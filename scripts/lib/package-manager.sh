@@ -123,3 +123,105 @@ packages_installation_required() {
 
     return 1
 }
+
+get_required_installations() {
+    local package_name
+
+    for package_name in "$@"; do
+        if ! is_package_installed "$package_name"; then
+            printf '%s\n' "$package_name"
+        fi
+    done
+}
+
+validate_installation_list() {
+    local package_name
+
+    if ! apt_is_usable; then
+        return 1
+    fi
+
+    for package_name in "$@"; do
+        if [[ -z "$package_name" ]]; then
+            return 1
+        fi
+
+        if is_package_installed "$package_name"; then
+            continue
+        fi
+
+        if ! package_is_available "$package_name"; then
+            printf 'Paquet indisponible : %s\n' "$package_name" >&2
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+install_required_packages() {
+    local package_name
+    local -a packages_to_install=()
+
+    if (( $# == 0 )); then
+        return 0
+    fi
+
+    if ! validate_installation_list "$@"; then
+        return 1
+    fi
+
+    while IFS= read -r package_name; do
+        [[ -n "$package_name" ]] || continue
+        packages_to_install+=("$package_name")
+    done < <(get_required_installations "$@")
+
+    if (( ${#packages_to_install[@]} == 0 )); then
+        return 0
+    fi
+
+    install_packages "${packages_to_install[@]}"
+}
+
+verify_packages_installed() {
+    local package_name
+
+    for package_name in "$@"; do
+        if ! is_package_installed "$package_name"; then
+            printf 'Paquet non installé : %s\n' "$package_name" >&2
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+install_required_packages() {
+    local package_name
+    local -a packages_to_install=()
+
+    if (( $# == 0 )); then
+        return 0
+    fi
+
+    if ! validate_installation_list "$@"; then
+        printf 'Validation des paquets impossible.\n' >&2
+        return 1
+    fi
+
+    while IFS= read -r package_name; do
+        [[ -n "$package_name" ]] || continue
+        packages_to_install+=("$package_name")
+    done < <(get_required_installations "$@")
+
+    if (( ${#packages_to_install[@]} == 0 )); then
+        return 0
+    fi
+
+    if ! install_packages "${packages_to_install[@]}"; then
+        printf 'Installation des paquets échouée.\n' >&2
+        return 1
+    fi
+
+    return 0
+}

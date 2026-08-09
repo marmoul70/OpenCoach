@@ -16,3 +16,49 @@ apt_is_usable() {
 
     apt-get indextargets >/dev/null 2>&1
 }
+
+is_package_installed() {
+    local package_name="$1"
+
+    dpkg-query \
+        --show \
+        --showformat='${Status}\n' \
+        "$package_name" 2>/dev/null |
+        grep -q '^install ok installed$'
+}
+
+get_missing_packages() {
+    local package_name
+
+    for package_name in "$@"; do
+        if ! is_package_installed "$package_name"; then
+            printf '%s\n' "$package_name"
+        fi
+    done
+}
+
+install_packages() {
+    local dry_run=0
+
+    if [[ "${1:-}" == "--dry-run" ]]; then
+        dry_run=1
+        shift
+    fi
+
+    if ! apt_is_usable; then
+        return 1
+    fi
+
+    if (( $# == 0 )); then
+        return 0
+    fi
+
+    if (( dry_run == 1 )); then
+        printf '[DRY-RUN] Installation :'
+        printf ' %s' "$@"
+        printf '\n'
+        return 0
+    fi
+
+    sudo apt-get install -y "$@"
+}

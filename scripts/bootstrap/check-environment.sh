@@ -17,6 +17,12 @@ source "$PROJECT_ROOT/scripts/lib/system.sh"
 # shellcheck source=../lib/dependencies.sh
 source "$PROJECT_ROOT/scripts/lib/dependencies.sh"
 
+# shellcheck source=../lib/package-manager.sh
+source "$PROJECT_ROOT/scripts/lib/package-manager.sh"
+
+# shellcheck source=../lib/packages.sh
+source "$PROJECT_ROOT/scripts/lib/packages.sh"
+
 log_info "Vérification de l'environnement OpenCoach"
 
 if is_debian; then
@@ -59,3 +65,26 @@ log_success "$available_dependencies dépendance(s) disponible(s)"
 log_success "Environnement de base valide"
 
 log_success "Environnement de base valide"
+
+if apt_is_usable; then
+    log_success "APT est opérationnel"
+else
+    log_error "APT n'est pas opérationnel"
+    exit 1
+fi
+
+missing_packages=0
+
+for package_name in "${OPENCOACH_REQUIRED_PACKAGES[@]}"; do
+    if apt-cache show "$package_name" >/dev/null 2>&1; then
+        log_success "Paquet $package_name disponible"
+    else
+        log_error "Paquet $package_name introuvable dans APT"
+        ((missing_packages += 1))
+    fi
+done
+
+if (( missing_packages > 0 )); then
+    log_error "$missing_packages paquet(s) requis introuvable(s)"
+    exit 1
+fi

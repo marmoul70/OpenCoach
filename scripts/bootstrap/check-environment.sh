@@ -23,6 +23,9 @@ source "$PROJECT_ROOT/scripts/lib/package-manager.sh"
 # shellcheck source=../lib/packages.sh
 source "$PROJECT_ROOT/scripts/lib/packages.sh"
 
+# shellcheck source=../lib/exit-codes.sh
+source "$PROJECT_ROOT/scripts/lib/exit-codes.sh"
+
 require_install_privileges() {
     if (( INSTALL_REQUESTED == 0 )); then
         return 0
@@ -77,7 +80,7 @@ case "${1:-}" in
         printf '\n'
         printf '  --help       Affiche cette aide.'
         printf '\n'
-        exit 0
+        exit "$OPENCOACH_EXIT_SUCCESS"
         ;;
     "--install")
         INSTALL_REQUESTED=1
@@ -85,12 +88,12 @@ case "${1:-}" in
     *)
         printf 'Argument inconnu : %s\n' "$1" >&2
         printf 'Utilisation : %s [--install|--help]\n' "$0" >&2
-        exit 1
+        exit "$OPENCOACH_EXIT_INVALID_ARGUMENT"
         ;;
 esac
 
 if ! require_install_privileges; then
-    exit 1
+    exit "$OPENCOACH_EXIT_PERMISSION_DENIED"
 fi
 
 log_info "Vérification de l'environnement OpenCoach"
@@ -99,7 +102,7 @@ if is_debian; then
     log_success "Debian détecté"
 else
     log_error "Le système n'est pas Debian"
-    exit 1
+    exit "$OPENCOACH_EXIT_GENERAL_ERROR"
 fi
 
 DEBIAN_VERSION="$(get_debian_version)"
@@ -108,7 +111,7 @@ if [[ "$DEBIAN_VERSION" == "13" ]]; then
     log_success "Debian $DEBIAN_VERSION détecté"
 else
     log_error "Debian 13 est requis (version détectée : $DEBIAN_VERSION)"
-    exit 1
+    exit "$OPENCOACH_EXIT_GENERAL_ERROR"
 fi
 
 available_dependencies=0
@@ -128,7 +131,7 @@ log_info "Résumé des dépendances"
 
 if (( missing_dependencies > 0 )); then
     log_error "$missing_dependencies dépendance(s) manquante(s)"
-    exit 1
+    exit "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
 fi
 
 log_success "$available_dependencies dépendance(s) disponible(s)"
@@ -138,7 +141,7 @@ if apt_is_usable; then
     log_success "APT est opérationnel"
 else
     log_error "APT n'est pas opérationnel"
-    exit 1
+    exit "$OPENCOACH_EXIT_SYSTEM_ERROR"
 fi
 
 printf '\n'
@@ -191,12 +194,12 @@ else
 
         if ! install_required_packages "${OPENCOACH_REQUIRED_PACKAGES[@]}"; then
             log_error "L'installation des dépendances a échoué."
-            exit 1
+            exit "$OPENCOACH_EXIT_SYSTEM_ERROR"
         fi
 
         if ! verify_packages_installed "${OPENCOACH_REQUIRED_PACKAGES[@]}"; then
             log_error "Vérification des dépendances échouée après installation."
-            exit 1
+            exit "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
         fi
 
         log_success "Installation des dépendances terminée et vérifiée."
@@ -210,7 +213,9 @@ log_info "Validation finale de l'environnement"
 
 if ! verify_required_commands; then
     log_error "La validation finale de l'environnement a échoué."
-    exit 1
+    exit "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
 fi
 
 log_success "Validation finale de l'environnement réussie"
+
+exit "$OPENCOACH_EXIT_SUCCESS"

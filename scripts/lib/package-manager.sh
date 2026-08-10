@@ -5,6 +5,22 @@
 # Provides helpers for detecting and interacting with
 # the system package manager.
 
+# shellcheck source=exit-codes.sh
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/exit-codes.sh"
+
+open_coach_package_manager_exit_codes_loaded() {
+    [[ -n "${OPENCOACH_EXIT_SUCCESS:-}" ]]
+}
+
+validate_package_manager_environment() {
+    if ! apt_is_usable; then
+        printf 'APT n''est pas opérationnel.\n' >&2
+        return "$OPENCOACH_EXIT_SYSTEM_ERROR"
+    fi
+
+    return "$OPENCOACH_EXIT_SUCCESS"
+}
+
 has_apt() {
     command -v apt-get >/dev/null 2>&1
 }
@@ -35,32 +51,6 @@ get_missing_packages() {
             printf '%s\n' "$package_name"
         fi
     done
-}
-
-install_packages() {
-    local dry_run=0
-
-    if [[ "${1:-}" == "--dry-run" ]]; then
-        dry_run=1
-        shift
-    fi
-
-    if ! apt_is_usable; then
-        return 1
-    fi
-
-    if (( $# == 0 )); then
-        return 0
-    fi
-
-    if (( dry_run == 1 )); then
-        printf '[DRY-RUN] Installation :'
-        printf ' %s' "$@"
-        printf '\n'
-        return 0
-    fi
-
-    sudo apt-get install -y "$@"
 }
 
 package_is_available() {
@@ -138,11 +128,17 @@ validate_installation_list() {
     local package_name
 
     if ! apt_is_usable; then
+        printf 'APT n''est pas opérationnel.\n' >&2
         return 1
+    fi
+
+    if (( $# == 0 )); then
+        return 0
     fi
 
     for package_name in "$@"; do
         if [[ -z "$package_name" ]]; then
+            printf 'Nom de paquet vide.\n' >&2
             return 1
         fi
 
@@ -159,46 +155,41 @@ validate_installation_list() {
     return 0
 }
 
-install_required_packages() {
-    local package_name
-    local -a packages_to_install=()
+install_packages() {
+    local dry_run=0
+
+    if [[ "${1:-}" == "--dry-run" ]]; then
+        dry_run=1
+        shift
+    fi
+
+    if ! apt_is_usable; then
+        return 1
+    fi
 
     if (( $# == 0 )); then
         return 0
     fi
 
-    if ! validate_installation_list "$@"; then
-        return 1
-    fi
-
-    while IFS= read -r package_name; do
-        [[ -n "$package_name" ]] || continue
-        packages_to_install+=("$package_name")
-    done < <(get_required_installations "$@")
-
-    if (( ${#packages_to_install[@]} == 0 )); then
+    if (( dry_run == 1 )); then
+        printf '[DRY-RUN] Installation :'
+        printf ' %s' "$@"
+        printf '\n'
         return 0
     fi
 
-    install_packages "${packages_to_install[@]}"
-}
-
-verify_packages_installed() {
-    local package_name
-
-    for package_name in "$@"; do
-        if ! is_package_installed "$package_name"; then
-            printf 'Paquet non installé : %s\n' "$package_name" >&2
-            return 1
-        fi
-    done
-
-    return 0
+    sudo apt-get install -y "$@"
 }
 
 install_required_packages() {
     local package_name
+    local dry_run=0
     local -a packages_to_install=()
+
+    if [[ "${1:-}" == "--dry-run" ]]; then
+        dry_run=1
+        shift
+    fi
 
     if (( $# == 0 )); then
         return 0
@@ -218,10 +209,53 @@ install_required_packages() {
         return 0
     fi
 
+    if (( dry_run == 1 )); then
+        printf '[DRY-RUN] Paquets à installer :'
+        printf ' %s' "${packages_to_install[@]}"
+        printf '\n'
+        return 0
+    fi
+
     if ! install_packages "${packages_to_install[@]}"; then
         printf 'Installation des paquets échouée.\n' >&2
         return 1
     fi
+
+    return 0
+}
+
+install_and_verify_packages() {
+    if (( $# == 0 )); then
+        return 0
+    fi
+
+    if ! validate_installation_list "$@"; then
+        printf 'Validation des paquets impossible.\n' >&2
+        return 1
+    fi
+
+    if ! install_required_packages "$@"; then
+        printf 'Installation des paquets échouée.\n' >&2
+        return 1
+    fi
+
+    if ! verify_packages_installed "$@"; then
+        printf 'Vérification des paquets échouée après installation.\n' >&2
+        return 1
+    fi
+
+    return 0
+}
+
+verify_packages_installed() {
+    local package_name
+
+    for package_name in "$@"; do
+        if ! is_package_installed "$package_name"; then
+            printf 'Paquet non installé : %s\n' "$package_name" >&2
+            return 1
+        fi
+    done
 
     return 0
 }

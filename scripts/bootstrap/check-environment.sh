@@ -23,20 +23,77 @@ source "$PROJECT_ROOT/scripts/lib/package-manager.sh"
 # shellcheck source=../lib/packages.sh
 source "$PROJECT_ROOT/scripts/lib/packages.sh"
 
-log_info "Vérification de l'environnement OpenCoach"
+require_install_privileges() {
+    if (( INSTALL_REQUESTED == 0 )); then
+        return 0
+    fi
+
+    if (( EUID == 0 )); then
+        return 0
+    fi
+
+    log_error "Le mode --install nécessite les privilèges administrateur."
+    log_error "Relancez le script avec sudo :"
+    log_error "sudo $0 --install"
+
+    return 1
+}
+
+verify_required_commands() {
+    local missing_commands=0
+
+    for command_name in "${OPENCOACH_REQUIRED_COMMANDS[@]}"; do
+        if require_command "$command_name"; then
+            log_success "$command_name disponible"
+        else
+            log_error "$command_name est introuvable"
+            ((missing_commands += 1))
+        fi
+    done
+
+    if (( missing_commands > 0 )); then
+        log_error "$missing_commands commande(s) requise(s) indisponible(s)"
+        return 1
+    fi
+
+    return 0
+}
 
 INSTALL_REQUESTED=0
 
-if [[ "${1:-}" == "--install" ]]; then
-    INSTALL_REQUESTED=1
-fi
+case "${1:-}" in
+    "")
+        ;;
+    "--help"|"-h")
+        printf '%s\n' "OpenCoach - Vérification de l'environnement"
+        printf '\n'
+        printf '%s\n' "Utilisation :"
+        printf '  %s\n' "$0"
+        printf '  %s --install\n' "$0"
+        printf '  %s --help\n' "$0"
+        printf '\n'
+        printf '%s\n' "Options :"
+        printf '  --install    Installe les dépendances manquantes.'
+        printf '\n'
+        printf '  --help       Affiche cette aide.'
+        printf '\n'
+        exit 0
+        ;;
+    "--install")
+        INSTALL_REQUESTED=1
+        ;;
+    *)
+        printf 'Argument inconnu : %s\n' "$1" >&2
+        printf 'Utilisation : %s [--install|--help]\n' "$0" >&2
+        exit 1
+        ;;
+esac
 
-if [[ -n "${1:-}" && "${1}" != "--install" ]]; then
-    printf 'Argument inconnu : %s\n' "$1" >&2
-    printf 'Utilisation : %s [--install]\n' "$0" >&2
+if ! require_install_privileges; then
     exit 1
 fi
 
+log_info "Vérification de l'environnement OpenCoach"
 
 if is_debian; then
     log_success "Debian détecté"
@@ -77,28 +134,10 @@ fi
 log_success "$available_dependencies dépendance(s) disponible(s)"
 log_success "Environnement de base valide"
 
-log_success "Environnement de base valide"
-
 if apt_is_usable; then
     log_success "APT est opérationnel"
 else
     log_error "APT n'est pas opérationnel"
-    exit 1
-fi
-
-missing_packages=0
-
-for package_name in "${OPENCOACH_REQUIRED_PACKAGES[@]}"; do
-    if apt-cache show "$package_name" >/dev/null 2>&1; then
-        log_success "Paquet $package_name disponible"
-    else
-        log_error "Paquet $package_name introuvable dans APT"
-        ((missing_packages += 1))
-    fi
-done
-
-if (( missing_packages > 0 )); then
-    log_error "$missing_packages paquet(s) requis introuvable(s)"
     exit 1
 fi
 
@@ -165,3 +204,13 @@ else
         log_success "Aucune installation nécessaire."
     fi
 fi
+
+printf '\n'
+log_info "Validation finale de l'environnement"
+
+if ! verify_required_commands; then
+    log_error "La validation finale de l'environnement a échoué."
+    exit 1
+fi
+
+log_success "Validation finale de l'environnement réussie"

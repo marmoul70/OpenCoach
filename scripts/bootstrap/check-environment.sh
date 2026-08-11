@@ -121,6 +121,37 @@ verify_required_packages() {
     return "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
 }
 
+verify_available_packages() {
+    local unavailable_packages=0
+
+    for package_name in "${OPENCOACH_REQUIRED_PACKAGES[@]}"; do
+        if package_is_available "$package_name"; then
+            log_success "Paquet $package_name disponible dans APT"
+        else
+            log_error "Paquet $package_name indisponible dans APT"
+            ((unavailable_packages += 1))
+        fi
+    done
+
+    if (( unavailable_packages > 0 )); then
+        log_error "$unavailable_packages paquet(s) requis indisponible(s) dans APT"
+        return "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
+    fi
+
+    return "$OPENCOACH_EXIT_SUCCESS"
+}
+
+get_installable_required_packages() {
+    local package_name
+
+    for package_name in "${OPENCOACH_REQUIRED_PACKAGES[@]}"; do
+        if ! is_package_installed "$package_name" &&
+           package_is_available "$package_name"; then
+            printf '%s\n' "$package_name"
+        fi
+    done
+}
+
 INSTALL_REQUESTED=0
 
 case "${1:-}" in
@@ -168,6 +199,13 @@ fi
 printf '\n'
 log_info "Vérification des paquets OpenCoach"
 
+if ! verify_available_packages; then
+    log_error "La vérification de disponibilité des paquets a échoué."
+    exit "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
+fi
+
+log_success "Tous les paquets requis sont disponibles dans APT"
+
 if verify_required_packages; then
     log_success "Validation des paquets OpenCoach réussie"
 else
@@ -186,7 +224,7 @@ installable_packages=()
 while IFS= read -r package_name; do
     [[ -n "$package_name" ]] || continue
     installable_packages+=("$package_name")
-done < <(get_installable_packages "${OPENCOACH_REQUIRED_PACKAGES[@]}")
+done < <(get_installable_required_packages)
 
 if (( ${#installable_packages[@]} == 0 )); then
     log_success "Aucun paquet supplémentaire disponible pour installation"

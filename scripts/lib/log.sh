@@ -13,8 +13,6 @@
 #   log_warning
 #   log_error
 
-set -Eeuo pipefail
-
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck source=colors.sh

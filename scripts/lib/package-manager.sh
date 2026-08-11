@@ -155,6 +155,14 @@ validate_installation_list() {
     return 0
 }
 
+run_as_root() {
+    if (( EUID == 0 )); then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
+
 install_packages() {
     local dry_run=0
 
@@ -178,7 +186,7 @@ install_packages() {
         return 0
     fi
 
-    sudo apt-get install -y "$@"
+    run_as_root apt-get install -y "$@"
 }
 
 install_required_packages() {

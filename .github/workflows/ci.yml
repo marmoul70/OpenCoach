@@ -1,0 +1,46 @@
+name: OpenCoach CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  bash:
+    name: Bash validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Bash syntax check
+        run: |
+          bash -n scripts/bootstrap/check-environment.sh
+          bash -n scripts/maintenance/shellcheck.sh
+          bash -n tests/test-libraries.sh
+
+      - name: ShellCheck
+        run: |
+          ./scripts/maintenance/shellcheck.sh
+
+      - name: OpenCoach tests on Debian 13
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            debian:13 \
+            bash -c '
+              set -Eeuo pipefail
+              apt-get update
+              apt-get install -y bash git
+              ./tests/test-libraries.sh
+            '

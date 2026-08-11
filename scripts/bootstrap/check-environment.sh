@@ -8,22 +8,22 @@
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 
-# shellcheck source=../lib/log.sh
+# shellcheck source=scripts/lib/log.sh
 source "$PROJECT_ROOT/scripts/lib/log.sh"
 
-# shellcheck source=../lib/system.sh
+# shellcheck source=scripts/lib/system.sh
 source "$PROJECT_ROOT/scripts/lib/system.sh"
 
-# shellcheck source=../lib/dependencies.sh
+# shellcheck source=scripts/lib/dependencies.sh
 source "$PROJECT_ROOT/scripts/lib/dependencies.sh"
 
-# shellcheck source=../lib/package-manager.sh
+# shellcheck source=scripts/lib/package-manager.sh
 source "$PROJECT_ROOT/scripts/lib/package-manager.sh"
 
-# shellcheck source=../lib/packages.sh
+# shellcheck source=scripts/lib/packages.sh
 source "$PROJECT_ROOT/scripts/lib/packages.sh"
 
-# shellcheck source=../lib/exit-codes.sh
+# shellcheck source=scripts/lib/exit-codes.sh
 source "$PROJECT_ROOT/scripts/lib/exit-codes.sh"
 
 require_install_privileges() {
@@ -182,8 +182,11 @@ case "${1:-}" in
         ;;
 esac
 
-if ! require_install_privileges; then
-    exit "$?"
+if require_install_privileges; then
+    :
+else
+    privilege_status=$?
+    exit "$privilege_status"
 fi
 
 log_info "Vérification de l'environnement OpenCoach"

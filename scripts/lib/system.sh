@@ -4,8 +4,6 @@
 #
 # Common functions used by OpenCoach installation and maintenance scripts.
 
-# set -Eeuo pipefail
-
 require_command() {
     local command_name="$1"
 

@@ -28,18 +28,18 @@ source "$PROJECT_ROOT/scripts/lib/exit-codes.sh"
 
 require_install_privileges() {
     if (( INSTALL_REQUESTED == 0 )); then
-        return 0
+        return "$OPENCOACH_EXIT_SUCCESS"
     fi
 
     if (( EUID == 0 )); then
-        return 0
+        return "$OPENCOACH_EXIT_SUCCESS"
     fi
 
     log_error "Le mode --install nécessite les privilèges administrateur."
     log_error "Relancez le script avec sudo :"
     log_error "sudo $0 --install"
 
-    return 1
+    return "$OPENCOACH_EXIT_PERMISSION_DENIED"
 }
 
 verify_required_commands() {
@@ -56,10 +56,69 @@ verify_required_commands() {
 
     if (( missing_commands > 0 )); then
         log_error "$missing_commands commande(s) requise(s) indisponible(s)"
-        return 1
+        return "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
     fi
 
-    return 0
+    return "$OPENCOACH_EXIT_SUCCESS"
+}
+
+validate_environment() {
+    local debian_version
+
+    log_info "Validation globale de l'environnement"
+
+    if ! is_debian; then
+        log_error "Le système n'est pas Debian"
+        return "$OPENCOACH_EXIT_GENERAL_ERROR"
+    fi
+
+    log_success "Debian détecté"
+
+    debian_version="$(get_debian_version)"
+
+    if [[ "$debian_version" != "13" ]]; then
+        log_error "Debian 13 est requis (version détectée : $debian_version)"
+        return "$OPENCOACH_EXIT_GENERAL_ERROR"
+    fi
+
+    log_success "Debian $debian_version détecté"
+
+    if ! apt_is_usable; then
+        log_error "APT n'est pas opérationnel"
+        return "$OPENCOACH_EXIT_SYSTEM_ERROR"
+    fi
+
+    log_success "APT est opérationnel"
+
+    if ! verify_required_commands; then
+        return "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
+    fi
+
+    log_success "Environnement de base valide"
+
+    return "$OPENCOACH_EXIT_SUCCESS"
+}
+
+verify_required_packages() {
+    local missing_packages=()
+
+    while IFS= read -r package_name; do
+        [[ -n "$package_name" ]] || continue
+        missing_packages+=("$package_name")
+    done < <(get_required_installations "${OPENCOACH_REQUIRED_PACKAGES[@]}")
+
+    if (( ${#missing_packages[@]} == 0 )); then
+        log_success "Tous les paquets OpenCoach sont installés"
+        return "$OPENCOACH_EXIT_SUCCESS"
+    fi
+
+    log_warning "Paquets OpenCoach manquants : ${#missing_packages[@]}"
+
+    for package_name in "${missing_packages[@]}"; do
+        log_warning "  - $package_name"
+    done
+
+    return "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
 }
 
 INSTALL_REQUESTED=0
@@ -93,75 +152,33 @@ case "${1:-}" in
 esac
 
 if ! require_install_privileges; then
-    exit "$OPENCOACH_EXIT_PERMISSION_DENIED"
+    exit "$?"
 fi
 
 log_info "Vérification de l'environnement OpenCoach"
 
-if is_debian; then
-    log_success "Debian détecté"
+if validate_environment; then
+    log_success "Validation globale de l'environnement réussie"
 else
-    log_error "Le système n'est pas Debian"
-    exit "$OPENCOACH_EXIT_GENERAL_ERROR"
-fi
-
-DEBIAN_VERSION="$(get_debian_version)"
-
-if [[ "$DEBIAN_VERSION" == "13" ]]; then
-    log_success "Debian $DEBIAN_VERSION détecté"
-else
-    log_error "Debian 13 est requis (version détectée : $DEBIAN_VERSION)"
-    exit "$OPENCOACH_EXIT_GENERAL_ERROR"
-fi
-
-available_dependencies=0
-missing_dependencies=0
-
-for command_name in "${OPENCOACH_REQUIRED_COMMANDS[@]}"; do
-    if require_command "$command_name"; then
-        log_success "$command_name disponible"
-        ((available_dependencies += 1))
-    else
-        log_error "$command_name est introuvable"
-        ((missing_dependencies += 1))
-    fi
-done
-
-log_info "Résumé des dépendances"
-
-if (( missing_dependencies > 0 )); then
-    log_error "$missing_dependencies dépendance(s) manquante(s)"
-    exit "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
-fi
-
-log_success "$available_dependencies dépendance(s) disponible(s)"
-log_success "Environnement de base valide"
-
-if apt_is_usable; then
-    log_success "APT est opérationnel"
-else
-    log_error "APT n'est pas opérationnel"
-    exit "$OPENCOACH_EXIT_SYSTEM_ERROR"
+    validation_status=$?
+    log_error "La validation globale de l'environnement a échoué."
+    exit "$validation_status"
 fi
 
 printf '\n'
 log_info "Vérification des paquets OpenCoach"
 
-missing_packages=()
-
-while IFS= read -r package_name; do
-    [[ -n "$package_name" ]] || continue
-    missing_packages+=("$package_name")
-done < <(get_required_installations "${OPENCOACH_REQUIRED_PACKAGES[@]}")
-
-if (( ${#missing_packages[@]} == 0 )); then
-    log_success "Tous les paquets OpenCoach sont installés"
+if verify_required_packages; then
+    log_success "Validation des paquets OpenCoach réussie"
 else
-    log_warning "Paquets OpenCoach manquants : ${#missing_packages[@]}"
+    package_validation_status=$?
 
-    for package_name in "${missing_packages[@]}"; do
-        log_warning "  - $package_name"
-    done
+    if (( package_validation_status == OPENCOACH_EXIT_MISSING_DEPENDENCY )); then
+        log_info "Des paquets requis sont absents et peuvent éventuellement être installés."
+    else
+        log_error "La validation des paquets OpenCoach a échoué."
+        exit "$package_validation_status"
+    fi
 fi
 
 installable_packages=()

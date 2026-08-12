@@ -37,7 +37,11 @@ require_install_privileges() {
 
     log_error "Le mode --install nécessite les privilèges administrateur."
     log_error "Relancez le script avec sudo :"
-    log_error "sudo $0 --install"
+    if (( DEV_REQUESTED == 1 )); then
+        log_error "sudo $0 --install --dev"
+    else
+        log_error "sudo $0 --install"
+    fi
 
     return "$OPENCOACH_EXIT_PERMISSION_DENIED"
 }
@@ -141,7 +145,7 @@ verify_available_packages() {
     return "$OPENCOACH_EXIT_SUCCESS"
 }
 
-get_installable_required_packages() {
+get_installable_packages_for_environment() {
     local package_name
 
     for package_name in "${OPENCOACH_REQUIRED_PACKAGES[@]}"; do
@@ -150,37 +154,67 @@ get_installable_required_packages() {
             printf '%s\n' "$package_name"
         fi
     done
+
+    if (( DEV_REQUESTED == 1 )); then
+        for package_name in "${OPENCOACH_DEV_PACKAGES[@]}"; do
+            if ! is_package_installed "$package_name" &&
+               package_is_available "$package_name"; then
+                printf '%s\n' "$package_name"
+            fi
+        done
+    fi
 }
 
 INSTALL_REQUESTED=0
+DEV_REQUESTED=0
 
-case "${1:-}" in
-    "")
-        ;;
-    "--help"|"-h")
-        printf '%s\n' "OpenCoach - Vérification de l'environnement"
-        printf '\n'
-        printf '%s\n' "Utilisation :"
-        printf '  %s\n' "$0"
-        printf '  %s --install\n' "$0"
-        printf '  %s --help\n' "$0"
-        printf '\n'
-        printf '%s\n' "Options :"
-        printf '  --install    Installe les dépendances manquantes.'
-        printf '\n'
-        printf '  --help       Affiche cette aide.'
-        printf '\n'
-        exit "$OPENCOACH_EXIT_SUCCESS"
-        ;;
-    "--install")
-        INSTALL_REQUESTED=1
-        ;;
-    *)
-        printf 'Argument inconnu : %s\n' "$1" >&2
-        printf 'Utilisation : %s [--install|--help]\n' "$0" >&2
-        exit "$OPENCOACH_EXIT_INVALID_ARGUMENT"
-        ;;
-esac
+while (( $# > 0 )); do
+    case "$1" in
+        "")
+            ;;
+
+        "--help"|"-h")
+            printf '%s\n' "OpenCoach - Vérification de l'environnement"
+            printf '\n'
+            printf '%s\n' "Utilisation :"
+            printf '  %s\n' "$0"
+            printf '  %s --install\n' "$0"
+            printf '  %s --install --dev\n' "$0"
+            printf '  %s --help\n' "$0"
+            printf '\n'
+            printf '%s\n' "Options :"
+            printf '  --install    Installe les dépendances manquantes.'
+            printf '\n'
+            printf '  --dev        Ajoute les outils de développement.'
+            printf '\n'
+            printf '  --help       Affiche cette aide.'
+            printf '\n'
+            exit "$OPENCOACH_EXIT_SUCCESS"
+            ;;
+
+        "--install")
+            INSTALL_REQUESTED=1
+            ;;
+
+        "--dev")
+            DEV_REQUESTED=1
+            ;;
+
+        *)
+            printf 'Argument inconnu : %s\n' "$1" >&2
+            printf 'Utilisation : %s [--install [--dev]|--help]\n' "$0" >&2
+            exit "$OPENCOACH_EXIT_INVALID_ARGUMENT"
+            ;;
+    esac
+
+    shift
+done
+
+if (( DEV_REQUESTED == 1 && INSTALL_REQUESTED == 0 )); then
+    printf '%s\n' "Le mode --dev nécessite --install." >&2
+    printf 'Utilisation : %s --install --dev\n' "$0" >&2
+    exit "$OPENCOACH_EXIT_INVALID_ARGUMENT"
+fi
 
 if require_install_privileges; then
     :
@@ -227,7 +261,7 @@ installable_packages=()
 while IFS= read -r package_name; do
     [[ -n "$package_name" ]] || continue
     installable_packages+=("$package_name")
-done < <(get_installable_required_packages)
+done < <(get_installable_packages_for_environment)
 
 if (( ${#installable_packages[@]} == 0 )); then
     log_success "Aucun paquet supplémentaire disponible pour installation"
@@ -250,9 +284,18 @@ else
     if (( ${#installable_packages[@]} > 0 )); then
         log_info "Installation des paquets manquants..."
 
-        if ! install_required_packages "${OPENCOACH_REQUIRED_PACKAGES[@]}"; then
+        if (( DEV_REQUESTED == 1 )); then
+            packages_to_install+=("${OPENCOACH_DEV_PACKAGES[@]}")
+        fi
+
+        if ! install_required_packages "${packages_to_install[@]}"; then
             log_error "L'installation des dépendances a échoué."
             exit "$OPENCOACH_EXIT_SYSTEM_ERROR"
+        fi
+
+        if ! verify_packages_installed "${packages_to_install[@]}"; then
+            log_error "Vérification des dépendances échouée après installation."
+            exit "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
         fi
 
         if ! verify_packages_installed "${OPENCOACH_REQUIRED_PACKAGES[@]}"; then

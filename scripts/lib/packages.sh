@@ -8,3 +8,7 @@ readonly OPENCOACH_REQUIRED_PACKAGES=(
     bash
     git
 )
+
+readonly OPENCOACH_DEV_PACKAGES=(
+    shellcheck
+)

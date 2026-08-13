@@ -284,9 +284,22 @@ else
     if (( ${#installable_packages[@]} > 0 )); then
         log_info "Installation des paquets manquants..."
 
-        if (( DEV_REQUESTED == 1 )); then
-            packages_to_install+=("${OPENCOACH_DEV_PACKAGES[@]}")
+        packages_to_install=()
+
+        for package_name in "${installable_packages[@]}"; do
+            packages_to_install+=("$package_name")
+        done
+
+        if (( ${#packages_to_install[@]} == 0 )); then
+            log_error "Aucun paquet installable n'a été sélectionné."
+            exit "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
         fi
+
+        log_info "Paquets sélectionnés pour installation : ${#packages_to_install[@]}"
+
+        for package_name in "${packages_to_install[@]}"; do
+            log_info "  - $package_name"
+        done
 
         if ! install_required_packages "${packages_to_install[@]}"; then
             log_error "L'installation des dépendances a échoué."
@@ -299,8 +312,15 @@ else
         fi
 
         if ! verify_packages_installed "${OPENCOACH_REQUIRED_PACKAGES[@]}"; then
-            log_error "Vérification des dépendances échouée après installation."
+            log_error "Vérification des dépendances obligatoires échouée après installation."
             exit "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
+        fi
+
+        if (( DEV_REQUESTED == 1 )); then
+            if ! verify_packages_installed "${OPENCOACH_DEV_PACKAGES[@]}"; then
+                log_error "Vérification des dépendances de développement échouée après installation."
+                exit "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
+            fi
         fi
 
         log_success "Installation des dépendances terminée et vérifiée."

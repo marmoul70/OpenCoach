@@ -7,6 +7,8 @@
 readonly OPENCOACH_REQUIRED_PACKAGES=(
     bash
     git
+    nodejs
+    npm
 )
 
 readonly OPENCOACH_DEV_PACKAGES=(

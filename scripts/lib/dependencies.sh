@@ -8,3 +8,8 @@ readonly OPENCOACH_REQUIRED_COMMANDS=(
     bash
     git
 )
+
+readonly OPENCOACH_APPLICATION_COMMANDS=(
+    node
+    npm
+)

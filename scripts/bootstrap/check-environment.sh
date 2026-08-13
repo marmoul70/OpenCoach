@@ -66,6 +66,26 @@ verify_required_commands() {
     return "$OPENCOACH_EXIT_SUCCESS"
 }
 
+verify_application_commands() {
+    local missing_commands=0
+
+    for command_name in "${OPENCOACH_APPLICATION_COMMANDS[@]}"; do
+        if require_command "$command_name"; then
+            log_success "$command_name disponible"
+        else
+            log_error "$command_name est introuvable"
+            ((missing_commands += 1))
+        fi
+    done
+
+    if (( missing_commands > 0 )); then
+        log_error "$missing_commands commande(s) applicative(s) indisponible(s)"
+        return "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
+    fi
+
+    return "$OPENCOACH_EXIT_SUCCESS"
+}
+
 validate_environment() {
     local debian_version
 
@@ -334,6 +354,11 @@ log_info "Validation finale de l'environnement"
 
 if ! verify_required_commands; then
     log_error "La validation finale de l'environnement a échoué."
+    exit "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
+fi
+
+if ! verify_application_commands; then
+    log_error "La validation finale des commandes applicatives a échoué."
     exit "$OPENCOACH_EXIT_MISSING_DEPENDENCY"
 fi
 

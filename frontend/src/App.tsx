@@ -11,13 +11,13 @@ function App() {
   const profile = getAthleteProfile()
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+    <div className="min-h-screen bg-base-200">
+      <header className="sticky top-0 z-40 border-b border-base-300 bg-base-100/95 shadow-sm backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <button
             type="button"
             onClick={() => setPage('dashboard')}
-            className="text-lg font-bold tracking-tight text-slate-900"
+            className="text-lg font-bold tracking-tight text-base-content transition hover:text-primary"
           >
             OpenCoach
           </button>
@@ -25,7 +25,7 @@ function App() {
           <button
             type="button"
             onClick={() => setPage('profile')}
-            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-600 transition hover:ring-2 hover:ring-slate-200"
+            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-base-300 bg-base-200 text-sm font-semibold text-base-content transition hover:ring-2 hover:ring-primary/30"
             aria-label="Ouvrir le profil"
             title="Profil"
           >

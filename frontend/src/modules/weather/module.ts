@@ -10,6 +10,8 @@ import {
   registerWidgetViewComponent,
 } from '../../components/widgets/WidgetViewRegistry'
 
+import { CloudSun } from 'lucide-react'
+
 import { WeatherWidget } from './WeatherWidget'
 import { WeatherDetails } from './WeatherDetails'
 
@@ -37,6 +39,8 @@ registerWidget({
   title: 'Météo',
   description: 'Conditions météorologiques actuelles',
   status: 'success',
+  accent: 'info',
+  icon: CloudSun,
   enabled: true,
   detailsViewId: 'weather-details',
 })

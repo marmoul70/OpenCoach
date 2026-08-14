@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { getWeather } from './api'
+import { getWeatherAlerts } from './alerts'
 import { DEFAULT_WEATHER_LOCATION } from './location'
 import { getWeatherDescription } from './logic'
 import type { WeatherData } from './types'
@@ -62,6 +63,8 @@ export function WeatherDetails() {
   const currentDescription = getWeatherDescription(
     weather.current.weatherCode,
   )
+  const alerts = getWeatherAlerts(weather)
+  const relevantAlerts = alerts.filter(isAlertRelevant)
 
   return (
     <div className="space-y-6">
@@ -109,12 +112,44 @@ export function WeatherDetails() {
         </div>
       </section>
 
-      <section>
-        <h3 className="text-lg font-semibold text-slate-900">
-          Prochaines heures
-        </h3>
+      {relevantAlerts.length > 0 && (
+        <details
+          open={relevantAlerts.some(
+            (alert) => alert.severity === 'danger',
+          )}
+          className="collapse collapse-arrow border border-base-300 bg-base-100"
+        >
+          <summary className="collapse-title flex items-center gap-2 font-semibold">
+            <span>⚠️ Alertes météo</span>
 
-        <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
+            <span className="badge badge-sm badge-warning">
+              {relevantAlerts.length}
+            </span>
+          </summary>
+
+          <div className="collapse-content">
+            <div className="space-y-3 pt-2">
+              {relevantAlerts.map((alert) => (
+                <WeatherAlertCard
+                  key={`${alert.type}-${alert.severity}-${alert.time}`}
+                  alert={alert}
+                />
+              ))}
+            </div>
+          </div>
+        </details>
+      )}
+
+      <details className="group rounded-2xl border border-slate-200 bg-white">
+        <summary className="flex cursor-pointer list-none items-center justify-between p-4 font-semibold text-slate-900">
+          <span>Prochaines heures</span>
+          <span className="text-slate-400 transition group-open:rotate-180">
+            ▼
+          </span>
+        </summary>
+
+        <div className="border-t border-slate-100 p-4">
+          <div className="flex gap-3 overflow-x-auto pb-2">
           {weather.hourly.slice(0, 12).map((hour) => {
             const description = getWeatherDescription(
               hour.weatherCode,
@@ -147,15 +182,19 @@ export function WeatherDetails() {
               </div>
             )
           })}
+          </div>
         </div>
-      </section>
+      </details>
 
-      <section>
-        <h3 className="text-lg font-semibold text-slate-900">
-          Prévisions à 7 jours
-        </h3>
+      <details className="group rounded-2xl border border-slate-200 bg-white">
+        <summary className="flex cursor-pointer list-none items-center justify-between p-4 font-semibold text-slate-900">
+          <span>Prévisions à 7 jours</span>
+          <span className="text-slate-400 transition group-open:rotate-180">
+            ▼
+          </span>
+        </summary>
 
-        <div className="mt-3 space-y-2">
+        <div className="space-y-2 border-t border-slate-100 p-4">
           {weather.daily.map((day) => {
             const description = getWeatherDescription(
               day.weatherCode,
@@ -205,9 +244,96 @@ export function WeatherDetails() {
             )
           })}
         </div>
-      </section>
+      </details>
     </div>
   )
+}
+
+interface WeatherAlertCardProps {
+  alert: import('./alerts').WeatherAlert
+}
+
+function WeatherAlertCard({
+  alert,
+}: WeatherAlertCardProps) {
+  const styles = getAlertStyles(alert.severity)
+
+  return (
+    <div className={`rounded-xl border p-4 ${styles.container}`}>
+      <div className="flex items-start gap-3">
+        <span className={`mt-0.5 text-lg ${styles.icon}`}>
+          {styles.symbol}
+        </span>
+
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className={`font-semibold ${styles.title}`}>
+              {alert.title}
+            </p>
+
+            {alert.time && (
+              <span className="text-xs text-slate-400">
+                {formatAlertTime(alert.time)}
+              </span>
+            )}
+          </div>
+
+          <p className="mt-1 text-sm text-slate-600">
+            {alert.message}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function getAlertStyles(
+  severity: import('./alerts').WeatherAlertSeverity,
+) {
+  switch (severity) {
+    case 'danger':
+      return {
+        container:
+          'border-red-200 bg-red-50',
+        icon: 'text-red-600',
+        title: 'text-red-800',
+        symbol: '⚠',
+      }
+
+    case 'warning':
+      return {
+        container:
+          'border-amber-200 bg-amber-50',
+        icon: 'text-amber-600',
+        title: 'text-amber-800',
+        symbol: '⚠',
+      }
+
+    default:
+      return {
+        container:
+          'border-blue-200 bg-blue-50',
+        icon: 'text-blue-600',
+        title: 'text-blue-800',
+        symbol: 'ℹ',
+      }
+  }
+}
+
+function formatAlertTime(value: string): string {
+  if (value.includes('T')) {
+    return new Intl.DateTimeFormat('fr-FR', {
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(value))
+  }
+
+  return new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(`${value}T12:00:00`))
 }
 
 interface MetricProps {
@@ -245,4 +371,36 @@ function formatDate(value: string): string {
     day: 'numeric',
     month: 'short',
   }).format(new Date(`${value}T12:00:00`))
+}
+
+function isAlertRelevant(
+  alert: import('./alerts').WeatherAlert,
+): boolean {
+  if (!alert.time) {
+    return true
+  }
+
+  const now = new Date()
+
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  )
+
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  const alertDate = new Date(alert.time)
+
+  const alertDay = new Date(
+    alertDate.getFullYear(),
+    alertDate.getMonth(),
+    alertDate.getDate(),
+  )
+
+  return (
+    alertDay.getTime() === today.getTime() ||
+    alertDay.getTime() === tomorrow.getTime()
+  )
 }

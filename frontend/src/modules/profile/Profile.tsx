@@ -2,6 +2,10 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 
 import {
+  UserRound,
+} from 'lucide-react'
+
+import {
   getAthleteProfile,
   updateAthleteProfile,
 } from '../../core/profile'
@@ -132,16 +136,33 @@ export function Profile() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-5xl px-6 py-8">
+    <main className="min-h-screen bg-base-200">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Profil athlète
-          </h1>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <UserRound size={24} strokeWidth={2} />
+                </div>
 
-          <p className="mt-2 text-slate-500">
-            Vos informations et paramètres utilisés par OpenCoach.
-          </p>
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-base-content">
+                    Profil athlète
+                  </h1>
+
+                  <p className="mt-1 text-sm text-base-content/60">
+                    Vos informations et paramètres utilisés par OpenCoach.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="badge badge-outline gap-2 px-3 py-3">
+              <span className="size-2 rounded-full bg-success" />
+              Profil local
+            </div>
+          </div>
         </header>
 
         <div className="space-y-4">
@@ -151,21 +172,23 @@ export function Profile() {
             defaultOpen
           >
             <div className="space-y-6">
-              <div className="flex items-center gap-5">
-                <AvatarPreview
-                  firstName={firstName}
-                  lastName={lastName}
-                  avatar={avatar}
-                />
+              <div className="card border border-base-300 bg-base-200/50">
+                <div className="card-body flex-row items-center gap-5 p-5">
+                  <AvatarPreview
+                    firstName={firstName}
+                    lastName={lastName}
+                    avatar={avatar}
+                  />
 
-                <div>
-                  <p className="font-medium text-slate-900">
-                    Photo de profil
-                  </p>
+                  <div>
+                    <p className="font-medium text-base-content">
+                      Photo de profil
+                    </p>
 
-                  <p className="mt-1 text-sm text-slate-500">
-                    Indiquez l'URL d'une image pour le moment.
-                  </p>
+                    <p className="mt-1 text-sm text-base-content/60">
+                      Indiquez l'URL d'une image pour le moment.
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -174,14 +197,14 @@ export function Profile() {
                   label="Prénom"
                   value={firstName}
                   onChange={setFirstName}
-                  placeholder="Votre prénom"
+                  placeholder="Prénom"
                 />
 
                 <FormField
                   label="Nom"
                   value={lastName}
                   onChange={setLastName}
-                  placeholder="Votre nom"
+                  placeholder="Nom"
                 />
 
                 <FormField
@@ -194,9 +217,9 @@ export function Profile() {
                 <div>
                   <label
                     htmlFor="profile-gender"
-                    className="mb-2 block text-sm font-medium text-slate-700"
+                    className="fieldset-legend"
                   >
-                    Genre
+                    Sexe
                   </label>
 
                   <select
@@ -211,20 +234,17 @@ export function Profile() {
                           | 'unspecified',
                       )
                     }
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    className="select select-bordered w-full"
                   >
-                    <option value="unspecified">
-                      Non renseigné
-                    </option>
+                    <option value="unspecified">Non renseigné</option>
                     <option value="male">Homme</option>
                     <option value="female">Femme</option>
-                    <option value="other">Autre</option>
                   </select>
                 </div>
 
                 <div className="sm:col-span-2">
                   <FormField
-                    label="URL de l'avatar"
+                    label="URL de la photo"
                     value={avatar}
                     onChange={setAvatar}
                     placeholder="https://..."
@@ -239,6 +259,7 @@ export function Profile() {
               />
             </div>
           </ProfileSection>
+
 
           <ProfileSection
             title="Physique"
@@ -384,8 +405,8 @@ function FormField({
   step,
 }: FormFieldProps) {
   return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-slate-700">
+    <fieldset className="fieldset">
+      <label className="fieldset-legend">
         {label}
       </label>
 
@@ -397,9 +418,9 @@ function FormField({
         min={min}
         max={max}
         step={step}
-        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+        className="input input-bordered w-full"
       />
-    </div>
+    </fieldset>
   )
 }
 
@@ -415,17 +436,17 @@ function SectionActions({
   onSave,
 }: SectionActionsProps) {
   return (
-    <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-5">
+    <div className="flex flex-wrap items-center justify-end gap-3 border-t border-base-300 pt-5">
       {saved && (
-        <p className="mr-auto text-sm font-medium text-emerald-600">
-          Paramètres enregistrés.
-        </p>
+        <div className="alert alert-success mr-auto w-auto py-2 text-sm">
+          <span>Paramètres enregistrés.</span>
+        </div>
       )}
 
       <button
         type="button"
         onClick={onReset}
-        className="rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+        className="btn btn-ghost"
       >
         Annuler
       </button>
@@ -433,7 +454,7 @@ function SectionActions({
       <button
         type="button"
         onClick={onSave}
-        className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+        className="btn btn-primary"
       >
         Enregistrer
       </button>
@@ -454,17 +475,24 @@ function AvatarPreview({
 }: AvatarPreviewProps) {
   if (avatar) {
     return (
-      <img
-        src={avatar}
-        alt="Aperçu de l'avatar"
-        className="h-20 w-20 rounded-full border border-slate-200 object-cover"
-      />
+      <div className="avatar">
+        <div className="w-20 rounded-full border border-base-300">
+          <img
+            src={avatar}
+            alt="Aperçu de l'avatar"
+          />
+        </div>
+      </div>
     )
   }
 
   return (
-    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-lg font-semibold text-slate-500">
-      {getInitials(firstName, lastName)}
+    <div className="avatar placeholder">
+      <div className="w-20 rounded-full bg-primary text-primary-content">
+        <span className="text-lg font-semibold">
+          {getInitials(firstName, lastName)}
+        </span>
+      </div>
     </div>
   )
 }
@@ -616,7 +644,7 @@ function TrainingSection({
           <div>
             <label
               htmlFor="profile-experience"
-              className="mb-2 block text-sm font-medium text-slate-700"
+              className="text-sm font-semibold text-base-content"
             >
               Niveau d'expérience
             </label>
@@ -633,7 +661,7 @@ function TrainingSection({
                     | 'expert',
                 )
               }
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              className="select select-bordered w-full"
             >
               <option value="beginner">Débutant</option>
               <option value="intermediate">Intermédiaire</option>
@@ -644,7 +672,7 @@ function TrainingSection({
         </div>
 
         <div>
-          <p className="mb-3 text-sm font-medium text-slate-700">
+          <p className="text-sm font-semibold text-base-content">
             Jours disponibles
           </p>
 
@@ -668,10 +696,10 @@ function TrainingSection({
                   onClick={() => toggleDay(numericDay)}
                   aria-pressed={selected}
                   className={[
-                    'flex h-11 items-center justify-center rounded-xl border text-sm font-medium transition',
+                    'btn h-11 min-h-11 flex-1',
                     selected
-                      ? 'border-slate-900 bg-slate-900 text-white'
-                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50',
+                      ? 'btn-primary'
+                      : 'btn-ghost border border-base-300 bg-base-100',
                   ].join(' ')}
                 >
                   {label}
@@ -696,10 +724,6 @@ function TrainingSection({
   )
 }
 
-interface ProfileValueProps {
-  label: string
-  value: unknown
-}
 
 interface LocationSectionProps {
   location: {
@@ -784,8 +808,8 @@ function LocationSection({
           />
         </div>
 
-        <div className="rounded-xl bg-slate-50 p-4">
-          <p className="text-sm font-medium text-slate-700">
+        <div className="alert bg-base-200">
+          <p className="text-sm font-semibold text-base-content">
             Utilisation
           </p>
 
@@ -1058,7 +1082,7 @@ function EquipmentSection({
             <button
               type="button"
               onClick={addShoe}
-              className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:col-span-2"
+              className="btn btn-outline sm:col-span-2"
             >
               + Ajouter une chaussure
             </button>
@@ -1100,7 +1124,7 @@ function EquipmentSection({
             <button
               type="button"
               onClick={addBike}
-              className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:col-span-2"
+              className="btn btn-outline sm:col-span-2"
             >
               + Ajouter un vélo
             </button>
@@ -1142,7 +1166,7 @@ function EquipmentSection({
             <button
               type="button"
               onClick={addWatch}
-              className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:col-span-2"
+              className="btn btn-outline sm:col-span-2"
             >
               + Ajouter une montre
             </button>
@@ -1183,7 +1207,7 @@ function EquipmentItemCard({
   children: ReactNode
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4">
+    <div className="flex items-center justify-between gap-4 rounded-box border border-base-300 bg-base-100 p-4">
       {children}
     </div>
   )
@@ -1200,23 +1224,22 @@ function EquipmentInfo({
 }) {
   return (
     <div className="min-w-0">
-      <p className="truncate font-medium text-slate-900">
+      <p className="truncate font-medium text-base-content">
         {title}
       </p>
 
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-base-content/60">
         {details}
       </p>
 
-      <p
-        className={
-          active
-            ? 'mt-1 text-xs font-medium text-emerald-600'
-            : 'mt-1 text-xs font-medium text-slate-400'
-        }
+      <span
+        className={[
+          'badge mt-2',
+          active ? 'badge-success' : 'badge-ghost',
+        ].join(' ')}
       >
         {active ? 'Actif' : 'Inactif'}
-      </p>
+      </span>
     </div>
   )
 }
@@ -1235,7 +1258,7 @@ function EquipmentActions({
       <button
         type="button"
         onClick={onToggle}
-        className="rounded-lg px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+        className="btn btn-sm btn-ghost"
       >
         {active ? 'Désactiver' : 'Activer'}
       </button>
@@ -1243,7 +1266,7 @@ function EquipmentActions({
       <button
         type="button"
         onClick={onRemove}
-        className="rounded-lg px-3 py-2 text-xs font-medium text-red-500 transition hover:bg-red-50 hover:text-red-700"
+        className="btn btn-sm btn-error btn-outline"
       >
         Supprimer
       </button>
@@ -1366,16 +1389,18 @@ function NutritionSection({
           />
         </div>
 
-        <div className="rounded-xl bg-slate-50 p-4">
-          <p className="text-sm font-medium text-slate-700">
-            Utilisation par OpenCoach
-          </p>
+        <div className="alert bg-base-200">
+          <div>
+            <p className="font-semibold">
+              Utilisation par OpenCoach
+            </p>
 
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            Ces valeurs pourront être utilisées pour générer
-            automatiquement les recommandations nutritionnelles
-            pendant les sorties longues et les compétitions.
-          </p>
+            <p className="mt-1 text-sm text-base-content/60">
+              Ces valeurs pourront être utilisées pour générer
+              automatiquement les recommandations nutritionnelles
+              pendant les sorties longues et les compétitions.
+            </p>
+          </div>
         </div>
 
         <SectionActions
@@ -1398,55 +1423,22 @@ function NutritionInfo({
   description: string
 }) {
   return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-      <p className="text-sm font-medium text-slate-700">
-        {label}
-      </p>
+    <div className="card border border-base-300 bg-base-200">
+      <div className="card-body p-4">
+        <p className="text-sm font-medium text-base-content/70">
+          {label}
+        </p>
 
-      <p className="mt-1 text-lg font-semibold text-slate-900">
-        {unit}
-      </p>
+        <p className="text-lg font-semibold text-base-content">
+          {unit}
+        </p>
 
-      <p className="mt-1 text-xs text-slate-400">
-        {description}
-      </p>
+        <p className="text-xs text-base-content/50">
+          {description}
+        </p>
+      </div>
     </div>
   )
-}
-
-function ProfileValue({
-  label,
-  value,
-}: ProfileValueProps) {
-  const displayValue =
-    value === undefined ||
-    value === null ||
-    value === ''
-      ? 'Non renseigné'
-      : String(value)
-
-  return (
-    <div className="rounded-xl bg-slate-50 p-4">
-      <p className="text-sm text-slate-500">
-        {label}
-      </p>
-
-      <p className="mt-1 font-medium text-slate-900">
-        {displayValue}
-      </p>
-    </div>
-  )
-}
-
-function formatValue(
-  value: number | undefined,
-  unit: string,
-): string {
-  if (value === undefined) {
-    return 'Non renseigné'
-  }
-
-  return `${value} ${unit}`
 }
 
 function parseOptionalNumber(

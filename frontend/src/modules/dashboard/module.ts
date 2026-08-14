@@ -1,3 +1,5 @@
+import { LayoutDashboard } from 'lucide-react'
+
 import { registerModule } from '../../core/modules/registry'
 import {
   registerWidget,
@@ -32,6 +34,8 @@ registerWidget({
   title: 'Bienvenue sur OpenCoach',
   description: 'Votre espace de suivi OpenCoach',
   status: 'neutral',
+  accent: 'primary',
+  icon: LayoutDashboard,
   enabled: true,
   detailsViewId: 'dashboard-welcome-details',
 })

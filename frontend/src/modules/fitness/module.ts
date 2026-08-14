@@ -12,6 +12,7 @@ import {
 
 import { FitnessWidget } from './FitnessWidget'
 import { FitnessDetails } from './FitnessDetails'
+import { HeartPulse } from 'lucide-react'
 
 registerModule({
   id: 'fitness',
@@ -37,6 +38,8 @@ registerWidget({
   title: 'État de forme',
   description: 'Votre état de forme actuel',
   status: 'success',
+  accent: 'success',
+  icon: HeartPulse,
   enabled: true,
   detailsViewId: 'fitness-details',
 })

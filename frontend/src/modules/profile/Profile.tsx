@@ -641,10 +641,10 @@ function TrainingSection({
             step="1"
           />
 
-          <div>
+          <fieldset className="fieldset">
             <label
               htmlFor="profile-experience"
-              className="text-sm font-semibold text-base-content"
+              className="fieldset-legend"
             >
               Niveau d'expérience
             </label>
@@ -668,7 +668,8 @@ function TrainingSection({
               <option value="advanced">Avancé</option>
               <option value="expert">Expert</option>
             </select>
-          </div>
+          </fieldset>
+
         </div>
 
         <div>

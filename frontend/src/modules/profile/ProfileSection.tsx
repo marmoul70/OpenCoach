@@ -16,7 +16,12 @@ export function ProfileSection({
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <section className="collapse-arrow collapse border border-base-300 bg-base-100 shadow-sm">
+    <section
+      className={[
+        'collapse-arrow collapse border border-base-300 bg-base-100 shadow-sm',
+        open ? 'collapse-open' : '',
+      ].join(' ')}
+    >
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}

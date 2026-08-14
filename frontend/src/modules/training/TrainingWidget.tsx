@@ -1,6 +1,6 @@
 import { Clock3, Gauge } from 'lucide-react'
 
-import { trainingSession } from './data'
+import { useTrainingSessions } from './trainingStore'
 
 interface TrainingWidgetProps {
   onClick: () => void
@@ -9,7 +9,13 @@ interface TrainingWidgetProps {
 export function TrainingWidget({
   onClick,
 }: TrainingWidgetProps) {
-  const session = trainingSession
+  const { sessions } = useTrainingSessions()
+
+  const today = new Date().toISOString().slice(0, 10)
+
+  const session =
+    sessions.find((item) => item.date === today) ??
+    sessions[0]
 
   return (
     <button

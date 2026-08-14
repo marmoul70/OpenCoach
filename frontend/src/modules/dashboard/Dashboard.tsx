@@ -7,8 +7,13 @@ import { getWidgetViewComponent } from '../../components/widgets/WidgetViewRegis
 import { getWidgets } from '../../core/widgets'
 import { getAthleteProfile } from '../../core/profile'
 
-export function Dashboard() {
+interface DashboardProps {
+  onOpenTraining: () => void
+}
 
+export function Dashboard({
+  onOpenTraining,
+}: DashboardProps) {
   const profile = getAthleteProfile()
   const firstName = profile.identity.firstName.trim()
 
@@ -58,7 +63,14 @@ export function Dashboard() {
       return (
         <Component
           key={widget.id}
-          onClick={() => openWidget(widget.id)}
+          onClick={() => {
+            if (widget.id === 'training') {
+              onOpenTraining()
+              return
+            }
+
+            openWidget(widget.id)
+          }}
         />
       )
     }
@@ -154,6 +166,7 @@ export function Dashboard() {
           <DetailsComponent />
         </Modal>
       )}
+
     </main>
   )
 }

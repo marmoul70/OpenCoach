@@ -20,6 +20,7 @@ export interface TrainingSession {
   description: string
   durationMinutes: number
   distanceKm?: number
+  elevationGainM?: number
   intensity: string
   heartRateZone?: string
   status: TrainingSessionStatus

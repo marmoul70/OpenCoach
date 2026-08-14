@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 
-export type WidgetViewComponent = ComponentType
+export type WidgetViewComponent = ComponentType<any>
 
 const views = new Map<string, WidgetViewComponent>()
 

@@ -1,0 +1,146 @@
+from pathlib import Path
+from pydantic import ValidationError
+
+from fastapi import APIRouter, Depends, HTTPException
+
+from opencoach.schemas.profile import AthleteProfileSchema
+from opencoach.database.repositories import JsonProfileRepository
+from opencoach.models import (
+    AthleteBody,
+    AthleteEquipment,
+    AthleteIdentity,
+    AthleteLocation,
+    AthleteNutrition,
+    AthletePhysiology,
+    AthleteProfile,
+    AthleteTraining,
+    Bike,
+    Shoe,
+    Watch,
+)
+from opencoach.services import ProfileService
+
+
+router = APIRouter(
+    prefix="/api/profile",
+    tags=["profile"],
+)
+
+
+def get_profile_service() -> ProfileService:
+    repository = JsonProfileRepository(
+        Path("data/profile.json"),
+    )
+
+    return ProfileService(repository)
+
+def schema_to_domain(
+    profile: AthleteProfileSchema,
+) -> AthleteProfile:
+    return AthleteProfile(
+        identity=AthleteIdentity(
+            first_name=profile.identity.first_name,
+            last_name=profile.identity.last_name,
+            birth_date=profile.identity.birth_date,
+            gender=profile.identity.gender,
+            avatar=profile.identity.avatar,
+        ),
+        body=AthleteBody(
+            height_cm=profile.body.height_cm,
+            weight_kg=profile.body.weight_kg,
+        ),
+        physiology=AthletePhysiology(
+            max_heart_rate=profile.physiology.max_heart_rate,
+            resting_heart_rate=profile.physiology.resting_heart_rate,
+            vma=profile.physiology.vma,
+            threshold_heart_rate_1=(
+                profile.physiology.threshold_heart_rate_1
+            ),
+            threshold_heart_rate_2=(
+                profile.physiology.threshold_heart_rate_2
+            ),
+        ),
+        training=AthleteTraining(
+            weekly_sessions=profile.training.weekly_sessions,
+            weekly_duration_minutes=(
+                profile.training.weekly_duration_minutes
+            ),
+            weekly_distance_km=profile.training.weekly_distance_km,
+            available_days=list(profile.training.available_days),
+            fatigue_threshold=profile.training.fatigue_threshold,
+            experience=profile.training.experience,
+        ),
+        location=AthleteLocation(
+            name=profile.location.name,
+            latitude=profile.location.latitude,
+            longitude=profile.location.longitude,
+        ),
+        equipment=AthleteEquipment(
+            shoes=[
+                Shoe(
+                    id=shoe.id,
+                    model=shoe.model,
+                    brand=shoe.brand,
+                    active=shoe.active,
+                    distance_km=shoe.distance_km,
+                    max_distance_km=shoe.max_distance_km,
+                )
+                for shoe in profile.equipment.shoes
+            ],
+            bikes=[
+                Bike(
+                    id=bike.id,
+                    model=bike.model,
+                    brand=bike.brand,
+                    active=bike.active,
+                    distance_km=bike.distance_km,
+                )
+                for bike in profile.equipment.bikes
+            ],
+            watches=[
+                Watch(
+                    id=watch.id,
+                    model=watch.model,
+                    brand=watch.brand,
+                    active=watch.active,
+                )
+                for watch in profile.equipment.watches
+            ],
+        ),
+        nutrition=AthleteNutrition(
+            carbohydrates_per_hour=(
+                profile.nutrition.carbohydrates_per_hour
+            ),
+            fluids_per_hour=profile.nutrition.fluids_per_hour,
+            sodium_per_hour=profile.nutrition.sodium_per_hour,
+        ),
+    )
+
+
+@router.get("")
+def get_profile(
+    service: ProfileService = Depends(get_profile_service),
+) -> AthleteProfile:
+    try:
+        return service.get_profile()
+    except (ValueError, ValidationError) as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Le profil enregistré est invalide ou corrompu.",
+        ) from exc
+
+@router.put("")
+def update_profile(
+    profile: AthleteProfileSchema,
+    service: ProfileService = Depends(get_profile_service),
+) -> AthleteProfile:
+    domain_profile = schema_to_domain(profile)
+
+    return service.update_profile(domain_profile)
+
+
+@router.post("/reset")
+def reset_profile(
+    service: ProfileService = Depends(get_profile_service),
+) -> AthleteProfile:
+    return service.reset_profile()

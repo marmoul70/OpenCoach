@@ -5,11 +5,15 @@ import {
   Clock3,
   Mountain,
   Route,
+  Trophy,
   X,
 } from 'lucide-react'
 
 import { Modal } from '../../components/ui/Modal'
+import { races } from '../races/data'
+import { getTrainingStats } from './stats'
 import { TrainingDetails } from './TrainingDetails'
+import { TrainingSummaryCard } from './TrainingSummaryCard'
 import { useTrainingSessions } from './trainingStore'
 import type { TrainingSession } from './types'
 
@@ -28,9 +32,12 @@ export function TrainingWeek() {
     sessions,
     updateSessionStatus,
   } = useTrainingSessions()
+
   const [selectedSessionId, setSelectedSessionId] = useState<
     string | null
   >(null)
+
+  const stats = getTrainingStats(sessions, races)
 
   const sessionsByDay = getWeekSessions(sessions)
 
@@ -69,7 +76,34 @@ export function TrainingWeek() {
             </div>
           </div>
         </header>
+        <section className="mb-8">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <TrainingSummaryCard
+              icon={Route}
+              label="Kilomètres"
+              value={`${stats.distanceKm} km`}
+              description="Depuis le début de l'année"
+            />
 
+            <TrainingSummaryCard
+              icon={Check}
+              label="Séances"
+              value={`${stats.completedSessions}`}
+              description="Réalisées cette année"
+            />
+
+            <TrainingSummaryCard
+              icon={Trophy}
+              label="Prochaine course"
+              value={stats.nextRace?.name ?? 'Aucune'}
+              description={
+                stats.nextRace
+                  ? `${formatRaceDate(stats.nextRace.date)} · ${stats.nextRace.distanceKm} km`
+                  : 'Aucune course programmée'
+              }
+            />
+          </div>
+        </section>
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -145,25 +179,23 @@ function DayCard({
   return (
     <article
       className={[
-        'card border bg-base-100 shadow-sm',
+        'card relative border bg-base-100 shadow-sm',
         isToday
           ? 'border-primary ring-1 ring-primary/20'
           : 'border-base-300',
       ].join(' ')}
     >
+      {isToday && (
+        <span className="badge badge-primary badge-sm absolute left-1/2 top-0 z-10 -translate-x-1/2 -translate-y-1/2">
+          Aujourd'hui
+        </span>
+      )}
+
       <div className="card-body gap-3 p-4">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-base-content/50">
-              {label}
-            </p>
-
-            {isToday && (
-              <span className="badge badge-primary badge-sm mt-1">
-                Aujourd'hui
-              </span>
-            )}
-          </div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/50">
+            {label}
+          </p>
 
           {session && (
             <StatusBadge status={session.status} />
@@ -258,25 +290,35 @@ function StatusBadge({
 }) {
   if (status === 'completed') {
     return (
-      <span className="badge badge-success badge-sm gap-1">
-        <Check className="h-3 w-3" />
-        Réalisée
+      <span
+        className="badge badge-success badge-sm p-2"
+        title="Séance réalisée"
+        aria-label="Séance réalisée"
+      >
+        <Check className="h-3.5 w-3.5" />
       </span>
     )
   }
 
   if (status === 'skipped') {
     return (
-      <span className="badge badge-error badge-sm gap-1">
-        <X className="h-3 w-3" />
-        Non réalisée
+      <span
+        className="badge badge-error badge-sm p-2"
+        title="Séance non réalisée"
+        aria-label="Séance non réalisée"
+      >
+        <X className="h-3.5 w-3.5" />
       </span>
     )
   }
 
   return (
-    <span className="badge badge-warning badge-sm">
-      À faire
+    <span
+      className="badge badge-warning badge-sm p-2"
+      title="Séance à faire"
+      aria-label="Séance à faire"
+    >
+      <Clock3 className="h-3.5 w-3.5" />
     </span>
   )
 }
@@ -308,4 +350,11 @@ function getWeekSessions(
         today.toISOString().slice(0, 10),
     }
   })
+}
+
+function formatRaceDate(dateString: string): string {
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(`${dateString}T12:00:00`))
 }

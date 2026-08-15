@@ -1,10 +1,11 @@
-from pathlib import Path
 from pydantic import ValidationError
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 from opencoach.schemas.profile import AthleteProfileSchema
-from opencoach.database.repositories import JsonProfileRepository
+from opencoach.database.repositories import SqlProfileRepository
+from opencoach.database.session import get_db
 from opencoach.models import (
     AthleteBody,
     AthleteEquipment,
@@ -27,10 +28,10 @@ router = APIRouter(
 )
 
 
-def get_profile_service() -> ProfileService:
-    repository = JsonProfileRepository(
-        Path("data/profile.json"),
-    )
+def get_profile_service(
+    db: Session = Depends(get_db),
+) -> ProfileService:
+    repository = SqlProfileRepository(db)
 
     return ProfileService(repository)
 

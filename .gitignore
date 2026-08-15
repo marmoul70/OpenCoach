@@ -219,3 +219,9 @@ __marimo__/
 
 # OpenCoach runtime data
 data/profile.json
+
+# OpenCoach runtime data
+data/profile.json
+data/*.db
+data/*.sqlite
+data/*.sqlite3

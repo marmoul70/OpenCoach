@@ -22,4 +22,7 @@ export {
   setAthleteProfile,
   updateAthleteProfile,
   resetAthleteProfile,
+  loadAthleteProfile,
+  subscribeAthleteProfile,
+  isAthleteProfileInitialized,
 } from './store'

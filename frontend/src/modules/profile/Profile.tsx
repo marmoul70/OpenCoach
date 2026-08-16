@@ -2,10 +2,6 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 
 import {
-  UserRound,
-} from 'lucide-react'
-
-import {
   getAthleteProfile,
   updateAthleteProfile,
 } from '../../core/profile'
@@ -14,14 +10,6 @@ import { ProfileSection } from './ProfileSection'
 
 export function Profile() {
   const profile = getAthleteProfile()
-
-  const [firstName, setFirstName] = useState(profile.identity.firstName)
-  const [lastName, setLastName] = useState(profile.identity.lastName)
-  const [birthDate, setBirthDate] = useState(profile.identity.birthDate)
-  const [gender, setGender] = useState(
-    profile.identity.gender ?? 'unspecified',
-  )
-  const [avatar, setAvatar] = useState(profile.identity.avatar ?? '')
 
   const [heightCm, setHeightCm] = useState(
     profile.body.heightCm?.toString() ?? '',
@@ -48,24 +36,8 @@ export function Profile() {
 
   const [savedSection, setSavedSection] = useState<string | null>(null)
 
-  function handleSaveIdentity() {
-    updateAthleteProfile((currentProfile) => ({
-      ...currentProfile,
-      identity: {
-        ...currentProfile.identity,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        birthDate,
-        gender,
-        avatar: avatar || undefined,
-      },
-    }))
-
-    showSaved('identity')
-  }
-
-  function handleSaveBody() {
-    updateAthleteProfile((currentProfile) => ({
+  async function handleSaveBody() {
+    await updateAthleteProfile((currentProfile) => ({
       ...currentProfile,
       body: {
         ...currentProfile.body,
@@ -77,29 +49,22 @@ export function Profile() {
     showSaved('body')
   }
 
-  function handleSavePhysiology() {
-    updateAthleteProfile((currentProfile) => ({
+  async function handleSavePhysiology() {
+    await updateAthleteProfile((currentProfile) => ({
       ...currentProfile,
       physiology: {
         ...currentProfile.physiology,
         vma: parseOptionalNumber(vma),
         maxHeartRate: parseOptionalNumber(maxHeartRate),
         restingHeartRate: parseOptionalNumber(restingHeartRate),
-        thresholdHeartRate1: parseOptionalNumber(thresholdHeartRate1),
-        thresholdHeartRate2: parseOptionalNumber(thresholdHeartRate2),
+        thresholdHeartRate1:
+          parseOptionalNumber(thresholdHeartRate1),
+        thresholdHeartRate2:
+          parseOptionalNumber(thresholdHeartRate2),
       },
     }))
 
     showSaved('physiology')
-  }
-
-  function handleResetIdentity() {
-    setFirstName(profile.identity.firstName)
-    setLastName(profile.identity.lastName)
-    setBirthDate(profile.identity.birthDate)
-    setGender(profile.identity.gender ?? 'unspecified')
-    setAvatar(profile.identity.avatar ?? '')
-    setSavedSection(null)
   }
 
   function handleResetBody() {
@@ -142,17 +107,13 @@ export function Profile() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <UserRound size={24} strokeWidth={2} />
-                </div>
-
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight text-base-content">
-                    Profil athlète
+                    Profil sportif
                   </h1>
 
                   <p className="mt-1 text-sm text-base-content/60">
-                    Vos informations et paramètres utilisés par OpenCoach.
+                    Vos données physiques et physiologiques utilisées par OpenCoach.
                   </p>
                 </div>
               </div>
@@ -166,101 +127,6 @@ export function Profile() {
         </header>
 
         <div className="space-y-4">
-          <ProfileSection
-            title="Identité"
-            description="Informations personnelles de votre profil."
-            defaultOpen
-          >
-            <div className="space-y-6">
-              <div className="card border border-base-300 bg-base-200/50">
-                <div className="card-body flex-row items-center gap-5 p-5">
-                  <AvatarPreview
-                    firstName={firstName}
-                    lastName={lastName}
-                    avatar={avatar}
-                  />
-
-                  <div>
-                    <p className="font-medium text-base-content">
-                      Photo de profil
-                    </p>
-
-                    <p className="mt-1 text-sm text-base-content/60">
-                      Indiquez l'URL d'une image pour le moment.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField
-                  label="Prénom"
-                  value={firstName}
-                  onChange={setFirstName}
-                  placeholder="Prénom"
-                />
-
-                <FormField
-                  label="Nom"
-                  value={lastName}
-                  onChange={setLastName}
-                  placeholder="Nom"
-                />
-
-                <FormField
-                  label="Date de naissance"
-                  type="date"
-                  value={birthDate}
-                  onChange={setBirthDate}
-                />
-
-                <div>
-                  <label
-                    htmlFor="profile-gender"
-                    className="fieldset-legend"
-                  >
-                    Sexe
-                  </label>
-
-                  <select
-                    id="profile-gender"
-                    value={gender}
-                    onChange={(event) =>
-                      setGender(
-                        event.target.value as
-                          | 'male'
-                          | 'female'
-                          | 'other'
-                          | 'unspecified',
-                      )
-                    }
-                    className="select select-bordered w-full"
-                  >
-                    <option value="unspecified">Non renseigné</option>
-                    <option value="male">Homme</option>
-                    <option value="female">Femme</option>
-                  </select>
-                </div>
-
-                <div className="sm:col-span-2">
-                  <FormField
-                    label="URL de la photo"
-                    value={avatar}
-                    onChange={setAvatar}
-                    placeholder="https://..."
-                  />
-                </div>
-              </div>
-
-              <SectionActions
-                saved={savedSection === 'identity'}
-                onReset={handleResetIdentity}
-                onSave={handleSaveIdentity}
-              />
-            </div>
-          </ProfileSection>
-
-
           <ProfileSection
             title="Physique"
             description="Données corporelles utilisées pour les calculs."
@@ -462,51 +328,6 @@ function SectionActions({
   )
 }
 
-interface AvatarPreviewProps {
-  firstName: string
-  lastName: string
-  avatar: string
-}
-
-function AvatarPreview({
-  firstName,
-  lastName,
-  avatar,
-}: AvatarPreviewProps) {
-  if (avatar) {
-    return (
-      <div className="avatar">
-        <div className="w-20 rounded-full border border-base-300">
-          <img
-            src={avatar}
-            alt="Aperçu de l'avatar"
-          />
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="avatar placeholder">
-      <div className="w-20 rounded-full bg-primary text-primary-content">
-        <span className="text-lg font-semibold">
-          {getInitials(firstName, lastName)}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function getInitials(
-  firstName: string,
-  lastName: string,
-): string {
-  const initials =
-    `${firstName.trim().charAt(0)}${lastName.trim().charAt(0)}`.toUpperCase()
-
-  return initials || 'OC'
-}
-
 interface TrainingSectionProps {
   training: {
     weeklySessions?: number
@@ -549,8 +370,8 @@ function TrainingSection({
     )
   }
 
-  function handleSave() {
-    updateAthleteProfile((currentProfile) => ({
+  async function handleSave() {
+    await updateAthleteProfile((currentProfile) => ({
       ...currentProfile,
       training: {
         ...currentProfile.training,
@@ -558,9 +379,13 @@ function TrainingSection({
         weeklyDurationMinutes: parseOptionalNumber(
           weeklyDurationMinutes,
         ),
-        weeklyDistanceKm: parseOptionalNumber(weeklyDistanceKm),
+        weeklyDistanceKm: parseOptionalNumber(
+          weeklyDistanceKm,
+        ),
         availableDays,
-        fatigueThreshold: parseOptionalNumber(fatigueThreshold),
+        fatigueThreshold: parseOptionalNumber(
+          fatigueThreshold,
+        ),
         experience,
       },
     }))

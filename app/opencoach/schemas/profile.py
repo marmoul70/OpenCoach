@@ -127,7 +127,7 @@ class AthleteTrainingSchema(BaseModel):
                 "Les jours disponibles ne peuvent pas être dupliqués."
             )
 
-        return value
+        return sorted(value)
 
 
 class AthleteLocationSchema(BaseModel):

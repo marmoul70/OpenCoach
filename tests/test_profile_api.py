@@ -1,24 +1,43 @@
 from pathlib import Path
+from copy import deepcopy
 
 from fastapi.testclient import TestClient
-
-from copy import deepcopy
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from opencoach.api import create_app
 from opencoach.api.profile import get_profile_service
-from opencoach.database.repositories import JsonProfileRepository
+from opencoach.database.base import Base
+from opencoach.database.repositories import SqlProfileRepository
 from opencoach.services import ProfileService
 
 
 def create_test_client(tmp_path: Path) -> TestClient:
-    repository = JsonProfileRepository(
-        tmp_path / "profile.json",
+    database_path = tmp_path / "opencoach-test.db"
+
+    engine = create_engine(
+        f"sqlite:///{database_path}",
+        connect_args={"check_same_thread": False},
     )
-    service = ProfileService(repository)
+
+    Base.metadata.create_all(engine)
+
+    session_factory = sessionmaker(
+        bind=engine,
+        expire_on_commit=False,
+    )
+
+    def get_test_profile_service() -> ProfileService:
+        session = session_factory()
+        repository = SqlProfileRepository(session)
+
+        return ProfileService(repository)
 
     app = create_app()
 
-    app.dependency_overrides[get_profile_service] = lambda: service
+    app.dependency_overrides[get_profile_service] = (
+        get_test_profile_service
+    )
 
     return TestClient(app)
 
@@ -358,56 +377,6 @@ def test_put_and_get_profile_with_equipment(tmp_path: Path) -> None:
     assert data["equipment"]["watches"][0]["model"] == "Race 2"
     assert data["equipment"]["watches"][0]["brand"] == "Suunto"
 
-
-def test_get_profile_rejects_corrupted_json(
-    tmp_path: Path,
-) -> None:
-    profile_path = tmp_path / "profile.json"
-
-    profile_path.write_text(
-        "{ invalid json",
-        encoding="utf-8",
-    )
-
-    client = create_test_client(tmp_path)
-
-    response = client.get("/api/profile")
-
-    assert response.status_code == 500
-
-
-def test_get_profile_rejects_invalid_json_profile(
-    tmp_path: Path,
-) -> None:
-    profile_path = tmp_path / "profile.json"
-
-    profile_path.write_text(
-        """
-        {
-            "identity": {},
-            "body": {
-                "weight_kg": -10
-            },
-            "physiology": {},
-            "training": {},
-            "location": {},
-            "equipment": {
-                "shoes": [],
-                "bikes": [],
-                "watches": []
-            },
-            "nutrition": {}
-        }
-        """,
-        encoding="utf-8",
-    )
-
-    client = create_test_client(tmp_path)
-
-    response = client.get("/api/profile")
-
-    assert response.status_code == 500
-
 def test_put_invalid_profile_does_not_overwrite_existing_profile(
     tmp_path: Path,
 ) -> None:
@@ -560,59 +529,3 @@ def test_put_and_get_profile_with_equipment(
 
     assert len(data["equipment"]["watches"]) == 1
     assert data["equipment"]["watches"][0]["id"] == "watch-1"
-
-
-def test_get_profile_rejects_corrupted_json(
-    tmp_path: Path,
-) -> None:
-    profile_path = tmp_path / "profile.json"
-
-    profile_path.write_text(
-        "{ invalid json",
-        encoding="utf-8",
-    )
-
-    client = create_test_client(tmp_path)
-
-    response = client.get("/api/profile")
-
-    assert response.status_code == 500
-    assert response.json()["detail"] == (
-        "Le profil enregistré est invalide ou corrompu."
-    )
-
-
-def test_get_profile_rejects_invalid_json_profile(
-    tmp_path: Path,
-) -> None:
-    profile_path = tmp_path / "profile.json"
-
-    profile_path.write_text(
-        """
-        {
-            "identity": {},
-            "body": {
-                "weight_kg": -10
-            },
-            "physiology": {},
-            "training": {},
-            "location": {},
-            "equipment": {
-                "shoes": [],
-                "bikes": [],
-                "watches": []
-            },
-            "nutrition": {}
-        }
-        """,
-        encoding="utf-8",
-    )
-
-    client = create_test_client(tmp_path)
-
-    response = client.get("/api/profile")
-
-    assert response.status_code == 500
-    assert response.json()["detail"] == (
-        "Le profil enregistré est invalide ou corrompu."
-    )

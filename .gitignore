@@ -225,3 +225,5 @@ data/profile.json
 data/*.db
 data/*.sqlite
 data/*.sqlite3
+# Local database backups
+data/*.backup*

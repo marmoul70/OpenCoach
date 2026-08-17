@@ -1,7 +1,13 @@
 from opencoach.database.models.athlete_profile import AthleteProfile
+from opencoach.database.models.bike import Bike
+from opencoach.database.models.shoe import Shoe
 from opencoach.database.models.user import User
+from opencoach.database.models.watch import Watch
 
 __all__ = [
     "AthleteProfile",
+    "Bike",
+    "Shoe",
     "User",
+    "Watch",
 ]

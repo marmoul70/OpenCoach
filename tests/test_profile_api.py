@@ -30,11 +30,14 @@ def create_test_client(tmp_path: Path) -> TestClient:
         expire_on_commit=False,
     )
 
-    def get_test_profile_service() -> ProfileService:
+    def get_test_profile_service():
         session = session_factory()
-        repository = SqlProfileRepository(session)
 
-        return ProfileService(repository)
+        try:
+            repository = SqlProfileRepository(session)
+            yield ProfileService(repository)
+        finally:
+            session.close()
 
     app = create_app()
 

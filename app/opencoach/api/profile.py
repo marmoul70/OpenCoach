@@ -28,6 +28,13 @@ router = APIRouter(
     tags=["profile"],
 )
 
+def _raise_profile_storage_unavailable(
+    exc: ProfileRepositoryError,
+) -> None:
+    raise HTTPException(
+        status_code=503,
+        detail="Le stockage du profil est temporairement indisponible.",
+    ) from exc
 
 def get_profile_service(
     db: Session = Depends(get_db),
@@ -126,10 +133,7 @@ def get_profile(
     try:
         return service.get_profile()
     except ProfileRepositoryError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail="Le stockage du profil est temporairement indisponible.",
-        ) from exc
+        _raise_profile_storage_unavailable(exc)
 
 @router.put("")
 def update_profile(
@@ -141,10 +145,7 @@ def update_profile(
     try:
         return service.update_profile(domain_profile)
     except ProfileRepositoryError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail="Le stockage du profil est temporairement indisponible.",
-        ) from exc
+        _raise_profile_storage_unavailable(exc)
 
 
 @router.post("/reset")
@@ -154,7 +155,4 @@ def reset_profile(
     try:
         return service.reset_profile()
     except ProfileRepositoryError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail="Le stockage du profil est temporairement indisponible.",
-        ) from exc
+        _raise_profile_storage_unavailable(exc)

@@ -25,6 +25,7 @@ from opencoach.models import (
     Watch,
 )
 
+LOCAL_USER_EMAIL = "local@opencoach.local"
 
 class SqlProfileRepository(ProfileRepository):
     """Persiste le profil sportif dans la base SQL."""
@@ -45,7 +46,7 @@ class SqlProfileRepository(ProfileRepository):
 
         if database_profile is None:
             user = User(
-                email=self._default_email(profile),
+                email=LOCAL_USER_EMAIL,
             )
 
             database_profile = AthleteProfileModel(
@@ -172,18 +173,10 @@ class SqlProfileRepository(ProfileRepository):
         statement = (
             select(AthleteProfileModel)
             .join(AthleteProfileModel.user)
-            .order_by(AthleteProfileModel.created_at)
-            .limit(1)
+            .where(User.email == LOCAL_USER_EMAIL)
         )
 
         return self.session.scalar(statement)
-
-    @staticmethod
-    def _default_email(profile: AthleteProfile) -> str:
-        if profile.identity.first_name:
-            return f"{profile.identity.first_name.lower()}@opencoach.local"
-
-        return "default@opencoach.local"
 
     @staticmethod
     def _to_domain(

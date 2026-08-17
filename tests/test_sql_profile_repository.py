@@ -80,7 +80,7 @@ def test_sql_repository_keeps_user_and_profile_linked() -> None:
         )
 
         assert database_profile.user is not None
-        assert database_profile.user.email == "test@opencoach.local"
+        assert database_profile.user.email == "local@opencoach.local"
         assert database_profile.user.athlete_profile is database_profile
     finally:
         db.close()
@@ -260,5 +260,189 @@ def test_sql_repository_rolls_back_when_commit_fails(
             )
 
         assert rollback_called is True
+    finally:
+        db.close()
+
+    def test_sql_repository_uses_local_user_profile_only() -> None:
+        db = create_session()
+
+        try:
+            other_user = User(
+                email="other@opencoach.local",
+            )
+            other_profile = AthleteProfileModel(
+                user=other_user,
+                first_name="Other",
+                last_name="User",
+            )
+
+            db.add(other_profile)
+            db.commit()
+
+            repository = SqlProfileRepository(db)
+
+            profile = AthleteProfile()
+            profile.identity.first_name = "Local"
+            profile.identity.last_name = "User"
+
+            repository.save_profile(profile)
+
+            loaded = repository.get_profile()
+
+            assert loaded.identity.first_name == "Local"
+            assert loaded.identity.last_name == "User"
+
+            users = {
+                user.email
+                for user in db.query(User).all()
+            }
+
+            assert users == {
+                "other@opencoach.local",
+                "local@opencoach.local",
+            }
+
+            local_profile = (
+                db.query(AthleteProfileModel)
+                .join(AthleteProfileModel.user)
+                .filter(User.email == "local@opencoach.local")
+                .one()
+            )
+
+            assert local_profile.first_name == "Local"
+            assert local_profile.last_name == "User"
+
+            other_profile = (
+                db.query(AthleteProfileModel)
+                .join(AthleteProfileModel.user)
+                .filter(User.email == "other@opencoach.local")
+                .one()
+            )
+
+            assert other_profile.first_name == "Other"
+            assert other_profile.last_name == "User"
+        finally:
+            db.close()
+
+    def test_sql_repository_uses_local_user_profile_only() -> None:
+        db = create_session()
+
+        try:
+            other_user = User(
+                email="other@opencoach.local",
+            )
+            other_profile = AthleteProfileModel(
+                user=other_user,
+                first_name="Other",
+                last_name="User",
+            )
+
+            db.add(other_profile)
+            db.commit()
+
+            repository = SqlProfileRepository(db)
+
+            profile = AthleteProfile()
+            profile.identity.first_name = "Local"
+            profile.identity.last_name = "User"
+
+            repository.save_profile(profile)
+
+            loaded = repository.get_profile()
+
+            assert loaded.identity.first_name == "Local"
+            assert loaded.identity.last_name == "User"
+
+            users = {
+                user.email
+                for user in db.query(User).all()
+            }
+
+            assert users == {
+                "other@opencoach.local",
+                "local@opencoach.local",
+            }
+
+            local_profile = (
+                db.query(AthleteProfileModel)
+                .join(AthleteProfileModel.user)
+                .filter(User.email == "local@opencoach.local")
+                .one()
+            )
+
+            assert local_profile.first_name == "Local"
+            assert local_profile.last_name == "User"
+
+            other_profile = (
+                db.query(AthleteProfileModel)
+                .join(AthleteProfileModel.user)
+                .filter(User.email == "other@opencoach.local")
+                .one()
+            )
+
+            assert other_profile.first_name == "Other"
+            assert other_profile.last_name == "User"
+        finally:
+            db.close()
+
+
+def test_sql_repository_uses_local_user_profile_only() -> None:
+    db = create_session()
+
+    try:
+        other_user = User(
+            email="other@opencoach.local",
+        )
+        other_profile = AthleteProfileModel(
+            user=other_user,
+            first_name="Other",
+            last_name="User",
+        )
+
+        db.add(other_profile)
+        db.commit()
+
+        repository = SqlProfileRepository(db)
+
+        profile = AthleteProfile()
+        profile.identity.first_name = "Local"
+        profile.identity.last_name = "User"
+
+        repository.save_profile(profile)
+
+        loaded = repository.get_profile()
+
+        assert loaded.identity.first_name == "Local"
+        assert loaded.identity.last_name == "User"
+
+        users = {
+            user.email
+            for user in db.query(User).all()
+        }
+
+        assert users == {
+            "other@opencoach.local",
+            "local@opencoach.local",
+        }
+
+        local_profile = (
+            db.query(AthleteProfileModel)
+            .join(AthleteProfileModel.user)
+            .filter(User.email == "local@opencoach.local")
+            .one()
+        )
+
+        assert local_profile.first_name == "Local"
+        assert local_profile.last_name == "User"
+
+        other_profile = (
+            db.query(AthleteProfileModel)
+            .join(AthleteProfileModel.user)
+            .filter(User.email == "other@opencoach.local")
+            .one()
+        )
+
+        assert other_profile.first_name == "Other"
+        assert other_profile.last_name == "User"
     finally:
         db.close()

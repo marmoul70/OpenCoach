@@ -12,6 +12,7 @@ from .profile import (
     Shoe,
     Watch,
 )
+from .activity import Activity
 
 __all__ = [
     "AthleteBody",
@@ -26,4 +27,5 @@ __all__ = [
     "EquipmentItem",
     "Shoe",
     "Watch",
+    "Activity",
 ]

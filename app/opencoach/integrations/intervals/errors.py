@@ -8,3 +8,6 @@ class IntervalsAuthenticationError(IntervalsError):
 
 class IntervalsApiError(IntervalsError):
     """Erreur retournée par l'API Intervals.icu."""
+
+class IntervalsDataError(IntervalsError):
+    """Données Intervals.icu absentes ou invalides."""

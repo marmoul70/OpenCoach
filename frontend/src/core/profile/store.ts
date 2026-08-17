@@ -29,6 +29,10 @@ export function getAthleteProfile(): AthleteProfile {
   return structuredClone(profile)
 }
 
+export function getAthleteProfileSnapshot(): AthleteProfile {
+  return profile
+}
+
 export function subscribeAthleteProfile(
   listener: ProfileListener,
 ): () => void {

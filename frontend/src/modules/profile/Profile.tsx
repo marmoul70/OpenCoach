@@ -2,14 +2,14 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 
 import {
-  getAthleteProfile,
   updateAthleteProfile,
+  useAthleteProfile,
 } from '../../core/profile'
 
 import { ProfileSection } from './ProfileSection'
 
 export function Profile() {
-  const profile = getAthleteProfile()
+  const profile = useAthleteProfile()
 
   const [heightCm, setHeightCm] = useState(
     profile.body.heightCm?.toString() ?? '',

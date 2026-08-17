@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 
 import {
-  getAthleteProfile,
   loadAthleteProfile,
-  subscribeAthleteProfile,
+  useAthleteProfile,
 } from './core/profile'
+
 import { Dashboard } from './modules/dashboard/Dashboard'
 import { Profile } from './modules/profile/Profile'
 import { PersonalProfile } from './modules/profile/PersonalProfile'
@@ -25,7 +25,7 @@ type Theme = 'light' | 'dark' | 'system'
 
 function App() {
   const [page, setPage] = useState<Page>('dashboard')
-  const [profile, setProfile] = useState(getAthleteProfile())
+  const profile = useAthleteProfile()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [theme, setTheme] = useState<Theme>(() => {
@@ -44,14 +44,6 @@ function App() {
 
   useEffect(() => {
     let mounted = true
-
-    const unsubscribe = subscribeAthleteProfile(
-      (nextProfile) => {
-        if (mounted) {
-          setProfile(nextProfile)
-        }
-      },
-    )
 
     loadAthleteProfile()
       .catch((reason: unknown) => {
@@ -73,7 +65,6 @@ function App() {
 
     return () => {
       mounted = false
-      unsubscribe()
     }
   }, [])
 

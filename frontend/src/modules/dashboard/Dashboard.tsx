@@ -5,7 +5,7 @@ import { WidgetCard } from '../../components/widgets/WidgetCard'
 import { getWidgetComponent } from '../../components/widgets/WidgetComponentRegistry'
 import { getWidgetViewComponent } from '../../components/widgets/WidgetViewRegistry'
 import { getWidgets } from '../../core/widgets'
-import { getAthleteProfile } from '../../core/profile'
+import { useAthleteProfile } from '../../core/profile'
 
 interface DashboardProps {
   onOpenTraining: () => void
@@ -14,7 +14,7 @@ interface DashboardProps {
 export function Dashboard({
   onOpenTraining,
 }: DashboardProps) {
-  const profile = getAthleteProfile()
+  const profile = useAthleteProfile()
   const firstName = profile.identity.firstName.trim()
 
   const widgets = getWidgets().filter(

@@ -18,7 +18,6 @@ export {
 } from './defaults'
 
 export {
-  getAthleteProfile,
   setAthleteProfile,
   updateAthleteProfile,
   resetAthleteProfile,
@@ -26,3 +25,7 @@ export {
   subscribeAthleteProfile,
   isAthleteProfileInitialized,
 } from './store'
+
+export {
+  useAthleteProfile,
+} from './useAthleteProfile'

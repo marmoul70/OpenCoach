@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { UserRound } from 'lucide-react'
 
 import {
-  getAthleteProfile,
   updateAthleteProfile,
+  useAthleteProfile,
 } from '../../core/profile'
 
 import { ProfileSection } from './ProfileSection'
@@ -58,7 +58,7 @@ function readAvatarFile(file: File): Promise<string> {
 }
 
 export function PersonalProfile() {
-  const profile = getAthleteProfile()
+  const profile = useAthleteProfile()
 
   const [firstName, setFirstName] = useState(
     profile.identity.firstName,

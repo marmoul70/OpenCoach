@@ -1,10 +1,11 @@
-from pydantic import ValidationError
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from opencoach.schemas.profile import AthleteProfileSchema
-from opencoach.database.repositories import SqlProfileRepository
+from opencoach.database.repositories import (
+    ProfileRepositoryError,
+    SqlProfileRepository,
+)
 from opencoach.database.session import get_db
 from opencoach.models import (
     AthleteBody,
@@ -124,10 +125,10 @@ def get_profile(
 ) -> AthleteProfile:
     try:
         return service.get_profile()
-    except (ValueError, ValidationError) as exc:
+    except ProfileRepositoryError as exc:
         raise HTTPException(
-            status_code=500,
-            detail="Le profil enregistré est invalide ou corrompu.",
+            status_code=503,
+            detail="Le stockage du profil est temporairement indisponible.",
         ) from exc
 
 @router.put("")
@@ -137,11 +138,23 @@ def update_profile(
 ) -> AthleteProfile:
     domain_profile = schema_to_domain(profile)
 
-    return service.update_profile(domain_profile)
+    try:
+        return service.update_profile(domain_profile)
+    except ProfileRepositoryError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Le stockage du profil est temporairement indisponible.",
+        ) from exc
 
 
 @router.post("/reset")
 def reset_profile(
     service: ProfileService = Depends(get_profile_service),
 ) -> AthleteProfile:
-    return service.reset_profile()
+    try:
+        return service.reset_profile()
+    except ProfileRepositoryError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Le stockage du profil est temporairement indisponible.",
+        ) from exc

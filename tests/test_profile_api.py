@@ -8,7 +8,10 @@ from sqlalchemy.orm import sessionmaker
 from opencoach.api import create_app
 from opencoach.api.profile import get_profile_service
 from opencoach.database.base import Base
-from opencoach.database.repositories import SqlProfileRepository
+from opencoach.database.repositories import (
+    ProfileRepositoryError,
+    SqlProfileRepository,
+)
 from opencoach.services import ProfileService
 
 
@@ -41,6 +44,27 @@ def create_test_client(tmp_path: Path) -> TestClient:
 
     return TestClient(app)
 
+class FailingProfileService:
+    """Simule une indisponibilité de la persistance du profil."""
+
+    def get_profile(self):
+        raise ProfileRepositoryError("database unavailable")
+
+    def update_profile(self, profile):
+        raise ProfileRepositoryError("database unavailable")
+
+    def reset_profile(self):
+        raise ProfileRepositoryError("database unavailable")
+
+
+def create_failing_test_client() -> TestClient:
+    app = create_app()
+
+    app.dependency_overrides[get_profile_service] = (
+        lambda: FailingProfileService()
+    )
+
+    return TestClient(app)
 
 def test_get_profile_returns_default_profile(tmp_path: Path) -> None:
     client = create_test_client(tmp_path)
@@ -529,3 +553,67 @@ def test_put_and_get_profile_with_equipment(
 
     assert len(data["equipment"]["watches"]) == 1
     assert data["equipment"]["watches"][0]["id"] == "watch-1"
+
+def test_get_profile_returns_503_when_storage_fails() -> None:
+    client = create_failing_test_client()
+
+    response = client.get("/api/profile")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": (
+            "Le stockage du profil est temporairement indisponible."
+        )
+    }
+
+
+def test_put_profile_returns_503_when_storage_fails() -> None:
+    client = create_failing_test_client()
+
+    profile = {
+        "identity": {
+            "first_name": "Test",
+            "last_name": "OpenCoach",
+            "birth_date": "",
+            "gender": "unspecified",
+            "avatar": None,
+        },
+        "body": {},
+        "physiology": {},
+        "training": {
+            "available_days": [],
+            "experience": "beginner",
+        },
+        "location": {},
+        "equipment": {
+            "shoes": [],
+            "bikes": [],
+            "watches": [],
+        },
+        "nutrition": {},
+    }
+
+    response = client.put(
+        "/api/profile",
+        json=profile,
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": (
+            "Le stockage du profil est temporairement indisponible."
+        )
+    }
+
+
+def test_reset_profile_returns_503_when_storage_fails() -> None:
+    client = create_failing_test_client()
+
+    response = client.post("/api/profile/reset")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": (
+            "Le stockage du profil est temporairement indisponible."
+        )
+    }

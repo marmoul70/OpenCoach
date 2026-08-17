@@ -4,7 +4,12 @@ from sqlalchemy.orm import sessionmaker
 from opencoach.database.base import Base
 from opencoach.database.models import AthleteProfile as AthleteProfileModel
 from opencoach.database.models import User
-from opencoach.database.repositories import SqlProfileRepository
+from sqlalchemy.exc import OperationalError
+
+from opencoach.database.repositories import (
+    ProfileRepositoryError,
+    SqlProfileRepository,
+)
 from opencoach.models import AthleteProfile, Bike, Shoe, Watch
 
 def create_session():
@@ -18,7 +23,6 @@ def create_session():
     )
 
     return SessionLocal()
-
 
 def test_sql_repository_creates_default_profile() -> None:
     db = create_session()
@@ -36,7 +40,6 @@ def test_sql_repository_creates_default_profile() -> None:
         assert db.query(AthleteProfileModel).count() == 1
     finally:
         db.close()
-
 
 def test_sql_repository_saves_and_reads_profile() -> None:
     db = create_session()
@@ -61,7 +64,6 @@ def test_sql_repository_saves_and_reads_profile() -> None:
         assert db.query(AthleteProfileModel).count() == 1
     finally:
         db.close()
-
 
 def test_sql_repository_keeps_user_and_profile_linked() -> None:
     db = create_session()
@@ -233,7 +235,11 @@ def test_sql_repository_rolls_back_when_commit_fails(
         rollback_called = False
 
         def failing_commit() -> None:
-            raise RuntimeError("database failure")
+            raise OperationalError(
+                "COMMIT",
+                {},
+                RuntimeError("database failure"),
+            )
 
         def tracking_rollback() -> None:
             nonlocal rollback_called
@@ -252,139 +258,16 @@ def test_sql_repository_rolls_back_when_commit_fails(
 
         try:
             repository.save_profile(profile)
-        except RuntimeError as exc:
-            assert str(exc) == "database failure"
+        except ProfileRepositoryError as exc:
+            assert str(exc) == "Impossible d'enregistrer le profil."
         else:
             raise AssertionError(
-                "RuntimeError attendu lors du commit."
+                "ProfileRepositoryError attendue lors du commit."
             )
 
         assert rollback_called is True
     finally:
         db.close()
-
-    def test_sql_repository_uses_local_user_profile_only() -> None:
-        db = create_session()
-
-        try:
-            other_user = User(
-                email="other@opencoach.local",
-            )
-            other_profile = AthleteProfileModel(
-                user=other_user,
-                first_name="Other",
-                last_name="User",
-            )
-
-            db.add(other_profile)
-            db.commit()
-
-            repository = SqlProfileRepository(db)
-
-            profile = AthleteProfile()
-            profile.identity.first_name = "Local"
-            profile.identity.last_name = "User"
-
-            repository.save_profile(profile)
-
-            loaded = repository.get_profile()
-
-            assert loaded.identity.first_name == "Local"
-            assert loaded.identity.last_name == "User"
-
-            users = {
-                user.email
-                for user in db.query(User).all()
-            }
-
-            assert users == {
-                "other@opencoach.local",
-                "local@opencoach.local",
-            }
-
-            local_profile = (
-                db.query(AthleteProfileModel)
-                .join(AthleteProfileModel.user)
-                .filter(User.email == "local@opencoach.local")
-                .one()
-            )
-
-            assert local_profile.first_name == "Local"
-            assert local_profile.last_name == "User"
-
-            other_profile = (
-                db.query(AthleteProfileModel)
-                .join(AthleteProfileModel.user)
-                .filter(User.email == "other@opencoach.local")
-                .one()
-            )
-
-            assert other_profile.first_name == "Other"
-            assert other_profile.last_name == "User"
-        finally:
-            db.close()
-
-    def test_sql_repository_uses_local_user_profile_only() -> None:
-        db = create_session()
-
-        try:
-            other_user = User(
-                email="other@opencoach.local",
-            )
-            other_profile = AthleteProfileModel(
-                user=other_user,
-                first_name="Other",
-                last_name="User",
-            )
-
-            db.add(other_profile)
-            db.commit()
-
-            repository = SqlProfileRepository(db)
-
-            profile = AthleteProfile()
-            profile.identity.first_name = "Local"
-            profile.identity.last_name = "User"
-
-            repository.save_profile(profile)
-
-            loaded = repository.get_profile()
-
-            assert loaded.identity.first_name == "Local"
-            assert loaded.identity.last_name == "User"
-
-            users = {
-                user.email
-                for user in db.query(User).all()
-            }
-
-            assert users == {
-                "other@opencoach.local",
-                "local@opencoach.local",
-            }
-
-            local_profile = (
-                db.query(AthleteProfileModel)
-                .join(AthleteProfileModel.user)
-                .filter(User.email == "local@opencoach.local")
-                .one()
-            )
-
-            assert local_profile.first_name == "Local"
-            assert local_profile.last_name == "User"
-
-            other_profile = (
-                db.query(AthleteProfileModel)
-                .join(AthleteProfileModel.user)
-                .filter(User.email == "other@opencoach.local")
-                .one()
-            )
-
-            assert other_profile.first_name == "Other"
-            assert other_profile.last_name == "User"
-        finally:
-            db.close()
-
 
 def test_sql_repository_uses_local_user_profile_only() -> None:
     db = create_session()
@@ -446,3 +329,10 @@ def test_sql_repository_uses_local_user_profile_only() -> None:
         assert other_profile.last_name == "User"
     finally:
         db.close()
+
+def failing_commit() -> None:
+    raise OperationalError(
+        "COMMIT",
+        {},
+        RuntimeError("database failure"),
+    )

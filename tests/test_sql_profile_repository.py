@@ -220,3 +220,45 @@ def test_sql_repository_persists_equipment() -> None:
 
     finally:
         db.close()
+
+def test_sql_repository_rolls_back_when_commit_fails(
+    monkeypatch,
+) -> None:
+    db = create_session()
+
+    try:
+        repository = SqlProfileRepository(db)
+        profile = AthleteProfile()
+
+        rollback_called = False
+
+        def failing_commit() -> None:
+            raise RuntimeError("database failure")
+
+        def tracking_rollback() -> None:
+            nonlocal rollback_called
+            rollback_called = True
+
+        monkeypatch.setattr(
+            db,
+            "commit",
+            failing_commit,
+        )
+        monkeypatch.setattr(
+            db,
+            "rollback",
+            tracking_rollback,
+        )
+
+        try:
+            repository.save_profile(profile)
+        except RuntimeError as exc:
+            assert str(exc) == "database failure"
+        else:
+            raise AssertionError(
+                "RuntimeError attendu lors du commit."
+            )
+
+        assert rollback_called is True
+    finally:
+        db.close()

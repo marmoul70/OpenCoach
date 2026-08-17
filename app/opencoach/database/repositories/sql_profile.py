@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from opencoach.database.models import (
@@ -155,7 +155,12 @@ class SqlProfileRepository(ProfileRepository):
             for watch in profile.equipment.watches
         )
 
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
+
         self.session.refresh(database_profile)
 
     def reset_profile(self) -> AthleteProfile:

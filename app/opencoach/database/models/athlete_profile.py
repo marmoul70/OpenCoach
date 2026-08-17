@@ -9,6 +9,7 @@ from opencoach.database.base import Base
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from opencoach.database.models.activity import Activity
     from opencoach.database.models.bike import Bike
     from opencoach.database.models.shoe import Shoe
     from opencoach.database.models.watch import Watch
@@ -172,6 +173,11 @@ class AthleteProfile(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
+    )
+
+    activities: Mapped[list["Activity"]] = relationship(
+        back_populates="athlete_profile",
+        cascade="all, delete-orphan",
     )
 
     shoes: Mapped[list["Shoe"]] = relationship(

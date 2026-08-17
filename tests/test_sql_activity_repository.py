@@ -174,3 +174,54 @@ def test_sql_activity_repository_keeps_provider_identity() -> None:
         }
     finally:
         db.close()
+
+def test_sql_activity_repository_lists_activities_by_date() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlActivityRepository(db)
+
+        first = create_activity()
+        first.provider_activity_id = "i1"
+        first.start_at = datetime(
+            2026,
+            8,
+            10,
+            8,
+            0,
+            tzinfo=timezone.utc,
+        )
+
+        second = create_activity()
+        second.provider_activity_id = "i2"
+        second.start_at = datetime(
+            2026,
+            8,
+            14,
+            8,
+            0,
+            tzinfo=timezone.utc,
+        )
+
+        repository.save_activity(
+            profile.id,
+            first,
+        )
+
+        repository.save_activity(
+            profile.id,
+            second,
+        )
+
+        activities = repository.list_activities(
+            profile.id,
+        )
+
+        assert len(activities) == 2
+        assert activities[0].provider_activity_id == "i2"
+        assert activities[1].provider_activity_id == "i1"
+
+    finally:
+        db.close()

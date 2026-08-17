@@ -12,6 +12,7 @@ import { TrainingWeek } from './modules/training/TrainingWeek'
 import { TrainingProvider } from './modules/training/trainingStore'
 import { RacePage } from './modules/races/RacePage'
 import { RaceProvider } from './modules/races/raceStore'
+import { ActivityPage } from './modules/activities/ActivityPage'
 
 type Page =
   | 'dashboard'
@@ -20,6 +21,7 @@ type Page =
   | 'profile-sport'
   | 'settings'
   | 'races'
+  | 'activities'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -180,7 +182,22 @@ function App() {
                         Entraînement
                       </button>
                     </li>
-
+                    <li>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          setPage('activities')
+                          event.currentTarget.blur()
+                        }}
+                        className={
+                          page === 'activities'
+                            ? 'text-primary font-semibold'
+                            : ''
+                        }
+                      >
+                        Activités
+                      </button>
+                    </li>
                     <li>
                       <button
                         type="button"
@@ -346,6 +363,8 @@ function App() {
           )}
 
           {page === 'training' && <TrainingWeek />}
+
+          {page === 'activities' && <ActivityPage />}
 
           {page === 'races' && <RacePage />}
 

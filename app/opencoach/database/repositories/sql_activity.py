@@ -163,6 +163,40 @@ class SqlActivityRepository(ActivityRepository):
                 "Impossible d'enregistrer l'activité."
             ) from exc
 
+    def list_activities(
+        self,
+        athlete_profile_id: UUID,
+    ) -> list[Activity]:
+        """Retourne les activités d'un athlète, de la plus récente à la plus ancienne."""
+
+        try:
+            statement = (
+                select(ActivityModel)
+                .where(
+                    ActivityModel.athlete_profile_id
+                    == athlete_profile_id
+                )
+                .order_by(
+                    ActivityModel.start_at.desc()
+                )
+            )
+
+            database_activities = self.session.scalars(
+                statement
+            ).all()
+
+            return [
+                self._to_domain(activity)
+                for activity in database_activities
+            ]
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise ActivityRepositoryError(
+                "Impossible de charger les activités."
+            ) from exc
+
     def _get_database_activity(
         self,
         *,
@@ -179,3 +213,51 @@ class SqlActivityRepository(ActivityRepository):
         )
 
         return self.session.scalar(statement)
+
+    @staticmethod
+    def _to_domain(
+        activity: ActivityModel,
+    ) -> Activity:
+        return Activity(
+            provider=activity.provider,
+            provider_activity_id=activity.provider_activity_id,
+            source=activity.source,
+            source_file_name=activity.source_file_name,
+            name=activity.name,
+            sport_type=activity.sport_type,
+            start_at=activity.start_at,
+            start_at_local=activity.start_at_local,
+            device_name=activity.device_name,
+            elapsed_time_seconds=activity.elapsed_time_seconds,
+            moving_time_seconds=activity.moving_time_seconds,
+            distance_m=activity.distance_m,
+            elevation_gain_m=activity.elevation_gain_m,
+            elevation_loss_m=activity.elevation_loss_m,
+            average_speed_mps=activity.average_speed_mps,
+            max_speed_mps=activity.max_speed_mps,
+            average_heart_rate=activity.average_heart_rate,
+            max_heart_rate=activity.max_heart_rate,
+            lactate_threshold_heart_rate=(
+                activity.lactate_threshold_heart_rate
+            ),
+            athlete_max_heart_rate=activity.athlete_max_heart_rate,
+            average_cadence=activity.average_cadence,
+            average_stride_m=activity.average_stride_m,
+            average_stance_time_ms=activity.average_stance_time_ms,
+            average_vertical_oscillation_mm=(
+                activity.average_vertical_oscillation_mm
+            ),
+            average_power_w=activity.average_power_w,
+            average_altitude_m=activity.average_altitude_m,
+            min_altitude_m=activity.min_altitude_m,
+            max_altitude_m=activity.max_altitude_m,
+            average_temperature_c=activity.average_temperature_c,
+            min_temperature_c=activity.min_temperature_c,
+            max_temperature_c=activity.max_temperature_c,
+            calories=activity.calories,
+            training_load=activity.training_load,
+            fitness_ctl=activity.fitness_ctl,
+            fatigue_atl=activity.fatigue_atl,
+            hr_load=activity.hr_load,
+            intensity=activity.intensity,
+        )

@@ -1,10 +1,52 @@
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from opencoach.api import create_app
+from opencoach.api.profile import get_profile_service
+from opencoach.database.base import Base
+from opencoach.database.repositories import SqlProfileRepository
+from opencoach.services import ProfileService
 
 
 def create_client() -> TestClient:
-    return TestClient(create_app())
+    engine = create_engine(
+        "sqlite://",
+        connect_args={
+            "check_same_thread": False,
+        },
+        poolclass=StaticPool,
+    )
+
+    Base.metadata.create_all(engine)
+
+    session_factory = sessionmaker(
+        bind=engine,
+        expire_on_commit=False,
+    )
+
+    def get_test_profile_service():
+        session = session_factory()
+
+        try:
+            repository = SqlProfileRepository(
+                session,
+            )
+
+            yield ProfileService(
+                repository,
+            )
+        finally:
+            session.close()
+
+    app = create_app()
+
+    app.dependency_overrides[
+        get_profile_service
+    ] = get_test_profile_service
+
+    return TestClient(app)
 
 
 def valid_profile() -> dict:

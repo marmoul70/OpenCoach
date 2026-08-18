@@ -46,6 +46,7 @@ def create_activity_data() -> dict:
         "icu_atl": 10.629515,
         "hr_load": 2,
         "icu_intensity": 13.648706,
+        "feel": 2,
     }
 
 
@@ -110,6 +111,7 @@ def test_intervals_activity_is_mapped_to_opencoach_activity() -> None:
     assert activity.fatigue_atl == 10.629515
     assert activity.hr_load == 2
     assert activity.intensity == 13.648706
+    assert activity.feel == 2
 
 
 @pytest.mark.parametrize(

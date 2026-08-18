@@ -1,3 +1,4 @@
+from uuid import UUID
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -54,3 +55,6 @@ class Activity:
     fatigue_atl: float | None = None
     hr_load: float | None = None
     intensity: float | None = None
+    feel: int | None = None
+
+    id: UUID | None = None

@@ -74,6 +74,7 @@ def map_intervals_activity(
         fatigue_atl=data.get("icu_atl"),
         hr_load=data.get("hr_load"),
         intensity=data.get("icu_intensity"),
+        feel=data.get("feel"),
     )
 
 

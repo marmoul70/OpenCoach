@@ -73,6 +73,7 @@ def create_activity() -> Activity:
         training_load=2,
         fitness_ctl=18.286057,
         fatigue_atl=10.629515,
+        feel=2,
     )
 
 
@@ -97,6 +98,7 @@ def test_sql_activity_repository_inserts_activity() -> None:
         assert saved.name == "Morning Course à pied"
         assert saved.distance_m == 4453.0
         assert saved.training_load == 2
+        assert saved.feel == 2
     finally:
         db.close()
 
@@ -222,6 +224,8 @@ def test_sql_activity_repository_lists_activities_by_date() -> None:
         assert len(activities) == 2
         assert activities[0].provider_activity_id == "i2"
         assert activities[1].provider_activity_id == "i1"
+        assert activities[0].feel == 2
+        assert activities[1].feel == 2
 
     finally:
         db.close()

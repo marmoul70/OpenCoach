@@ -152,6 +152,7 @@ class SqlActivityRepository(ActivityRepository):
             )
             database_activity.hr_load = activity.hr_load
             database_activity.intensity = activity.intensity
+            database_activity.feel = activity.feel
 
             self.session.commit()
             self.session.refresh(database_activity)
@@ -260,4 +261,6 @@ class SqlActivityRepository(ActivityRepository):
             fatigue_atl=activity.fatigue_atl,
             hr_load=activity.hr_load,
             intensity=activity.intensity,
+            feel=activity.feel,
+            id=activity.id,
         )

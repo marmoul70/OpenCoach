@@ -24,4 +24,5 @@ export interface TrainingSession {
   intensity: string
   heartRateZone?: string
   status: TrainingSessionStatus
+  activityId?: string
 }

@@ -1,54 +1,232 @@
 import {
   createContext,
+  useCallback,
   useContext,
+  useEffect,
   useState,
   type ReactNode,
 } from 'react'
 
-import { trainingSessions } from './data'
-import type { TrainingSession } from './types'
+import {
+  fetchTrainingSessions,
+  updateTrainingSessionActivity as updateTrainingSessionActivityApi,
+  updateTrainingSessionStatus as updateTrainingSessionStatusApi,
+} from '../../core/training/api'
+
+import type {
+  TrainingSession,
+  TrainingSessionStatus,
+} from './types'
+
 
 interface TrainingStoreValue {
   sessions: TrainingSession[]
+  loading: boolean
+  error: string | null
+
   updateSessionStatus: (
     sessionId: string,
-    status: TrainingSession['status'],
-  ) => void
+    status: TrainingSessionStatus,
+  ) => Promise<void>
+
+  updateSessionActivity: (
+    sessionId: string,
+    activityId: string | null,
+  ) => Promise<void>
+
+  refreshSessions: () => Promise<void>
 }
+
 
 const TrainingStoreContext =
   createContext<TrainingStoreValue | undefined>(
     undefined,
   )
 
+
 interface TrainingProviderProps {
   children: ReactNode
 }
 
+
+function formatLocalDate(
+  date: Date,
+): string {
+  const year = date.getFullYear()
+
+  const month = String(
+    date.getMonth() + 1,
+  ).padStart(2, '0')
+
+  const day = String(
+    date.getDate(),
+  ).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+
+function getCurrentWeekRange(): {
+  start: string
+  end: string
+} {
+  const today = new Date()
+
+  const currentDay = today.getDay()
+
+  const mondayOffset =
+    currentDay === 0
+      ? -6
+      : 1 - currentDay
+
+  const monday = new Date(today)
+
+  monday.setHours(
+    12,
+    0,
+    0,
+    0,
+  )
+
+  monday.setDate(
+    today.getDate() + mondayOffset,
+  )
+
+  const sunday = new Date(monday)
+
+  sunday.setDate(
+    monday.getDate() + 6,
+  )
+
+  return {
+    start: formatLocalDate(monday),
+    end: formatLocalDate(sunday),
+  }
+}
+
+
 export function TrainingProvider({
   children,
 }: TrainingProviderProps) {
-  const [sessions, setSessions] =
-    useState<TrainingSession[]>(trainingSessions)
+  const [sessions, setSessions] = useState<
+    TrainingSession[]
+  >([])
 
-  function updateSessionStatus(
+  const [loading, setLoading] =
+    useState(true)
+
+  const [error, setError] =
+    useState<string | null>(null)
+
+
+  const refreshSessions =
+    useCallback(async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const {
+          start,
+          end,
+        } = getCurrentWeekRange()
+
+        const result =
+          await fetchTrainingSessions(
+            start,
+            end,
+          )
+
+        setSessions(result)
+      } catch (caughtError) {
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : 'Impossible de charger les séances.',
+        )
+      } finally {
+        setLoading(false)
+      }
+    }, [])
+
+
+  useEffect(() => {
+    void refreshSessions()
+  }, [refreshSessions])
+
+
+  async function updateSessionStatus(
     sessionId: string,
-    status: TrainingSession['status'],
-  ) {
-    setSessions((current) =>
-      current.map((session) =>
-        session.id === sessionId
-          ? { ...session, status }
-          : session,
-      ),
-    )
+    status: TrainingSessionStatus,
+  ): Promise<void> {
+    setError(null)
+
+    try {
+      const updatedSession =
+        await updateTrainingSessionStatusApi(
+          sessionId,
+          status,
+        )
+
+      setSessions((current) =>
+        current.map((session) =>
+          session.id === updatedSession.id
+            ? updatedSession
+            : session,
+        ),
+      )
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Impossible de modifier la séance.',
+      )
+
+      throw caughtError
+    }
   }
+
+
+  async function updateSessionActivity(
+    sessionId: string,
+    activityId: string | null,
+  ): Promise<void> {
+    setError(null)
+
+    try {
+      const updatedSession =
+        await updateTrainingSessionActivityApi(
+          sessionId,
+          activityId,
+        )
+
+      setSessions((current) =>
+        current.map((session) =>
+          session.id === updatedSession.id
+            ? updatedSession
+            : session,
+        ),
+      )
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Impossible d'associer l'activité.",
+      )
+
+      throw caughtError
+    }
+  }
+
 
   return (
     <TrainingStoreContext.Provider
       value={{
         sessions,
+        loading,
+        error,
         updateSessionStatus,
+        updateSessionActivity,
+        refreshSessions,
       }}
     >
       {children}
@@ -56,8 +234,11 @@ export function TrainingProvider({
   )
 }
 
-export function useTrainingSessions(): TrainingStoreValue {
-  const context = useContext(TrainingStoreContext)
+
+export function useTrainingSessions():
+TrainingStoreValue {
+  const context =
+    useContext(TrainingStoreContext)
 
   if (!context) {
     throw new Error(

@@ -31,6 +31,7 @@ export function TrainingWeek() {
   const {
     sessions,
     updateSessionStatus,
+    updateSessionActivity,
   } = useTrainingSessions()
 
   const [selectedSessionId, setSelectedSessionId] = useState<
@@ -152,9 +153,17 @@ export function TrainingWeek() {
         >
           <TrainingDetails
             session={selectedSession}
-            onStatusChange={(status) => {
-              updateSessionStatus(selectedSession.id, status)
-              closeSession()
+            onStatusChange={async (status) => {
+              await updateSessionStatus(
+                selectedSession.id,
+                status,
+              )
+            }}
+            onActivityChange={async (activityId) => {
+              await updateSessionActivity(
+                selectedSession.id,
+                activityId,
+              )
             }}
           />
         </Modal>

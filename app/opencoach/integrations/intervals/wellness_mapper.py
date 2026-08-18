@@ -26,6 +26,13 @@ def map_intervals_wellness(
         fitness_ctl=data.get("ctl"),
         fatigue_atl=data.get("atl"),
         ramp_rate=data.get("rampRate"),
+        resting_hr=data.get("restingHR"),
+        hrv=data.get("hrv"),
+        sleep_seconds=data.get("sleepSecs"),
+        sleep_score=data.get("sleepScore"),
+        sleep_quality=data.get("sleepQuality"),
+        avg_sleeping_hr=data.get("avgSleepingHR"),
+        spo2=data.get("spO2"),
         steps=data.get("steps"),
         provider_updated_at=provider_updated_at,
     )

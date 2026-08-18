@@ -15,6 +15,13 @@ def create_wellness_data() -> dict:
         "atl": 6.00268,
         "rampRate": -2.8922691,
         "steps": 1627,
+        "restingHR": 46,
+        "hrv": 52.0,
+        "sleepSecs": 76140,
+        "sleepScore": 77.0,
+        "sleepQuality": 3,
+        "avgSleepingHR": 48.0,
+        "spO2": 99.0,
         "updated": "2026-08-17T16:15:43.799+00:00",
     }
 
@@ -31,6 +38,16 @@ def test_intervals_wellness_is_mapped() -> None:
     assert wellness.fatigue_atl == 6.00268
     assert wellness.ramp_rate == -2.8922691
     assert wellness.steps == 1627
+
+    assert wellness.resting_hr == 46
+    assert wellness.hrv == 52.0
+
+    assert wellness.sleep_seconds == 76140
+    assert wellness.sleep_score == 77.0
+    assert wellness.sleep_quality == 3
+    assert wellness.avg_sleeping_hr == 48.0
+
+    assert wellness.spo2 == 99.0
 
     assert wellness.provider_updated_at == datetime(
         2026,

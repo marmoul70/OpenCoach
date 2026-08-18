@@ -53,6 +53,15 @@ class SqlWellnessRepository(WellnessRepository):
             database_wellness.fitness_ctl = wellness.fitness_ctl
             database_wellness.fatigue_atl = wellness.fatigue_atl
             database_wellness.ramp_rate = wellness.ramp_rate
+            database_wellness.resting_hr = wellness.resting_hr
+            database_wellness.hrv = wellness.hrv
+
+            database_wellness.sleep_seconds = wellness.sleep_seconds
+            database_wellness.sleep_score = wellness.sleep_score
+            database_wellness.sleep_quality = wellness.sleep_quality
+            database_wellness.avg_sleeping_hr = wellness.avg_sleeping_hr
+
+            database_wellness.spo2 = wellness.spo2
             database_wellness.steps = wellness.steps
             database_wellness.provider_updated_at = (
                 wellness.provider_updated_at

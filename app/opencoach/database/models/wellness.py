@@ -73,6 +73,41 @@ class WellnessDaily(Base):
         nullable=True,
     )
 
+    resting_hr: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    hrv: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+
+    sleep_seconds: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    sleep_score: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+
+    sleep_quality: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    avg_sleeping_hr: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+
+    spo2: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+
     steps: Mapped[int | None] = mapped_column(
         Integer,
         nullable=True,

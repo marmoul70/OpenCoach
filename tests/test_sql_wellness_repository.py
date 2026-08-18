@@ -57,6 +57,13 @@ def create_wellness_day() -> WellnessDay:
         fatigue_atl=6.00268,
         ramp_rate=-2.8922691,
         steps=1627,
+        resting_hr=46,
+        hrv=52.0,
+        sleep_seconds=76140,
+        sleep_score=77.0,
+        sleep_quality=3,
+        avg_sleeping_hr=48.0,
+        spo2=99.0,
         provider_updated_at=datetime(
             2026,
             8,
@@ -91,6 +98,13 @@ def test_sql_wellness_repository_inserts_day() -> None:
         assert saved.fatigue_atl == 6.00268
         assert saved.ramp_rate == -2.8922691
         assert saved.steps == 1627
+        assert saved.resting_hr == 46
+        assert saved.hrv == 52.0
+        assert saved.sleep_seconds == 76140
+        assert saved.sleep_score == 77.0
+        assert saved.sleep_quality == 3
+        assert saved.avg_sleeping_hr == 48.0
+        assert saved.spo2 == 99.0
 
     finally:
         db.close()

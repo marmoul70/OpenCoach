@@ -112,12 +112,56 @@ def test_threshold_settings_accept_custom_values(
         significant_treatment = 50.0
         significant_illness = 29.0
         critical_pain = 40.0
+
+        [coach_decision.readiness]
+        keep_min = 75.0
+        reduce_min = 55.0
+        replace_min = 35.0
+
+        [coach_decision.reduction]
+        duration_factor = 0.65
+        intensity_factor = 0.75
+
+        [coach_decision.constraints]
+        avoid_high_intensity_duration_factor = 0.80
+        recovery_max_duration_minutes = 40
         """.strip(),
             encoding="utf-8",
         )
 
     settings = load_threshold_settings(
         config_path,
+    )
+
+    assert (
+        settings.coach_decision.readiness.keep_min
+        == 75.0
+    )
+
+    assert (
+        settings.coach_decision.readiness.reduce_min
+        == 55.0
+    )
+
+    assert (
+        settings.coach_decision.readiness.replace_min
+        == 35.0
+    )
+
+    assert (
+        settings.coach_decision.reduction.duration_factor
+        == 0.65
+    )
+
+    assert (
+        settings.coach_decision.reduction.intensity_factor
+        == 0.75
+    )
+
+    assert (
+        settings.coach_decision.constraints
+        .recovery_max_duration_minutes
+        == 40
     )
 
     assert (

@@ -13,6 +13,9 @@ from opencoach.api.readiness import (
 from opencoach.api.daily_context import (
     router as daily_context_router,
 )
+from opencoach.api.coach import (
+    router as coach_router,
+)
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -27,6 +30,7 @@ def create_app() -> FastAPI:
     app.include_router(daily_context_router)
     app.include_router(training_sessions_router)
     app.include_router(readiness_router)
+    app.include_router(coach_router)
 
     return app
 

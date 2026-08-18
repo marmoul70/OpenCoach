@@ -158,12 +158,45 @@ class ReadinessThresholds:
     context: ReadinessContextThresholds
 
 @dataclass(frozen=True)
+class CoachDecisionReadinessThresholds:
+    """Seuils de décision basés sur le Daily Readiness."""
+
+    keep_min: float
+    reduce_min: float
+    replace_min: float
+
+
+@dataclass(frozen=True)
+class CoachDecisionReductionThresholds:
+    """Facteurs de réduction d'une séance."""
+
+    duration_factor: float
+    intensity_factor: float
+
+
+@dataclass(frozen=True)
+class CoachDecisionConstraintThresholds:
+    """Paramètres liés aux contraintes d'entraînement."""
+
+    avoid_high_intensity_duration_factor: float
+    recovery_max_duration_minutes: int
+
+
+@dataclass(frozen=True)
+class CoachDecisionThresholds:
+    """Configuration du Coach Decision Engine."""
+
+    readiness: CoachDecisionReadinessThresholds
+    reduction: CoachDecisionReductionThresholds
+    constraints: CoachDecisionConstraintThresholds
+
+@dataclass(frozen=True)
 class ThresholdSettings:
     """Ensemble des seuils configurables OpenCoach."""
 
     activity_matching: ActivityMatchingThresholds
     readiness: ReadinessThresholds
-
+    coach_decision: CoachDecisionThresholds
 
 def load_threshold_settings(
     path: Path | None = None,
@@ -205,6 +238,22 @@ def load_threshold_settings(
 
         readiness_data = data[
             "readiness"
+        ]
+
+        coach_decision_data = data[
+            "coach_decision"
+        ]
+
+        coach_readiness_data = coach_decision_data[
+            "readiness"
+        ]
+
+        coach_reduction_data = coach_decision_data[
+            "reduction"
+        ]
+
+        coach_constraints_data = coach_decision_data[
+            "constraints"
         ]
 
         baseline_data = readiness_data[
@@ -479,6 +528,49 @@ def load_threshold_settings(
                     ),
                 ),
             ),
+            coach_decision=CoachDecisionThresholds(
+                readiness=CoachDecisionReadinessThresholds(
+                    keep_min=float(
+                        coach_readiness_data[
+                            "keep_min"
+                        ]
+                    ),
+                    reduce_min=float(
+                        coach_readiness_data[
+                            "reduce_min"
+                        ]
+                    ),
+                    replace_min=float(
+                        coach_readiness_data[
+                            "replace_min"
+                        ]
+                    ),
+                ),
+                reduction=CoachDecisionReductionThresholds(
+                    duration_factor=float(
+                        coach_reduction_data[
+                            "duration_factor"
+                        ]
+                    ),
+                    intensity_factor=float(
+                        coach_reduction_data[
+                            "intensity_factor"
+                        ]
+                    ),
+                ),
+                constraints=CoachDecisionConstraintThresholds(
+                    avoid_high_intensity_duration_factor=float(
+                        coach_constraints_data[
+                            "avoid_high_intensity_duration_factor"
+                        ]
+                    ),
+                    recovery_max_duration_minutes=int(
+                        coach_constraints_data[
+                            "recovery_max_duration_minutes"
+                        ]
+                    ),
+                ),
+            ),
         )
 
     except (
@@ -717,3 +809,112 @@ def _validate_threshold_settings(
                     "doit être compris entre 0 et 100."
                 )
             )
+    coach_decision = (
+        settings
+        .coach_decision
+    )
+
+    keep_min = (
+        coach_decision
+        .readiness
+        .keep_min
+    )
+
+    reduce_min = (
+        coach_decision
+        .readiness
+        .reduce_min
+    )
+
+    replace_min = (
+        coach_decision
+        .readiness
+        .replace_min
+    )
+
+    if not (
+        0.0
+        <= replace_min
+        < reduce_min
+        < keep_min
+        <= 100.0
+    ):
+        raise ThresholdConfigurationError(
+            (
+                "Les seuils coach_decision.readiness "
+                "doivent respecter : "
+                "0 <= replace_min < reduce_min "
+                "< keep_min <= 100."
+            )
+        )
+
+    duration_factor = (
+        coach_decision
+        .reduction
+        .duration_factor
+    )
+
+    if not (
+        0.0
+        < duration_factor
+        <= 1.0
+    ):
+        raise ThresholdConfigurationError(
+            (
+                "coach_decision.reduction."
+                "duration_factor doit être "
+                "compris entre 0 exclu et 1."
+            )
+        )
+
+    intensity_factor = (
+        coach_decision
+        .reduction
+        .intensity_factor
+    )
+
+    if not (
+        0.0
+        < intensity_factor
+        <= 1.0
+    ):
+        raise ThresholdConfigurationError(
+            (
+                "coach_decision.reduction."
+                "intensity_factor doit être "
+                "compris entre 0 exclu et 1."
+            )
+        )
+
+    constraint_factor = (
+        coach_decision
+        .constraints
+        .avoid_high_intensity_duration_factor
+    )
+
+    if not (
+        0.0
+        < constraint_factor
+        <= 1.0
+    ):
+        raise ThresholdConfigurationError(
+            (
+                "coach_decision.constraints."
+                "avoid_high_intensity_duration_factor "
+                "doit être compris entre 0 exclu et 1."
+            )
+        )
+
+    if (
+        coach_decision
+        .constraints
+        .recovery_max_duration_minutes
+        <= 0
+    ):
+        raise ThresholdConfigurationError(
+            (
+                "coach_decision.constraints."
+                "recovery_max_duration_minutes "
+                "doit être supérieur à zéro."
+            )
+        )

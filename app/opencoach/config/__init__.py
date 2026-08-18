@@ -9,6 +9,7 @@ from .thresholds import (
     clear_threshold_settings_cache,
     get_threshold_settings,
     load_threshold_settings,
+    CoachDecisionThresholds,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "get_threshold_settings",
     "load_threshold_settings",
     "ReadinessContextThresholds",
+    "CoachDecisionThresholds",
 ]

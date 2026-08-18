@@ -122,6 +122,7 @@ def apply_daily_context(
         constraints=constraints,
         context=context,
         context_signals=context_signals,
+        thresholds=context_thresholds,
     )
 
     return replace(
@@ -311,6 +312,7 @@ def _append_context_constraints(
     constraints: list[str],
     context: DailyContext,
     context_signals: list[ReadinessSignal],
+    thresholds: ReadinessContextThresholds,
 ) -> None:
     critical_metrics = {
         signal.metric
@@ -359,7 +361,8 @@ def _append_context_constraints(
         )
 
     if (
-        context.motivation <= 1
+        context.motivation
+        <= thresholds.motivation.low_max
     ):
         _append_unique(
             constraints,

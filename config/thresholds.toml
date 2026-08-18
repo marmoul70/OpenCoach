@@ -166,3 +166,40 @@ critical_pain = 40.0
 [readiness.context.motivation]
 
 low_max = 1
+
+# ---------------------------------------------------------
+# Coach Decision Engine
+# ---------------------------------------------------------
+
+[coach_decision.readiness]
+
+# Score à partir duquel la séance planifiée peut être
+# conservée sans adaptation liée à la récupération.
+keep_min = 70.0
+
+# En dessous de keep_min, une réduction peut être appliquée.
+reduce_min = 50.0
+
+# En dessous de reduce_min, une séance alternative de
+# récupération doit être privilégiée.
+replace_min = 30.0
+
+# En dessous de replace_min, le repos est privilégié.
+# La valeur correspond implicitement à 0 <= score < 30.
+
+
+[coach_decision.reduction]
+
+# Facteurs appliqués lorsqu'une séance doit être réduite.
+duration_factor = 0.70
+intensity_factor = 0.80
+
+
+[coach_decision.constraints]
+
+# Réduction supplémentaire de durée lorsqu'une contrainte
+# impose d'éviter l'intensité élevée.
+avoid_high_intensity_duration_factor = 0.85
+
+# Durée maximale proposée pour une séance de récupération.
+recovery_max_duration_minutes = 45

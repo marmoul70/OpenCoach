@@ -25,6 +25,7 @@ class FakeIntervalsSyncService:
     ) -> int:
         self.calls.append(
             (
+                "activities",
                 athlete_profile_id,
                 oldest,
                 newest,
@@ -33,6 +34,22 @@ class FakeIntervalsSyncService:
 
         return self.result
 
+    def sync_wellness(
+        self,
+        athlete_profile_id,
+        oldest: date,
+        newest: date,
+    ) -> int:
+        self.calls.append(
+            (
+                "wellness",
+                athlete_profile_id,
+                oldest,
+                newest,
+            )
+        )
+
+        return self.result
 
 def test_sync_activities_uses_requested_period() -> None:
     sync_service = FakeIntervalsSyncService(
@@ -55,6 +72,7 @@ def test_sync_activities_uses_requested_period() -> None:
 
     assert sync_service.calls == [
         (
+            "activities",
             profile_id,
             date(2026, 7, 18),
             date(2026, 8, 17),
@@ -78,6 +96,7 @@ def test_sync_activities_uses_default_period() -> None:
 
     assert sync_service.calls == [
         (
+            "activities",
             profile_id,
             date(2026, 8, 17)
             - timedelta(days=DEFAULT_SYNC_DAYS),
@@ -114,3 +133,40 @@ def test_sync_activities_rejects_invalid_period(
         )
 
     assert sync_service.calls == []
+
+def test_sync_all_synchronizes_activities_and_wellness() -> None:
+    sync_service = FakeIntervalsSyncService(
+        result=21,
+    )
+
+    service = IntervalsApplicationService(
+        sync_service,
+    )
+
+    profile_id = uuid4()
+
+    result = service.sync_all(
+        profile_id,
+        newest=date(2026, 8, 18),
+        days=30,
+    )
+
+    assert result == (
+        21,
+        21,
+    )
+
+    assert sync_service.calls == [
+        (
+            "activities",
+            profile_id,
+            date(2026, 7, 19),
+            date(2026, 8, 18),
+        ),
+        (
+            "wellness",
+            profile_id,
+            date(2026, 7, 19),
+            date(2026, 8, 18),
+        ),
+    ]

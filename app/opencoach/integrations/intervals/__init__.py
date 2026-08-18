@@ -7,6 +7,7 @@ from .errors import (
 )
 from .mapper import map_intervals_activity
 from .sync import IntervalsSyncService
+from .wellness_mapper import map_intervals_wellness
 
 __all__ = [
     "IntervalsApiError",
@@ -16,4 +17,5 @@ __all__ = [
     "IntervalsDataError",
     "map_intervals_activity",
     "IntervalsSyncService",
+    "map_intervals_wellness",
 ]

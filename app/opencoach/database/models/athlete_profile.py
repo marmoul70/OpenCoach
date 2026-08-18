@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from opencoach.database.models.bike import Bike
     from opencoach.database.models.shoe import Shoe
     from opencoach.database.models.watch import Watch
+    from opencoach.database.models.wellness import WellnessDaily
 
 class AthleteProfile(Base):
     """Profil sportif associé à un compte utilisateur."""
@@ -173,6 +174,11 @@ class AthleteProfile(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
+    )
+
+    wellness_days: Mapped[list["WellnessDaily"]] = relationship(
+        back_populates="athlete_profile",
+        cascade="all, delete-orphan",
     )
 
     activities: Mapped[list["Activity"]] = relationship(

@@ -13,6 +13,7 @@ from .profile import (
     Watch,
 )
 from .activity import Activity
+from .wellness import WellnessDay
 
 __all__ = [
     "AthleteBody",
@@ -28,4 +29,5 @@ __all__ = [
     "Shoe",
     "Watch",
     "Activity",
+    "WellnessDay",
 ]

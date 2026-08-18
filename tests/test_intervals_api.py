@@ -7,7 +7,10 @@ from opencoach.api.intervals import (
     get_intervals_application_service,
     get_local_athlete_profile_id,
 )
-from opencoach.database.repositories import ActivityRepositoryError
+from opencoach.database.repositories import (
+     ActivityRepositoryError,
+    WellnessRepositoryError,
+)
 from opencoach.integrations.intervals import (
     IntervalsApiError,
     IntervalsAuthenticationError,
@@ -26,13 +29,13 @@ class FakeIntervalsApplicationService:
         self.error = error
         self.calls = []
 
-    def sync_activities(
+    def sync_all(
         self,
         athlete_profile_id,
         *,
         newest=None,
         days=30,
-    ) -> int:
+    ) -> tuple[int, int]:
         self.calls.append(
             (
                 athlete_profile_id,
@@ -44,8 +47,10 @@ class FakeIntervalsApplicationService:
         if self.error is not None:
             raise self.error
 
-        return self.result
-
+        return (
+            self.result,
+            self.result,
+        )
 
 def create_test_client(
     service: FakeIntervalsApplicationService,
@@ -84,6 +89,7 @@ def test_sync_intervals_activities() -> None:
         "provider": "intervals",
         "synced_activities": 21,
         "days": 30,
+        "synced_wellness_days": 21,
     }
 
     assert service.calls == [
@@ -113,6 +119,7 @@ def test_sync_intervals_accepts_custom_period() -> None:
     assert response.json() == {
         "provider": "intervals",
         "synced_activities": 50,
+        "synced_wellness_days": 50,
         "days": 90,
     }
 
@@ -227,4 +234,27 @@ def test_sync_intervals_handles_storage_error() -> None:
 
     assert response.json() == {
         "detail": "Impossible d'enregistrer les activités."
+    }
+
+def test_sync_intervals_handles_wellness_storage_error() -> None:
+    service = FakeIntervalsApplicationService(
+        error=WellnessRepositoryError(
+            "storage failed"
+        ),
+    )
+
+    client, _ = create_test_client(
+        service,
+    )
+
+    response = client.post(
+        "/api/integrations/intervals/sync"
+    )
+
+    assert response.status_code == 503
+
+    assert response.json() == {
+        "detail": (
+            "Impossible d'enregistrer les données Wellness."
+        )
     }

@@ -25,6 +25,74 @@ class IntervalsApplicationService:
     ) -> int:
         """Synchronise les activités récentes d'un athlète."""
 
+        oldest, newest = self._resolve_period(
+            newest=newest,
+            days=days,
+        )
+
+        return self.sync_service.sync_activities(
+            athlete_profile_id=athlete_profile_id,
+            oldest=oldest,
+            newest=newest,
+        )
+
+    def sync_wellness(
+        self,
+        athlete_profile_id: UUID,
+        *,
+        newest: date | None = None,
+        days: int = DEFAULT_SYNC_DAYS,
+    ) -> int:
+        """Synchronise les données Wellness récentes."""
+
+        oldest, newest = self._resolve_period(
+            newest=newest,
+            days=days,
+        )
+
+        return self.sync_service.sync_wellness(
+            athlete_profile_id=athlete_profile_id,
+            oldest=oldest,
+            newest=newest,
+        )
+
+    def sync_all(
+        self,
+        athlete_profile_id: UUID,
+        *,
+        newest: date | None = None,
+        days: int = DEFAULT_SYNC_DAYS,
+    ) -> tuple[int, int]:
+        """Synchronise activités et Wellness sur la même période."""
+
+        oldest, newest = self._resolve_period(
+            newest=newest,
+            days=days,
+        )
+
+        synced_activities = self.sync_service.sync_activities(
+            athlete_profile_id=athlete_profile_id,
+            oldest=oldest,
+            newest=newest,
+        )
+
+        synced_wellness = self.sync_service.sync_wellness(
+            athlete_profile_id=athlete_profile_id,
+            oldest=oldest,
+            newest=newest,
+        )
+
+        return (
+            synced_activities,
+            synced_wellness,
+        )
+
+    @staticmethod
+    def _resolve_period(
+        *,
+        newest: date | None,
+        days: int,
+    ) -> tuple[date, date]:
         if days < 1:
             raise ValueError(
                 "La période de synchronisation doit être positive."
@@ -35,8 +103,4 @@ class IntervalsApplicationService:
 
         oldest = newest - timedelta(days=days)
 
-        return self.sync_service.sync_activities(
-            athlete_profile_id=athlete_profile_id,
-            oldest=oldest,
-            newest=newest,
-        )
+        return oldest, newest

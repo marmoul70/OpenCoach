@@ -10,6 +10,8 @@ from opencoach.database.models import AthleteProfile, User
 from opencoach.database.repositories import (
     ActivityRepositoryError,
     SqlActivityRepository,
+    SqlWellnessRepository,
+    WellnessRepositoryError,
 )
 from opencoach.database.session import get_db
 from opencoach.integrations.intervals import (
@@ -83,11 +85,13 @@ def get_intervals_application_service(
         athlete_id=settings.athlete_id,
     )
 
-    repository = SqlActivityRepository(db)
+    activity_repository = SqlActivityRepository(db)
+    wellness_repository = SqlWellnessRepository(db)
 
     sync_service = IntervalsSyncService(
         client=client,
-        repository=repository,
+        repository=activity_repository,
+        wellness_repository=wellness_repository,
     )
 
     return IntervalsApplicationService(
@@ -96,7 +100,7 @@ def get_intervals_application_service(
 
 
 @router.post("/sync")
-def sync_intervals_activities(
+def sync_intervals(
     days: int = Query(
         default=DEFAULT_SYNC_DAYS,
         ge=1,
@@ -109,10 +113,13 @@ def sync_intervals_activities(
         get_intervals_application_service,
     ),
 ) -> dict[str, str | int]:
-    """Synchronise les activités Intervals.icu vers OpenCoach."""
+    """Synchronise activités et Wellness Intervals.icu."""
 
     try:
-        synced = service.sync_activities(
+        (
+            synced_activities,
+            synced_wellness_days,
+        ) = service.sync_all(
             athlete_profile_id,
             days=days,
         )
@@ -141,8 +148,15 @@ def sync_intervals_activities(
             detail="Impossible d'enregistrer les activités.",
         ) from exc
 
+    except WellnessRepositoryError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible d'enregistrer les données Wellness.",
+        ) from exc
+
     return {
         "provider": "intervals",
-        "synced_activities": synced,
+        "synced_activities": synced_activities,
+        "synced_wellness_days": synced_wellness_days,
         "days": days,
     }

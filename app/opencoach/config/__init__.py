@@ -2,6 +2,7 @@ from .intervals import IntervalsSettings
 from .thresholds import (
     ActivityMatchingThresholds,
     ReadinessBaselineThresholds,
+    ReadinessContextThresholds,
     ReadinessThresholds,
     ThresholdConfigurationError,
     ThresholdSettings,
@@ -20,4 +21,5 @@ __all__ = [
     "clear_threshold_settings_cache",
     "get_threshold_settings",
     "load_threshold_settings",
+    "ReadinessContextThresholds",
 ]

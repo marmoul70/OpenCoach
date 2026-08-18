@@ -5,6 +5,7 @@ from .errors import (
     ProfileRepositoryError,
     WellnessRepositoryError,
     TrainingSessionRepositoryError,
+    DailyContextRepositoryError,
 )
 from .profile import ProfileRepository
 from .sql_activity import SqlActivityRepository
@@ -21,6 +22,12 @@ from .sql_integration_connection import (
 
 from .sql_training_session import (
     SqlTrainingSessionRepository,
+)
+from .daily_context import (
+    DailyContextRepository,
+)
+from .sql_daily_context import (
+    SqlDailyContextRepository,
 )
 
 __all__ = [
@@ -39,4 +46,7 @@ __all__ = [
     "TrainingSessionRepository",
     "TrainingSessionRepositoryError",
     "SqlTrainingSessionRepository",
+    "DailyContextRepository",
+    "DailyContextRepositoryError",
+    "SqlDailyContextRepository",
 ]

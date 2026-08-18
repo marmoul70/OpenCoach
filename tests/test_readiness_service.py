@@ -9,10 +9,16 @@ from opencoach.config import (
 from opencoach.database.repositories.wellness import (
     WellnessRepository,
 )
-from opencoach.models import WellnessDay
+from opencoach.models import (
+    DailyContext,
+    WellnessDay,
+)
 from opencoach.readiness import (
     ReadinessDataUnavailableError,
     ReadinessService,
+)
+from opencoach.database.repositories.daily_context import (
+    DailyContextRepository,
 )
 
 
@@ -112,6 +118,43 @@ class FakeWellnessRepository(
             )
         ]
 
+class FakeDailyContextRepository(
+    DailyContextRepository
+):
+    def __init__(
+        self,
+        context: DailyContext | None = None,
+    ) -> None:
+        self.context = context
+        self.get_by_date_calls = []
+
+    def save(
+        self,
+        athlete_profile_id: UUID,
+        context: DailyContext,
+    ) -> DailyContext:
+        self.context = context
+        return context
+
+    def get_by_date(
+        self,
+        athlete_profile_id: UUID,
+        context_date: date,
+    ) -> DailyContext | None:
+        self.get_by_date_calls.append(
+            (
+                athlete_profile_id,
+                context_date,
+            )
+        )
+
+        if self.context is None:
+            return None
+
+        if self.context.date != context_date:
+            return None
+
+        return self.context
 
 def create_current_day() -> WellnessDay:
     return WellnessDay(
@@ -155,9 +198,16 @@ def create_history(
 
 def create_service(
     repository: WellnessRepository,
+    *,
+    daily_context_repository: (
+        DailyContextRepository | None
+    ) = None,
 ) -> ReadinessService:
     return ReadinessService(
         repository,
+        daily_context_repository=(
+            daily_context_repository
+        ),
         thresholds=load_threshold_settings(),
         provider="intervals",
     )
@@ -374,3 +424,206 @@ def test_readiness_service_detects_degraded_recovery() -> None:
         "prefer_recovery_or_rest"
         in result.readiness.training_constraints
     )
+
+def test_readiness_service_works_without_daily_context_repository() -> None:
+    repository = FakeWellnessRepository(
+        current=create_current_day(),
+        history=create_history(),
+    )
+
+    service = create_service(
+        repository
+    )
+
+    result = service.calculate(
+        uuid4(),
+        TARGET_DATE,
+    )
+
+    assert result.context is None
+    assert result.readiness.score == 100.0
+    assert result.readiness.level == "high"
+
+
+def test_readiness_service_loads_daily_context() -> None:
+    wellness_repository = FakeWellnessRepository(
+        current=create_current_day(),
+        history=create_history(),
+    )
+
+    context = DailyContext(
+        date=TARGET_DATE,
+        fatigue_subjective=2,
+        pain_level=0,
+        illness_status="none",
+        treatment_impact="none",
+        motivation=3,
+    )
+
+    context_repository = FakeDailyContextRepository(
+        context
+    )
+
+    service = create_service(
+        wellness_repository,
+        daily_context_repository=(
+            context_repository
+        ),
+    )
+
+    profile_id = uuid4()
+
+    result = service.calculate(
+        profile_id,
+        TARGET_DATE,
+    )
+
+    assert result.context == context
+
+    assert (
+        context_repository.get_by_date_calls
+        == [
+            (
+                profile_id,
+                TARGET_DATE,
+            )
+        ]
+    )
+
+    assert result.readiness.score == 100.0
+    assert result.readiness.level == "high"
+
+
+def test_readiness_service_applies_significant_treatment_context() -> None:
+    wellness_repository = FakeWellnessRepository(
+        current=create_current_day(),
+        history=create_history(),
+    )
+
+    context_repository = FakeDailyContextRepository(
+        DailyContext(
+            date=TARGET_DATE,
+            fatigue_subjective=2,
+            pain_level=0,
+            illness_status="none",
+            treatment_impact="significant",
+            motivation=2,
+        )
+    )
+
+    service = create_service(
+        wellness_repository,
+        daily_context_repository=(
+            context_repository
+        ),
+    )
+
+    result = service.calculate(
+        uuid4(),
+        TARGET_DATE,
+    )
+
+    assert result.context is not None
+
+    assert (
+        result.context.treatment_impact
+        == "significant"
+    )
+
+    assert result.readiness.score == 50.0
+    assert result.readiness.level == "moderate"
+
+    assert result.readiness.critical_count == 1
+
+    assert (
+        "avoid_high_intensity"
+        in result.readiness.training_constraints
+    )
+
+    assert (
+        "prefer_recovery_or_rest"
+        in result.readiness.training_constraints
+    )
+
+
+def test_readiness_service_applies_multiple_context_signals() -> None:
+    wellness_repository = FakeWellnessRepository(
+        current=create_current_day(),
+        history=create_history(),
+    )
+
+    context_repository = FakeDailyContextRepository(
+        DailyContext(
+            date=TARGET_DATE,
+            fatigue_subjective=5,
+            pain_level=8,
+            illness_status="none",
+            treatment_impact="significant",
+            motivation=1,
+        )
+    )
+
+    service = create_service(
+        wellness_repository,
+        daily_context_repository=(
+            context_repository
+        ),
+    )
+
+    result = service.calculate(
+        uuid4(),
+        TARGET_DATE,
+    )
+
+    assert result.readiness.critical_count == 3
+
+    assert result.readiness.score == 25.0
+    assert result.readiness.level == "very_low"
+
+    assert (
+        "reduce_duration"
+        in result.readiness.training_constraints
+    )
+
+    assert (
+        "avoid_pain_aggravation"
+        in result.readiness.training_constraints
+    )
+
+    assert (
+        "prefer_recovery_or_rest"
+        in result.readiness.training_constraints
+    )
+
+    assert (
+        "consider_low_motivation"
+        in result.readiness.training_constraints
+    )
+
+
+def test_readiness_service_keeps_physiological_result_when_context_missing() -> None:
+    wellness_repository = FakeWellnessRepository(
+        current=create_current_day(),
+        history=create_history(),
+    )
+
+    context_repository = FakeDailyContextRepository(
+        None
+    )
+
+    service = create_service(
+        wellness_repository,
+        daily_context_repository=(
+            context_repository
+        ),
+    )
+
+    result = service.calculate(
+        uuid4(),
+        TARGET_DATE,
+    )
+
+    assert result.context is None
+
+    assert result.readiness.score == 100.0
+    assert result.readiness.level == "high"

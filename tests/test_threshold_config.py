@@ -88,6 +88,30 @@ def test_threshold_settings_accept_custom_values(
         [readiness.training_load]
         warning_balance = -12.0
         critical_balance = -24.0
+
+        [readiness.context.fatigue]
+        warning_min = 4
+        critical_min = 5
+
+        [readiness.context.pain]
+        warning_min = 4
+        critical_min = 7
+
+        [readiness.context.illness]
+        mild_level = "warning"
+        significant_level = "critical"
+
+        [readiness.context.treatment]
+        mild_level = "warning"
+        significant_level = "critical"
+
+        [readiness.context.motivation]
+        low_max = 1
+
+        [readiness.context.caps]
+        significant_treatment = 50.0
+        significant_illness = 29.0
+        critical_pain = 40.0
         """.strip(),
             encoding="utf-8",
         )
@@ -117,6 +141,66 @@ def test_threshold_settings_accept_custom_values(
         .baseline
         .minimum_samples
         == 10
+    )
+
+    assert (
+        settings.readiness.context.motivation.low_max
+        == 1
+    )
+
+    assert (
+        settings.readiness.context.fatigue.warning_min
+        == 4
+    )
+
+    assert (
+        settings.readiness.context.fatigue.critical_min
+        == 5
+    )
+
+    assert (
+        settings.readiness.context.pain.warning_min
+        == 4
+    )
+
+    assert (
+        settings.readiness.context.pain.critical_min
+        == 7
+    )
+
+    assert (
+        settings.readiness.context.illness.mild_level
+        == "warning"
+    )
+
+    assert (
+        settings.readiness.context.illness.significant_level
+        == "critical"
+    )
+
+    assert (
+        settings.readiness.context.treatment.mild_level
+        == "warning"
+    )
+
+    assert (
+        settings.readiness.context.treatment.significant_level
+        == "critical"
+    )
+
+    assert (
+        settings.readiness.context.caps.significant_treatment
+        == 50.0
+    )
+
+    assert (
+        settings.readiness.context.caps.significant_illness
+        == 29.0
+    )
+
+    assert (
+        settings.readiness.context.caps.critical_pain
+        == 40.0
     )
 
 

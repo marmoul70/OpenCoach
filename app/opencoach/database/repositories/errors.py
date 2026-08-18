@@ -12,3 +12,6 @@ class IntegrationConnectionRepositoryError(RuntimeError):
 
 class TrainingSessionRepositoryError(RuntimeError):
     """Erreur de persistance des séances d'entraînement."""
+
+class DailyContextRepositoryError(RuntimeError):
+    """Erreur de persistance du contexte quotidien."""

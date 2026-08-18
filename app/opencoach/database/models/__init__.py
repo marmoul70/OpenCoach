@@ -11,6 +11,9 @@ from opencoach.database.models.integration_connection import (
 from opencoach.database.models.training_session import (
     TrainingSession,
 )
+from opencoach.database.models.daily_context import (
+    DailyContext,
+)
 
 __all__ = [
     "Activity",
@@ -22,4 +25,5 @@ __all__ = [
     "WellnessDaily",
     "IntegrationConnection",
     "TrainingSession",
+    "DailyContext",
 ]

@@ -17,6 +17,9 @@ if TYPE_CHECKING:
     from opencoach.database.models.integration_connection import (
         IntegrationConnection,
     )
+    from opencoach.database.models.daily_context import (
+        DailyContext,
+    )
 
 class AthleteProfile(Base):
     """Profil sportif associé à un compte utilisateur."""
@@ -180,6 +183,13 @@ class AthleteProfile(Base):
     )
 
     wellness_days: Mapped[list["WellnessDaily"]] = relationship(
+        back_populates="athlete_profile",
+        cascade="all, delete-orphan",
+    )
+
+    daily_contexts: Mapped[
+        list["DailyContext"]
+    ] = relationship(
         back_populates="athlete_profile",
         cascade="all, delete-orphan",
     )

@@ -126,3 +126,43 @@ critical_value = 50.0
 # aiguë est élevée par rapport à la forme chronique.
 warning_balance = -10.0
 critical_balance = -20.0
+
+# ---------------------------------------------------------
+# Daily Readiness - Contexte subjectif
+# ---------------------------------------------------------
+
+[readiness.context.fatigue]
+
+# Échelle 1 à 5.
+warning_min = 4
+critical_min = 5
+
+
+[readiness.context.pain]
+
+# Échelle 0 à 10.
+warning_min = 4
+critical_min = 7
+
+
+[readiness.context.illness]
+
+mild_level = "warning"
+significant_level = "critical"
+
+
+[readiness.context.treatment]
+
+mild_level = "warning"
+significant_level = "critical"
+
+
+[readiness.context.caps]
+
+significant_treatment = 50.0
+significant_illness = 29.0
+critical_pain = 40.0
+
+[readiness.context.motivation]
+
+low_max = 1

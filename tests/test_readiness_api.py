@@ -163,8 +163,9 @@ def create_assessment() -> ReadinessAssessment:
 
         baseline=baseline,
         comparison=comparison,
+        context=None,
         readiness=readiness,
-    )
+)
 
 
 def create_client(

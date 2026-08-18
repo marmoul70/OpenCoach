@@ -8,6 +8,8 @@ from opencoach.api.intervals import (
     get_local_athlete_profile_id,
 )
 from opencoach.database.repositories import (
+    DailyContextRepositoryError,
+    SqlDailyContextRepository,
     SqlWellnessRepository,
     WellnessRepositoryError,
 )
@@ -37,10 +39,21 @@ router = APIRouter(
 def get_readiness_service(
     db: Session = Depends(get_db),
 ) -> ReadinessService:
-    repository = SqlWellnessRepository(db)
+    wellness_repository = SqlWellnessRepository(
+        db
+    )
+
+    daily_context_repository = (
+        SqlDailyContextRepository(
+            db
+        )
+    )
 
     return ReadinessService(
-        repository,
+        wellness_repository,
+        daily_context_repository=(
+            daily_context_repository
+        ),
         provider="intervals",
     )
 
@@ -69,7 +82,10 @@ def get_today_readiness(
             detail=str(exc),
         ) from exc
 
-    except WellnessRepositoryError as exc:
+    except (
+        WellnessRepositoryError,
+        DailyContextRepositoryError,
+    ) as exc:
         raise HTTPException(
             status_code=503,
             detail=(
@@ -77,7 +93,6 @@ def get_today_readiness(
                 "nécessaires au Readiness."
             ),
         ) from exc
-
     return _to_response(
         assessment,
     )

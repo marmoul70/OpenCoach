@@ -21,6 +21,9 @@ from .service import (
     ReadinessService,
     ReadinessServiceError,
 )
+from .context import (
+    apply_daily_context,
+)
 
 __all__ = [
     "DailyReadiness",
@@ -36,4 +39,5 @@ __all__ = [
     "calculate_daily_readiness",
     "calculate_readiness_baseline",
     "compare_with_baseline",
+    "apply_daily_context",
 ]

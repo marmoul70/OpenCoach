@@ -6,10 +6,16 @@ from opencoach.config import (
     ThresholdSettings,
     get_threshold_settings,
 )
+from opencoach.database.repositories.daily_context import (
+    DailyContextRepository,
+)
 from opencoach.database.repositories.wellness import (
     WellnessRepository,
 )
-from opencoach.models import WellnessDay
+from opencoach.models import (
+    DailyContext,
+    WellnessDay,
+)
 
 from .baseline import (
     calculate_readiness_baseline,
@@ -17,6 +23,9 @@ from .baseline import (
 from .comparison import (
     ReadinessComparison,
     compare_with_baseline,
+)
+from .context import (
+    apply_daily_context,
 )
 from .models import (
     DailyReadiness,
@@ -45,8 +54,12 @@ class ReadinessAssessment:
     provider: str
 
     current: WellnessDay
+
     baseline: ReadinessBaseline
     comparison: ReadinessComparison
+
+    context: DailyContext | None
+
     readiness: DailyReadiness
 
 
@@ -57,10 +70,17 @@ class ReadinessService:
         self,
         repository: WellnessRepository,
         *,
+        daily_context_repository: (
+            DailyContextRepository | None
+        ) = None,
         thresholds: ThresholdSettings | None = None,
         provider: str = "intervals",
     ) -> None:
         self.repository = repository
+
+        self.daily_context_repository = (
+            daily_context_repository
+        )
 
         self.thresholds = (
             thresholds
@@ -139,11 +159,38 @@ class ReadinessService:
             thresholds=self.thresholds.readiness,
         )
 
+        context = self._get_daily_context(
+            athlete_profile_id,
+            target_date,
+        )
+
+        readiness = apply_daily_context(
+            readiness=readiness,
+            context=context,
+            thresholds=self.thresholds.readiness,
+        )
+
         return ReadinessAssessment(
             date=target_date,
             provider=self.provider,
             current=current,
             baseline=baseline,
             comparison=comparison,
+            context=context,
             readiness=readiness,
+        )
+
+    def _get_daily_context(
+        self,
+        athlete_profile_id: UUID,
+        target_date: date,
+    ) -> DailyContext | None:
+        """Charge le contexte subjectif si un repository est configuré."""
+
+        if self.daily_context_repository is None:
+            return None
+
+        return self.daily_context_repository.get_by_date(
+            athlete_profile_id,
+            target_date,
         )

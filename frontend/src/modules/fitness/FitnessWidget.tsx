@@ -1,15 +1,52 @@
-import { Activity, HeartPulse, TrendingUp } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import {
+  Footprints,
+  HeartPulse,
+  Moon,
+} from 'lucide-react'
 
-import { fitnessData } from './data'
+import {
+  fetchLatestWellness,
+  type WellnessLatest,
+} from '../../core/wellness'
+
 
 interface FitnessWidgetProps {
   onClick: () => void
 }
 
+
 export function FitnessWidget({
   onClick,
 }: FitnessWidgetProps) {
-  const data = fitnessData
+  const [data, setData] = useState<WellnessLatest | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+
+    fetchLatestWellness()
+      .then((wellness) => {
+        if (mounted) {
+          setData(wellness)
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setError(true)
+        }
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoading(false)
+        }
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   return (
     <button
@@ -24,82 +61,114 @@ export function FitnessWidget({
               <HeartPulse className="h-5 w-5 text-success" />
             </div>
 
-            <div className="min-w-0">
+            <div>
               <p className="text-sm font-medium text-base-content/60">
                 État de forme
               </p>
 
-              <p className="mt-1 text-3xl font-bold text-base-content">
-                {data.score}
-                <span className="ml-1 text-base font-normal text-base-content/40">
-                  / 100
-                </span>
+              <p className="mt-1 text-sm text-base-content/40">
+                {data
+                  ? formatDate(data.date)
+                  : 'Dernières données disponibles'}
               </p>
             </div>
           </div>
 
-          <span className="badge badge-success badge-outline shrink-0">
-            {data.label}
-          </span>
+          {loading && (
+            <span className="loading loading-spinner loading-sm" />
+          )}
         </div>
 
-        <div className="mt-5">
-          <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="text-base-content/50">
-              Score de forme
-            </span>
-
-            <span className="font-medium text-success">
-              {data.score} %
-            </span>
+        {!loading && error && (
+          <div className="mt-5 text-sm text-error">
+            Données indisponibles
           </div>
+        )}
 
-          <progress
-            className="progress progress-success w-full"
-            value={data.score}
-            max="100"
-          />
-        </div>
+        {!loading && !error && data && (
+          <>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <Metric
+                icon={<Moon className="h-4 w-4" />}
+                label="Sommeil"
+                value={
+                  data.sleep_score != null
+                    ? `${Math.round(data.sleep_score)}/100`
+                    : '—'
+                }
+              />
 
-        <div className="mt-5 grid grid-cols-3 gap-2">
-          <Metric
-            icon={<Activity className="h-4 w-4" />}
-            label="Charge"
-            value={data.trainingLoad}
-          />
+              <Metric
+                icon={<HeartPulse className="h-4 w-4" />}
+                label="HRV"
+                value={
+                  data.hrv != null
+                    ? `${Math.round(data.hrv)} ms`
+                    : '—'
+                }
+              />
 
-          <Metric
-            icon={<TrendingUp className="h-4 w-4" />}
-            label="Récup."
-            value={data.recovery}
-          />
+              <Metric
+                icon={<HeartPulse className="h-4 w-4" />}
+                label="FC repos"
+                value={
+                  data.resting_hr != null
+                    ? `${data.resting_hr} bpm`
+                    : '—'
+                }
+              />
 
-          <Metric
-            icon={<HeartPulse className="h-4 w-4" />}
-            label="Fatigue"
-            value={data.fatigue}
-          />
-        </div>
+              <Metric
+                icon={<Footprints className="h-4 w-4" />}
+                label="Pas"
+                value={
+                  data.steps != null
+                    ? data.steps.toLocaleString('fr-FR')
+                    : '—'
+                }
+              />
+            </div>
 
-        <div className="mt-4 flex items-center justify-between">
-          <span className="text-xs text-base-content/50">
-            Analyse de votre état de forme
-          </span>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <SmallMetric
+                label="CTL"
+                value={formatNumber(data.fitness_ctl)}
+              />
 
-          <span className="text-sm font-medium text-success">
-            Voir →
-          </span>
-        </div>
+              <SmallMetric
+                label="ATL"
+                value={formatNumber(data.fatigue_atl)}
+              />
+
+              <SmallMetric
+                label="Ramp"
+                value={formatRamp(data.ramp_rate)}
+              />
+            </div>
+
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-xs text-base-content/50">
+                SpO₂ {formatSpo2(data.spo2)}
+              </span>
+
+              <span className="text-sm font-medium text-success">
+                Voir →
+              </span>
+            </div>
+          </>
+        )}
       </div>
     </button>
   )
 }
 
+
 interface MetricProps {
   icon: React.ReactNode
   label: string
-  value: number
+  value: string
 }
+
 
 function Metric({
   icon,
@@ -121,4 +190,66 @@ function Metric({
       </p>
     </div>
   )
+}
+
+
+function SmallMetric({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <div className="rounded-lg border border-base-300 p-2 text-center">
+      <p className="text-xs text-base-content/50">
+        {label}
+      </p>
+
+      <p className="mt-1 font-semibold">
+        {value}
+      </p>
+    </div>
+  )
+}
+
+
+function formatDate(value: string): string {
+  return new Intl.DateTimeFormat(
+    'fr-FR',
+    {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    },
+  ).format(new Date(`${value}T12:00:00`))
+}
+
+
+function formatNumber(
+  value: number | null,
+): string {
+  return value == null
+    ? '—'
+    : value.toFixed(1)
+}
+
+
+function formatRamp(
+  value: number | null,
+): string {
+  if (value == null) {
+    return '—'
+  }
+
+  return `${value > 0 ? '+' : ''}${value.toFixed(1)}`
+}
+
+
+function formatSpo2(
+  value: number | null,
+): string {
+  return value == null
+    ? '—'
+    : `${Math.round(value)} %`
 }

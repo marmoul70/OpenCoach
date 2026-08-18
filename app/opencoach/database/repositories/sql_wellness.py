@@ -77,6 +77,43 @@ class SqlWellnessRepository(WellnessRepository):
                 "Impossible d'enregistrer les données Wellness."
             ) from exc
 
+    def get_latest(
+        self,
+        athlete_profile_id: UUID,
+    ) -> WellnessDay | None:
+        """Retourne la dernière journée Wellness disponible."""
+
+        try:
+            statement = (
+                select(WellnessDaily)
+                .where(
+                    WellnessDaily.athlete_profile_id
+                    == athlete_profile_id,
+                )
+                .order_by(
+                    WellnessDaily.date.desc(),
+                )
+                .limit(1)
+            )
+
+            database_wellness = self.session.scalar(
+                statement
+            )
+
+            if database_wellness is None:
+                return None
+
+            return self._to_domain(
+                database_wellness
+            )
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise WellnessRepositoryError(
+                "Impossible de charger les données Wellness."
+            ) from exc
+
     def _get_database_wellness(
         self,
         *,
@@ -95,3 +132,25 @@ class SqlWellnessRepository(WellnessRepository):
         )
 
         return self.session.scalar(statement)
+
+
+    @staticmethod
+    def _to_domain(
+        wellness: WellnessDaily,
+    ) -> WellnessDay:
+        return WellnessDay(
+            provider=wellness.provider,
+            date=wellness.date,
+            fitness_ctl=wellness.fitness_ctl,
+            fatigue_atl=wellness.fatigue_atl,
+            ramp_rate=wellness.ramp_rate,
+            resting_hr=wellness.resting_hr,
+            hrv=wellness.hrv,
+            sleep_seconds=wellness.sleep_seconds,
+            sleep_score=wellness.sleep_score,
+            sleep_quality=wellness.sleep_quality,
+            avg_sleeping_hr=wellness.avg_sleeping_hr,
+            spo2=wellness.spo2,
+            steps=wellness.steps,
+            provider_updated_at=wellness.provider_updated_at,
+        )

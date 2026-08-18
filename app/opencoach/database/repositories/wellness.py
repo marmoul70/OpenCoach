@@ -15,3 +15,11 @@ class WellnessRepository(ABC):
     ) -> None:
         """Crée ou met à jour une journée Wellness."""
         raise NotImplementedError
+
+    @abstractmethod
+    def get_latest(
+        self,
+        athlete_profile_id: UUID,
+    ) -> WellnessDay | None:
+        """Retourne la dernière journée Wellness disponible."""
+        raise NotImplementedError

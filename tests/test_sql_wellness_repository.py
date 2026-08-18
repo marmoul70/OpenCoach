@@ -180,3 +180,59 @@ def test_same_date_is_allowed_for_different_providers() -> None:
 
     finally:
         db.close()
+
+
+def test_sql_wellness_repository_returns_latest_day() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlWellnessRepository(db)
+
+        older = create_wellness_day()
+        older.date = date(2026, 8, 8)
+
+        latest = create_wellness_day()
+        latest.date = date(2026, 8, 9)
+        latest.sleep_score = 77.0
+        latest.hrv = 52.0
+
+        repository.save_wellness_day(
+            profile.id,
+            older,
+        )
+
+        repository.save_wellness_day(
+            profile.id,
+            latest,
+        )
+
+        result = repository.get_latest(
+            profile.id,
+        )
+
+        assert result is not None
+        assert result.date == date(2026, 8, 9)
+        assert result.sleep_score == 77.0
+        assert result.hrv == 52.0
+
+    finally:
+        db.close()
+
+def test_sql_wellness_repository_returns_none_when_empty() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlWellnessRepository(db)
+
+        result = repository.get_latest(
+            profile.id,
+        )
+
+        assert result is None
+
+    finally:
+        db.close()

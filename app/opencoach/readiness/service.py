@@ -1,0 +1,149 @@
+from dataclasses import dataclass
+from datetime import date, timedelta
+from uuid import UUID
+
+from opencoach.config import (
+    ThresholdSettings,
+    get_threshold_settings,
+)
+from opencoach.database.repositories.wellness import (
+    WellnessRepository,
+)
+from opencoach.models import WellnessDay
+
+from .baseline import (
+    calculate_readiness_baseline,
+)
+from .comparison import (
+    ReadinessComparison,
+    compare_with_baseline,
+)
+from .models import (
+    DailyReadiness,
+    ReadinessBaseline,
+)
+from .scoring import (
+    calculate_daily_readiness,
+)
+
+
+class ReadinessServiceError(RuntimeError):
+    """Erreur métier du service Daily Readiness."""
+
+
+class ReadinessDataUnavailableError(
+    ReadinessServiceError
+):
+    """Aucune donnée Wellness disponible pour la date demandée."""
+
+
+@dataclass(frozen=True)
+class ReadinessAssessment:
+    """Évaluation complète de la disponibilité quotidienne."""
+
+    date: date
+    provider: str
+
+    current: WellnessDay
+    baseline: ReadinessBaseline
+    comparison: ReadinessComparison
+    readiness: DailyReadiness
+
+
+class ReadinessService:
+    """Orchestre le calcul complet du Daily Readiness."""
+
+    def __init__(
+        self,
+        repository: WellnessRepository,
+        *,
+        thresholds: ThresholdSettings | None = None,
+        provider: str = "intervals",
+    ) -> None:
+        self.repository = repository
+
+        self.thresholds = (
+            thresholds
+            if thresholds is not None
+            else get_threshold_settings()
+        )
+
+        self.provider = provider
+
+    def calculate(
+        self,
+        athlete_profile_id: UUID,
+        target_date: date,
+    ) -> ReadinessAssessment:
+        """Calcule le Daily Readiness pour une date donnée."""
+
+        current = self.repository.get_by_date(
+            athlete_profile_id,
+            target_date,
+            provider=self.provider,
+        )
+
+        if current is None:
+            raise ReadinessDataUnavailableError(
+                (
+                    "Aucune donnée Wellness disponible "
+                    f"pour le {target_date.isoformat()} "
+                    f"avec le fournisseur {self.provider}."
+                )
+            )
+
+        baseline_thresholds = (
+            self.thresholds
+            .readiness
+            .baseline
+        )
+
+        history_start = (
+            target_date
+            - timedelta(
+                days=baseline_thresholds.window_days,
+            )
+        )
+
+        history_end = (
+            target_date
+            - timedelta(days=1)
+        )
+
+        history = self.repository.list_range(
+            athlete_profile_id,
+            history_start,
+            history_end,
+            provider=self.provider,
+        )
+
+        baseline = calculate_readiness_baseline(
+            history,
+            current_date=target_date,
+            window_days=(
+                baseline_thresholds.window_days
+            ),
+            minimum_samples=(
+                baseline_thresholds.minimum_samples
+            ),
+        )
+
+        comparison = compare_with_baseline(
+            current,
+            baseline,
+        )
+
+        readiness = calculate_daily_readiness(
+            current=current,
+            comparison=comparison,
+            thresholds=self.thresholds.readiness,
+        )
+
+        return ReadinessAssessment(
+            date=target_date,
+            provider=self.provider,
+            current=current,
+            baseline=baseline,
+            comparison=comparison,
+            readiness=readiness,
+        )

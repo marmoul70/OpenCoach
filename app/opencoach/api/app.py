@@ -7,6 +7,9 @@ from opencoach.api.wellness import router as wellness_router
 from opencoach.api.training_sessions import (
     router as training_sessions_router,
 )
+from opencoach.api.readiness import (
+    router as readiness_router,
+)
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -19,6 +22,7 @@ def create_app() -> FastAPI:
     app.include_router(activities_router)
     app.include_router(wellness_router)
     app.include_router(training_sessions_router)
+    app.include_router(readiness_router)
 
     return app
 

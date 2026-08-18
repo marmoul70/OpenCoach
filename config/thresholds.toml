@@ -1,0 +1,128 @@
+# =========================================================
+# OpenCoach - Seuils configurables
+# =========================================================
+#
+# Ce fichier centralise les seuils métier utilisés par
+# OpenCoach.
+#
+# Les valeurs peuvent être modifiées sans modifier le code
+# Python.
+# =========================================================
+
+
+# ---------------------------------------------------------
+# Activity matching
+# ---------------------------------------------------------
+
+[activity_matching]
+
+# Score minimum permettant de considérer une activité
+# comme une bonne correspondance avec une séance planifiée.
+best_match_score = 75.0
+
+
+# ---------------------------------------------------------
+# Daily Readiness - Baseline
+# ---------------------------------------------------------
+
+[readiness.baseline]
+
+# Nombre de jours utilisés pour construire la baseline.
+window_days = 14
+
+# Nombre minimum de mesures nécessaires pour considérer
+# une baseline comme suffisamment fiable.
+minimum_samples = 7
+
+
+# ---------------------------------------------------------
+# Daily Readiness - Classification du score
+# ---------------------------------------------------------
+
+[readiness.score]
+
+high_min = 85.0
+good_min = 70.0
+moderate_min = 50.0
+low_min = 30.0
+
+# Une alerte critique empêche le score final
+# de dépasser cette valeur.
+single_critical_cap = 60.0
+
+# Deux alertes critiques ou plus limitent fortement
+# le score de disponibilité.
+multiple_critical_cap = 29.0
+
+
+# ---------------------------------------------------------
+# Daily Readiness - Pénalités
+# ---------------------------------------------------------
+
+[readiness.penalties]
+
+warning = 10.0
+critical = 25.0
+
+
+# ---------------------------------------------------------
+# Daily Readiness - HRV
+# ---------------------------------------------------------
+
+[readiness.hrv]
+
+# Écart en pourcentage par rapport à la baseline.
+# Une baisse est défavorable.
+warning_percent = -10.0
+critical_percent = -20.0
+
+
+# ---------------------------------------------------------
+# Daily Readiness - Fréquence cardiaque de repos
+# ---------------------------------------------------------
+
+[readiness.resting_hr]
+
+# Écart en pourcentage par rapport à la baseline.
+# Une hausse est défavorable.
+warning_percent = 7.0
+critical_percent = 12.0
+
+
+# ---------------------------------------------------------
+# Daily Readiness - Durée du sommeil
+# ---------------------------------------------------------
+
+[readiness.sleep_duration]
+
+# Écart relatif à la baseline.
+warning_percent = -15.0
+critical_percent = -30.0
+
+# Garde-fous absolus exprimés en heures.
+warning_hours = 6.0
+critical_hours = 4.5
+
+
+# ---------------------------------------------------------
+# Daily Readiness - Score de sommeil
+# ---------------------------------------------------------
+
+[readiness.sleep_score]
+
+warning_value = 65.0
+critical_value = 50.0
+
+
+# ---------------------------------------------------------
+# Daily Readiness - Charge d'entraînement
+# ---------------------------------------------------------
+
+[readiness.training_load]
+
+# Balance = CTL - ATL.
+#
+# Une valeur fortement négative signifie que la fatigue
+# aiguë est élevée par rapport à la forme chronique.
+warning_balance = -10.0
+critical_balance = -20.0

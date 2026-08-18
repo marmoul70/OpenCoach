@@ -18,8 +18,10 @@ from opencoach.schemas.training_session import (
     TrainingSessionResponse,
     TrainingSessionStatusUpdate,
 )
+from opencoach.config import (
+    get_threshold_settings,
+)
 from opencoach.training import (
-    BEST_MATCH_THRESHOLD,
     match_activity_to_session,
 )
 
@@ -276,12 +278,20 @@ def list_candidate_activities(
         reverse=True,
     )
 
+    thresholds = get_threshold_settings()
+
+    best_match_threshold = (
+        thresholds
+        .activity_matching
+        .best_match_score
+    )
+
     best_activity_id = (
         candidates[0][0].id
         if (
             candidates
             and candidates[0][1].score
-            >= BEST_MATCH_THRESHOLD
+            >= best_match_threshold
         )
         else None
     )

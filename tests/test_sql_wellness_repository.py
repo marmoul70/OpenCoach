@@ -236,3 +236,202 @@ def test_sql_wellness_repository_returns_none_when_empty() -> None:
 
     finally:
         db.close()
+
+def test_sql_wellness_repository_lists_range() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlWellnessRepository(db)
+
+        for day_number in range(1, 6):
+            wellness = create_wellness_day()
+            wellness.date = date(
+                2026,
+                8,
+                day_number,
+            )
+            wellness.hrv = float(
+                40 + day_number
+            )
+
+            repository.save_wellness_day(
+                profile.id,
+                wellness,
+            )
+
+        result = repository.list_range(
+            profile.id,
+            date(2026, 8, 2),
+            date(2026, 8, 4),
+            provider="intervals",
+        )
+
+        assert len(result) == 3
+
+        assert [
+            wellness.date
+            for wellness in result
+        ] == [
+            date(2026, 8, 2),
+            date(2026, 8, 3),
+            date(2026, 8, 4),
+        ]
+
+    finally:
+        db.close()
+
+
+def test_sql_wellness_repository_filters_provider() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlWellnessRepository(db)
+
+        intervals = create_wellness_day()
+        intervals.date = date(
+            2026,
+            8,
+            10,
+        )
+        intervals.provider = "intervals"
+
+        suunto = create_wellness_day()
+        suunto.date = date(
+            2026,
+            8,
+            10,
+        )
+        suunto.provider = "suunto"
+
+        repository.save_wellness_day(
+            profile.id,
+            intervals,
+        )
+
+        repository.save_wellness_day(
+            profile.id,
+            suunto,
+        )
+
+        result = repository.list_range(
+            profile.id,
+            date(2026, 8, 10),
+            date(2026, 8, 10),
+            provider="intervals",
+        )
+
+        assert len(result) == 1
+        assert result[0].provider == "intervals"
+
+    finally:
+        db.close()
+
+def test_sql_wellness_repository_gets_day_by_date() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlWellnessRepository(db)
+
+        wellness = create_wellness_day()
+        wellness.date = date(
+            2026,
+            8,
+            18,
+        )
+        wellness.hrv = 52.0
+
+        repository.save_wellness_day(
+            profile.id,
+            wellness,
+        )
+
+        result = repository.get_by_date(
+            profile.id,
+            date(2026, 8, 18),
+            provider="intervals",
+        )
+
+        assert result is not None
+        assert result.date == date(
+            2026,
+            8,
+            18,
+        )
+        assert result.provider == "intervals"
+        assert result.hrv == 52.0
+
+    finally:
+        db.close()
+
+
+def test_sql_wellness_repository_get_by_date_filters_provider() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlWellnessRepository(db)
+
+        intervals = create_wellness_day()
+        intervals.date = date(
+            2026,
+            8,
+            18,
+        )
+        intervals.provider = "intervals"
+
+        suunto = create_wellness_day()
+        suunto.date = date(
+            2026,
+            8,
+            18,
+        )
+        suunto.provider = "suunto"
+
+        repository.save_wellness_day(
+            profile.id,
+            intervals,
+        )
+
+        repository.save_wellness_day(
+            profile.id,
+            suunto,
+        )
+
+        result = repository.get_by_date(
+            profile.id,
+            date(2026, 8, 18),
+            provider="suunto",
+        )
+
+        assert result is not None
+        assert result.provider == "suunto"
+
+    finally:
+        db.close()
+
+
+def test_sql_wellness_repository_get_by_date_returns_none_when_missing() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlWellnessRepository(db)
+
+        result = repository.get_by_date(
+            profile.id,
+            date(2026, 8, 18),
+            provider="intervals",
+        )
+
+        assert result is None
+
+    finally:
+        db.close()

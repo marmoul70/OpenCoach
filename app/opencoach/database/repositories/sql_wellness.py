@@ -1,3 +1,4 @@
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy import select
@@ -42,7 +43,9 @@ class SqlWellnessRepository(WellnessRepository):
                     date=wellness.date,
                 )
 
-                self.session.add(database_wellness)
+                self.session.add(
+                    database_wellness
+                )
 
             database_wellness.athlete_profile_id = (
                 athlete_profile_id
@@ -50,31 +53,61 @@ class SqlWellnessRepository(WellnessRepository):
             database_wellness.provider = wellness.provider
             database_wellness.date = wellness.date
 
-            database_wellness.fitness_ctl = wellness.fitness_ctl
-            database_wellness.fatigue_atl = wellness.fatigue_atl
-            database_wellness.ramp_rate = wellness.ramp_rate
-            database_wellness.resting_hr = wellness.resting_hr
-            database_wellness.hrv = wellness.hrv
+            database_wellness.fitness_ctl = (
+                wellness.fitness_ctl
+            )
+            database_wellness.fatigue_atl = (
+                wellness.fatigue_atl
+            )
+            database_wellness.ramp_rate = (
+                wellness.ramp_rate
+            )
 
-            database_wellness.sleep_seconds = wellness.sleep_seconds
-            database_wellness.sleep_score = wellness.sleep_score
-            database_wellness.sleep_quality = wellness.sleep_quality
-            database_wellness.avg_sleeping_hr = wellness.avg_sleeping_hr
+            database_wellness.resting_hr = (
+                wellness.resting_hr
+            )
+            database_wellness.hrv = (
+                wellness.hrv
+            )
 
-            database_wellness.spo2 = wellness.spo2
-            database_wellness.steps = wellness.steps
+            database_wellness.sleep_seconds = (
+                wellness.sleep_seconds
+            )
+            database_wellness.sleep_score = (
+                wellness.sleep_score
+            )
+            database_wellness.sleep_quality = (
+                wellness.sleep_quality
+            )
+            database_wellness.avg_sleeping_hr = (
+                wellness.avg_sleeping_hr
+            )
+
+            database_wellness.spo2 = (
+                wellness.spo2
+            )
+            database_wellness.steps = (
+                wellness.steps
+            )
+
             database_wellness.provider_updated_at = (
                 wellness.provider_updated_at
             )
 
             self.session.commit()
-            self.session.refresh(database_wellness)
+
+            self.session.refresh(
+                database_wellness
+            )
 
         except SQLAlchemyError as exc:
             self.session.rollback()
 
             raise WellnessRepositoryError(
-                "Impossible d'enregistrer les données Wellness."
+                (
+                    "Impossible d'enregistrer "
+                    "les données Wellness."
+                )
             ) from exc
 
     def get_latest(
@@ -96,8 +129,10 @@ class SqlWellnessRepository(WellnessRepository):
                 .limit(1)
             )
 
-            database_wellness = self.session.scalar(
-                statement
+            database_wellness = (
+                self.session.scalar(
+                    statement
+                )
             )
 
             if database_wellness is None:
@@ -111,7 +146,124 @@ class SqlWellnessRepository(WellnessRepository):
             self.session.rollback()
 
             raise WellnessRepositoryError(
-                "Impossible de charger les données Wellness."
+                (
+                    "Impossible de charger "
+                    "les données Wellness."
+                )
+            ) from exc
+
+    def get_by_date(
+        self,
+        athlete_profile_id: UUID,
+        wellness_date: date,
+        *,
+        provider: str | None = None,
+    ) -> WellnessDay | None:
+        """Retourne une journée Wellness précise."""
+
+        try:
+            conditions = [
+                WellnessDaily.athlete_profile_id
+                == athlete_profile_id,
+                WellnessDaily.date
+                == wellness_date,
+            ]
+
+            if provider is not None:
+                conditions.append(
+                    WellnessDaily.provider
+                    == provider
+                )
+
+            statement = (
+                select(WellnessDaily)
+                .where(
+                    *conditions
+                )
+                .order_by(
+                    WellnessDaily.provider.asc(),
+                )
+                .limit(1)
+            )
+
+            database_wellness = (
+                self.session.scalar(
+                    statement
+                )
+            )
+
+            if database_wellness is None:
+                return None
+
+            return self._to_domain(
+                database_wellness
+            )
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise WellnessRepositoryError(
+                (
+                    "Impossible de charger "
+                    "la journée Wellness."
+                )
+            ) from exc
+
+    def list_range(
+        self,
+        athlete_profile_id: UUID,
+        start_date: date,
+        end_date: date,
+        *,
+        provider: str | None = None,
+    ) -> list[WellnessDay]:
+        """Retourne les journées Wellness d'une période."""
+
+        try:
+            conditions = [
+                WellnessDaily.athlete_profile_id
+                == athlete_profile_id,
+                WellnessDaily.date
+                >= start_date,
+                WellnessDaily.date
+                <= end_date,
+            ]
+
+            if provider is not None:
+                conditions.append(
+                    WellnessDaily.provider
+                    == provider
+                )
+
+            statement = (
+                select(WellnessDaily)
+                .where(
+                    *conditions
+                )
+                .order_by(
+                    WellnessDaily.date.asc(),
+                )
+            )
+
+            rows = self.session.scalars(
+                statement
+            ).all()
+
+            return [
+                self._to_domain(
+                    row
+                )
+                for row in rows
+            ]
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise WellnessRepositoryError(
+                (
+                    "Impossible de charger "
+                    "l'historique Wellness."
+                )
             ) from exc
 
     def _get_database_wellness(
@@ -119,20 +271,23 @@ class SqlWellnessRepository(WellnessRepository):
         *,
         athlete_profile_id: UUID,
         provider: str,
-        wellness_date,
+        wellness_date: date,
     ) -> WellnessDaily | None:
         statement = (
             select(WellnessDaily)
             .where(
                 WellnessDaily.athlete_profile_id
                 == athlete_profile_id,
-                WellnessDaily.provider == provider,
-                WellnessDaily.date == wellness_date,
+                WellnessDaily.provider
+                == provider,
+                WellnessDaily.date
+                == wellness_date,
             )
         )
 
-        return self.session.scalar(statement)
-
+        return self.session.scalar(
+            statement
+        )
 
     @staticmethod
     def _to_domain(
@@ -149,8 +304,12 @@ class SqlWellnessRepository(WellnessRepository):
             sleep_seconds=wellness.sleep_seconds,
             sleep_score=wellness.sleep_score,
             sleep_quality=wellness.sleep_quality,
-            avg_sleeping_hr=wellness.avg_sleeping_hr,
+            avg_sleeping_hr=(
+                wellness.avg_sleeping_hr
+            ),
             spo2=wellness.spo2,
             steps=wellness.steps,
-            provider_updated_at=wellness.provider_updated_at,
+            provider_updated_at=(
+                wellness.provider_updated_at
+            ),
         )

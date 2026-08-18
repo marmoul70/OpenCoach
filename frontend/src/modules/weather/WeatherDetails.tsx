@@ -2,11 +2,19 @@ import { useEffect, useState } from 'react'
 
 import { getWeather } from './api'
 import { getWeatherAlerts } from './alerts'
-import { DEFAULT_WEATHER_LOCATION } from './location'
+import { useAthleteProfile } from '../../core/profile'
 import { getWeatherDescription } from './logic'
 import type { WeatherData } from './types'
 
 export function WeatherDetails() {
+  const profile = useAthleteProfile()
+
+  const weatherLocation = {
+    name: profile.location.name ?? '',
+    latitude: profile.location.latitude,
+    longitude: profile.location.longitude,
+  }
+
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -19,9 +27,20 @@ export function WeatherDetails() {
         setLoading(true)
         setError(false)
 
-        const data = await getWeather(
-          DEFAULT_WEATHER_LOCATION,
-        )
+        if (
+          weatherLocation.latitude == null ||
+          weatherLocation.longitude == null
+        ) {
+          throw new Error(
+            'La localisation du profil est incomplète.',
+          )
+        }
+
+        const data = await getWeather({
+          name: weatherLocation.name || 'Ma position',
+          latitude: weatherLocation.latitude,
+          longitude: weatherLocation.longitude,
+        })
 
         if (!cancelled) {
           setWeather(data)
@@ -42,7 +61,11 @@ export function WeatherDetails() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [
+    weatherLocation.name,
+    weatherLocation.latitude,
+    weatherLocation.longitude,
+  ])
 
   if (loading) {
     return (

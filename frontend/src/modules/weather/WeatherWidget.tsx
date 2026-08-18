@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 
 import { getWeather } from './api'
-import { DEFAULT_WEATHER_LOCATION } from './location'
+import { useAthleteProfile } from '../../core/profile'
 import { getWeatherDescription } from './logic'
 import { getWeatherAlerts } from './alerts'
 import type { WeatherAlertSeverity } from './alerts'
@@ -20,6 +20,14 @@ interface WeatherWidgetProps {
 export function WeatherWidget({
   onClick,
 }: WeatherWidgetProps) {
+  const profile = useAthleteProfile()
+
+  const weatherLocation = {
+    name: profile.location.name ?? '',
+    latitude: profile.location.latitude,
+    longitude: profile.location.longitude,
+  }
+
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -32,9 +40,20 @@ export function WeatherWidget({
         setLoading(true)
         setError(false)
 
-        const data = await getWeather(
-          DEFAULT_WEATHER_LOCATION,
-        )
+        if (
+          weatherLocation.latitude == null ||
+          weatherLocation.longitude == null
+        ) {
+          throw new Error(
+            'La localisation du profil est incomplète.',
+          )
+        }
+
+        const data = await getWeather({
+          name: weatherLocation.name || 'Ma position',
+          latitude: weatherLocation.latitude,
+          longitude: weatherLocation.longitude,
+        })
 
         if (!cancelled) {
           setWeather(data)
@@ -55,7 +74,11 @@ export function WeatherWidget({
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [
+    weatherLocation.name,
+    weatherLocation.latitude,
+    weatherLocation.longitude,
+  ])
 
   if (loading) {
     return (

@@ -13,6 +13,7 @@ import { TrainingProvider } from './modules/training/trainingStore'
 import { RacePage } from './modules/races/RacePage'
 import { RaceProvider } from './modules/races/raceStore'
 import { ActivityPage } from './modules/activities/ActivityPage'
+import { Settings } from './modules/settings'
 
 type Page =
   | 'dashboard'
@@ -372,33 +373,7 @@ function App() {
 
           {page === 'profile-sport' && <Profile />}
 
-          {page === 'settings' && (
-            <main className="min-h-screen bg-base-200">
-              <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
-                <header className="mb-8">
-                  <h1 className="text-3xl font-bold tracking-tight text-base-content">
-                    Réglages
-                  </h1>
-
-                  <p className="mt-1 text-sm text-base-content/60">
-                    Paramètres généraux d'OpenCoach.
-                  </p>
-                </header>
-
-                <div className="card border border-base-300 bg-base-100 shadow-sm">
-                  <div className="card-body">
-                    <h2 className="card-title">
-                      Réglages
-                    </h2>
-
-                    <p className="text-sm text-base-content/60">
-                      Les réglages généraux seront disponibles ici.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </main>
-          )}
+          {page === 'settings' && <Settings />}
         </div>
       </TrainingProvider>
     </RaceProvider>

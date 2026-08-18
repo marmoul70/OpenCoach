@@ -11,6 +11,7 @@ class TrainingSession:
 
     date: date
     type: str
+    sport_type: str
 
     title: str
     description: str

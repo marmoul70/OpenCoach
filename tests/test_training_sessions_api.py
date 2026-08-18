@@ -22,6 +22,7 @@ class FakeTrainingSessionRepository:
             date=date(2026, 8, 9),
             type="easy",
             title="Endurance fondamentale",
+            sport_type="Run",
             description="Course facile en endurance.",
             duration_minutes=60,
             distance_km=9.0,
@@ -139,6 +140,7 @@ def test_training_sessions_api_lists_period() -> None:
     assert payload[0]["id"] == str(repository.session.id)
     assert payload[0]["date"] == "2026-08-09"
     assert payload[0]["title"] == "Endurance fondamentale"
+    assert payload[0]["sport_type"] == "Run"
     assert payload[0]["status"] == "planned"
     assert payload[0]["activity_id"] is None
 
@@ -272,6 +274,15 @@ def test_training_sessions_api_lists_candidate_activities() -> None:
     assert activity["distance_m"] == 10000.0
     assert activity["elevation_gain_m"] == 180.0
     assert activity["feel"] == 2
+
+    assert activity["match_score"] == 89.2
+    assert activity["best_match"] is True
+    assert activity["sport_matches"] is True
+    assert activity["sport_score"] == 40.0
+    assert activity["distance_score"] == 22.2
+    assert activity["duration_score"] == 25.0
+    assert activity["elevation_score"] == 2.0
+
     assert activity["start_at_local"] == (
         "2026-08-09T07:07:02"
     )
@@ -289,3 +300,67 @@ def test_training_sessions_api_returns_404_when_missing() -> None:
     assert response.json() == {
         "detail": "Séance introuvable."
     }
+
+def test_training_sessions_api_marks_best_candidate() -> None:
+    client, repository = create_test_client()
+
+    better = repository.activity
+
+    worse = Activity(
+        id=uuid4(),
+        provider="intervals",
+        provider_activity_id="i-worse",
+        name="Morning Marche",
+        sport_type="Walk",
+        start_at=datetime(
+            2026,
+            8,
+            9,
+            7,
+            0,
+        ),
+        start_at_local=datetime(
+            2026,
+            8,
+            9,
+            9,
+            0,
+        ),
+        moving_time_seconds=1800,
+        distance_m=3000.0,
+        elevation_gain_m=20.0,
+        feel=1,
+    )
+
+    repository.list_candidate_activities_for_date = (
+        lambda athlete_profile_id, session_date: [
+            worse,
+            better,
+        ]
+    )
+
+    response = client.get(
+        (
+            f"/api/training-sessions/"
+            f"{repository.session.id}/candidate-activities"
+        )
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+
+    assert len(payload) == 2
+
+    assert payload[0]["id"] == str(
+        better.id
+    )
+
+    assert payload[0]["best_match"] is True
+    assert payload[1]["best_match"] is False
+
+    assert (
+        payload[0]["match_score"]
+        >
+        payload[1]["match_score"]
+    )

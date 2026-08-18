@@ -298,7 +298,7 @@ export function TrainingDetails({
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
                               <p className="font-semibold text-base-content">
                                 {activity.name}
@@ -317,12 +317,34 @@ export function TrainingDetails({
                               </p>
                             </div>
 
-                            {selected && (
-                              <span className="badge badge-primary gap-1">
-                                <Link2 className="h-3 w-3" />
-                                Associée
+                            <div className="flex flex-wrap items-center gap-2">
+                              {activity.bestMatch && (
+                                <span className="badge badge-success badge-sm">
+                                  Meilleure correspondance
+                                </span>
+                              )}
+
+                              <span
+                                className={[
+                                  'badge badge-sm',
+                                  getMatchBadgeClass(
+                                    activity.matchScore,
+                                  ),
+                                ].join(' ')}
+                              >
+                                {Math.round(
+                                  activity.matchScore,
+                                )}{' '}
+                                %
                               </span>
-                            )}
+
+                              {selected && (
+                                <span className="badge badge-primary gap-1">
+                                  <Link2 className="h-3 w-3" />
+                                  Associée
+                                </span>
+                              )}
+                            </div>
                           </div>
 
 
@@ -351,6 +373,93 @@ export function TrainingDetails({
                                 m D+
                               </span>
                             )}
+                          </div>
+
+
+                          <div className="mt-4 rounded-lg bg-base-200 p-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                              Correspondance avec la séance
+                            </p>
+
+                            <div className="mt-3 space-y-2">
+                              <MatchCriterion
+                                label="Sport"
+                                planned={formatSportType(
+                                  session.sportType,
+                                )}
+                                actual={formatSportType(
+                                  activity.sportType,
+                                )}
+                                score={activity.sportScore}
+                                maxScore={40}
+                              />
+
+                              {activity.distanceScore !== undefined && (
+                                <MatchCriterion
+                                  label="Distance"
+                                  planned={
+                                    session.distanceKm !== undefined
+                                      ? `${session.distanceKm.toFixed(
+                                          1,
+                                        )} km`
+                                      : '—'
+                                  }
+                                  actual={
+                                    activity.distanceM !== undefined
+                                      ? formatDistance(
+                                          activity.distanceM,
+                                        )
+                                      : '—'
+                                  }
+                                  score={
+                                    activity.distanceScore
+                                  }
+                                  maxScore={25}
+                                />
+                              )}
+
+                              {activity.durationScore !== undefined && (
+                                <MatchCriterion
+                                  label="Durée"
+                                  planned={`${session.durationMinutes} min`}
+                                  actual={
+                                    activity.movingTimeSeconds !== undefined
+                                      ? formatDuration(
+                                          activity.movingTimeSeconds,
+                                        )
+                                      : '—'
+                                  }
+                                  score={
+                                    activity.durationScore
+                                  }
+                                  maxScore={25}
+                                />
+                              )}
+
+                              {activity.elevationScore !== undefined && (
+                                <MatchCriterion
+                                  label="Dénivelé"
+                                  planned={
+                                    session.elevationGainM !== undefined
+                                      ? `${Math.round(
+                                          session.elevationGainM,
+                                        )} m`
+                                      : '—'
+                                  }
+                                  actual={
+                                    activity.elevationGainM !== undefined
+                                      ? `${Math.round(
+                                          activity.elevationGainM,
+                                        )} m`
+                                      : '—'
+                                  }
+                                  score={
+                                    activity.elevationScore
+                                  }
+                                  maxScore={10}
+                                />
+                              )}
+                            </div>
                           </div>
 
 
@@ -520,6 +629,53 @@ function StatusBadge({
 }
 
 
+function MatchCriterion({
+  label,
+  planned,
+  actual,
+  score,
+  maxScore,
+}: {
+  label: string
+  planned: string
+  actual: string
+  score: number
+  maxScore: number
+}) {
+  const percentage =
+    maxScore > 0
+      ? Math.round(
+          (score / maxScore) * 100,
+        )
+      : 0
+
+  return (
+    <div className="flex items-center justify-between gap-4 text-sm">
+      <div className="min-w-0">
+        <span className="font-medium text-base-content">
+          {label}
+        </span>
+
+        <span className="ml-2 text-xs text-base-content/50">
+          {actual} / {planned}
+        </span>
+      </div>
+
+      <span
+        className={[
+          'badge badge-sm',
+          getMatchBadgeClass(
+            percentage,
+          ),
+        ].join(' ')}
+      >
+        {percentage} %
+      </span>
+    </div>
+  )
+}
+
+
 function FeelStars({
   feel,
 }: {
@@ -539,10 +695,11 @@ function FeelStars({
    * 1 = meilleur ressenti
    * 5 = plus mauvais ressenti.
    *
-   * Pour une représentation intuitive en étoiles,
-   * on inverse l'échelle uniquement côté affichage.
+   * Pour l'affichage en étoiles,
+   * on inverse uniquement la représentation.
    */
-  const stars = 6 - normalizedFeel
+  const stars =
+    6 - normalizedFeel
 
   return (
     <div
@@ -568,20 +725,40 @@ function FeelStars({
 }
 
 
+function getMatchBadgeClass(
+  score: number,
+): string {
+  if (score >= 85) {
+    return 'badge-success'
+  }
+
+  if (score >= 65) {
+    return 'badge-warning'
+  }
+
+  return 'badge-error'
+}
+
+
 function formatFeelLabel(
   feel: number,
 ): string {
   switch (Math.round(feel)) {
     case 1:
       return 'Excellent'
+
     case 2:
       return 'Bon'
+
     case 3:
       return 'Moyen'
+
     case 4:
       return 'Difficile'
+
     case 5:
       return 'Très difficile'
+
     default:
       return 'Non défini'
   }
@@ -601,10 +778,14 @@ function formatDuration(
   seconds: number,
 ): string {
   const totalMinutes =
-    Math.round(seconds / 60)
+    Math.round(
+      seconds / 60,
+    )
 
   const hours =
-    Math.floor(totalMinutes / 60)
+    Math.floor(
+      totalMinutes / 60,
+    )
 
   const minutes =
     totalMinutes % 60
@@ -644,6 +825,7 @@ function formatSportType(
     string
   > = {
     Run: 'Course à pied',
+    TrailRun: 'Trail',
     Ride: 'Cyclisme',
     VirtualRide: 'Cyclisme virtuel',
     Walk: 'Marche',

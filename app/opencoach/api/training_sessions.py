@@ -18,7 +18,9 @@ from opencoach.schemas.training_session import (
     TrainingSessionResponse,
     TrainingSessionStatusUpdate,
 )
-
+from opencoach.training import (
+    match_activity_to_session,
+)
 
 router = APIRouter(
     prefix="/api/training-sessions",
@@ -43,6 +45,7 @@ def to_response(
         id=session.id,
         date=session.date,
         type=session.type,
+        sport_type=session.sport_type,
         title=session.title,
         description=session.description,
         duration_minutes=session.duration_minutes,
@@ -249,11 +252,42 @@ def list_candidate_activities(
             ),
         ) from exc
 
+    candidates = []
+
+    for activity in activities:
+        if activity.id is None:
+            continue
+
+        match = match_activity_to_session(
+            session,
+            activity,
+        )
+
+        candidates.append(
+            (
+                activity,
+                match,
+            )
+        )
+
+    candidates.sort(
+        key=lambda item: item[1].score,
+        reverse=True,
+    )
+
+    best_activity_id = (
+        candidates[0][0].id
+        if candidates
+        else None
+    )
+
     return [
         TrainingActivityCandidateResponse(
             id=activity.id,
             provider=activity.provider,
-            provider_activity_id=activity.provider_activity_id,
+            provider_activity_id=(
+                activity.provider_activity_id
+            ),
             name=activity.name,
             sport_type=activity.sport_type,
             start_at_local=(
@@ -261,11 +295,21 @@ def list_candidate_activities(
                 if activity.start_at_local
                 else None
             ),
-            moving_time_seconds=activity.moving_time_seconds,
+            moving_time_seconds=(
+                activity.moving_time_seconds
+            ),
             distance_m=activity.distance_m,
             elevation_gain_m=activity.elevation_gain_m,
             feel=activity.feel,
+            match_score=match.score,
+            best_match=(
+                activity.id == best_activity_id
+            ),
+            sport_matches=match.sport_matches,
+            sport_score=match.sport_score,
+            distance_score=match.distance_score,
+            duration_score=match.duration_score,
+            elevation_score=match.elevation_score,
         )
-        for activity in activities
-        if activity.id is not None
+        for activity, match in candidates
     ]

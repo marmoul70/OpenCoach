@@ -55,6 +55,7 @@ def create_training_session() -> TrainingSession:
         date=date(2026, 8, 9),
         type="easy",
         title="Endurance fondamentale",
+        sport_type="Run",
         description="Course facile en endurance.",
         duration_minutes=60,
         distance_km=9.0,
@@ -126,6 +127,7 @@ def test_sql_training_session_repository_inserts_session() -> None:
         assert saved.date == date(2026, 8, 9)
         assert saved.type == "easy"
         assert saved.title == "Endurance fondamentale"
+        assert saved.sport_type == "Run"
         assert saved.duration_minutes == 60
         assert saved.distance_km == 9.0
         assert saved.status == "planned"

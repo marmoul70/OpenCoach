@@ -60,6 +60,7 @@ class SqlTrainingSessionRepository(
             database_session.date = session.date
             database_session.type = session.type
             database_session.title = session.title
+            database_session.sport_type = session.sport_type
             database_session.description = session.description
             database_session.duration_minutes = (
                 session.duration_minutes
@@ -305,6 +306,7 @@ class SqlTrainingSessionRepository(
             id=session.id,
             date=session.date,
             type=session.type,
+            sport_type=session.sport_type,
             title=session.title,
             description=session.description,
             duration_minutes=session.duration_minutes,

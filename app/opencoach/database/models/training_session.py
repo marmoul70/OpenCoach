@@ -52,6 +52,12 @@ class TrainingSession(Base):
         nullable=False,
     )
 
+    sport_type: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        default="Run",
+    )
+
     title: Mapped[str] = mapped_column(
         String(255),
         nullable=False,

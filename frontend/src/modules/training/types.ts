@@ -16,6 +16,7 @@ export interface TrainingSession {
   id: string
   date: string
   type: TrainingSessionType
+  sportType: string
   title: string
   description: string
   durationMinutes: number

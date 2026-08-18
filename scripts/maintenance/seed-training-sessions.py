@@ -23,6 +23,7 @@ SESSIONS = [
         date=date_at_offset(-3),
         type="rest",
         title="Repos",
+        sport_type="Run",
         description=(
             "Journée de récupération. "
             "Aucun entraînement prévu."
@@ -36,6 +37,7 @@ SESSIONS = [
         date=date_at_offset(-2),
         type="easy",
         title="Endurance fondamentale",
+        sport_type="Run",
         description=(
             "Course facile en aisance respiratoire. "
             "Rester confortable et régulier."
@@ -52,6 +54,7 @@ SESSIONS = [
         date=date_at_offset(-1),
         type="recovery",
         title="Récupération",
+        sport_type="Run",
         description=(
             "Footing très léger destiné "
             "à favoriser la récupération."
@@ -68,6 +71,7 @@ SESSIONS = [
         date=date_at_offset(0),
         type="interval",
         title="VMA courte",
+        sport_type="Run",
         description=(
             "Séance de fractionné destinée "
             "à travailler la vitesse maximale aérobie."
@@ -84,6 +88,7 @@ SESSIONS = [
         date=date_at_offset(1),
         type="rest",
         title="Repos",
+        sport_type="Run",
         description=(
             "Journée sans entraînement "
             "pour assimiler la charge."
@@ -97,6 +102,7 @@ SESSIONS = [
         date=date_at_offset(2),
         type="trail",
         title="Sortie longue trail",
+        sport_type="Run",
         description=(
             "Sortie longue sur terrain vallonné "
             "avec travail de l'endurance spécifique trail."
@@ -113,6 +119,7 @@ SESSIONS = [
         date=date_at_offset(3),
         type="easy",
         title="Endurance",
+        sport_type="Run",
         description=(
             "Footing d'endurance à intensité confortable."
         ),

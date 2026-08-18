@@ -7,6 +7,7 @@ interface TrainingSessionApiResponse {
   id: string
   date: string
   type: TrainingSession['type']
+  sport_type: string
   title: string
   description: string
   duration_minutes: number
@@ -25,6 +26,7 @@ function mapTrainingSession(
     id: data.id,
     date: data.date,
     type: data.type,
+    sportType: data.sport_type,
     title: data.title,
     description: data.description,
     durationMinutes: data.duration_minutes,
@@ -102,6 +104,16 @@ export interface TrainingActivityCandidate {
   distanceM?: number
   elevationGainM?: number
   feel?: number
+
+  matchScore: number
+  bestMatch: boolean
+
+  sportMatches: boolean
+
+  sportScore: number
+  distanceScore?: number
+  durationScore?: number
+  elevationScore?: number
 }
 
 interface TrainingActivityCandidateApiResponse {
@@ -115,6 +127,16 @@ interface TrainingActivityCandidateApiResponse {
   distance_m: number | null
   elevation_gain_m: number | null
   feel: number | null
+
+  match_score: number
+  best_match: boolean
+
+  sport_matches: boolean
+
+  sport_score: number
+  distance_score: number | null
+  duration_score: number | null
+  elevation_score: number | null
 }
 
 function mapTrainingActivityCandidate(
@@ -129,10 +151,33 @@ function mapTrainingActivityCandidate(
     startAtLocal: data.start_at_local ?? undefined,
     movingTimeSeconds:
       data.moving_time_seconds ?? undefined,
-    distanceM: data.distance_m ?? undefined,
+    distanceM:
+      data.distance_m ?? undefined,
     elevationGainM:
       data.elevation_gain_m ?? undefined,
-    feel: data.feel ?? undefined,
+    feel:
+      data.feel ?? undefined,
+
+    matchScore:
+      data.match_score,
+
+    bestMatch:
+      data.best_match,
+
+    sportMatches:
+      data.sport_matches,
+
+    sportScore:
+      data.sport_score,
+
+    distanceScore:
+      data.distance_score ?? undefined,
+
+    durationScore:
+      data.duration_score ?? undefined,
+
+    elevationScore:
+      data.elevation_score ?? undefined,
   }
 }
 

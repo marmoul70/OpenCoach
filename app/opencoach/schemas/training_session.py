@@ -9,6 +9,7 @@ class TrainingSessionResponse(BaseModel):
     date: date
     type: str
     title: str
+    sport_type: str
     description: str
     duration_minutes: int
     distance_km: float | None
@@ -40,3 +41,13 @@ class TrainingActivityCandidateResponse(BaseModel):
     distance_m: float | None
     elevation_gain_m: float | None
     feel: int | None
+
+    match_score: float
+    best_match: bool
+
+    sport_matches: bool
+
+    sport_score: float
+    distance_score: float | None
+    duration_score: float | None
+    elevation_score: float | None

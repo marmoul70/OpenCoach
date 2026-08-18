@@ -14,6 +14,9 @@ if TYPE_CHECKING:
     from opencoach.database.models.shoe import Shoe
     from opencoach.database.models.watch import Watch
     from opencoach.database.models.wellness import WellnessDaily
+    from opencoach.database.models.integration_connection import (
+        IntegrationConnection,
+    )
 
 class AthleteProfile(Base):
     """Profil sportif associé à un compte utilisateur."""
@@ -203,4 +206,11 @@ class AthleteProfile(Base):
 
     user: Mapped["User"] = relationship(
         back_populates="athlete_profile",
+    )
+
+    integration_connections: Mapped[
+        list["IntegrationConnection"]
+    ] = relationship(
+        back_populates="athlete_profile",
+        cascade="all, delete-orphan",
     )

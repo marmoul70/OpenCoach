@@ -1,16 +1,26 @@
 from uuid import uuid4
 
+from opencoach.models import IntegrationConnection
+from opencoach.services import (
+    IntegrationConnectionServiceError,
+)
+
 from fastapi.testclient import TestClient
 
 from opencoach.api.app import create_app
 from opencoach.api.intervals import (
     get_intervals_application_service,
+    get_integration_connection_service,
     get_local_athlete_profile_id,
+    IntervalsAuthenticationError,
 )
 from opencoach.database.repositories import (
      ActivityRepositoryError,
     WellnessRepositoryError,
 )
+
+import opencoach.api.intervals as intervals_api
+
 from opencoach.integrations.intervals import (
     IntervalsApiError,
     IntervalsAuthenticationError,
@@ -50,6 +60,52 @@ class FakeIntervalsApplicationService:
         return (
             self.result,
             self.result,
+        )
+
+class FakeIntegrationConnectionService:
+    def __init__(
+        self,
+        connection=None,
+        *,
+        error=None,
+    ):
+        self.connection = connection
+        self.error = error
+        self.saved = None
+
+    def get_connection(
+        self,
+        athlete_profile_id,
+        provider,
+    ):
+        if self.error is not None:
+            raise self.error
+
+        return self.connection
+
+    def save_intervals_connection(
+        self,
+        athlete_profile_id,
+        athlete_id,
+        api_key,
+        *,
+        enabled=True,
+    ):
+        if self.error is not None:
+            raise self.error
+
+        self.saved = {
+            "athlete_profile_id": athlete_profile_id,
+            "athlete_id": athlete_id,
+            "api_key": api_key,
+            "enabled": enabled,
+        }
+
+        return IntegrationConnection(
+            provider="intervals",
+            enabled=enabled,
+            athlete_id=athlete_id,
+            secret_configured=True,
         )
 
 def create_test_client(
@@ -257,4 +313,363 @@ def test_sync_intervals_handles_wellness_storage_error() -> None:
         "detail": (
             "Impossible d'enregistrer les données Wellness."
         )
+    }
+
+def test_get_intervals_connection_returns_configured() -> None:
+    app = create_app()
+
+    profile_id = uuid4()
+
+    service = FakeIntegrationConnectionService(
+        IntegrationConnection(
+            provider="intervals",
+            enabled=True,
+            athlete_id="i651743",
+            secret_configured=True,
+        )
+    )
+
+    app.dependency_overrides[
+        get_local_athlete_profile_id
+    ] = lambda: profile_id
+
+    app.dependency_overrides[
+        get_integration_connection_service
+    ] = lambda: service
+
+    client = TestClient(app)
+
+    response = client.get(
+        "/api/integrations/intervals/connection"
+    )
+
+    assert response.status_code == 200
+
+    assert response.json() == {
+        "provider": "intervals",
+        "configured": True,
+        "enabled": True,
+        "athlete_id": "i651743",
+        "api_key_configured": True,
+    }
+
+
+def test_get_intervals_connection_returns_unconfigured() -> None:
+    app = create_app()
+
+    app.dependency_overrides[
+        get_local_athlete_profile_id
+    ] = lambda: uuid4()
+
+    app.dependency_overrides[
+        get_integration_connection_service
+    ] = lambda: FakeIntegrationConnectionService()
+
+    client = TestClient(app)
+
+    response = client.get(
+        "/api/integrations/intervals/connection"
+    )
+
+    assert response.status_code == 200
+
+    assert response.json() == {
+        "provider": "intervals",
+        "configured": False,
+        "enabled": False,
+        "athlete_id": None,
+        "api_key_configured": False,
+    }
+
+
+def test_put_intervals_connection() -> None:
+    app = create_app()
+
+    profile_id = uuid4()
+    service = FakeIntegrationConnectionService()
+
+    app.dependency_overrides[
+        get_local_athlete_profile_id
+    ] = lambda: profile_id
+
+    app.dependency_overrides[
+        get_integration_connection_service
+    ] = lambda: service
+
+    client = TestClient(app)
+
+    response = client.put(
+        "/api/integrations/intervals/connection",
+        json={
+            "athlete_id": "i651743",
+            "api_key": "secret-api-key",
+            "enabled": True,
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert service.saved == {
+        "athlete_profile_id": profile_id,
+        "athlete_id": "i651743",
+        "api_key": "secret-api-key",
+        "enabled": True,
+    }
+
+    assert response.json() == {
+        "provider": "intervals",
+        "configured": True,
+        "enabled": True,
+        "athlete_id": "i651743",
+        "api_key_configured": True,
+    }
+
+
+def test_put_intervals_connection_handles_validation_error() -> None:
+    app = create_app()
+
+    service = FakeIntegrationConnectionService(
+        error=IntegrationConnectionServiceError(
+            "La clé API Intervals.icu est obligatoire."
+        )
+    )
+
+    app.dependency_overrides[
+        get_local_athlete_profile_id
+    ] = lambda: uuid4()
+
+    app.dependency_overrides[
+        get_integration_connection_service
+    ] = lambda: service
+
+    client = TestClient(app)
+
+    response = client.put(
+        "/api/integrations/intervals/connection",
+        json={
+            "athlete_id": "i651743",
+            "api_key": None,
+            "enabled": True,
+        },
+    )
+
+    assert response.status_code == 422
+
+def test_intervals_connection_test_succeeds(
+    monkeypatch,
+) -> None:
+    class FakeIntervalsClient:
+        def __init__(
+            self,
+            api_key,
+            athlete_id,
+        ) -> None:
+            self.api_key = api_key
+            self.athlete_id = athlete_id
+
+        def get_wellness(
+            self,
+            oldest,
+            newest,
+        ):
+            return []
+
+    monkeypatch.setattr(
+        intervals_api,
+        "IntervalsClient",
+        FakeIntervalsClient,
+    )
+
+    client = TestClient(
+        create_app()
+    )
+
+    response = client.post(
+        "/api/integrations/intervals/connection/test",
+        json={
+            "athlete_id": "i651743",
+            "api_key": "secret-api-key",
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert response.json() == {
+        "provider": "intervals",
+        "connected": True,
+        "athlete_id": "i651743",
+    }
+
+
+def test_intervals_connection_test_rejects_bad_credentials(
+    monkeypatch,
+) -> None:
+    class FakeIntervalsClient:
+        def __init__(
+            self,
+            api_key,
+            athlete_id,
+        ) -> None:
+            pass
+
+        def get_wellness(
+            self,
+            oldest,
+            newest,
+        ):
+            raise IntervalsAuthenticationError(
+                "Authentication failed."
+            )
+
+    monkeypatch.setattr(
+        intervals_api,
+        "IntervalsClient",
+        FakeIntervalsClient,
+    )
+
+    client = TestClient(
+        create_app()
+    )
+
+    response = client.post(
+        "/api/integrations/intervals/connection/test",
+        json={
+            "athlete_id": "i651743",
+            "api_key": "bad-api-key",
+        },
+    )
+
+    assert response.status_code == 401
+
+    assert response.json() == {
+        "detail": "Identifiants Intervals.icu refusés."
+    }
+
+def test_saved_intervals_connection_succeeds(
+    monkeypatch,
+) -> None:
+    app = create_app()
+
+    profile_id = uuid4()
+
+    class FakeCredentials:
+        provider = "intervals"
+        athlete_id = "i651743"
+        secret = "secret-api-key"
+
+    class FakeConnectionService:
+        def get_credentials(
+            self,
+            athlete_profile_id,
+            provider,
+        ):
+            assert athlete_profile_id == profile_id
+            assert provider == "intervals"
+
+            return FakeCredentials()
+
+    class FakeIntervalsClient:
+        def __init__(
+            self,
+            api_key,
+            athlete_id,
+        ) -> None:
+            assert api_key == "secret-api-key"
+            assert athlete_id == "i651743"
+
+        def get_wellness(
+            self,
+            oldest,
+            newest,
+        ):
+            return []
+
+    app.dependency_overrides[
+        get_local_athlete_profile_id
+    ] = lambda: profile_id
+
+    app.dependency_overrides[
+        get_integration_connection_service
+    ] = lambda: FakeConnectionService()
+
+    monkeypatch.setattr(
+        intervals_api,
+        "IntervalsClient",
+        FakeIntervalsClient,
+    )
+
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/integrations/intervals/connection/test-saved"
+    )
+
+    assert response.status_code == 200
+
+    assert response.json() == {
+        "provider": "intervals",
+        "connected": True,
+        "athlete_id": "i651743",
+    }
+
+
+def test_saved_intervals_connection_rejects_bad_credentials(
+    monkeypatch,
+) -> None:
+    app = create_app()
+
+    class FakeCredentials:
+        provider = "intervals"
+        athlete_id = "i651743"
+        secret = "bad-api-key"
+
+    class FakeConnectionService:
+        def get_credentials(
+            self,
+            athlete_profile_id,
+            provider,
+        ):
+            return FakeCredentials()
+
+    class FakeIntervalsClient:
+        def __init__(
+            self,
+            api_key,
+            athlete_id,
+        ) -> None:
+            pass
+
+        def get_wellness(
+            self,
+            oldest,
+            newest,
+        ):
+            raise IntervalsAuthenticationError(
+                "Authentication failed."
+            )
+
+    app.dependency_overrides[
+        get_local_athlete_profile_id
+    ] = lambda: uuid4()
+
+    app.dependency_overrides[
+        get_integration_connection_service
+    ] = lambda: FakeConnectionService()
+
+    monkeypatch.setattr(
+        intervals_api,
+        "IntervalsClient",
+        FakeIntervalsClient,
+    )
+
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/integrations/intervals/connection/test-saved"
+    )
+
+    assert response.status_code == 401
+
+    assert response.json() == {
+        "detail": "Identifiants Intervals.icu refusés."
     }

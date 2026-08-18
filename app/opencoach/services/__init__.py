@@ -3,9 +3,17 @@ from .intervals_sync import (
     IntervalsApplicationService,
 )
 from .profile import ProfileService
+from .integration_connection import (
+    IntegrationConnectionService,
+    IntegrationConnectionServiceError,
+    IntegrationCredentials,
+)
 
 __all__ = [
     "DEFAULT_SYNC_DAYS",
     "IntervalsApplicationService",
     "ProfileService",
+    "IntegrationConnectionService",
+    "IntegrationConnectionServiceError",
+    "IntegrationCredentials",
 ]

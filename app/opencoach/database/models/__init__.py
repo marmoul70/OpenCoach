@@ -5,6 +5,9 @@ from opencoach.database.models.shoe import Shoe
 from opencoach.database.models.user import User
 from opencoach.database.models.watch import Watch
 from opencoach.database.models.wellness import WellnessDaily
+from opencoach.database.models.integration_connection import (
+    IntegrationConnection,
+)
 
 __all__ = [
     "Activity",
@@ -14,4 +17,5 @@ __all__ = [
     "User",
     "Watch",
     "WellnessDaily",
+    "IntegrationConnection",
 ]

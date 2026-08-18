@@ -14,6 +14,7 @@ from .profile import (
 )
 from .activity import Activity
 from .wellness import WellnessDay
+from .integration import IntegrationConnection
 
 __all__ = [
     "AthleteBody",
@@ -30,4 +31,5 @@ __all__ = [
     "Watch",
     "Activity",
     "WellnessDay",
+    "IntegrationConnection",
 ]

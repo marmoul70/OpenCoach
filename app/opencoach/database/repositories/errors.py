@@ -6,3 +6,6 @@ class ActivityRepositoryError(RuntimeError):
 
 class WellnessRepositoryError(RuntimeError):
     """Erreur de persistance des données Wellness."""
+
+class IntegrationConnectionRepositoryError(RuntimeError):
+    """Erreur de persistance des connexions externes."""

@@ -1,15 +1,17 @@
 from uuid import UUID
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from opencoach.config import IntervalsSettings
 from opencoach.database.models import AthleteProfile, User
 from opencoach.database.repositories import (
     ActivityRepositoryError,
+    IntegrationConnectionRepositoryError,
     SqlActivityRepository,
+    SqlIntegrationConnectionRepository,
     SqlWellnessRepository,
     WellnessRepositoryError,
 )
@@ -23,7 +25,19 @@ from opencoach.integrations.intervals import (
 )
 from opencoach.services import (
     DEFAULT_SYNC_DAYS,
+    IntegrationConnectionService,
+    IntegrationConnectionServiceError,
     IntervalsApplicationService,
+)
+from opencoach.schemas.integration import (
+    IntervalsConnectionResponse,
+    IntervalsConnectionTest,
+    IntervalsConnectionTestResponse,
+    IntervalsConnectionUpdate,
+)
+from opencoach.security import (
+    SecretCipher,
+    SecretCipherError,
 )
 
 
@@ -66,23 +80,79 @@ def get_local_athlete_profile_id(
 
     return profile_id
 
+def get_integration_connection_service(
+    db: Session = Depends(get_db),
+) -> IntegrationConnectionService:
+    """Construit le service de gestion des connexions."""
+
+    try:
+        cipher = SecretCipher.from_env()
+
+    except SecretCipherError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "La clé de chiffrement OpenCoach "
+                "n'est pas configurée."
+            ),
+        ) from exc
+
+    repository = SqlIntegrationConnectionRepository(
+        db,
+    )
+
+    return IntegrationConnectionService(
+        repository=repository,
+        cipher=cipher,
+    )
 
 def get_intervals_application_service(
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id,
+    ),
     db: Session = Depends(get_db),
+    connection_service: IntegrationConnectionService = Depends(
+        get_integration_connection_service,
+    ),
 ) -> IntervalsApplicationService:
     """Construit le service applicatif Intervals.icu."""
 
     try:
-        settings = IntervalsSettings.from_env()
-    except RuntimeError as exc:
+        credentials = connection_service.get_credentials(
+            athlete_profile_id,
+            "intervals",
+        )
+
+    except IntegrationConnectionServiceError as exc:
         raise HTTPException(
             status_code=503,
-            detail="L'intégration Intervals.icu n'est pas configurée.",
+            detail=(
+                "L'intégration Intervals.icu "
+                "n'est pas configurée."
+            ),
+        ) from exc
+
+    except IntegrationConnectionRepositoryError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Impossible de charger la connexion "
+                "Intervals.icu."
+            ),
+        ) from exc
+
+    except SecretCipherError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Impossible de déchiffrer les identifiants "
+                "Intervals.icu."
+            ),
         ) from exc
 
     client = IntervalsClient(
-        api_key=settings.api_key,
-        athlete_id=settings.athlete_id,
+        api_key=credentials.secret,
+        athlete_id=credentials.athlete_id,
     )
 
     activity_repository = SqlActivityRepository(db)
@@ -98,6 +168,88 @@ def get_intervals_application_service(
         sync_service=sync_service,
     )
 
+@router.get(
+    "/connection",
+    response_model=IntervalsConnectionResponse,
+)
+def get_intervals_connection(
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id,
+    ),
+    service: IntegrationConnectionService = Depends(
+        get_integration_connection_service,
+    ),
+) -> IntervalsConnectionResponse:
+    """Retourne l'état de configuration Intervals.icu."""
+
+    try:
+        connection = service.get_connection(
+            athlete_profile_id,
+            "intervals",
+        )
+
+    except IntegrationConnectionRepositoryError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible de charger la connexion Intervals.icu.",
+        ) from exc
+
+    if connection is None:
+        return IntervalsConnectionResponse(
+            configured=False,
+            enabled=False,
+            athlete_id=None,
+            api_key_configured=False,
+        )
+
+    return IntervalsConnectionResponse(
+        configured=True,
+        enabled=connection.enabled,
+        athlete_id=connection.athlete_id,
+        api_key_configured=connection.secret_configured,
+    )
+
+@router.put(
+    "/connection",
+    response_model=IntervalsConnectionResponse,
+)
+def save_intervals_connection(
+    payload: IntervalsConnectionUpdate,
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id,
+    ),
+    service: IntegrationConnectionService = Depends(
+        get_integration_connection_service,
+    ),
+) -> IntervalsConnectionResponse:
+    """Crée ou met à jour la connexion Intervals.icu."""
+
+    try:
+        connection = service.save_intervals_connection(
+            athlete_profile_id=athlete_profile_id,
+            athlete_id=payload.athlete_id,
+            api_key=payload.api_key,
+            enabled=payload.enabled,
+        )
+
+    except IntegrationConnectionServiceError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
+
+    except IntegrationConnectionRepositoryError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible d'enregistrer la connexion Intervals.icu.",
+        ) from exc
+
+    return IntervalsConnectionResponse(
+        configured=True,
+        enabled=connection.enabled,
+        athlete_id=connection.athlete_id,
+        api_key_configured=connection.secret_configured,
+    )
 
 @router.post("/sync")
 def sync_intervals(
@@ -160,3 +312,110 @@ def sync_intervals(
         "synced_wellness_days": synced_wellness_days,
         "days": days,
     }
+
+@router.post(
+    "/connection/test",
+    response_model=IntervalsConnectionTestResponse,
+)
+def test_intervals_connection(
+    payload: IntervalsConnectionTest,
+) -> IntervalsConnectionTestResponse:
+    """Teste des credentials Intervals.icu sans les enregistrer."""
+
+    client = IntervalsClient(
+        api_key=payload.api_key.strip(),
+        athlete_id=payload.athlete_id.strip(),
+    )
+
+    today = date.today()
+
+    try:
+        client.get_wellness(
+            oldest=today,
+            newest=today,
+        )
+
+    except IntervalsAuthenticationError as exc:
+        raise HTTPException(
+            status_code=401,
+            detail="Identifiants Intervals.icu refusés.",
+        ) from exc
+
+    except IntervalsApiError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Impossible de contacter Intervals.icu.",
+        ) from exc
+
+    return IntervalsConnectionTestResponse(
+        connected=True,
+        athlete_id=payload.athlete_id.strip(),
+    )
+
+@router.post(
+    "/connection/test-saved",
+    response_model=IntervalsConnectionTestResponse,
+)
+def test_saved_intervals_connection(
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id,
+    ),
+    service: IntegrationConnectionService = Depends(
+        get_integration_connection_service,
+    ),
+) -> IntervalsConnectionTestResponse:
+    """Teste la connexion Intervals.icu enregistrée."""
+
+    try:
+        credentials = service.get_credentials(
+            athlete_profile_id,
+            "intervals",
+        )
+
+    except IntegrationConnectionServiceError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=str(exc),
+        ) from exc
+
+    except IntegrationConnectionRepositoryError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible de charger la connexion Intervals.icu.",
+        ) from exc
+
+    except SecretCipherError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible de déchiffrer les identifiants Intervals.icu.",
+        ) from exc
+
+    client = IntervalsClient(
+        api_key=credentials.secret,
+        athlete_id=credentials.athlete_id,
+    )
+
+    today = date.today()
+
+    try:
+        client.get_wellness(
+            oldest=today,
+            newest=today,
+        )
+
+    except IntervalsAuthenticationError as exc:
+        raise HTTPException(
+            status_code=401,
+            detail="Identifiants Intervals.icu refusés.",
+        ) from exc
+
+    except IntervalsApiError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Impossible de contacter Intervals.icu.",
+        ) from exc
+
+    return IntervalsConnectionTestResponse(
+        connected=True,
+        athlete_id=credentials.athlete_id,
+    )

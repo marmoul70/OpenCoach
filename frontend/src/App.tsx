@@ -14,6 +14,7 @@ import { RacePage } from './modules/races/RacePage'
 import { RaceProvider } from './modules/races/raceStore'
 import { ActivityPage } from './modules/activities/ActivityPage'
 import { Settings } from './modules/settings'
+import { Connections } from './modules/connections'
 
 type Page =
   | 'dashboard'
@@ -23,6 +24,7 @@ type Page =
   | 'settings'
   | 'races'
   | 'activities'
+  | 'connections'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -310,9 +312,23 @@ function App() {
                         Réglages
                       </button>
                     </li>
-
+                    <li>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          setPage('connections')
+                          event.currentTarget.blur()
+                        }}
+                        className={
+                          page === 'connections'
+                            ? 'text-primary font-semibold'
+                            : ''
+                        }
+                      >
+                        Connexions
+                      </button>
+                    </li>
                     <div className="divider my-1" />
-
                     <li>
                       <details>
                         <summary>Apparence</summary>
@@ -364,16 +380,12 @@ function App() {
           )}
 
           {page === 'training' && <TrainingWeek />}
-
           {page === 'activities' && <ActivityPage />}
-
           {page === 'races' && <RacePage />}
-
           {page === 'profile-personal' && <PersonalProfile />}
-
           {page === 'profile-sport' && <Profile />}
-
           {page === 'settings' && <Settings />}
+          {page === 'connections' && <Connections />}
         </div>
       </TrainingProvider>
     </RaceProvider>

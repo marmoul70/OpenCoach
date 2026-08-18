@@ -7,7 +7,7 @@ SPORT_WEIGHT = 40.0
 DISTANCE_WEIGHT = 25.0
 DURATION_WEIGHT = 25.0
 ELEVATION_WEIGHT = 10.0
-
+BEST_MATCH_THRESHOLD = 75.0
 
 @dataclass(frozen=True)
 class ActivityMatchResult:

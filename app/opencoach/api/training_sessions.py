@@ -19,6 +19,7 @@ from opencoach.schemas.training_session import (
     TrainingSessionStatusUpdate,
 )
 from opencoach.training import (
+    BEST_MATCH_THRESHOLD,
     match_activity_to_session,
 )
 
@@ -277,7 +278,11 @@ def list_candidate_activities(
 
     best_activity_id = (
         candidates[0][0].id
-        if candidates
+        if (
+            candidates
+            and candidates[0][1].score
+            >= BEST_MATCH_THRESHOLD
+        )
         else None
     )
 

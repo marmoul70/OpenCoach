@@ -364,3 +364,54 @@ def test_training_sessions_api_marks_best_candidate() -> None:
         >
         payload[1]["match_score"]
     )
+
+def test_training_sessions_api_does_not_mark_weak_candidate_as_best() -> None:
+    client, repository = create_test_client()
+
+    weak_activity = Activity(
+        id=uuid4(),
+        provider="intervals",
+        provider_activity_id="i-weak",
+        name="Morning Marche",
+        sport_type="Walk",
+        start_at=datetime(
+            2026,
+            8,
+            9,
+            7,
+            0,
+        ),
+        start_at_local=datetime(
+            2026,
+            8,
+            9,
+            9,
+            0,
+        ),
+        moving_time_seconds=4 * 3600,
+        distance_m=40000.0,
+        elevation_gain_m=2000.0,
+        feel=3,
+    )
+
+    repository.list_candidate_activities_for_date = (
+        lambda athlete_profile_id, session_date: [
+            weak_activity,
+        ]
+    )
+
+    response = client.get(
+        (
+            f"/api/training-sessions/"
+            f"{repository.session.id}/candidate-activities"
+        )
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+
+    assert len(payload) == 1
+
+    assert payload[0]["match_score"] < 75.0
+    assert payload[0]["best_match"] is False

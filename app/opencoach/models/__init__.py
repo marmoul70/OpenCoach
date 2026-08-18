@@ -15,6 +15,7 @@ from .profile import (
 from .activity import Activity
 from .wellness import WellnessDay
 from .integration import IntegrationConnection
+from .training_session import TrainingSession
 
 __all__ = [
     "AthleteBody",
@@ -32,4 +33,5 @@ __all__ = [
     "Activity",
     "WellnessDay",
     "IntegrationConnection",
+    "TrainingSession",
 ]

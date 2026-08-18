@@ -214,3 +214,10 @@ class AthleteProfile(Base):
         back_populates="athlete_profile",
         cascade="all, delete-orphan",
     )
+
+    training_sessions: Mapped[
+        list["TrainingSession"]
+    ] = relationship(
+        back_populates="athlete_profile",
+        cascade="all, delete-orphan",
+    )

@@ -8,6 +8,9 @@ from opencoach.database.models.wellness import WellnessDaily
 from opencoach.database.models.integration_connection import (
     IntegrationConnection,
 )
+from opencoach.database.models.training_session import (
+    TrainingSession,
+)
 
 __all__ = [
     "Activity",
@@ -18,4 +21,5 @@ __all__ = [
     "Watch",
     "WellnessDaily",
     "IntegrationConnection",
+    "TrainingSession",
 ]

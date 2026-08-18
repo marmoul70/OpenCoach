@@ -9,3 +9,6 @@ class WellnessRepositoryError(RuntimeError):
 
 class IntegrationConnectionRepositoryError(RuntimeError):
     """Erreur de persistance des connexions externes."""
+
+class TrainingSessionRepositoryError(RuntimeError):
+    """Erreur de persistance des séances d'entraînement."""

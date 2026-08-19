@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-
+from datetime import datetime
 
 class IntervalsConnectionUpdate(BaseModel):
     """Données saisies pour configurer Intervals.icu."""
@@ -25,6 +25,7 @@ class IntervalsConnectionResponse(BaseModel):
     enabled: bool
     athlete_id: str | None
     api_key_configured: bool
+    last_synced_at: datetime | None = None
 
 
 class IntervalsConnectionTest(BaseModel):

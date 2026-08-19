@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -216,6 +217,52 @@ def test_sql_integration_repository_returns_none_when_missing() -> None:
 
         assert connection is None
         assert secret is None
+
+    finally:
+        db.close()
+
+def test_marks_integration_as_synced() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlIntegrationConnectionRepository(
+            db,
+        )
+
+        repository.save_connection(
+            profile.id,
+            IntegrationConnection(
+                provider="intervals",
+                enabled=True,
+                athlete_id="i123456",
+                secret_configured=True,
+            ),
+            b"encrypted-secret",
+        )
+
+        synced_at = datetime(
+            2026,
+            8,
+            19,
+            21,
+            0,
+        )
+
+        repository.mark_synced(
+            profile.id,
+            "intervals",
+            synced_at,
+        )
+
+        connection = repository.get_connection(
+            profile.id,
+            "intervals",
+        )
+
+        assert connection is not None
+        assert connection.last_synced_at == synced_at
 
     finally:
         db.close()

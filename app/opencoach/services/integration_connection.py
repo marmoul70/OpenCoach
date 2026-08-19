@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from uuid import UUID
+from datetime import datetime
 
 from opencoach.database.repositories import (
     IntegrationConnectionRepository,
@@ -145,4 +146,28 @@ class IntegrationConnectionService:
             provider=provider,
             athlete_id=connection.athlete_id,
             secret=secret,
+        )
+
+        def mark_synced(
+            self,
+            athlete_profile_id: UUID,
+            provider: str,
+            synced_at: datetime,
+        ) -> None:
+            self.repository.mark_synced(
+                athlete_profile_id,
+                provider,
+                synced_at,
+            )
+
+    def mark_synced(
+        self,
+        athlete_profile_id: UUID,
+        provider: str,
+        synced_at: datetime,
+    ) -> None:
+        self.repository.mark_synced(
+            athlete_profile_id,
+            provider,
+            synced_at,
         )

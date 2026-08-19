@@ -4,6 +4,7 @@ export interface IntervalsConnection {
   enabled: boolean
   athlete_id: string | null
   api_key_configured: boolean
+  last_synced_at: string | null
 }
 
 export interface IntervalsConnectionUpdate {
@@ -16,6 +17,14 @@ export interface IntervalsConnectionTestResult {
   provider: 'intervals'
   connected: boolean
   athlete_id: string
+}
+
+export interface IntervalsSyncResult {
+  provider: 'intervals'
+  synced_activities: number
+  synced_wellness_days: number
+  days: number
+  synced_at: string
 }
 
 async function request<T>(
@@ -90,6 +99,17 @@ export function testSavedIntervalsConnection():
 Promise<IntervalsConnectionTestResult> {
   return request<IntervalsConnectionTestResult>(
     '/api/integrations/intervals/connection/test-saved',
+    {
+      method: 'POST',
+    },
+  )
+}
+
+export function syncIntervals(
+  days = 7,
+): Promise<IntervalsSyncResult> {
+  return request<IntervalsSyncResult>(
+    `/api/integrations/intervals/sync?days=${days}`,
     {
       method: 'POST',
     },

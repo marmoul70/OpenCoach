@@ -1,3 +1,4 @@
+from datetime import datetime
 from abc import ABC, abstractmethod
 from uuid import UUID
 
@@ -33,4 +34,14 @@ class IntegrationConnectionRepository(ABC):
         provider: str,
     ) -> bytes | None:
         """Retourne le secret chiffré d'une connexion."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def mark_synced(
+        self,
+        athlete_profile_id: UUID,
+        provider: str,
+        synced_at: datetime,
+    ) -> None:
+        """Enregistre la date de dernière synchronisation réussie."""
         raise NotImplementedError

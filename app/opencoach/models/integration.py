@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 
 
 @dataclass
@@ -11,3 +12,5 @@ class IntegrationConnection:
     athlete_id: str | None = None
 
     secret_configured: bool = False
+
+    last_synced_at: datetime | None = None

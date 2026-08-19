@@ -1,15 +1,25 @@
-import { useEffect, useState } from 'react'
+import {
+  useEffect,
+  useState,
+} from 'react'
+
 import {
   Activity,
   CheckCircle2,
   MessageCircle,
   Radio,
+  RefreshCw,
   Watch,
 } from 'lucide-react'
 
 import {
+  useToast,
+} from '../../components/ui/ToastProvider'
+
+import {
   fetchIntervalsConnection,
   saveIntervalsConnection,
+  syncIntervals,
   testIntervalsConnection,
   testSavedIntervalsConnection,
   type IntervalsConnection,
@@ -17,22 +27,71 @@ import {
 
 
 export function Connections() {
-  const [connection, setConnection] =
-    useState<IntervalsConnection | null>(null)
+  const {
+    toast,
+  } = useToast()
 
-  const [athleteId, setAthleteId] = useState('')
-  const [apiKey, setApiKey] = useState('')
-  const [enabled, setEnabled] = useState(true)
+  const [
+    connection,
+    setConnection,
+  ] =
+    useState<IntervalsConnection | null>(
+      null,
+    )
 
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [testing, setTesting] = useState(false)
+  const [
+    athleteId,
+    setAthleteId,
+  ] = useState('')
 
-  const [connectionTested, setConnectionTested] =
-    useState(false)
+  const [
+    apiKey,
+    setApiKey,
+  ] = useState('')
 
-  const [error, setError] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
+  const [
+    enabled,
+    setEnabled,
+  ] = useState(true)
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true)
+
+  const [
+    saving,
+    setSaving,
+  ] = useState(false)
+
+  const [
+    testing,
+    setTesting,
+  ] = useState(false)
+
+  const [
+    syncing,
+    setSyncing,
+  ] = useState(false)
+
+  const [
+    connectionTested,
+    setConnectionTested,
+  ] = useState(false)
+
+  const [
+    error,
+    setError,
+  ] = useState<string | null>(
+    null,
+  )
+
+  const [
+    message,
+    setMessage,
+  ] = useState<string | null>(
+    null,
+  )
 
   useEffect(() => {
     let mounted = true
@@ -44,8 +103,13 @@ export function Connections() {
         }
 
         setConnection(result)
-        setAthleteId(result.athlete_id ?? '')
-        setEnabled(result.enabled)
+        setAthleteId(
+          result.athlete_id
+          ?? '',
+        )
+        setEnabled(
+          result.enabled,
+        )
       })
       .catch((reason: unknown) => {
         if (!mounted) {
@@ -53,7 +117,9 @@ export function Connections() {
         }
 
         setError(
-          getErrorMessage(reason),
+          getErrorMessage(
+            reason,
+          ),
         )
       })
       .finally(() => {
@@ -92,7 +158,10 @@ export function Connections() {
           normalizedApiKey,
         )
       } else {
-        if (!connection?.api_key_configured) {
+        if (
+          !connection
+            ?.api_key_configured
+        ) {
           throw new Error(
             'Saisissez une clé API pour tester la connexion.',
           )
@@ -110,7 +179,9 @@ export function Connections() {
       setConnectionTested(false)
 
       setError(
-        getErrorMessage(reason),
+        getErrorMessage(
+          reason,
+        ),
       )
     } finally {
       setTesting(false)
@@ -123,11 +194,17 @@ export function Connections() {
     setMessage(null)
 
     try {
-      const result = await saveIntervalsConnection({
-        athlete_id: athleteId.trim(),
-        api_key: apiKey.trim() || null,
-        enabled,
-      })
+      const result =
+        await saveIntervalsConnection({
+          athlete_id:
+            athleteId.trim(),
+
+          api_key:
+            apiKey.trim()
+            || null,
+
+          enabled,
+        })
 
       setConnection(result)
       setApiKey('')
@@ -138,10 +215,67 @@ export function Connections() {
       )
     } catch (reason) {
       setError(
-        getErrorMessage(reason),
+        getErrorMessage(
+          reason,
+        ),
       )
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleSync() {
+    if (
+      !connection?.configured
+      || !connection.enabled
+    ) {
+      return
+    }
+
+    setSyncing(true)
+
+    try {
+      const result =
+        await syncIntervals(
+          7,
+        )
+
+      setConnection(
+        (current) => {
+          if (!current) {
+            return current
+          }
+
+          return {
+            ...current,
+            last_synced_at:
+              result.synced_at,
+          }
+        },
+      )
+
+      toast({
+        type: 'info',
+        title:
+          'Synchronisation terminée',
+        message: [
+          `${result.synced_activities} activité(s)`,
+          `${result.synced_wellness_days} jour(s) Wellness`,
+        ].join(' · '),
+      })
+    } catch (reason) {
+      toast({
+        type: 'error',
+        title:
+          'Échec de la synchronisation',
+        message:
+          getErrorMessage(
+            reason,
+          ),
+        duration: null,
+      })
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -193,8 +327,10 @@ export function Connections() {
 
                 <ConnectionBadge
                   connected={
-                    connection?.configured === true &&
-                    connection.enabled
+                    connection
+                      ?.configured
+                    === true
+                    && connection.enabled
                   }
                 />
               </div>
@@ -209,14 +345,23 @@ export function Connections() {
                     </label>
 
                     <input
-                      value={athleteId}
+                      value={
+                        athleteId
+                      }
                       onChange={(event) => {
                         setAthleteId(
-                          event.target.value,
+                          event
+                            .target
+                            .value,
                         )
 
-                        setConnectionTested(false)
-                        setMessage(null)
+                        setConnectionTested(
+                          false,
+                        )
+
+                        setMessage(
+                          null,
+                        )
                       }}
                       placeholder="i123456"
                       className="input input-bordered w-full"
@@ -230,17 +375,27 @@ export function Connections() {
 
                     <input
                       type="password"
-                      value={apiKey}
+                      value={
+                        apiKey
+                      }
                       onChange={(event) => {
                         setApiKey(
-                          event.target.value,
+                          event
+                            .target
+                            .value,
                         )
 
-                        setConnectionTested(false)
-                        setMessage(null)
+                        setConnectionTested(
+                          false,
+                        )
+
+                        setMessage(
+                          null,
+                        )
                       }}
                       placeholder={
-                        connection?.api_key_configured
+                        connection
+                          ?.api_key_configured
                           ? 'Clé déjà configurée'
                           : 'Votre clé API Intervals.icu'
                       }
@@ -248,11 +403,13 @@ export function Connections() {
                       className="input input-bordered w-full"
                     />
 
-                    {connection?.api_key_configured && (
-                      <p className="mt-1 text-xs text-base-content/50">
-                        Laissez vide pour conserver la clé actuelle.
-                      </p>
-                    )}
+                    {connection
+                      ?.api_key_configured
+                      && (
+                        <p className="mt-1 text-xs text-base-content/50">
+                          Laissez vide pour conserver la clé actuelle.
+                        </p>
+                      )}
                   </fieldset>
                 </div>
 
@@ -269,15 +426,72 @@ export function Connections() {
 
                   <input
                     type="checkbox"
-                    checked={enabled}
+                    checked={
+                      enabled
+                    }
                     onChange={(event) => {
                       setEnabled(
-                        event.target.checked,
+                        event
+                          .target
+                          .checked,
                       )
                     }}
                     className="toggle toggle-primary"
                   />
                 </div>
+
+                {connection
+                  ?.configured
+                  && (
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-base-300 bg-base-100 p-4">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-base-content">
+                          Synchronisation
+                        </p>
+
+                        <p className="mt-1 text-xs text-base-content/50">
+                          {connection
+                            .last_synced_at
+                            ? (
+                              `Dernière synchronisation : ${formatRelativeSyncTime(
+                                connection
+                                  .last_synced_at,
+                              )}`
+                            )
+                            : (
+                              'Aucune synchronisation effectuée'
+                            )}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={
+                          handleSync
+                        }
+                        disabled={
+                          syncing
+                          || saving
+                          || testing
+                          || !connection
+                            .enabled
+                        }
+                        className="btn btn-sm btn-outline"
+                      >
+                        {syncing
+                          ? (
+                            <span className="loading loading-spinner loading-sm" />
+                          )
+                          : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
+
+                        {syncing
+                          ? 'Synchronisation...'
+                          : 'Synchroniser maintenant'}
+                      </button>
+                    </div>
+                  )}
 
                 {error && (
                   <div className="alert alert-error mt-4">
@@ -300,10 +514,13 @@ export function Connections() {
                 <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-base-300 pt-5">
                   <button
                     type="button"
-                    onClick={handleTest}
+                    onClick={
+                      handleTest
+                    }
                     disabled={
-                      testing ||
-                      saving
+                      testing
+                      || saving
+                      || syncing
                     }
                     className="btn btn-outline"
                   >
@@ -316,11 +533,14 @@ export function Connections() {
 
                   <button
                     type="button"
-                    onClick={handleSave}
+                    onClick={
+                      handleSave
+                    }
                     disabled={
-                      saving ||
-                      testing ||
-                      !connectionTested
+                      saving
+                      || testing
+                      || syncing
+                      || !connectionTested
                     }
                     className="btn btn-primary"
                   >
@@ -332,11 +552,13 @@ export function Connections() {
                   </button>
                 </div>
 
-                {!connectionTested && apiKey.trim() && (
-                  <p className="mt-3 text-right text-xs text-base-content/50">
-                    Testez la connexion avant de pouvoir enregistrer.
-                  </p>
-                )}
+                {!connectionTested
+                  && apiKey.trim()
+                  && (
+                    <p className="mt-3 text-right text-xs text-base-content/50">
+                      Testez la connexion avant de pouvoir enregistrer.
+                    </p>
+                  )}
               </div>
             </div>
           </section>
@@ -442,6 +664,82 @@ function ComingSoonConnection({
         </div>
       </div>
     </section>
+  )
+}
+
+
+function formatRelativeSyncTime(
+  value: string,
+): string {
+  const normalizedValue =
+    hasTimezoneInformation(value)
+      ? value
+      : `${value}Z`
+
+  const date =
+    new Date(
+      normalizedValue,
+    )
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return 'date inconnue'
+  }
+
+  const elapsedMilliseconds =
+    Date.now()
+    - date.getTime()
+
+  const elapsedMinutes =
+    Math.max(
+      0,
+      Math.floor(
+        elapsedMilliseconds
+        / 60_000,
+      ),
+    )
+
+  if (elapsedMinutes < 1) {
+    return "à l'instant"
+  }
+
+  if (elapsedMinutes < 60) {
+    return `il y a ${elapsedMinutes} min`
+  }
+
+  const elapsedHours =
+    Math.floor(
+      elapsedMinutes / 60,
+    )
+
+  if (elapsedHours < 24) {
+    return elapsedHours === 1
+      ? 'il y a 1 h'
+      : `il y a ${elapsedHours} h`
+  }
+
+  const elapsedDays =
+    Math.floor(
+      elapsedHours / 24,
+    )
+
+  return elapsedDays === 1
+    ? 'il y a 1 jour'
+    : `il y a ${elapsedDays} jours`
+}
+
+
+function hasTimezoneInformation(
+  value: string,
+): boolean {
+  return (
+    value.endsWith('Z')
+    || /[+-]\d{2}:\d{2}$/.test(
+      value,
+    )
   )
 }
 

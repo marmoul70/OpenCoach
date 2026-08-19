@@ -1,5 +1,5 @@
 from uuid import UUID
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -200,6 +200,7 @@ def get_intervals_connection(
             enabled=False,
             athlete_id=None,
             api_key_configured=False,
+            last_synced_at=None,
         )
 
     return IntervalsConnectionResponse(
@@ -207,6 +208,7 @@ def get_intervals_connection(
         enabled=connection.enabled,
         athlete_id=connection.athlete_id,
         api_key_configured=connection.secret_configured,
+        last_synced_at=connection.last_synced_at,
     )
 
 @router.put(
@@ -249,6 +251,7 @@ def save_intervals_connection(
         enabled=connection.enabled,
         athlete_id=connection.athlete_id,
         api_key_configured=connection.secret_configured,
+        last_synced_at=connection.last_synced_at,
     )
 
 @router.post("/sync")
@@ -263,6 +266,9 @@ def sync_intervals(
     ),
     service: IntervalsApplicationService = Depends(
         get_intervals_application_service,
+    ),
+    connection_service: IntegrationConnectionService = Depends(
+        get_integration_connection_service,
     ),
 ) -> dict[str, str | int]:
     """Synchronise activités et Wellness Intervals.icu."""
@@ -306,12 +312,35 @@ def sync_intervals(
             detail="Impossible d'enregistrer les données Wellness.",
         ) from exc
 
+    synced_at = datetime.now(
+        timezone.utc,
+    )
+
+    try:
+        connection_service.mark_synced(
+            athlete_profile_id,
+            "intervals",
+            synced_at,
+        )
+
+    except IntegrationConnectionRepositoryError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "La synchronisation a réussi, "
+                "mais sa date n'a pas pu être enregistrée."
+            ),
+        ) from exc
+
     return {
         "provider": "intervals",
         "synced_activities": synced_activities,
         "synced_wellness_days": synced_wellness_days,
         "days": days,
+        "synced_at": synced_at.isoformat(),
     }
+
+
 
 @router.post(
     "/connection/test",

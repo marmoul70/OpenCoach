@@ -1,32 +1,29 @@
-from uuid import uuid4
-
-from opencoach.models import IntegrationConnection
-from opencoach.services import (
-    IntegrationConnectionServiceError,
-)
+from datetime import datetime
+from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
 from opencoach.api.app import create_app
 from opencoach.api.intervals import (
-    get_intervals_application_service,
     get_integration_connection_service,
+    get_intervals_application_service,
     get_local_athlete_profile_id,
-    IntervalsAuthenticationError,
 )
 from opencoach.database.repositories import (
-     ActivityRepositoryError,
+    ActivityRepositoryError,
     WellnessRepositoryError,
 )
-
-import opencoach.api.intervals as intervals_api
-
 from opencoach.integrations.intervals import (
     IntervalsApiError,
     IntervalsAuthenticationError,
     IntervalsDataError,
 )
+from opencoach.models import IntegrationConnection
+from opencoach.services import (
+    IntegrationConnectionServiceError,
+)
 
+import opencoach.api.intervals as intervals_api
 
 class FakeIntervalsApplicationService:
     def __init__(
@@ -68,10 +65,18 @@ class FakeIntegrationConnectionService:
         connection=None,
         *,
         error=None,
-    ):
+    ) -> None:
         self.connection = connection
         self.error = error
         self.saved = None
+
+        self.synced_calls: list[
+            tuple[
+                UUID,
+                str,
+                datetime,
+            ]
+        ] = []
 
     def get_connection(
         self,
@@ -95,17 +100,43 @@ class FakeIntegrationConnectionService:
             raise self.error
 
         self.saved = {
-            "athlete_profile_id": athlete_profile_id,
-            "athlete_id": athlete_id,
-            "api_key": api_key,
-            "enabled": enabled,
+            "athlete_profile_id":
+                athlete_profile_id,
+            "athlete_id":
+                athlete_id,
+            "api_key":
+                api_key,
+            "enabled":
+                enabled,
         }
 
-        return IntegrationConnection(
+        connection = IntegrationConnection(
             provider="intervals",
             enabled=enabled,
             athlete_id=athlete_id,
             secret_configured=True,
+            last_synced_at=None,
+        )
+
+        self.connection = connection
+
+        return connection
+
+    def mark_synced(
+        self,
+        athlete_profile_id: UUID,
+        provider: str,
+        synced_at: datetime,
+    ) -> None:
+        if self.error is not None:
+            raise self.error
+
+        self.synced_calls.append(
+            (
+                athlete_profile_id,
+                provider,
+                synced_at,
+            )
         )
 
 def create_test_client(
@@ -123,8 +154,15 @@ def create_test_client(
         get_intervals_application_service
     ] = lambda: service
 
-    return TestClient(app), profile_id
+    connection_service = (
+        FakeIntegrationConnectionService()
+    )
 
+    app.dependency_overrides[
+        get_integration_connection_service
+    ] = lambda: connection_service
+
+    return TestClient(app), profile_id
 
 def test_sync_intervals_activities() -> None:
     service = FakeIntervalsApplicationService(
@@ -141,12 +179,21 @@ def test_sync_intervals_activities() -> None:
 
     assert response.status_code == 200
 
-    assert response.json() == {
-        "provider": "intervals",
-        "synced_activities": 21,
-        "days": 30,
-        "synced_wellness_days": 21,
-    }
+    payload = response.json()
+
+    assert payload["provider"] == "intervals"
+    assert payload["synced_activities"] == 21
+    assert payload["synced_wellness_days"] == 21
+    assert payload["days"] == 30
+
+    assert isinstance(
+        payload["synced_at"],
+        str,
+    )
+
+    datetime.fromisoformat(
+        payload["synced_at"],
+    )
 
     assert service.calls == [
         (
@@ -172,12 +219,21 @@ def test_sync_intervals_accepts_custom_period() -> None:
 
     assert response.status_code == 200
 
-    assert response.json() == {
-        "provider": "intervals",
-        "synced_activities": 50,
-        "synced_wellness_days": 50,
-        "days": 90,
-    }
+    payload = response.json()
+
+    assert payload["provider"] == "intervals"
+    assert payload["synced_activities"] == 50
+    assert payload["synced_wellness_days"] == 50
+    assert payload["days"] == 90
+
+    assert isinstance(
+        payload["synced_at"],
+        str,
+    )
+
+    datetime.fromisoformat(
+        payload["synced_at"],
+    )
 
     assert service.calls == [
         (
@@ -326,6 +382,13 @@ def test_get_intervals_connection_returns_configured() -> None:
             enabled=True,
             athlete_id="i651743",
             secret_configured=True,
+            last_synced_at=datetime(
+                2026,
+                8,
+                19,
+                18,
+                30,
+            ),
         )
     )
 
@@ -351,6 +414,7 @@ def test_get_intervals_connection_returns_configured() -> None:
         "enabled": True,
         "athlete_id": "i651743",
         "api_key_configured": True,
+        "last_synced_at": "2026-08-19T18:30:00",
     }
 
 
@@ -379,6 +443,7 @@ def test_get_intervals_connection_returns_unconfigured() -> None:
         "enabled": False,
         "athlete_id": None,
         "api_key_configured": False,
+        "last_synced_at": None,
     }
 
 
@@ -422,6 +487,7 @@ def test_put_intervals_connection() -> None:
         "enabled": True,
         "athlete_id": "i651743",
         "api_key_configured": True,
+        "last_synced_at": None,
     }
 
 

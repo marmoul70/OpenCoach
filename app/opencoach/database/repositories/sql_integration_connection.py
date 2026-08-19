@@ -1,4 +1,5 @@
 from uuid import UUID
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
@@ -50,6 +51,7 @@ class SqlIntegrationConnectionRepository(
                 secret_configured=(
                     database_connection.encrypted_secret is not None
                 ),
+                last_synced_at=database_connection.last_synced_at,
             )
 
         except SQLAlchemyError as exc:
@@ -138,3 +140,36 @@ class SqlIntegrationConnectionRepository(
         )
 
         return self.session.scalar(statement)
+
+    def mark_synced(
+        self,
+        athlete_profile_id: UUID,
+        provider: str,
+        synced_at: datetime,
+    ) -> None:
+        try:
+            database_connection = self._get_database_connection(
+                athlete_profile_id=athlete_profile_id,
+                provider=provider,
+            )
+
+            if database_connection is None:
+                raise IntegrationConnectionRepositoryError(
+                    "La connexion à synchroniser n'existe pas."
+                )
+
+            database_connection.last_synced_at = synced_at
+
+            self.session.commit()
+            self.session.refresh(database_connection)
+
+        except IntegrationConnectionRepositoryError:
+            self.session.rollback()
+            raise
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise IntegrationConnectionRepositoryError(
+                "Impossible d'enregistrer la date de synchronisation."
+            ) from exc

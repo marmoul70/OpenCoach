@@ -18,7 +18,7 @@ class CoachDecision:
 
     reason: str
 
-    original_duration_minutes: int
+    original_duration_minutes: int | None
     recommended_duration_minutes: int | None
 
     duration_factor: float | None
@@ -26,6 +26,6 @@ class CoachDecision:
 
     constraints: tuple[str, ...]
 
-    original_intensity: str
+    original_intensity: str | None
 
     recommended_intensity: str | None

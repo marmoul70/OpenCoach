@@ -1,6 +1,10 @@
-import { Clock3, Gauge } from 'lucide-react'
+import {
+  CalendarDays,
+} from 'lucide-react'
 
-import { useTrainingSessions } from './trainingStore'
+import {
+  useTrainingSessions,
+} from './trainingStore'
 
 
 interface TrainingWidgetProps {
@@ -30,8 +34,8 @@ export function TrainingWidget({
   if (loading) {
     return (
       <div className="card w-full border border-base-300 bg-base-100 shadow-sm">
-        <div className="card-body flex min-h-48 items-center justify-center">
-          <span className="loading loading-spinner loading-md text-primary" />
+        <div className="card-body flex min-h-28 items-center justify-center p-4">
+          <span className="loading loading-spinner loading-sm text-primary" />
         </div>
       </div>
     )
@@ -40,12 +44,24 @@ export function TrainingWidget({
   if (error) {
     return (
       <div className="card w-full border border-error/30 bg-base-100 shadow-sm">
-        <div className="card-body">
-          <p className="font-semibold text-error">
-            Entraînement indisponible
-          </p>
+        <div className="card-body p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-error">
+                Entraînement
+              </p>
 
-          <p className="mt-1 text-sm text-base-content/60">
+              <p className="mt-1 font-semibold text-error">
+                Indisponible
+              </p>
+            </div>
+
+            <span className="badge badge-error badge-sm">
+              Erreur
+            </span>
+          </div>
+
+          <p className="mt-2 text-sm text-base-content/60">
             {error}
           </p>
         </div>
@@ -58,26 +74,26 @@ export function TrainingWidget({
       <button
         type="button"
         onClick={onClick}
-        className="card w-full border border-base-300 bg-base-100 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+        className="card w-full border border-base-300 bg-base-100 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
       >
-        <div className="card-body p-5">
-          <p className="text-sm font-medium text-base-content/60">
-            Entraînement du jour
-          </p>
+        <div className="card-body gap-2 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-base-content/50">
+                Entraînement du jour
+              </p>
 
-          <h2 className="mt-2 text-xl font-bold text-base-content">
-            Aucune séance prévue
-          </h2>
+              <h2 className="mt-1 text-lg font-bold">
+                Repos
+              </h2>
+            </div>
 
-          <p className="mt-2 text-sm text-base-content/50">
-            Aucun entraînement n&apos;est programmé pour cette semaine.
-          </p>
-
-          <div className="mt-4 text-right">
-            <span className="text-sm font-medium text-primary">
-              Voir le planning →
-            </span>
+            <CalendarDays className="h-4 w-4 text-base-content/40" />
           </div>
+
+          <p className="text-sm text-base-content/55">
+            Aucune séance planifiée aujourd’hui.
+          </p>
         </div>
       </button>
     )
@@ -87,57 +103,54 @@ export function TrainingWidget({
     <button
       type="button"
       onClick={onClick}
-      className="card w-full border border-base-300 bg-base-100 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+      className="card w-full border border-base-300 bg-base-100 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="card-body p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-base-content/60">
+      <div className="card-body gap-3 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-base-content/50">
               Entraînement du jour
             </p>
 
-            <h2 className="mt-2 text-xl font-bold text-base-content">
-              {session.title}
-            </h2>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-lg font-bold">
+                {session.title}
+              </h2>
+
+              <StatusBadge
+                status={session.status}
+              />
+            </div>
           </div>
 
-          <StatusBadge
-            status={session.status}
-          />
+          <CalendarDays className="h-4 w-4 shrink-0 text-base-content/40" />
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <Metric
-            icon={
-              <Clock3 className="h-4 w-4" />
-            }
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <InlineMetric
             label="Durée"
             value={`${session.durationMinutes} min`}
           />
 
-          <Metric
-            icon={
-              <Gauge className="h-4 w-4" />
-            }
+          <InlineMetric
             label="Intensité"
+            value={session.intensity}
+          />
+
+          <InlineMetric
+            label="Zone"
             value={
-              `${session.intensity} · ${
-                session.heartRateZone ?? '—'
-              }`
+              session.heartRateZone
+                ?? '—'
             }
           />
-        </div>
 
-        <div className="mt-4 flex items-center justify-between">
-          <span className="text-xs text-base-content/50">
-            {session.distanceKm !== undefined
-              ? `${session.distanceKm} km prévus`
-              : 'Séance prévue'}
-          </span>
-
-          <span className="text-sm font-medium text-primary">
-            Voir la séance →
-          </span>
+          {session.distanceKm !== undefined && (
+            <InlineMetric
+              label="Distance"
+              value={`${session.distanceKm} km`}
+            />
+          )}
         </div>
       </div>
     </button>
@@ -155,7 +168,7 @@ function StatusBadge({
 }) {
   if (status === 'completed') {
     return (
-      <span className="badge badge-success">
+      <span className="badge badge-success badge-sm">
         Réalisée
       </span>
     )
@@ -163,45 +176,36 @@ function StatusBadge({
 
   if (status === 'skipped') {
     return (
-      <span className="badge badge-error">
+      <span className="badge badge-error badge-sm">
         Non réalisée
       </span>
     )
   }
 
   return (
-    <span className="badge badge-warning">
+    <span className="badge badge-warning badge-sm">
       À faire
     </span>
   )
 }
 
 
-interface MetricProps {
-  icon: React.ReactNode
-  label: string
-  value: string
-}
-
-
-function Metric({
-  icon,
+function InlineMetric({
   label,
   value,
-}: MetricProps) {
+}: {
+  label: string
+  value: string
+}) {
   return (
-    <div className="rounded-xl bg-base-200 p-3">
-      <div className="flex items-center gap-2 text-base-content/50">
-        {icon}
+    <div className="flex items-baseline gap-1.5 text-sm">
+      <span className="text-xs text-base-content/45">
+        {label}
+      </span>
 
-        <span className="text-xs">
-          {label}
-        </span>
-      </div>
-
-      <p className="mt-1 font-semibold text-base-content">
+      <span className="font-semibold text-base-content">
         {value}
-      </p>
+      </span>
     </div>
   )
 }

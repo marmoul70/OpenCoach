@@ -34,7 +34,7 @@ class CoachDecisionAssessment:
     """Décision complète du coach pour une séance planifiée."""
 
     date: date
-    session: TrainingSession
+    session: TrainingSession | None
     readiness: ReadinessAssessment
     decision: CoachDecision
 
@@ -81,11 +81,33 @@ class CoachDecisionService:
         ]
 
         if not planned_sessions:
-            raise PlannedSessionUnavailableError(
-                (
-                    "Aucune séance planifiée disponible "
-                    f"pour le {target_date.isoformat()}."
-                )
+            readiness = self.readiness_service.calculate(
+                athlete_profile_id,
+                target_date,
+            )
+
+            decision = CoachDecision(
+                action="rest",
+                reason=(
+                    "Aucune séance n'est planifiée aujourd'hui. "
+                    "Journée de repos maintenue."
+                ),
+                original_duration_minutes=None,
+                recommended_duration_minutes=None,
+                duration_factor=None,
+                intensity_factor=None,
+                constraints=(
+                    readiness.readiness.training_constraints
+                ),
+                original_intensity=None,
+                recommended_intensity=None,
+            )
+
+            return CoachDecisionAssessment(
+                date=target_date,
+                session=None,
+                readiness=readiness,
+                decision=decision,
             )
 
         if len(planned_sessions) > 1:

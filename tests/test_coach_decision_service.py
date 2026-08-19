@@ -411,7 +411,7 @@ def test_coach_decision_service_rests() -> None:
     )
 
 
-def test_coach_decision_service_ignores_non_planned_session() -> None:
+def test_coach_decision_service_treats_non_planned_session_as_rest() -> None:
     service, _, readiness_service = create_service(
         sessions=[
             create_session(
@@ -421,33 +421,74 @@ def test_coach_decision_service_ignores_non_planned_session() -> None:
         readiness_score=90.0,
     )
 
-    with pytest.raises(
-        PlannedSessionUnavailableError,
-    ):
-        service.calculate(
-            uuid4(),
+    profile_id = uuid4()
+
+    result = service.calculate(
+        profile_id,
+        TARGET_DATE,
+    )
+
+    assert result.session is None
+    assert result.decision.action == "rest"
+
+    assert readiness_service.calls == [
+        (
+            profile_id,
             TARGET_DATE,
         )
+    ]
 
-    assert readiness_service.calls == []
-
-
-def test_coach_decision_service_raises_when_no_session() -> None:
+def test_coach_decision_service_returns_rest_when_no_session() -> None:
     service, _, readiness_service = create_service(
         sessions=[],
         readiness_score=90.0,
     )
 
-    with pytest.raises(
-        PlannedSessionUnavailableError,
-    ):
-        service.calculate(
-            uuid4(),
+    profile_id = uuid4()
+
+    result = service.calculate(
+        profile_id,
+        TARGET_DATE,
+    )
+
+    assert result.session is None
+
+    assert result.decision.action == "rest"
+
+    assert (
+        result.decision.reason
+        == (
+            "Aucune séance n'est planifiée aujourd'hui. "
+            "Journée de repos maintenue."
+        )
+    )
+
+    assert (
+        result.decision.original_duration_minutes
+        is None
+    )
+
+    assert (
+        result.decision.recommended_duration_minutes
+        is None
+    )
+
+    assert (
+        result.decision.original_intensity
+        is None
+    )
+
+    assert (
+        result.decision.recommended_intensity
+        is None
+    )
+
+    assert readiness_service.calls == [
+        (
+            profile_id,
             TARGET_DATE,
         )
-
-    assert readiness_service.calls == []
-
+    ]
 
 def test_coach_decision_service_raises_when_multiple_sessions() -> None:
     service, _, readiness_service = create_service(

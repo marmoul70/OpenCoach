@@ -1,4 +1,9 @@
-import { useEffect, useState } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+
 import {
   AlertTriangle,
   CloudSun,
@@ -6,31 +11,81 @@ import {
   Wind,
 } from 'lucide-react'
 
-import { getWeather } from './api'
-import { useAthleteProfile } from '../../core/profile'
-import { getWeatherDescription } from './logic'
-import { getWeatherAlerts } from './alerts'
-import type { WeatherAlertSeverity } from './alerts'
-import type { WeatherData } from './types'
+import {
+  useToast,
+} from '../../components/ui/ToastProvider'
+
+import {
+  useAthleteProfile,
+} from '../../core/profile'
+
+import {
+  getWeather,
+} from './api'
+
+import {
+  getWeatherAlerts,
+} from './alerts'
+
+import type {
+  WeatherAlertSeverity,
+} from './alerts'
+
+import {
+  getWeatherDescription,
+} from './logic'
+
+import type {
+  WeatherData,
+} from './types'
+
 
 interface WeatherWidgetProps {
   onClick: () => void
 }
 
+
 export function WeatherWidget({
   onClick,
 }: WeatherWidgetProps) {
-  const profile = useAthleteProfile()
+  const {
+    toast,
+  } = useToast()
+
+  const notifiedAlerts =
+    useRef<Set<string>>(
+      new Set(),
+    )
+
+  const profile =
+    useAthleteProfile()
 
   const weatherLocation = {
-    name: profile.location.name ?? '',
-    latitude: profile.location.latitude,
-    longitude: profile.location.longitude,
+    name:
+      profile.location.name
+      ?? '',
+    latitude:
+      profile.location.latitude,
+    longitude:
+      profile.location.longitude,
   }
 
-  const [weather, setWeather] = useState<WeatherData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [
+    weather,
+    setWeather,
+  ] = useState<WeatherData | null>(
+    null,
+  )
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true)
+
+  const [
+    error,
+    setError,
+  ] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -41,19 +96,24 @@ export function WeatherWidget({
         setError(false)
 
         if (
-          weatherLocation.latitude == null ||
-          weatherLocation.longitude == null
+          weatherLocation.latitude == null
+          || weatherLocation.longitude == null
         ) {
           throw new Error(
             'La localisation du profil est incomplète.',
           )
         }
 
-        const data = await getWeather({
-          name: weatherLocation.name || 'Ma position',
-          latitude: weatherLocation.latitude,
-          longitude: weatherLocation.longitude,
-        })
+        const data =
+          await getWeather({
+            name:
+              weatherLocation.name
+              || 'Ma position',
+            latitude:
+              weatherLocation.latitude,
+            longitude:
+              weatherLocation.longitude,
+          })
 
         if (!cancelled) {
           setWeather(data)
@@ -80,275 +140,325 @@ export function WeatherWidget({
     weatherLocation.longitude,
   ])
 
+  useEffect(() => {
+    if (!weather) {
+      return
+    }
+
+    const today =
+      weather.current.time.slice(
+        0,
+        10,
+      )
+
+    const alerts =
+      getWeatherAlerts(
+        weather,
+      ).filter(
+        (alert) =>
+          alert.time?.slice(
+            0,
+            10,
+          ) === today,
+      )
+
+    for (const alert of alerts) {
+      const key = [
+        alert.type,
+        alert.severity,
+      ].join('-')
+
+      if (
+        notifiedAlerts.current.has(
+          key,
+        )
+      ) {
+        continue
+      }
+
+      notifiedAlerts.current.add(
+        key,
+      )
+
+      toast({
+        type:
+          mapAlertSeverityToToastType(
+            alert.severity,
+          ),
+        title: alert.title,
+        message: alert.message,
+        duration:
+          alert.severity === 'info'
+          ? 5000
+          : null,
+      })
+    }
+  }, [
+    weather,
+    toast,
+  ])
+
   if (loading) {
     return (
-      <button
-        type="button"
-        onClick={onClick}
-        className="card w-full border border-base-300 bg-base-100 text-left shadow-sm"
-      >
-        <div className="card-body p-5">
-          <div className="flex items-center gap-3">
-            <div className="skeleton h-11 w-11 shrink-0 rounded-xl" />
-
-            <div className="space-y-2">
-              <div className="skeleton h-4 w-24" />
-              <div className="skeleton h-3 w-32" />
-            </div>
-          </div>
-
-          <div className="mt-5 skeleton h-10 w-28" />
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="skeleton h-16 w-full rounded-xl" />
-            <div className="skeleton h-16 w-full rounded-xl" />
-          </div>
+      <div className="card w-full border border-base-300 bg-base-100 shadow-sm">
+        <div className="card-body flex min-h-28 items-center justify-center p-4">
+          <span className="loading loading-spinner loading-sm text-info" />
         </div>
-      </button>
+      </div>
     )
   }
 
-  if (error || !weather) {
+  if (
+    error
+    || !weather
+  ) {
     return (
       <button
         type="button"
         onClick={onClick}
-        className="card w-full border border-base-300 bg-base-100 text-left shadow-sm"
+        className="card w-full border border-error/30 bg-base-100 text-left shadow-sm"
       >
-        <div className="card-body p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-error/10">
-              <CloudSun className="h-5 w-5 text-error" />
-            </div>
-
+        <div className="card-body p-4">
+          <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-base-content/60">
+              <p className="text-xs font-medium uppercase tracking-wide text-error">
                 Météo
               </p>
 
-              <p className="mt-1 text-sm text-base-content/40">
-                Conditions météorologiques
+              <p className="mt-1 font-semibold text-error">
+                Données indisponibles
               </p>
             </div>
-          </div>
 
-          <div className="alert alert-error mt-5">
-            <AlertTriangle className="h-5 w-5" />
-
-            <span className="text-sm">
-              Impossible de récupérer la météo.
-            </span>
+            <CloudSun className="h-4 w-4 text-error" />
           </div>
         </div>
       </button>
     )
   }
 
-  const description = getWeatherDescription(
-    weather.current.weatherCode,
-  )
+  const description =
+    getWeatherDescription(
+      weather.current.weatherCode,
+    )
 
-  const today = weather.current.time.slice(0, 10)
+  const today =
+    weather.current.time.slice(
+      0,
+      10,
+    )
 
-  const todayAlerts = getWeatherAlerts(weather).filter(
-    (alert) => alert.time?.slice(0, 10) === today,
-  )
+  const todayAlerts =
+    getWeatherAlerts(
+      weather,
+    ).filter(
+      (alert) =>
+        alert.time?.slice(
+          0,
+          10,
+        ) === today,
+    )
 
-  const alertSeverity = getHighestAlertSeverity(
-    todayAlerts.map((alert) => alert.severity),
-  )
+  const alertSeverity =
+    getHighestAlertSeverity(
+      todayAlerts.map(
+        (alert) => alert.severity,
+      ),
+    )
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="card w-full border border-base-300 bg-base-100 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+      className="card w-full border border-base-300 bg-base-100 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="card-body p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-info/10">
-              <CloudSun className="h-5 w-5 text-info" />
-            </div>
-
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-base-content/60">
-                Météo
-              </p>
-
-              <div className="mt-1 flex items-center gap-1 text-sm text-base-content/40">
-                <MapPin className="h-3.5 w-3.5" />
-
-                <span className="truncate">
-                  {weather.location.name}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {alertSeverity && (
-            <span
-              className={getAlertIndicatorClass(
-                alertSeverity,
-              )}
-              title={getAlertIndicatorTitle(alertSeverity)}
-              aria-label={getAlertIndicatorTitle(
-                alertSeverity,
-              )}
-            >
-              <AlertTriangle className="h-4 w-4" />
-            </span>
-          )}
-        </div>
-
-        <div className="mt-5 flex items-center justify-between gap-4">
-          <div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-bold text-base-content">
-                {Math.round(weather.current.temperature)}
-              </span>
-
-              <span className="text-xl text-base-content/50">
-                °C
-              </span>
-            </div>
-
-            <p className="mt-1 text-sm text-base-content/60">
-              {description.label}
+      <div className="card-body gap-3 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-base-content/50">
+              Météo
             </p>
-          </div>
 
-          <span className="text-5xl">
-            {description.icon}
-          </span>
-        </div>
+            <div className="mt-1 flex items-center gap-1.5 text-sm text-base-content/50">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <Metric
-            icon={<CloudSun className="h-4 w-4" />}
-            label="Ressenti"
-            value={`${Math.round(weather.current.apparentTemperature)}°C`}
-          />
-
-          <Metric
-            icon={<Wind className="h-4 w-4" />}
-            label="Vent"
-            value={`${Math.round(weather.current.windSpeed)} km/h`}
-          />
-        </div>
-
-        {alertSeverity && (
-          <div
-            className={`mt-4 rounded-xl p-3 ${getAlertBackgroundClass(alertSeverity)}`}
-          >
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-
-              <span className="text-sm font-medium">
-                {getAlertIndicatorTitle(alertSeverity)}
+              <span className="truncate">
+                {weather.location.name}
               </span>
             </div>
           </div>
-        )}
 
-        <div className="mt-4 flex items-center justify-between">
-          <span className="text-xs text-base-content/40">
-            Prévisions et détails météo
-          </span>
+          <div className="flex items-center gap-2">
+            {alertSeverity && (
+              <span
+                className={
+                  getAlertIndicatorClass(
+                    alertSeverity,
+                  )
+                }
+                title={
+                  getAlertIndicatorTitle(
+                    alertSeverity,
+                  )
+                }
+                aria-label={
+                  getAlertIndicatorTitle(
+                    alertSeverity,
+                  )
+                }
+              >
+                <AlertTriangle className="h-4 w-4" />
+              </span>
+            )}
 
-          <span className="text-sm font-medium text-info">
-            Voir →
-          </span>
+            <span className="text-2xl">
+              {description.icon}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <InlineMetric
+            label="Temp."
+            value={
+              `${Math.round(
+                weather.current.temperature,
+              )}°C`
+            }
+          />
+
+          <InlineMetric
+            label="Ressenti"
+            value={
+              `${Math.round(
+                weather.current.apparentTemperature,
+              )}°C`
+            }
+          />
+
+          <InlineMetric
+            icon={
+              <Wind className="h-3.5 w-3.5" />
+            }
+            label="Vent"
+            value={
+              `${Math.round(
+                weather.current.windSpeed,
+              )} km/h`
+            }
+          />
+
+          <InlineMetric
+            label=""
+            value={description.label}
+          />
         </div>
       </div>
     </button>
   )
 }
 
-interface MetricProps {
-  icon: React.ReactNode
-  label: string
-  value: string
-}
 
-function Metric({
+function InlineMetric({
   icon,
   label,
   value,
-}: MetricProps) {
+}: {
+  icon?: React.ReactNode
+  label: string
+  value: string
+}) {
   return (
-    <div className="rounded-xl bg-base-200 p-3">
-      <div className="flex items-center gap-2 text-base-content/50">
-        {icon}
+    <div className="flex items-center gap-1.5 text-sm">
+      {icon && (
+        <span className="text-base-content/40">
+          {icon}
+        </span>
+      )}
 
-        <span className="text-xs">
+      {label && (
+        <span className="text-xs text-base-content/45">
           {label}
         </span>
-      </div>
+      )}
 
-      <p className="mt-1 font-semibold text-base-content">
+      <span className="font-semibold text-base-content">
         {value}
-      </p>
+      </span>
     </div>
   )
 }
 
+
 function getHighestAlertSeverity(
   severities: WeatherAlertSeverity[],
 ): WeatherAlertSeverity | null {
-  if (severities.includes('danger')) {
+  if (
+    severities.includes(
+      'danger',
+    )
+  ) {
     return 'danger'
   }
 
-  if (severities.includes('warning')) {
+  if (
+    severities.includes(
+      'warning',
+    )
+  ) {
     return 'warning'
   }
 
-  if (severities.includes('info')) {
+  if (
+    severities.includes(
+      'info',
+    )
+  ) {
     return 'info'
   }
 
   return null
 }
 
+
 function getAlertIndicatorClass(
   severity: WeatherAlertSeverity,
 ): string {
-  if (severity === 'danger') {
-    return 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-error/10 text-error'
+  const classes = {
+    danger:
+      'text-error',
+    warning:
+      'text-warning',
+    info:
+      'text-info',
   }
 
-  if (severity === 'warning') {
-    return 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning'
-  }
-
-  return 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info'
+  return classes[severity]
 }
 
-function getAlertBackgroundClass(
-  severity: WeatherAlertSeverity,
-): string {
-  if (severity === 'danger') {
-    return 'bg-error/10 text-error'
-  }
-
-  if (severity === 'warning') {
-    return 'bg-warning/10 text-warning'
-  }
-
-  return 'bg-info/10 text-info'
-}
 
 function getAlertIndicatorTitle(
   severity: WeatherAlertSeverity,
 ): string {
+  const labels = {
+    danger:
+      'Alerte météo importante',
+    warning:
+      'Vigilance météo',
+    info:
+      'Information météo',
+  }
+
+  return labels[severity]
+}
+
+
+function mapAlertSeverityToToastType(
+  severity: WeatherAlertSeverity,
+): 'info' | 'warning' | 'error' {
   if (severity === 'danger') {
-    return 'Alerte météo importante aujourd’hui'
+    return 'error'
   }
 
-  if (severity === 'warning') {
-    return 'Alerte météo aujourd’hui'
-  }
-
-  return 'Information météo aujourd’hui'
+  return severity
 }

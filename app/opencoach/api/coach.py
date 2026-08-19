@@ -33,6 +33,7 @@ from opencoach.readiness import (
 from opencoach.schemas.coach import (
     CoachDecisionResponse,
     CoachReadinessResponse,
+    CoachReadinessSignalResponse,
     CoachSessionResponse,
     CoachTodayResponse,
 )
@@ -143,25 +144,29 @@ def _to_response(
     return CoachTodayResponse(
         date=assessment.date,
 
-        session=CoachSessionResponse(
-            id=session.id,
-            date=session.date,
-            type=session.type,
-            sport_type=session.sport_type,
-            title=session.title,
-            description=session.description,
-            duration_minutes=(
-                session.duration_minutes
-            ),
-            distance_km=session.distance_km,
-            elevation_gain_m=(
-                session.elevation_gain_m
-            ),
-            intensity=session.intensity,
-            heart_rate_zone=(
-                session.heart_rate_zone
-            ),
-            status=session.status,
+        session=(
+            CoachSessionResponse(
+                id=session.id,
+                date=session.date,
+                type=session.type,
+                sport_type=session.sport_type,
+                title=session.title,
+                description=session.description,
+                duration_minutes=(
+                    session.duration_minutes
+                ),
+                distance_km=session.distance_km,
+                elevation_gain_m=(
+                    session.elevation_gain_m
+                ),
+                intensity=session.intensity,
+                heart_rate_zone=(
+                    session.heart_rate_zone
+                ),
+                status=session.status,
+            )
+            if session is not None
+            else None
         ),
 
         readiness=CoachReadinessResponse(
@@ -176,6 +181,16 @@ def _to_response(
             training_constraints=list(
                 readiness.training_constraints
             ),
+            signals=[
+                CoachReadinessSignalResponse(
+                    metric=signal.metric,
+                    level=signal.level,
+                    reason=signal.reason,
+                    current_value=signal.current_value,
+                    reference_value=signal.reference_value,
+                )
+                for signal in readiness.signals
+            ],
         ),
 
         decision=CoachDecisionResponse(

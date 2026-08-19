@@ -1,9 +1,18 @@
 import {
-  Activity,
-  CircleGauge,
-  Clock3,
-  ShieldCheck,
+  useState,
+} from 'react'
+
+import {
+  Eye,
 } from 'lucide-react'
+
+import {
+  Modal,
+} from '../../components/ui/Modal'
+
+import {
+  CoachTodayDetails,
+} from './CoachTodayDetails'
 
 import type {
   CoachAction,
@@ -15,6 +24,11 @@ import {
 
 
 export function CoachTodayWidget() {
+  const [
+    detailsOpen,
+    setDetailsOpen,
+  ] = useState(false)
+
   const {
     coach,
     loading,
@@ -24,9 +38,9 @@ export function CoachTodayWidget() {
 
   if (loading) {
     return (
-      <div className="card border border-base-300 bg-base-100 shadow-sm">
-        <div className="card-body flex min-h-56 items-center justify-center">
-          <span className="loading loading-spinner loading-md text-primary" />
+      <div className="card w-full border border-base-300 bg-base-100 shadow-sm">
+        <div className="card-body flex min-h-28 items-center justify-center p-4">
+          <span className="loading loading-spinner loading-sm text-primary" />
         </div>
       </div>
     )
@@ -34,13 +48,25 @@ export function CoachTodayWidget() {
 
   if (error) {
     return (
-      <div className="card border border-error/30 bg-base-100 shadow-sm">
-        <div className="card-body">
-          <p className="font-semibold text-error">
-            Coach indisponible
-          </p>
+      <div className="card w-full border border-error/30 bg-base-100 shadow-sm">
+        <div className="card-body p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-error">
+                Coach
+              </p>
 
-          <p className="mt-1 text-sm text-base-content/60">
+              <p className="mt-1 font-semibold text-error">
+                Indisponible
+              </p>
+            </div>
+
+            <span className="badge badge-error badge-sm">
+              Erreur
+            </span>
+          </div>
+
+          <p className="mt-2 text-sm text-base-content/60">
             {error}
           </p>
         </div>
@@ -53,27 +79,19 @@ export function CoachTodayWidget() {
     || !coach
   ) {
     return (
-      <div className="card border border-base-300 bg-base-100 shadow-sm">
-        <div className="card-body p-5">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-base-200 p-3">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
+      <div className="card w-full border border-base-300 bg-base-100 shadow-sm">
+        <div className="card-body p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-base-content/50">
+            Coach du jour
+          </p>
 
-            <div>
-              <p className="text-sm text-base-content/60">
-                Coach du jour
-              </p>
+          <p className="mt-1 font-semibold">
+            Données indisponibles
+          </p>
 
-              <h2 className="text-xl font-bold">
-                Aucune recommandation
-              </h2>
-            </div>
-          </div>
-
-          <p className="mt-4 text-sm text-base-content/60">
-            Aucune séance planifiée n&apos;est actuellement
-            disponible pour aujourd&apos;hui.
+          <p className="mt-1 text-sm text-base-content/50">
+            Les données nécessaires au calcul du Readiness
+            ne sont pas encore disponibles.
           </p>
         </div>
       </div>
@@ -87,103 +105,85 @@ export function CoachTodayWidget() {
   } = coach
 
   return (
-    <div className="card border border-base-300 bg-base-100 shadow-sm">
-      <div className="card-body p-5 sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-base-content/60">
-              Coach du jour
-            </p>
+    <>
+      <div className="card w-full border border-base-300 bg-base-100 shadow-sm">
+        <div className="card-body gap-3 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-wide text-base-content/50">
+                Coach du jour
+              </p>
 
-            <h2 className="mt-1 text-2xl font-bold">
-              {session.title}
-            </h2>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <h2 className="truncate text-lg font-bold">
+                  {session
+                    ? session.title
+                    : 'Repos aujourd’hui'}
+                </h2>
 
-            <p className="mt-1 text-sm text-base-content/50">
-              {session.description}
-            </p>
+                <DecisionBadge
+                  action={decision.action}
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm btn-circle shrink-0"
+              onClick={() =>
+                setDetailsOpen(true)
+              }
+              aria-label="Voir le détail du coach"
+              title="Voir le détail"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
           </div>
 
-          <DecisionBadge
-            action={decision.action}
-          />
-        </div>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <InlineMetric
+              label="Readiness"
+              value={`${Math.round(readiness.score)}/100`}
+            />
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <Metric
-            icon={
-              <CircleGauge className="h-4 w-4" />
-            }
-            label="Readiness"
-            value={`${readiness.score}/100`}
-            detail={formatReadinessLevel(
-              readiness.level,
-            )}
-          />
+            <InlineMetric
+              label="Durée"
+              value={
+                decision.recommendedDurationMinutes
+                  !== undefined
+                  ? `${decision.recommendedDurationMinutes} min`
+                  : 'Repos'
+              }
+            />
 
-          <Metric
-            icon={
-              <Clock3 className="h-4 w-4" />
-            }
-            label="Durée"
-            value={
-              decision.recommendedDurationMinutes
-                !== undefined
-                ? `${decision.recommendedDurationMinutes} min`
-                : 'Repos'
-            }
-            detail={
-              decision.recommendedDurationMinutes
-                !== undefined
-                ? `${decision.originalDurationMinutes} min prévues`
-                : `${decision.originalDurationMinutes} min annulées`
-            }
-          />
+            <InlineMetric
+              label="Intensité"
+              value={
+                formatIntensity(
+                  decision.recommendedIntensity,
+                )
+              }
+            />
+          </div>
 
-          <Metric
-            icon={
-              <Activity className="h-4 w-4" />
-            }
-            label="Intensité"
-            value={
-              formatIntensity(
-                decision.recommendedIntensity,
-              )
-            }
-            detail={
-              `Prévue : ${decision.originalIntensity}`
-            }
-          />
-        </div>
-
-        <div className="mt-5 rounded-xl bg-base-200 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-base-content/50">
-            Recommandation OpenCoach
-          </p>
-
-          <p className="mt-2 font-medium text-base-content">
+          <p className="line-clamp-2 text-sm leading-snug text-base-content/60">
             {decision.reason}
           </p>
         </div>
-
-        {decision.constraints.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {decision.constraints.map(
-              (constraint) => (
-                <span
-                  key={constraint}
-                  className="badge badge-outline"
-                >
-                  {formatConstraint(
-                    constraint,
-                  )}
-                </span>
-              ),
-            )}
-          </div>
-        )}
       </div>
-    </div>
+
+      <Modal
+        title="Coach du jour"
+        open={detailsOpen}
+        onClose={() =>
+          setDetailsOpen(false)
+        }
+      >
+        <CoachTodayDetails
+          coach={coach}
+        />
+      </Modal>
+    </>
   )
 }
 
@@ -204,12 +204,12 @@ function DecisionBadge({
     keep: 'badge-success',
     reduce: 'badge-warning',
     replace: 'badge-info',
-    rest: 'badge-error',
+    rest: 'badge-neutral',
   }[action]
 
   return (
     <span
-      className={`badge ${className} badge-lg`}
+      className={`badge badge-sm ${className}`}
     >
       {label}
     </span>
@@ -217,54 +217,24 @@ function DecisionBadge({
 }
 
 
-interface MetricProps {
-  icon: React.ReactNode
-  label: string
-  value: string
-  detail: string
-}
-
-
-function Metric({
-  icon,
+function InlineMetric({
   label,
   value,
-  detail,
-}: MetricProps) {
+}: {
+  label: string
+  value: string
+}) {
   return (
-    <div className="rounded-xl bg-base-200 p-4">
-      <div className="flex items-center gap-2 text-base-content/50">
-        {icon}
+    <div className="flex items-baseline gap-1.5 text-sm">
+      <span className="text-xs text-base-content/45">
+        {label}
+      </span>
 
-        <span className="text-xs">
-          {label}
-        </span>
-      </div>
-
-      <p className="mt-2 text-lg font-bold">
+      <span className="font-semibold text-base-content">
         {value}
-      </p>
-
-      <p className="mt-1 text-xs text-base-content/50">
-        {detail}
-      </p>
+      </span>
     </div>
   )
-}
-
-
-function formatReadinessLevel(
-  level: string,
-): string {
-  const labels: Record<string, string> = {
-    high: 'Très bonne disponibilité',
-    good: 'Bonne disponibilité',
-    moderate: 'Disponibilité modérée',
-    low: 'Disponibilité faible',
-    very_low: 'Disponibilité très faible',
-  }
-
-  return labels[level] ?? level
 }
 
 
@@ -280,32 +250,6 @@ function formatIntensity(
     recovery: 'Récupération',
   }
 
-  return labels[intensity] ?? intensity
-}
-
-
-function formatConstraint(
-  constraint: string,
-): string {
-  const labels: Record<string, string> = {
-    avoid_high_intensity:
-      'Éviter haute intensité',
-    prefer_recovery_or_rest:
-      'Récupération / repos',
-    reduce_duration:
-      'Réduire la durée',
-    avoid_pain_aggravation:
-      'Ne pas aggraver la douleur',
-    consider_low_motivation:
-      'Motivation basse',
-    monitor_intensity:
-      'Surveiller l’intensité',
-    monitor_recovery:
-      'Surveiller la récupération',
-    reduce_training_load:
-      'Réduire la charge',
-  }
-
-  return labels[constraint]
-    ?? constraint
+  return labels[intensity]
+    ?? intensity
 }

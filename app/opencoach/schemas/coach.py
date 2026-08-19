@@ -24,6 +24,15 @@ class CoachSessionResponse(BaseModel):
 
     status: str
 
+class CoachReadinessSignalResponse(BaseModel):
+    """Signal individuel ayant participé au Readiness."""
+
+    metric: str
+    level: str
+    reason: str
+
+    current_value: float | None
+    reference_value: float | None
 
 class CoachReadinessResponse(BaseModel):
     score: float
@@ -34,18 +43,20 @@ class CoachReadinessResponse(BaseModel):
 
     training_constraints: list[str]
 
+    signals: list[CoachReadinessSignalResponse]
+
 
 class CoachDecisionResponse(BaseModel):
     action: str
     reason: str
 
-    original_duration_minutes: int
+    original_duration_minutes: int | None
     recommended_duration_minutes: int | None
 
     duration_factor: float | None
     intensity_factor: float | None
 
-    original_intensity: str
+    original_intensity: str | None
     recommended_intensity: str | None
 
     constraints: list[str]
@@ -54,6 +65,6 @@ class CoachDecisionResponse(BaseModel):
 class CoachTodayResponse(BaseModel):
     date: date
 
-    session: CoachSessionResponse
+    session: CoachSessionResponse | None
     readiness: CoachReadinessResponse
     decision: CoachDecisionResponse

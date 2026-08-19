@@ -90,18 +90,18 @@ export function Dashboard({
   return (
     <main className="min-h-screen bg-base-200">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <header className="mb-8">
+        <header className="mb-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <div className="badge badge-primary badge-outline mb-3">
+              <div className="badge badge-primary badge-outline badge-sm mb-2">
                 Dashboard
               </div>
 
-              <h1 className="text-3xl font-bold tracking-tight text-base-content sm:text-4xl">
+              <h1 className="text-2xl font-bold tracking-tight text-base-content sm:text-3xl">
                 Bonjour{firstName ? ` ${firstName}` : ''} 👋
               </h1>
 
-              <p className="mt-2 max-w-2xl text-base text-base-content/60">
+              <p className="mt-1 text-sm text-base-content/55">
                 Voici l’état actuel de votre suivi sportif.
               </p>
             </div>
@@ -113,10 +113,11 @@ export function Dashboard({
         </header>
 
         {widgets.length > 0 ? (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <section aria-label="Coach du jour">
               <CoachTodayWidget />
             </section>
+
             {trainingWidget && (
               <section aria-label="Entraînement du jour">
                 {renderWidget(
@@ -127,21 +128,30 @@ export function Dashboard({
             )}
 
             {secondaryWidgets.length > 0 && (
-              <section aria-label="Indicateurs">
+              <section
+                aria-label="Indicateurs"
+                className="pt-1"
+              >
                 <div className="mb-3">
                   <h2 className="text-lg font-semibold text-base-content">
                     Vos indicateurs
                   </h2>
 
-                  <p className="mt-1 text-sm text-base-content/50">
+                  <p className="mt-0.5 text-sm text-base-content/50">
                     Les principales données de votre suivi.
                   </p>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   {secondaryWidgets.map(
-                    ({ widget, Component }) =>
-                      renderWidget(widget, Component),
+                    ({
+                      widget,
+                      Component,
+                    }) =>
+                      renderWidget(
+                        widget,
+                        Component,
+                      ),
                   )}
                 </div>
               </section>

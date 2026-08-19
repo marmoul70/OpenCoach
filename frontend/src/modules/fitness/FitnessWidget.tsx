@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react'
 import {
-  Footprints,
+  useEffect,
+  useState,
+} from 'react'
+
+import {
   HeartPulse,
   Moon,
 } from 'lucide-react'
@@ -19,9 +22,22 @@ interface FitnessWidgetProps {
 export function FitnessWidget({
   onClick,
 }: FitnessWidgetProps) {
-  const [data, setData] = useState<WellnessLatest | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [
+    data,
+    setData,
+  ] = useState<WellnessLatest | null>(
+    null,
+  )
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true)
+
+  const [
+    error,
+    setError,
+  ] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -48,173 +64,149 @@ export function FitnessWidget({
     }
   }, [])
 
+  if (loading) {
+    return (
+      <div className="card w-full border border-base-300 bg-base-100 shadow-sm">
+        <div className="card-body flex min-h-28 items-center justify-center p-4">
+          <span className="loading loading-spinner loading-sm text-success" />
+        </div>
+      </div>
+    )
+  }
+
+  if (
+    error
+    || !data
+  ) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="card w-full border border-error/30 bg-base-100 text-left shadow-sm"
+      >
+        <div className="card-body p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-error">
+                État de forme
+              </p>
+
+              <p className="mt-1 font-semibold text-error">
+                Données indisponibles
+              </p>
+            </div>
+
+            <HeartPulse className="h-4 w-4 text-error" />
+          </div>
+        </div>
+      </button>
+    )
+  }
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className="card w-full border border-base-300 bg-base-100 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+      className="card w-full border border-base-300 bg-base-100 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="card-body p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-success/10">
-              <HeartPulse className="h-5 w-5 text-success" />
-            </div>
+      <div className="card-body gap-3 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-base-content/50">
+              État de forme
+            </p>
 
-            <div>
-              <p className="text-sm font-medium text-base-content/60">
-                État de forme
-              </p>
-
-              <p className="mt-1 text-sm text-base-content/40">
-                {data
-                  ? formatDate(data.date)
-                  : 'Dernières données disponibles'}
-              </p>
-            </div>
+            <p className="mt-1 truncate text-sm text-base-content/50">
+              {formatDate(
+                data.date,
+              )}
+            </p>
           </div>
 
-          {loading && (
-            <span className="loading loading-spinner loading-sm" />
-          )}
+          <HeartPulse className="h-4 w-4 shrink-0 text-success" />
         </div>
 
-        {!loading && error && (
-          <div className="mt-5 text-sm text-error">
-            Données indisponibles
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <InlineMetric
+            icon={
+              <Moon className="h-3.5 w-3.5" />
+            }
+            label="Sommeil"
+            value={
+              data.sleep_score != null
+                ? `${Math.round(data.sleep_score)}/100`
+                : '—'
+            }
+          />
 
-        {!loading && !error && data && (
-          <>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <Metric
-                icon={<Moon className="h-4 w-4" />}
-                label="Sommeil"
-                value={
-                  data.sleep_score != null
-                    ? `${Math.round(data.sleep_score)}/100`
-                    : '—'
-                }
-              />
+          <InlineMetric
+            icon={
+              <HeartPulse className="h-3.5 w-3.5" />
+            }
+            label="HRV"
+            value={
+              data.hrv != null
+                ? `${Math.round(data.hrv)} ms`
+                : '—'
+            }
+          />
 
-              <Metric
-                icon={<HeartPulse className="h-4 w-4" />}
-                label="HRV"
-                value={
-                  data.hrv != null
-                    ? `${Math.round(data.hrv)} ms`
-                    : '—'
-                }
-              />
+          <InlineMetric
+            label="FC repos"
+            value={
+              data.resting_hr != null
+                ? `${data.resting_hr} bpm`
+                : '—'
+            }
+          />
 
-              <Metric
-                icon={<HeartPulse className="h-4 w-4" />}
-                label="FC repos"
-                value={
-                  data.resting_hr != null
-                    ? `${data.resting_hr} bpm`
-                    : '—'
-                }
-              />
-
-              <Metric
-                icon={<Footprints className="h-4 w-4" />}
-                label="Pas"
-                value={
-                  data.steps != null
-                    ? data.steps.toLocaleString('fr-FR')
-                    : '—'
-                }
-              />
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <SmallMetric
-                label="CTL"
-                value={formatNumber(data.fitness_ctl)}
-              />
-
-              <SmallMetric
-                label="ATL"
-                value={formatNumber(data.fatigue_atl)}
-              />
-
-              <SmallMetric
-                label="Ramp"
-                value={formatRamp(data.ramp_rate)}
-              />
-            </div>
-
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-xs text-base-content/50">
-                SpO₂ {formatSpo2(data.spo2)}
-              </span>
-
-              <span className="text-sm font-medium text-success">
-                Voir →
-              </span>
-            </div>
-          </>
-        )}
+          <InlineMetric
+            label="CTL"
+            value={
+              formatNumber(
+                data.fitness_ctl,
+              )
+            }
+          />
+        </div>
       </div>
     </button>
   )
 }
 
 
-interface MetricProps {
-  icon: React.ReactNode
-  label: string
-  value: string
-}
-
-
-function Metric({
+function InlineMetric({
   icon,
   label,
   value,
-}: MetricProps) {
-  return (
-    <div className="rounded-xl bg-base-200 p-3">
-      <div className="flex items-center gap-1.5 text-base-content/50">
-        {icon}
-
-        <span className="text-xs">
-          {label}
-        </span>
-      </div>
-
-      <p className="mt-1 text-lg font-semibold text-base-content">
-        {value}
-      </p>
-    </div>
-  )
-}
-
-
-function SmallMetric({
-  label,
-  value,
 }: {
+  icon?: React.ReactNode
   label: string
   value: string
 }) {
   return (
-    <div className="rounded-lg border border-base-300 p-2 text-center">
-      <p className="text-xs text-base-content/50">
-        {label}
-      </p>
+    <div className="flex items-center gap-1.5 text-sm">
+      {icon && (
+        <span className="text-base-content/40">
+          {icon}
+        </span>
+      )}
 
-      <p className="mt-1 font-semibold">
+      <span className="text-xs text-base-content/45">
+        {label}
+      </span>
+
+      <span className="font-semibold text-base-content">
         {value}
-      </p>
+      </span>
     </div>
   )
 }
 
 
-function formatDate(value: string): string {
+function formatDate(
+  value: string,
+): string {
   return new Intl.DateTimeFormat(
     'fr-FR',
     {
@@ -222,7 +214,11 @@ function formatDate(value: string): string {
       day: 'numeric',
       month: 'long',
     },
-  ).format(new Date(`${value}T12:00:00`))
+  ).format(
+    new Date(
+      `${value}T12:00:00`,
+    ),
+  )
 }
 
 
@@ -232,24 +228,4 @@ function formatNumber(
   return value == null
     ? '—'
     : value.toFixed(1)
-}
-
-
-function formatRamp(
-  value: number | null,
-): string {
-  if (value == null) {
-    return '—'
-  }
-
-  return `${value > 0 ? '+' : ''}${value.toFixed(1)}`
-}
-
-
-function formatSpo2(
-  value: number | null,
-): string {
-  return value == null
-    ? '—'
-    : `${Math.round(value)} %`
 }

@@ -4,6 +4,7 @@ export type CoachAction =
   | 'replace'
   | 'rest'
 
+
 export interface CoachSession {
   id?: string
 
@@ -25,6 +26,17 @@ export interface CoachSession {
   status: string
 }
 
+
+export interface CoachReadinessSignal {
+  metric: string
+  level: string
+  reason: string
+
+  currentValue?: number
+  referenceValue?: number
+}
+
+
 export interface CoachReadiness {
   score: number
   level: string
@@ -33,28 +45,33 @@ export interface CoachReadiness {
   criticalCount: number
 
   trainingConstraints: string[]
+
+  signals: CoachReadinessSignal[]
 }
+
 
 export interface CoachDecision {
   action: CoachAction
   reason: string
 
-  originalDurationMinutes: number
+  originalDurationMinutes?: number
   recommendedDurationMinutes?: number
 
   durationFactor?: number
   intensityFactor?: number
 
-  originalIntensity: string
+  originalIntensity?: string
   recommendedIntensity?: string
 
   constraints: string[]
 }
 
+
 export interface CoachToday {
   date: string
 
-  session: CoachSession
+  session: CoachSession | null
+
   readiness: CoachReadiness
   decision: CoachDecision
 }

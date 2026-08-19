@@ -1,5 +1,4 @@
 import type {
-  CoachAction,
   CoachToday,
 } from '../../modules/coach/types'
 
@@ -26,7 +25,7 @@ interface CoachTodayApiResponse {
     heart_rate_zone: string | null
 
     status: string
-  }
+  } | null
 
   readiness: {
     score: number
@@ -36,19 +35,33 @@ interface CoachTodayApiResponse {
     critical_count: number
 
     training_constraints: string[]
+
+    signals: {
+      metric: string
+      level: string
+      reason: string
+
+      current_value: number | null
+      reference_value: number | null
+    }[]
   }
 
   decision: {
-    action: CoachAction
+    action:
+      | 'keep'
+      | 'reduce'
+      | 'replace'
+      | 'rest'
+
     reason: string
 
-    original_duration_minutes: number
+    original_duration_minutes: number | null
     recommended_duration_minutes: number | null
 
     duration_factor: number | null
     intensity_factor: number | null
 
-    original_intensity: string
+    original_intensity: string | null
     recommended_intensity: string | null
 
     constraints: string[]
@@ -56,89 +69,204 @@ interface CoachTodayApiResponse {
 }
 
 
-export class CoachTodayUnavailableError extends Error {
-  constructor(message: string) {
+export class CoachTodayUnavailableError
+  extends Error {
+  constructor(
+    message: string,
+  ) {
     super(message)
 
-    this.name = 'CoachTodayUnavailableError'
+    this.name =
+      'CoachTodayUnavailableError'
   }
 }
 
 
 export async function fetchCoachToday(): Promise<CoachToday> {
-  const response = await fetch(
-    '/api/coach/today',
-  )
+  const response =
+    await fetch(
+      '/api/coach/today',
+    )
 
   if (response.status === 404) {
+    const detail =
+      await readErrorDetail(
+        response,
+      )
+
     throw new CoachTodayUnavailableError(
-      'Aucune recommandation disponible pour aujourd’hui.',
+      detail
+      ?? (
+        'Les données nécessaires au Coach '
+        + 'ne sont pas disponibles aujourd’hui.'
+      ),
     )
   }
 
   if (!response.ok) {
+    const detail =
+      await readErrorDetail(
+        response,
+      )
+
     throw new Error(
-      `Impossible de charger le coach (${response.status}).`,
+      detail
+      ?? `Erreur HTTP ${response.status}`,
     )
   }
 
-  const data =
-    (await response.json()) as CoachTodayApiResponse
+  const data = (
+    await response.json()
+  ) as CoachTodayApiResponse
 
   return {
-    date: data.date,
+    date:
+      data.date,
 
-    session: {
-      id: data.session.id ?? undefined,
-      date: data.session.date,
-      type: data.session.type,
-      sportType: data.session.sport_type,
-      title: data.session.title,
-      description: data.session.description,
-      durationMinutes:
-        data.session.duration_minutes,
-      distanceKm:
-        data.session.distance_km ?? undefined,
-      elevationGainM:
-        data.session.elevation_gain_m ?? undefined,
-      intensity: data.session.intensity,
-      heartRateZone:
-        data.session.heart_rate_zone ?? undefined,
-      status: data.session.status,
-    },
+    session:
+      data.session
+        ? {
+            id:
+              data.session.id
+              ?? undefined,
+
+            date:
+              data.session.date,
+
+            type:
+              data.session.type,
+
+            sportType:
+              data.session.sport_type,
+
+            title:
+              data.session.title,
+
+            description:
+              data.session.description,
+
+            durationMinutes:
+              data.session.duration_minutes,
+
+            distanceKm:
+              data.session.distance_km
+              ?? undefined,
+
+            elevationGainM:
+              data.session.elevation_gain_m
+              ?? undefined,
+
+            intensity:
+              data.session.intensity,
+
+            heartRateZone:
+              data.session.heart_rate_zone
+              ?? undefined,
+
+            status:
+              data.session.status,
+          }
+        : null,
 
     readiness: {
-      score: data.readiness.score,
-      level: data.readiness.level,
+      score:
+        data.readiness.score,
+
+      level:
+        data.readiness.level,
+
       warningCount:
         data.readiness.warning_count,
+
       criticalCount:
         data.readiness.critical_count,
+
       trainingConstraints:
-        data.readiness.training_constraints,
+        data.readiness
+          .training_constraints,
+
+      signals:
+        data.readiness.signals.map(
+          (signal) => ({
+            metric:
+              signal.metric,
+
+            level:
+              signal.level,
+
+            reason:
+              signal.reason,
+
+            currentValue:
+              signal.current_value
+              ?? undefined,
+
+            referenceValue:
+              signal.reference_value
+              ?? undefined,
+          }),
+        ),
     },
 
     decision: {
-      action: data.decision.action,
-      reason: data.decision.reason,
+      action:
+        data.decision.action,
+
+      reason:
+        data.decision.reason,
+
       originalDurationMinutes:
-        data.decision.original_duration_minutes,
+        data.decision
+          .original_duration_minutes
+        ?? undefined,
+
       recommendedDurationMinutes:
-        data.decision.recommended_duration_minutes
-          ?? undefined,
+        data.decision
+          .recommended_duration_minutes
+        ?? undefined,
+
       durationFactor:
         data.decision.duration_factor
-          ?? undefined,
+        ?? undefined,
+
       intensityFactor:
         data.decision.intensity_factor
-          ?? undefined,
+        ?? undefined,
+
       originalIntensity:
-        data.decision.original_intensity,
+        data.decision.original_intensity
+        ?? undefined,
+
       recommendedIntensity:
-        data.decision.recommended_intensity
-          ?? undefined,
+        data.decision
+          .recommended_intensity
+        ?? undefined,
+
       constraints:
         data.decision.constraints,
     },
+  }
+}
+
+
+async function readErrorDetail(
+  response: Response,
+): Promise<string | null> {
+  try {
+    const payload =
+      (await response.json()) as {
+        detail?: unknown
+      }
+
+    if (
+      typeof payload.detail
+      === 'string'
+    ) {
+      return payload.detail
+    }
+
+    return null
+  } catch {
+    return null
   }
 }

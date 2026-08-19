@@ -26,6 +26,7 @@ from opencoach.readiness import (
     ReadinessAssessment,
     ReadinessBaseline,
     ReadinessComparison,
+    ReadinessSignal,
 )
 
 
@@ -142,9 +143,30 @@ def create_assessment() -> CoachDecisionAssessment:
     )
 
     readiness = DailyReadiness(
-        score=50.0,
-        level="moderate",
-        signals=(),
+                score=50.0,
+                level="moderate",
+                signals=(
+            ReadinessSignal(
+                metric="hrv",
+                level="normal",
+                reason=(
+                    "HRV -3.8 % par rapport "
+                    "à la baseline."
+                ),
+                current_value=50.0,
+                reference_value=52.0,
+            ),
+            ReadinessSignal(
+                metric="sleep_duration",
+                level="warning",
+                reason=(
+                    "Sommeil 7.0 h, "
+                    "-6.7 % vs baseline."
+                ),
+                current_value=25200.0,
+                reference_value=27000.0,
+            ),
+        ),
         warning_count=1,
         critical_count=1,
         training_constraints=(
@@ -235,6 +257,25 @@ def test_coach_api_returns_today_decision() -> None:
 
     payload = response.json()
 
+    assert "signals" in payload["readiness"]
+
+    assert isinstance(
+        payload["readiness"]["signals"],
+        list,
+    )
+
+    assert len(
+        payload["readiness"]["signals"]
+    ) > 0
+
+    signal = payload["readiness"]["signals"][0]
+
+    assert "metric" in signal
+    assert "level" in signal
+    assert "reason" in signal
+    assert "current_value" in signal
+    assert "reference_value" in signal
+
     assert payload["date"] == (
         TODAY.isoformat()
     )
@@ -275,11 +316,34 @@ def test_coach_api_returns_today_decision() -> None:
     ]
 
 
-def test_coach_api_returns_404_without_planned_session() -> None:
+def create_rest_assessment() -> CoachDecisionAssessment:
+    assessment = create_assessment()
+
+    decision = CoachDecision(
+        action="rest",
+        reason=(
+            "Aucune séance n'est planifiée aujourd'hui. "
+            "Journée de repos maintenue."
+        ),
+        original_duration_minutes=None,
+        recommended_duration_minutes=None,
+        duration_factor=None,
+        intensity_factor=None,
+        original_intensity=None,
+        recommended_intensity=None,
+        constraints=(),
+    )
+
+    return CoachDecisionAssessment(
+        date=TODAY,
+        session=None,
+        readiness=assessment.readiness,
+        decision=decision,
+    )
+
+def test_coach_api_returns_rest_without_planned_session() -> None:
     service = FakeCoachDecisionService(
-        error=PlannedSessionUnavailableError(
-            "Aucune séance planifiée disponible."
-        )
+        assessment=create_rest_assessment(),
     )
 
     client, _ = create_client(
@@ -290,10 +354,35 @@ def test_coach_api_returns_404_without_planned_session() -> None:
         "/api/coach/today"
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 200
 
-    assert response.json() == {
-        "detail": (
-            "Aucune séance planifiée disponible."
-        )
-    }
+    payload = response.json()
+
+    assert "signals" in payload["readiness"]
+
+    assert isinstance(
+        payload["readiness"]["signals"],
+        list,
+    )
+
+    assert len(
+        payload["readiness"]["signals"]
+    ) > 0
+
+    signal = payload["readiness"]["signals"][0]
+
+    assert "metric" in signal
+    assert "level" in signal
+    assert "reason" in signal
+    assert "current_value" in signal
+    assert "reference_value" in signal
+
+    assert payload["session"] is None
+    assert payload["decision"]["action"] == "rest"
+
+    assert (
+        payload["decision"][
+            "recommended_duration_minutes"
+        ]
+        is None
+    )

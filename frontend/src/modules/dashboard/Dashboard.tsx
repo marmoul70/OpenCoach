@@ -6,6 +6,9 @@ import { getWidgetComponent } from '../../components/widgets/WidgetComponentRegi
 import { getWidgetViewComponent } from '../../components/widgets/WidgetViewRegistry'
 import { getWidgets } from '../../core/widgets'
 import { useAthleteProfile } from '../../core/profile'
+import {
+  CoachTodayWidget,
+} from '../coach/CoachTodayWidget'
 
 interface DashboardProps {
   onOpenTraining: () => void
@@ -111,6 +114,9 @@ export function Dashboard({
 
         {widgets.length > 0 ? (
           <div className="space-y-6">
+            <section aria-label="Coach du jour">
+              <CoachTodayWidget />
+            </section>
             {trainingWidget && (
               <section aria-label="Entraînement du jour">
                 {renderWidget(

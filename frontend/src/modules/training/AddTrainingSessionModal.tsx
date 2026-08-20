@@ -22,6 +22,9 @@ import type {
   TrainingAvailableActivity,
   TrainingSessionCreate,
 } from './types'
+import {
+  TRAINING_INTENSITIES,
+} from './intensity'
 
 
 interface AddTrainingSessionModalProps {
@@ -945,11 +948,6 @@ function ManualPanel({
         </span>
 
         <select
-          className="
-            select
-            select-bordered
-            w-full
-          "
           value={form.intensity}
           onChange={(event) =>
             update(
@@ -957,30 +955,26 @@ function ManualPanel({
               event.target.value,
             )
           }
+          className="
+            select
+            select-bordered
+            w-full
+          "
         >
           <option value="">
             Non renseignée
           </option>
 
-          <option value="Très facile">
-            Très facile
-          </option>
-
-          <option value="Facile">
-            Facile
-          </option>
-
-          <option value="Modérée">
-            Modérée
-          </option>
-
-          <option value="Soutenue">
-            Soutenue
-          </option>
-
-          <option value="Élevée">
-            Élevée
-          </option>
+          {TRAINING_INTENSITIES.map(
+            (intensity) => (
+              <option
+                key={intensity.value}
+                value={intensity.value}
+              >
+                {intensity.label}
+              </option>
+            ),
+          )}
         </select>
       </label>
 

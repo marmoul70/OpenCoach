@@ -24,7 +24,9 @@ import {
 import type {
   TrainingSession,
 } from './types'
-
+import {
+  formatTrainingIntensity,
+} from './intensity'
 
 interface TrainingDetailsProps {
   session: TrainingSession
@@ -378,7 +380,9 @@ function SessionSummary({
           icon={Gauge}
           label="Intensité"
           value={
-            session.intensity
+            formatTrainingIntensity(
+              session.intensity,
+            )
             || '—'
           }
         />

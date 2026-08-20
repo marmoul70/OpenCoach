@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -226,6 +226,206 @@ def test_sql_activity_repository_lists_activities_by_date() -> None:
         assert activities[1].provider_activity_id == "i1"
         assert activities[0].feel == 2
         assert activities[1].feel == 2
+
+    finally:
+        db.close()
+
+def test_sql_activity_repository_lists_activities_between_dates() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlActivityRepository(db)
+
+        before = create_activity()
+        before.provider_activity_id = "before"
+        before.start_at = datetime(
+            2026,
+            8,
+            9,
+            8,
+            0,
+            tzinfo=timezone.utc,
+        )
+
+        first = create_activity()
+        first.provider_activity_id = "first"
+        first.start_at = datetime(
+            2026,
+            8,
+            10,
+            8,
+            0,
+            tzinfo=timezone.utc,
+        )
+
+        second = create_activity()
+        second.provider_activity_id = "second"
+        second.start_at = datetime(
+            2026,
+            8,
+            12,
+            8,
+            0,
+            tzinfo=timezone.utc,
+        )
+
+        after = create_activity()
+        after.provider_activity_id = "after"
+        after.start_at = datetime(
+            2026,
+            8,
+            13,
+            8,
+            0,
+            tzinfo=timezone.utc,
+        )
+
+        for activity in (
+            before,
+            first,
+            second,
+            after,
+        ):
+            repository.save_activity(
+                profile.id,
+                activity,
+            )
+
+        activities = (
+            repository.list_activities_between(
+                profile.id,
+                date(2026, 8, 10),
+                date(2026, 8, 12),
+            )
+        )
+
+        assert len(activities) == 2
+
+        assert {
+            activity.provider_activity_id
+            for activity in activities
+        } == {
+            "first",
+            "second",
+        }
+
+    finally:
+        db.close()
+
+
+def test_sql_activity_repository_uses_local_date_first() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlActivityRepository(db)
+
+        activity = create_activity()
+
+        activity.provider_activity_id = (
+            "local-date"
+        )
+
+        activity.start_at = datetime(
+            2026,
+            8,
+            19,
+            22,
+            30,
+            tzinfo=timezone.utc,
+        )
+
+        activity.start_at_local = datetime(
+            2026,
+            8,
+            20,
+            0,
+            30,
+        )
+
+        repository.save_activity(
+            profile.id,
+            activity,
+        )
+
+        august_19 = (
+            repository.list_activities_between(
+                profile.id,
+                date(2026, 8, 19),
+                date(2026, 8, 19),
+            )
+        )
+
+        august_20 = (
+            repository.list_activities_between(
+                profile.id,
+                date(2026, 8, 20),
+                date(2026, 8, 20),
+            )
+        )
+
+        assert august_19 == []
+
+        assert len(august_20) == 1
+
+        assert (
+            august_20[0]
+            .provider_activity_id
+            == "local-date"
+        )
+
+    finally:
+        db.close()
+
+
+def test_sql_activity_repository_falls_back_to_start_at() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlActivityRepository(db)
+
+        activity = create_activity()
+
+        activity.provider_activity_id = (
+            "fallback-start-at"
+        )
+
+        activity.start_at = datetime(
+            2026,
+            8,
+            20,
+            8,
+            0,
+            tzinfo=timezone.utc,
+        )
+
+        activity.start_at_local = None
+
+        repository.save_activity(
+            profile.id,
+            activity,
+        )
+
+        activities = (
+            repository.list_activities_between(
+                profile.id,
+                date(2026, 8, 20),
+                date(2026, 8, 20),
+            )
+        )
+
+        assert len(activities) == 1
+
+        assert (
+            activities[0]
+            .provider_activity_id
+            == "fallback-start-at"
+        )
 
     finally:
         db.close()

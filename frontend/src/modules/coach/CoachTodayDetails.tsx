@@ -15,7 +15,9 @@ import type {
 interface CoachTodayDetailsProps {
   coach: CoachToday
 }
-
+import {
+  formatTrainingIntensity,
+} from '../training/intensity'
 
 export function CoachTodayDetails({
   coach,
@@ -442,18 +444,11 @@ function formatReadinessLevel(
 
 
 function formatIntensity(
-  intensity?: string,
+  intensity: string | null | undefined,
 ): string {
-  if (!intensity) {
-    return 'Aucune'
-  }
-
-  const labels: Record<string, string> = {
-    easy: 'Facile',
-    recovery: 'Récupération',
-  }
-
-  return labels[intensity] ?? intensity
+  return formatTrainingIntensity(
+    intensity,
+  )
 }
 
 

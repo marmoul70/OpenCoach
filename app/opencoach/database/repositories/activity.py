@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
+from datetime import date
 
 from opencoach.models import Activity
 
@@ -22,4 +23,14 @@ class ActivityRepository(ABC):
         athlete_profile_id: UUID,
     ) -> list[Activity]:
         """Retourne les activités d'un athlète."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_activities_between(
+        self,
+        athlete_profile_id: UUID,
+        start_date: date,
+        end_date: date,
+    ) -> list[Activity]:
+        """Retourne les activités comprises dans une période."""
         raise NotImplementedError

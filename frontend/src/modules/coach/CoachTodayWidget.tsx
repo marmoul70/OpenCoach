@@ -21,7 +21,9 @@ import type {
 import {
   useCoachToday,
 } from './useCoachToday'
-
+import {
+  formatTrainingIntensity,
+} from '../training/intensity'
 
 export function CoachTodayWidget() {
   const [
@@ -239,17 +241,9 @@ function InlineMetric({
 
 
 function formatIntensity(
-  intensity?: string,
+  intensity: string | null | undefined,
 ): string {
-  if (!intensity) {
-    return 'Aucune'
-  }
-
-  const labels: Record<string, string> = {
-    easy: 'Facile',
-    recovery: 'Récupération',
-  }
-
-  return labels[intensity]
-    ?? intensity
+  return formatTrainingIntensity(
+    intensity,
+  )
 }

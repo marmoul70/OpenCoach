@@ -5,7 +5,9 @@ import {
 import {
   useTrainingSessions,
 } from './trainingStore'
-
+import {
+  formatTrainingIntensity,
+} from './intensity'
 
 interface TrainingWidgetProps {
   onClick: () => void
@@ -135,7 +137,11 @@ export function TrainingWidget({
 
           <InlineMetric
             label="Intensité"
-            value={session.intensity}
+            value={
+              formatTrainingIntensity(
+                session.intensity,
+              )
+            }
           />
 
           <InlineMetric

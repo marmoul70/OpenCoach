@@ -187,7 +187,7 @@ def _build_replace_decision(
         ),
         intensity_factor=None,
         original_intensity=session.intensity,
-        recommended_intensity="recovery",
+        recommended_intensity="very_easy",
         constraints=(
             readiness.training_constraints
         ),

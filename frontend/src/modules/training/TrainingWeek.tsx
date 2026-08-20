@@ -40,6 +40,9 @@ import type {
   TrainingSession,
 } from './types'
 
+import {
+  formatTrainingIntensity,
+} from './intensity'
 
 const dayLabels = [
   'Lundi',
@@ -850,7 +853,9 @@ function SessionRow({
         {session.intensity && (
           <InlineValue
             value={
-              session.intensity
+              formatTrainingIntensity(
+                session.intensity,
+              )
             }
           />
         )}

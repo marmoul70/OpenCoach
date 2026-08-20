@@ -1,4 +1,7 @@
+from datetime import date, datetime, time, timedelta
 from uuid import UUID
+
+from sqlalchemy import and_, or_, select
 
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
@@ -196,6 +199,86 @@ class SqlActivityRepository(ActivityRepository):
 
             raise ActivityRepositoryError(
                 "Impossible de charger les activités."
+            ) from exc
+
+    def list_activities_between(
+        self,
+        athlete_profile_id: UUID,
+        start_date: date,
+        end_date: date,
+    ) -> list[Activity]:
+        """Retourne les activités comprises dans une période.
+
+        La date locale de l'activité est utilisée en priorité.
+        Lorsque celle-ci n'est pas disponible, ``start_at`` est
+        utilisé comme solution de repli.
+        """
+
+        if end_date < start_date:
+            return []
+
+        start_datetime = datetime.combine(
+            start_date,
+            time.min,
+        )
+
+        end_datetime = datetime.combine(
+            end_date + timedelta(days=1),
+            time.min,
+        )
+
+        try:
+            statement = (
+                select(ActivityModel)
+                .where(
+                    ActivityModel.athlete_profile_id
+                    == athlete_profile_id,
+                    or_(
+                        and_(
+                            ActivityModel.start_at_local
+                            .is_not(None),
+                            ActivityModel.start_at_local
+                            >= start_datetime,
+                            ActivityModel.start_at_local
+                            < end_datetime,
+                        ),
+                        and_(
+                            ActivityModel.start_at_local
+                            .is_(None),
+                            ActivityModel.start_at
+                            >= start_datetime,
+                            ActivityModel.start_at
+                            < end_datetime,
+                        ),
+                    ),
+                )
+                .order_by(
+                    ActivityModel.start_at.desc(),
+                )
+            )
+
+            database_activities = (
+                self.session.scalars(
+                    statement,
+                ).all()
+            )
+
+            return [
+                self._to_domain(
+                    activity,
+                )
+                for activity
+                in database_activities
+            ]
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise ActivityRepositoryError(
+                (
+                    "Impossible de charger les activités "
+                    "de la période."
+                )
             ) from exc
 
     def _get_database_activity(

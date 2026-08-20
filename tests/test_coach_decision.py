@@ -148,7 +148,7 @@ def test_coach_decision_replaces_session() -> None:
 
     assert (
         decision.recommended_intensity
-        == "recovery"
+        == "very_easy"
     )
 
 

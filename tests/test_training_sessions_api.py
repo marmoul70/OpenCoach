@@ -12,9 +12,20 @@ from opencoach.api.training_sessions import (
 )
 from opencoach.models import Activity, TrainingSession
 
+from opencoach.database.repositories import (
+    TrainingSessionRepositoryError,
+)
 
 class FakeTrainingSessionRepository:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        save_error: Exception | None = None,
+    ) -> None:
+        self.save_error = save_error
+        self.saved_sessions: list[
+            TrainingSession
+        ] = []
         self.profile_id = uuid4()
 
         self.session = TrainingSession(
@@ -61,6 +72,23 @@ class FakeTrainingSessionRepository:
             feel=2,
         )
 
+    def save_session(
+        self,
+        athlete_profile_id,
+        session,
+    ):
+        if self.save_error is not None:
+            raise self.save_error
+
+        if session.id is None:
+            session.id = uuid4()
+
+        self.saved_sessions.append(
+            session,
+        )
+
+        return session
+
     def list_sessions_between(
         self,
         athlete_profile_id,
@@ -104,11 +132,23 @@ class FakeTrainingSessionRepository:
     ):
         return [self.activity]
 
+    def list_unlinked_activities_for_date(
+        self,
+        athlete_profile_id,
+        session_date,
+    ):
+        return [self.activity]
 
-def create_test_client():
+
+def create_test_client(
+    repository: FakeTrainingSessionRepository | None = None,
+):
     app = create_app()
 
-    repository = FakeTrainingSessionRepository()
+    repository = (
+        repository
+        or FakeTrainingSessionRepository()
+    )
 
     app.dependency_overrides[
         get_local_athlete_profile_id
@@ -119,7 +159,6 @@ def create_test_client():
     ] = lambda: repository
 
     return TestClient(app), repository
-
 
 def test_training_sessions_api_lists_period() -> None:
     client, repository = create_test_client()
@@ -144,6 +183,131 @@ def test_training_sessions_api_lists_period() -> None:
     assert payload[0]["status"] == "planned"
     assert payload[0]["activity_id"] is None
 
+def test_training_sessions_api_creates_session() -> None:
+    client, repository = create_test_client()
+
+    response = client.post(
+        "/api/training-sessions",
+        json={
+            "date": "2026-08-19",
+            "type": "supplementary",
+            "sport_type": "StrengthTraining",
+            "title": "Renforcement caserne",
+            "description": "Séance supplémentaire.",
+            "duration_minutes": 40,
+            "distance_km": None,
+            "elevation_gain_m": None,
+            "intensity": "Modérée",
+            "heart_rate_zone": None,
+            "status": "completed",
+            "activity_id": None,
+        },
+    )
+
+    assert response.status_code == 201
+
+    payload = response.json()
+
+    assert payload["date"] == "2026-08-19"
+    assert payload["type"] == "supplementary"
+    assert payload["sport_type"] == "StrengthTraining"
+    assert payload["title"] == "Renforcement caserne"
+    assert payload["duration_minutes"] == 40
+    assert payload["status"] == "completed"
+    assert payload["activity_id"] is None
+
+    assert len(
+        repository.saved_sessions,
+    ) == 1
+
+def test_training_sessions_api_creates_session_with_activity() -> None:
+    client, repository = create_test_client()
+
+    response = client.post(
+        "/api/training-sessions",
+        json={
+            "date": "2026-08-09",
+            "type": "supplementary",
+            "sport_type": "Run",
+            "title": "Course supplémentaire",
+            "description": "",
+            "duration_minutes": 60,
+            "distance_km": 10.0,
+            "elevation_gain_m": 180.0,
+            "intensity": "Modérée",
+            "heart_rate_zone": None,
+            "status": "completed",
+            "activity_id": str(
+                repository.activity.id,
+            ),
+        },
+    )
+
+    assert response.status_code == 201
+
+    payload = response.json()
+
+    assert payload["activity_id"] == str(
+        repository.activity.id,
+    )
+
+    assert (
+        repository
+        .saved_sessions[0]
+        .activity_id
+        == repository.activity.id
+    )
+
+def test_training_sessions_api_allows_multiple_sessions_same_day() -> None:
+    client, repository = create_test_client()
+
+    first_response = client.post(
+        "/api/training-sessions",
+        json={
+            "date": "2026-08-19",
+            "type": "supplementary",
+            "sport_type": "Run",
+            "title": "Footing",
+            "description": "",
+            "duration_minutes": 60,
+            "distance_km": 10.0,
+            "elevation_gain_m": 100.0,
+            "intensity": "Facile",
+            "heart_rate_zone": "Z2",
+            "status": "completed",
+            "activity_id": None,
+        },
+    )
+
+    second_response = client.post(
+        "/api/training-sessions",
+        json={
+            "date": "2026-08-19",
+            "type": "supplementary",
+            "sport_type": "StrengthTraining",
+            "title": "Renforcement",
+            "description": "",
+            "duration_minutes": 40,
+            "distance_km": None,
+            "elevation_gain_m": None,
+            "intensity": "Modérée",
+            "heart_rate_zone": None,
+            "status": "completed",
+            "activity_id": None,
+        },
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+
+    assert len(
+        repository.saved_sessions,
+    ) == 2
+
+    assert (
+        repository.saved_sessions[0].date
+        == repository.saved_sessions[1].date
+    )
 
 def test_training_sessions_api_returns_session() -> None:
     client, repository = create_test_client()
@@ -415,3 +579,239 @@ def test_training_sessions_api_does_not_mark_weak_candidate_as_best() -> None:
 
     assert payload[0]["match_score"] < 75.0
     assert payload[0]["best_match"] is False
+
+def test_create_training_session() -> None:
+    repository = FakeTrainingSessionRepository()
+
+    client, profile_id = create_test_client(
+        repository,
+    )
+
+    response = client.post(
+        "/api/training-sessions",
+        json={
+            "date": "2026-08-19",
+            "type": "supplementary",
+            "sport_type": "StrengthTraining",
+            "title": "Renforcement caserne",
+            "description": "Séance supplémentaire.",
+            "duration_minutes": 40,
+            "distance_km": None,
+            "elevation_gain_m": None,
+            "intensity": "Modérée",
+            "heart_rate_zone": None,
+            "status": "completed",
+            "activity_id": None,
+        },
+    )
+
+    assert response.status_code == 201
+
+    payload = response.json()
+
+    assert payload["date"] == "2026-08-19"
+    assert payload["type"] == "supplementary"
+    assert payload["sport_type"] == "StrengthTraining"
+    assert payload["title"] == "Renforcement caserne"
+    assert payload["duration_minutes"] == 40
+    assert payload["status"] == "completed"
+    assert payload["activity_id"] is None
+
+def test_create_training_session_with_activity() -> None:
+    repository = FakeTrainingSessionRepository()
+
+    client, _ = create_test_client(
+        repository,
+    )
+
+    activity_id = uuid4()
+
+    response = client.post(
+        "/api/training-sessions",
+        json={
+            "date": "2026-08-19",
+            "type": "supplementary",
+            "sport_type": "Swim",
+            "title": "Natation",
+            "description": "",
+            "duration_minutes": 30,
+            "distance_km": 1.2,
+            "elevation_gain_m": None,
+            "intensity": "Facile",
+            "heart_rate_zone": None,
+            "status": "completed",
+            "activity_id": str(activity_id),
+        },
+    )
+
+    assert response.status_code == 201
+
+    payload = response.json()
+
+    assert payload["activity_id"] == str(
+        activity_id,
+    )
+
+def test_create_multiple_sessions_same_day() -> None:
+    repository = FakeTrainingSessionRepository()
+
+    client, _ = create_test_client(
+        repository,
+    )
+
+    first = client.post(
+        "/api/training-sessions",
+        json={
+            "date": "2026-08-19",
+            "type": "supplementary",
+            "sport_type": "Run",
+            "title": "Footing",
+            "description": "",
+            "duration_minutes": 60,
+            "distance_km": 10,
+            "elevation_gain_m": 100,
+            "intensity": "Facile",
+            "heart_rate_zone": "Z2",
+            "status": "completed",
+            "activity_id": None,
+        },
+    )
+
+    second = client.post(
+        "/api/training-sessions",
+        json={
+            "date": "2026-08-19",
+            "type": "supplementary",
+            "sport_type": "StrengthTraining",
+            "title": "Renforcement",
+            "description": "",
+            "duration_minutes": 40,
+            "distance_km": None,
+            "elevation_gain_m": None,
+            "intensity": "Modérée",
+            "heart_rate_zone": None,
+            "status": "completed",
+            "activity_id": None,
+        },
+    )
+
+    assert first.status_code == 201
+    assert second.status_code == 201
+
+def test_create_training_session_handles_repository_error() -> None:
+    repository = FakeTrainingSessionRepository(
+        save_error=TrainingSessionRepositoryError(
+            "storage failed",
+        ),
+    )
+
+    client, _ = create_test_client(
+        repository,
+    )
+
+    response = client.post(
+        "/api/training-sessions",
+        json={
+            "date": "2026-08-19",
+            "type": "supplementary",
+            "sport_type": "Run",
+            "title": "Footing",
+            "description": "",
+            "duration_minutes": 30,
+            "distance_km": 5,
+            "elevation_gain_m": 0,
+            "intensity": "Facile",
+            "heart_rate_zone": "Z2",
+            "status": "completed",
+            "activity_id": None,
+        },
+    )
+
+    assert response.status_code == 503
+
+    assert response.json() == {
+        "detail": "Impossible de créer la séance."
+    }
+
+def test_training_sessions_api_handles_create_repository_error() -> None:
+    repository = FakeTrainingSessionRepository(
+        save_error=TrainingSessionRepositoryError(
+            "storage failed",
+        ),
+    )
+
+    client, _ = create_test_client(
+        repository,
+    )
+
+    response = client.post(
+        "/api/training-sessions",
+        json={
+            "date": "2026-08-19",
+            "type": "supplementary",
+            "sport_type": "Run",
+            "title": "Footing",
+            "description": "",
+            "duration_minutes": 30,
+            "distance_km": 5.0,
+            "elevation_gain_m": 0,
+            "intensity": "Facile",
+            "heart_rate_zone": "Z2",
+            "status": "completed",
+            "activity_id": None,
+        },
+    )
+
+    assert response.status_code == 503
+
+    assert response.json() == {
+        "detail": "Impossible de créer la séance."
+    }
+
+def test_training_sessions_api_lists_available_activities() -> None:
+    client, repository = create_test_client()
+
+    response = client.get(
+        "/api/training-sessions/available-activities",
+        params={
+            "date": "2026-08-09",
+        },
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+
+    assert len(payload) == 1
+
+    activity = payload[0]
+
+    assert activity["id"] == str(
+        repository.activity.id
+    )
+    assert activity["provider"] == "intervals"
+    assert activity["provider_activity_id"] == "i-run"
+    assert activity["name"] == "Morning Course à pied"
+    assert activity["sport_type"] == "Run"
+
+    assert (
+        activity["start_at_local"]
+        == "2026-08-09T07:07:02"
+    )
+
+    assert activity["moving_time_seconds"] == 3600
+    assert activity["distance_m"] == 10000.0
+    assert activity["elevation_gain_m"] == 180.0
+    assert activity["feel"] == 2
+
+def test_training_sessions_api_rejects_invalid_available_activity_date() -> None:
+    client, _ = create_test_client()
+
+    response = client.get(
+        "/api/training-sessions/available-activities",
+        params={
+            "date": "invalid",
+        },
+    )
+
+    assert response.status_code == 422

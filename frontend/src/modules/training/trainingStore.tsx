@@ -8,6 +8,7 @@ import {
 } from 'react'
 
 import {
+  createTrainingSession as createTrainingSessionApi,
   fetchTrainingSessions,
   updateTrainingSessionActivity as updateTrainingSessionActivityApi,
   updateTrainingSessionStatus as updateTrainingSessionStatusApi,
@@ -15,6 +16,7 @@ import {
 
 import type {
   TrainingSession,
+  TrainingSessionCreate,
   TrainingSessionStatus,
 } from './types'
 
@@ -23,6 +25,10 @@ interface TrainingStoreValue {
   sessions: TrainingSession[]
   loading: boolean
   error: string | null
+
+  createSession: (
+    session: TrainingSessionCreate,
+  ) => Promise<TrainingSession>
 
   updateSessionStatus: (
     sessionId: string,
@@ -154,6 +160,54 @@ export function TrainingProvider({
   }, [refreshSessions])
 
 
+  async function createSession(
+    session: TrainingSessionCreate,
+  ): Promise<TrainingSession> {
+    setError(null)
+
+    try {
+      const createdSession =
+        await createTrainingSessionApi(
+          session,
+        )
+
+      setSessions((current) => {
+        const next = [
+          ...current,
+          createdSession,
+        ]
+
+        return next.sort(
+          (first, second) => {
+            const dateComparison =
+              first.date.localeCompare(
+                second.date,
+              )
+
+            if (dateComparison !== 0) {
+              return dateComparison
+            }
+
+            return first.title.localeCompare(
+              second.title,
+            )
+          },
+        )
+      })
+
+      return createdSession
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Impossible de créer la séance.',
+      )
+
+      throw caughtError
+    }
+  }
+
+
   async function updateSessionStatus(
     sessionId: string,
     status: TrainingSessionStatus,
@@ -224,6 +278,7 @@ export function TrainingProvider({
         sessions,
         loading,
         error,
+        createSession,
         updateSessionStatus,
         updateSessionActivity,
         refreshSessions,

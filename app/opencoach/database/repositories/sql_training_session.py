@@ -278,6 +278,79 @@ class SqlTrainingSessionRepository(
                 "Impossible de rechercher les activités du jour."
             ) from exc
 
+    def list_unlinked_activities_for_date(
+        self,
+        athlete_profile_id: UUID,
+        session_date: date,
+    ) -> list[Activity]:
+        """Retourne les activités du jour non liées à une séance."""
+
+        start_datetime = datetime.combine(
+            session_date,
+            time.min,
+        )
+
+        end_datetime = datetime.combine(
+            session_date,
+            time.max,
+        )
+
+        try:
+            linked_activity_ids = (
+                select(
+                    TrainingSessionModel.activity_id
+                )
+                .where(
+                    TrainingSessionModel.athlete_profile_id
+                    == athlete_profile_id,
+                    TrainingSessionModel.activity_id.is_not(
+                        None
+                    ),
+                )
+            )
+
+            statement = (
+                select(ActivityModel)
+                .where(
+                    ActivityModel.athlete_profile_id
+                    == athlete_profile_id,
+                    ActivityModel.start_at_local.is_not(
+                        None
+                    ),
+                    ActivityModel.start_at_local
+                    >= start_datetime,
+                    ActivityModel.start_at_local
+                    <= end_datetime,
+                    ActivityModel.id.not_in(
+                        linked_activity_ids
+                    ),
+                )
+                .order_by(
+                    ActivityModel.start_at_local.asc()
+                )
+            )
+
+            activities = self.session.scalars(
+                statement
+            ).all()
+
+            return [
+                self._activity_to_domain(
+                    activity
+                )
+                for activity in activities
+            ]
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise TrainingSessionRepositoryError(
+                (
+                    "Impossible de rechercher les "
+                    "activités disponibles du jour."
+                )
+            ) from exc
+
     def _get_required_session(
         self,
         athlete_profile_id: UUID,
@@ -373,3 +446,61 @@ class SqlTrainingSessionRepository(
             feel=activity.feel,
             id=activity.id,
         )
+def test_sql_training_session_repository_lists_only_unlinked_activities() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlTrainingSessionRepository(db)
+
+        linked_activity = create_activity(
+            db,
+            profile,
+            provider_activity_id="i-linked",
+            hour=7,
+            name="Course déjà liée",
+            feel=2,
+        )
+
+        available_activity = create_activity(
+            db,
+            profile,
+            provider_activity_id="i-available",
+            hour=8,
+            name="Renforcement disponible",
+            feel=1,
+        )
+
+        session = repository.save_session(
+            profile.id,
+            create_training_session(),
+        )
+
+        repository.link_activity(
+            profile.id,
+            session.id,
+            linked_activity.id,
+        )
+
+        activities = (
+            repository.list_unlinked_activities_for_date(
+                profile.id,
+                date(2026, 8, 9),
+            )
+        )
+
+        assert len(activities) == 1
+
+        assert (
+            activities[0].id
+            == available_activity.id
+        )
+
+        assert (
+            activities[0].provider_activity_id
+            == "i-available"
+        )
+
+    finally:
+        db.close()

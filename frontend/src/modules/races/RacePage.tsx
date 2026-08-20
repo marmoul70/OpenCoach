@@ -1,67 +1,177 @@
-import { useState } from 'react'
-
-import { RaceDetails } from './RaceDetails'
-
-import { Modal } from '../../components/ui/Modal'
+import {
+  useState,
+} from 'react'
 
 import {
-  CalendarDays,
+  Check,
+  Flag,
   MapPin,
-  Mountain,
   Plus,
   Route,
+  Trophy,
+  X,
 } from 'lucide-react'
 
-import { useRaces } from './raceStore'
-import type { Race } from './types'
-import { RaceForm } from './RaceForm'
+import {
+  Modal,
+} from '../../components/ui/Modal'
+
+import {
+  RaceDetails,
+} from './RaceDetails'
+
+import {
+  RaceForm,
+} from './RaceForm'
+
+import {
+  useRaces,
+} from './raceStore'
+
+import type {
+  Race,
+} from './types'
+
 
 export function RacePage() {
-  const { races } = useRaces()
+  const {
+    races,
+  } = useRaces()
 
-  const [selectedRaceId, setSelectedRaceId] =
-    useState<string | null>(null)
+  const [
+    selectedRaceId,
+    setSelectedRaceId,
+  ] = useState<string | null>(
+    null,
+  )
 
-  const selectedRace = selectedRaceId
-    ? races.find(
-        (race) => race.id === selectedRaceId,
+  const [
+    isAddModalOpen,
+    setIsAddModalOpen,
+  ] = useState(false)
+
+
+  const selectedRace =
+    selectedRaceId
+      ? races.find(
+          (race) =>
+            race.id
+            === selectedRaceId,
+        )
+      : undefined
+
+
+  const upcomingRaces =
+    races
+      .filter(
+        (race) =>
+          race.status
+          === 'planned',
       )
-    : undefined
+      .sort(
+        (first, second) =>
+          new Date(
+            first.date,
+          ).getTime()
+          - new Date(
+            second.date,
+          ).getTime(),
+      )
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
-  const upcomingRaces = races
-    .filter((race) => race.status === 'planned')
-    .sort(
-      (a, b) =>
-        new Date(a.date).getTime() -
-        new Date(b.date).getTime(),
-    )
+  const pastRaces =
+    races
+      .filter(
+        (race) =>
+          race.status
+          !== 'planned',
+      )
+      .sort(
+        (first, second) =>
+          new Date(
+            second.date,
+          ).getTime()
+          - new Date(
+            first.date,
+          ).getTime(),
+      )
 
-  const pastRaces = races
-    .filter((race) => race.status !== 'planned')
-    .sort(
-      (a, b) =>
-        new Date(b.date).getTime() -
-        new Date(a.date).getTime(),
-    )
+
+  const completedCount =
+    pastRaces.filter(
+      (race) =>
+        race.status
+        === 'completed',
+    ).length
+
+
+  const nextRace =
+    upcomingRaces[0]
+
 
   return (
     <main>
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
-        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Route size={24} />
+      <div
+        className="
+          mx-auto
+          max-w-6xl
+          px-4 py-6
+          sm:px-6
+          lg:py-8
+        "
+      >
+        <header
+          className="
+            mb-6
+            flex flex-col
+            gap-4
+            sm:flex-row
+            sm:items-start
+            sm:justify-between
+          "
+        >
+          <div
+            className="
+              flex items-start
+              gap-4
+            "
+          >
+            <div
+              className="
+                flex size-11
+                shrink-0
+                items-center
+                justify-center
+                rounded-2xl
+                bg-primary/10
+                text-primary
+              "
+            >
+              <Route
+                size={24}
+              />
             </div>
 
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-base-content">
+              <h1
+                className="
+                  text-3xl
+                  font-bold
+                  tracking-tight
+                  text-base-content
+                "
+              >
                 Courses
               </h1>
 
-              <p className="mt-1 text-sm text-base-content/60">
-                Vos objectifs à venir et votre historique de courses.
+              <p
+                className="
+                  mt-1 text-sm
+                  text-base-content/60
+                "
+              >
+                Vos objectifs à venir et
+                votre historique de courses.
               </p>
             </div>
           </div>
@@ -69,86 +179,197 @@ export function RacePage() {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() =>
+              setIsAddModalOpen(
+                true,
+              )
+            }
           >
-            <Plus className="h-4 w-4" />
+            <Plus
+              size={16}
+            />
+
             Ajouter une course
           </button>
         </header>
 
-        {upcomingRaces.length > 0 && (
-          <section className="mb-10">
-            <div className="mb-4">
-              <h2 className="text-xl font-bold text-base-content">
-                Prochaines courses
-              </h2>
 
-              <p className="mt-1 text-sm text-base-content/60">
-                Vos prochains objectifs.
-              </p>
-            </div>
+        <RaceOverview
+          upcomingCount={
+            upcomingRaces.length
+          }
+          completedCount={
+            completedCount
+          }
+          nextRace={
+            nextRace
+          }
+        />
 
-            <div className="grid gap-4 md:grid-cols-2">
-              {upcomingRaces.map((race) => (
-                <RaceCard
-                  key={race.id}
-                  race={race}
-                  onOpen={() => setSelectedRaceId(race.id)}
-                />
-              ))}
-            </div>
-          </section>
-        )}
 
-        <section>
-          <div className="mb-4">
-            <h2 className="text-xl font-bold text-base-content">
-              Historique
+        <section
+          className="
+            mt-7
+            space-y-4
+          "
+        >
+          <div>
+            <h2
+              className="
+                text-xl
+                font-bold
+                text-base-content
+              "
+            >
+              Prochaines courses
             </h2>
 
-            <p className="mt-1 text-sm text-base-content/60">
-              Vos courses terminées et vos abandons.
+            <p
+              className="
+                mt-1 text-sm
+                text-base-content/60
+              "
+            >
+              Vos prochains objectifs.
             </p>
           </div>
 
+
+          {upcomingRaces.length
+            > 0 ? (
+              <div className="space-y-3">
+                {upcomingRaces.map(
+                  (
+                    race,
+                    index,
+                  ) => (
+                    <UpcomingRaceRow
+                      key={
+                        race.id
+                      }
+                      race={
+                        race
+                      }
+                      next={
+                        index === 0
+                      }
+                      onOpen={() =>
+                        setSelectedRaceId(
+                          race.id,
+                        )
+                      }
+                    />
+                  ),
+                )}
+              </div>
+            ) : (
+              <EmptyState
+                title="Aucune course prévue"
+                description={
+                  'Ajoutez votre prochain '
+                  + 'objectif pour préparer '
+                  + 'votre entraînement.'
+                }
+              />
+            )}
+        </section>
+
+
+        <section
+          className="
+            mt-8
+            space-y-4
+          "
+        >
+          <div>
+            <h2
+              className="
+                text-xl
+                font-bold
+                text-base-content
+              "
+            >
+              Historique
+            </h2>
+
+            <p
+              className="
+                mt-1 text-sm
+                text-base-content/60
+              "
+            >
+              Vos courses terminées,
+              abandons et non-participations.
+            </p>
+          </div>
+
+
           {pastRaces.length > 0 ? (
             <div className="space-y-3">
-              {pastRaces.map((race) => (
-                  <RaceHistoryCard
-                    key={race.id}
-                    race={race}
-                    onOpen={() => setSelectedRaceId(race.id)}
+              {pastRaces.map(
+                (race) => (
+                  <PastRaceRow
+                    key={
+                      race.id
+                    }
+                    race={
+                      race
+                    }
+                    onOpen={() =>
+                      setSelectedRaceId(
+                        race.id,
+                      )
+                    }
                   />
-                ))}
+                ),
+              )}
             </div>
           ) : (
-            <div className="card border border-base-300 bg-base-100 shadow-sm">
-              <div className="card-body items-center py-10 text-center">
-                <p className="font-semibold">
-                  Aucune course dans l'historique
-                </p>
-
-                <p className="text-sm text-base-content/50">
-                  Vos performances apparaîtront ici après vos courses.
-                </p>
-              </div>
-            </div>
+            <EmptyState
+              title="Aucune course dans l’historique"
+              description={
+                'Vos performances apparaîtront '
+                + 'ici après vos courses.'
+              }
+            />
           )}
         </section>
       </div>
+
+
       <RaceForm
-        open={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        open={
+          isAddModalOpen
+        }
+        onClose={() =>
+          setIsAddModalOpen(
+            false,
+          )
+        }
       />
+
+
       {selectedRace && (
         <Modal
-          title={selectedRace.name}
+          title={
+            selectedRace.name
+          }
           open
-          onClose={() => setSelectedRaceId(null)}
+          onClose={() =>
+            setSelectedRaceId(
+              null,
+            )
+          }
         >
           <RaceDetails
-            race={selectedRace}
-            onClose={() => setSelectedRaceId(null)}
+            race={
+              selectedRace
+            }
+            onClose={() =>
+              setSelectedRaceId(
+                null,
+              )
+            }
           />
         </Modal>
       )}
@@ -156,209 +377,673 @@ export function RacePage() {
   )
 }
 
-function RaceCard({
-  race,
-  onOpen,
-}: {
-  race: Race
-  onOpen: () => void
-}) {
+
+interface RaceOverviewProps {
+  upcomingCount: number
+  completedCount: number
+  nextRace:
+    Race | undefined
+}
+
+
+function RaceOverview({
+  upcomingCount,
+  completedCount,
+  nextRace,
+}: RaceOverviewProps) {
   return (
-    <article
-        className="card cursor-pointer border border-base-300 bg-base-100 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-        onClick={onOpen}
+    <section
+      className="
+        overflow-hidden
+        rounded-2xl
+        border border-base-300
+        bg-base-100
+        shadow-sm
+      "
+    >
+      <div
+        className="
+          grid
+          divide-y divide-base-300
+          sm:grid-cols-[1fr_1fr_1.5fr]
+          sm:divide-x
+          sm:divide-y-0
+        "
       >
-      <div className="card-body p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-bold text-base-content">
-              {race.name}
-            </h3>
+        <OverviewItem
+          icon={Flag}
+          value={`${upcomingCount}`}
+          label="À venir"
+          description="Courses programmées"
+        />
 
-            <div className="mt-2 flex items-center gap-1.5 text-sm text-base-content/60">
-              <MapPin className="h-4 w-4" />
-              {race.location}
-            </div>
-          </div>
+        <OverviewItem
+          icon={Check}
+          value={`${completedCount}`}
+          label="Terminées"
+          description="Courses réalisées"
+        />
 
-          <span className="badge badge-primary">
-            À venir
+        <OverviewItem
+          icon={Trophy}
+          value={
+            nextRace?.name
+            ?? 'Aucun objectif'
+          }
+          label="Prochaine course"
+          description={
+            nextRace
+              ? (
+                `${formatDate(
+                  nextRace.date,
+                )} · ${
+                  formatNumber(
+                    nextRace.distanceKm,
+                  )
+                } km`
+              )
+              : (
+                'Aucune course programmée'
+              )
+          }
+          wide
+        />
+      </div>
+    </section>
+  )
+}
+
+
+interface OverviewItemProps {
+  icon: typeof Flag
+  value: string
+  label: string
+  description: string
+  wide?: boolean
+}
+
+
+function OverviewItem({
+  icon: Icon,
+  value,
+  label,
+  description,
+  wide = false,
+}: OverviewItemProps) {
+  return (
+    <div
+      className="
+        flex min-w-0
+        items-center
+        gap-3
+        px-4 py-3.5
+        sm:px-5
+      "
+    >
+      <div
+        className="
+          flex size-9
+          shrink-0
+          items-center
+          justify-center
+          rounded-xl
+          bg-primary/10
+          text-primary
+        "
+      >
+        <Icon
+          size={18}
+        />
+      </div>
+
+      <div className="min-w-0">
+        <p
+          className={[
+            (
+              'font-bold '
+              + 'text-base-content'
+            ),
+            wide
+              ? (
+                'truncate '
+                + 'text-base'
+              )
+              : 'text-lg',
+          ].join(' ')}
+          title={
+            wide
+              ? value
+              : undefined
+          }
+        >
+          {value}
+        </p>
+
+        <div
+          className="
+            mt-0.5
+            flex flex-wrap
+            items-baseline
+            gap-x-2
+          "
+        >
+          <span
+            className="
+              text-xs
+              font-medium
+              text-base-content/60
+            "
+          >
+            {label}
+          </span>
+
+          <span
+            className="
+              text-xs
+              text-base-content/40
+            "
+          >
+            {description}
           </span>
         </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <RaceMetric
-            icon={CalendarDays}
-            label="Date"
-            value={formatDate(race.date)}
-          />
-
-          <RaceMetric
-            icon={Route}
-            label="Distance"
-            value={`${race.distanceKm} km`}
-          />
-
-          <RaceMetric
-            icon={Mountain}
-            label="D+"
-            value={
-              race.elevationGainM !== undefined
-                ? `${race.elevationGainM} m`
-                : '—'
-            }
-          />
-
-          <RaceMetric
-            icon={CalendarDays}
-            label="Objectif"
-            value={
-              race.targetTimeMinutes !== undefined
-                ? formatDuration(race.targetTimeMinutes)
-                : '—'
-            }
-          />
-        </div>
       </div>
-    </article>
+    </div>
   )
 }
 
-function RaceHistoryCard({
+
+interface UpcomingRaceRowProps {
+  race: Race
+  next: boolean
+  onOpen: () => void
+}
+
+
+function UpcomingRaceRow({
   race,
+  next,
   onOpen,
-}: {
+}: UpcomingRaceRowProps) {
+  return (
+    <button
+      type="button"
+      onClick={
+        onOpen
+      }
+      className={[
+        (
+          'w-full rounded-2xl '
+          + 'border bg-base-100 '
+          + 'p-4 text-left '
+          + 'shadow-sm transition '
+          + 'hover:bg-base-200/40'
+        ),
+        next
+          ? (
+            'border-primary '
+            + 'ring-1 '
+            + 'ring-primary/20'
+          )
+          : 'border-base-300',
+      ].join(' ')}
+    >
+      <div
+        className="
+          grid gap-4
+          md:grid-cols-[170px_minmax(0,1fr)_auto]
+          md:items-center
+        "
+      >
+        <div>
+          <div
+            className="
+              flex flex-wrap
+              items-center
+              gap-2
+            "
+          >
+            <span
+              className="
+                text-sm
+                font-semibold
+                text-base-content
+              "
+            >
+              {formatDate(
+                race.date,
+              )}
+            </span>
+
+            {next && (
+              <span
+                className="
+                  badge
+                  badge-primary
+                  badge-sm
+                "
+              >
+                Prochaine
+              </span>
+            )}
+          </div>
+
+          <p
+            className="
+              mt-1
+              text-xs
+              text-base-content/45
+            "
+          >
+            {formatRaceType(
+              race.type,
+            )}
+          </p>
+        </div>
+
+
+        <div className="min-w-0">
+          <h3
+            className="
+              truncate
+              text-lg
+              font-bold
+              text-base-content
+            "
+          >
+            {race.name}
+          </h3>
+
+          <p
+            className="
+              mt-1
+              flex items-center
+              gap-1.5
+              text-sm
+              text-base-content/50
+            "
+          >
+            <MapPin
+              size={14}
+            />
+
+            {race.location}
+          </p>
+        </div>
+
+
+        <div
+          className="
+            flex flex-wrap
+            items-center
+            gap-x-5
+            gap-y-2
+            text-sm
+            text-base-content/60
+            md:justify-end
+          "
+        >
+          <span>
+            {formatNumber(
+              race.distanceKm,
+            )}
+            {' '}
+            km
+          </span>
+
+          {race.elevationGainM
+            !== undefined && (
+              <span>
+                {Math.round(
+                  race.elevationGainM,
+                )}
+                {' '}
+                m D+
+              </span>
+            )}
+
+          {race.targetTimeMinutes
+            !== undefined && (
+              <span>
+                Objectif{' '}
+                {formatDuration(
+                  race.targetTimeMinutes,
+                )}
+              </span>
+            )}
+        </div>
+      </div>
+    </button>
+  )
+}
+
+
+interface PastRaceRowProps {
   race: Race
   onOpen: () => void
-}) {
-  const abandoned = race.status === 'abandoned'
-  const notParticipated =
-    race.status === 'not_participated'
+}
 
+
+function PastRaceRow({
+  race,
+  onOpen,
+}: PastRaceRowProps) {
   return (
-    <article
-      className="card cursor-pointer border border-base-300 bg-base-100 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-      onClick={onOpen}
+    <button
+      type="button"
+      onClick={
+        onOpen
+      }
+      className="
+        w-full
+        rounded-2xl
+        border border-base-300
+        bg-base-100
+        p-4
+        text-left
+        shadow-sm
+        transition
+        hover:bg-base-200/40
+      "
     >
-      <div className="card-body p-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-bold text-base-content">
-                {race.name}
-              </h3>
+      <div
+        className="
+          grid gap-4
+          md:grid-cols-[170px_minmax(0,1fr)_auto]
+          md:items-center
+        "
+      >
+        <div>
+          <p
+            className="
+              text-sm
+              font-semibold
+              text-base-content
+            "
+          >
+            {formatDate(
+              race.date,
+            )}
+          </p>
 
-              <span
-                className={
-                  abandoned
-                    ? 'badge badge-error badge-sm'
-                    : notParticipated
-                      ? 'badge badge-ghost badge-sm'
-                      : 'badge badge-success badge-sm'
-                }
-              >
-                {abandoned
-                  ? 'Abandon'
-                  : notParticipated
-                    ? 'Non participant'
-                    : 'Terminée'}
-              </span>
-            </div>
-
-            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-base-content/50">
-              <span>{formatDate(race.date)}</span>
-              <span>{race.location}</span>
-              <span>{race.distanceKm} km</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:min-w-72">
-            <span className="text-base-content/50">
-              Distance
-            </span>
-
-            <span className="font-semibold text-right">
-              {race.actualDistanceKm !== undefined
-                ? `${race.actualDistanceKm} km`
-                : '—'}
-            </span>
-
-            <span className="text-base-content/50">
-              D+
-            </span>
-
-            <span className="font-semibold text-right">
-              {race.actualElevationGainM !== undefined
-                ? `${race.actualElevationGainM} m`
-                : '—'}
-            </span>
-
-            <span className="text-base-content/50">
-              Temps
-            </span>
-
-            <span className="font-semibold text-right">
-              {race.actualTimeMinutes !== undefined
-                ? formatDuration(race.actualTimeMinutes)
-                : '—'}
-            </span>
-
-            <span className="text-base-content/50">
-              Classement
-            </span>
-
-            <span className="font-semibold text-right">
-              {race.ranking !== undefined
-                ? `${race.ranking}e`
-                : '—'}
-            </span>
-          </div>
+          <StatusBadge
+            status={
+              race.status
+            }
+          />
         </div>
 
-        {race.notes && (
-          <p className="mt-2 border-t border-base-300 pt-3 text-sm text-base-content/60">
-            {race.notes}
+
+        <div className="min-w-0">
+          <h3
+            className="
+              truncate
+              font-bold
+              text-base-content
+            "
+          >
+            {race.name}
+          </h3>
+
+          <p
+            className="
+              mt-1
+              flex items-center
+              gap-1.5
+              text-sm
+              text-base-content/50
+            "
+          >
+            <MapPin
+              size={14}
+            />
+
+            {race.location}
           </p>
-        )}
+        </div>
+
+
+        <div
+          className="
+            flex flex-wrap
+            items-center
+            gap-x-5
+            gap-y-2
+            text-sm
+            text-base-content/60
+            md:justify-end
+          "
+        >
+          <span>
+            {formatNumber(
+              race.actualDistanceKm
+              ?? race.distanceKm,
+            )}
+            {' '}
+            km
+          </span>
+
+          {race.actualElevationGainM
+            !== undefined && (
+              <span>
+                {Math.round(
+                  race.actualElevationGainM,
+                )}
+                {' '}
+                m D+
+              </span>
+            )}
+
+          {race.actualTimeMinutes
+            !== undefined && (
+              <span
+                className="
+                  font-semibold
+                  text-base-content
+                "
+              >
+                {formatDuration(
+                  race.actualTimeMinutes,
+                )}
+              </span>
+            )}
+
+          {race.ranking
+            !== undefined && (
+              <span>
+                {race.ranking}
+                e
+              </span>
+            )}
+        </div>
       </div>
-    </article>
+    </button>
   )
 }
 
-function RaceMetric({
-  icon: Icon,
-  label,
-  value,
+
+function StatusBadge({
+  status,
 }: {
-  icon: typeof CalendarDays
-  label: string
-  value: string
+  status: Race['status']
+}) {
+  if (
+    status === 'completed'
+  ) {
+    return (
+      <span
+        className="
+          badge
+          badge-success
+          badge-sm
+          mt-1
+          gap-1
+        "
+      >
+        <Check
+          size={11}
+        />
+
+        Terminée
+      </span>
+    )
+  }
+
+  if (
+    status === 'abandoned'
+  ) {
+    return (
+      <span
+        className="
+          badge
+          badge-error
+          badge-sm
+          mt-1
+          gap-1
+        "
+      >
+        <X
+          size={11}
+        />
+
+        Abandon
+      </span>
+    )
+  }
+
+  return (
+    <span
+      className="
+        badge
+        badge-ghost
+        badge-sm
+        mt-1
+      "
+    >
+      Non participant
+    </span>
+  )
+}
+
+
+function EmptyState({
+  title,
+  description,
+}: {
+  title: string
+  description: string
 }) {
   return (
-    <div className="rounded-xl bg-base-200 p-3">
-      <div className="flex items-center gap-2 text-xs text-base-content/50">
-        <Icon className="h-3.5 w-3.5" />
-        {label}
-      </div>
+    <div
+      className="
+        rounded-2xl
+        border border-base-300
+        bg-base-100
+        px-5 py-8
+        text-center
+      "
+    >
+      <Flag
+        size={22}
+        className="
+          mx-auto
+          text-base-content/30
+        "
+      />
 
-      <p className="mt-1 font-semibold text-base-content">
-        {value}
+      <p
+        className="
+          mt-3
+          font-semibold
+          text-base-content
+        "
+      >
+        {title}
+      </p>
+
+      <p
+        className="
+          mt-1
+          text-sm
+          text-base-content/45
+        "
+      >
+        {description}
       </p>
     </div>
   )
 }
 
-function formatDate(dateString: string): string {
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(`${dateString}T12:00:00`))
+
+function formatDate(
+  dateString: string,
+): string {
+  return new Intl.DateTimeFormat(
+    'fr-FR',
+    {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    },
+  ).format(
+    new Date(
+      `${dateString}T12:00:00`,
+    ),
+  )
 }
 
-function formatDuration(totalMinutes: number): string {
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
 
-  return `${hours}h${minutes.toString().padStart(2, '0')}`
+function formatDuration(
+  totalMinutes: number,
+): string {
+  const hours =
+    Math.floor(
+      totalMinutes / 60,
+    )
+
+  const minutes =
+    totalMinutes % 60
+
+  return (
+    `${hours}h${
+      minutes
+        .toString()
+        .padStart(
+          2,
+          '0',
+        )
+    }`
+  )
+}
+
+
+function formatNumber(
+  value: number,
+): string {
+  return new Intl.NumberFormat(
+    'fr-FR',
+    {
+      maximumFractionDigits: 1,
+    },
+  ).format(
+    value,
+  )
+}
+
+
+function formatRaceType(
+  type: Race['type'],
+): string {
+  switch (type) {
+    case 'trail':
+      return 'Trail'
+
+    case 'road':
+      return 'Route'
+
+    case 'ultra':
+      return 'Ultra'
+
+    default:
+      return 'Autre'
+  }
 }

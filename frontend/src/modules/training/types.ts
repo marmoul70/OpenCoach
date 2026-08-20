@@ -6,6 +6,7 @@ export type TrainingSessionType =
   | 'recovery'
   | 'trail'
   | 'rest'
+  | 'supplementary'
 
 export type TrainingSessionStatus =
   | 'planned'
@@ -26,4 +27,33 @@ export interface TrainingSession {
   heartRateZone?: string
   status: TrainingSessionStatus
   activityId?: string
+}
+
+export interface TrainingSessionCreate {
+  date: string
+  type: TrainingSessionType
+  sportType: string
+  title: string
+  description: string
+  durationMinutes: number
+  distanceKm?: number
+  elevationGainM?: number
+  intensity: string
+  heartRateZone?: string
+  status: TrainingSessionStatus
+  activityId?: string
+}
+
+export interface TrainingAvailableActivity {
+  id: string
+  provider: string
+  providerActivityId: string
+  name: string
+  sportType: string
+  startAtLocal?: string
+  movingTimeSeconds?: number
+  distanceM?: number
+  elevationGainM?: number
+  trainingLoad?: number
+  feel?: number
 }

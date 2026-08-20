@@ -60,6 +60,13 @@ class FakeTrainingSessionRepository(
     ) -> TrainingSession | None:
         raise NotImplementedError
 
+    def list_unlinked_activities_for_date(
+        self,
+        athlete_profile_id,
+        session_date,
+    ):
+        return []
+
     def list_sessions_between(
         self,
         athlete_profile_id: UUID,

@@ -21,7 +21,9 @@ import {
   type TrainingActivityCandidate,
 } from '../../core/training/api'
 
-import type { TrainingSession } from './types'
+import type {
+  TrainingSession,
+} from './types'
 
 
 interface TrainingDetailsProps {
@@ -42,23 +44,47 @@ export function TrainingDetails({
   onStatusChange,
   onActivityChange,
 }: TrainingDetailsProps) {
-  const [activities, setActivities] =
-    useState<TrainingActivityCandidate[]>([])
+  const [
+    activities,
+    setActivities,
+  ] = useState<
+    TrainingActivityCandidate[]
+  >([])
 
-  const [loadingActivities, setLoadingActivities] =
-    useState(true)
+  const [
+    loadingActivities,
+    setLoadingActivities,
+  ] = useState(true)
 
-  const [activityError, setActivityError] =
-    useState<string | null>(null)
+  const [
+    activityError,
+    setActivityError,
+  ] = useState<string | null>(
+    null,
+  )
 
-  const [savingActivityId, setSavingActivityId] =
-    useState<string | null>(null)
+  const [
+    savingActivityId,
+    setSavingActivityId,
+  ] = useState<string | null>(
+    null,
+  )
 
-  const [savingStatus, setSavingStatus] =
-    useState(false)
+  const [
+    savingStatus,
+    setSavingStatus,
+  ] = useState(false)
 
 
   useEffect(() => {
+    if (
+      session.type === 'rest'
+    ) {
+      setLoadingActivities(false)
+      setActivities([])
+      return
+    }
+
     let mounted = true
 
     setLoadingActivities(true)
@@ -87,14 +113,19 @@ export function TrainingDetails({
       })
       .finally(() => {
         if (mounted) {
-          setLoadingActivities(false)
+          setLoadingActivities(
+            false,
+          )
         }
       })
 
     return () => {
       mounted = false
     }
-  }, [session.id])
+  }, [
+    session.id,
+    session.type,
+  ])
 
 
   async function handleActivityChange(
@@ -103,11 +134,14 @@ export function TrainingDetails({
     setActivityError(null)
 
     const nextActivityId =
-      session.activityId === activityId
+      session.activityId
+      === activityId
         ? null
         : activityId
 
-    setSavingActivityId(activityId)
+    setSavingActivityId(
+      activityId,
+    )
 
     try {
       await onActivityChange(
@@ -117,21 +151,29 @@ export function TrainingDetails({
       setActivityError(
         reason instanceof Error
           ? reason.message
-          : "Impossible d'associer l'activité.",
+          : (
+              "Impossible d'associer "
+              + "l'activité."
+            ),
       )
     } finally {
-      setSavingActivityId(null)
+      setSavingActivityId(
+        null,
+      )
     }
   }
 
 
   async function handleStatusChange(
-    status: TrainingSession['status'],
+    status:
+      TrainingSession['status'],
   ) {
     setSavingStatus(true)
 
     try {
-      await onStatusChange(status)
+      await onStatusChange(
+        status,
+      )
     } finally {
       setSavingStatus(false)
     }
@@ -139,461 +181,860 @@ export function TrainingDetails({
 
 
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="badge badge-primary">
-            {formatDate(session.date)}
+    <div className="space-y-5">
+      <SessionHeader
+        session={session}
+      />
+
+      {session.description && (
+        <p
+          className="
+            text-sm
+            leading-relaxed
+            text-base-content/60
+          "
+        >
+          {session.description}
+        </p>
+      )}
+
+      <SessionSummary
+        session={session}
+      />
+
+      {session.type
+        !== 'rest' && (
+          <ActivitySection
+            session={session}
+            activities={
+              activities
+            }
+            loading={
+              loadingActivities
+            }
+            error={
+              activityError
+            }
+            savingActivityId={
+              savingActivityId
+            }
+            onActivityChange={
+              handleActivityChange
+            }
+          />
+        )}
+
+      <StatusSection
+        session={session}
+        saving={
+          savingStatus
+        }
+        onChange={
+          handleStatusChange
+        }
+      />
+    </div>
+  )
+}
+
+
+function SessionHeader({
+  session,
+}: {
+  session: TrainingSession
+}) {
+  return (
+    <div
+      className="
+        flex flex-col
+        gap-3
+        sm:flex-row
+        sm:items-start
+        sm:justify-between
+      "
+    >
+      <div className="min-w-0">
+        <div
+          className="
+            flex flex-wrap
+            items-center
+            gap-2
+          "
+        >
+          <span className="text-sm font-medium text-base-content/55">
+            {formatDate(
+              session.date,
+            )}
           </span>
 
-          <StatusBadge
-            status={session.status}
-          />
+          {session.type
+            === 'supplementary' && (
+              <span className="badge badge-outline badge-sm">
+                Supplémentaire
+              </span>
+            )}
         </div>
 
-        <h2 className="mt-3 text-2xl font-bold text-base-content">
+        <h2
+          className="
+            mt-1
+            text-xl
+            font-bold
+            text-base-content
+          "
+        >
           {session.title}
         </h2>
 
-        <p className="mt-2 leading-6 text-base-content/60">
-          {session.description}
+        <p
+          className="
+            mt-1 text-sm
+            text-base-content/50
+          "
+        >
+          {formatSportType(
+            session.sportType,
+          )}
         </p>
       </div>
 
+      <StatusBadge
+        status={
+          session.status
+        }
+      />
+    </div>
+  )
+}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Metric
+
+function SessionSummary({
+  session,
+}: {
+  session: TrainingSession
+}) {
+  return (
+    <div
+      className="
+        overflow-hidden
+        rounded-xl
+        border border-base-300
+      "
+    >
+      <div
+        className="
+          grid
+          divide-y divide-base-300
+          sm:grid-cols-2
+          sm:divide-x
+          sm:divide-y-0
+          lg:grid-cols-5
+        "
+      >
+        <SummaryValue
           icon={Clock3}
           label="Durée"
-          value={`${session.durationMinutes} minutes`}
+          value={
+            session.type
+            === 'rest'
+              ? 'Repos'
+              : (
+                `${session.durationMinutes} min`
+              )
+          }
         />
 
-        <Metric
+        <SummaryValue
           icon={MapPin}
           label="Distance"
           value={
-            session.distanceKm !== undefined
-              ? `${session.distanceKm} km`
-              : 'Non définie'
+            session.distanceKm
+            !== undefined
+              ? (
+                `${formatNumber(
+                  session.distanceKm,
+                )} km`
+              )
+              : '—'
           }
         />
 
-        <Metric
+        <SummaryValue
           icon={Mountain}
           label="Dénivelé"
           value={
-            session.elevationGainM !== undefined
-              ? `${session.elevationGainM} m D+`
-              : 'Non défini'
+            session.elevationGainM
+            !== undefined
+              ? (
+                `${Math.round(
+                  session.elevationGainM,
+                )} m`
+              )
+              : '—'
           }
         />
 
-        <Metric
+        <SummaryValue
           icon={Gauge}
           label="Intensité"
-          value={session.intensity}
-        />
-
-        <Metric
-          icon={Activity}
-          label="Zone cardio"
           value={
-            session.heartRateZone ??
-            'Non définie'
+            session.intensity
+            || '—'
           }
         />
-      </div>
 
-
-      {session.type !== 'rest' && (
-        <div className="border-t border-base-300 pt-5">
-          <div className="mb-4">
-            <h3 className="font-semibold text-base-content">
-              Activité réalisée
-            </h3>
-
-            <p className="mt-1 text-sm text-base-content/60">
-              OpenCoach recherche les activités enregistrées
-              le même jour que cette séance.
-            </p>
-          </div>
-
-
-          {loadingActivities && (
-            <div className="flex items-center gap-3 rounded-xl bg-base-200 p-4">
-              <span className="loading loading-spinner loading-sm" />
-
-              <span className="text-sm text-base-content/60">
-                Recherche des activités…
-              </span>
-            </div>
-          )}
-
-
-          {!loadingActivities &&
-            activityError && (
-              <div className="alert alert-error">
-                <span>
-                  {activityError}
-                </span>
-              </div>
-            )}
-
-
-          {!loadingActivities &&
-            !activityError &&
-            activities.length === 0 && (
-              <div className="rounded-xl bg-base-200 p-4">
-                <p className="font-medium text-base-content">
-                  Aucune activité détectée
-                </p>
-
-                <p className="mt-1 text-sm text-base-content/50">
-                  Aucune activité Intervals.icu n&apos;a été
-                  trouvée pour cette journée.
-                </p>
-              </div>
-            )}
-
-
-          {!loadingActivities &&
-            activities.length > 0 && (
-              <div className="space-y-3">
-                {activities.map((activity) => {
-                  const selected =
-                    session.activityId ===
-                    activity.id
-
-                  const saving =
-                    savingActivityId ===
-                    activity.id
-
-                  return (
-                    <button
-                      key={activity.id}
-                      type="button"
-                      disabled={
-                        savingActivityId !== null
-                      }
-                      onClick={() =>
-                        void handleActivityChange(
-                          activity.id,
-                        )
-                      }
-                      className={[
-                        'w-full rounded-xl border p-4 text-left transition',
-                        selected
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                          : 'border-base-300 bg-base-100 hover:bg-base-200',
-                      ].join(' ')}
-                    >
-                      <div className="flex gap-3">
-                        <div className="pt-1">
-                          <input
-                            type="checkbox"
-                            checked={selected}
-                            readOnly
-                            className="checkbox checkbox-primary checkbox-sm"
-                          />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <p className="font-semibold text-base-content">
-                                {activity.name}
-                              </p>
-
-                              <p className="mt-1 text-xs text-base-content/50">
-                                {formatSportType(
-                                  activity.sportType,
-                                )}
-
-                                {activity.startAtLocal
-                                  ? ` · ${formatActivityTime(
-                                      activity.startAtLocal,
-                                    )}`
-                                  : ''}
-                              </p>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-2">
-                              {activity.bestMatch && (
-                                <span className="badge badge-success badge-sm">
-                                  Meilleure correspondance
-                                </span>
-                              )}
-
-                              <span
-                                className={[
-                                  'badge badge-sm',
-                                  getMatchBadgeClass(
-                                    activity.matchScore,
-                                  ),
-                                ].join(' ')}
-                              >
-                                {Math.round(
-                                  activity.matchScore,
-                                )}{' '}
-                                %
-                              </span>
-
-                              {selected && (
-                                <span className="badge badge-primary gap-1">
-                                  <Link2 className="h-3 w-3" />
-                                  Associée
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-
-                          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-base-content/60">
-                            {activity.distanceM !== undefined && (
-                              <span>
-                                {formatDistance(
-                                  activity.distanceM,
-                                )}
-                              </span>
-                            )}
-
-                            {activity.movingTimeSeconds !== undefined && (
-                              <span>
-                                {formatDuration(
-                                  activity.movingTimeSeconds,
-                                )}
-                              </span>
-                            )}
-
-                            {activity.elevationGainM !== undefined && (
-                              <span>
-                                {Math.round(
-                                  activity.elevationGainM,
-                                )}{' '}
-                                m D+
-                              </span>
-                            )}
-                          </div>
-
-
-                          <div className="mt-4 rounded-lg bg-base-200 p-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-base-content/50">
-                              Correspondance avec la séance
-                            </p>
-
-                            <div className="mt-3 space-y-2">
-                              <MatchCriterion
-                                label="Sport"
-                                planned={formatSportType(
-                                  session.sportType,
-                                )}
-                                actual={formatSportType(
-                                  activity.sportType,
-                                )}
-                                score={activity.sportScore}
-                                maxScore={40}
-                              />
-
-                              {activity.distanceScore !== undefined && (
-                                <MatchCriterion
-                                  label="Distance"
-                                  planned={
-                                    session.distanceKm !== undefined
-                                      ? `${session.distanceKm.toFixed(
-                                          1,
-                                        )} km`
-                                      : '—'
-                                  }
-                                  actual={
-                                    activity.distanceM !== undefined
-                                      ? formatDistance(
-                                          activity.distanceM,
-                                        )
-                                      : '—'
-                                  }
-                                  score={
-                                    activity.distanceScore
-                                  }
-                                  maxScore={25}
-                                />
-                              )}
-
-                              {activity.durationScore !== undefined && (
-                                <MatchCriterion
-                                  label="Durée"
-                                  planned={`${session.durationMinutes} min`}
-                                  actual={
-                                    activity.movingTimeSeconds !== undefined
-                                      ? formatDuration(
-                                          activity.movingTimeSeconds,
-                                        )
-                                      : '—'
-                                  }
-                                  score={
-                                    activity.durationScore
-                                  }
-                                  maxScore={25}
-                                />
-                              )}
-
-                              {activity.elevationScore !== undefined && (
-                                <MatchCriterion
-                                  label="Dénivelé"
-                                  planned={
-                                    session.elevationGainM !== undefined
-                                      ? `${Math.round(
-                                          session.elevationGainM,
-                                        )} m`
-                                      : '—'
-                                  }
-                                  actual={
-                                    activity.elevationGainM !== undefined
-                                      ? `${Math.round(
-                                          activity.elevationGainM,
-                                        )} m`
-                                      : '—'
-                                  }
-                                  score={
-                                    activity.elevationScore
-                                  }
-                                  maxScore={10}
-                                />
-                              )}
-                            </div>
-                          </div>
-
-
-                          {activity.feel !== undefined && (
-                            <div className="mt-4 flex flex-wrap items-center gap-3">
-                              <span className="text-sm text-base-content/60">
-                                Ressenti Intervals.icu
-                              </span>
-
-                              <FeelStars
-                                feel={activity.feel}
-                              />
-
-                              <span className="text-xs text-base-content/50">
-                                {formatFeelLabel(
-                                  activity.feel,
-                                )}
-                              </span>
-                            </div>
-                          )}
-
-
-                          {saving && (
-                            <div className="mt-3 flex items-center gap-2 text-sm text-primary">
-                              <span className="loading loading-spinner loading-xs" />
-
-                              Enregistrement…
-                            </div>
-                          )}
-
-
-                          {selected && !saving && (
-                            <div className="mt-3 flex items-center gap-2 text-xs text-base-content/50">
-                              <Unlink className="h-3.5 w-3.5" />
-
-                              Cliquez à nouveau pour désassocier.
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-        </div>
-      )}
-
-
-      <div className="border-t border-base-300 pt-5">
-        <p className="mb-3 text-sm font-semibold text-base-content">
-          Statut de la séance
-        </p>
-
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            type="button"
-            disabled={savingStatus}
-            onClick={() =>
-              void handleStatusChange(
-                'completed',
-              )
-            }
-            className={[
-              'btn flex-1',
-              session.status === 'completed'
-                ? 'btn-success'
-                : 'btn-success btn-outline',
-            ].join(' ')}
-          >
-            {savingStatus ? (
-              <span className="loading loading-spinner loading-sm" />
-            ) : (
-              <Check className="h-4 w-4" />
-            )}
-
-            Réalisée
-          </button>
-
-
-          <button
-            type="button"
-            disabled={savingStatus}
-            onClick={() =>
-              void handleStatusChange(
-                'skipped',
-              )
-            }
-            className={[
-              'btn flex-1',
-              session.status === 'skipped'
-                ? 'btn-error'
-                : 'btn-error btn-outline',
-            ].join(' ')}
-          >
-            <X className="h-4 w-4" />
-
-            Non réalisée
-          </button>
-        </div>
+        <SummaryValue
+          icon={Activity}
+          label="Zone"
+          value={
+            session.heartRateZone
+            ?? '—'
+          }
+        />
       </div>
     </div>
   )
 }
 
 
-interface MetricProps {
-  icon: React.ComponentType<{
-    className?: string
-  }>
+interface SummaryValueProps {
+  icon:
+    typeof Clock3
   label: string
   value: string
 }
 
 
-function Metric({
+function SummaryValue({
   icon: Icon,
   label,
   value,
-}: MetricProps) {
+}: SummaryValueProps) {
   return (
-    <div className="rounded-xl bg-base-200 p-4">
-      <div className="flex items-center gap-2 text-base-content/50">
-        <Icon className="h-4 w-4" />
+    <div
+      className="
+        flex items-center
+        gap-3 px-3 py-3
+      "
+    >
+      <Icon
+        size={16}
+        className="
+          shrink-0
+          text-base-content/40
+        "
+      />
 
-        <span className="text-sm">
+      <div className="min-w-0">
+        <p
+          className="
+            text-[11px]
+            uppercase
+            tracking-wide
+            text-base-content/40
+          "
+        >
           {label}
-        </span>
+        </p>
+
+        <p
+          className="
+            truncate
+            text-sm
+            font-semibold
+            text-base-content
+          "
+        >
+          {value}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+
+interface ActivitySectionProps {
+  session:
+    TrainingSession
+
+  activities:
+    TrainingActivityCandidate[]
+
+  loading: boolean
+
+  error:
+    string | null
+
+  savingActivityId:
+    string | null
+
+  onActivityChange: (
+    activityId: string,
+  ) => Promise<void>
+}
+
+
+function ActivitySection({
+  session,
+  activities,
+  loading,
+  error,
+  savingActivityId,
+  onActivityChange,
+}: ActivitySectionProps) {
+  return (
+    <section
+      className="
+        border-t
+        border-base-300
+        pt-5
+      "
+    >
+      <div
+        className="
+          flex flex-col
+          gap-2
+          sm:flex-row
+          sm:items-end
+          sm:justify-between
+        "
+      >
+        <div>
+          <h3
+            className="
+              font-semibold
+              text-base-content
+            "
+          >
+            Activité réalisée
+          </h3>
+
+          <p
+            className="
+              mt-1 text-sm
+              text-base-content/50
+            "
+          >
+            Activités Intervals.icu
+            détectées le même jour.
+          </p>
+        </div>
+
+        {session.activityId && (
+          <span
+            className="
+              badge
+              badge-success
+              badge-sm
+              gap-1
+            "
+          >
+            <Link2
+              size={12}
+            />
+
+            Associée
+          </span>
+        )}
       </div>
 
-      <p className="mt-2 font-semibold text-base-content">
-        {value}
-      </p>
-    </div>
+
+      {loading && (
+        <div
+          className="
+            mt-4
+            flex items-center
+            gap-2
+            rounded-xl
+            bg-base-200/60
+            px-4 py-3
+          "
+        >
+          <span
+            className="
+              loading
+              loading-spinner
+              loading-sm
+            "
+          />
+
+          <span
+            className="
+              text-sm
+              text-base-content/55
+            "
+          >
+            Recherche des activités…
+          </span>
+        </div>
+      )}
+
+
+      {!loading
+        && error && (
+          <div
+            className="
+              mt-4
+              rounded-xl
+              border
+              border-error/30
+              bg-error/5
+              px-4 py-3
+              text-sm
+              text-error
+            "
+          >
+            {error}
+          </div>
+        )}
+
+
+      {!loading
+        && !error
+        && activities.length
+        === 0 && (
+          <div
+            className="
+              mt-4
+              rounded-xl
+              bg-base-200/60
+              px-4 py-3
+            "
+          >
+            <p
+              className="
+                text-sm
+                font-medium
+                text-base-content/70
+              "
+            >
+              Aucune activité détectée
+            </p>
+
+            <p
+              className="
+                mt-1 text-xs
+                text-base-content/45
+              "
+            >
+              Synchronisez Intervals.icu
+              si votre activité vient
+              d&apos;être enregistrée.
+            </p>
+          </div>
+        )}
+
+
+      {!loading
+        && !error
+        && activities.length
+        > 0 && (
+          <div className="mt-4 space-y-2">
+            {activities.map(
+              (activity) => (
+                <ActivityRow
+                  key={
+                    activity.id
+                  }
+                  session={
+                    session
+                  }
+                  activity={
+                    activity
+                  }
+                  saving={
+                    savingActivityId
+                    === activity.id
+                  }
+                  disabled={
+                    savingActivityId
+                    !== null
+                  }
+                  onClick={() =>
+                    void onActivityChange(
+                      activity.id,
+                    )
+                  }
+                />
+              ),
+            )}
+          </div>
+        )}
+    </section>
+  )
+}
+
+
+interface ActivityRowProps {
+  session:
+    TrainingSession
+
+  activity:
+    TrainingActivityCandidate
+
+  saving: boolean
+  disabled: boolean
+
+  onClick: () => void
+}
+
+
+function ActivityRow({
+  session,
+  activity,
+  saving,
+  disabled,
+  onClick,
+}: ActivityRowProps) {
+  const selected =
+    session.activityId
+    === activity.id
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={[
+        (
+          'w-full rounded-xl '
+          + 'border px-4 py-3 '
+          + 'text-left transition'
+        ),
+        selected
+          ? (
+            'border-primary '
+            + 'bg-primary/5 '
+            + 'ring-1 '
+            + 'ring-primary/15'
+          )
+          : (
+            'border-base-300 '
+            + 'hover:bg-base-200/50'
+          ),
+      ].join(' ')}
+    >
+      <div
+        className="
+          flex flex-col
+          gap-3
+          sm:flex-row
+          sm:items-center
+          sm:justify-between
+        "
+      >
+        <div className="min-w-0">
+          <div
+            className="
+              flex flex-wrap
+              items-center
+              gap-2
+            "
+          >
+            <p
+              className="
+                truncate
+                font-semibold
+                text-base-content
+              "
+            >
+              {activity.name}
+            </p>
+
+            {activity.bestMatch && (
+              <span
+                className="
+                  badge
+                  badge-success
+                  badge-sm
+                "
+              >
+                Meilleur choix
+              </span>
+            )}
+          </div>
+
+          <p
+            className="
+              mt-1 text-xs
+              text-base-content/50
+            "
+          >
+            {formatSportType(
+              activity.sportType,
+            )}
+
+            {activity.startAtLocal
+              ? (
+                ` · ${formatActivityTime(
+                  activity.startAtLocal,
+                )}`
+              )
+              : ''}
+          </p>
+        </div>
+
+
+        <div
+          className="
+            flex flex-wrap
+            items-center
+            gap-3
+            text-sm
+            text-base-content/60
+          "
+        >
+          {activity.movingTimeSeconds
+            !== undefined && (
+              <span>
+                {formatDuration(
+                  activity
+                    .movingTimeSeconds,
+                )}
+              </span>
+            )}
+
+          {activity.distanceM
+            !== undefined && (
+              <span>
+                {formatDistance(
+                  activity.distanceM,
+                )}
+              </span>
+            )}
+
+          {activity.elevationGainM
+            !== undefined && (
+              <span>
+                {Math.round(
+                  activity
+                    .elevationGainM,
+                )}{' '}
+                m D+
+              </span>
+            )}
+
+          <span
+            className={[
+              'badge badge-sm',
+              getMatchBadgeClass(
+                activity.matchScore,
+              ),
+            ].join(' ')}
+          >
+            {Math.round(
+              activity.matchScore,
+            )}{' '}
+            %
+          </span>
+
+          {saving ? (
+            <span
+              className="
+                loading
+                loading-spinner
+                loading-sm
+              "
+            />
+          ) : selected ? (
+            <Unlink
+              size={15}
+              className="
+                text-primary
+              "
+            />
+          ) : (
+            <Link2
+              size={15}
+              className="
+                text-base-content/40
+              "
+            />
+          )}
+        </div>
+      </div>
+
+
+      {selected && (
+        <div
+          className="
+            mt-3
+            border-t
+            border-primary/15
+            pt-3
+          "
+        >
+          <p
+            className="
+              text-xs
+              text-base-content/50
+            "
+          >
+            Cliquez à nouveau pour
+            désassocier cette activité.
+          </p>
+        </div>
+      )}
+
+
+      {activity.feel
+        !== undefined && (
+          <div
+            className="
+              mt-2
+              flex items-center
+              gap-2
+            "
+          >
+            <FeelStars
+              feel={
+                activity.feel
+              }
+            />
+
+            <span
+              className="
+                text-xs
+                text-base-content/45
+              "
+            >
+              {formatFeelLabel(
+                activity.feel,
+              )}
+            </span>
+          </div>
+        )}
+    </button>
+  )
+}
+
+
+interface StatusSectionProps {
+  session:
+    TrainingSession
+
+  saving: boolean
+
+  onChange: (
+    status:
+      TrainingSession['status'],
+  ) => Promise<void>
+}
+
+
+function StatusSection({
+  session,
+  saving,
+  onChange,
+}: StatusSectionProps) {
+  return (
+    <section
+      className="
+        border-t
+        border-base-300
+        pt-5
+      "
+    >
+      <div
+        className="
+          flex flex-col
+          gap-3
+          sm:flex-row
+          sm:items-center
+          sm:justify-between
+        "
+      >
+        <div>
+          <h3
+            className="
+              font-semibold
+              text-base-content
+            "
+          >
+            Statut
+          </h3>
+
+          <p
+            className="
+              mt-1 text-sm
+              text-base-content/50
+            "
+          >
+            Indiquez si la séance
+            a été réalisée.
+          </p>
+        </div>
+
+        <div
+          className="
+            flex flex-wrap
+            gap-2
+          "
+        >
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() =>
+              void onChange(
+                'completed',
+              )
+            }
+            className={[
+              'btn btn-sm',
+              session.status
+              === 'completed'
+                ? 'btn-success'
+                : (
+                  'btn-success '
+                  + 'btn-outline'
+                ),
+            ].join(' ')}
+          >
+            {saving ? (
+              <span
+                className="
+                  loading
+                  loading-spinner
+                  loading-xs
+                "
+              />
+            ) : (
+              <Check
+                size={14}
+              />
+            )}
+
+            Réalisée
+          </button>
+
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() =>
+              void onChange(
+                'skipped',
+              )
+            }
+            className={[
+              'btn btn-sm',
+              session.status
+              === 'skipped'
+                ? 'btn-error'
+                : (
+                  'btn-error '
+                  + 'btn-outline'
+                ),
+            ].join(' ')}
+          >
+            <X
+              size={14}
+            />
+
+            Non réalisée
+          </button>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -601,77 +1042,61 @@ function Metric({
 function StatusBadge({
   status,
 }: {
-  status: TrainingSession['status']
+  status:
+    TrainingSession['status']
 }) {
-  if (status === 'completed') {
+  if (
+    status === 'completed'
+  ) {
     return (
-      <span className="badge badge-success gap-1">
-        <Check className="h-3.5 w-3.5" />
+      <span
+        className="
+          badge
+          badge-success
+          badge-sm
+          gap-1
+        "
+      >
+        <Check
+          size={12}
+        />
+
         Réalisée
       </span>
     )
   }
 
-  if (status === 'skipped') {
+  if (
+    status === 'skipped'
+  ) {
     return (
-      <span className="badge badge-error gap-1">
-        <X className="h-3.5 w-3.5" />
+      <span
+        className="
+          badge
+          badge-error
+          badge-sm
+          gap-1
+        "
+      >
+        <X
+          size={12}
+        />
+
         Non réalisée
       </span>
     )
   }
 
   return (
-    <span className="badge badge-warning">
+    <span
+      className="
+        badge
+        badge-warning
+        badge-sm
+      "
+    >
       À faire
     </span>
-  )
-}
-
-
-function MatchCriterion({
-  label,
-  planned,
-  actual,
-  score,
-  maxScore,
-}: {
-  label: string
-  planned: string
-  actual: string
-  score: number
-  maxScore: number
-}) {
-  const percentage =
-    maxScore > 0
-      ? Math.round(
-          (score / maxScore) * 100,
-        )
-      : 0
-
-  return (
-    <div className="flex items-center justify-between gap-4 text-sm">
-      <div className="min-w-0">
-        <span className="font-medium text-base-content">
-          {label}
-        </span>
-
-        <span className="ml-2 text-xs text-base-content/50">
-          {actual} / {planned}
-        </span>
-      </div>
-
-      <span
-        className={[
-          'badge badge-sm',
-          getMatchBadgeClass(
-            percentage,
-          ),
-        ].join(' ')}
-      >
-        {percentage} %
-      </span>
-    </div>
   )
 }
 
@@ -686,36 +1111,45 @@ function FeelStars({
       5,
       Math.max(
         1,
-        Math.round(feel),
+        Math.round(
+          feel,
+        ),
       ),
     )
 
-  /*
-   * Intervals.icu :
-   * 1 = meilleur ressenti
-   * 5 = plus mauvais ressenti.
-   *
-   * Pour l'affichage en étoiles,
-   * on inverse uniquement la représentation.
-   */
   const stars =
     6 - normalizedFeel
 
   return (
     <div
-      className="flex items-center gap-0.5"
-      aria-label={`${stars} étoiles sur 5`}
+      className="
+        flex items-center
+        gap-0.5
+      "
+      aria-label={
+        `${stars} étoiles sur 5`
+      }
     >
       {Array.from(
-        { length: 5 },
-        (_, index) => (
+        {
+          length: 5,
+        },
+        (
+          _,
+          index,
+        ) => (
           <Star
             key={index}
             className={[
-              'h-4 w-4',
+              'h-3.5 w-3.5',
               index < stars
-                ? 'fill-current text-warning'
-                : 'text-base-content/20',
+                ? (
+                  'fill-current '
+                  + 'text-warning'
+                )
+                : (
+                  'text-base-content/20'
+                ),
             ].join(' ')}
           />
         ),
@@ -743,7 +1177,11 @@ function getMatchBadgeClass(
 function formatFeelLabel(
   feel: number,
 ): string {
-  switch (Math.round(feel)) {
+  switch (
+    Math.round(
+      feel,
+    )
+  ) {
     case 1:
       return 'Excellent'
 
@@ -768,9 +1206,13 @@ function formatFeelLabel(
 function formatDistance(
   distanceM: number,
 ): string {
-  return `${(
-    distanceM / 1000
-  ).toFixed(2)} km`
+  return (
+    `${
+      (
+        distanceM / 1000
+      ).toFixed(2)
+    } km`
+  )
 }
 
 
@@ -798,7 +1240,9 @@ function formatDuration(
     return `${hours} h`
   }
 
-  return `${hours} h ${minutes} min`
+  return (
+    `${hours} h ${minutes} min`
+  )
 }
 
 
@@ -812,7 +1256,9 @@ function formatActivityTime(
       minute: '2-digit',
     },
   ).format(
-    new Date(dateString),
+    new Date(
+      dateString,
+    ),
   )
 }
 
@@ -820,22 +1266,33 @@ function formatActivityTime(
 function formatSportType(
   sportType: string,
 ): string {
-  const sportLabels: Record<
-    string,
-    string
-  > = {
-    Run: 'Course à pied',
-    TrailRun: 'Trail',
-    Ride: 'Cyclisme',
-    VirtualRide: 'Cyclisme virtuel',
-    Walk: 'Marche',
-    Hike: 'Randonnée',
-    Swim: 'Natation',
-  }
+  const labels:
+    Record<string, string> = {
+      Run:
+        'Course à pied',
+      TrailRun:
+        'Trail',
+      Ride:
+        'Cyclisme',
+      VirtualRide:
+        'Cyclisme virtuel',
+      Walk:
+        'Marche',
+      Hike:
+        'Randonnée',
+      Swim:
+        'Natation',
+      StrengthTraining:
+        'Renforcement',
+      WeightTraining:
+        'Renforcement',
+      Other:
+        'Autre',
+    }
 
   return (
-    sportLabels[sportType] ??
-    sportType
+    labels[sportType]
+    ?? sportType
   )
 }
 
@@ -854,5 +1311,19 @@ function formatDate(
     new Date(
       `${dateString}T12:00:00`,
     ),
+  )
+}
+
+
+function formatNumber(
+  value: number,
+): string {
+  return new Intl.NumberFormat(
+    'fr-FR',
+    {
+      maximumFractionDigits: 1,
+    },
+  ).format(
+    value,
   )
 }

@@ -64,3 +64,11 @@ class TrainingSessionRepository(ABC):
     ) -> list[Activity]:
         """Retourne les activités détectées le même jour."""
         raise NotImplementedError
+
+    @abstractmethod
+    def list_unlinked_activities_for_date(
+        self,
+        athlete_profile_id: UUID,
+        session_date: date,
+    ) -> list[Activity]:
+        """Retourne les activités du jour non liées à une séance."""

@@ -1,23 +1,70 @@
-import { useEffect, useState } from 'react'
+import {
+  CloudRain,
+  Droplets,
+  MapPin,
+  Thermometer,
+  Wind,
+} from 'lucide-react'
 
-import { getWeather } from './api'
-import { getWeatherAlerts } from './alerts'
-import { useAthleteProfile } from '../../core/profile'
-import { getWeatherDescription } from './logic'
-import type { WeatherData } from './types'
+import {
+  useEffect,
+  useState,
+} from 'react'
+
+import {
+  useAthleteProfile,
+} from '../../core/profile'
+
+import {
+  getWeatherAlerts,
+} from './alerts'
+
+import {
+  getWeather,
+} from './api'
+
+import {
+  getWeatherDescription,
+} from './logic'
+
+import type {
+  WeatherData,
+} from './types'
+
 
 export function WeatherDetails() {
-  const profile = useAthleteProfile()
+  const profile =
+    useAthleteProfile()
 
   const weatherLocation = {
-    name: profile.location.name ?? '',
-    latitude: profile.location.latitude,
-    longitude: profile.location.longitude,
+    name:
+      profile.location.name
+      ?? '',
+
+    latitude:
+      profile.location.latitude,
+
+    longitude:
+      profile.location.longitude,
   }
 
-  const [weather, setWeather] = useState<WeatherData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [
+    weather,
+    setWeather,
+  ] = useState<
+    WeatherData | null
+  >(null)
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true)
+
+  const [
+    error,
+    setError,
+  ] = useState(false)
+
 
   useEffect(() => {
     let cancelled = false
@@ -28,19 +75,28 @@ export function WeatherDetails() {
         setError(false)
 
         if (
-          weatherLocation.latitude == null ||
-          weatherLocation.longitude == null
+          weatherLocation.latitude
+          == null
+          || weatherLocation.longitude
+          == null
         ) {
           throw new Error(
             'La localisation du profil est incomplète.',
           )
         }
 
-        const data = await getWeather({
-          name: weatherLocation.name || 'Ma position',
-          latitude: weatherLocation.latitude,
-          longitude: weatherLocation.longitude,
-        })
+        const data =
+          await getWeather({
+            name:
+              weatherLocation.name
+              || 'Ma position',
+
+            latitude:
+              weatherLocation.latitude,
+
+            longitude:
+              weatherLocation.longitude,
+          })
 
         if (!cancelled) {
           setWeather(data)
@@ -67,363 +123,1149 @@ export function WeatherDetails() {
     weatherLocation.longitude,
   ])
 
+
   if (loading) {
     return (
-      <div className="py-8 text-center text-slate-400">
-        Chargement des prévisions…
+      <div
+        className="
+          flex items-center
+          justify-center
+          gap-3
+          py-10
+          text-base-content/50
+        "
+      >
+        <span
+          className="
+            loading
+            loading-spinner
+            loading-sm
+          "
+        />
+
+        <span className="text-sm">
+          Chargement des prévisions…
+        </span>
       </div>
     )
   }
 
-  if (error || !weather) {
+
+  if (
+    error
+    || !weather
+  ) {
     return (
-      <div className="py-8 text-center text-red-500">
-        Impossible de récupérer les prévisions météo.
+      <div
+        className="
+          rounded-xl
+          border
+          border-error/30
+          bg-error/5
+          px-4 py-4
+          text-sm
+          text-error
+        "
+      >
+        Impossible de récupérer
+        les prévisions météo.
       </div>
     )
   }
 
-  const currentDescription = getWeatherDescription(
-    weather.current.weatherCode,
-  )
-  const alerts = getWeatherAlerts(weather)
-  const relevantAlerts = alerts.filter(isAlertRelevant)
+
+  const currentDescription =
+    getWeatherDescription(
+      weather.current.weatherCode,
+    )
+
+  const alerts =
+    getWeatherAlerts(
+      weather,
+    )
+
+  const relevantAlerts =
+    alerts.filter(
+      isAlertRelevant,
+    )
+
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl bg-slate-50 p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-slate-500">
-              {weather.location.name}
-            </p>
+    <div className="space-y-5">
+      <WeatherHeader
+        location={
+          weather.location.name
+          ?? weatherLocation.name
+          ?? 'Ma position'
+        }
+        temperature={
+          weather.current.temperature
+        }
+        label={
+          currentDescription.label
+        }
+        icon={
+          currentDescription.icon
+        }
+      />
 
-            <p className="mt-2 text-5xl font-bold text-slate-900">
-              {Math.round(weather.current.temperature)}°C
-            </p>
-
-            <p className="mt-2 text-slate-500">
-              {currentDescription.label}
-            </p>
-          </div>
-
-          <span className="text-4xl">
-            {currentDescription.icon}
-          </span>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Metric
-            label="Ressenti"
-            value={`${Math.round(weather.current.apparentTemperature)}°C`}
-          />
-
-          <Metric
-            label="Humidité"
-            value={`${Math.round(weather.current.humidity)} %`}
-          />
-
-          <Metric
-            label="Pluie"
-            value={`${weather.current.precipitation.toFixed(1)} mm`}
-          />
-
-          <Metric
-            label="Vent"
-            value={`${Math.round(weather.current.windSpeed)} km/h`}
-          />
-        </div>
-      </section>
+      <CurrentMetrics
+        apparentTemperature={
+          weather.current
+            .apparentTemperature
+        }
+        humidity={
+          weather.current.humidity
+        }
+        precipitation={
+          weather.current.precipitation
+        }
+        windSpeed={
+          weather.current.windSpeed
+        }
+      />
 
       {relevantAlerts.length > 0 && (
-        <details
-          open={relevantAlerts.some(
-            (alert) => alert.severity === 'danger',
-          )}
-          className="collapse collapse-arrow border border-base-300 bg-base-100"
-        >
-          <summary className="collapse-title flex items-center gap-2 font-semibold">
-            <span>⚠️ Alertes météo</span>
-
-            <span className="badge badge-sm badge-warning">
-              {relevantAlerts.length}
-            </span>
-          </summary>
-
-          <div className="collapse-content">
-            <div className="space-y-3 pt-2">
-              {relevantAlerts.map((alert) => (
-                <WeatherAlertCard
-                  key={`${alert.type}-${alert.severity}-${alert.time}`}
-                  alert={alert}
-                />
-              ))}
-            </div>
-          </div>
-        </details>
+        <WeatherAlerts
+          alerts={
+            relevantAlerts
+          }
+        />
       )}
 
-      <details className="group rounded-2xl border border-slate-200 bg-white">
-        <summary className="flex cursor-pointer list-none items-center justify-between p-4 font-semibold text-slate-900">
-          <span>Prochaines heures</span>
-          <span className="text-slate-400 transition group-open:rotate-180">
-            ▼
-          </span>
-        </summary>
+      <HourlyForecast
+        weather={weather}
+      />
 
-        <div className="border-t border-slate-100 p-4">
-          <div className="flex gap-3 overflow-x-auto pb-2">
-          {weather.hourly.slice(0, 12).map((hour) => {
-            const description = getWeatherDescription(
-              hour.weatherCode,
-            )
-
-            return (
-              <div
-                key={hour.time}
-                className="min-w-28 rounded-xl border border-slate-200 bg-white p-3 text-center"
-              >
-                <p className="text-xs text-slate-500">
-                  {formatHour(hour.time)}
-                </p>
-
-                <p className="mt-2 text-xl">
-                  {description.icon}
-                </p>
-
-                <p className="mt-1 font-semibold text-slate-900">
-                  {Math.round(hour.temperature)}°C
-                </p>
-
-                <p className="mt-2 text-xs text-blue-600">
-                  {Math.round(hour.precipitationProbability)} %
-                </p>
-
-                <p className="mt-1 text-xs text-slate-400">
-                  {hour.precipitation.toFixed(1)} mm
-                </p>
-              </div>
-            )
-          })}
-          </div>
-        </div>
-      </details>
-
-      <details className="group rounded-2xl border border-slate-200 bg-white">
-        <summary className="flex cursor-pointer list-none items-center justify-between p-4 font-semibold text-slate-900">
-          <span>Prévisions à 7 jours</span>
-          <span className="text-slate-400 transition group-open:rotate-180">
-            ▼
-          </span>
-        </summary>
-
-        <div className="space-y-2 border-t border-slate-100 p-4">
-          {weather.daily.map((day) => {
-            const description = getWeatherDescription(
-              day.weatherCode,
-            )
-
-            return (
-              <div
-                key={day.date}
-                className="grid grid-cols-[1fr_auto_auto] items-center gap-4 rounded-xl bg-slate-50 p-3"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">
-                    {description.icon}
-                  </span>
-
-                  <div>
-                    <p className="font-medium text-slate-900">
-                      {formatDate(day.date)}
-                    </p>
-
-                    <p className="text-xs text-slate-500">
-                      {description.label}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="text-right text-sm">
-                  <p className="font-semibold text-slate-900">
-                    {Math.round(day.temperatureMax)}°
-                  </p>
-
-                  <p className="text-slate-400">
-                    {Math.round(day.temperatureMin)}°
-                  </p>
-                </div>
-
-                <div className="text-right text-xs">
-                  <p className="text-blue-600">
-                    {Math.round(day.precipitationProbabilityMax)} %
-                  </p>
-
-                  <p className="text-slate-400">
-                    {day.precipitationSum.toFixed(1)} mm
-                  </p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </details>
+      <DailyForecast
+        weather={weather}
+      />
     </div>
   )
 }
 
-interface WeatherAlertCardProps {
-  alert: import('./alerts').WeatherAlert
+
+interface WeatherHeaderProps {
+  location: string
+  temperature: number
+  label: string
+  icon: string
 }
 
-function WeatherAlertCard({
-  alert,
-}: WeatherAlertCardProps) {
-  const styles = getAlertStyles(alert.severity)
 
+function WeatherHeader({
+  location,
+  temperature,
+  label,
+  icon,
+}: WeatherHeaderProps) {
   return (
-    <div className={`rounded-xl border p-4 ${styles.container}`}>
-      <div className="flex items-start gap-3">
-        <span className={`mt-0.5 text-lg ${styles.icon}`}>
-          {styles.symbol}
-        </span>
+    <div
+      className="
+        flex items-center
+        justify-between
+        gap-4
+      "
+    >
+      <div
+        className="
+          flex min-w-0
+          items-center
+          gap-3
+        "
+      >
+        <div
+          className="
+            flex size-11
+            shrink-0
+            items-center
+            justify-center
+            rounded-xl
+            bg-info/10
+            text-2xl
+          "
+        >
+          {icon}
+        </div>
 
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className={`font-semibold ${styles.title}`}>
-              {alert.title}
-            </p>
+          <div
+            className="
+              flex items-center
+              gap-1.5
+              text-sm
+              text-base-content/50
+            "
+          >
+            <MapPin
+              size={13}
+            />
 
-            {alert.time && (
-              <span className="text-xs text-slate-400">
-                {formatAlertTime(alert.time)}
-              </span>
-            )}
+            <span className="truncate">
+              {location}
+            </span>
           </div>
 
-          <p className="mt-1 text-sm text-slate-600">
-            {alert.message}
+          <p
+            className="
+              mt-0.5
+              font-semibold
+              text-base-content
+            "
+          >
+            {label}
           </p>
         </div>
       </div>
+
+      <div
+        className="
+          shrink-0
+          text-right
+        "
+      >
+        <span
+          className="
+            text-3xl
+            font-bold
+            text-base-content
+          "
+        >
+          {Math.round(
+            temperature,
+          )}
+        </span>
+
+        <span
+          className="
+            text-lg
+            font-medium
+            text-base-content/45
+          "
+        >
+          °C
+        </span>
+      </div>
     </div>
   )
 }
 
-function getAlertStyles(
-  severity: import('./alerts').WeatherAlertSeverity,
-) {
-  switch (severity) {
-    case 'danger':
-      return {
-        container:
-          'border-red-200 bg-red-50',
-        icon: 'text-red-600',
-        title: 'text-red-800',
-        symbol: '⚠',
-      }
 
-    case 'warning':
-      return {
-        container:
-          'border-amber-200 bg-amber-50',
-        icon: 'text-amber-600',
-        title: 'text-amber-800',
-        symbol: '⚠',
-      }
-
-    default:
-      return {
-        container:
-          'border-blue-200 bg-blue-50',
-        icon: 'text-blue-600',
-        title: 'text-blue-800',
-        symbol: 'ℹ',
-      }
-  }
+interface CurrentMetricsProps {
+  apparentTemperature: number
+  humidity: number
+  precipitation: number
+  windSpeed: number
 }
 
-function formatAlertTime(value: string): string {
-  if (value.includes('T')) {
-    return new Intl.DateTimeFormat('fr-FR', {
-      weekday: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(value))
-  }
 
-  return new Intl.DateTimeFormat('fr-FR', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  }).format(new Date(`${value}T12:00:00`))
+function CurrentMetrics({
+  apparentTemperature,
+  humidity,
+  precipitation,
+  windSpeed,
+}: CurrentMetricsProps) {
+  return (
+    <section
+      className="
+        overflow-hidden
+        rounded-xl
+        border
+        border-base-300
+      "
+    >
+      <div
+        className="
+          grid
+          grid-cols-2
+          divide-base-300
+          sm:grid-cols-4
+        "
+      >
+        <WeatherMetric
+          icon={Thermometer}
+          label="Ressenti"
+          value={
+            `${Math.round(
+              apparentTemperature,
+            )} °C`
+          }
+        />
+
+        <WeatherMetric
+          icon={Droplets}
+          label="Humidité"
+          value={
+            `${Math.round(
+              humidity,
+            )} %`
+          }
+        />
+
+        <WeatherMetric
+          icon={CloudRain}
+          label="Pluie"
+          value={
+            `${precipitation.toFixed(
+              1,
+            )} mm`
+          }
+        />
+
+        <WeatherMetric
+          icon={Wind}
+          label="Vent"
+          value={
+            `${Math.round(
+              windSpeed,
+            )} km/h`
+          }
+        />
+      </div>
+    </section>
+  )
 }
 
-interface MetricProps {
+
+interface WeatherMetricProps {
+  icon:
+    typeof Thermometer
+
   label: string
   value: string
 }
 
-function Metric({
+
+function WeatherMetric({
+  icon: Icon,
   label,
   value,
-}: MetricProps) {
+}: WeatherMetricProps) {
   return (
-    <div className="rounded-xl bg-white p-3">
-      <p className="text-xs text-slate-500">
-        {label}
+    <div
+      className="
+        flex items-center
+        gap-3
+        border-b
+        border-base-300
+        px-3 py-3
+        odd:border-r
+        sm:border-b-0
+        sm:border-r
+        sm:last:border-r-0
+      "
+    >
+      <Icon
+        size={16}
+        className="
+          shrink-0
+          text-base-content/40
+        "
+      />
+
+      <div className="min-w-0">
+        <p
+          className="
+            text-[11px]
+            uppercase
+            tracking-wide
+            text-base-content/40
+          "
+        >
+          {label}
+        </p>
+
+        <p
+          className="
+            truncate
+            text-sm
+            font-semibold
+            text-base-content
+          "
+        >
+          {value}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+
+interface WeatherAlertsProps {
+  alerts:
+    import('./alerts')
+      .WeatherAlert[]
+}
+
+
+function WeatherAlerts({
+  alerts,
+}: WeatherAlertsProps) {
+  const hasDanger =
+    alerts.some(
+      (alert) =>
+        alert.severity
+        === 'danger',
+    )
+
+  return (
+    <section
+      className="
+        border-t
+        border-base-300
+        pt-5
+      "
+    >
+      <details
+        open={hasDanger}
+        className="group"
+      >
+        <summary
+          className="
+            flex cursor-pointer
+            list-none
+            items-center
+            justify-between
+            gap-3
+          "
+        >
+          <div
+            className="
+              flex items-center
+              gap-2
+            "
+          >
+            <span
+              className="
+                text-warning
+              "
+            >
+              ⚠
+            </span>
+
+            <span
+              className="
+                font-semibold
+                text-base-content
+              "
+            >
+              Alertes météo
+            </span>
+
+            <span
+              className="
+                badge
+                badge-warning
+                badge-sm
+              "
+            >
+              {alerts.length}
+            </span>
+          </div>
+
+          <span
+            className="
+              text-xs
+              text-base-content/35
+              transition-transform
+              group-open:rotate-180
+            "
+          >
+            ▼
+          </span>
+        </summary>
+
+        <div className="mt-3 space-y-2">
+          {alerts.map(
+            (alert) => (
+              <WeatherAlertRow
+                key={
+                  `${alert.type}-${alert.severity}-${alert.time}`
+                }
+                alert={alert}
+              />
+            ),
+          )}
+        </div>
+      </details>
+    </section>
+  )
+}
+
+
+interface WeatherAlertRowProps {
+  alert:
+    import('./alerts')
+      .WeatherAlert
+}
+
+
+function WeatherAlertRow({
+  alert,
+}: WeatherAlertRowProps) {
+  const style =
+    getAlertStyle(
+      alert.severity,
+    )
+
+  return (
+    <div
+      className={[
+        (
+          'rounded-xl border '
+          + 'px-4 py-3'
+        ),
+        style,
+      ].join(' ')}
+    >
+      <div
+        className="
+          flex items-start
+          justify-between
+          gap-3
+        "
+      >
+        <div>
+          <p
+            className="
+              text-sm
+              font-semibold
+            "
+          >
+            {alert.title}
+          </p>
+
+          <p
+            className="
+              mt-1
+              text-sm
+              leading-relaxed
+              text-base-content/60
+            "
+          >
+            {alert.message}
+          </p>
+        </div>
+
+        {alert.time && (
+          <span
+            className="
+              shrink-0
+              text-xs
+              text-base-content/40
+            "
+          >
+            {formatAlertTime(
+              alert.time,
+            )}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+
+function HourlyForecast({
+  weather,
+}: {
+  weather: WeatherData
+}) {
+  return (
+    <section
+      className="
+        border-t
+        border-base-300
+        pt-5
+      "
+    >
+      <details className="group">
+        <summary
+          className="
+            flex cursor-pointer
+            list-none
+            items-center
+            justify-between
+          "
+        >
+          <div>
+            <h3
+              className="
+                font-semibold
+                text-base-content
+              "
+            >
+              Prochaines heures
+            </h3>
+
+            <p
+              className="
+                mt-0.5
+                text-xs
+                text-base-content/45
+              "
+            >
+              Température et risque
+              de précipitations
+            </p>
+          </div>
+
+          <span
+            className="
+              text-xs
+              text-base-content/35
+              transition-transform
+              group-open:rotate-180
+            "
+          >
+            ▼
+          </span>
+        </summary>
+
+        <div
+          className="
+            mt-4
+            flex gap-2
+            overflow-x-auto
+            pb-2
+          "
+        >
+          {weather.hourly
+            .slice(
+              0,
+              12,
+            )
+            .map(
+              (hour) => {
+                const description =
+                  getWeatherDescription(
+                    hour.weatherCode,
+                  )
+
+                return (
+                  <HourlyItem
+                    key={
+                      hour.time
+                    }
+                    time={
+                      hour.time
+                    }
+                    icon={
+                      description.icon
+                    }
+                    temperature={
+                      hour.temperature
+                    }
+                    precipitationProbability={
+                      hour
+                        .precipitationProbability
+                    }
+                    precipitation={
+                      hour.precipitation
+                    }
+                  />
+                )
+              },
+            )}
+        </div>
+      </details>
+    </section>
+  )
+}
+
+
+interface HourlyItemProps {
+  time: string
+  icon: string
+  temperature: number
+  precipitationProbability: number
+  precipitation: number
+}
+
+
+function HourlyItem({
+  time,
+  icon,
+  temperature,
+  precipitationProbability,
+  precipitation,
+}: HourlyItemProps) {
+  return (
+    <div
+      className="
+        min-w-24
+        rounded-xl
+        border
+        border-base-300
+        px-3 py-3
+        text-center
+      "
+    >
+      <p
+        className="
+          text-xs
+          text-base-content/45
+        "
+      >
+        {formatHour(
+          time,
+        )}
       </p>
 
-      <p className="mt-1 font-semibold text-slate-900">
-        {value}
+      <div
+        className="
+          my-2
+          text-xl
+        "
+      >
+        {icon}
+      </div>
+
+      <p
+        className="
+          text-sm
+          font-bold
+          text-base-content
+        "
+      >
+        {Math.round(
+          temperature,
+        )}
+        °
+      </p>
+
+      <p
+        className="
+          mt-2
+          text-xs
+          font-medium
+          text-info
+        "
+      >
+        {Math.round(
+          precipitationProbability,
+        )}
+        %
+      </p>
+
+      <p
+        className="
+          mt-0.5
+          text-[11px]
+          text-base-content/35
+        "
+      >
+        {precipitation.toFixed(
+          1,
+        )}
+        {' '}
+        mm
       </p>
     </div>
   )
 }
 
-function formatHour(value: string): string {
-  return new Intl.DateTimeFormat('fr-FR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value))
+
+function DailyForecast({
+  weather,
+}: {
+  weather: WeatherData
+}) {
+  return (
+    <section
+      className="
+        border-t
+        border-base-300
+        pt-5
+      "
+    >
+      <details className="group">
+        <summary
+          className="
+            flex cursor-pointer
+            list-none
+            items-center
+            justify-between
+          "
+        >
+          <div>
+            <h3
+              className="
+                font-semibold
+                text-base-content
+              "
+            >
+              Prévisions à 7 jours
+            </h3>
+
+            <p
+              className="
+                mt-0.5
+                text-xs
+                text-base-content/45
+              "
+            >
+              Tendance météo
+              de la semaine
+            </p>
+          </div>
+
+          <span
+            className="
+              text-xs
+              text-base-content/35
+              transition-transform
+              group-open:rotate-180
+            "
+          >
+            ▼
+          </span>
+        </summary>
+
+        <div
+          className="
+            mt-4
+            divide-y
+            divide-base-300
+          "
+        >
+          {weather.daily.map(
+            (day) => {
+              const description =
+                getWeatherDescription(
+                  day.weatherCode,
+                )
+
+              return (
+                <DailyRow
+                  key={
+                    day.date
+                  }
+                  date={
+                    day.date
+                  }
+                  icon={
+                    description.icon
+                  }
+                  label={
+                    description.label
+                  }
+                  temperatureMax={
+                    day.temperatureMax
+                  }
+                  temperatureMin={
+                    day.temperatureMin
+                  }
+                  precipitationProbability={
+                    day
+                      .precipitationProbabilityMax
+                  }
+                  precipitation={
+                    day.precipitationSum
+                  }
+                />
+              )
+            },
+          )}
+        </div>
+      </details>
+    </section>
+  )
 }
 
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('fr-FR', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  }).format(new Date(`${value}T12:00:00`))
+
+interface DailyRowProps {
+  date: string
+  icon: string
+  label: string
+  temperatureMax: number
+  temperatureMin: number
+  precipitationProbability: number
+  precipitation: number
 }
+
+
+function DailyRow({
+  date,
+  icon,
+  label,
+  temperatureMax,
+  temperatureMin,
+  precipitationProbability,
+  precipitation,
+}: DailyRowProps) {
+  return (
+    <div
+      className="
+        grid
+        grid-cols-[1fr_auto]
+        items-center
+        gap-4
+        py-3
+      "
+    >
+      <div
+        className="
+          flex min-w-0
+          items-center
+          gap-3
+        "
+      >
+        <span
+          className="
+            w-7
+            shrink-0
+            text-center
+            text-xl
+          "
+        >
+          {icon}
+        </span>
+
+        <div className="min-w-0">
+          <p
+            className="
+              text-sm
+              font-medium
+              text-base-content
+            "
+          >
+            {formatDate(
+              date,
+            )}
+          </p>
+
+          <p
+            className="
+              truncate
+              text-xs
+              text-base-content/45
+            "
+          >
+            {label}
+          </p>
+        </div>
+      </div>
+
+      <div
+        className="
+          flex items-center
+          gap-5
+        "
+      >
+        <div
+          className="
+            text-right
+            text-xs
+          "
+        >
+          <p
+            className="
+              font-medium
+              text-info
+            "
+          >
+            {Math.round(
+              precipitationProbability,
+            )}
+            %
+          </p>
+
+          <p
+            className="
+              text-base-content/35
+            "
+          >
+            {precipitation.toFixed(
+              1,
+            )}
+            {' '}
+            mm
+          </p>
+        </div>
+
+        <div
+          className="
+            min-w-14
+            text-right
+          "
+        >
+          <span
+            className="
+              text-sm
+              font-bold
+              text-base-content
+            "
+          >
+            {Math.round(
+              temperatureMax,
+            )}
+            °
+          </span>
+
+          <span
+            className="
+              ml-2
+              text-sm
+              text-base-content/35
+            "
+          >
+            {Math.round(
+              temperatureMin,
+            )}
+            °
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+function getAlertStyle(
+  severity:
+    import('./alerts')
+      .WeatherAlertSeverity,
+): string {
+  switch (severity) {
+    case 'danger':
+      return (
+        'border-error/30 '
+        + 'bg-error/5 '
+        + 'text-error'
+      )
+
+    case 'warning':
+      return (
+        'border-warning/30 '
+        + 'bg-warning/5 '
+        + 'text-warning'
+      )
+
+    default:
+      return (
+        'border-info/30 '
+        + 'bg-info/5 '
+        + 'text-info'
+      )
+  }
+}
+
+
+function formatAlertTime(
+  value: string,
+): string {
+  if (
+    value.includes('T')
+  ) {
+    return new Intl.DateTimeFormat(
+      'fr-FR',
+      {
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      },
+    ).format(
+      new Date(
+        value,
+      ),
+    )
+  }
+
+  return new Intl.DateTimeFormat(
+    'fr-FR',
+    {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    },
+  ).format(
+    new Date(
+      `${value}T12:00:00`,
+    ),
+  )
+}
+
+
+function formatHour(
+  value: string,
+): string {
+  return new Intl.DateTimeFormat(
+    'fr-FR',
+    {
+      hour: '2-digit',
+      minute: '2-digit',
+    },
+  ).format(
+    new Date(
+      value,
+    ),
+  )
+}
+
+
+function formatDate(
+  value: string,
+): string {
+  return new Intl.DateTimeFormat(
+    'fr-FR',
+    {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    },
+  ).format(
+    new Date(
+      `${value}T12:00:00`,
+    ),
+  )
+}
+
 
 function isAlertRelevant(
-  alert: import('./alerts').WeatherAlert,
+  alert:
+    import('./alerts')
+      .WeatherAlert,
 ): boolean {
   if (!alert.time) {
     return true
   }
 
-  const now = new Date()
+  const now =
+    new Date()
 
-  const today = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
+  const today =
+    new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    )
+
+  const tomorrow =
+    new Date(
+      today,
+    )
+
+  tomorrow.setDate(
+    tomorrow.getDate() + 1,
   )
 
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
+  const alertDate =
+    new Date(
+      alert.time,
+    )
 
-  const alertDate = new Date(alert.time)
-
-  const alertDay = new Date(
-    alertDate.getFullYear(),
-    alertDate.getMonth(),
-    alertDate.getDate(),
-  )
+  const alertDay =
+    new Date(
+      alertDate.getFullYear(),
+      alertDate.getMonth(),
+      alertDate.getDate(),
+    )
 
   return (
-    alertDay.getTime() === today.getTime() ||
-    alertDay.getTime() === tomorrow.getTime()
+    alertDay.getTime()
+    === today.getTime()
+    || alertDay.getTime()
+    === tomorrow.getTime()
   )
 }

@@ -27,9 +27,10 @@ export function TrainingWidget({
 
   const session =
     sessions.find(
-      (item) => item.date === today,
-    ) ??
-    sessions[0]
+      (item) =>
+        item.date === today
+        && item.type !== 'supplementary',
+    )
 
   if (loading) {
     return (

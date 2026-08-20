@@ -1,5 +1,7 @@
 import type {
+  TrainingAvailableActivity,
   TrainingSession,
+  TrainingSessionCreate,
   TrainingSessionStatus,
 } from '../../modules/training/types'
 
@@ -17,6 +19,20 @@ interface TrainingSessionApiResponse {
   heart_rate_zone: string | null
   status: TrainingSessionStatus
   activity_id: string | null
+}
+
+interface TrainingAvailableActivityApiResponse {
+  id: string
+  provider: string
+  provider_activity_id: string
+  name: string
+  sport_type: string
+  start_at_local: string | null
+  moving_time_seconds: number | null
+  distance_m: number | null
+  elevation_gain_m: number | null
+  training_load: number | null
+  feel: number | null
 }
 
 function mapTrainingSession(
@@ -227,4 +243,89 @@ export async function updateTrainingSessionActivity(
     (await response.json()) as TrainingSessionApiResponse
 
   return mapTrainingSession(data)
+}
+
+export async function createTrainingSession(
+  session: TrainingSessionCreate,
+): Promise<TrainingSession> {
+  const response = await fetch(
+    '/api/training-sessions',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        date: session.date,
+        type: session.type,
+        sport_type: session.sportType,
+        title: session.title,
+        description: session.description,
+        duration_minutes: session.durationMinutes,
+        distance_km: session.distanceKm ?? null,
+        elevation_gain_m:
+          session.elevationGainM ?? null,
+        intensity: session.intensity,
+        heart_rate_zone:
+          session.heartRateZone ?? null,
+        status: session.status,
+        activity_id:
+          session.activityId ?? null,
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      `Impossible de créer la séance (${response.status}).`,
+    )
+  }
+
+  const data =
+    (await response.json()) as TrainingSessionApiResponse
+
+  return mapTrainingSession(data)
+}
+
+
+export async function fetchAvailableTrainingActivities(
+  date: string,
+): Promise<TrainingAvailableActivity[]> {
+  const params = new URLSearchParams({
+    date,
+  })
+
+  const response = await fetch(
+    `/api/training-sessions/available-activities?${params.toString()}`,
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      `Impossible de charger les activités disponibles (${response.status}).`,
+    )
+  }
+
+  const data =
+    (await response.json()) as TrainingAvailableActivityApiResponse[]
+
+  return data.map((activity) => ({
+    id: activity.id,
+    provider: activity.provider,
+    providerActivityId:
+      activity.provider_activity_id,
+    name: activity.name,
+    sportType: activity.sport_type,
+    startAtLocal:
+      activity.start_at_local ?? undefined,
+    movingTimeSeconds:
+      activity.moving_time_seconds ?? undefined,
+    distanceM:
+      activity.distance_m ?? undefined,
+    elevationGainM:
+      activity.elevation_gain_m ?? undefined,
+    trainingLoad:
+      activity.training_load ?? undefined,
+    feel:
+      activity.feel ?? undefined,
+  }))
 }

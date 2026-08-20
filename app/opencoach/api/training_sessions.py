@@ -1,7 +1,12 @@
 from datetime import date
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+)
 from sqlalchemy.orm import Session
 
 from opencoach.api.intervals import (
@@ -17,6 +22,8 @@ from opencoach.schemas.training_session import (
     TrainingSessionActivityUpdate,
     TrainingSessionResponse,
     TrainingSessionStatusUpdate,
+    TrainingSessionCreate,
+    TrainingAvailableActivityResponse,
 )
 from opencoach.config import (
     get_threshold_settings,
@@ -24,6 +31,7 @@ from opencoach.config import (
 from opencoach.training import (
     match_activity_to_session,
 )
+from opencoach.models import TrainingSession
 
 router = APIRouter(
     prefix="/api/training-sessions",
@@ -95,6 +103,118 @@ def list_training_sessions(
         for session in sessions
     ]
 
+@router.post(
+    "",
+    response_model=TrainingSessionResponse,
+    status_code=201,
+)
+def create_training_session(
+    payload: TrainingSessionCreate,
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id,
+    ),
+    repository: SqlTrainingSessionRepository = Depends(
+        get_training_session_repository,
+    ),
+) -> TrainingSessionResponse:
+    """Crée une séance d'entraînement supplémentaire."""
+
+    session = TrainingSession(
+        id=None,
+        date=payload.date,
+        type=payload.type,
+        sport_type=payload.sport_type,
+        title=payload.title,
+        description=payload.description,
+        duration_minutes=payload.duration_minutes,
+        distance_km=payload.distance_km,
+        elevation_gain_m=payload.elevation_gain_m,
+        intensity=payload.intensity,
+        heart_rate_zone=payload.heart_rate_zone,
+        status=payload.status,
+        activity_id=payload.activity_id,
+    )
+
+    try:
+        created_session = repository.save_session(
+            athlete_profile_id,
+            session,
+        )
+
+    except TrainingSessionRepositoryError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible de créer la séance.",
+        ) from exc
+
+    return to_response(
+        created_session,
+    )
+
+@router.get(
+    "/available-activities",
+    response_model=list[
+        TrainingAvailableActivityResponse
+    ],
+)
+def list_available_activities(
+    session_date: date = Query(
+        alias="date",
+    ),
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id,
+    ),
+    repository: SqlTrainingSessionRepository = Depends(
+        get_training_session_repository,
+    ),
+) -> list[TrainingAvailableActivityResponse]:
+    """Retourne les activités non liées disponibles pour une date."""
+
+    try:
+        activities = (
+            repository
+            .list_unlinked_activities_for_date(
+                athlete_profile_id,
+                session_date,
+            )
+        )
+
+    except TrainingSessionRepositoryError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Impossible de rechercher les "
+                "activités disponibles du jour."
+            ),
+        ) from exc
+
+    return [
+        TrainingAvailableActivityResponse(
+            id=activity.id,
+            provider=activity.provider,
+            provider_activity_id=(
+                activity.provider_activity_id
+            ),
+            name=activity.name,
+            sport_type=activity.sport_type,
+            start_at_local=(
+                activity.start_at_local.isoformat()
+                if activity.start_at_local
+                else None
+            ),
+            moving_time_seconds=(
+                activity.moving_time_seconds
+            ),
+            distance_m=activity.distance_m,
+            elevation_gain_m=(
+                activity.elevation_gain_m
+            ),
+            training_load=activity.training_load,
+            feel=activity.feel,
+        )
+        for activity in activities
+        if activity.id is not None
+    ]
 
 @router.get(
     "/{session_id}",

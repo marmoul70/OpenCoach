@@ -5,17 +5,31 @@ from opencoach.models import TrainingSession
 from opencoach.readiness import DailyReadiness
 
 from .models import CoachDecision
-
+from opencoach.training import (
+    RecentLoadAssessment,
+)
 
 def decide_training_session(
     *,
     session: TrainingSession,
     readiness: DailyReadiness,
     thresholds: CoachDecisionThresholds,
+    recent_load: RecentLoadAssessment | None = None,
 ) -> CoachDecision:
-    """Décide comment adapter une séance selon le Readiness."""
+    """Décide comment adapter une séance selon le contexte disponible."""
 
     score = readiness.score
+
+    if (
+        recent_load is not None
+        and recent_load.has_critical
+    ):
+        return _build_recent_load_reduction(
+            session=session,
+            readiness=readiness,
+            thresholds=thresholds,
+            recent_load=recent_load,
+        )
 
     if (
         "prefer_recovery_or_rest"
@@ -52,7 +66,6 @@ def decide_training_session(
         session=session,
         readiness=readiness,
     )
-
 
 def _build_keep_decision(
     *,
@@ -149,6 +162,73 @@ def _build_reduce_decision(
         ),
     )
 
+def _build_recent_load_reduction(
+    *,
+    session: TrainingSession,
+    readiness: DailyReadiness,
+    thresholds: CoachDecisionThresholds,
+    recent_load: RecentLoadAssessment,
+) -> CoachDecision:
+    """Réduit la séance lorsqu'une surcharge récente est détectée."""
+
+    duration_factor = (
+        thresholds
+        .reduction
+        .duration_factor
+    )
+
+    recommended_duration = _scaled_duration(
+        session.duration_minutes,
+        duration_factor,
+    )
+
+    critical_reasons = [
+        signal.reason
+        for signal in recent_load.signals
+        if signal.level == "critical"
+    ]
+
+    reason = (
+        critical_reasons[0]
+        if critical_reasons
+        else (
+            "La charge récente justifie une réduction "
+            "de la séance planifiée."
+        )
+    )
+
+    constraints = tuple(
+        dict.fromkeys(
+            (
+                *readiness.training_constraints,
+                *(
+                    signal.kind
+                    for signal in recent_load.signals
+                    if signal.level == "critical"
+                ),
+            )
+        )
+    )
+
+    return CoachDecision(
+        action="reduce",
+        reason=reason,
+        original_duration_minutes=(
+            session.duration_minutes
+        ),
+        recommended_duration_minutes=(
+            recommended_duration
+        ),
+        duration_factor=duration_factor,
+        intensity_factor=(
+            thresholds
+            .reduction
+            .intensity_factor
+        ),
+        original_intensity=session.intensity,
+        recommended_intensity="easy",
+        constraints=constraints,
+    )
 
 def _build_replace_decision(
     *,

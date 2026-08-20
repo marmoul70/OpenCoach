@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from uuid import UUID, uuid4
 
 import pytest
@@ -28,6 +28,10 @@ from opencoach.readiness import (
 )
 from opencoach.models import WellnessDay
 
+from opencoach.training import (
+    RecentTrainingLoad,
+    TrainingLoadComparison,
+)
 
 TARGET_DATE = date(
     2026,
@@ -137,6 +141,31 @@ class FakeReadinessService:
 
         return self.assessment
 
+class FakeRecentTrainingLoadService:
+    def __init__(
+        self,
+        recent_load: RecentTrainingLoad,
+    ) -> None:
+        self.recent_load = recent_load
+        self.calls: list[
+            tuple[UUID, date]
+        ] = []
+
+    def calculate(
+        self,
+        athlete_profile_id: UUID,
+        target_date: date,
+        *,
+        days: int = 7,
+    ) -> RecentTrainingLoad:
+        self.calls.append(
+            (
+                athlete_profile_id,
+                target_date,
+            )
+        )
+
+        return self.recent_load
 
 def create_session(
     *,
@@ -262,12 +291,54 @@ def create_readiness_assessment(
         readiness=readiness,
     )
 
+def create_recent_overload() -> RecentTrainingLoad:
+    day_1 = TrainingLoadComparison(
+        date=TARGET_DATE - timedelta(days=1),
+        planned_duration_minutes=60,
+        actual_duration_minutes=90,
+        planned_load=30.0,
+        actual_load=50.0,
+        measured_load=50.0,
+        estimated_load=0.0,
+        planned_sessions_count=1,
+        actual_sessions_count=1,
+        status="above_plan",
+    )
+
+    day_2 = TrainingLoadComparison(
+        date=TARGET_DATE - timedelta(days=2),
+        planned_duration_minutes=45,
+        actual_duration_minutes=75,
+        planned_load=25.0,
+        actual_load=40.0,
+        measured_load=40.0,
+        estimated_load=0.0,
+        planned_sessions_count=1,
+        actual_sessions_count=1,
+        status="above_plan",
+    )
+
+    return RecentTrainingLoad(
+        days=(
+            day_1,
+            day_2,
+        ),
+        analyzed_days=2,
+        planned_load_total=55.0,
+        actual_load_total=90.0,
+        above_plan_days=2,
+        below_plan_days=0,
+        on_plan_days=0,
+        broken_rest_days=0,
+        respected_rest_days=0,
+    )
 
 def create_service(
     *,
     sessions: list[TrainingSession],
     readiness_score: float,
     constraints: tuple[str, ...] = (),
+    recent_load: RecentTrainingLoad | None = None,
 ):
     training_repository = (
         FakeTrainingSessionRepository(
@@ -282,9 +353,20 @@ def create_service(
         )
     )
 
+    recent_load_service = (
+        FakeRecentTrainingLoadService(
+            recent_load,
+        )
+        if recent_load is not None
+        else None
+    )
+
     service = CoachDecisionService(
         training_repository,
         readiness_service,
+        recent_load_service=(
+            recent_load_service
+        ),
         thresholds=load_threshold_settings(),
     )
 
@@ -293,7 +375,6 @@ def create_service(
         training_repository,
         readiness_service,
     )
-
 
 def test_coach_decision_service_keeps_session() -> None:
     session = create_session()
@@ -538,3 +619,73 @@ def test_completed_session_does_not_conflict_with_planned_session() -> None:
 
     assert result.session == planned
     assert result.decision.action == "keep"
+
+def test_coach_decision_service_uses_recent_overload() -> None:
+    service, _, _ = create_service(
+        sessions=[
+            create_session(
+                duration_minutes=60,
+            ),
+        ],
+        readiness_score=90.0,
+        recent_load=create_recent_overload(),
+    )
+
+    result = service.calculate(
+        uuid4(),
+        TARGET_DATE,
+    )
+
+    assert result.decision.action == "reduce"
+
+    assert (
+        result.decision.recommended_intensity
+        == "easy"
+    )
+
+    assert (
+        "repeated_overload"
+        in result.decision.constraints
+    )
+
+    assert result.recent_load is not None
+
+    assert (
+        result.recent_load.above_plan_days
+        == 2
+    )
+
+    assert (
+        result.recent_load_assessment
+        is not None
+    )
+
+    assert (
+        result.recent_load_assessment.has_critical
+        is True
+    )
+
+
+def test_coach_decision_service_keeps_without_recent_load() -> None:
+    service, _, _ = create_service(
+        sessions=[
+            create_session(
+                duration_minutes=60,
+            ),
+        ],
+        readiness_score=90.0,
+    )
+
+    result = service.calculate(
+        uuid4(),
+        TARGET_DATE,
+    )
+
+    assert result.decision.action == "keep"
+
+    assert result.recent_load is None
+
+    assert (
+        result.recent_load_assessment
+        is None
+    )

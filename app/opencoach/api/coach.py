@@ -18,7 +18,9 @@ from opencoach.coaching import (
     PlannedSessionUnavailableError,
 )
 from opencoach.database.repositories import (
+    ActivityRepositoryError,
     DailyContextRepositoryError,
+    SqlActivityRepository,
     SqlDailyContextRepository,
     SqlTrainingSessionRepository,
     SqlWellnessRepository,
@@ -29,6 +31,11 @@ from opencoach.database.session import get_db
 from opencoach.readiness import (
     ReadinessDataUnavailableError,
     ReadinessService,
+)
+from opencoach.training import (
+    DailyTrainingLoadService,
+    RecentTrainingLoadService,
+    TrainingLoadComparisonService,
 )
 from opencoach.schemas.coach import (
     CoachDecisionResponse,
@@ -54,6 +61,12 @@ def get_coach_decision_service(
         )
     )
 
+    activity_repository = (
+        SqlActivityRepository(
+            db
+        )
+    )
+
     wellness_repository = (
         SqlWellnessRepository(
             db
@@ -74,11 +87,33 @@ def get_coach_decision_service(
         provider="intervals",
     )
 
+    daily_training_load_service = (
+        DailyTrainingLoadService(
+            activity_repository,
+            training_repository,
+        )
+    )
+
+    load_comparison_service = (
+        TrainingLoadComparisonService(
+            training_repository,
+            daily_training_load_service,
+        )
+    )
+
+    recent_load_service = (
+        RecentTrainingLoadService(
+            load_comparison_service,
+        )
+    )
+
     return CoachDecisionService(
         training_repository,
         readiness_service,
+        recent_load_service=(
+            recent_load_service
+        ),
     )
-
 
 @router.get(
     "/today",
@@ -117,6 +152,7 @@ def get_today_coach_decision(
         ) from exc
 
     except (
+        ActivityRepositoryError,
         TrainingSessionRepositoryError,
         WellnessRepositoryError,
         DailyContextRepositoryError,

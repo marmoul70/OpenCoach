@@ -8,10 +8,13 @@ from .daily_load import (
 from .daily_load_service import (
     DailyTrainingLoadService,
 )
-from .load_estimation import (
-    INTENSITY_LOAD_FACTORS,
-    estimate_prescribed_load,
-    estimate_session_load,
+from .load_comparison import (
+    TrainingLoadComparison,
+    TrainingLoadStatus,
+    classify_training_load,
+)
+from .load_comparison_service import (
+    TrainingLoadComparisonService,
 )
 from .load_estimation import (
     CANONICAL_INTENSITIES,
@@ -23,25 +26,42 @@ from .load_estimation import (
     get_intensity_load_factor,
     normalize_intensity,
 )
-from .load_comparison_service import (
-    TrainingLoadComparisonService,
+from .recent_load import (
+    RecentTrainingLoad,
+)
+from .recent_load_service import (
+    RecentTrainingLoadService,
+)
+from .recent_load_signals import (
+    RecentLoadAssessment,
+    RecentLoadSignal,
+    RecentLoadSignalKind,
+    RecentLoadSignalLevel,
+    assess_recent_training_load,
 )
 
 __all__ = [
     "ActivityMatchResult",
+    "CANONICAL_INTENSITIES",
     "DailyTrainingLoad",
     "DailyTrainingLoadService",
-    "match_activity_to_session",
+    "INTENSITY_ALIASES",
     "INTENSITY_LOAD_FACTORS",
-    "estimate_session_load",
-    "estimate_prescribed_load",
+    "RecentTrainingLoad",
+    "RecentTrainingLoadService",
     "TrainingLoadComparison",
+    "TrainingLoadComparisonService",
     "TrainingLoadStatus",
     "classify_training_load",
-    "INTENSITY_ALIASES",
     "estimate_load",
+    "estimate_prescribed_load",
+    "estimate_session_load",
     "get_intensity_load_factor",
-    "CANONICAL_INTENSITIES",
+    "match_activity_to_session",
     "normalize_intensity",
-    "TrainingLoadComparisonService",
+    "RecentLoadAssessment",
+    "RecentLoadSignal",
+    "RecentLoadSignalKind",
+    "RecentLoadSignalLevel",
+    "assess_recent_training_load",
 ]

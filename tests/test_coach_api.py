@@ -28,10 +28,16 @@ from opencoach.readiness import (
     ReadinessComparison,
     ReadinessSignal,
 )
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
+from opencoach.training import (
+    DailyTrainingLoadService,
+    RecentTrainingLoadService,
+    TrainingLoadComparisonService,
+)
 
 TODAY = date.today()
-
 
 class FakeCoachDecisionService:
     def __init__(
@@ -386,3 +392,62 @@ def test_coach_api_returns_rest_without_planned_session() -> None:
         ]
         is None
     )
+def test_coach_api_builds_recent_training_load_dependencies() -> None:
+    engine = create_engine(
+        "sqlite:///:memory:",
+    )
+
+    SessionLocal = sessionmaker(
+        bind=engine,
+        expire_on_commit=False,
+    )
+
+    db = SessionLocal()
+
+    try:
+        service = get_coach_decision_service(
+            db,
+        )
+
+        assert service.recent_load_service is not None
+
+        assert isinstance(
+            service.recent_load_service,
+            RecentTrainingLoadService,
+        )
+
+        comparison_service = (
+            service
+            .recent_load_service
+            .comparison_service
+        )
+
+        assert isinstance(
+            comparison_service,
+            TrainingLoadComparisonService,
+        )
+
+        daily_load_service = (
+            comparison_service
+            .daily_training_load_service
+        )
+
+        assert isinstance(
+            daily_load_service,
+            DailyTrainingLoadService,
+        )
+
+        assert (
+            daily_load_service
+            .training_session_repository
+            is service.training_repository
+        )
+
+        assert (
+            comparison_service
+            .training_session_repository
+            is service.training_repository
+        )
+
+    finally:
+        db.close()

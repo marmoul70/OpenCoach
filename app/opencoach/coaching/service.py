@@ -14,6 +14,12 @@ from opencoach.readiness.service import (
     ReadinessAssessment,
     ReadinessService,
 )
+from opencoach.training import (
+    RecentLoadAssessment,
+    RecentTrainingLoad,
+    RecentTrainingLoadService,
+    assess_recent_training_load,
+)
 
 from .decision import decide_training_session
 from .models import CoachDecision
@@ -38,6 +44,9 @@ class CoachDecisionAssessment:
     readiness: ReadinessAssessment
     decision: CoachDecision
 
+    recent_load: RecentTrainingLoad | None = None
+    recent_load_assessment: RecentLoadAssessment | None = None
+
 
 class CoachDecisionService:
     """Orchestre la décision du coach pour une séance planifiée."""
@@ -47,10 +56,12 @@ class CoachDecisionService:
         training_repository: TrainingSessionRepository,
         readiness_service: ReadinessService,
         *,
+        recent_load_service: RecentTrainingLoadService | None = None,
         thresholds: ThresholdSettings | None = None,
     ) -> None:
         self.training_repository = training_repository
         self.readiness_service = readiness_service
+        self.recent_load_service = recent_load_service
 
         self.thresholds = (
             thresholds
@@ -125,10 +136,28 @@ class CoachDecisionService:
             target_date,
         )
 
+        recent_load = None
+        recent_load_assessment = None
+
+        if self.recent_load_service is not None:
+            recent_load = (
+                self.recent_load_service.calculate(
+                    athlete_profile_id,
+                    target_date,
+                )
+            )
+
+            recent_load_assessment = (
+                assess_recent_training_load(
+                    recent_load,
+                )
+            )
+
         decision = decide_training_session(
             session=session,
             readiness=readiness.readiness,
             thresholds=self.thresholds.coach_decision,
+            recent_load=recent_load_assessment,
         )
 
         return CoachDecisionAssessment(
@@ -136,4 +165,8 @@ class CoachDecisionService:
             session=session,
             readiness=readiness,
             decision=decision,
+            recent_load=recent_load,
+            recent_load_assessment=(
+                recent_load_assessment
+            ),
         )

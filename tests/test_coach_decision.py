@@ -8,7 +8,10 @@ from opencoach.config import (
 )
 from opencoach.models import TrainingSession
 from opencoach.readiness import DailyReadiness
-
+from opencoach.training import (
+    RecentLoadAssessment,
+    RecentLoadSignal,
+)
 
 def create_session(
     *,
@@ -223,3 +226,116 @@ def test_score_at_replace_boundary_replaces_session() -> None:
     )
 
     assert decision.action == "replace"
+
+def test_coach_decision_keeps_session_with_recent_load_warning() -> None:
+    recent_load = RecentLoadAssessment(
+        signals=(
+            RecentLoadSignal(
+                kind="recent_overload",
+                level="warning",
+                reason=(
+                    "La charge réalisée hier était "
+                    "supérieure au programme prévu."
+                ),
+            ),
+        ),
+    )
+
+    decision = decide_training_session(
+        session=create_session(),
+        readiness=create_readiness(
+            score=90.0,
+        ),
+        thresholds=thresholds(),
+        recent_load=recent_load,
+    )
+
+    assert decision.action == "keep"
+
+
+def test_coach_decision_reduces_session_with_repeated_overload() -> None:
+    recent_load = RecentLoadAssessment(
+        signals=(
+            RecentLoadSignal(
+                kind="repeated_overload",
+                level="critical",
+                reason=(
+                    "La charge a dépassé le programme "
+                    "sur plusieurs jours récents."
+                ),
+            ),
+        ),
+    )
+
+    decision = decide_training_session(
+        session=create_session(
+            duration_minutes=60,
+        ),
+        readiness=create_readiness(
+            score=90.0,
+        ),
+        thresholds=thresholds(),
+        recent_load=recent_load,
+    )
+
+    assert decision.action == "reduce"
+
+    assert (
+        decision.recommended_duration_minutes
+        < 60
+    )
+
+    assert (
+        decision.recommended_intensity
+        == "easy"
+    )
+
+    assert (
+        "repeated_overload"
+        in decision.constraints
+    )
+
+
+def test_coach_decision_reduces_session_with_repeated_broken_rest() -> None:
+    recent_load = RecentLoadAssessment(
+        signals=(
+            RecentLoadSignal(
+                kind="repeated_broken_rest",
+                level="critical",
+                reason=(
+                    "Plusieurs journées de repos récentes "
+                    "ont comporté une charge sportive."
+                ),
+            ),
+        ),
+    )
+
+    decision = decide_training_session(
+        session=create_session(
+            duration_minutes=60,
+        ),
+        readiness=create_readiness(
+            score=90.0,
+        ),
+        thresholds=thresholds(),
+        recent_load=recent_load,
+    )
+
+    assert decision.action == "reduce"
+
+    assert (
+        "repeated_broken_rest"
+        in decision.constraints
+    )
+
+
+def test_coach_decision_without_recent_load_keeps_existing_behavior() -> None:
+    decision = decide_training_session(
+        session=create_session(),
+        readiness=create_readiness(
+            score=90.0,
+        ),
+        thresholds=thresholds(),
+    )
+
+    assert decision.action == "keep"

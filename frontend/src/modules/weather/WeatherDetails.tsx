@@ -655,8 +655,9 @@ function WeatherAlertRow({
               text-base-content/40
             "
           >
-            {formatAlertTime(
+            {formatAlertPeriod(
               alert.time,
+              alert.endTime,
             )}
           </span>
         )}
@@ -671,6 +672,17 @@ function HourlyForecast({
 }: {
   weather: WeatherData
 }) {
+  const upcomingHours =
+    weather.hourly
+      .filter(
+        (hour) =>
+          hour.time
+          >= weather.current.time,
+      )
+      .slice(
+        0,
+        12,
+      )
   return (
     <section
       className="
@@ -730,13 +742,8 @@ function HourlyForecast({
             pb-2
           "
         >
-          {weather.hourly
-            .slice(
-              0,
-              12,
-            )
-            .map(
-              (hour) => {
+          {upcomingHours.map(
+            (hour) => {
                 const description =
                   getWeatherDescription(
                     hour.weatherCode,
@@ -1183,6 +1190,32 @@ function formatAlertTime(
     new Date(
       `${value}T12:00:00`,
     ),
+  )
+}
+
+
+function formatAlertPeriod(
+  startTime: string,
+  endTime?: string,
+): string {
+  const start =
+    formatAlertTime(
+      startTime,
+    )
+
+  if (
+    !endTime
+    || endTime === startTime
+  ) {
+    return start
+  }
+
+  return (
+    `${start} → ${
+      formatAlertTime(
+        endTime,
+      )
+    }`
   )
 }
 

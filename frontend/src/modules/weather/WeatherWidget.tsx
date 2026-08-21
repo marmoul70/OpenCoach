@@ -186,7 +186,15 @@ export function WeatherWidget({
             alert.severity,
           ),
         title: alert.title,
-        message: alert.message,
+        message:
+          alert.time
+            ? (
+                `${formatAlertPeriod(
+                  alert.time,
+                  alert.endTime,
+                )} · ${alert.message}`
+              )
+            : alert.message,
         duration:
           alert.severity === 'info'
           ? 5000
@@ -461,4 +469,58 @@ function mapAlertSeverityToToastType(
   }
 
   return severity
+}
+
+function formatAlertPeriod(
+  startTime: string,
+  endTime?: string,
+): string {
+  const start =
+    formatAlertTime(
+      startTime,
+    )
+
+  if (
+    !endTime
+    || endTime === startTime
+  ) {
+    return start
+  }
+
+  return (
+    `${start} → ${
+      formatAlertTime(
+        endTime,
+      )
+    }`
+  )
+}
+
+
+function formatAlertTime(
+  time: string,
+): string {
+  if (!time.includes('T')) {
+    return new Intl.DateTimeFormat(
+      'fr-FR',
+      {
+        day: 'numeric',
+        month: 'short',
+      },
+    ).format(
+      new Date(
+        `${time}T12:00:00`,
+      ),
+    )
+  }
+
+  return new Intl.DateTimeFormat(
+    'fr-FR',
+    {
+      hour: '2-digit',
+      minute: '2-digit',
+    },
+  ).format(
+    new Date(time),
+  )
 }

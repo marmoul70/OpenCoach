@@ -25,6 +25,7 @@ export interface WeatherAlert {
   title: string
   message: string
   time?: string
+  endTime?: string
 }
 
 const STORM_CODES = [95, 96, 99]
@@ -42,7 +43,9 @@ export function getWeatherAlerts(
   const currentDate = weather.current.time.slice(0, 10)
   analyseDailyWeather(weather.daily, alerts, currentDate)
 
-  return deduplicateAlerts(alerts)
+  return mergeConsecutiveAlerts(
+    deduplicateAlerts(alerts),
+  )
 }
 
 function analyseHourlyWeather(
@@ -205,4 +208,96 @@ function deduplicateAlerts(
     seen.add(key)
     return true
   })
+}
+
+function mergeConsecutiveAlerts(
+  alerts: WeatherAlert[],
+): WeatherAlert[] {
+  const hourlyAlerts =
+    alerts
+      .filter(
+        (alert) =>
+          alert.time
+          && alert.time.includes('T'),
+      )
+      .sort(
+        (first, second) =>
+          (first.time ?? '')
+            .localeCompare(
+              second.time ?? '',
+            ),
+      )
+
+  const dailyAlerts =
+    alerts.filter(
+      (alert) =>
+        !alert.time
+        || !alert.time.includes('T'),
+    )
+
+  const mergedAlerts:
+    WeatherAlert[] = []
+
+  for (const alert of hourlyAlerts) {
+    const previous =
+      mergedAlerts.at(-1)
+
+    if (
+      previous
+      && canMergeAlerts(
+        previous,
+        alert,
+      )
+    ) {
+      previous.endTime =
+        alert.time
+
+      continue
+    }
+
+    mergedAlerts.push({
+      ...alert,
+    })
+  }
+
+  return [
+    ...mergedAlerts,
+    ...dailyAlerts,
+  ]
+}
+
+
+function canMergeAlerts(
+  previous: WeatherAlert,
+  current: WeatherAlert,
+): boolean {
+  if (
+    previous.type
+      !== current.type
+    || previous.severity
+      !== current.severity
+    || !previous.time
+    || !current.time
+  ) {
+    return false
+  }
+
+  const previousEnd =
+    previous.endTime
+    ?? previous.time
+
+  const previousDate =
+    new Date(previousEnd)
+
+  const currentDate =
+    new Date(current.time)
+
+  const differenceMilliseconds =
+    currentDate.getTime()
+    - previousDate.getTime()
+
+  return (
+    differenceMilliseconds
+    === 60 * 60 * 1000
+  )
 }

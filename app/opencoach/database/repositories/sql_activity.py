@@ -167,6 +167,36 @@ class SqlActivityRepository(ActivityRepository):
                 "Impossible d'enregistrer l'activité."
             ) from exc
 
+    def get_activity(
+        self,
+        athlete_profile_id: UUID,
+        activity_id: UUID,
+    ) -> Activity | None:
+        """Retourne une activité par identifiant."""
+
+        try:
+            database_activity = self.session.scalar(
+                select(ActivityModel).where(
+                    ActivityModel.id == activity_id,
+                    ActivityModel.athlete_profile_id
+                    == athlete_profile_id,
+                )
+            )
+
+            if database_activity is None:
+                return None
+
+            return self._to_domain(
+                database_activity
+            )
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise ActivityRepositoryError(
+                "Impossible de charger l'activité."
+            ) from exc
+
     def list_activities(
         self,
         athlete_profile_id: UUID,

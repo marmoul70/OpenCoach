@@ -429,3 +429,49 @@ def test_sql_activity_repository_falls_back_to_start_at() -> None:
 
     finally:
         db.close()
+
+def test_sql_activity_repository_gets_activity_by_id() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(
+            db
+        )
+
+        activity = create_activity()
+
+        repository = SqlActivityRepository(
+            db
+        )
+
+        repository.save_activity(
+            profile.id,
+            activity,
+        )
+
+        saved_activities = (
+            repository.list_activities(
+                profile.id
+            )
+        )
+
+        assert len(saved_activities) == 1
+
+        saved_activity = saved_activities[0]
+
+        assert saved_activity.id is not None
+
+        result = repository.get_activity(
+            profile.id,
+            saved_activity.id,
+        )
+
+        assert result is not None
+        assert result.id == saved_activity.id
+        assert (
+            result.provider_activity_id
+            == activity.provider_activity_id
+        )
+
+    finally:
+        db.close()

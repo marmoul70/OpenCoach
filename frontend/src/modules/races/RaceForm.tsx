@@ -20,11 +20,13 @@ import {
 } from './raceStore'
 
 import type {
-  Race,
   RacePriority,
   RaceType,
 } from './types'
 
+import type {
+  RaceWritePayload,
+} from '../../core/races/api'
 
 interface RaceFormProps {
   open: boolean
@@ -103,7 +105,7 @@ export function RaceForm({
   }
 
 
-  function handleSubmit(
+  async function handleSubmit(
     event:
       React.FormEvent<HTMLFormElement>,
   ) {
@@ -127,11 +129,7 @@ export function RaceForm({
       return
     }
 
-    const race:
-    Race = {
-      id:
-        `race-${Date.now()}`,
-
+    const payload: RaceWritePayload = {
       name:
         name.trim(),
 
@@ -140,7 +138,8 @@ export function RaceForm({
 
       date,
 
-      type,
+      raceType:
+        type,
 
       priority,
 
@@ -163,10 +162,13 @@ export function RaceForm({
 
       status:
         'planned',
+
+      notes:
+        '',
     }
 
-    addRace(
-      race,
+    await addRace(
+      payload,
     )
 
     resetForm()

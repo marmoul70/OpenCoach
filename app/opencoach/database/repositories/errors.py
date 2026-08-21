@@ -15,3 +15,6 @@ class TrainingSessionRepositoryError(RuntimeError):
 
 class DailyContextRepositoryError(RuntimeError):
     """Erreur de persistance du contexte quotidien."""
+
+class RaceRepositoryError(RuntimeError):
+    """Erreur de persistance des courses."""

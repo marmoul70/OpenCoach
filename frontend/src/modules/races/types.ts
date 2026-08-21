@@ -16,6 +16,44 @@ export type RacePriority =
   | 'primary'
   | 'training'
 
+export type RaceResultSource =
+  | 'activity'
+  | 'manual'
+  | 'none'
+
+
+export interface RaceActualResult {
+  source: RaceResultSource
+
+  activityId?: string
+
+  distanceKm?: number
+  elevationGainM?: number
+  durationMinutes?: number
+
+  trainingLoad?: number
+}
+
+
+export interface RaceActivityCandidate {
+  id: string
+
+  provider: string
+  providerActivityId: string
+
+  name: string
+  sportType: string
+
+  startAtLocal?: string
+
+  movingTimeSeconds?: number
+
+  distanceM?: number
+  elevationGainM?: number
+
+  trainingLoad?: number
+  feel?: number
+}
 
 export interface Race {
   id: string
@@ -39,6 +77,9 @@ export interface Race {
   actualElevationGainM?: number
   actualTimeMinutes?: number
   ranking?: number
+  activityId?: string
+
+  actualResult: RaceActualResult
 
   // Retour personnel
   notes?: string

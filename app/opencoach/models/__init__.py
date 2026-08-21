@@ -16,6 +16,8 @@ from .activity import Activity
 from .wellness import WellnessDay
 from .integration import IntegrationConnection
 from .training_session import TrainingSession
+from .race import Race
+
 from .daily_context import (
     DailyContext,
     IllnessStatus,
@@ -39,4 +41,5 @@ __all__ = [
     "WellnessDay",
     "IntegrationConnection",
     "TrainingSession",
+    "Race",
 ]

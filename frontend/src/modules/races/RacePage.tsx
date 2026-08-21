@@ -7,6 +7,7 @@ import {
   Flag,
   MapPin,
   Plus,
+  RefreshCw,
   Route,
   Trophy,
   X,
@@ -37,9 +38,13 @@ import {
   getTrainingRacesBeforeNextPrimary,
 } from './selectors'
 
+
 export function RacePage() {
   const {
     races,
+    loading,
+    error,
+    refreshRaces,
   } = useRaces()
 
   const [
@@ -118,6 +123,7 @@ export function RacePage() {
     getTrainingRacesBeforeNextPrimary(
       races,
     )
+
 
   return (
     <main>
@@ -204,149 +210,171 @@ export function RacePage() {
         </header>
 
 
-        <RaceOverview
-          upcomingCount={
-            upcomingRaces.length
-          }
-          completedCount={
-            completedCount
-          }
-          nextPrimaryRace={
-            nextPrimaryRace
-          }
-          preparationRacesCount={
-            preparationRaces.length
-          }
-        />
+        {loading && (
+          <LoadingState />
+        )}
 
 
-        <section
-          className="
-            mt-7
-            space-y-4
-          "
-        >
-          <div>
-            <h2
-              className="
-                text-xl
-                font-bold
-                text-base-content
-              "
-            >
-              Prochaines courses
-            </h2>
-
-            <p
-              className="
-                mt-1 text-sm
-                text-base-content/60
-              "
-            >
-              Vos prochains objectifs.
-            </p>
-          </div>
+        {error && !loading && (
+          <ErrorState
+            error={error}
+            onRetry={() =>
+              void refreshRaces()
+            }
+          />
+        )}
 
 
-          {upcomingRaces.length
-            > 0 ? (
-              <div className="space-y-3">
-                {upcomingRaces.map(
-                  (
-                    race,
-                    index,
-                  ) => (
-                    <UpcomingRaceRow
-                      key={
-                        race.id
-                      }
-                      race={
-                        race
-                      }
-                      next={
-                        index === 0
-                      }
-                      onOpen={() =>
-                        setSelectedRaceId(
-                          race.id,
-                        )
-                      }
-                    />
-                  ),
-                )}
-              </div>
-            ) : (
-              <EmptyState
-                title="Aucune course prévue"
-                description={
-                  'Ajoutez votre prochain '
-                  + 'objectif pour préparer '
-                  + 'votre entraînement.'
-                }
-              />
-            )}
-        </section>
-
-
-        <section
-          className="
-            mt-8
-            space-y-4
-          "
-        >
-          <div>
-            <h2
-              className="
-                text-xl
-                font-bold
-                text-base-content
-              "
-            >
-              Historique
-            </h2>
-
-            <p
-              className="
-                mt-1 text-sm
-                text-base-content/60
-              "
-            >
-              Vos courses terminées,
-              abandons et non-participations.
-            </p>
-          </div>
-
-
-          {pastRaces.length > 0 ? (
-            <div className="space-y-3">
-              {pastRaces.map(
-                (race) => (
-                  <PastRaceRow
-                    key={
-                      race.id
-                    }
-                    race={
-                      race
-                    }
-                    onOpen={() =>
-                      setSelectedRaceId(
-                        race.id,
-                      )
-                    }
-                  />
-                ),
-              )}
-            </div>
-          ) : (
-            <EmptyState
-              title="Aucune course dans l’historique"
-              description={
-                'Vos performances apparaîtront '
-                + 'ici après vos courses.'
+        {!loading && !error && (
+          <>
+            <RaceOverview
+              upcomingCount={
+                upcomingRaces.length
+              }
+              completedCount={
+                completedCount
+              }
+              nextPrimaryRace={
+                nextPrimaryRace
+              }
+              preparationRacesCount={
+                preparationRaces.length
               }
             />
-          )}
-        </section>
+
+
+            <section
+              className="
+                mt-7
+                space-y-4
+              "
+            >
+              <div>
+                <h2
+                  className="
+                    text-xl
+                    font-bold
+                    text-base-content
+                  "
+                >
+                  Prochaines courses
+                </h2>
+
+                <p
+                  className="
+                    mt-1 text-sm
+                    text-base-content/60
+                  "
+                >
+                  Vos prochains objectifs.
+                </p>
+              </div>
+
+
+              {upcomingRaces.length
+                > 0 ? (
+                  <div className="space-y-3">
+                    {upcomingRaces.map(
+                      (
+                        race,
+                        index,
+                      ) => (
+                        <UpcomingRaceRow
+                          key={
+                            race.id
+                          }
+                          race={
+                            race
+                          }
+                          next={
+                            index === 0
+                          }
+                          onOpen={() =>
+                            setSelectedRaceId(
+                              race.id,
+                            )
+                          }
+                        />
+                      ),
+                    )}
+                  </div>
+                ) : (
+                  <EmptyState
+                    title="Aucune course prévue"
+                    description={
+                      'Ajoutez votre prochain '
+                      + 'objectif pour préparer '
+                      + 'votre entraînement.'
+                    }
+                  />
+                )}
+            </section>
+
+
+            <section
+              className="
+                mt-8
+                space-y-4
+              "
+            >
+              <div>
+                <h2
+                  className="
+                    text-xl
+                    font-bold
+                    text-base-content
+                  "
+                >
+                  Historique
+                </h2>
+
+                <p
+                  className="
+                    mt-1 text-sm
+                    text-base-content/60
+                  "
+                >
+                  Vos courses terminées,
+                  abandons et non-participations.
+                </p>
+              </div>
+
+
+              {pastRaces.length > 0 ? (
+                <div className="space-y-3">
+                  {pastRaces.map(
+                    (race) => (
+                      <PastRaceRow
+                        key={
+                          race.id
+                        }
+                        race={
+                          race
+                        }
+                        onOpen={() =>
+                          setSelectedRaceId(
+                            race.id,
+                          )
+                        }
+                      />
+                    ),
+                  )}
+                </div>
+              ) : (
+                <EmptyState
+                  title={
+                    'Aucune course '
+                    + 'dans l’historique'
+                  }
+                  description={
+                    'Vos performances apparaîtront '
+                    + 'ici après vos courses.'
+                  }
+                />
+              )}
+            </section>
+          </>
+        )}
       </div>
 
 
@@ -387,6 +415,135 @@ export function RacePage() {
         </Modal>
       )}
     </main>
+  )
+}
+
+
+function LoadingState() {
+  return (
+    <div
+      className="
+        flex min-h-48
+        items-center
+        justify-center
+        rounded-2xl
+        border border-base-300
+        bg-base-100
+        px-5 py-8
+        shadow-sm
+      "
+    >
+      <div
+        className="
+          flex flex-col
+          items-center
+          gap-3
+          text-center
+        "
+      >
+        <span
+          className="
+            loading
+            loading-spinner
+            loading-md
+            text-primary
+          "
+        />
+
+        <div>
+          <p
+            className="
+              font-semibold
+              text-base-content
+            "
+          >
+            Chargement des courses…
+          </p>
+
+          <p
+            className="
+              mt-1
+              text-sm
+              text-base-content/45
+            "
+          >
+            Synchronisation avec OpenCoach.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+interface ErrorStateProps {
+  error: string
+  onRetry: () => void
+}
+
+
+function ErrorState({
+  error,
+  onRetry,
+}: ErrorStateProps) {
+  return (
+    <div
+      className="
+        rounded-2xl
+        border border-error/30
+        bg-error/5
+        px-5 py-5
+      "
+    >
+      <div
+        className="
+          flex flex-col
+          gap-4
+          sm:flex-row
+          sm:items-center
+          sm:justify-between
+        "
+      >
+        <div>
+          <p
+            className="
+              font-semibold
+              text-error
+            "
+          >
+            Impossible de charger les courses
+          </p>
+
+          <p
+            className="
+              mt-1
+              text-sm
+              text-base-content/60
+            "
+          >
+            {error}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="
+            btn
+            btn-outline
+            btn-sm
+          "
+          onClick={
+            onRetry
+          }
+        >
+          <RefreshCw
+            size={14}
+          />
+
+          Réessayer
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -528,9 +685,9 @@ function OverviewItem({
             ),
             wide
               ? (
-                'truncate '
-                + 'text-base'
-              )
+                  'truncate '
+                  + 'text-base'
+                )
               : 'text-lg',
           ].join(' ')}
           title={
@@ -603,10 +760,10 @@ function UpcomingRaceRow({
         ),
         next
           ? (
-            'border-primary '
-            + 'ring-1 '
-            + 'ring-primary/20'
-          )
+              'border-primary '
+              + 'ring-1 '
+              + 'ring-primary/20'
+            )
           : 'border-base-300',
       ].join(' ')}
     >
@@ -648,8 +805,11 @@ function UpcomingRaceRow({
                 Prochaine
               </span>
             )}
+
             <PriorityBadge
-              priority={race.priority}
+              priority={
+                race.priority
+              }
             />
           </div>
 
@@ -753,6 +913,9 @@ function PastRaceRow({
   race,
   onOpen,
 }: PastRaceRowProps) {
+  const result =
+    race.actualResult
+
   return (
     <button
       type="button"
@@ -796,9 +959,12 @@ function PastRaceRow({
               race.status
             }
           />
+
           <div className="mt-2">
             <PriorityBadge
-              priority={race.priority}
+              priority={
+                race.priority
+              }
             />
           </div>
         </div>
@@ -830,6 +996,31 @@ function PastRaceRow({
 
             {race.location}
           </p>
+
+          {result.source === 'activity' && (
+            <p
+              className="
+                mt-1
+                text-xs
+                font-medium
+                text-success
+              "
+            >
+              Données Intervals.icu
+            </p>
+          )}
+
+          {result.source === 'manual' && (
+            <p
+              className="
+                mt-1
+                text-xs
+                text-base-content/40
+              "
+            >
+              Résultat saisi manuellement
+            </p>
+          )}
         </div>
 
 
@@ -846,25 +1037,25 @@ function PastRaceRow({
         >
           <span>
             {formatNumber(
-              race.actualDistanceKm
-              ?? race.distanceKm,
+              result.distanceKm
+              ?? 0,
             )}
             {' '}
             km
           </span>
 
-          {race.actualElevationGainM
+          {result.elevationGainM
             !== undefined && (
               <span>
                 {Math.round(
-                  race.actualElevationGainM,
+                  result.elevationGainM,
                 )}
                 {' '}
                 m D+
               </span>
             )}
 
-          {race.actualTimeMinutes
+          {result.durationMinutes
             !== undefined && (
               <span
                 className="
@@ -873,7 +1064,17 @@ function PastRaceRow({
                 "
               >
                 {formatDuration(
-                  race.actualTimeMinutes,
+                  result.durationMinutes,
+                )}
+              </span>
+            )}
+
+          {result.trainingLoad
+            !== undefined && (
+              <span>
+                Charge{' '}
+                {formatNumber(
+                  result.trainingLoad,
                 )}
               </span>
             )}
@@ -967,7 +1168,8 @@ function EmptyState({
     <div
       className="
         rounded-2xl
-        border border-base-300
+        border border-dashed
+        border-base-300
         bg-base-100
         px-5 py-8
         text-center
@@ -1026,13 +1228,18 @@ function formatDate(
 function formatDuration(
   totalMinutes: number,
 ): string {
+  const roundedMinutes =
+    Math.round(
+      totalMinutes,
+    )
+
   const hours =
     Math.floor(
-      totalMinutes / 60,
+      roundedMinutes / 60,
     )
 
   const minutes =
-    totalMinutes % 60
+    roundedMinutes % 60
 
   return (
     `${hours}h${
@@ -1078,6 +1285,7 @@ function formatRaceType(
       return 'Autre'
   }
 }
+
 
 function PriorityBadge({
   priority,

@@ -34,3 +34,12 @@ class ActivityRepository(ABC):
     ) -> list[Activity]:
         """Retourne les activités comprises dans une période."""
         raise NotImplementedError
+
+    @abstractmethod
+    def get_activity(
+        self,
+        athlete_profile_id: UUID,
+        activity_id: UUID,
+    ) -> Activity | None:
+        """Retourne une activité par identifiant."""
+        raise NotImplementedError

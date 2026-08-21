@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from opencoach.database.models.daily_context import (
         DailyContext,
     )
+    from opencoach.database.models.race import Race
 
 class AthleteProfile(Base):
     """Profil sportif associé à un compte utilisateur."""
@@ -227,6 +228,13 @@ class AthleteProfile(Base):
 
     training_sessions: Mapped[
         list["TrainingSession"]
+    ] = relationship(
+        back_populates="athlete_profile",
+        cascade="all, delete-orphan",
+    )
+
+    races: Mapped[
+        list["Race"]
     ] = relationship(
         back_populates="athlete_profile",
         cascade="all, delete-orphan",

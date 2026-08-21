@@ -6,6 +6,7 @@ from .errors import (
     WellnessRepositoryError,
     TrainingSessionRepositoryError,
     DailyContextRepositoryError,
+    RaceRepositoryError,
 )
 from .profile import ProfileRepository
 from .sql_activity import SqlActivityRepository
@@ -29,6 +30,8 @@ from .daily_context import (
 from .sql_daily_context import (
     SqlDailyContextRepository,
 )
+from .race import RaceRepository
+from .sql_race import SqlRaceRepository
 
 __all__ = [
     "ActivityRepository",
@@ -49,4 +52,7 @@ __all__ = [
     "DailyContextRepository",
     "DailyContextRepositoryError",
     "SqlDailyContextRepository",
+    "RaceRepository",
+    "RaceRepositoryError",
+    "SqlRaceRepository",
 ]

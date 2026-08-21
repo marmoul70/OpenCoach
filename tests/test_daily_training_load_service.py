@@ -32,6 +32,17 @@ class FakeActivityRepository(
             activity,
         )
 
+    def get_activity(
+        self,
+        athlete_profile_id: UUID,
+        activity_id: UUID,
+    ) -> Activity | None:
+        for activity in self.activities:
+            if activity.id == activity_id:
+                return activity
+
+        return None
+
     def list_activities(
         self,
         athlete_profile_id: UUID,

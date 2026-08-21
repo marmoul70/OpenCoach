@@ -61,6 +61,46 @@ class CoachDecisionResponse(BaseModel):
 
     constraints: list[str]
 
+class CoachRecentLoadResponse(BaseModel):
+    """Synthèse de la charge d'entraînement récente."""
+
+    analyzed_days: int
+
+    planned_load_total: float
+    actual_load_total: float
+
+    load_delta_total: float
+    load_ratio: float | None
+
+    above_plan_days: int
+    below_plan_days: int
+    on_plan_days: int
+
+    broken_rest_days: int
+    respected_rest_days: int
+
+    has_training_history: bool
+
+
+class CoachRecentLoadSignalResponse(BaseModel):
+    """Signal métier dérivé de la charge récente."""
+
+    kind: str
+    level: str
+    reason: str
+
+
+class CoachRecentLoadAssessmentResponse(BaseModel):
+    """Synthèse des signaux de charge récente."""
+
+    has_warning: bool
+    has_critical: bool
+    has_overload: bool
+    has_broken_rest: bool
+
+    signals: list[
+        CoachRecentLoadSignalResponse
+    ]
 
 class CoachTodayResponse(BaseModel):
     date: date
@@ -68,3 +108,13 @@ class CoachTodayResponse(BaseModel):
     session: CoachSessionResponse | None
     readiness: CoachReadinessResponse
     decision: CoachDecisionResponse
+
+    recent_load: (
+        CoachRecentLoadResponse
+        | None
+    )
+
+    recent_load_assessment: (
+        CoachRecentLoadAssessmentResponse
+        | None
+    )

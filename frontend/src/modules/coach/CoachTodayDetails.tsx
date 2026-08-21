@@ -26,6 +26,8 @@ export function CoachTodayDetails({
     session,
     readiness,
     decision,
+    recentLoad,
+    recentLoadAssessment,
   } = coach
 
   return (
@@ -96,6 +98,125 @@ export function CoachTodayDetails({
           />
         </div>
       </section>
+
+      {recentLoad && (
+        <>
+          <div className="divider my-0" />
+
+          <section>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-base-content">
+                  Charge récente
+                </h3>
+
+                <p className="mt-1 text-sm text-base-content/50">
+                  Comparaison entre le programme OpenCoach et
+                  l&apos;entraînement réellement effectué sur les{' '}
+                  {recentLoad.analyzedDays} derniers jours.
+                </p>
+              </div>
+
+              {recentLoadAssessment && (
+                <RecentLoadBadge
+                  assessment={recentLoadAssessment}
+                />
+              )}
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <InfoCard
+                icon={
+                  <Activity className="h-4 w-4" />
+                }
+                label="Charge prévue"
+                value={formatTrainingLoad(
+                  recentLoad.plannedLoadTotal,
+                )}
+                detail={`${recentLoad.analyzedDays} jours analysés`}
+              />
+
+              <InfoCard
+                icon={
+                  <Activity className="h-4 w-4" />
+                }
+                label="Charge réalisée"
+                value={formatTrainingLoad(
+                  recentLoad.actualLoadTotal,
+                )}
+                detail={formatLoadRatio(
+                  recentLoad.loadRatio,
+                )}
+              />
+
+              <InfoCard
+                icon={
+                  <CircleGauge className="h-4 w-4" />
+                }
+                label="Écart"
+                value={formatLoadDelta(
+                  recentLoad.loadDeltaTotal,
+                )}
+                detail={formatLoadDeltaDetail(
+                  recentLoad.loadDeltaTotal,
+                )}
+              />
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-base-300 p-4">
+                <p className="text-xs text-base-content/50">
+                  Respect du programme
+                </p>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="badge badge-warning badge-outline">
+                    {recentLoad.abovePlanDays} au-dessus
+                  </span>
+
+                  <span className="badge badge-success badge-outline">
+                    {recentLoad.onPlanDays} conformes
+                  </span>
+
+                  <span className="badge badge-info badge-outline">
+                    {recentLoad.belowPlanDays} en dessous
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-base-300 p-4">
+                <p className="text-xs text-base-content/50">
+                  Journées de repos
+                </p>
+
+                <p className="mt-2 font-semibold">
+                  {recentLoad.brokenRestDays} non respecté
+                  {recentLoad.brokenRestDays > 1 ? 's' : ''}
+                </p>
+
+                <p className="mt-1 text-xs text-base-content/50">
+                  {recentLoad.respectedRestDays} repos respecté
+                  {recentLoad.respectedRestDays > 1 ? 's' : ''}
+                </p>
+              </div>
+            </div>
+
+            {recentLoadAssessment
+              && recentLoadAssessment.signals.length > 0 && (
+                <div className="mt-3 divide-y divide-base-300 overflow-hidden rounded-xl border border-base-300">
+                  {recentLoadAssessment.signals.map(
+                    (signal) => (
+                      <RecentLoadSignalRow
+                        key={signal.kind}
+                        signal={signal}
+                      />
+                    ),
+                  )}
+                </div>
+              )}
+          </section>
+        </>
+      )}
 
       {readiness.signals.length > 0 && (
         <>
@@ -518,6 +639,12 @@ function formatConstraint(
 
     reduce_training_load:
       'Réduire la charge',
+
+    recent_overload:
+      'Surcharge récente',
+
+    broken_rest:
+      'Repos non respecté',
   }
 
   return labels[constraint]
@@ -603,4 +730,148 @@ function formatSleepDuration(
   return `${hours}h${String(
     minutes,
   ).padStart(2, '0')}`
+}
+
+function RecentLoadBadge({
+  assessment,
+}: {
+  assessment:
+    CoachToday['recentLoadAssessment']
+}) {
+  if (!assessment) {
+    return null
+  }
+
+  if (assessment.hasCritical) {
+    return (
+      <span className="badge badge-error">
+        Charge critique
+      </span>
+    )
+  }
+
+  if (assessment.hasWarning) {
+    return (
+      <span className="badge badge-warning">
+        À surveiller
+      </span>
+    )
+  }
+
+  return (
+    <span className="badge badge-success">
+      Charge maîtrisée
+    </span>
+  )
+}
+
+
+function RecentLoadSignalRow({
+  signal,
+}: {
+  signal: NonNullable<
+    CoachToday['recentLoadAssessment']
+  >['signals'][number]
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 px-4 py-3">
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-medium">
+            {formatRecentLoadSignal(
+              signal.kind,
+            )}
+          </span>
+
+          <SignalBadge
+            level={signal.level}
+          />
+        </div>
+
+        <p className="mt-1 text-sm text-base-content/55">
+          {signal.reason}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+
+function formatTrainingLoad(
+  value: number,
+): string {
+  return value.toFixed(1)
+}
+
+
+function formatLoadDelta(
+  value: number,
+): string {
+  const prefix =
+    value > 0
+      ? '+'
+      : ''
+
+  return `${prefix}${value.toFixed(1)}`
+}
+
+
+function formatLoadDeltaDetail(
+  value: number,
+): string {
+  if (value > 0) {
+    return 'Charge supérieure au programme'
+  }
+
+  if (value < 0) {
+    return 'Charge inférieure au programme'
+  }
+
+  return 'Charge conforme au programme'
+}
+
+
+function formatLoadRatio(
+  ratio?: number,
+): string {
+  if (ratio === undefined) {
+    return 'Aucune charge prévue'
+  }
+
+  const percent =
+    Math.round(
+      (ratio - 1) * 100,
+    )
+
+  if (percent > 0) {
+    return `+${percent} % vs programme`
+  }
+
+  if (percent < 0) {
+    return `${percent} % vs programme`
+  }
+
+  return 'Conforme au programme'
+}
+
+
+function formatRecentLoadSignal(
+  kind: string,
+): string {
+  const labels: Record<string, string> = {
+    recent_overload:
+      'Surcharge récente',
+
+    repeated_overload:
+      'Surcharge répétée',
+
+    broken_rest:
+      'Repos non respecté',
+
+    repeated_broken_rest:
+      'Repos régulièrement non respectés',
+  }
+
+  return labels[kind]
+    ?? kind
 }

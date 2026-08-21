@@ -299,7 +299,12 @@ def test_coach_api_returns_today_decision() -> None:
     assert payload["readiness"]["level"] == "moderate"
 
     assert payload["decision"]["action"] == "reduce"
+    assert payload["recent_load"] is None
 
+    assert (
+        payload["recent_load_assessment"]
+        is None
+    )
     assert (
         payload["decision"][
             "recommended_duration_minutes"

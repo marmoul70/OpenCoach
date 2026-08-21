@@ -41,6 +41,9 @@ from opencoach.schemas.coach import (
     CoachDecisionResponse,
     CoachReadinessResponse,
     CoachReadinessSignalResponse,
+    CoachRecentLoadAssessmentResponse,
+    CoachRecentLoadResponse,
+    CoachRecentLoadSignalResponse,
     CoachSessionResponse,
     CoachTodayResponse,
 )
@@ -177,6 +180,11 @@ def _to_response(
     readiness = assessment.readiness.readiness
     decision = assessment.decision
 
+    recent_load = assessment.recent_load
+    recent_load_assessment = (
+        assessment.recent_load_assessment
+    )
+
     return CoachTodayResponse(
         date=assessment.date,
 
@@ -222,8 +230,12 @@ def _to_response(
                     metric=signal.metric,
                     level=signal.level,
                     reason=signal.reason,
-                    current_value=signal.current_value,
-                    reference_value=signal.reference_value,
+                    current_value=(
+                        signal.current_value
+                    ),
+                    reference_value=(
+                        signal.reference_value
+                    ),
                 )
                 for signal in readiness.signals
             ],
@@ -253,5 +265,73 @@ def _to_response(
             constraints=list(
                 decision.constraints
             ),
+        ),
+
+        recent_load=(
+            CoachRecentLoadResponse(
+                analyzed_days=(
+                    recent_load.analyzed_days
+                ),
+                planned_load_total=(
+                    recent_load.planned_load_total
+                ),
+                actual_load_total=(
+                    recent_load.actual_load_total
+                ),
+                load_delta_total=(
+                    recent_load.load_delta_total
+                ),
+                load_ratio=(
+                    recent_load.load_ratio
+                ),
+                above_plan_days=(
+                    recent_load.above_plan_days
+                ),
+                below_plan_days=(
+                    recent_load.below_plan_days
+                ),
+                on_plan_days=(
+                    recent_load.on_plan_days
+                ),
+                broken_rest_days=(
+                    recent_load.broken_rest_days
+                ),
+                respected_rest_days=(
+                    recent_load.respected_rest_days
+                ),
+                has_training_history=(
+                    recent_load.has_training_history
+                ),
+            )
+            if recent_load is not None
+            else None
+        ),
+
+        recent_load_assessment=(
+            CoachRecentLoadAssessmentResponse(
+                has_warning=(
+                    recent_load_assessment.has_warning
+                ),
+                has_critical=(
+                    recent_load_assessment.has_critical
+                ),
+                has_overload=(
+                    recent_load_assessment.has_overload
+                ),
+                has_broken_rest=(
+                    recent_load_assessment.has_broken_rest
+                ),
+                signals=[
+                    CoachRecentLoadSignalResponse(
+                        kind=signal.kind,
+                        level=signal.level,
+                        reason=signal.reason,
+                    )
+                    for signal
+                    in recent_load_assessment.signals
+                ],
+            )
+            if recent_load_assessment is not None
+            else None
         ),
     )

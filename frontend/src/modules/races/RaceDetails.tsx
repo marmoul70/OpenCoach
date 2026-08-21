@@ -177,6 +177,9 @@ export function RaceDetails({
       <RaceSummary
         race={race}
       />
+      <RacePriorityInfo
+        race={race}
+      />
 
       {isPlanned ? (
         <form
@@ -493,11 +496,26 @@ function RaceHeader({
         </p>
       </div>
 
-      <RaceStatusBadge
-        status={
-          race.status
-        }
-      />
+      <div
+        className="
+          flex flex-wrap
+          items-center
+          justify-end
+          gap-2
+        "
+      >
+        <RacePriorityBadge
+          priority={
+            race.priority
+          }
+        />
+
+        <RaceStatusBadge
+          status={
+            race.status
+          }
+        />
+      </div>
     </section>
   )
 }
@@ -978,6 +996,38 @@ function ResultItem({
   )
 }
 
+function RacePriorityBadge({
+  priority,
+}: {
+  priority: Race['priority']
+}) {
+  if (
+    priority === 'primary'
+  ) {
+    return (
+      <span
+        className="
+          badge
+          badge-primary
+          gap-1
+        "
+      >
+        ★ Objectif prioritaire
+      </span>
+    )
+  }
+
+  return (
+    <span
+      className="
+        badge
+        badge-outline
+      "
+    >
+      Course d&apos;entraînement
+    </span>
+  )
+}
 
 function RaceStatusBadge({
   status,
@@ -1128,4 +1178,88 @@ function formatRaceType(
     default:
       return 'Autre'
   }
+}
+
+function RacePriorityInfo({
+  race,
+}: {
+  race: Race
+}) {
+  const primary =
+    race.priority === 'primary'
+
+  return (
+    <section
+      className={[
+        (
+          'rounded-xl border '
+          + 'px-4 py-3'
+        ),
+        primary
+          ? (
+              'border-primary/30 '
+              + 'bg-primary/5'
+            )
+          : (
+              'border-base-300 '
+              + 'bg-base-200/40'
+            ),
+      ].join(' ')}
+    >
+      <div
+        className="
+          flex items-start
+          gap-3
+        "
+      >
+        <Flag
+          size={18}
+          className={
+            primary
+              ? 'mt-0.5 shrink-0 text-primary'
+              : (
+                  'mt-0.5 shrink-0 '
+                  + 'text-base-content/45'
+                )
+          }
+        />
+
+        <div>
+          <p
+            className="
+              font-semibold
+              text-base-content
+            "
+          >
+            {primary
+              ? 'Objectif prioritaire'
+              : 'Course d’entraînement'}
+          </p>
+
+          <p
+            className="
+              mt-1
+              text-sm
+              leading-relaxed
+              text-base-content/55
+            "
+          >
+            {primary
+              ? (
+                  'Cette course constitue un objectif '
+                  + 'principal. Le plan d’entraînement '
+                  + 'sera construit pour favoriser un '
+                  + 'pic de forme à cette date.'
+                )
+              : (
+                  'Cette course fait partie de la '
+                  + 'préparation. Elle sera intégrée '
+                  + 'comme séance spécifique sans '
+                  + 'remplacer l’objectif principal.'
+                )}
+          </p>
+        </div>
+      </div>
+    </section>
+  )
 }

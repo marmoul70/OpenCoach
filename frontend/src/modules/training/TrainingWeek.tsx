@@ -23,8 +23,12 @@ import {
 } from '../../core/training/api'
 
 import {
-  races,
-} from '../races/data'
+  useRaces,
+} from '../races/raceStore'
+
+import {
+  getNextPrimaryRace,
+} from '../races/selectors'
 
 import {
   AddTrainingSessionModal,
@@ -60,6 +64,10 @@ const dayLabels = [
 
 
 export function TrainingWeek() {
+  const {
+    races,
+  } = useRaces()
+
   const {
     sessions,
     updateSessionStatus,
@@ -186,8 +194,8 @@ export function TrainingWeek() {
         === 'rest',
     ).length
 
-  const nextRace =
-    getNextRace(
+  const nextPrimaryRace =
+    getNextPrimaryRace(
       races,
     )
 
@@ -262,19 +270,19 @@ export function TrainingWeek() {
             statsLoading
           }
           raceName={
-            nextRace?.name
-            ?? 'Aucune course'
+            nextPrimaryRace?.name
+            ?? 'Aucun objectif prioritaire'
           }
           raceDescription={
-            nextRace
+            nextPrimaryRace
               ? (
                   `${formatRaceDate(
-                    nextRace.date,
+                    nextPrimaryRace.date,
                   )} · ${
-                    nextRace.distanceKm
+                    nextPrimaryRace.distanceKm
                   } km`
                 )
-              : 'Aucune course programmée'
+              : 'Aucun objectif principal programmé'
           }
         />
 
@@ -500,7 +508,7 @@ function TrainingOverview({
         <OverviewItem
           icon={Trophy}
           value={raceName}
-          label="Prochaine course"
+          label="Objectif principal"
           description={
             raceDescription
           }
@@ -1135,45 +1143,6 @@ function getWeekSessions(
     },
   )
 }
-
-
-function getNextRace(
-  availableRaces: typeof races,
-) {
-  const today =
-    new Date()
-
-  today.setHours(
-    0,
-    0,
-    0,
-    0,
-  )
-
-  return [
-    ...availableRaces,
-  ]
-    .filter(
-      (race) =>
-        new Date(
-          `${race.date}T12:00:00`,
-        ) >= today,
-    )
-    .sort(
-      (
-        first,
-        second,
-      ) =>
-        new Date(
-          `${first.date}T12:00:00`,
-        ).getTime()
-        -
-        new Date(
-          `${second.date}T12:00:00`,
-        ).getTime(),
-    )[0]
-}
-
 
 function formatLocalDate(
   date: Date,

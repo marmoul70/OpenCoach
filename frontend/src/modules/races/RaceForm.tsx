@@ -21,6 +21,7 @@ import {
 
 import type {
   Race,
+  RacePriority,
   RaceType,
 } from './types'
 
@@ -62,6 +63,13 @@ export function RaceForm({
   )
 
   const [
+    priority,
+    setPriority,
+  ] = useState<RacePriority>(
+    'training',
+  )
+
+  const [
     distanceKm,
     setDistanceKm,
   ] = useState('')
@@ -82,6 +90,7 @@ export function RaceForm({
     setDate('')
     setLocation('')
     setType('trail')
+    setPriority('training')
     setDistanceKm('')
     setElevationGainM('')
     setTargetTime('')
@@ -132,6 +141,8 @@ export function RaceForm({
       date,
 
       type,
+
+      priority,
 
       distanceKm:
         distance,
@@ -206,7 +217,7 @@ export function RaceForm({
                 text-base-content
               "
             >
-              Nouvel objectif
+              Nouvelle course
             </h2>
 
             <p
@@ -217,7 +228,9 @@ export function RaceForm({
               "
             >
               Ajoutez les informations
-              principales de votre course.
+              principales de votre course
+              et définissez son rôle dans
+              votre préparation.
             </p>
           </div>
         </div>
@@ -310,8 +323,11 @@ export function RaceForm({
           >
             <select
               value={type}
-              onChange={(event) =>
-                setType(event.target.value as RaceType)
+              onChange={
+                (event) =>
+                  setType(
+                    event.target.value as RaceType,
+                  )
               }
               className="
                 select
@@ -335,6 +351,140 @@ export function RaceForm({
                 Autre
               </option>
             </select>
+          </Field>
+
+
+          <Field
+            label="Rôle dans l'entraînement"
+            icon={Flag}
+            wide
+          >
+            <div
+              className="
+                grid gap-3
+                sm:grid-cols-2
+              "
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setPriority(
+                    'primary',
+                  )
+                }
+                className={[
+                  (
+                    'rounded-xl border '
+                    + 'p-4 text-left '
+                    + 'transition'
+                  ),
+                  priority === 'primary'
+                    ? (
+                        'border-primary '
+                        + 'bg-primary/5 '
+                        + 'ring-1 '
+                        + 'ring-primary/20'
+                      )
+                    : (
+                        'border-base-300 '
+                        + 'hover:bg-base-200/50'
+                      ),
+                ].join(' ')}
+              >
+                <div
+                  className="
+                    flex items-center
+                    gap-2
+                    font-semibold
+                    text-base-content
+                  "
+                >
+                  <span
+                    className="
+                      text-primary
+                    "
+                  >
+                    ★
+                  </span>
+
+                  Course prioritaire
+                </div>
+
+                <p
+                  className="
+                    mt-2
+                    text-sm
+                    leading-relaxed
+                    text-base-content/55
+                  "
+                >
+                  Objectif principal.
+                  Le plan d&apos;entraînement
+                  est construit pour arriver
+                  en forme sur cette course.
+                </p>
+              </button>
+
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPriority(
+                    'training',
+                  )
+                }
+                className={[
+                  (
+                    'rounded-xl border '
+                    + 'p-4 text-left '
+                    + 'transition'
+                  ),
+                  priority === 'training'
+                    ? (
+                        'border-primary '
+                        + 'bg-primary/5 '
+                        + 'ring-1 '
+                        + 'ring-primary/20'
+                      )
+                    : (
+                        'border-base-300 '
+                        + 'hover:bg-base-200/50'
+                      ),
+                ].join(' ')}
+              >
+                <div
+                  className="
+                    flex items-center
+                    gap-2
+                    font-semibold
+                    text-base-content
+                  "
+                >
+                  <Flag
+                    size={16}
+                    className="
+                      text-base-content/50
+                    "
+                  />
+
+                  Course d&apos;entraînement
+                </div>
+
+                <p
+                  className="
+                    mt-2
+                    text-sm
+                    leading-relaxed
+                    text-base-content/55
+                  "
+                >
+                  Course intégrée au programme
+                  comme séance spécifique,
+                  sans modifier l&apos;objectif
+                  principal.
+                </p>
+              </button>
+            </div>
           </Field>
 
 

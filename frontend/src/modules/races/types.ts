@@ -4,11 +4,18 @@ export type RaceType =
   | 'ultra'
   | 'other'
 
+
 export type RaceStatus =
   | 'planned'
   | 'completed'
   | 'abandoned'
   | 'not_participated'
+
+
+export type RacePriority =
+  | 'primary'
+  | 'training'
+
 
 export interface Race {
   id: string
@@ -18,6 +25,10 @@ export interface Race {
   location: string
   date: string
   type: RaceType
+
+  // Rôle dans la planification
+  priority: RacePriority
+
   distanceKm: number
   elevationGainM?: number
   targetTimeMinutes?: number

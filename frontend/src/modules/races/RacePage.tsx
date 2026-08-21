@@ -32,6 +32,10 @@ import type {
   Race,
 } from './types'
 
+import {
+  getNextPrimaryRace,
+  getTrainingRacesBeforeNextPrimary,
+} from './selectors'
 
 export function RacePage() {
   const {
@@ -105,9 +109,15 @@ export function RacePage() {
     ).length
 
 
-  const nextRace =
-    upcomingRaces[0]
+  const nextPrimaryRace =
+    getNextPrimaryRace(
+      races,
+    )
 
+  const preparationRaces =
+    getTrainingRacesBeforeNextPrimary(
+      races,
+    )
 
   return (
     <main>
@@ -201,8 +211,11 @@ export function RacePage() {
           completedCount={
             completedCount
           }
-          nextRace={
-            nextRace
+          nextPrimaryRace={
+            nextPrimaryRace
+          }
+          preparationRacesCount={
+            preparationRaces.length
           }
         />
 
@@ -381,15 +394,19 @@ export function RacePage() {
 interface RaceOverviewProps {
   upcomingCount: number
   completedCount: number
-  nextRace:
+
+  nextPrimaryRace:
     Race | undefined
+
+  preparationRacesCount: number
 }
 
 
 function RaceOverview({
   upcomingCount,
   completedCount,
-  nextRace,
+  nextPrimaryRace,
+  preparationRacesCount,
 }: RaceOverviewProps) {
   return (
     <section
@@ -427,24 +444,30 @@ function RaceOverview({
         <OverviewItem
           icon={Trophy}
           value={
-            nextRace?.name
+            nextPrimaryRace?.name
             ?? 'Aucun objectif'
           }
-          label="Prochaine course"
+          label="Objectif principal"
           description={
-            nextRace
+            nextPrimaryRace
               ? (
-                `${formatDate(
-                  nextRace.date,
-                )} · ${
-                  formatNumber(
-                    nextRace.distanceKm,
-                  )
-                } km`
-              )
+                  `${formatDate(
+                    nextPrimaryRace.date,
+                  )} · ${
+                    formatNumber(
+                      nextPrimaryRace.distanceKm,
+                    )
+                  } km · ${
+                    preparationRacesCount
+                  } course${
+                    preparationRacesCount > 1
+                      ? 's'
+                      : ''
+                  } d’entraînement avant`
+                )
               : (
-                'Aucune course programmée'
-              )
+                  'Aucune course prioritaire programmée'
+                )
           }
           wide
         />
@@ -625,6 +648,9 @@ function UpcomingRaceRow({
                 Prochaine
               </span>
             )}
+            <PriorityBadge
+              priority={race.priority}
+            />
           </div>
 
           <p
@@ -770,6 +796,11 @@ function PastRaceRow({
               race.status
             }
           />
+          <div className="mt-2">
+            <PriorityBadge
+              priority={race.priority}
+            />
+          </div>
         </div>
 
 
@@ -1046,4 +1077,39 @@ function formatRaceType(
     default:
       return 'Autre'
   }
+}
+
+function PriorityBadge({
+  priority,
+}: {
+  priority: Race['priority']
+}) {
+  if (
+    priority === 'primary'
+  ) {
+    return (
+      <span
+        className="
+          badge
+          badge-primary
+          badge-sm
+          gap-1
+        "
+      >
+        ★ Objectif prioritaire
+      </span>
+    )
+  }
+
+  return (
+    <span
+      className="
+        badge
+        badge-outline
+        badge-sm
+      "
+    >
+      Course d&apos;entraînement
+    </span>
+  )
 }

@@ -533,12 +533,12 @@ def test_intervals_connection_test_succeeds(
             self.api_key = api_key
             self.athlete_id = athlete_id
 
-        def get_wellness(
+        def get_athlete(
             self,
-            oldest,
-            newest,
         ):
-            return []
+            return {
+                "id": self.athlete_id,
+            }
 
     monkeypatch.setattr(
         intervals_api,
@@ -578,10 +578,8 @@ def test_intervals_connection_test_rejects_bad_credentials(
         ) -> None:
             pass
 
-        def get_wellness(
+        def get_athlete(
             self,
-            oldest,
-            newest,
         ):
             raise IntervalsAuthenticationError(
                 "Authentication failed."
@@ -643,12 +641,12 @@ def test_saved_intervals_connection_succeeds(
             assert api_key == "secret-api-key"
             assert athlete_id == "i651743"
 
-        def get_wellness(
+        def get_athlete(
             self,
-            oldest,
-            newest,
         ):
-            return []
+            return {
+                "id": "i651743",
+            }
 
     app.dependency_overrides[
         get_local_athlete_profile_id
@@ -705,10 +703,8 @@ def test_saved_intervals_connection_rejects_bad_credentials(
         ) -> None:
             pass
 
-        def get_wellness(
+        def get_athlete(
             self,
-            oldest,
-            newest,
         ):
             raise IntervalsAuthenticationError(
                 "Authentication failed."

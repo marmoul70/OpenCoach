@@ -37,13 +37,21 @@ class IntervalsClient:
         self.timeout = timeout
         self.transport = transport
 
+    def get_athlete(
+        self,
+    ) -> dict:
+        """Retourne le profil de l'athlète connecté."""
+        return self._get_object(
+            f"/athlete/{self.athlete_id}",
+        )
+
     def get_wellness(
         self,
         oldest: date,
         newest: date,
     ) -> list[dict]:
         """Retourne les données Wellness sur une période."""
-        return self._get(
+        return self._get_list(
             f"/athlete/{self.athlete_id}/wellness",
             params={
                 "oldest": oldest.isoformat(),
@@ -57,7 +65,7 @@ class IntervalsClient:
         newest: date,
     ) -> list[dict]:
         """Retourne les activités sur une période."""
-        return self._get(
+        return self._get_list(
             f"/athlete/{self.athlete_id}/activities",
             params={
                 "oldest": oldest.isoformat(),
@@ -65,12 +73,14 @@ class IntervalsClient:
             },
         )
 
-    def _get(
+    def _request(
         self,
         path: str,
         *,
         params: dict[str, str] | None = None,
-    ) -> list[dict]:
+    ) -> object:
+        """Exécute une requête GET authentifiée vers Intervals.icu."""
+
         try:
             with httpx.Client(
                 auth=httpx.BasicAuth(
@@ -84,6 +94,7 @@ class IntervalsClient:
                     f"{INTERVALS_BASE_URL}{path}",
                     params=params,
                 )
+
         except httpx.HTTPError as exc:
             raise IntervalsApiError(
                 "Impossible de contacter Intervals.icu."
@@ -96,6 +107,7 @@ class IntervalsClient:
 
         try:
             response.raise_for_status()
+
         except httpx.HTTPStatusError as exc:
             raise IntervalsApiError(
                 f"Intervals.icu a retourné HTTP "
@@ -103,13 +115,47 @@ class IntervalsClient:
             ) from exc
 
         try:
-            data = response.json()
+            return response.json()
+
         except ValueError as exc:
             raise IntervalsApiError(
                 "Réponse JSON Intervals.icu invalide."
             ) from exc
 
+    def _get_list(
+        self,
+        path: str,
+        *,
+        params: dict[str, str] | None = None,
+    ) -> list[dict]:
+        """Retourne une réponse JSON de type liste."""
+
+        data = self._request(
+            path,
+            params=params,
+        )
+
         if not isinstance(data, list):
+            raise IntervalsApiError(
+                "Réponse Intervals.icu inattendue."
+            )
+
+        return data
+
+    def _get_object(
+        self,
+        path: str,
+        *,
+        params: dict[str, str] | None = None,
+    ) -> dict:
+        """Retourne une réponse JSON de type objet."""
+
+        data = self._request(
+            path,
+            params=params,
+        )
+
+        if not isinstance(data, dict):
             raise IntervalsApiError(
                 "Réponse Intervals.icu inattendue."
             )

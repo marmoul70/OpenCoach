@@ -356,13 +356,8 @@ def test_intervals_connection(
         athlete_id=payload.athlete_id.strip(),
     )
 
-    today = date.today()
-
     try:
-        client.get_wellness(
-            oldest=today,
-            newest=today,
-        )
+        client.get_athlete()
 
     except IntervalsAuthenticationError as exc:
         raise HTTPException(
@@ -424,13 +419,8 @@ def test_saved_intervals_connection(
         athlete_id=credentials.athlete_id,
     )
 
-    today = date.today()
-
     try:
-        client.get_wellness(
-            oldest=today,
-            newest=today,
-        )
+        client.get_athlete()
 
     except IntervalsAuthenticationError as exc:
         raise HTTPException(

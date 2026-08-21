@@ -435,3 +435,137 @@ def test_sql_wellness_repository_get_by_date_returns_none_when_missing() -> None
 
     finally:
         db.close()
+
+def test_sql_wellness_repository_gets_latest_on_or_before() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlWellnessRepository(db)
+
+        for day_number in (
+            15,
+            17,
+            19,
+        ):
+            wellness = create_wellness_day()
+            wellness.date = date(
+                2026,
+                8,
+                day_number,
+            )
+
+            repository.save_wellness_day(
+                profile.id,
+                wellness,
+            )
+
+        result = (
+            repository
+            .get_latest_on_or_before(
+                profile.id,
+                date(2026, 8, 18),
+                provider="intervals",
+            )
+        )
+
+        assert result is not None
+        assert result.date == date(
+            2026,
+            8,
+            17,
+        )
+
+    finally:
+        db.close()
+
+
+def test_sql_wellness_repository_latest_on_or_before_filters_provider() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlWellnessRepository(db)
+
+        intervals = create_wellness_day()
+        intervals.date = date(
+            2026,
+            8,
+            16,
+        )
+        intervals.provider = "intervals"
+
+        suunto = create_wellness_day()
+        suunto.date = date(
+            2026,
+            8,
+            17,
+        )
+        suunto.provider = "suunto"
+
+        repository.save_wellness_day(
+            profile.id,
+            intervals,
+        )
+
+        repository.save_wellness_day(
+            profile.id,
+            suunto,
+        )
+
+        result = (
+            repository
+            .get_latest_on_or_before(
+                profile.id,
+                date(2026, 8, 18),
+                provider="intervals",
+            )
+        )
+
+        assert result is not None
+        assert result.provider == "intervals"
+        assert result.date == date(
+            2026,
+            8,
+            16,
+        )
+
+    finally:
+        db.close()
+
+
+def test_sql_wellness_repository_latest_on_or_before_returns_none_when_unavailable() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+
+        repository = SqlWellnessRepository(db)
+
+        wellness = create_wellness_day()
+        wellness.date = date(
+            2026,
+            8,
+            19,
+        )
+
+        repository.save_wellness_day(
+            profile.id,
+            wellness,
+        )
+
+        result = (
+            repository
+            .get_latest_on_or_before(
+                profile.id,
+                date(2026, 8, 18),
+                provider="intervals",
+            )
+        )
+
+        assert result is None
+
+    finally:
+        db.close()

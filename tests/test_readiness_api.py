@@ -165,7 +165,11 @@ def create_assessment() -> ReadinessAssessment:
         comparison=comparison,
         context=None,
         readiness=readiness,
-)
+
+        source_date=TODAY,
+        data_age_days=0,
+        data_status="fresh",
+    )
 
 
 def create_client(

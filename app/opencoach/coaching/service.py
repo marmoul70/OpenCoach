@@ -91,36 +91,6 @@ class CoachDecisionService:
             if session.status == "planned"
         ]
 
-        if not planned_sessions:
-            readiness = self.readiness_service.calculate(
-                athlete_profile_id,
-                target_date,
-            )
-
-            decision = CoachDecision(
-                action="rest",
-                reason=(
-                    "Aucune séance n'est planifiée aujourd'hui. "
-                    "Journée de repos maintenue."
-                ),
-                original_duration_minutes=None,
-                recommended_duration_minutes=None,
-                duration_factor=None,
-                intensity_factor=None,
-                constraints=(
-                    readiness.readiness.training_constraints
-                ),
-                original_intensity=None,
-                recommended_intensity=None,
-            )
-
-            return CoachDecisionAssessment(
-                date=target_date,
-                session=None,
-                readiness=readiness,
-                decision=decision,
-            )
-
         if len(planned_sessions) > 1:
             raise CoachDecisionServiceError(
                 (
@@ -128,8 +98,6 @@ class CoachDecisionService:
                     f"disponibles pour le {target_date.isoformat()}."
                 )
             )
-
-        session = planned_sessions[0]
 
         readiness = self.readiness_service.calculate(
             athlete_profile_id,
@@ -152,6 +120,37 @@ class CoachDecisionService:
                     recent_load,
                 )
             )
+
+        if not planned_sessions:
+            decision = CoachDecision(
+                action="rest",
+                reason=(
+                    "Aucune séance n'est planifiée aujourd'hui. "
+                    "Journée de repos maintenue."
+                ),
+                original_duration_minutes=None,
+                recommended_duration_minutes=None,
+                duration_factor=None,
+                intensity_factor=None,
+                constraints=(
+                    readiness.readiness.training_constraints
+                ),
+                original_intensity=None,
+                recommended_intensity=None,
+            )
+
+            return CoachDecisionAssessment(
+                date=target_date,
+                session=None,
+                readiness=readiness,
+                decision=decision,
+                recent_load=recent_load,
+                recent_load_assessment=(
+                    recent_load_assessment
+                ),
+            )
+
+        session = planned_sessions[0]
 
         decision = decide_training_session(
             session=session,

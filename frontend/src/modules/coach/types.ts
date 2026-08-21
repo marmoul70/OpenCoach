@@ -60,6 +60,10 @@ export interface CoachReadiness {
   trainingConstraints: string[]
 
   signals: CoachReadinessSignal[]
+
+  sourceDate: string
+  dataAgeDays: number
+  dataStatus: 'fresh' | 'stale'
 }
 
 
@@ -128,4 +132,6 @@ export interface CoachToday {
   recentLoad: CoachRecentLoad | null
   recentLoadAssessment:
     CoachRecentLoadAssessment | null
+
+  dataWarning?: string
 }

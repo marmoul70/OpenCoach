@@ -46,6 +46,10 @@ interface CoachTodayApiResponse {
       current_value: number | null
       reference_value: number | null
     }>
+
+    source_date: string
+    data_age_days: number
+    data_status: 'fresh' | 'stale'
   }
 
   decision: {
@@ -109,6 +113,8 @@ interface CoachTodayApiResponse {
       reason: string
     }>
   } | null
+
+  data_warning: string | null
 }
 
 
@@ -260,6 +266,14 @@ Promise<CoachToday> {
               ?? undefined,
           }),
         ),
+      sourceDate:
+        data.readiness.source_date,
+
+      dataAgeDays:
+        data.readiness.data_age_days,
+
+      dataStatus:
+        data.readiness.data_status,
     },
 
     decision: {
@@ -386,6 +400,10 @@ Promise<CoachToday> {
                 ),
           }
         : null,
+
+    dataWarning:
+      data.data_warning
+      ?? undefined
   }
 }
 

@@ -289,6 +289,9 @@ def create_readiness_assessment(
         comparison=comparison,
         context=None,
         readiness=readiness,
+        source_date=TARGET_DATE,
+        data_age_days=0,
+        data_status="fresh",
     )
 
 def create_recent_overload() -> RecentTrainingLoad:
@@ -569,6 +572,49 @@ def test_coach_decision_service_returns_rest_when_no_session() -> None:
     assert (
         result.decision.recommended_intensity
         is None
+    )
+
+    assert readiness_service.calls == [
+        (
+            profile_id,
+            TARGET_DATE,
+        )
+    ]
+
+def test_coach_decision_service_keeps_recent_load_when_no_session() -> None:
+    recent_load = create_recent_overload()
+
+    service, _, readiness_service = create_service(
+        sessions=[],
+        readiness_score=90.0,
+        recent_load=recent_load,
+    )
+
+    profile_id = uuid4()
+
+    result = service.calculate(
+        profile_id,
+        TARGET_DATE,
+    )
+
+    assert result.session is None
+    assert result.decision.action == "rest"
+
+    assert result.recent_load is recent_load
+
+    assert (
+        result.recent_load_assessment
+        is not None
+    )
+
+    assert (
+        result.recent_load_assessment.has_critical
+        is True
+    )
+
+    assert (
+        result.recent_load_assessment.has_overload
+        is True
     )
 
     assert readiness_service.calls == [

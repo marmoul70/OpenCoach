@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -149,9 +149,9 @@ def create_assessment() -> CoachDecisionAssessment:
     )
 
     readiness = DailyReadiness(
-                score=50.0,
-                level="moderate",
-                signals=(
+        score=50.0,
+        level="moderate",
+        signals=(
             ReadinessSignal(
                 metric="hrv",
                 level="normal",
@@ -197,6 +197,9 @@ def create_assessment() -> CoachDecisionAssessment:
         comparison=comparison,
         context=None,
         readiness=readiness,
+        source_date=TODAY,
+        data_age_days=0,
+        data_status="fresh",
     )
 
     decision = CoachDecision(
@@ -224,6 +227,35 @@ def create_assessment() -> CoachDecisionAssessment:
         decision=decision,
     )
 
+def create_stale_assessment() -> CoachDecisionAssessment:
+    assessment = create_assessment()
+
+    stale_readiness = ReadinessAssessment(
+        date=assessment.readiness.date,
+        provider=assessment.readiness.provider,
+        current=assessment.readiness.current,
+        baseline=assessment.readiness.baseline,
+        comparison=assessment.readiness.comparison,
+        context=assessment.readiness.context,
+        readiness=assessment.readiness.readiness,
+        source_date=(
+            TODAY
+            - timedelta(days=1)
+        ),
+        data_age_days=1,
+        data_status="stale",
+    )
+
+    return CoachDecisionAssessment(
+        date=assessment.date,
+        session=assessment.session,
+        readiness=stale_readiness,
+        decision=assessment.decision,
+        recent_load=assessment.recent_load,
+        recent_load_assessment=(
+            assessment.recent_load_assessment
+        ),
+    )
 
 def create_client(
     service: FakeCoachDecisionService,
@@ -297,6 +329,23 @@ def test_coach_api_returns_today_decision() -> None:
 
     assert payload["readiness"]["score"] == 50.0
     assert payload["readiness"]["level"] == "moderate"
+
+    assert (
+        payload["readiness"]["source_date"]
+        == TODAY.isoformat()
+    )
+
+    assert (
+        payload["readiness"]["data_age_days"]
+        == 0
+    )
+
+    assert (
+        payload["readiness"]["data_status"]
+        == "fresh"
+    )
+
+    assert payload["data_warning"] is None
 
     assert payload["decision"]["action"] == "reduce"
     assert payload["recent_load"] is None
@@ -456,3 +505,40 @@ def test_coach_api_builds_recent_training_load_dependencies() -> None:
 
     finally:
         db.close()
+
+def test_coach_api_reports_stale_readiness_data() -> None:
+    service = FakeCoachDecisionService(
+        assessment=create_stale_assessment(),
+    )
+
+    client, _ = create_client(service)
+
+    response = client.get(
+        "/api/coach/today"
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+
+    assert (
+        payload["readiness"]["source_date"]
+        == (TODAY - timedelta(days=1)).isoformat()
+    )
+
+    assert (
+        payload["readiness"]["data_age_days"]
+        == 1
+    )
+
+    assert (
+        payload["readiness"]["data_status"]
+        == "stale"
+    )
+
+    assert payload["data_warning"] is not None
+
+    assert (
+        "données de récupération du jour"
+        in payload["data_warning"]
+    )

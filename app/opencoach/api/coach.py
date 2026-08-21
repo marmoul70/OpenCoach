@@ -29,6 +29,7 @@ from opencoach.database.repositories import (
 )
 from opencoach.database.session import get_db
 from opencoach.readiness import (
+    ReadinessAssessment,
     ReadinessDataUnavailableError,
     ReadinessService,
 )
@@ -180,9 +181,18 @@ def _to_response(
     readiness = assessment.readiness.readiness
     decision = assessment.decision
 
+    readiness_assessment = (
+        assessment.readiness
+    )
+
     recent_load = assessment.recent_load
+
     recent_load_assessment = (
         assessment.recent_load_assessment
+    )
+
+    data_warning = _build_data_warning(
+        readiness_assessment
     )
 
     return CoachTodayResponse(
@@ -239,6 +249,15 @@ def _to_response(
                 )
                 for signal in readiness.signals
             ],
+            source_date=(
+                readiness_assessment.source_date
+            ),
+            data_age_days=(
+                readiness_assessment.data_age_days
+            ),
+            data_status=(
+                readiness_assessment.data_status
+            ),
         ),
 
         decision=CoachDecisionResponse(
@@ -334,4 +353,39 @@ def _to_response(
             if recent_load_assessment is not None
             else None
         ),
+
+        data_warning=data_warning,
+    )
+
+def _build_data_warning(
+    readiness_assessment: ReadinessAssessment,
+) -> str | None:
+    """Construit un avertissement sur la fraîcheur des données."""
+
+    if readiness_assessment.data_status == "fresh":
+        return None
+
+    source_date = (
+        readiness_assessment
+        .source_date
+        .strftime("%d/%m/%Y")
+    )
+
+    age_days = (
+        readiness_assessment.data_age_days
+    )
+
+    if age_days == 1:
+        age_label = "1 jour"
+    else:
+        age_label = f"{age_days} jours"
+
+    return (
+        "Les données de récupération du jour "
+        "ne sont pas encore disponibles. "
+        "La recommandation utilise les dernières "
+        "données disponibles "
+        f"({source_date}, il y a {age_label}) "
+        "ainsi que l'historique d'entraînement "
+        "enregistré dans OpenCoach."
     )

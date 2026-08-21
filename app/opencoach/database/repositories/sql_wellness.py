@@ -152,6 +152,65 @@ class SqlWellnessRepository(WellnessRepository):
                 )
             ) from exc
 
+    def get_latest_on_or_before(
+        self,
+        athlete_profile_id: UUID,
+        target_date: date,
+        *,
+        provider: str | None = None,
+    ) -> WellnessDay | None:
+        """Retourne la dernière journée Wellness disponible
+        antérieure ou égale à une date.
+        """
+
+        try:
+            conditions = [
+                WellnessDaily.athlete_profile_id
+                == athlete_profile_id,
+                WellnessDaily.date
+                <= target_date,
+            ]
+
+            if provider is not None:
+                conditions.append(
+                    WellnessDaily.provider
+                    == provider
+                )
+
+            statement = (
+                select(WellnessDaily)
+                .where(
+                    *conditions
+                )
+                .order_by(
+                    WellnessDaily.date.desc(),
+                )
+                .limit(1)
+            )
+
+            database_wellness = (
+                self.session.scalar(
+                    statement
+                )
+            )
+
+            if database_wellness is None:
+                return None
+
+            return self._to_domain(
+                database_wellness
+            )
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise WellnessRepositoryError(
+                (
+                    "Impossible de charger "
+                    "la dernière journée Wellness."
+                )
+            ) from exc
+
     def get_by_date(
         self,
         athlete_profile_id: UUID,

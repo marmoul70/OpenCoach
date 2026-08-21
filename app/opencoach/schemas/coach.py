@@ -45,6 +45,10 @@ class CoachReadinessResponse(BaseModel):
 
     signals: list[CoachReadinessSignalResponse]
 
+    source_date: date
+    data_age_days: int
+    data_status: str
+
 
 class CoachDecisionResponse(BaseModel):
     action: str
@@ -118,3 +122,5 @@ class CoachTodayResponse(BaseModel):
         CoachRecentLoadAssessmentResponse
         | None
     )
+
+    data_warning: str | None

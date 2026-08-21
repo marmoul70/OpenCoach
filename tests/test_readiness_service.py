@@ -43,6 +43,7 @@ class FakeWellnessRepository(
 
         self.get_by_date_calls = []
         self.list_range_calls = []
+        self.get_latest_on_or_before_calls = []
 
     def save_wellness_day(
         self,
@@ -56,6 +57,49 @@ class FakeWellnessRepository(
         athlete_profile_id: UUID,
     ) -> WellnessDay | None:
         return self.current
+
+    def get_latest_on_or_before(
+        self,
+        athlete_profile_id: UUID,
+        target_date: date,
+        *,
+        provider: str | None = None,
+    ) -> WellnessDay | None:
+        self.get_latest_on_or_before_calls.append(
+            (
+                athlete_profile_id,
+                target_date,
+                provider,
+            )
+        )
+
+        candidates = [
+            wellness
+            for wellness in (
+                [
+                    self.current
+                ]
+                + self.history
+            )
+            if (
+                wellness is not None
+                and wellness.date
+                <= target_date
+                and (
+                    provider is None
+                    or wellness.provider
+                    == provider
+                )
+            )
+        ]
+
+        if not candidates:
+            return None
+
+        return max(
+            candidates,
+            key=lambda wellness: wellness.date,
+        )
 
     def get_by_date(
         self,
@@ -233,7 +277,9 @@ def test_readiness_service_calculates_assessment() -> None:
     assert result.date == TARGET_DATE
     assert result.provider == "intervals"
 
-    assert result.current.date == TARGET_DATE
+    assert result.source_date == TARGET_DATE
+    assert result.data_age_days == 0
+    assert result.data_status == "fresh"
 
     assert result.baseline.hrv.median == 50.0
     assert result.baseline.hrv.sample_count == 14
@@ -345,25 +391,51 @@ def test_readiness_service_filters_provider() -> None:
     assert result.baseline.hrv.median == 50.0
 
 
-def test_readiness_service_raises_when_current_day_is_missing() -> None:
+def test_readiness_service_uses_previous_wellness_when_current_day_is_missing() -> None:
+    history = create_history()
+
     repository = FakeWellnessRepository(
         current=None,
-        history=create_history(),
+        history=history,
     )
 
     service = create_service(
         repository
     )
 
-    with pytest.raises(
-        ReadinessDataUnavailableError,
-        match="Aucune donnée Wellness disponible",
-    ):
-        service.calculate(
-            uuid4(),
-            TARGET_DATE,
-        )
+    profile_id = uuid4()
 
+    result = service.calculate(
+        profile_id,
+        TARGET_DATE,
+    )
+
+    assert result.date == TARGET_DATE
+
+    assert result.current.date == (
+        TARGET_DATE
+        - timedelta(days=1)
+    )
+
+    assert result.source_date == (
+        TARGET_DATE
+        - timedelta(days=1)
+    )
+
+    assert result.data_age_days == 1
+    assert result.data_status == "stale"
+
+    assert (
+        repository
+        .get_latest_on_or_before_calls
+        == [
+            (
+                profile_id,
+                TARGET_DATE,
+                "intervals",
+            )
+        ]
+    )
 
 def test_readiness_service_handles_insufficient_baseline() -> None:
     repository = FakeWellnessRepository(
@@ -627,3 +699,88 @@ def test_readiness_service_keeps_physiological_result_when_context_missing() -> 
 
     assert result.readiness.score == 100.0
     assert result.readiness.level == "high"
+
+def test_readiness_service_reports_three_day_old_wellness_as_stale() -> None:
+    history = [
+        wellness
+        for wellness in create_history()
+        if wellness.date <= (
+            TARGET_DATE
+            - timedelta(days=3)
+        )
+    ]
+
+    repository = FakeWellnessRepository(
+        current=None,
+        history=history,
+    )
+
+    service = create_service(
+        repository
+    )
+
+    result = service.calculate(
+        uuid4(),
+        TARGET_DATE,
+    )
+
+    assert result.source_date == (
+        TARGET_DATE
+        - timedelta(days=3)
+    )
+
+    assert result.data_age_days == 3
+    assert result.data_status == "stale"
+
+def test_readiness_service_raises_when_no_wellness_is_available() -> None:
+    repository = FakeWellnessRepository(
+        current=None,
+        history=[],
+    )
+
+    service = create_service(
+        repository
+    )
+
+    with pytest.raises(
+        ReadinessDataUnavailableError,
+        match="Aucune donnée Wellness exploitable",
+    ):
+        service.calculate(
+            uuid4(),
+            TARGET_DATE,
+        )
+
+def test_readiness_service_builds_baseline_before_fallback_source_date() -> None:
+    history = create_history()
+
+    repository = FakeWellnessRepository(
+        current=None,
+        history=history,
+    )
+
+    service = create_service(
+        repository
+    )
+
+    profile_id = uuid4()
+
+    result = service.calculate(
+        profile_id,
+        TARGET_DATE,
+    )
+
+    assert result.source_date == date(
+        2026,
+        8,
+        17,
+    )
+
+    assert repository.list_range_calls == [
+        (
+            profile_id,
+            date(2026, 8, 3),
+            date(2026, 8, 16),
+            "intervals",
+        )
+    ]

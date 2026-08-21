@@ -28,6 +28,7 @@ export function CoachTodayDetails({
     decision,
     recentLoad,
     recentLoadAssessment,
+    dataWarning,
   } = coach
 
   return (
@@ -51,6 +52,45 @@ export function CoachTodayDetails({
           {decision.reason}
         </p>
       </section>
+
+      {dataWarning && (
+        <div
+          className="
+            rounded-xl
+            border border-warning/30
+            bg-warning/10
+            p-4
+          "
+        >
+          <div className="flex items-start gap-3">
+            <ShieldAlert
+              className="
+                mt-0.5
+                h-5 w-5
+                shrink-0
+                text-warning
+              "
+            />
+
+            <div>
+              <p className="font-semibold text-base-content">
+                Données de récupération non actualisées
+              </p>
+
+              <p
+                className="
+                  mt-1
+                  text-sm
+                  leading-relaxed
+                  text-base-content/65
+                "
+              >
+                {dataWarning}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="divider my-0" />
 
@@ -97,6 +137,13 @@ export function CoachTodayDetails({
             detail="Règles actives"
           />
         </div>
+        <p className="mt-2 text-xs text-base-content/45">
+          Données de récupération :{' '}
+          {formatReadinessFreshness(
+            readiness.sourceDate,
+            readiness.dataAgeDays,
+          )}
+        </p>
       </section>
 
       {recentLoad && (
@@ -643,8 +690,14 @@ function formatConstraint(
     recent_overload:
       'Surcharge récente',
 
+    repeated_overload:
+      'Surcharge répétée',
+
     broken_rest:
       'Repos non respecté',
+
+    repeated_broken_rest:
+      'Repos répétés non respectés',
   }
 
   return labels[constraint]
@@ -874,4 +927,36 @@ function formatRecentLoadSignal(
 
   return labels[kind]
     ?? kind
+}
+
+function formatReadinessFreshness(
+  sourceDate: string,
+  ageDays: number,
+): string {
+  if (ageDays === 0) {
+    return "aujourd'hui"
+  }
+
+  const formattedDate =
+    new Intl.DateTimeFormat(
+      'fr-FR',
+      {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      },
+    ).format(
+      new Date(
+        `${sourceDate}T12:00:00`,
+      ),
+    )
+
+  if (ageDays === 1) {
+    return `${formattedDate} · il y a 1 jour`
+  }
+
+  return (
+    `${formattedDate} · `
+    + `il y a ${ageDays} jours`
+  )
 }

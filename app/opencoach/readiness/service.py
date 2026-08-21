@@ -62,6 +62,9 @@ class ReadinessAssessment:
 
     readiness: DailyReadiness
 
+    source_date: date
+    data_age_days: int
+    data_status: str
 
 class ReadinessService:
     """Orchestre le calcul complet du Daily Readiness."""
@@ -104,6 +107,39 @@ class ReadinessService:
         )
 
         if current is None:
+            current = (
+                self.repository
+                .get_latest_on_or_before(
+                    athlete_profile_id,
+                    target_date,
+                    provider=self.provider,
+                )
+            )
+
+        if current is None:
+            raise ReadinessDataUnavailableError(
+                (
+                    "Aucune donnée Wellness exploitable "
+                    f"n'est disponible avant ou pour "
+                    f"le {target_date.isoformat()} "
+                    f"avec le fournisseur {self.provider}."
+                )
+            )
+
+        source_date = current.date
+
+        data_age_days = (
+            target_date
+            - source_date
+        ).days
+
+        data_status = (
+            "fresh"
+            if data_age_days == 0
+            else "stale"
+        )
+
+        if current is None:
             raise ReadinessDataUnavailableError(
                 (
                     "Aucune donnée Wellness disponible "
@@ -119,14 +155,17 @@ class ReadinessService:
         )
 
         history_start = (
-            target_date
+            source_date
             - timedelta(
-                days=baseline_thresholds.window_days,
+                days=(
+                    baseline_thresholds
+                    .window_days
+                ),
             )
         )
 
         history_end = (
-            target_date
+            source_date
             - timedelta(days=1)
         )
 
@@ -139,7 +178,7 @@ class ReadinessService:
 
         baseline = calculate_readiness_baseline(
             history,
-            current_date=target_date,
+            current_date=source_date,
             window_days=(
                 baseline_thresholds.window_days
             ),
@@ -178,6 +217,9 @@ class ReadinessService:
             comparison=comparison,
             context=context,
             readiness=readiness,
+            source_date=source_date,
+            data_age_days=data_age_days,
+            data_status=data_status,
         )
 
     def _get_daily_context(

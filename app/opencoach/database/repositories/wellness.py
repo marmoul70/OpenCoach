@@ -26,6 +26,19 @@ class WellnessRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get_latest_on_or_before(
+        self,
+        athlete_profile_id: UUID,
+        target_date: date,
+        *,
+        provider: str | None = None,
+    ) -> WellnessDay | None:
+        """Retourne la dernière journée Wellness disponible
+        antérieure ou égale à une date.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def list_range(
         self,
         athlete_profile_id: UUID,

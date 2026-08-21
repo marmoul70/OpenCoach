@@ -125,6 +125,7 @@ export function CoachTodayWidget() {
 
                 <DecisionBadge
                   action={decision.action}
+                  sessionStatus={session?.status}
                 />
               </div>
             </div>
@@ -151,10 +152,14 @@ export function CoachTodayWidget() {
             <InlineMetric
               label="Durée"
               value={
-                decision.recommendedDurationMinutes
-                  !== undefined
-                  ? `${decision.recommendedDurationMinutes} min`
-                  : 'Repos'
+                session?.status === 'skipped'
+                  ? `${session.durationMinutes} min prévues`
+                  : session?.status === 'completed'
+                    ? `${session.durationMinutes} min prévues`
+                    : decision.recommendedDurationMinutes
+                      !== undefined
+                      ? `${decision.recommendedDurationMinutes} min`
+                      : 'Repos'
               }
             />
 
@@ -192,9 +197,27 @@ export function CoachTodayWidget() {
 
 function DecisionBadge({
   action,
+  sessionStatus,
 }: {
   action: CoachAction
+  sessionStatus?: string
 }) {
+  if (sessionStatus === 'skipped') {
+    return (
+      <span className="badge badge-error badge-sm">
+        Non réalisée
+      </span>
+    )
+  }
+
+  if (sessionStatus === 'completed') {
+    return (
+      <span className="badge badge-success badge-sm">
+        Réalisée
+      </span>
+    )
+  }
+
   const label = {
     keep: 'Maintenir',
     reduce: 'Réduire',

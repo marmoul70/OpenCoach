@@ -502,12 +502,14 @@ def test_coach_decision_service_rests() -> None:
     )
 
 
-def test_coach_decision_service_treats_non_planned_session_as_rest() -> None:
+def test_coach_decision_service_keeps_completed_session_context() -> None:
+    session = create_session(
+        status="completed",
+    )
+
     service, _, readiness_service = create_service(
         sessions=[
-            create_session(
-                status="completed",
-            ),
+            session,
         ],
         readiness_score=90.0,
     )
@@ -519,8 +521,16 @@ def test_coach_decision_service_treats_non_planned_session_as_rest() -> None:
         TARGET_DATE,
     )
 
-    assert result.session is None
+    assert result.session is session
+
+    assert result.session.status == "completed"
+
     assert result.decision.action == "rest"
+
+    assert (
+        "a déjà été réalisée"
+        in result.decision.reason
+    )
 
     assert readiness_service.calls == [
         (
@@ -735,3 +745,39 @@ def test_coach_decision_service_keeps_without_recent_load() -> None:
         result.recent_load_assessment
         is None
     )
+def test_coach_decision_service_keeps_skipped_session_context() -> None:
+    session = create_session(
+        status="skipped",
+    )
+
+    service, _, readiness_service = create_service(
+        sessions=[
+            session,
+        ],
+        readiness_score=90.0,
+    )
+
+    profile_id = uuid4()
+
+    result = service.calculate(
+        profile_id,
+        TARGET_DATE,
+    )
+
+    assert result.session is session
+
+    assert result.session.status == "skipped"
+
+    assert result.decision.action == "rest"
+
+    assert (
+        "déclarée non réalisée"
+        in result.decision.reason
+    )
+
+    assert readiness_service.calls == [
+        (
+            profile_id,
+            TARGET_DATE,
+        )
+    ]

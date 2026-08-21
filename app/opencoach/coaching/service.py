@@ -91,6 +91,20 @@ class CoachDecisionService:
             if session.status == "planned"
         ]
 
+        skipped_sessions = [
+            session
+            for session in sessions
+            if session.status == "skipped"
+            and session.type != "rest"
+        ]
+
+        completed_sessions = [
+            session
+            for session in sessions
+            if session.status == "completed"
+            and session.type != "rest"
+        ]
+
         if len(planned_sessions) > 1:
             raise CoachDecisionServiceError(
                 (
@@ -122,12 +136,36 @@ class CoachDecisionService:
             )
 
         if not planned_sessions:
-            decision = CoachDecision(
-                action="rest",
-                reason=(
+            historical_session = None
+
+            if skipped_sessions:
+                historical_session = skipped_sessions[0]
+
+                reason = (
+                    f"La séance « {historical_session.title} » "
+                    "prévue aujourd'hui a été déclarée "
+                    "non réalisée. Aucune autre séance "
+                    "n'est planifiée aujourd'hui."
+                )
+
+            elif completed_sessions:
+                historical_session = completed_sessions[0]
+
+                reason = (
+                    f"La séance « {historical_session.title} » "
+                    "prévue aujourd'hui a déjà été réalisée. "
+                    "Aucune autre séance n'est planifiée."
+                )
+
+            else:
+                reason = (
                     "Aucune séance n'est planifiée aujourd'hui. "
                     "Journée de repos maintenue."
-                ),
+                )
+
+            decision = CoachDecision(
+                action="rest",
+                reason=reason,
                 original_duration_minutes=None,
                 recommended_duration_minutes=None,
                 duration_factor=None,
@@ -141,7 +179,7 @@ class CoachDecisionService:
 
             return CoachDecisionAssessment(
                 date=target_date,
-                session=None,
+                session=historical_session,
                 readiness=readiness,
                 decision=decision,
                 recent_load=recent_load,

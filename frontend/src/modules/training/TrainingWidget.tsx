@@ -5,9 +5,15 @@ import {
 import {
   useTrainingSessions,
 } from './trainingStore'
+
 import {
   formatTrainingIntensity,
 } from './intensity'
+
+import type {
+  TrainingSession,
+} from './types'
+
 
 interface TrainingWidgetProps {
   onClick: () => void
@@ -27,12 +33,36 @@ export function TrainingWidget({
     new Date(),
   )
 
-  const session =
-    sessions.find(
+  const todaySessions =
+    sessions.filter(
       (item) =>
         item.date === today
         && item.type !== 'supplementary',
     )
+
+  const plannedSession =
+    todaySessions.find(
+      (item) =>
+        item.status === 'planned',
+    )
+
+  const completedSession =
+    todaySessions.find(
+      (item) =>
+        item.status === 'completed',
+    )
+
+  const skippedSession =
+    todaySessions.find(
+      (item) =>
+        item.status === 'skipped',
+    )
+
+  const session =
+    plannedSession
+    ?? completedSession
+    ?? skippedSession
+
 
   if (loading) {
     return (
@@ -43,6 +73,7 @@ export function TrainingWidget({
       </div>
     )
   }
+
 
   if (error) {
     return (
@@ -72,12 +103,23 @@ export function TrainingWidget({
     )
   }
 
+
   if (!session) {
     return (
       <button
         type="button"
         onClick={onClick}
-        className="card w-full border border-base-300 bg-base-100 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+        className="
+          card w-full
+          border border-base-300
+          bg-base-100
+          text-left
+          shadow-sm
+          transition-all
+          duration-200
+          hover:-translate-y-0.5
+          hover:shadow-md
+        "
       >
         <div className="card-body gap-2 p-4">
           <div className="flex items-center justify-between gap-3">
@@ -102,17 +144,30 @@ export function TrainingWidget({
     )
   }
 
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className="card w-full border border-base-300 bg-base-100 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      className="
+        card w-full
+        border border-base-300
+        bg-base-100
+        text-left
+        shadow-sm
+        transition-all
+        duration-200
+        hover:-translate-y-0.5
+        hover:shadow-md
+      "
     >
       <div className="card-body gap-3 p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-base-content/50">
-              Entraînement du jour
+              {getWidgetLabel(
+                session.status,
+              )}
             </p>
 
             <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -121,7 +176,9 @@ export function TrainingWidget({
               </h2>
 
               <StatusBadge
-                status={session.status}
+                status={
+                  session.status
+                }
               />
             </div>
           </div>
@@ -129,10 +186,13 @@ export function TrainingWidget({
           <CalendarDays className="h-4 w-4 shrink-0 text-base-content/40" />
         </div>
 
+
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <InlineMetric
             label="Durée"
-            value={`${session.durationMinutes} min`}
+            value={
+              `${session.durationMinutes} min`
+            }
           />
 
           <InlineMetric
@@ -148,19 +208,80 @@ export function TrainingWidget({
             label="Zone"
             value={
               session.heartRateZone
-                ?? '—'
+              ?? '—'
             }
           />
 
           {session.distanceKm !== undefined && (
             <InlineMetric
               label="Distance"
-              value={`${session.distanceKm} km`}
+              value={
+                `${session.distanceKm} km`
+              }
             />
           )}
         </div>
+
+
+        <p className="text-sm text-base-content/55">
+          {getStatusDescription(
+            session.status,
+          )}
+        </p>
       </div>
     </button>
+  )
+}
+
+
+function getWidgetLabel(
+  status:
+    TrainingSession['status'],
+): string {
+  if (
+    status === 'completed'
+  ) {
+    return (
+      'Séance réalisée aujourd’hui'
+    )
+  }
+
+  if (
+    status === 'skipped'
+  ) {
+    return (
+      'Séance non réalisée'
+    )
+  }
+
+  return (
+    'Entraînement du jour'
+  )
+}
+
+
+function getStatusDescription(
+  status:
+    TrainingSession['status'],
+): string {
+  if (
+    status === 'completed'
+  ) {
+    return (
+      'Cette séance a été marquée comme réalisée.'
+    )
+  }
+
+  if (
+    status === 'skipped'
+  ) {
+    return (
+      'Cette séance a été marquée comme non réalisée.'
+    )
+  }
+
+  return (
+    'Séance prévue aujourd’hui.'
   )
 }
 
@@ -169,11 +290,11 @@ function StatusBadge({
   status,
 }: {
   status:
-    | 'planned'
-    | 'completed'
-    | 'skipped'
+    TrainingSession['status']
 }) {
-  if (status === 'completed') {
+  if (
+    status === 'completed'
+  ) {
     return (
       <span className="badge badge-success badge-sm">
         Réalisée
@@ -181,7 +302,9 @@ function StatusBadge({
     )
   }
 
-  if (status === 'skipped') {
+  if (
+    status === 'skipped'
+  ) {
     return (
       <span className="badge badge-error badge-sm">
         Non réalisée
@@ -221,15 +344,27 @@ function InlineMetric({
 function formatLocalDate(
   date: Date,
 ): string {
-  const year = date.getFullYear()
+  const year =
+    date.getFullYear()
 
-  const month = String(
-    date.getMonth() + 1,
-  ).padStart(2, '0')
+  const month =
+    String(
+      date.getMonth()
+      + 1,
+    ).padStart(
+      2,
+      '0',
+    )
 
-  const day = String(
-    date.getDate(),
-  ).padStart(2, '0')
+  const day =
+    String(
+      date.getDate(),
+    ).padStart(
+      2,
+      '0',
+    )
 
-  return `${year}-${month}-${day}`
+  return (
+    `${year}-${month}-${day}`
+  )
 }

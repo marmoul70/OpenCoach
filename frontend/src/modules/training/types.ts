@@ -57,3 +57,20 @@ export interface TrainingAvailableActivity {
   trainingLoad?: number
   feel?: number
 }
+
+export interface TrainingStats {
+  startDate: string
+  endDate: string
+
+  activitiesCount: number
+  manualSessionsCount: number
+  sessionsCount: number
+
+  totalDurationMinutes: number
+  totalDistanceKm: number
+  totalElevationGainM: number
+
+  measuredLoad: number
+  estimatedLoad: number
+  totalLoad: number
+}

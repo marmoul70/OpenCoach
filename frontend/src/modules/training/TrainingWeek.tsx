@@ -1,4 +1,6 @@
 import {
+  useCallback,
+  useEffect,
   useState,
 } from 'react'
 
@@ -17,16 +19,16 @@ import {
 } from '../../components/ui/Modal'
 
 import {
+  fetchTrainingStats,
+} from '../../core/training/api'
+
+import {
   races,
 } from '../races/data'
 
 import {
   AddTrainingSessionModal,
 } from './AddTrainingSessionModal'
-
-import {
-  getTrainingStats,
-} from './stats'
 
 import {
   TrainingDetails,
@@ -38,11 +40,13 @@ import {
 
 import type {
   TrainingSession,
+  TrainingStats,
 } from './types'
 
 import {
   formatTrainingIntensity,
 } from './intensity'
+
 
 const dayLabels = [
   'Lundi',
@@ -76,11 +80,72 @@ export function TrainingWeek() {
     null,
   )
 
-  const stats =
-    getTrainingStats(
-      sessions,
-      races,
-    )
+  const [
+    stats,
+    setStats,
+  ] = useState<TrainingStats | null>(
+    null,
+  )
+
+  const [
+    statsLoading,
+    setStatsLoading,
+  ] = useState(true)
+
+  const [
+    statsError,
+    setStatsError,
+  ] = useState<string | null>(
+    null,
+  )
+
+
+  const loadStats = useCallback(
+    async () => {
+      const today = new Date()
+
+      const start =
+        `${today.getFullYear()}-01-01`
+
+      const end =
+        formatLocalDate(
+          today,
+        )
+
+      setStatsLoading(true)
+      setStatsError(null)
+
+      try {
+        const result =
+          await fetchTrainingStats(
+            start,
+            end,
+          )
+
+        setStats(result)
+      } catch (reason) {
+        setStatsError(
+          reason instanceof Error
+            ? reason.message
+            : (
+                'Impossible de charger '
+                + 'les statistiques.'
+              ),
+        )
+      } finally {
+        setStatsLoading(false)
+      }
+    },
+    [],
+  )
+
+
+  useEffect(() => {
+    void loadStats()
+  }, [
+    loadStats,
+  ])
+
 
   const weekDays =
     getWeekSessions(
@@ -120,6 +185,11 @@ export function TrainingWeek() {
         session.type
         === 'rest',
     ).length
+
+  const nextRace =
+    getNextRace(
+      races,
+    )
 
 
   function openSession(
@@ -181,27 +251,49 @@ export function TrainingWeek() {
 
         <TrainingOverview
           distanceKm={
-            stats.distanceKm
+            stats?.totalDistanceKm
+            ?? 0
           }
           completedSessions={
-            stats.completedSessions
+            stats?.sessionsCount
+            ?? 0
+          }
+          loading={
+            statsLoading
           }
           raceName={
-            stats.nextRace?.name
+            nextRace?.name
             ?? 'Aucune course'
           }
           raceDescription={
-            stats.nextRace
+            nextRace
               ? (
-                `${formatRaceDate(
-                  stats.nextRace.date,
-                )} · ${
-                  stats.nextRace.distanceKm
-                } km`
-              )
+                  `${formatRaceDate(
+                    nextRace.date,
+                  )} · ${
+                    nextRace.distanceKm
+                  } km`
+                )
               : 'Aucune course programmée'
           }
         />
+
+
+        {statsError && (
+          <div
+            className="
+              mt-3
+              rounded-xl
+              border border-warning/30
+              bg-warning/5
+              px-4 py-3
+              text-sm
+              text-warning
+            "
+          >
+            {statsError}
+          </div>
+        )}
 
 
         <section className="mt-7 space-y-4">
@@ -307,6 +399,8 @@ export function TrainingWeek() {
                 selectedSession.id,
                 status,
               )
+
+              await loadStats()
             }}
             onActivityChange={async (
               activityId,
@@ -315,6 +409,8 @@ export function TrainingWeek() {
                 selectedSession.id,
                 activityId,
               )
+
+              await loadStats()
             }}
           />
         </Modal>
@@ -327,9 +423,11 @@ export function TrainingWeek() {
           date={
             addSessionDate
           }
-          onClose={
-            closeAddSession
-          }
+          onClose={() => {
+            closeAddSession()
+
+            void loadStats()
+          }}
         />
       )}
     </main>
@@ -340,6 +438,7 @@ export function TrainingWeek() {
 interface TrainingOverviewProps {
   distanceKm: number
   completedSessions: number
+  loading: boolean
   raceName: string
   raceDescription: string
 }
@@ -348,6 +447,7 @@ interface TrainingOverviewProps {
 function TrainingOverview({
   distanceKm,
   completedSessions,
+  loading,
   raceName,
   raceDescription,
 }: TrainingOverviewProps) {
@@ -373,14 +473,26 @@ function TrainingOverview({
       >
         <OverviewItem
           icon={Route}
-          value={`${distanceKm} km`}
+          value={
+            loading
+              ? '…'
+              : (
+                  `${formatNumber(
+                    distanceKm,
+                  )} km`
+                )
+          }
           label="Kilomètres"
           description="Depuis le début de l'année"
         />
 
         <OverviewItem
           icon={Check}
-          value={`${completedSessions}`}
+          value={
+            loading
+              ? '…'
+              : `${completedSessions}`
+          }
           label="Séances réalisées"
           description="Depuis le début de l'année"
         />
@@ -538,10 +650,10 @@ function DayRow({
         'rounded-2xl border bg-base-100 shadow-sm',
         isToday
           ? (
-            'border-primary '
-            + 'ring-1 '
-            + 'ring-primary/20'
-          )
+              'border-primary '
+              + 'ring-1 '
+              + 'ring-primary/20'
+            )
           : 'border-base-300',
       ].join(' ')}
     >
@@ -1022,6 +1134,44 @@ function getWeekSessions(
       }
     },
   )
+}
+
+
+function getNextRace(
+  availableRaces: typeof races,
+) {
+  const today =
+    new Date()
+
+  today.setHours(
+    0,
+    0,
+    0,
+    0,
+  )
+
+  return [
+    ...availableRaces,
+  ]
+    .filter(
+      (race) =>
+        new Date(
+          `${race.date}T12:00:00`,
+        ) >= today,
+    )
+    .sort(
+      (
+        first,
+        second,
+      ) =>
+        new Date(
+          `${first.date}T12:00:00`,
+        ).getTime()
+        -
+        new Date(
+          `${second.date}T12:00:00`,
+        ).getTime(),
+    )[0]
 }
 
 

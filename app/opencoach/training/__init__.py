@@ -39,6 +39,12 @@ from .recent_load_signals import (
     RecentLoadSignalLevel,
     assess_recent_training_load,
 )
+from .stats import (
+    TrainingStats,
+)
+from .stats_service import (
+    TrainingStatsService,
+)
 
 __all__ = [
     "ActivityMatchResult",
@@ -64,4 +70,7 @@ __all__ = [
     "RecentLoadSignalKind",
     "RecentLoadSignalLevel",
     "assess_recent_training_load",
+    "TrainingStats",
+    "TrainingStatsService",
+
 ]

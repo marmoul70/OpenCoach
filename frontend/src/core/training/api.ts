@@ -3,6 +3,7 @@ import type {
   TrainingSession,
   TrainingSessionCreate,
   TrainingSessionStatus,
+  TrainingStats,
 } from '../../modules/training/types'
 
 interface TrainingSessionApiResponse {
@@ -328,4 +329,80 @@ export async function fetchAvailableTrainingActivities(
     feel:
       activity.feel ?? undefined,
   }))
+}
+
+interface TrainingStatsApiResponse {
+  start_date: string
+  end_date: string
+
+  activities_count: number
+  manual_sessions_count: number
+  sessions_count: number
+
+  total_duration_minutes: number
+  total_distance_km: number
+  total_elevation_gain_m: number
+
+  measured_load: number
+  estimated_load: number
+  total_load: number
+}
+
+
+export async function fetchTrainingStats(
+  start: string,
+  end: string,
+): Promise<TrainingStats> {
+  const params = new URLSearchParams({
+    start,
+    end,
+  })
+
+  const response = await fetch(
+    `/api/training-stats?${params.toString()}`,
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      `Impossible de charger les statistiques (${response.status}).`,
+    )
+  }
+
+  const data =
+    (await response.json()) as TrainingStatsApiResponse
+
+  return {
+    startDate:
+      data.start_date,
+
+    endDate:
+      data.end_date,
+
+    activitiesCount:
+      data.activities_count,
+
+    manualSessionsCount:
+      data.manual_sessions_count,
+
+    sessionsCount:
+      data.sessions_count,
+
+    totalDurationMinutes:
+      data.total_duration_minutes,
+
+    totalDistanceKm:
+      data.total_distance_km,
+
+    totalElevationGainM:
+      data.total_elevation_gain_m,
+
+    measuredLoad:
+      data.measured_load,
+
+    estimatedLoad:
+      data.estimated_load,
+
+    totalLoad:
+      data.total_load,
+  }
 }

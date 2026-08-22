@@ -246,3 +246,10 @@ class AthleteProfile(Base):
         back_populates="athlete_profile",
         cascade="all, delete-orphan",
     )
+
+    physiological_measurements: Mapped[
+        list["PhysiologicalMeasurement"]
+    ] = relationship(
+        back_populates="athlete_profile",
+        cascade="all, delete-orphan",
+    )

@@ -11,6 +11,7 @@ from .errors import (
     DailyContextRepositoryError,
     RaceRepositoryError,
     AthleteConstraintRepositoryError,
+    PhysiologicalMeasurementRepositoryError,
 )
 from .profile import ProfileRepository
 from .sql_activity import SqlActivityRepository
@@ -37,8 +38,12 @@ from .sql_daily_context import (
 from .race import RaceRepository
 from .sql_race import SqlRaceRepository
 from .athlete_constraint import AthleteConstraintRepository
-
-
+from .physiological_measurement import (
+    PhysiologicalMeasurementRepository,
+)
+from .sql_physiological_measurement import (
+    SqlPhysiologicalMeasurementRepository,
+)
 __all__ = [
     "ActivityRepository",
     "ActivityRepositoryError",
@@ -64,4 +69,7 @@ __all__ = [
     "AthleteConstraintRepository",
     "AthleteConstraintRepositoryError",
     "SqlAthleteConstraintRepository",
+    "PhysiologicalMeasurementRepository",
+    "PhysiologicalMeasurementRepositoryError",
+    "SqlPhysiologicalMeasurementRepository",
 ]

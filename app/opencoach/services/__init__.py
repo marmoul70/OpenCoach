@@ -8,6 +8,9 @@ from .integration_connection import (
     IntegrationConnectionServiceError,
     IntegrationCredentials,
 )
+from .physiological_measurement import (
+    PhysiologicalMeasurementService,
+)
 
 __all__ = [
     "DEFAULT_SYNC_DAYS",
@@ -16,4 +19,5 @@ __all__ = [
     "IntegrationConnectionService",
     "IntegrationConnectionServiceError",
     "IntegrationCredentials",
+    "PhysiologicalMeasurementService",
 ]

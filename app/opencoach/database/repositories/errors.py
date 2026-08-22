@@ -21,3 +21,6 @@ class RaceRepositoryError(RuntimeError):
 
 class AthleteConstraintRepositoryError(RuntimeError):
     """Erreur de persistance des contraintes temporaires."""
+
+class PhysiologicalMeasurementRepositoryError(RuntimeError):
+    """Erreur de persistance des mesures physiologiques."""

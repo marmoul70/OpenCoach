@@ -72,6 +72,21 @@ from .physiological_freshness import (
     PhysiologicalFreshnessPolicy,
     assess_measurement_freshness,
 )
+from .physiological_snapshot import (
+    CalibrationMetricSource,
+    PhysiologicalCalibrationMetric,
+    PhysiologicalCalibrationSnapshot,
+)
+from .physiological_snapshot_service import (
+    PhysiologicalCalibrationSnapshotService,
+)
+from .assessment_need import (
+    AssessmentNeed,
+    AssessmentPriority,
+    AssessmentType,
+    identify_assessment_needs,
+)
+
 __all__ = [
     "DayAvailability",
     "DayAvailabilityStatus",
@@ -115,4 +130,12 @@ __all__ = [
     "PhysiologicalFreshnessAssessment",
     "PhysiologicalFreshnessPolicy",
     "assess_measurement_freshness",
+    "CalibrationMetricSource",
+    "PhysiologicalCalibrationMetric",
+    "PhysiologicalCalibrationSnapshot",
+    "PhysiologicalCalibrationSnapshotService",
+    "AssessmentNeed",
+    "AssessmentPriority",
+    "AssessmentType",
+    "identify_assessment_needs",
 ]

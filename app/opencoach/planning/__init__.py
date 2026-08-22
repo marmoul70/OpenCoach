@@ -207,6 +207,44 @@ from .season_strategy_gate import (
     SeasonStrategyGateStatus,
     evaluate_season_strategy_gate,
 )
+from .training_knowledge import (
+    KnowledgeApplicability,
+    KnowledgeEvidenceLevel,
+    KnowledgeSourceType,
+    KnowledgeTopic,
+    TrainingKnowledgeBase,
+    TrainingKnowledgeItem,
+    TrainingKnowledgeSource,
+)
+from .training_knowledge_selection import (
+    TrainingKnowledgeSelection,
+    select_training_knowledge,
+)
+from .training_knowledge_requirements import (
+    KnowledgeRequirementReason,
+    TrainingKnowledgeRequirements,
+    infer_training_knowledge_requirements,
+)
+from .race_knowledge_classification import (
+    RaceClassificationThresholds,
+    RaceDistanceFamily,
+    RaceElevationProfile,
+    RaceKnowledgeClassification,
+    RaceSportFamily,
+    classify_race_for_knowledge,
+)
+from .training_knowledge_context import (
+    TrainingKnowledgeContext,
+    build_training_knowledge_context,
+)
+from .season_strategist_context import (
+    SeasonStrategistContext,
+    build_season_strategist_context,
+)
+from .season_strategist_request import (
+    SeasonStrategistRequest,
+    build_season_strategist_request,
+)
 __all__ = [
     "DayAvailability",
     "DayAvailabilityStatus",
@@ -339,4 +377,28 @@ __all__ = [
     "SeasonStrategyGateResult",
     "SeasonStrategyGateStatus",
     "evaluate_season_strategy_gate",
+    "KnowledgeApplicability",
+    "KnowledgeEvidenceLevel",
+    "KnowledgeSourceType",
+    "KnowledgeTopic",
+    "TrainingKnowledgeBase",
+    "TrainingKnowledgeItem",
+    "TrainingKnowledgeSource",
+    "TrainingKnowledgeSelection",
+    "select_training_knowledge",
+    "KnowledgeRequirementReason",
+    "TrainingKnowledgeRequirements",
+    "infer_training_knowledge_requirements",
+    "RaceClassificationThresholds",
+    "RaceDistanceFamily",
+    "RaceElevationProfile",
+    "RaceKnowledgeClassification",
+    "RaceSportFamily",
+    "classify_race_for_knowledge",
+    "TrainingKnowledgeContext",
+    "build_training_knowledge_context",
+    "SeasonStrategistContext",
+    "build_season_strategist_context",
+    "SeasonStrategistRequest",
+    "build_season_strategist_request",
 ]

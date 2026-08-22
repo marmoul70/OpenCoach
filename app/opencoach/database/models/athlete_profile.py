@@ -194,6 +194,13 @@ class AthleteProfile(Base):
         back_populates="athlete_profile",
         cascade="all, delete-orphan",
     )
+    
+    constraints: Mapped[
+        list["AthleteConstraint"]
+    ] = relationship(
+        back_populates="athlete_profile",
+        cascade="all, delete-orphan",
+    )
 
     activities: Mapped[list["Activity"]] = relationship(
         back_populates="athlete_profile",

@@ -18,3 +18,6 @@ class DailyContextRepositoryError(RuntimeError):
 
 class RaceRepositoryError(RuntimeError):
     """Erreur de persistance des courses."""
+
+class AthleteConstraintRepositoryError(RuntimeError):
+    """Erreur de persistance des contraintes temporaires."""

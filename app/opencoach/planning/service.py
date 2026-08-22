@@ -1,8 +1,14 @@
 from datetime import date, timedelta
 from uuid import UUID
 
-from opencoach.database.repositories import RaceRepository
-from opencoach.models import Race
+from opencoach.database.repositories import (
+    AthleteConstraintRepository,
+    RaceRepository,
+)
+from opencoach.models import (
+    AthleteConstraint,
+    Race,
+)
 from opencoach.readiness import (
     ReadinessAssessment,
     ReadinessDataUnavailableError,
@@ -29,12 +35,14 @@ class PlanningContextService:
         readiness_service: ReadinessService,
         recent_load_service: RecentTrainingLoadService,
         training_stats_service: TrainingStatsService,
+        constraint_repository: AthleteConstraintRepository,
     ) -> None:
         self.profile_service = profile_service
         self.race_repository = race_repository
         self.readiness_service = readiness_service
         self.recent_load_service = recent_load_service
         self.training_stats_service = training_stats_service
+        self.constraint_repository = constraint_repository
 
     def build(
         self,
@@ -43,6 +51,7 @@ class PlanningContextService:
         *,
         stats_days: int = 28,
         recent_load_days: int = 7,
+        constraint_days: int = 14,
     ) -> PlanningContext:
         """Construit un snapshot des données utiles à la planification."""
 
@@ -54,6 +63,11 @@ class PlanningContextService:
         if recent_load_days < 1:
             raise ValueError(
                 "La période de charge récente doit contenir au moins un jour."
+            )
+
+        if constraint_days < 1:
+            raise ValueError(
+                "La période de contraintes doit contenir au moins un jour."
             )
 
         athlete = self.profile_service.get_profile()
@@ -88,6 +102,19 @@ class PlanningContextService:
             days=stats_days,
         )
 
+        constraints_end_date = (
+            planning_date
+            + timedelta(
+                days=constraint_days - 1,
+            )
+        )
+
+        constraints = self._get_constraints(
+            athlete_profile_id=athlete_profile_id,
+            start_date=planning_date,
+            end_date=constraints_end_date,
+        )
+
         return PlanningContext(
             planning_date=planning_date,
             athlete=athlete,
@@ -96,6 +123,8 @@ class PlanningContextService:
             readiness=readiness,
             recent_load=recent_load,
             recent_stats=recent_stats,
+            constraints=constraints,
+            constraints_end_date=constraints_end_date,
         )
 
     def _get_training_races(
@@ -173,3 +202,22 @@ class PlanningContextService:
             start_date,
             end_date,
         )
+
+    def _get_constraints(
+        self,
+        *,
+        athlete_profile_id: UUID,
+        start_date: date,
+        end_date: date,
+    ) -> tuple[AthleteConstraint, ...]:
+        """Charge les contraintes temporaires de l'horizon demandé."""
+
+        constraints = (
+            self.constraint_repository.list_overlapping(
+                athlete_profile_id,
+                start_date,
+                end_date,
+            )
+        )
+
+        return tuple(constraints)

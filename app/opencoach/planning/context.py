@@ -1,7 +1,11 @@
 from dataclasses import dataclass
 from datetime import date
 
-from opencoach.models import AthleteProfile, Race
+from opencoach.models import (
+    AthleteConstraint,
+    AthleteProfile,
+    Race,
+)
 from opencoach.readiness import ReadinessAssessment
 from opencoach.training import (
     RecentTrainingLoad,
@@ -30,3 +34,6 @@ class PlanningContext:
 
     recent_load: RecentTrainingLoad | None
     recent_stats: TrainingStats | None
+
+    constraints: tuple[AthleteConstraint, ...]
+    constraints_end_date: date

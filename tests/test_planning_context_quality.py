@@ -22,15 +22,21 @@ def create_context(
     recent_load=None,
     recent_stats=None,
 ) -> PlanningContext:
-    return PlanningContext(
-        planning_date=PLANNING_DATE,
-        athlete=athlete,
-        primary_race=primary_race,
-        training_races=(),
-        readiness=readiness,
-        recent_load=recent_load,
-        recent_stats=recent_stats,
-    )
+        return PlanningContext(
+            planning_date=PLANNING_DATE,
+            athlete=athlete,
+            primary_race=primary_race,
+            training_races=(),
+            readiness=readiness,
+            recent_load=recent_load,
+            recent_stats=recent_stats,
+            constraints=(),
+            constraints_end_date=date(
+                2026,
+                9,
+                4,
+            ),
+        )
 
 
 def create_plannable_athlete() -> AthleteProfile:

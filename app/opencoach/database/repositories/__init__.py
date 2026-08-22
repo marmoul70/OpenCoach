@@ -1,4 +1,7 @@
 from .activity import ActivityRepository
+from .sql_athlete_constraint import (
+    SqlAthleteConstraintRepository,
+)
 from .errors import (
     ActivityRepositoryError,
     IntegrationConnectionRepositoryError,
@@ -7,6 +10,7 @@ from .errors import (
     TrainingSessionRepositoryError,
     DailyContextRepositoryError,
     RaceRepositoryError,
+    AthleteConstraintRepositoryError,
 )
 from .profile import ProfileRepository
 from .sql_activity import SqlActivityRepository
@@ -32,6 +36,8 @@ from .sql_daily_context import (
 )
 from .race import RaceRepository
 from .sql_race import SqlRaceRepository
+from .athlete_constraint import AthleteConstraintRepository
+
 
 __all__ = [
     "ActivityRepository",
@@ -55,4 +61,7 @@ __all__ = [
     "RaceRepository",
     "RaceRepositoryError",
     "SqlRaceRepository",
+    "AthleteConstraintRepository",
+    "AthleteConstraintRepositoryError",
+    "SqlAthleteConstraintRepository",
 ]

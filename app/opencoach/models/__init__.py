@@ -23,6 +23,11 @@ from .daily_context import (
     IllnessStatus,
     TreatmentImpact,
 )
+from .athlete_constraint import (
+    AthleteConstraint,
+    ConstraintType,
+    TrainingAvailability,
+)
 
 __all__ = [
     "AthleteBody",
@@ -42,4 +47,7 @@ __all__ = [
     "IntegrationConnection",
     "TrainingSession",
     "Race",
+    "AthleteConstraint",
+    "ConstraintType",
+    "TrainingAvailability",
 ]

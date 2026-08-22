@@ -46,6 +46,12 @@ def test_planning_context_can_be_created() -> None:
         readiness=None,
         recent_load=None,
         recent_stats=None,
+        constraints=(),
+        constraints_end_date=date(
+            2026,
+            9,
+            4,
+        ),
     )
 
     assert context.planning_date == date(
@@ -75,6 +81,12 @@ def test_planning_context_supports_missing_optional_data() -> None:
         readiness=None,
         recent_load=None,
         recent_stats=None,
+        constraints=(),
+        constraints_end_date=date(
+            2026,
+            9,
+            4,
+        ),
     )
 
     assert context.primary_race is None
@@ -93,6 +105,12 @@ def test_planning_context_is_frozen() -> None:
         readiness=None,
         recent_load=None,
         recent_stats=None,
+        constraints=(),
+        constraints_end_date=date(
+            2026,
+            9,
+            4,
+        ),
     )
 
     with pytest.raises(FrozenInstanceError):

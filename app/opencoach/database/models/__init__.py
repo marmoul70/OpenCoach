@@ -15,6 +15,7 @@ from opencoach.database.models.daily_context import (
     DailyContext,
 )
 from opencoach.database.models.race import Race
+from .athlete_constraint import AthleteConstraint
 
 __all__ = [
     "Activity",
@@ -28,4 +29,5 @@ __all__ = [
     "TrainingSession",
     "DailyContext",
     "Race",
+    "AthleteConstraint",
 ]

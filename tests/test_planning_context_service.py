@@ -1,7 +1,12 @@
+import pytest
 from datetime import date
 from uuid import uuid4
 
-from opencoach.models import AthleteProfile, Race
+from opencoach.models import (
+    AthleteConstraint,
+    AthleteProfile,
+    Race,
+)
 from opencoach.planning import PlanningContextService
 from opencoach.readiness import (
     ReadinessDataUnavailableError,
@@ -73,6 +78,26 @@ class FakeRaceRepository:
     ):
         return self.training_races
 
+class FakeConstraintRepository:
+    def __init__(
+        self,
+        constraints: list[AthleteConstraint],
+    ) -> None:
+        self.constraints = constraints
+
+        self.start_date = None
+        self.end_date = None
+
+    def list_overlapping(
+        self,
+        athlete_profile_id,
+        start_date,
+        end_date,
+    ):
+        self.start_date = start_date
+        self.end_date = end_date
+
+        return self.constraints
 
 class FakeReadinessService:
     def __init__(
@@ -196,7 +221,11 @@ def test_builds_complete_planning_context() -> None:
         ),
         priority="training",
     )
+    constraint = create_constraint()
 
+    constraint_repository = FakeConstraintRepository(
+        [constraint]
+    )
     recent_load = create_recent_load()
     stats = create_stats()
 
@@ -221,6 +250,7 @@ def test_builds_complete_planning_context() -> None:
         ),
         recent_load_service=recent_load_service,
         training_stats_service=stats_service,
+        constraint_repository=constraint_repository,
     )
 
     context = service.build(
@@ -254,6 +284,26 @@ def test_builds_complete_planning_context() -> None:
         21,
     )
 
+    assert context.constraints == (
+        constraint,
+    )
+
+    assert context.constraints_end_date == date(
+        2026,
+        9,
+        4,
+    )
+
+    assert constraint_repository.start_date == (
+        PLANNING_DATE
+    )
+
+    assert constraint_repository.end_date == date(
+        2026,
+        9,
+        4,
+    )
+
 
 def test_builds_context_without_primary_race() -> None:
     service = PlanningContextService(
@@ -270,6 +320,9 @@ def test_builds_context_without_primary_race() -> None:
         ),
         training_stats_service=FakeTrainingStatsService(
             create_stats()
+        ),
+        constraint_repository=FakeConstraintRepository(
+            []
         ),
     )
 
@@ -291,14 +344,15 @@ def test_builds_context_when_readiness_is_unavailable() -> None:
             primary_race=None,
             training_races=[],
         ),
-        readiness_service=FakeReadinessService(
-            unavailable=True
-        ),
+        readiness_service=FakeReadinessService(),
         recent_load_service=FakeRecentLoadService(
             create_recent_load()
         ),
         training_stats_service=FakeTrainingStatsService(
             create_stats()
+        ),
+        constraint_repository=FakeConstraintRepository(
+            []
         ),
     )
 
@@ -308,3 +362,96 @@ def test_builds_context_when_readiness_is_unavailable() -> None:
     )
 
     assert context.readiness is None
+
+def create_constraint() -> AthleteConstraint:
+    return AthleteConstraint(
+        id=uuid4(),
+        start_date=date(
+            2026,
+            8,
+            26,
+        ),
+        end_date=date(
+            2026,
+            8,
+            26,
+        ),
+        constraint_type="work",
+        availability="unavailable",
+    )
+
+def test_constraint_horizon_can_be_configured() -> None:
+    constraint_repository = FakeConstraintRepository(
+        []
+    )
+
+    service = PlanningContextService(
+        profile_service=FakeProfileService(
+            AthleteProfile()
+        ),
+        race_repository=FakeRaceRepository(
+            primary_race=None,
+            training_races=[],
+        ),
+        readiness_service=FakeReadinessService(),
+        recent_load_service=FakeRecentLoadService(
+            create_recent_load()
+        ),
+        training_stats_service=FakeTrainingStatsService(
+            create_stats()
+        ),
+        constraint_repository=constraint_repository,
+    )
+
+    context = service.build(
+        uuid4(),
+        PLANNING_DATE,
+        constraint_days=7,
+    )
+
+    assert context.constraints_end_date == date(
+        2026,
+        8,
+        28,
+    )
+
+    assert constraint_repository.start_date == (
+        PLANNING_DATE
+    )
+
+    assert constraint_repository.end_date == date(
+        2026,
+        8,
+        28,
+    )
+
+def test_rejects_invalid_constraint_horizon() -> None:
+    service = PlanningContextService(
+        profile_service=FakeProfileService(
+            AthleteProfile()
+        ),
+        race_repository=FakeRaceRepository(
+            primary_race=None,
+            training_races=[],
+        ),
+        readiness_service=FakeReadinessService(),
+        recent_load_service=FakeRecentLoadService(
+            create_recent_load()
+        ),
+        training_stats_service=FakeTrainingStatsService(
+            create_stats()
+        ),
+        constraint_repository=FakeConstraintRepository(
+            []
+        ),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="contraintes",
+    ):
+        service.build(
+            uuid4(),
+            PLANNING_DATE,
+            constraint_days=0,
+        )

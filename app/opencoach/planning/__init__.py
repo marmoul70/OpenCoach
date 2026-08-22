@@ -86,7 +86,14 @@ from .assessment_need import (
     AssessmentType,
     identify_assessment_needs,
 )
-
+from .assessment_protocol import (
+    ASSESSMENT_PROTOCOLS,
+    AssessmentProtocol,
+    ProtocolEnvironment,
+    ProtocolIntensity,
+    get_assessment_protocol,
+    get_assessment_protocols,
+)
 __all__ = [
     "DayAvailability",
     "DayAvailabilityStatus",
@@ -138,4 +145,10 @@ __all__ = [
     "AssessmentPriority",
     "AssessmentType",
     "identify_assessment_needs",
+    "ASSESSMENT_PROTOCOLS",
+    "AssessmentProtocol",
+    "ProtocolEnvironment",
+    "ProtocolIntensity",
+    "get_assessment_protocol",
+    "get_assessment_protocols",
 ]

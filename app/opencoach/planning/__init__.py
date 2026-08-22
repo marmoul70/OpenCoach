@@ -25,7 +25,11 @@ from .placement_scoring import (
     SessionPlacementCandidate,
     rank_session_placement_candidates,
 )
-
+from .placement_rules import (
+    PlacementRuleResult,
+    RuleSeverity,
+    evaluate_placement_rules,
+)
 __all__ = [
     "DayAvailability",
     "DayAvailabilityStatus",
@@ -42,4 +46,7 @@ __all__ = [
     "build_session_placement_context",
     "SessionPlacementCandidate",
     "rank_session_placement_candidates",
+    "PlacementRuleResult",
+    "RuleSeverity",
+    "evaluate_placement_rules",
 ]

@@ -327,10 +327,7 @@ def test_duration_limit_penalizes_too_long_session() -> None:
         if item.date == thursday
     )
 
-    assert (
-        candidate.placement_score
-        == candidate.calendar_score - 50
-    )
+    assert candidate.eligible is False
 
     assert (
         "Durée prévue supérieure à la disponibilité du jour."
@@ -383,4 +380,52 @@ def test_duration_limit_does_not_penalize_compatible_session() -> None:
     assert (
         "Durée prévue supérieure à la disponibilité du jour."
         not in candidate.reasons
+    )
+def test_soft_rule_keeps_candidate_eligible() -> None:
+    athlete = create_athlete()
+
+    week = build_weekly_availability(
+        athlete=athlete,
+        week_start=WEEK_START,
+    )
+
+    target = create_session(
+        session_date=WEDNESDAY,
+        intensity="easy",
+    )
+
+    thursday_session = create_session(
+        session_date=date(
+            2026,
+            8,
+            27,
+        ),
+        intensity="easy",
+    )
+
+    context = build_session_placement_context(
+        session=target,
+        week=week,
+        existing_sessions=(
+            target,
+            thursday_session,
+        ),
+    )
+
+    candidates = rank_session_placement_candidates(
+        context=context,
+    )
+
+    thursday = next(
+        candidate
+        for candidate in candidates
+        if candidate.date
+        == date(2026, 8, 27)
+    )
+
+    assert thursday.eligible is True
+
+    assert (
+        thursday.placement_score
+        == thursday.calendar_score - 35
     )

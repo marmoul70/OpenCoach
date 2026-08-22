@@ -1,15 +1,15 @@
 from dataclasses import dataclass
 from datetime import date
 
-from opencoach.models import TrainingSession
-from opencoach.training import normalize_intensity
-
 from .candidates import (
     TrainingDayCandidate,
     rank_training_day_candidates,
 )
+from .placement_rules import (
+    PlacementRuleResult,
+    evaluate_placement_rules,
+)
 from .session_placement import (
-    HARD_INTENSITIES,
     SessionPlacementContext,
 )
 
@@ -23,6 +23,8 @@ class SessionPlacementCandidate:
     calendar_score: int
     placement_score: int
 
+    eligible: bool
+
     preferred: bool
     requires_confirmation: bool
 
@@ -30,6 +32,7 @@ class SessionPlacementCandidate:
     cross_training_allowed: bool
     max_duration_minutes: int | None
 
+    rules: tuple[PlacementRuleResult, ...]
     reasons: tuple[str, ...]
 
 
@@ -37,7 +40,7 @@ def rank_session_placement_candidates(
     *,
     context: SessionPlacementContext,
 ) -> tuple[SessionPlacementCandidate, ...]:
-    """Classe les jours candidats selon calendrier et séances voisines."""
+    """Classe les jours candidats selon calendrier et règles métier."""
 
     for_running = (
         context.session.sport_type
@@ -64,6 +67,7 @@ def rank_session_placement_candidates(
         sorted(
             candidates,
             key=lambda candidate: (
+                not candidate.eligible,
                 -candidate.placement_score,
                 -candidate.calendar_score,
                 candidate.date,
@@ -77,84 +81,49 @@ def _score_candidate(
     context: SessionPlacementContext,
     candidate: TrainingDayCandidate,
 ) -> SessionPlacementCandidate:
-    score = candidate.score
+    rules = evaluate_placement_rules(
+        context=context,
+        candidate=candidate,
+    )
+
+    hard_violations = tuple(
+        rule
+        for rule in rules
+        if (
+            rule.violated
+            and rule.severity == "hard"
+        )
+    )
+
+    soft_adjustment = sum(
+        rule.score_adjustment
+        for rule in rules
+        if (
+            rule.violated
+            and rule.severity == "soft"
+        )
+    )
+
+    placement_score = (
+        candidate.score
+        + soft_adjustment
+    )
 
     reasons = list(
         candidate.reasons
     )
 
-    session_is_hard = _is_hard(
-        context.session
+    reasons.extend(
+        rule.reason
+        for rule in rules
+        if rule.violated
     )
-
-    sessions_previous_day = (
-        _sessions_at_offset(
-            sessions=context.existing_sessions,
-            candidate_date=candidate.date,
-            offset=-1,
-        )
-    )
-
-    sessions_same_day = (
-        _sessions_at_offset(
-            sessions=context.existing_sessions,
-            candidate_date=candidate.date,
-            offset=0,
-        )
-    )
-
-    sessions_next_day = (
-        _sessions_at_offset(
-            sessions=context.existing_sessions,
-            candidate_date=candidate.date,
-            offset=1,
-        )
-    )
-
-    if sessions_same_day:
-        score -= 35
-
-        reasons.append(
-            "Une autre séance est déjà prévue ce jour."
-        )
-
-    if session_is_hard:
-        if any(
-            _is_hard(session)
-            for session in sessions_previous_day
-        ):
-            score -= 45
-
-            reasons.append(
-                "Séance intense déjà prévue la veille."
-            )
-
-        if any(
-            _is_hard(session)
-            for session in sessions_next_day
-        ):
-            score -= 45
-
-            reasons.append(
-                "Séance intense déjà prévue le lendemain."
-            )
-
-    if (
-        candidate.max_duration_minutes
-        is not None
-        and context.session.duration_minutes
-        > candidate.max_duration_minutes
-    ):
-        score -= 50
-
-        reasons.append(
-            "Durée prévue supérieure à la disponibilité du jour."
-        )
 
     return SessionPlacementCandidate(
         date=candidate.date,
         calendar_score=candidate.score,
-        placement_score=score,
+        placement_score=placement_score,
+        eligible=not hard_violations,
         preferred=candidate.preferred,
         requires_confirmation=(
             candidate.requires_confirmation
@@ -168,35 +137,6 @@ def _score_candidate(
         max_duration_minutes=(
             candidate.max_duration_minutes
         ),
+        rules=rules,
         reasons=tuple(reasons),
-    )
-
-
-def _sessions_at_offset(
-    *,
-    sessions: tuple[TrainingSession, ...],
-    candidate_date: date,
-    offset: int,
-) -> tuple[TrainingSession, ...]:
-    return tuple(
-        session
-        for session in sessions
-        if (
-            session.date
-            - candidate_date
-        ).days == offset
-    )
-
-
-def _is_hard(
-    session: TrainingSession,
-) -> bool:
-    if session.type == "rest":
-        return False
-
-    return (
-        normalize_intensity(
-            session.intensity
-        )
-        in HARD_INTENSITIES
     )

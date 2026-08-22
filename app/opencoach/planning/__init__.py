@@ -245,6 +245,31 @@ from .season_strategist_request import (
     SeasonStrategistRequest,
     build_season_strategist_request,
 )
+from .season_strategist_port import (
+    SeasonStrategistError,
+    SeasonStrategistInvalidResponseError,
+    SeasonStrategistPort,
+    SeasonStrategistResponse,
+    SeasonStrategistUnavailableError,
+)
+from .fake_season_strategist import (
+    FakeSeasonStrategist,
+)
+from .ollama_season_strategist import (
+    OllamaSeasonStrategist,
+    OllamaSeasonStrategistConfig,
+)
+from .season_strategy_schema import (
+    build_season_strategy_proposal_schema,
+)
+from .season_strategy_parser import (
+    parse_season_strategy_proposal,
+)
+from .season_strategist_service import (
+    SeasonStrategistExecution,
+    SeasonStrategistService,
+)
+
 __all__ = [
     "DayAvailability",
     "DayAvailabilityStatus",
@@ -401,4 +426,16 @@ __all__ = [
     "build_season_strategist_context",
     "SeasonStrategistRequest",
     "build_season_strategist_request",
+    "SeasonStrategistError",
+    "SeasonStrategistInvalidResponseError",
+    "SeasonStrategistPort",
+    "SeasonStrategistUnavailableError",
+    "FakeSeasonStrategist",
+    "SeasonStrategistResponse",
+    "OllamaSeasonStrategist",
+    "OllamaSeasonStrategistConfig",
+    "build_season_strategy_proposal_schema",
+    "parse_season_strategy_proposal",
+    "SeasonStrategistExecution",
+    "SeasonStrategistService",
 ]

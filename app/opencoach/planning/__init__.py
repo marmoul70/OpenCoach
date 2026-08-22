@@ -13,6 +13,10 @@ from .weekly_availability import (
     WeeklyAvailability,
     build_weekly_availability,
 )
+from .candidates import (
+    TrainingDayCandidate,
+    rank_training_day_candidates,
+)
 
 __all__ = [
     "DayAvailability",
@@ -24,4 +28,6 @@ __all__ = [
     "resolve_day_availability",
     "WeeklyAvailability",
     "build_weekly_availability",
+    "TrainingDayCandidate",
+    "rank_training_day_candidates",
 ]

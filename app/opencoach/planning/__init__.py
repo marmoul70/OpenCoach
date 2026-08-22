@@ -30,6 +30,11 @@ from .placement_rules import (
     RuleSeverity,
     evaluate_placement_rules,
 )
+from .placement_result import (
+    SessionPlacementResult,
+    build_session_placement_result,
+)
+
 __all__ = [
     "DayAvailability",
     "DayAvailabilityStatus",
@@ -49,4 +54,6 @@ __all__ = [
     "PlacementRuleResult",
     "RuleSeverity",
     "evaluate_placement_rules",
+    "SessionPlacementResult",
+    "build_session_placement_result",
 ]

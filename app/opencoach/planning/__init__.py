@@ -40,6 +40,11 @@ from .training_history import (
 from .training_history_service import (
     TrainingHistorySnapshotService,
 )
+from .training_history_metrics import (
+    TrainingHistoryMetrics,
+    WeeklyTrainingAverages,
+    calculate_training_history_metrics,
+)
 
 __all__ = [
     "DayAvailability",
@@ -64,4 +69,7 @@ __all__ = [
     "build_session_placement_result",
     "TrainingHistorySnapshot",
     "TrainingHistorySnapshotService",
+    "TrainingHistoryMetrics",
+    "WeeklyTrainingAverages",
+    "calculate_training_history_metrics",
 ]

@@ -28,7 +28,12 @@ from .athlete_constraint import (
     ConstraintType,
     TrainingAvailability,
 )
-
+from .physiological_measurement import (
+    MeasurementConfidence,
+    MeasurementSource,
+    PhysiologicalMeasurement,
+    PhysiologicalMetric,
+)
 __all__ = [
     "AthleteBody",
     "AthleteEquipment",
@@ -50,4 +55,8 @@ __all__ = [
     "AthleteConstraint",
     "ConstraintType",
     "TrainingAvailability",
+    "MeasurementConfidence",
+    "MeasurementSource",
+    "PhysiologicalMeasurement",
+    "PhysiologicalMetric",
 ]

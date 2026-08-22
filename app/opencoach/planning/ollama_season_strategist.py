@@ -183,11 +183,8 @@ def _build_ollama_payload(
                     "Tu es le stratège d'entraînement OpenCoach. "
                     "Produis uniquement une proposition stratégique JSON. "
                     "N'ajoute aucun texte avant ou après le JSON. "
-                    "Respecte strictement le JSON Schema suivant : "
-                    + json.dumps(
-                        schema,
-                        ensure_ascii=False,
-                    )
+                    "Respecte strictement le schéma de sortie imposé "
+                    "par le moteur."
                 ),
             },
             {

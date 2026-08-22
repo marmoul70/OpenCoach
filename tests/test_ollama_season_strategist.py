@@ -6,6 +6,7 @@ from opencoach.planning import (
     OllamaSeasonStrategistConfig,
     SeasonStrategistInvalidResponseError,
     SeasonStrategistRequest,
+    build_season_strategy_proposal_schema,
 )
 
 from opencoach.planning.ollama_season_strategist import (
@@ -185,3 +186,19 @@ def test_http_error_is_also_url_error() -> None:
         error,
         URLError,
     )
+
+def test_payload_does_not_duplicate_schema_in_system_message() -> None:
+    payload = _build_ollama_payload(
+        request=create_request(),
+        config=create_config(),
+    )
+
+    schema = build_season_strategy_proposal_schema()
+
+    system_message = payload["messages"][0]["content"]
+
+    assert payload["format"] == schema
+    assert json.dumps(
+        schema,
+        ensure_ascii=False,
+    ) not in system_message

@@ -50,6 +50,13 @@ from .athlete_capacity import (
     CapacityConfidence,
     assess_athlete_capacity,
 )
+from .capacity_profile_comparison import (
+    CapacityMetricComparison,
+    CapacityProfileComparison,
+    ComparisonStatus,
+    compare_capacity_to_profile,
+)
+
 __all__ = [
     "DayAvailability",
     "DayAvailabilityStatus",
@@ -79,4 +86,8 @@ __all__ = [
     "AthleteCapacityAssessment",
     "CapacityConfidence",
     "assess_athlete_capacity",
+    "CapacityMetricComparison",
+    "CapacityProfileComparison",
+    "ComparisonStatus",
+    "compare_capacity_to_profile",
 ]

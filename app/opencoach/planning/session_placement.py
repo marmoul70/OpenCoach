@@ -30,20 +30,26 @@ class SessionPlacementContext:
     previous_day_hard: bool
     next_day_hard: bool
 
+    include_original_date: bool = False
+
 
 def build_session_placement_context(
     *,
     session: TrainingSession,
     week: WeeklyAvailability,
     existing_sessions: tuple[TrainingSession, ...],
+    include_original_date: bool = False,
 ) -> SessionPlacementContext:
     """Construit le contexte autour d'une séance à replacer."""
 
-    other_sessions = tuple(
-        item
-        for item in existing_sessions
-        if item.id != session.id
-    )
+    if session.id is None:
+        other_sessions = existing_sessions
+    else:
+        other_sessions = tuple(
+            item
+            for item in existing_sessions
+            if item.id != session.id
+        )
 
     previous_session = _find_previous_session(
         session_date=session.date,
@@ -80,6 +86,7 @@ def build_session_placement_context(
         next_session=next_session,
         previous_day_hard=previous_day_hard,
         next_day_hard=next_day_hard,
+        include_original_date=include_original_date,
     )
 
 

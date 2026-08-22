@@ -28,13 +28,17 @@ def rank_training_day_candidates(
     week: WeeklyAvailability,
     original_date: date,
     for_running: bool = True,
+    include_original_date: bool = False,
 ) -> tuple[TrainingDayCandidate, ...]:
     """Classe les jours disponibles autour d'une date initiale."""
 
     candidates: list[TrainingDayCandidate] = []
 
     for day in week.days:
-        if day.date == original_date:
+        if (
+            day.date == original_date
+            and not include_original_date
+        ):
             continue
 
         if not day.training_allowed:

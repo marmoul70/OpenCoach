@@ -52,6 +52,9 @@ def rank_session_placement_candidates(
             week=context.week,
             original_date=context.original_date,
             for_running=for_running,
+            include_original_date=(
+                context.include_original_date
+            ),
         )
     )
 

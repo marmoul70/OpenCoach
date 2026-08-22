@@ -114,6 +114,28 @@ from .assessment_consolidation import (
     ConsolidatedAssessmentPlan,
     consolidate_assessment_needs,
 )
+from .assessment_session import (
+    AssessmentSessionSpec,
+    build_assessment_session_spec,
+)
+from .assessment_session_placement import (
+    build_assessment_training_session,
+    place_assessment_session,
+)
+from .assessment_placement_proposal import (
+    AssessmentPlacementProposal,
+    AssessmentPlacementStatus,
+    build_assessment_placement_proposal,
+)
+from .assessment_placement_apply import (
+    AssessmentPlacementApplication,
+    AssessmentPlacementApplyError,
+    apply_assessment_placement,
+)
+from .assessment_planning_service import (
+    AssessmentPlanningError,
+    AssessmentPlanningService,
+)
 
 __all__ = [
     "DayAvailability",
@@ -184,4 +206,16 @@ __all__ = [
     "build_assessment_recommendation",
     "ConsolidatedAssessmentPlan",
     "consolidate_assessment_needs",
+    "AssessmentSessionSpec",
+    "build_assessment_session_spec",
+    "build_assessment_training_session",
+    "place_assessment_session",
+    "AssessmentPlacementProposal",
+    "AssessmentPlacementStatus",
+    "build_assessment_placement_proposal",
+    "AssessmentPlacementApplication",
+    "AssessmentPlacementApplyError",
+    "apply_assessment_placement",
+    "AssessmentPlanningError",
+    "AssessmentPlanningService",
 ]

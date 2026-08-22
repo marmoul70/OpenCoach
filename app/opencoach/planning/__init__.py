@@ -34,6 +34,12 @@ from .placement_result import (
     SessionPlacementResult,
     build_session_placement_result,
 )
+from .training_history import (
+    TrainingHistorySnapshot,
+)
+from .training_history_service import (
+    TrainingHistorySnapshotService,
+)
 
 __all__ = [
     "DayAvailability",
@@ -56,4 +62,6 @@ __all__ = [
     "evaluate_placement_rules",
     "SessionPlacementResult",
     "build_session_placement_result",
+    "TrainingHistorySnapshot",
+    "TrainingHistorySnapshotService",
 ]

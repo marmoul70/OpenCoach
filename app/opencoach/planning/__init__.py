@@ -17,6 +17,10 @@ from .candidates import (
     TrainingDayCandidate,
     rank_training_day_candidates,
 )
+from .session_placement import (
+    SessionPlacementContext,
+    build_session_placement_context,
+)
 
 __all__ = [
     "DayAvailability",
@@ -30,4 +34,6 @@ __all__ = [
     "build_weekly_availability",
     "TrainingDayCandidate",
     "rank_training_day_candidates",
+    "SessionPlacementContext",
+    "build_session_placement_context",
 ]

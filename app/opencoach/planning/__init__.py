@@ -56,6 +56,16 @@ from .capacity_profile_comparison import (
     ComparisonStatus,
     compare_capacity_to_profile,
 )
+from .training_baseline import (
+    AthleteTrainingBaseline,
+    build_training_baseline,
+)
+from .physiological_calibration import (
+    CalibrationStatus,
+    PhysiologicalCalibrationAssessment,
+    PhysiologicalMetricAssessment,
+    assess_physiological_calibration,
+)
 
 __all__ = [
     "DayAvailability",
@@ -90,4 +100,10 @@ __all__ = [
     "CapacityProfileComparison",
     "ComparisonStatus",
     "compare_capacity_to_profile",
+    "AthleteTrainingBaseline",
+    "build_training_baseline",
+    "CalibrationStatus",
+    "PhysiologicalCalibrationAssessment",
+    "PhysiologicalMetricAssessment",
+    "assess_physiological_calibration",
 ]

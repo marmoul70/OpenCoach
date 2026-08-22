@@ -138,8 +138,8 @@ def test_strategy_calculates_weeks_to_goal() -> None:
             3,
             1,
         ),
-        primary_race_id=uuid4(),
-        primary_race_date=date(
+        target_race_id=uuid4(),
+        target_race_date=date(
             2027,
             6,
             12,
@@ -148,7 +148,7 @@ def test_strategy_calculates_weeks_to_goal() -> None:
         weeks=(),
         revision=create_revision(),
         knowledge_version="2026.08",
-        policy_version="season-planning-v1",
+        policy_version="1.0",
         created_at=datetime(
             2027,
             3,
@@ -197,8 +197,8 @@ def test_strategy_exposes_current_week() -> None:
             3,
             3,
         ),
-        primary_race_id=uuid4(),
-        primary_race_date=date(
+        target_race_id=uuid4(),
+        target_race_date=date(
             2027,
             6,
             12,
@@ -210,7 +210,7 @@ def test_strategy_exposes_current_week() -> None:
         ),
         revision=create_revision(),
         knowledge_version="2026.08",
-        policy_version="season-planning-v1",
+        policy_version="1.0",
         created_at=datetime(
             2027,
             3,

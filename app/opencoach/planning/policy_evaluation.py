@@ -11,6 +11,7 @@ PolicyEvaluationStatus = Literal[
     "passed",
     "violated",
     "not_applicable",
+    "unevaluable",
 ]
 
 
@@ -28,6 +29,10 @@ class PolicyRuleEvaluation:
 
     observed_value: float | None = None
     limit_value: float | None = None
+
+    @property
+    def unevaluable(self) -> bool:
+        return self.status == "unevaluable"
 
     @property
     def violated(self) -> bool:
@@ -75,6 +80,22 @@ class SeasonPolicyEvaluation:
 
     @property
     def acceptable(self) -> bool:
-        """Les warnings n'invalident pas directement la proposition."""
+        """Une hard limit violée ou non évaluable bloque la proposition."""
 
-        return not self.hard_violations
+        return not (
+            self.hard_violations
+            or self.unevaluable_hard_limits
+    )
+
+    @property
+    def unevaluable_hard_limits(
+        self,
+    ) -> tuple[PolicyRuleEvaluation, ...]:
+        return tuple(
+            evaluation
+            for evaluation in self.evaluations
+            if (
+                evaluation.authority == "hard_limit"
+                and evaluation.unevaluable
+            )
+        )

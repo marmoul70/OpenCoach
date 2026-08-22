@@ -37,14 +37,55 @@ class SeasonAthleteContext:
 
 @dataclass(frozen=True)
 class SeasonGoalContext:
-    """Objectifs sportifs connus au moment de la planification."""
+    """Courses influençant la stratégie de saison.
 
-    primary_race: Race
+    target_race définit l'horizon final de la stratégie.
 
-    training_races: tuple[
+    races contient toutes les courses pertinentes connues,
+    y compris éventuellement plusieurs objectifs prioritaires.
+    """
+
+    target_race: Race
+
+    races: tuple[
         Race,
         ...
     ] = ()
+
+    @property
+    def all_races(
+        self,
+    ) -> tuple[Race, ...]:
+        """Retourne toutes les courses sans dupliquer la cible."""
+
+        target_id = self.target_race.id
+
+        others = tuple(
+            race
+            for race in self.races
+            if (
+                race.id != target_id
+                if target_id is not None
+                else race is not self.target_race
+            )
+        )
+
+        return (
+            self.target_race,
+            *others,
+        )
+
+    @property
+    def priority_races(
+        self,
+    ) -> tuple[Race, ...]:
+        """Retourne les courses déclarées prioritaires."""
+
+        return tuple(
+            race
+            for race in self.all_races
+            if race.priority == "primary"
+        )
 
 
 @dataclass(frozen=True)
@@ -76,6 +117,7 @@ class SeasonKnowledgeContext:
 
     knowledge_version: str
 
+    policy_id: str
     policy_version: str
 
 
@@ -112,19 +154,19 @@ class SeasonPlanningInput:
         return self.previous_strategy is not None
 
     @property
-    def days_to_primary_race(self) -> int:
-        """Nombre de jours avant la course principale."""
+    def days_to_target_race(self) -> int:
+        """Nombre de jours avant la course définissant l'horizon."""
 
         return (
-            self.goals.primary_race.date
+            self.goals.target_race.date
             - self.planning_date
         ).days
 
     @property
-    def weeks_to_primary_race(self) -> int:
-        """Nombre de semaines calendaires avant l'objectif."""
+    def weeks_to_target_race(self) -> int:
+        """Nombre de semaines calendaires avant la course cible."""
 
-        days = self.days_to_primary_race
+        days = self.days_to_target_race
 
         if days <= 0:
             return 0
@@ -135,11 +177,11 @@ class SeasonPlanningInput:
 
     def __post_init__(self) -> None:
         if (
-            self.goals.primary_race.date
+            self.goals.target_race.date
             < self.planning_date
         ):
             raise ValueError(
-                "La course principale ne peut pas "
+                "La course cible ne peut pas "
                 "être antérieure à la date de planification."
             )
 

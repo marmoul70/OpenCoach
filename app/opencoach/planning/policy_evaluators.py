@@ -42,9 +42,19 @@ def evaluate_policy_rule(
         return PolicyRuleEvaluation(
             rule_id=rule.rule_id,
             authority=rule.authority,
-            status="not_applicable",
+            status=(
+                "unevaluable"
+                if rule.authority == "hard_limit"
+                else "not_applicable"
+            ),
             message=(
-                "La règle ne contient aucun paramètre évaluateur."
+                "La hard limit ne contient aucun paramètre "
+                "permettant son évaluation."
+                if rule.authority == "hard_limit"
+                else (
+                    "La règle ne contient aucun "
+                    "paramètre évaluateur."
+                )
             ),
         )
 
@@ -56,10 +66,19 @@ def evaluate_policy_rule(
         return PolicyRuleEvaluation(
             rule_id=rule.rule_id,
             authority=rule.authority,
-            status="not_applicable",
+            status=(
+                "unevaluable"
+                if rule.authority == "hard_limit"
+                else "not_applicable"
+            ),
             message=(
                 "Aucun évaluateur n'est disponible "
-                "pour ce type de paramètres."
+                "pour cette hard limit."
+                if rule.authority == "hard_limit"
+                else (
+                    "Aucun évaluateur n'est disponible "
+                    "pour ce type de paramètres."
+                )
             ),
         )
 
@@ -91,7 +110,11 @@ def _evaluate_relative_load_limit(
         return PolicyRuleEvaluation(
             rule_id=rule.rule_id,
             authority=rule.authority,
-            status="not_applicable",
+            status=(
+                "unevaluable"
+                if rule.authority == "hard_limit"
+                else "not_applicable"
+            ),
             message=(
                 "La référence de charge nécessaire "
                 "à cette règle n'est pas disponible."
@@ -108,7 +131,11 @@ def _evaluate_relative_load_limit(
         return PolicyRuleEvaluation(
             rule_id=rule.rule_id,
             authority=rule.authority,
-            status="not_applicable",
+            status=(
+                "unevaluable"
+                if rule.authority == "hard_limit"
+                else "not_applicable"
+            ),
             message=(
                 "La proposition ne contient aucune "
                 "charge hebdomadaire cible."

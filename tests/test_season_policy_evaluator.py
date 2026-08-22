@@ -98,7 +98,7 @@ def create_input():
             ),
         ),
         goals=SeasonGoalContext(
-            primary_race=race,
+            target_race=race,
         ),
         training_state=SeasonTrainingState(
             recent_load=None,
@@ -115,7 +115,8 @@ def create_input():
         ),
         knowledge=SeasonKnowledgeContext(
             knowledge_version="2027.03",
-            policy_version="season-planning-v1",
+            policy_id="season-planning",
+            policy_version="1.0",
         ),
     )
 
@@ -314,3 +315,66 @@ def test_disabled_rule_is_not_evaluated():
     )
 
     assert evaluation.evaluations == ()
+
+def test_hard_limit_without_evaluator_is_unevaluable() -> None:
+    policy = create_policy(
+        authority="hard_limit"
+    )
+
+    rule = replace(
+        policy.rules[0],
+        parameters=None,
+    )
+
+    policy = replace(
+        policy,
+        rules=(
+            rule,
+        ),
+    )
+
+    evaluation = evaluate_season_policy(
+        planning_input=create_input(),
+        proposal=create_proposal(),
+        policy=policy,
+    )
+
+    result = evaluation.evaluations[0]
+
+    assert result.status == "unevaluable"
+
+    assert len(
+        evaluation.unevaluable_hard_limits
+    ) == 1
+
+    assert evaluation.acceptable is False
+
+def test_warning_without_evaluator_remains_not_applicable() -> None:
+    policy = create_policy(
+        authority="warning"
+    )
+
+    rule = replace(
+        policy.rules[0],
+        parameters=None,
+    )
+
+    policy = replace(
+        policy,
+        rules=(
+            rule,
+        ),
+    )
+
+    evaluation = evaluate_season_policy(
+        planning_input=create_input(),
+        proposal=create_proposal(),
+        policy=policy,
+    )
+
+    assert (
+        evaluation.evaluations[0].status
+        == "not_applicable"
+    )
+
+    assert evaluation.acceptable is True

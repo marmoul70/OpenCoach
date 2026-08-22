@@ -118,8 +118,8 @@ def create_input(
             physiology=create_physiology(),
         ),
         goals=SeasonGoalContext(
-            primary_race=race,
-            training_races=(),
+            target_race=race,
+            races=(),
         ),
         training_state=SeasonTrainingState(
             recent_load=None,
@@ -136,7 +136,8 @@ def create_input(
         ),
         knowledge=SeasonKnowledgeContext(
             knowledge_version="2027.03",
-            policy_version="season-planning-v1",
+            policy_id="season-planning",
+            policy_version="1.0",
         ),
     )
 
@@ -150,7 +151,7 @@ def test_input_is_single_structured_contract() -> None:
     )
 
     assert (
-        planning_input.goals.primary_race.priority
+        planning_input.goals.target_race.priority
         == "primary"
     )
 
@@ -164,7 +165,7 @@ def test_input_calculates_days_to_goal() -> None:
     planning_input = create_input()
 
     assert (
-        planning_input.days_to_primary_race
+        planning_input.days_to_target_race
         == 103
     )
 
@@ -173,7 +174,7 @@ def test_input_calculates_weeks_to_goal() -> None:
     planning_input = create_input()
 
     assert (
-        planning_input.weeks_to_primary_race
+        planning_input.weeks_to_target_race
         == 15
     )
 
@@ -198,10 +199,10 @@ def test_future_contract_can_keep_optional_state_missing() -> None:
     )
 
 
-def test_past_primary_race_is_rejected() -> None:
+def test_past_target_race_is_rejected() -> None:
     with pytest.raises(
         ValueError,
-        match="course principale",
+        match="course cible",
     ):
         create_input(
             race=create_race(
@@ -228,7 +229,7 @@ def test_constraint_horizon_cannot_end_before_planning_date() -> None:
                 physiology=create_physiology(),
             ),
             goals=SeasonGoalContext(
-                primary_race=create_race(),
+                target_race=create_race(),
             ),
             training_state=SeasonTrainingState(
                 recent_load=None,
@@ -245,6 +246,67 @@ def test_constraint_horizon_cannot_end_before_planning_date() -> None:
             ),
             knowledge=SeasonKnowledgeContext(
                 knowledge_version="2027.03",
-                policy_version="season-planning-v1",
+                policy_id="season-planning",
+                policy_version="1.0",
             ),
         )
+def test_goal_context_supports_multiple_priority_races() -> None:
+    may_race = create_race(
+        race_date=date(
+            2027,
+            5,
+            10,
+        )
+    )
+
+    june_race = create_race(
+        race_date=date(
+            2027,
+            6,
+            12,
+        )
+    )
+
+    goals = SeasonGoalContext(
+        target_race=june_race,
+        races=(
+            may_race,
+            june_race,
+        ),
+    )
+
+    assert goals.target_race is june_race
+
+    assert len(
+        goals.priority_races
+    ) == 2
+
+    assert {
+        race.date
+        for race in goals.priority_races
+    } == {
+        date(
+            2027,
+            5,
+            10,
+        ),
+        date(
+            2027,
+            6,
+            12,
+        ),
+    }
+
+def test_all_races_does_not_duplicate_target_race() -> None:
+    target = create_race()
+
+    goals = SeasonGoalContext(
+        target_race=target,
+        races=(
+            target,
+        ),
+    )
+
+    assert goals.all_races == (
+        target,
+    )

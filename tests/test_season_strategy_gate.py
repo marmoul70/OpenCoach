@@ -1,3 +1,4 @@
+from datetime import date
 from opencoach.planning import (
     PolicyRuleEvaluation,
     SeasonPolicyEvaluation,
@@ -188,3 +189,41 @@ def test_reject_state_is_exposed() -> None:
     assert result.accepted is False
     assert result.requires_revision is False
     assert result.rejected is True
+
+def test_unevaluable_hard_limit_rejects_strategy() -> None:
+    status = _resolve_gate_status(
+        structural_validation=structural(),
+        policy_evaluation=policy(
+            PolicyRuleEvaluation(
+                rule_id="unknown-hard-rule",
+                authority="hard_limit",
+                status="unevaluable",
+                message=(
+                    "Aucun évaluateur disponible."
+                ),
+            )
+        ),
+    )
+
+    assert status == "reject"
+
+def test_reject_has_priority_over_policy_warnings() -> None:
+    status = _resolve_gate_status(
+        structural_validation=structural(),
+        policy_evaluation=policy(
+            PolicyRuleEvaluation(
+                rule_id="unknown-hard-rule",
+                authority="hard_limit",
+                status="unevaluable",
+                message="Impossible à évaluer.",
+            ),
+            PolicyRuleEvaluation(
+                rule_id="soft-warning",
+                authority="warning",
+                status="violated",
+                message="Warning.",
+            ),
+        ),
+    )
+
+    assert status == "reject"

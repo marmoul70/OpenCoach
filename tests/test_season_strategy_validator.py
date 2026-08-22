@@ -94,7 +94,7 @@ def create_input():
             ),
         ),
         goals=SeasonGoalContext(
-            primary_race=race,
+            target_race=race,
         ),
         training_state=SeasonTrainingState(
             recent_load=None,
@@ -107,7 +107,8 @@ def create_input():
         ),
         knowledge=SeasonKnowledgeContext(
             knowledge_version="2027.03",
-            policy_version="season-planning-v1",
+            policy_id="season-planning",
+            policy_version="1.0",
         ),
     )
 
@@ -218,7 +219,7 @@ def test_unknown_fact_reference_is_rejected():
     )
 
 
-def test_phase_after_primary_race_is_rejected():
+def test_phase_after_target_race_is_rejected():
     proposal = replace(
         create_proposal(),
         phases=(
@@ -235,7 +236,7 @@ def test_phase_after_primary_race_is_rejected():
     )
 
     assert (
-        "phase_not_after_primary_race"
+        "phase_not_after_target_race"
         in rule_ids(validation)
     )
 

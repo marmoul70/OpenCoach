@@ -153,14 +153,17 @@ def _validate_phases(
                 )
             )
 
-        if phase.end_date > planning_input.goals.primary_race.date:
+        if (
+            phase.end_date
+            > planning_input.goals.target_race.date
+        ):
             violations.append(
                 StrategyViolation(
-                    rule_id="phase_not_after_primary_race",
+                    rule_id="phase_not_after_target_race",
                     severity="error",
                     message=(
                         "Une phase stratégique dépasse "
-                        "la course principale."
+                        "la course cible."
                     ),
                     target=phase.phase_type,
                 )
@@ -235,14 +238,17 @@ def _validate_weeks(
                 )
             )
 
-        if week.end_date > planning_input.goals.primary_race.date:
+        if (
+            week.end_date
+            > planning_input.goals.target_race.date
+        ):
             violations.append(
                 StrategyViolation(
-                    rule_id="week_not_after_primary_race",
+                    rule_id="week_not_after_target_race",
                     severity="error",
                     message=(
                         "Une semaine stratégique dépasse "
-                        "la course principale."
+                        "la course cible."
                     ),
                     target=str(
                         week.week_number

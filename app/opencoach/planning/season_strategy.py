@@ -185,8 +185,8 @@ class SeasonStrategy:
 
     planning_date: date
 
-    primary_race_id: UUID
-    primary_race_date: date
+    target_race_id: UUID
+    target_race_date: date
 
     phases: tuple[
         MacrocyclePhase,
@@ -210,7 +210,7 @@ class SeasonStrategy:
         """Nombre de semaines calendaires entre planification et objectif."""
 
         days = (
-            self.primary_race_date
+            self.target_race_date
             - self.planning_date
         ).days
 

@@ -1,5 +1,5 @@
 from dataclasses import replace
-from datetime import date
+from datetime import date, datetime, timezone
 from uuid import uuid4
 
 from opencoach.models import (
@@ -27,6 +27,9 @@ from opencoach.planning import (
     TrainingStimulus,
     WeekTrajectory,
     evaluate_season_strategy_gate,
+    SeasonStrategy,
+    StrategyRevision,
+    StrategyRevisionChange,
 )
 
 
@@ -105,8 +108,8 @@ def create_planning_input():
             ),
         ),
         goals=SeasonGoalContext(
-            primary_race=race,
-            training_races=(),
+            target_race=race,
+            races=(),
         ),
         training_state=SeasonTrainingState(
             recent_load=None,
@@ -123,7 +126,8 @@ def create_planning_input():
         ),
         knowledge=SeasonKnowledgeContext(
             knowledge_version="2027.03",
-            policy_version="season-planning-v1",
+            policy_id="season-planning",
+            policy_version="1.0",
         ),
     )
 
@@ -375,7 +379,7 @@ def test_structurally_invalid_ai_proposal_requires_revision() -> None:
     assert result.status == "revise"
 
     assert any(
-        "phase_not_after_primary_race"
+        "phase_not_after_target_race"
         in reason
         for reason in result.reasons
     )
@@ -405,6 +409,223 @@ def test_ai_cannot_reference_fact_that_python_does_not_have() -> None:
 
     assert any(
         "fact_reference_exists"
+        in reason
+        for reason in result.reasons
+    )
+def test_policy_version_mismatch_rejects_strategy() -> None:
+    planning_input = create_planning_input()
+
+    changed_policy = replace(
+        create_policy(),
+        version="2.0",
+    )
+
+    result = evaluate_season_strategy_gate(
+        planning_input=planning_input,
+        proposal=create_valid_proposal(),
+        policy=changed_policy,
+    )
+
+    assert result.status == "reject"
+
+    assert any(
+        "policy_version_mismatch"
+        in reason
+        for reason in result.reasons
+    )
+
+def test_future_policy_rejects_strategy() -> None:
+    planning_input = create_planning_input()
+
+    changed_policy = replace(
+        create_policy(),
+        effective_from=date(
+            2027,
+            4,
+            1,
+        ),
+    )
+
+    result = evaluate_season_strategy_gate(
+        planning_input=planning_input,
+        proposal=create_valid_proposal(),
+        policy=changed_policy,
+    )
+
+    assert result.status == "reject"
+
+    assert any(
+        "policy_not_effective_yet"
+        in reason
+        for reason in result.reasons
+    )
+
+def create_revision_input():
+    planning_input = create_planning_input()
+
+    may_race = Race(
+        id=uuid4(),
+        date=date(
+            2027,
+            5,
+            10,
+        ),
+        name="Objectif mai",
+        location="Test",
+        race_type="trail",
+        priority="primary",
+        distance_km=30.0,
+        elevation_gain_m=1500.0,
+        status="planned",
+    )
+
+    june_race = planning_input.goals.target_race
+
+    return replace(
+        planning_input,
+        goals=SeasonGoalContext(
+            target_race=june_race,
+            races=(
+                may_race,
+                june_race,
+            ),
+        ),
+        previous_strategy=(
+            create_previous_strategy()
+        ),
+    )
+
+def create_previous_strategy():
+    return SeasonStrategy(
+        id=uuid4(),
+        athlete_profile_id=uuid4(),
+        planning_date=date(
+            2027,
+            1,
+            1,
+        ),
+        target_race_id=uuid4(),
+        target_race_date=RACE_DATE,
+        phases=(
+            MacrocyclePhase(
+                phase_type="base",
+                start_date=date(
+                    2027,
+                    1,
+                    1,
+                ),
+                end_date=date(
+                    2027,
+                    2,
+                    28,
+                ),
+                objective=(
+                    "Construire la base aérobie."
+                ),
+                primary_stimuli=(
+                    "aerobic_endurance",
+                ),
+            ),
+        ),
+        weeks=(),
+        revision=StrategyRevision(
+            reason="initial_plan",
+            created_at=datetime(
+                2027,
+                1,
+                1,
+                tzinfo=timezone.utc,
+            ),
+            description=(
+                "Stratégie initiale vers juin."
+            ),
+        ),
+        knowledge_version="2027.03",
+        policy_version="1.0",
+        created_at=datetime(
+            2027,
+            1,
+            1,
+            tzinfo=timezone.utc,
+        ),
+    )
+
+def test_new_priority_race_can_trigger_explicit_strategy_revision() -> None:
+    planning_input = create_revision_input()
+
+    proposal = replace(
+        create_valid_proposal(),
+        revision_changes=(
+            StrategyRevisionChange(
+                action="modify",
+                target="macrocycle:may-june",
+                description=(
+                    "Intégrer un premier pic de forme "
+                    "pour la course prioritaire de mai, "
+                    "puis prévoir récupération et "
+                    "reconstruction vers juin."
+                ),
+                reason=(
+                    "Une nouvelle course prioritaire "
+                    "a été ajoutée le 10 mai."
+                ),
+            ),
+        ),
+    )
+
+    result = evaluate_season_strategy_gate(
+        planning_input=planning_input,
+        proposal=proposal,
+        policy=create_policy(),
+    )
+
+    assert result.status == "accept"
+
+    assert result.accepted is True
+
+    assert (
+        planning_input.is_revision
+        is True
+    )
+
+    assert len(
+        planning_input.goals.priority_races
+    ) == 2
+
+    assert {
+        race.date
+        for race
+        in planning_input.goals.priority_races
+    } == {
+        date(
+            2027,
+            5,
+            10,
+        ),
+        date(
+            2027,
+            6,
+            12,
+        ),
+    }
+
+    assert proposal.is_revision is True
+
+def test_revision_input_without_revision_changes_requires_revision() -> None:
+    planning_input = create_revision_input()
+
+    proposal = create_valid_proposal()
+
+    result = evaluate_season_strategy_gate(
+        planning_input=planning_input,
+        proposal=proposal,
+        policy=create_policy(),
+    )
+
+    assert result.status == "revise"
+
+    assert any(
+        "revision_changes_required"
         in reason
         for reason in result.reasons
     )

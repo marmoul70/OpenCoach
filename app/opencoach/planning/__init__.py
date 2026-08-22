@@ -45,7 +45,11 @@ from .training_history_metrics import (
     WeeklyTrainingAverages,
     calculate_training_history_metrics,
 )
-
+from .athlete_capacity import (
+    AthleteCapacityAssessment,
+    CapacityConfidence,
+    assess_athlete_capacity,
+)
 __all__ = [
     "DayAvailability",
     "DayAvailabilityStatus",
@@ -72,4 +76,7 @@ __all__ = [
     "TrainingHistoryMetrics",
     "WeeklyTrainingAverages",
     "calculate_training_history_metrics",
+    "AthleteCapacityAssessment",
+    "CapacityConfidence",
+    "assess_athlete_capacity",
 ]

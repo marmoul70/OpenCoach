@@ -1,3 +1,8 @@
+from .availability import (
+    DayAvailability,
+    DayAvailabilityStatus,
+    resolve_day_availability,
+)
 from .context import PlanningContext
 from .quality import (
     PlanningContextAssessment,
@@ -7,8 +12,11 @@ from .service import PlanningContextService
 
 
 __all__ = [
+    "DayAvailability",
+    "DayAvailabilityStatus",
     "PlanningContext",
     "PlanningContextAssessment",
     "PlanningContextService",
     "assess_planning_context",
+    "resolve_day_availability",
 ]

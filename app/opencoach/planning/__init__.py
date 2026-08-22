@@ -9,7 +9,10 @@ from .quality import (
     assess_planning_context,
 )
 from .service import PlanningContextService
-
+from .weekly_availability import (
+    WeeklyAvailability,
+    build_weekly_availability,
+)
 
 __all__ = [
     "DayAvailability",
@@ -19,4 +22,6 @@ __all__ = [
     "PlanningContextService",
     "assess_planning_context",
     "resolve_day_availability",
+    "WeeklyAvailability",
+    "build_weekly_availability",
 ]

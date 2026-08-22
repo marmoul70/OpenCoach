@@ -94,6 +94,27 @@ from .assessment_protocol import (
     get_assessment_protocol,
     get_assessment_protocols,
 )
+from .assessment_protocol_selector import (
+    AssessmentProtocolCandidate,
+    AssessmentProtocolSelection,
+    AssessmentSelectionContext,
+    build_assessment_selection_context,
+    select_assessment_protocol,
+)
+from .assessment_safety import (
+    AssessmentSafetyContext,
+    build_assessment_safety_context,
+)
+from .assessment_recommendation import (
+    AssessmentPlanRecommendation,
+    AssessmentRecommendationStatus,
+    build_assessment_recommendation,
+)
+from .assessment_consolidation import (
+    ConsolidatedAssessmentPlan,
+    consolidate_assessment_needs,
+)
+
 __all__ = [
     "DayAvailability",
     "DayAvailabilityStatus",
@@ -151,4 +172,16 @@ __all__ = [
     "ProtocolIntensity",
     "get_assessment_protocol",
     "get_assessment_protocols",
+    "AssessmentProtocolCandidate",
+    "AssessmentProtocolSelection",
+    "AssessmentSelectionContext",
+    "select_assessment_protocol",
+    "AssessmentSafetyContext",
+    "build_assessment_safety_context",
+    "build_assessment_selection_context",
+    "AssessmentPlanRecommendation",
+    "AssessmentRecommendationStatus",
+    "build_assessment_recommendation",
+    "ConsolidatedAssessmentPlan",
+    "consolidate_assessment_needs",
 ]

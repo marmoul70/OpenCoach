@@ -6,9 +6,15 @@ Ce module assemble les décisions déterministes déjà calculées :
 - récupération ;
 - disponibilités ;
 - prescription des stimuli ;
-- placement des stimuli.
+- demande quantitative de stimuli ;
+- intentions de séance ;
+- placement hebdomadaire.
 
 Il ne génère aucune séance concrète.
+
+Le pipeline historique basé directement sur les stimuli n'est plus
+utilisé comme source de planification. Une représentation compatible
+est toutefois conservée temporairement dans l'enveloppe.
 """
 
 from __future__ import annotations
@@ -22,15 +28,33 @@ from .contextual_stimulus_prescription import (
 from .load_recovery_cycle import (
     LoadRecoveryDecision,
 )
+from .multi_week_trajectory import (
+    TrajectoryWeekType,
+)
+from .session_intent import (
+    SessionIntentImportance,
+)
+from .session_intent_builder import (
+    build_session_intent_plan,
+)
 from .weekly_load_progression import (
     WeeklyLoadTarget,
 )
-from .weekly_stimulus_scheduler import (
-    WeeklyStimulusSchedule,
-    schedule_weekly_stimuli,
+from .weekly_session_intent_scheduler import (
+    WeeklySessionIntentSchedule,
+    schedule_session_intents,
+)
+from .weekly_session_intent_slot import (
+    WeeklySessionIntentSlot,
+)
+from .weekly_stimulus_demand import (
+    build_weekly_stimulus_demand,
 )
 from .weekly_stimulus_slot import (
+    FatigueBudget,
+    SlotImportance,
     Weekday,
+    WeeklyStimulusSlot,
 )
 from .weekly_training_envelope import (
     SchedulePressure,
@@ -61,6 +85,15 @@ class WeeklyTrainingEnvelopeInput:
     athlete_schedule_constrained: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class _AdjustedLoads:
+    """Charges finales transmises à l'enveloppe."""
+
+    target_load: float
+    load_min: float
+    load_max: float
+
+
 def build_weekly_training_envelope(
     *,
     input_data: WeeklyTrainingEnvelopeInput,
@@ -72,25 +105,58 @@ def build_weekly_training_envelope(
         + timedelta(days=6)
     )
 
-    schedule = schedule_weekly_stimuli(
-        requirements=(
-            input_data.prescription.requirements
-        ),
-        available_days=input_data.available_days,
-    )
-
     adjusted_loads = _apply_recovery_factor(
         load_target=input_data.load_target,
         recovery=input_data.recovery,
     )
 
-    schedule_pressure = _classify_schedule_pressure(
-        schedule=schedule,
-        available_days=input_data.available_days,
+    week_type = _resolve_week_type(
+        phase=input_data.phase,
+        recovery=input_data.recovery,
+        target_load=adjusted_loads.target_load,
+    )
+
+    weekly_demand = (
+        build_weekly_stimulus_demand(
+            prescription=input_data.prescription,
+            week_type=week_type,
+            target_load=adjusted_loads.target_load,
+            reference_load=(
+                input_data.load_target.theoretical_load
+            ),
+        )
+    )
+
+    intent_plan = build_session_intent_plan(
+        weekly_demand=weekly_demand,
+    )
+
+    session_schedule = (
+        schedule_session_intents(
+            plan=intent_plan,
+            available_days=(
+                input_data.available_days
+            ),
+        )
+    )
+
+    legacy_slots = (
+        _build_legacy_slots(
+            session_slots=session_schedule.slots,
+        )
+    )
+
+    schedule_pressure = (
+        _classify_schedule_pressure(
+            schedule=session_schedule,
+            available_days=(
+                input_data.available_days
+            ),
+        )
     )
 
     notes = _build_notes(
-        schedule=schedule,
+        schedule=session_schedule,
         recovery=input_data.recovery,
     )
 
@@ -102,21 +168,15 @@ def build_weekly_training_envelope(
         load_min=adjusted_loads.load_min,
         load_max=adjusted_loads.load_max,
         available_days=input_data.available_days,
-        slots=schedule.slots,
+        slots=legacy_slots,
+        session_slots=session_schedule.slots,
         schedule_pressure=schedule_pressure,
         athlete_schedule_constrained=(
             input_data.athlete_schedule_constrained
-            or schedule.constrained
+            or session_schedule.constrained
         ),
         notes=notes,
     )
-
-
-@dataclass(frozen=True, slots=True)
-class _AdjustedLoads:
-    target_load: float
-    load_min: float
-    load_max: float
 
 
 def _apply_recovery_factor(
@@ -142,9 +202,141 @@ def _apply_recovery_factor(
     )
 
 
+def _resolve_week_type(
+    *,
+    phase: TrainingPhase,
+    recovery: LoadRecoveryDecision,
+    target_load: float,
+) -> TrajectoryWeekType:
+    """Déduit le rôle qualitatif de la semaine.
+
+    La suspension de charge domine toutes les autres décisions.
+    Ensuite viennent le retour à l'entraînement, la récupération
+    et l'affûtage.
+    """
+
+    if target_load == 0:
+        return (
+            TrajectoryWeekType.SUSPENDED
+        )
+
+    if (
+        phase
+        is TrainingPhase.RETURN_TO_TRAINING
+    ):
+        return (
+            TrajectoryWeekType.RETURN_TO_TRAINING
+        )
+
+    if recovery.recovery_week:
+        return (
+            TrajectoryWeekType.RECOVERY
+        )
+
+    if phase is TrainingPhase.TAPER:
+        return TrajectoryWeekType.TAPER
+
+    return TrajectoryWeekType.LOADING
+
+
+def _build_legacy_slots(
+    *,
+    session_slots: tuple[
+        WeeklySessionIntentSlot,
+        ...
+    ],
+) -> tuple[
+    WeeklyStimulusSlot,
+    ...
+]:
+    """Produit la vue historique compatible de l'enveloppe.
+
+    Le stimulus principal de chaque SessionIntent est utilisé comme
+    requirement historique.
+
+    Les stimuli secondaires restent accessibles uniquement via
+    ``session_slots`` et constituent désormais la représentation
+    métier complète.
+    """
+
+    result: list[
+        WeeklyStimulusSlot
+    ] = []
+
+    for session_slot in session_slots:
+        intent = session_slot.intent
+
+        primary_requirement = next(
+            requirement
+            for requirement
+            in intent.source_requirements
+            if (
+                requirement.stimulus
+                is intent.primary_stimulus
+            )
+        )
+
+        result.append(
+            WeeklyStimulusSlot(
+                slot_id=session_slot.slot_id,
+                day=session_slot.day,
+                requirement=primary_requirement,
+                importance=_legacy_importance(
+                    intent.importance
+                ),
+                fatigue_budget=(
+                    session_slot.fatigue_budget
+                ),
+                duration_available_minutes=(
+                    session_slot.duration_available_minutes
+                ),
+                preserve_next_key_session=(
+                    session_slot.preserve_next_key_session
+                ),
+                preferred_recovery_before_hours=(
+                    session_slot
+                    .preferred_recovery_before_hours
+                ),
+                preferred_recovery_after_hours=(
+                    session_slot
+                    .preferred_recovery_after_hours
+                ),
+                notes=session_slot.notes,
+            )
+        )
+
+    return tuple(
+        result
+    )
+
+
+def _legacy_importance(
+    importance: SessionIntentImportance,
+) -> SlotImportance:
+    """Convertit l'importance vers le vieux contrat.
+
+    SlotImportance ne possède pas encore de niveau IMPORTANT.
+    On conserve donc temporairement son ancien comportement.
+    """
+
+    if (
+        importance
+        is SessionIntentImportance.KEY
+    ):
+        return SlotImportance.KEY
+
+    if (
+        importance
+        is SessionIntentImportance.IMPORTANT
+    ):
+        return SlotImportance.KEY
+
+    return SlotImportance.SUPPORT
+
+
 def _classify_schedule_pressure(
     *,
-    schedule: WeeklyStimulusSchedule,
+    schedule: WeeklySessionIntentSchedule,
     available_days: tuple[
         Weekday,
         ...
@@ -168,32 +360,38 @@ def _classify_schedule_pressure(
 
 def _build_notes(
     *,
-    schedule: WeeklyStimulusSchedule,
+    schedule: WeeklySessionIntentSchedule,
     recovery: LoadRecoveryDecision,
-) -> tuple[str, ...]:
-    notes: list[str] = []
+) -> tuple[
+    str,
+    ...
+]:
+    notes: list[
+        str
+    ] = []
 
     if recovery.recovery_week:
         notes.append(
             "Semaine de récupération : la charge globale "
-            "a été réduite par le moteur."
+            "et la densité qualitative ont été réduites "
+            "par le moteur."
         )
 
     if schedule.constrained:
         notes.append(
-            "Les disponibilités ne permettent pas de représenter "
-            "séparément tous les stimuli souhaités."
+            "Les disponibilités ne permettent pas de positionner "
+            "toutes les intentions de séance souhaitées."
         )
 
-    if schedule.omitted_requirements:
+    if schedule.omitted_intents:
         omitted = ", ".join(
-            requirement.stimulus.value
-            for requirement
-            in schedule.omitted_requirements
+            intent.primary_stimulus.value
+            for intent
+            in schedule.omitted_intents
         )
 
         notes.append(
-            "Stimuli non positionnés explicitement : "
+            "Intentions non positionnées : "
             f"{omitted}."
         )
 

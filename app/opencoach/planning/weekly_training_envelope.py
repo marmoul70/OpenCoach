@@ -3,6 +3,12 @@
 L'enveloppe décrit les objectifs et contraintes de la semaine.
 Elle ne contient aucune séance détaillée.
 
+Le nouveau contrat métier repose sur les intentions de séance
+placées dans ``session_slots``.
+
+``slots`` reste temporairement disponible comme représentation
+historique compatible avec les anciens consommateurs.
+
 L'athlète reste l'autorité finale sur ses disponibilités et
 sur la réalisation effective de l'entraînement.
 """
@@ -13,6 +19,9 @@ from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
 
+from .weekly_session_intent_slot import (
+    WeeklySessionIntentSlot,
+)
 from .weekly_stimulus_slot import (
     Weekday,
     WeeklyStimulusSlot,
@@ -46,9 +55,15 @@ class WeeklyTrainingEnvelope:
     Python définit :
     - la phase ;
     - la trajectoire de charge ;
-    - les stimuli nécessaires ;
+    - les intentions de séance ;
     - les disponibilités réelles ;
     - les préférences d'espacement.
+
+    ``session_slots`` est désormais la représentation métier
+    privilégiée.
+
+    ``slots`` conserve temporairement la représentation historique
+    basée sur un stimulus principal par créneau.
 
     Le coach IA transforme ensuite ce cadre en séances concrètes.
 
@@ -66,15 +81,29 @@ class WeeklyTrainingEnvelope:
     load_min: float | None
     load_max: float | None
 
-    available_days: tuple[Weekday, ...]
+    available_days: tuple[
+        Weekday,
+        ...
+    ]
 
-    slots: tuple[WeeklyStimulusSlot, ...]
+    slots: tuple[
+        WeeklyStimulusSlot,
+        ...
+    ]
 
     schedule_pressure: SchedulePressure
 
+    session_slots: tuple[
+        WeeklySessionIntentSlot,
+        ...
+    ] = ()
+
     athlete_schedule_constrained: bool = False
 
-    notes: tuple[str, ...] = ()
+    notes: tuple[
+        str,
+        ...
+    ] = ()
 
     def __post_init__(self) -> None:
         if self.week_end < self.week_start:
@@ -123,7 +152,8 @@ class WeeklyTrainingEnvelope:
             and self.target_load < self.load_min
         ):
             raise ValueError(
-                "La charge cible doit appartenir à la plage autorisée."
+                "La charge cible doit appartenir à "
+                "la plage autorisée."
             )
 
         if (
@@ -132,20 +162,30 @@ class WeeklyTrainingEnvelope:
             and self.target_load > self.load_max
         ):
             raise ValueError(
-                "La charge cible doit appartenir à la plage autorisée."
+                "La charge cible doit appartenir à "
+                "la plage autorisée."
             )
 
         available = set(
             self.available_days
         )
 
-        unavailable_slots = tuple(
+        unavailable_legacy_slots = tuple(
             slot
             for slot in self.slots
             if slot.day not in available
         )
 
-        if unavailable_slots:
+        unavailable_session_slots = tuple(
+            slot
+            for slot in self.session_slots
+            if slot.day not in available
+        )
+
+        if (
+            unavailable_legacy_slots
+            or unavailable_session_slots
+        ):
             raise ValueError(
                 "Un créneau d'entraînement a été placé sur "
                 "un jour indisponible pour l'athlète."
@@ -153,6 +193,17 @@ class WeeklyTrainingEnvelope:
 
     @property
     def session_count(self) -> int:
+        """Nombre réel d'intentions de séance.
+
+        Lorsque le nouveau pipeline est présent, il devient la source
+        de vérité. Sinon la représentation historique est utilisée.
+        """
+
+        if self.session_slots:
+            return len(
+                self.session_slots
+            )
+
         return len(
             self.slots
         )
@@ -164,6 +215,12 @@ class WeeklyTrainingEnvelope:
         Cette information est descriptive et ne constitue pas
         une interdiction.
         """
+
+        active_slots = (
+            self.session_slots
+            if self.session_slots
+            else self.slots
+        )
 
         day_indexes = {
             Weekday.MONDAY: 0,
@@ -178,7 +235,7 @@ class WeeklyTrainingEnvelope:
         indexes = sorted(
             {
                 day_indexes[slot.day]
-                for slot in self.slots
+                for slot in active_slots
             }
         )
 
@@ -194,6 +251,7 @@ class WeeklyTrainingEnvelope:
         ):
             if current_day == previous + 1:
                 current += 1
+
                 longest = max(
                     longest,
                     current,

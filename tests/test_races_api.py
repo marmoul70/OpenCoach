@@ -12,6 +12,7 @@ from opencoach.api.intervals import (
     get_local_athlete_profile_id,
 )
 from opencoach.api.races import (
+    get_activity_repository,
     get_race_repository,
 )
 from opencoach.models import Race
@@ -170,6 +171,22 @@ class FakeRaceRepository:
             [],
         )
 
+class FakeActivityRepository:
+    def __init__(
+        self,
+    ) -> None:
+        self.activities = {}
+
+    def get_activity(
+        self,
+        athlete_profile_id,
+        activity_id,
+    ):
+        del athlete_profile_id
+
+        return self.activities.get(
+            activity_id
+        )
 
 def create_race(
     *,
@@ -196,10 +213,16 @@ def create_race(
 
 def create_client(
     repository,
+    activity_repository=None,
 ):
     app = create_app()
 
     profile_id = uuid4()
+
+    if activity_repository is None:
+        activity_repository = (
+            FakeActivityRepository()
+        )
 
     app.dependency_overrides[
         get_local_athlete_profile_id
@@ -208,6 +231,10 @@ def create_client(
     app.dependency_overrides[
         get_race_repository
     ] = lambda: repository
+
+    app.dependency_overrides[
+        get_activity_repository
+    ] = lambda: activity_repository
 
     return (
         TestClient(

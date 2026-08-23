@@ -1,16 +1,16 @@
-from opencoach.planning.contextual_stimulus_prescription import (
+from opencoach.planning.stimulus.contextual_prescription import (
     build_contextual_stimulus_prescription,
 )
-from opencoach.planning.race_demand_profile import (
+from opencoach.planning.knowledge.race_demand_profile import (
     build_race_demand_profile,
 )
-from opencoach.planning.training_stimulus import (
+from opencoach.planning.stimulus.training import (
     SpecificityLevel,
     StimulusPriority,
     SubstitutionPolicy,
     TrainingStimulus,
 )
-from opencoach.planning.weekly_training_envelope import (
+from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
 

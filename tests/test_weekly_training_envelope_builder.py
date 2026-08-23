@@ -2,33 +2,33 @@ from datetime import date
 
 import pytest
 
-from opencoach.planning.contextual_stimulus_prescription import (
+from opencoach.planning.stimulus.contextual_prescription import (
     build_contextual_stimulus_prescription,
 )
-from opencoach.planning.load_recovery_cycle import (
+from opencoach.planning.trajectory.load_recovery_cycle import (
     LoadRecoveryDecision,
     RecoveryTrigger,
 )
-from opencoach.planning.race_demand_profile import (
+from opencoach.planning.knowledge.race_demand_profile import (
     build_race_demand_profile,
 )
-from opencoach.planning.trajectory_adjustment import (
+from opencoach.planning.trajectory.adjustment import (
     LoadAdjustment,
 )
-from opencoach.planning.training_stimulus import (
+from opencoach.planning.stimulus.training import (
     TrainingStimulus,
 )
-from opencoach.planning.weekly_load_progression import (
+from opencoach.planning.weekly.load_progression import (
     calculate_weekly_load_target,
 )
-from opencoach.planning.weekly_schedule_types import (
+from opencoach.planning.weekly.schedule_types import (
     Weekday,
 )
-from opencoach.planning.weekly_training_envelope import (
+from opencoach.planning.weekly.training_envelope import (
     SchedulePressure,
     TrainingPhase,
 )
-from opencoach.planning.weekly_training_envelope_builder import (
+from opencoach.planning.weekly.training_envelope_builder import (
     WeeklyTrainingEnvelopeInput,
     build_weekly_training_envelope,
 )

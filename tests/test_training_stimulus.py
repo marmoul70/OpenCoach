@@ -1,6 +1,6 @@
 import pytest
 
-from opencoach.planning.training_stimulus import (
+from opencoach.planning.stimulus.training import (
     SpecificityLevel,
     StimulusPriority,
     SubstitutionPolicy,

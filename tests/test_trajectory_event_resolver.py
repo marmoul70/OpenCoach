@@ -1,16 +1,16 @@
 from datetime import date
 
-from opencoach.planning.trajectory_adjustment import (
+from opencoach.planning.trajectory.adjustment import (
     LoadAdjustment,
     ProgressionAdjustment,
 )
-from opencoach.planning.trajectory_event import (
+from opencoach.planning.trajectory.event import (
     EventImpact,
     RacePriority,
     TrajectoryEvent,
     TrajectoryEventType,
 )
-from opencoach.planning.trajectory_event_resolver import (
+from opencoach.planning.trajectory.event_resolver import (
     resolve_trajectory_events,
 )
 

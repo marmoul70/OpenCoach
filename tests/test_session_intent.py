@@ -1,11 +1,11 @@
 import pytest
 
-from opencoach.planning.session_intent import (
+from opencoach.planning.sessions.intent import (
     SessionIntent,
     SessionIntentImportance,
     build_session_intent,
 )
-from opencoach.planning.training_stimulus import (
+from opencoach.planning.stimulus.training import (
     SpecificityLevel,
     StimulusPriority,
     SubstitutionPolicy,

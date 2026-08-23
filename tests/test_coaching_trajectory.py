@@ -2,39 +2,39 @@ from datetime import date
 
 import pytest
 
-from opencoach.planning.coaching_trajectory import (
+from opencoach.planning.trajectory.coaching import (
     CoachingTrajectoryInput,
     build_coaching_trajectory,
 )
-from opencoach.planning.load_recovery_cycle import (
+from opencoach.planning.trajectory.load_recovery_cycle import (
     RecoveryTrigger,
 )
-from opencoach.planning.multi_week_trajectory import (
+from opencoach.planning.trajectory.multi_week import (
     TrajectoryWeek,
     TrajectoryWeekType,
 )
-from opencoach.planning.return_to_training_clearance import (
+from opencoach.planning.return_to_training.clearance import (
     ReadinessAnswer,
     ReturnToTrainingReadiness,
 )
-from opencoach.planning.return_to_training_resolver import (
+from opencoach.planning.return_to_training.resolver import (
     ReturnToTrainingStatus,
 )
-from opencoach.planning.trajectory_adjustment import (
+from opencoach.planning.trajectory.adjustment import (
     AdjustmentSeverity,
     LoadAdjustment,
     ProgressionAdjustment,
     TrajectoryAdjustment,
 )
-from opencoach.planning.trajectory_event import (
+from opencoach.planning.trajectory.event import (
     EventImpact,
     TrajectoryEvent,
     TrajectoryEventType,
 )
-from opencoach.planning.weekly_schedule_types import (
+from opencoach.planning.weekly.schedule_types import (
     Weekday,
 )
-from opencoach.planning.weekly_training_envelope import (
+from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
 

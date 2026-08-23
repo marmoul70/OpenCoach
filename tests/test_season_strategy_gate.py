@@ -7,7 +7,7 @@ from opencoach.planning import (
     StrategyViolation,
 )
 
-from opencoach.planning.season_strategy_gate import (
+from opencoach.planning.season.strategy_gate import (
     _build_gate_reasons,
     _resolve_gate_status,
 )

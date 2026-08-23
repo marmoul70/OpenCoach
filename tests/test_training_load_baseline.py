@@ -1,10 +1,10 @@
 import pytest
 
-from opencoach.planning.training_history_metrics import (
+from opencoach.planning.history.metrics import (
     TrainingHistoryMetrics,
     WeeklyTrainingAverages,
 )
-from opencoach.planning.training_load_baseline import (
+from opencoach.planning.physiology.training_load_baseline import (
     TrainingLoadBaseline,
     calculate_training_load_baseline,
 )

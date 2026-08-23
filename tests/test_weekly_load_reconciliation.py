@@ -1,6 +1,6 @@
 import pytest
 
-from opencoach.planning.weekly_load_reconciliation import (
+from opencoach.planning.weekly.load_reconciliation import (
     LoadReconciliationStatus,
     WeeklyLoadReconciliation,
     reconcile_weekly_load,

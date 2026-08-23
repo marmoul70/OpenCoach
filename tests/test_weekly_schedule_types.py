@@ -1,4 +1,4 @@
-from opencoach.planning.weekly_schedule_types import (
+from opencoach.planning.weekly.schedule_types import (
     FatigueBudget,
     Weekday,
 )

@@ -1,14 +1,14 @@
 import pytest
 
-from opencoach.planning.load_reconciliation_history import (
+from opencoach.planning.history.load_reconciliation import (
     ReconciliationHistoryPolicy,
     ReconciliationTrendStatus,
     analyze_reconciliation_history,
 )
-from opencoach.planning.weekly_load_reconciliation import (
+from opencoach.planning.weekly.load_reconciliation import (
     reconcile_weekly_load,
 )
-from opencoach.planning.weekly_load_reconciliation_context import (
+from opencoach.planning.weekly.load_reconciliation_context import (
     ContextualWeeklyLoadReconciliation,
     LoadDeviationCause,
     contextualize_weekly_load_reconciliation,

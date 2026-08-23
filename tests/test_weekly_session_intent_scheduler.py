@@ -1,19 +1,19 @@
-from opencoach.planning.contextual_stimulus_prescription import (
+from opencoach.planning.stimulus.contextual_prescription import (
     ContextualStimulusPrescription,
 )
-from opencoach.planning.multi_week_trajectory import (
+from opencoach.planning.trajectory.multi_week import (
     TrajectoryWeekType,
 )
-from opencoach.planning.race_demand_profile import (
+from opencoach.planning.knowledge.race_demand_profile import (
     build_race_demand_profile,
 )
-from opencoach.planning.session_intent import (
+from opencoach.planning.sessions.intent import (
     SessionIntentImportance,
 )
-from opencoach.planning.session_intent_builder import (
+from opencoach.planning.sessions.intent_builder import (
     build_session_intent_plan,
 )
-from opencoach.planning.training_stimulus import (
+from opencoach.planning.stimulus.training import (
     SpecificityLevel,
     StimulusPriority,
     SubstitutionPolicy,
@@ -21,17 +21,17 @@ from opencoach.planning.training_stimulus import (
     TrainingStimulus,
     TrainingStimulusRequirement,
 )
-from opencoach.planning.weekly_session_intent_scheduler import (
+from opencoach.planning.weekly.session_intent_scheduler import (
     schedule_session_intents,
 )
-from opencoach.planning.weekly_stimulus_demand import (
+from opencoach.planning.stimulus.weekly_demand import (
     build_weekly_stimulus_demand,
 )
-from opencoach.planning.weekly_schedule_types import (
+from opencoach.planning.weekly.schedule_types import (
     FatigueBudget,
     Weekday,
 )
-from opencoach.planning.weekly_training_envelope import (
+from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
 

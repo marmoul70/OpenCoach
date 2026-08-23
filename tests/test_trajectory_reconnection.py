@@ -1,6 +1,6 @@
 import pytest
 
-from opencoach.planning.trajectory_reconnection import (
+from opencoach.planning.trajectory.reconnection import (
     ReconnectionStatus,
     TrajectoryReconnectionPolicy,
     calculate_trajectory_reconnection,

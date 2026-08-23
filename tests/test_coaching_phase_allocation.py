@@ -2,13 +2,13 @@ from datetime import date
 
 import pytest
 
-from opencoach.planning.coaching_phase_allocation import (
+from opencoach.planning.trajectory.coaching_phase_allocation import (
     AllocatedTrainingPhase,
     CoachingPhaseAllocation,
     PhaseDurationPolicy,
     allocate_coaching_phases,
 )
-from opencoach.planning.weekly_training_envelope import (
+from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
 

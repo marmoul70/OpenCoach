@@ -1,10 +1,10 @@
 import pytest
 
-from opencoach.planning.training_stimulus import (
+from opencoach.planning.stimulus.training import (
     TrainingModality,
     TrainingStimulus,
 )
-from opencoach.planning.trajectory_adjustment import (
+from opencoach.planning.trajectory.adjustment import (
     AdjustmentSeverity,
     LoadAdjustment,
     ProgressionAdjustment,

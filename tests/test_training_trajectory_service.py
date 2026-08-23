@@ -2,37 +2,37 @@ from datetime import date
 
 import pytest
 
-from opencoach.planning.load_reconciliation_history import (
+from opencoach.planning.history.load_reconciliation import (
     ReconciliationTrendStatus,
 )
-from opencoach.planning.multi_week_trajectory import (
+from opencoach.planning.trajectory.multi_week import (
     TrajectoryWeekType,
 )
-from opencoach.planning.training_history_metrics import (
+from opencoach.planning.history.metrics import (
     TrainingHistoryMetrics,
     WeeklyTrainingAverages,
 )
-from opencoach.planning.training_trajectory_service import (
+from opencoach.planning.trajectory.service import (
     CurrentWeekCoachingInput,
     build_current_week_coaching,
     build_training_trajectory,
 )
-from opencoach.planning.trajectory_adjustment import (
+from opencoach.planning.trajectory.adjustment import (
     LoadAdjustment,
     ProgressionAdjustment,
 )
-from opencoach.planning.weekly_load_reconciliation import (
+from opencoach.planning.weekly.load_reconciliation import (
     LoadReconciliationStatus,
     reconcile_weekly_load,
 )
-from opencoach.planning.weekly_load_reconciliation_context import (
+from opencoach.planning.weekly.load_reconciliation_context import (
     LoadDeviationCause,
     contextualize_weekly_load_reconciliation,
 )
-from opencoach.planning.weekly_schedule_types import (
+from opencoach.planning.weekly.schedule_types import (
     Weekday,
 )
-from opencoach.planning.weekly_training_envelope import (
+from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
 

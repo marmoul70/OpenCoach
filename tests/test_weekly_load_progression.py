@@ -1,14 +1,14 @@
 import pytest
 
-from opencoach.planning.trajectory_adjustment import (
+from opencoach.planning.trajectory.adjustment import (
     LoadAdjustment,
 )
-from opencoach.planning.weekly_load_progression import (
+from opencoach.planning.weekly.load_progression import (
     LoadProgressionPolicy,
     WeeklyLoadTarget,
     calculate_weekly_load_target,
 )
-from opencoach.planning.weekly_training_envelope import (
+from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
 

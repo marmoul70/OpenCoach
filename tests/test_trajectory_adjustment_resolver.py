@@ -1,14 +1,14 @@
-from opencoach.planning.training_stimulus import (
+from opencoach.planning.stimulus.training import (
     TrainingModality,
     TrainingStimulus,
 )
-from opencoach.planning.trajectory_adjustment import (
+from opencoach.planning.trajectory.adjustment import (
     AdjustmentSeverity,
     LoadAdjustment,
     ProgressionAdjustment,
     TrajectoryAdjustment,
 )
-from opencoach.planning.trajectory_adjustment_resolver import (
+from opencoach.planning.trajectory.adjustment_resolver import (
     resolve_trajectory_adjustments,
 )
 

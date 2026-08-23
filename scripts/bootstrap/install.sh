@@ -50,14 +50,6 @@ main() {
         "Validation de l'environnement" \
         "$BOOTSTRAP_DIR/check-environment.sh"
 
-    run_step \
-        "Installation du moteur IA local Ollama" \
-        "$BOOTSTRAP_DIR/install-ollama.sh"
-
-    run_step \
-        "Installation du modèle IA OpenCoach" \
-        "$BOOTSTRAP_DIR/install-ollama-model.sh"
-
     log_success \
         "Bootstrap OpenCoach terminé avec succès."
 }

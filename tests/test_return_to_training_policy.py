@@ -1,9 +1,9 @@
 from datetime import date
 
-from opencoach.planning.return_to_training_policy import (
+from opencoach.planning.return_to_training.policy import (
     build_return_to_training_policy,
 )
-from opencoach.planning.trajectory_event import (
+from opencoach.planning.trajectory.event import (
     EventImpact,
     TrajectoryEvent,
     TrajectoryEventType,

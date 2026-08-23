@@ -28,7 +28,7 @@ from opencoach.planning import (
     build_season_strategist_request,
 )
 
-from opencoach.planning.season_strategist_request import (
+from opencoach.planning.season.strategist_request import (
     _serialize_value,
 )
 from opencoach.models import (

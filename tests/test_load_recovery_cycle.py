@@ -1,12 +1,12 @@
 import pytest
 
-from opencoach.planning.load_recovery_cycle import (
+from opencoach.planning.trajectory.load_recovery_cycle import (
     LoadRecoveryDecision,
     LoadRecoveryPolicy,
     RecoveryTrigger,
     decide_load_recovery,
 )
-from opencoach.planning.weekly_training_envelope import (
+from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
 

@@ -1,10 +1,10 @@
 import pytest
 
-from opencoach.planning.phase_stimulus_prescription import (
+from opencoach.planning.stimulus.phase_prescription import (
     PhaseStimulusPrescription,
     build_phase_stimulus_prescription,
 )
-from opencoach.planning.training_stimulus import (
+from opencoach.planning.stimulus.training import (
     SpecificityLevel,
     StimulusPriority,
     SubstitutionPolicy,
@@ -12,7 +12,7 @@ from opencoach.planning.training_stimulus import (
     TrainingStimulus,
     TrainingStimulusRequirement,
 )
-from opencoach.planning.weekly_training_envelope import (
+from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
 

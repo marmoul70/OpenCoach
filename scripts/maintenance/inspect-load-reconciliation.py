@@ -6,18 +6,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from opencoach.planning.trajectory_adjustment import (
+from opencoach.planning.trajectory.adjustment import (
     LoadAdjustment,
     ProgressionAdjustment,
 )
-from opencoach.planning.weekly_load_reconciliation import (
+from opencoach.planning.weekly.load_reconciliation import (
     reconcile_weekly_load,
 )
-from opencoach.planning.weekly_load_reconciliation_context import (
+from opencoach.planning.weekly.load_reconciliation_context import (
     LoadDeviationCause,
     contextualize_weekly_load_reconciliation,
 )
-from opencoach.planning.weekly_load_reconciliation_policy import (
+from opencoach.planning.weekly.load_reconciliation_policy import (
     build_reconciliation_adjustment,
 )
 

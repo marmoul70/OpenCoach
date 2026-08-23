@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from opencoach.planning.trajectory_event import (
+from opencoach.planning.trajectory.event import (
     EventImpact,
     RacePriority,
     TrajectoryEvent,

@@ -1,15 +1,15 @@
 import pytest
 
-from opencoach.planning.contextual_stimulus_prescription import (
+from opencoach.planning.stimulus.contextual_prescription import (
     ContextualStimulusPrescription,
 )
-from opencoach.planning.multi_week_trajectory import (
+from opencoach.planning.trajectory.multi_week import (
     TrajectoryWeekType,
 )
-from opencoach.planning.race_demand_profile import (
+from opencoach.planning.knowledge.race_demand_profile import (
     build_race_demand_profile,
 )
-from opencoach.planning.training_stimulus import (
+from opencoach.planning.stimulus.training import (
     SpecificityLevel,
     StimulusPriority,
     SubstitutionPolicy,
@@ -17,13 +17,13 @@ from opencoach.planning.training_stimulus import (
     TrainingStimulus,
     TrainingStimulusRequirement,
 )
-from opencoach.planning.weekly_stimulus_demand import (
+from opencoach.planning.stimulus.weekly_demand import (
     StimulusDemand,
     StimulusDemandDensity,
     WeeklyStimulusDemand,
     build_weekly_stimulus_demand,
 )
-from opencoach.planning.weekly_training_envelope import (
+from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
 

@@ -1,4 +1,4 @@
-from .availability import (
+from opencoach.planning.athlete.availability import (
     DayAvailability,
     DayAvailabilityStatus,
     resolve_day_availability,
@@ -9,84 +9,84 @@ from .quality import (
     assess_planning_context,
 )
 from .service import PlanningContextService
-from .weekly_availability import (
+from opencoach.planning.athlete.weekly_availability import (
     WeeklyAvailability,
     build_weekly_availability,
 )
-from .candidates import (
+from opencoach.planning.athlete.candidates import (
     TrainingDayCandidate,
     rank_training_day_candidates,
 )
-from .session_placement import (
+from opencoach.planning.placement.session import (
     SessionPlacementContext,
     build_session_placement_context,
 )
-from .placement_scoring import (
+from opencoach.planning.placement.scoring import (
     SessionPlacementCandidate,
     rank_session_placement_candidates,
 )
-from .placement_rules import (
+from opencoach.planning.placement.rules import (
     PlacementRuleResult,
     RuleSeverity,
     evaluate_placement_rules,
 )
-from .placement_result import (
+from opencoach.planning.placement.result import (
     SessionPlacementResult,
     build_session_placement_result,
 )
-from .training_history import (
+from opencoach.planning.history.training import (
     TrainingHistorySnapshot,
 )
-from .training_history_service import (
+from opencoach.planning.history.service import (
     TrainingHistorySnapshotService,
 )
-from .training_history_metrics import (
+from opencoach.planning.history.metrics import (
     TrainingHistoryMetrics,
     WeeklyTrainingAverages,
     calculate_training_history_metrics,
 )
-from .athlete_capacity import (
+from opencoach.planning.athlete.capacity import (
     AthleteCapacityAssessment,
     CapacityConfidence,
     assess_athlete_capacity,
 )
-from .capacity_profile_comparison import (
+from opencoach.planning.athlete.capacity_profile_comparison import (
     CapacityMetricComparison,
     CapacityProfileComparison,
     ComparisonStatus,
     compare_capacity_to_profile,
 )
-from .training_baseline import (
+from opencoach.planning.physiology.training_baseline import (
     AthleteTrainingBaseline,
     build_training_baseline,
 )
-from .physiological_calibration import (
+from opencoach.planning.physiology.calibration import (
     CalibrationStatus,
     PhysiologicalCalibrationAssessment,
     PhysiologicalMetricAssessment,
     assess_physiological_calibration,
 )
-from .physiological_freshness import (
+from opencoach.planning.physiology.freshness import (
     MeasurementFreshness,
     PhysiologicalFreshnessAssessment,
     PhysiologicalFreshnessPolicy,
     assess_measurement_freshness,
 )
-from .physiological_snapshot import (
+from opencoach.planning.physiology.snapshot import (
     CalibrationMetricSource,
     PhysiologicalCalibrationMetric,
     PhysiologicalCalibrationSnapshot,
 )
-from .physiological_snapshot_service import (
+from opencoach.planning.physiology.snapshot_service import (
     PhysiologicalCalibrationSnapshotService,
 )
-from .assessment_need import (
+from opencoach.planning.assessment.need import (
     AssessmentNeed,
     AssessmentPriority,
     AssessmentType,
     identify_assessment_needs,
 )
-from .assessment_protocol import (
+from opencoach.planning.assessment.protocol import (
     ASSESSMENT_PROTOCOLS,
     AssessmentProtocol,
     ProtocolEnvironment,
@@ -94,49 +94,49 @@ from .assessment_protocol import (
     get_assessment_protocol,
     get_assessment_protocols,
 )
-from .assessment_protocol_selector import (
+from opencoach.planning.assessment.protocol_selector import (
     AssessmentProtocolCandidate,
     AssessmentProtocolSelection,
     AssessmentSelectionContext,
     build_assessment_selection_context,
     select_assessment_protocol,
 )
-from .assessment_safety import (
+from opencoach.planning.assessment.safety import (
     AssessmentSafetyContext,
     build_assessment_safety_context,
 )
-from .assessment_recommendation import (
+from opencoach.planning.assessment.recommendation import (
     AssessmentPlanRecommendation,
     AssessmentRecommendationStatus,
     build_assessment_recommendation,
 )
-from .assessment_consolidation import (
+from opencoach.planning.assessment.consolidation import (
     ConsolidatedAssessmentPlan,
     consolidate_assessment_needs,
 )
-from .assessment_session import (
+from opencoach.planning.assessment.session import (
     AssessmentSessionSpec,
     build_assessment_session_spec,
 )
-from .assessment_session_placement import (
+from opencoach.planning.assessment.session_placement import (
     build_assessment_training_session,
     place_assessment_session,
 )
-from .assessment_placement_proposal import (
+from opencoach.planning.assessment.placement_proposal import (
     AssessmentPlacementProposal,
     AssessmentPlacementStatus,
     build_assessment_placement_proposal,
 )
-from .assessment_placement_apply import (
+from opencoach.planning.assessment.placement_apply import (
     AssessmentPlacementApplication,
     AssessmentPlacementApplyError,
     apply_assessment_placement,
 )
-from .assessment_planning_service import (
+from opencoach.planning.assessment.planning_service import (
     AssessmentPlanningError,
     AssessmentPlanningService,
 )
-from .season_strategy import (
+from opencoach.planning.season.strategy import (
     MacrocyclePhase,
     MacrocyclePhaseType,
     SeasonStrategy,
@@ -147,7 +147,7 @@ from .season_strategy import (
     TrajectoryStatus,
     WeekTrajectory,
 )
-from .season_planning_input import (
+from opencoach.planning.season.planning_input import (
     SeasonAthleteContext,
     SeasonConstraintContext,
     SeasonGoalContext,
@@ -155,7 +155,7 @@ from .season_planning_input import (
     SeasonPlanningInput,
     SeasonTrainingState,
 )
-from .season_strategy_proposal import (
+from opencoach.planning.season.strategy_proposal import (
     AssumptionImpact,
     SeasonStrategyProposal,
     StrategyAssumption,
@@ -167,13 +167,13 @@ from .season_strategy_proposal import (
     StrategyUncertainty,
     UncertaintyLevel,
 )
-from .season_strategy_validator import (
+from opencoach.planning.season.strategy_validator import (
     SeasonStrategyValidation,
     StrategyViolation,
     ViolationSeverity,
     validate_season_strategy_proposal,
 )
-from .season_policy import (
+from opencoach.planning.season.policy import (
     PolicyAuthority,
     PolicyCategory,
     PolicySource,
@@ -181,7 +181,7 @@ from .season_policy import (
     SeasonPlanningPolicy,
     SeasonPolicyRule,
 )
-from .policy_parameters import (
+from opencoach.planning.season.policy_parameters import (
     AbsoluteLoadLimitParameters,
     AssessmentTimingParameters,
     ComparisonOperator,
@@ -191,23 +191,23 @@ from .policy_parameters import (
     RelativeLoadLimitParameters,
     TaperParameters,
 )
-from .policy_evaluation import (
+from opencoach.planning.season.policy_evaluation import (
     PolicyEvaluationStatus,
     PolicyRuleEvaluation,
     SeasonPolicyEvaluation,
 )
-from .policy_evaluators import (
+from opencoach.planning.season.policy_evaluators import (
     evaluate_policy_rule,
 )
-from .season_policy_evaluator import (
+from opencoach.planning.season.policy_evaluator import (
     evaluate_season_policy,
 )
-from .season_strategy_gate import (
+from opencoach.planning.season.strategy_gate import (
     SeasonStrategyGateResult,
     SeasonStrategyGateStatus,
     evaluate_season_strategy_gate,
 )
-from .training_knowledge import (
+from opencoach.planning.knowledge.training import (
     KnowledgeApplicability,
     KnowledgeEvidenceLevel,
     KnowledgeSourceType,
@@ -216,16 +216,16 @@ from .training_knowledge import (
     TrainingKnowledgeItem,
     TrainingKnowledgeSource,
 )
-from .training_knowledge_selection import (
+from opencoach.planning.knowledge.selection import (
     TrainingKnowledgeSelection,
     select_training_knowledge,
 )
-from .training_knowledge_requirements import (
+from opencoach.planning.knowledge.requirements import (
     KnowledgeRequirementReason,
     TrainingKnowledgeRequirements,
     infer_training_knowledge_requirements,
 )
-from .race_knowledge_classification import (
+from opencoach.planning.knowledge.race_classification import (
     RaceClassificationThresholds,
     RaceDistanceFamily,
     RaceElevationProfile,
@@ -233,39 +233,35 @@ from .race_knowledge_classification import (
     RaceSportFamily,
     classify_race_for_knowledge,
 )
-from .training_knowledge_context import (
+from opencoach.planning.knowledge.context import (
     TrainingKnowledgeContext,
     build_training_knowledge_context,
 )
-from .season_strategist_context import (
+from opencoach.planning.season.strategist_context import (
     SeasonStrategistContext,
     build_season_strategist_context,
 )
-from .season_strategist_request import (
+from opencoach.planning.season.strategist_request import (
     SeasonStrategistRequest,
     build_season_strategist_request,
 )
-from .season_strategist_port import (
+from opencoach.planning.season.strategist_port import (
     SeasonStrategistError,
     SeasonStrategistInvalidResponseError,
     SeasonStrategistPort,
     SeasonStrategistResponse,
     SeasonStrategistUnavailableError,
 )
-from .fake_season_strategist import (
+from opencoach.planning.season.fake_strategist import (
     FakeSeasonStrategist,
 )
-from .ollama_season_strategist import (
-    OllamaSeasonStrategist,
-    OllamaSeasonStrategistConfig,
-)
-from .season_strategy_schema import (
+from opencoach.planning.season.strategy_schema import (
     build_season_strategy_proposal_schema,
 )
-from .season_strategy_parser import (
+from opencoach.planning.season.strategy_parser import (
     parse_season_strategy_proposal,
 )
-from .season_strategist_service import (
+from opencoach.planning.season.strategist_service import (
     SeasonStrategistExecution,
     SeasonStrategistService,
 )
@@ -432,8 +428,6 @@ __all__ = [
     "SeasonStrategistUnavailableError",
     "FakeSeasonStrategist",
     "SeasonStrategistResponse",
-    "OllamaSeasonStrategist",
-    "OllamaSeasonStrategistConfig",
     "build_season_strategy_proposal_schema",
     "parse_season_strategy_proposal",
     "SeasonStrategistExecution",

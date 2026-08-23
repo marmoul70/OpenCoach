@@ -4,19 +4,19 @@ from __future__ import annotations
 
 from datetime import date
 
-from opencoach.planning.load_reconciliation_history import (
+from opencoach.planning.history.load_reconciliation import (
     analyze_reconciliation_history,
 )
-from opencoach.planning.multi_week_trajectory_builder import (
+from opencoach.planning.trajectory.multi_week_builder import (
     build_multi_week_trajectory,
 )
-from opencoach.planning.multi_week_trajectory_reanchoring import (
+from opencoach.planning.trajectory.reanchoring import (
     reanchor_multi_week_trajectory,
 )
-from opencoach.planning.weekly_load_reconciliation import (
+from opencoach.planning.weekly.load_reconciliation import (
     reconcile_weekly_load,
 )
-from opencoach.planning.weekly_load_reconciliation_context import (
+from opencoach.planning.weekly.load_reconciliation_context import (
     LoadDeviationCause,
     contextualize_weekly_load_reconciliation,
 )

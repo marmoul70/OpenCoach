@@ -1,6 +1,6 @@
 import pytest
 
-from opencoach.planning.race_demand_profile import (
+from opencoach.planning.knowledge.race_demand_profile import (
     ElevationDemand,
     RaceDistanceCategory,
     RaceSpecificityDemand,

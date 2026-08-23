@@ -1,14 +1,14 @@
 from datetime import date
 
-from opencoach.planning.return_to_training_clearance import (
+from opencoach.planning.return_to_training.clearance import (
     ReadinessAnswer,
     ReturnToTrainingReadiness,
 )
-from opencoach.planning.return_to_training_resolver import (
+from opencoach.planning.return_to_training.resolver import (
     ReturnToTrainingStatus,
     resolve_return_to_training,
 )
-from opencoach.planning.trajectory_event import (
+from opencoach.planning.trajectory.event import (
     EventImpact,
     TrajectoryEvent,
     TrajectoryEventType,

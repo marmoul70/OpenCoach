@@ -2,10 +2,10 @@ from datetime import date
 
 import pytest
 
-from opencoach.planning.session_intent import (
+from opencoach.planning.sessions.intent import (
     build_session_intent,
 )
-from opencoach.planning.training_stimulus import (
+from opencoach.planning.stimulus.training import (
     SpecificityLevel,
     StimulusPriority,
     SubstitutionPolicy,
@@ -13,14 +13,14 @@ from opencoach.planning.training_stimulus import (
     TrainingStimulus,
     TrainingStimulusRequirement,
 )
-from opencoach.planning.weekly_session_intent_slot import (
+from opencoach.planning.weekly.session_intent_slot import (
     WeeklySessionIntentSlot,
 )
-from opencoach.planning.weekly_schedule_types import (
+from opencoach.planning.weekly.schedule_types import (
     FatigueBudget,
     Weekday,
 )
-from opencoach.planning.weekly_training_envelope import (
+from opencoach.planning.weekly.training_envelope import (
     SchedulePressure,
     TrainingPhase,
     WeeklyTrainingEnvelope,

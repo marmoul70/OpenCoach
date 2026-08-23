@@ -10,10 +10,10 @@ from opencoach.planning import (
     build_session_placement_context,
     build_weekly_availability,
 )
-from opencoach.planning.candidates import (
+from opencoach.planning.athlete.candidates import (
     rank_training_day_candidates,
 )
-from opencoach.planning.placement_rules import (
+from opencoach.planning.placement.rules import (
     evaluate_placement_rules,
 )
 

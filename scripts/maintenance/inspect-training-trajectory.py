@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from opencoach.planning.multi_week_trajectory_builder import (
+from opencoach.planning.trajectory.multi_week_builder import (
     build_multi_week_trajectory,
 )
 

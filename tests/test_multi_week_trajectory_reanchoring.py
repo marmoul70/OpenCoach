@@ -2,16 +2,16 @@ from datetime import date
 
 import pytest
 
-from opencoach.planning.multi_week_trajectory import (
+from opencoach.planning.trajectory.multi_week import (
     TrajectoryWeekType,
 )
-from opencoach.planning.multi_week_trajectory_builder import (
+from opencoach.planning.trajectory.multi_week_builder import (
     build_multi_week_trajectory,
 )
-from opencoach.planning.multi_week_trajectory_reanchoring import (
+from opencoach.planning.trajectory.reanchoring import (
     reanchor_multi_week_trajectory,
 )
-from opencoach.planning.weekly_training_envelope import (
+from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
 

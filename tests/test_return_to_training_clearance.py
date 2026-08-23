@@ -1,4 +1,4 @@
-from opencoach.planning.return_to_training_clearance import (
+from opencoach.planning.return_to_training.clearance import (
     ReadinessAnswer,
     ReturnToTrainingReadiness,
     evaluate_return_to_training_clearance,

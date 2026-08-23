@@ -27,7 +27,7 @@ from opencoach.planning.weekly_session_intent_scheduler import (
 from opencoach.planning.weekly_stimulus_demand import (
     build_weekly_stimulus_demand,
 )
-from opencoach.planning.weekly_stimulus_slot import (
+from opencoach.planning.weekly_schedule_types import (
     FatigueBudget,
     Weekday,
 )

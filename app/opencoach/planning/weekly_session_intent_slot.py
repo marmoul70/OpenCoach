@@ -15,7 +15,7 @@ from .session_intent import (
     SessionIntent,
     SessionIntentImportance,
 )
-from .weekly_stimulus_slot import (
+from .weekly_schedule_types import (
     FatigueBudget,
     Weekday,
 )

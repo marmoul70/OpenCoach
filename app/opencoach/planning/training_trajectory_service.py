@@ -69,7 +69,7 @@ from .weekly_load_reconciliation_context import (
 from .weekly_load_reconciliation_policy import (
     build_reconciliation_adjustment,
 )
-from .weekly_stimulus_slot import (
+from .weekly_schedule_types import (
     Weekday,
 )
 

@@ -3,11 +3,8 @@
 L'enveloppe décrit les objectifs et contraintes de la semaine.
 Elle ne contient aucune séance détaillée.
 
-Le nouveau contrat métier repose sur les intentions de séance
+Le contrat métier repose exclusivement sur les intentions de séance
 placées dans ``session_slots``.
-
-``slots`` reste temporairement disponible comme représentation
-historique compatible avec les anciens consommateurs.
 
 L'athlète reste l'autorité finale sur ses disponibilités et
 sur la réalisation effective de l'entraînement.
@@ -22,9 +19,8 @@ from enum import StrEnum
 from .weekly_session_intent_slot import (
     WeeklySessionIntentSlot,
 )
-from .weekly_stimulus_slot import (
+from .weekly_schedule_types import (
     Weekday,
-    WeeklyStimulusSlot,
 )
 
 
@@ -59,12 +55,6 @@ class WeeklyTrainingEnvelope:
     - les disponibilités réelles ;
     - les préférences d'espacement.
 
-    ``session_slots`` est désormais la représentation métier
-    privilégiée.
-
-    ``slots`` conserve temporairement la représentation historique
-    basée sur un stimulus principal par créneau.
-
     Le coach IA transforme ensuite ce cadre en séances concrètes.
 
     Les disponibilités de l'athlète sont prioritaires : une semaine
@@ -86,17 +76,12 @@ class WeeklyTrainingEnvelope:
         ...
     ]
 
-    slots: tuple[
-        WeeklyStimulusSlot,
+    session_slots: tuple[
+        WeeklySessionIntentSlot,
         ...
     ]
 
     schedule_pressure: SchedulePressure
-
-    session_slots: tuple[
-        WeeklySessionIntentSlot,
-        ...
-    ] = ()
 
     athlete_schedule_constrained: bool = False
 
@@ -170,22 +155,13 @@ class WeeklyTrainingEnvelope:
             self.available_days
         )
 
-        unavailable_legacy_slots = tuple(
-            slot
-            for slot in self.slots
-            if slot.day not in available
-        )
-
-        unavailable_session_slots = tuple(
+        unavailable_slots = tuple(
             slot
             for slot in self.session_slots
             if slot.day not in available
         )
 
-        if (
-            unavailable_legacy_slots
-            or unavailable_session_slots
-        ):
+        if unavailable_slots:
             raise ValueError(
                 "Un créneau d'entraînement a été placé sur "
                 "un jour indisponible pour l'athlète."
@@ -193,19 +169,10 @@ class WeeklyTrainingEnvelope:
 
     @property
     def session_count(self) -> int:
-        """Nombre réel d'intentions de séance.
-
-        Lorsque le nouveau pipeline est présent, il devient la source
-        de vérité. Sinon la représentation historique est utilisée.
-        """
-
-        if self.session_slots:
-            return len(
-                self.session_slots
-            )
+        """Nombre d'intentions de séance planifiées."""
 
         return len(
-            self.slots
+            self.session_slots
         )
 
     @property
@@ -215,12 +182,6 @@ class WeeklyTrainingEnvelope:
         Cette information est descriptive et ne constitue pas
         une interdiction.
         """
-
-        active_slots = (
-            self.session_slots
-            if self.session_slots
-            else self.slots
-        )
 
         day_indexes = {
             Weekday.MONDAY: 0,
@@ -235,7 +196,7 @@ class WeeklyTrainingEnvelope:
         indexes = sorted(
             {
                 day_indexes[slot.day]
-                for slot in active_slots
+                for slot in self.session_slots
             }
         )
 

@@ -12,9 +12,7 @@ Ce module assemble les décisions déterministes déjà calculées :
 
 Il ne génère aucune séance concrète.
 
-Le pipeline historique basé directement sur les stimuli n'est plus
-utilisé comme source de planification. Une représentation compatible
-est toutefois conservée temporairement dans l'enveloppe.
+Le pipeline repose exclusivement sur les intentions de séance.
 """
 
 from __future__ import annotations
@@ -31,9 +29,6 @@ from .load_recovery_cycle import (
 from .multi_week_trajectory import (
     TrajectoryWeekType,
 )
-from .session_intent import (
-    SessionIntentImportance,
-)
 from .session_intent_builder import (
     build_session_intent_plan,
 )
@@ -44,17 +39,11 @@ from .weekly_session_intent_scheduler import (
     WeeklySessionIntentSchedule,
     schedule_session_intents,
 )
-from .weekly_session_intent_slot import (
-    WeeklySessionIntentSlot,
-)
 from .weekly_stimulus_demand import (
     build_weekly_stimulus_demand,
 )
-from .weekly_stimulus_slot import (
-    FatigueBudget,
-    SlotImportance,
+from .weekly_schedule_types import (
     Weekday,
-    WeeklyStimulusSlot,
 )
 from .weekly_training_envelope import (
     SchedulePressure,
@@ -140,12 +129,6 @@ def build_weekly_training_envelope(
         )
     )
 
-    legacy_slots = (
-        _build_legacy_slots(
-            session_slots=session_schedule.slots,
-        )
-    )
-
     schedule_pressure = (
         _classify_schedule_pressure(
             schedule=session_schedule,
@@ -168,7 +151,6 @@ def build_weekly_training_envelope(
         load_min=adjusted_loads.load_min,
         load_max=adjusted_loads.load_max,
         available_days=input_data.available_days,
-        slots=legacy_slots,
         session_slots=session_schedule.slots,
         schedule_pressure=schedule_pressure,
         athlete_schedule_constrained=(
@@ -208,12 +190,7 @@ def _resolve_week_type(
     recovery: LoadRecoveryDecision,
     target_load: float,
 ) -> TrajectoryWeekType:
-    """Déduit le rôle qualitatif de la semaine.
-
-    La suspension de charge domine toutes les autres décisions.
-    Ensuite viennent le retour à l'entraînement, la récupération
-    et l'affûtage.
-    """
+    """Déduit le rôle qualitatif de la semaine."""
 
     if target_load == 0:
         return (
@@ -237,101 +214,6 @@ def _resolve_week_type(
         return TrajectoryWeekType.TAPER
 
     return TrajectoryWeekType.LOADING
-
-
-def _build_legacy_slots(
-    *,
-    session_slots: tuple[
-        WeeklySessionIntentSlot,
-        ...
-    ],
-) -> tuple[
-    WeeklyStimulusSlot,
-    ...
-]:
-    """Produit la vue historique compatible de l'enveloppe.
-
-    Le stimulus principal de chaque SessionIntent est utilisé comme
-    requirement historique.
-
-    Les stimuli secondaires restent accessibles uniquement via
-    ``session_slots`` et constituent désormais la représentation
-    métier complète.
-    """
-
-    result: list[
-        WeeklyStimulusSlot
-    ] = []
-
-    for session_slot in session_slots:
-        intent = session_slot.intent
-
-        primary_requirement = next(
-            requirement
-            for requirement
-            in intent.source_requirements
-            if (
-                requirement.stimulus
-                is intent.primary_stimulus
-            )
-        )
-
-        result.append(
-            WeeklyStimulusSlot(
-                slot_id=session_slot.slot_id,
-                day=session_slot.day,
-                requirement=primary_requirement,
-                importance=_legacy_importance(
-                    intent.importance
-                ),
-                fatigue_budget=(
-                    session_slot.fatigue_budget
-                ),
-                duration_available_minutes=(
-                    session_slot.duration_available_minutes
-                ),
-                preserve_next_key_session=(
-                    session_slot.preserve_next_key_session
-                ),
-                preferred_recovery_before_hours=(
-                    session_slot
-                    .preferred_recovery_before_hours
-                ),
-                preferred_recovery_after_hours=(
-                    session_slot
-                    .preferred_recovery_after_hours
-                ),
-                notes=session_slot.notes,
-            )
-        )
-
-    return tuple(
-        result
-    )
-
-
-def _legacy_importance(
-    importance: SessionIntentImportance,
-) -> SlotImportance:
-    """Convertit l'importance vers le vieux contrat.
-
-    SlotImportance ne possède pas encore de niveau IMPORTANT.
-    On conserve donc temporairement son ancien comportement.
-    """
-
-    if (
-        importance
-        is SessionIntentImportance.KEY
-    ):
-        return SlotImportance.KEY
-
-    if (
-        importance
-        is SessionIntentImportance.IMPORTANT
-    ):
-        return SlotImportance.KEY
-
-    return SlotImportance.SUPPORT
 
 
 def _classify_schedule_pressure(

@@ -15,7 +15,7 @@ from opencoach.planning.training_stimulus import (
 from opencoach.planning.weekly_session_intent_slot import (
     WeeklySessionIntentSlot,
 )
-from opencoach.planning.weekly_stimulus_slot import (
+from opencoach.planning.weekly_schedule_types import (
     FatigueBudget,
     Weekday,
 )

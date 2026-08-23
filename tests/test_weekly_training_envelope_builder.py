@@ -21,7 +21,7 @@ from opencoach.planning.training_stimulus import (
 from opencoach.planning.weekly_load_progression import (
     calculate_weekly_load_target,
 )
-from opencoach.planning.weekly_stimulus_slot import (
+from opencoach.planning.weekly_schedule_types import (
     Weekday,
 )
 from opencoach.planning.weekly_training_envelope import (
@@ -118,38 +118,6 @@ def test_builder_creates_session_intent_pipeline() -> None:
     assert envelope.session_count > 0
 
     assert envelope.session_slots
-
-
-def test_legacy_slots_are_kept_as_compatibility_view() -> None:
-    envelope = build_weekly_training_envelope(
-        input_data=WeeklyTrainingEnvelopeInput(
-            week_start=date(2027, 3, 1),
-            phase=TrainingPhase.BUILD,
-            load_target=create_load_target(),
-            recovery=create_recovery(),
-            prescription=create_prescription(),
-            available_days=(
-                Weekday.MONDAY,
-                Weekday.WEDNESDAY,
-                Weekday.FRIDAY,
-                Weekday.SUNDAY,
-            ),
-        )
-    )
-
-    assert len(
-        envelope.slots
-    ) == len(
-        envelope.session_slots
-    )
-
-    assert [
-        slot.day
-        for slot in envelope.slots
-    ] == [
-        slot.day
-        for slot in envelope.session_slots
-    ]
 
 
 def test_session_intents_can_cover_multiple_stimuli() -> None:
@@ -421,8 +389,9 @@ def test_zero_load_suppresses_all_session_intents() -> None:
     )
 
     assert envelope.target_load == 0.0
+
     assert envelope.session_slots == ()
-    assert envelope.slots == ()
+
     assert envelope.session_count == 0
 
 

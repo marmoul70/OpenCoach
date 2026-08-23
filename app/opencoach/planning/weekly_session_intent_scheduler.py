@@ -1,10 +1,7 @@
 """Placement déterministe des intentions de séance dans une semaine.
 
-Ce scheduler succède conceptuellement au scheduler historique basé
-directement sur les TrainingStimulusRequirement.
-
-Il reçoit des SessionIntent déjà consolidées et décide uniquement
-de leur placement sur les jours disponibles.
+Ce scheduler reçoit des SessionIntent déjà consolidées et décide
+uniquement de leur placement sur les jours disponibles.
 
 Il ne génère aucun contenu concret de séance.
 """
@@ -20,12 +17,12 @@ from .session_intent import (
 from .session_intent_builder import (
     SessionIntentPlan,
 )
-from .weekly_session_intent_slot import (
-    WeeklySessionIntentSlot,
-)
-from .weekly_stimulus_slot import (
+from .weekly_schedule_types import (
     FatigueBudget,
     Weekday,
+)
+from .weekly_session_intent_slot import (
+    WeeklySessionIntentSlot,
 )
 
 
@@ -160,9 +157,6 @@ def _intent_sort_key(
         SessionIntentImportance.SUPPORT: 2,
     }
 
-    # En cas d'égalité, une intention couvrant davantage de stimuli
-    # est priorisée car elle représente davantage de besoins
-    # hebdomadaires dans un seul créneau.
     return (
         importance_order[
             intent.importance
@@ -254,13 +248,9 @@ def _choose_day(
     """Choisit un jour en privilégiant l'espacement des séances clés."""
 
     if not assignments:
-        return (
-            _choose_initial_day(
-                remaining_days=(
-                    remaining_days
-                ),
-                intent=intent,
-            )
+        return _choose_initial_day(
+            remaining_days=remaining_days,
+            intent=intent,
         )
 
     if (
@@ -321,11 +311,7 @@ def _choose_initial_day(
     ],
     intent: SessionIntent,
 ) -> Weekday:
-    """Choisit le premier jour.
-
-    Une intention clé commence sur le premier jour disponible.
-    Les suivantes seront ensuite espacées au maximum.
-    """
+    """Choisit le premier jour disponible."""
 
     return remaining_days[0]
 
@@ -338,16 +324,12 @@ def _build_slot(
 ) -> WeeklySessionIntentSlot:
     """Construit un créneau depuis une intention."""
 
-    fatigue_budget = (
-        _fatigue_budget(
-            intent
-        )
+    fatigue_budget = _fatigue_budget(
+        intent
     )
 
-    recovery_hours = (
-        _recovery_hours(
-            intent
-        )
+    recovery_hours = _recovery_hours(
+        intent
     )
 
     return WeeklySessionIntentSlot(
@@ -391,17 +373,11 @@ def _fatigue_budget(
 
 def _recovery_hours(
     intent: SessionIntent,
-) -> int | None:
+) -> int:
     if (
         intent.importance
         is SessionIntentImportance.KEY
     ):
         return 36
-
-    if (
-        intent.importance
-        is SessionIntentImportance.IMPORTANT
-    ):
-        return 24
 
     return 24

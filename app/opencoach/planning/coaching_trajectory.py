@@ -65,7 +65,7 @@ from .weekly_load_progression import (
     WeeklyLoadTarget,
     calculate_weekly_load_target,
 )
-from .weekly_stimulus_slot import (
+from .weekly_schedule_types import (
     Weekday,
 )
 from .weekly_training_envelope import (

@@ -29,7 +29,7 @@ from opencoach.planning.weekly_load_reconciliation_context import (
     LoadDeviationCause,
     contextualize_weekly_load_reconciliation,
 )
-from opencoach.planning.weekly_stimulus_slot import (
+from opencoach.planning.weekly_schedule_types import (
     Weekday,
 )
 from opencoach.planning.weekly_training_envelope import (

@@ -31,7 +31,7 @@ from opencoach.planning.trajectory_event import (
     TrajectoryEvent,
     TrajectoryEventType,
 )
-from opencoach.planning.weekly_stimulus_slot import (
+from opencoach.planning.weekly_schedule_types import (
     Weekday,
 )
 from opencoach.planning.weekly_training_envelope import (

@@ -5,7 +5,7 @@ son contenu concret.
 
 Elle constitue la frontière entre :
 - le moteur déterministe Python, qui décide des objectifs et contraintes ;
-- le coach IA, qui produit ensuite la séance concrète.
+- le moteur de génération des séances, qui produit ensuite la séance concrète.
 
 Une intention peut regrouper plusieurs stimuli compatibles. Cela évite
 de transformer artificiellement chaque stimulus en séance distincte.

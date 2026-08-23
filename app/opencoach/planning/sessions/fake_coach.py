@@ -1,7 +1,7 @@
-"""Fake déterministe du coach IA de séance.
+"""Fake déterministe du fournisseur de séance.
 
 Cette implémentation sert uniquement aux tests automatiques et aux
-diagnostics sans fournisseur IA réel.
+diagnostics sans fournisseur externe réel.
 
 Elle respecte le même contrat que les futures implémentations
 externes ou distantes.

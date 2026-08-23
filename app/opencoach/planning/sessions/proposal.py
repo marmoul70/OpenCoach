@@ -1,4 +1,4 @@
-"""Proposition concrète de séance générée par le coach IA.
+"""Proposition concrète de séance générée par le moteur de génération des séances.
 
 Une SessionProposal décrit le contenu concret proposé pour une
 SessionIntent déjà décidée par le moteur déterministe.
@@ -11,7 +11,7 @@ Le moteur Python reste responsable des contraintes structurelles :
 - importance ;
 - charge et trajectoire.
 
-Le coach IA peut proposer la manière concrète de réaliser la séance,
+Le moteur de génération des séances peut proposer la manière concrète de réaliser la séance,
 mais ne peut pas redéfinir ces contraintes.
 """
 
@@ -58,7 +58,7 @@ class SessionBlock:
 
 @dataclass(frozen=True, slots=True)
 class SessionProposal:
-    """Séance concrète proposée par le coach IA."""
+    """Séance concrète proposée par le moteur de génération des séances."""
 
     title: str
 

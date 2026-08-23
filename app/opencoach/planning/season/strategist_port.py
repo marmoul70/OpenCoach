@@ -7,24 +7,24 @@ from opencoach.planning.season.strategist_request import (
 
 
 class SeasonStrategistError(RuntimeError):
-    """Erreur générique du stratège IA."""
+    """Erreur générique du fournisseur stratégique."""
 
 
 class SeasonStrategistUnavailableError(
     SeasonStrategistError
 ):
-    """Le moteur IA local n'est pas disponible."""
+    """Le fournisseur stratégique n'est pas disponible."""
 
 
 class SeasonStrategistInvalidResponseError(
     SeasonStrategistError
 ):
-    """Le moteur IA a retourné une réponse inexploitable."""
+    """Le fournisseur stratégique a retourné une réponse inexploitable."""
 
 
 @dataclass(frozen=True)
 class SeasonStrategistResponse:
-    """Réponse structurée brute retournée par un moteur IA."""
+    """Réponse structurée brute retournée par un fournisseur stratégique."""
 
     content: dict[str, object]
 
@@ -34,7 +34,7 @@ class SeasonStrategistResponse:
 
 
 class SeasonStrategistPort(ABC):
-    """Port abstrait utilisé par OpenCoach pour appeler le stratège IA."""
+    """Port abstrait utilisé par OpenCoach pour appeler un fournisseur stratégique optionnel."""
 
     @abstractmethod
     def generate(
@@ -42,4 +42,4 @@ class SeasonStrategistPort(ABC):
         *,
         request: SeasonStrategistRequest,
     ) -> SeasonStrategistResponse:
-        """Génère une réponse structurée depuis le moteur IA."""
+        """Génère une réponse structurée depuis le fournisseur stratégique."""

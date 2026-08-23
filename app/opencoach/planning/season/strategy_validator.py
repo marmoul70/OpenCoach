@@ -63,7 +63,7 @@ def validate_season_strategy_proposal(
     planning_input: SeasonPlanningInput,
     proposal: SeasonStrategyProposal,
 ) -> SeasonStrategyValidation:
-    """Valide une proposition IA contre les faits détenus par Python."""
+    """Valide une proposition stratégique contre les faits détenus par Python."""
 
     violations: list[StrategyViolation] = []
 

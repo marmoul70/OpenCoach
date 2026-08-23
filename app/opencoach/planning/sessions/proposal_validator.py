@@ -1,6 +1,6 @@
-"""Validation déterministe des propositions de séance IA.
+"""Validation déterministe des propositions de séance.
 
-Le coach IA produit une SessionProposal concrète, mais le moteur
+Un fournisseur peut produire une SessionProposal concrète, mais le moteur
 Python reste l'autorité sur les contraintes structurelles.
 
 Ce module vérifie notamment :
@@ -28,7 +28,7 @@ from opencoach.planning.sessions.proposal import (
 
 
 class SessionProposalViolation(StrEnum):
-    """Type de violation détectée dans une proposition IA."""
+    """Type de violation détectée dans une proposition de séance."""
 
     DURATION_BELOW_MINIMUM = "duration_below_minimum"
 
@@ -68,7 +68,7 @@ class SessionProposalValidationIssue:
 
 @dataclass(frozen=True, slots=True)
 class SessionProposalValidationResult:
-    """Résultat complet de validation d'une proposition IA."""
+    """Résultat complet de validation d'une proposition de séance."""
 
     valid: bool
 

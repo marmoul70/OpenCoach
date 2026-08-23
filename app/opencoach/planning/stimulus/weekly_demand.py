@@ -16,7 +16,7 @@ Il ne choisit :
 - ni la combinaison de plusieurs stimuli dans une même séance.
 
 Ces responsabilités appartiennent aux étapes ultérieures du moteur
-et au coach IA.
+et au moteur de génération des séances.
 
 Les quantités définies ici sont des règles de planification OpenCoach.
 Elles sont configurables et ne constituent pas des seuils médicaux.

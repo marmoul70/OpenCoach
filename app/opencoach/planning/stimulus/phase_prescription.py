@@ -4,7 +4,7 @@ Ce module décrit les qualités que la semaine doit développer.
 
 Il ne choisit ni les jours, ni les exercices, ni les intervalles,
 ni le contenu concret des séances. Ces décisions appartiennent aux
-étapes ultérieures du moteur et au coach IA.
+étapes ultérieures du moteur et au moteur de génération des séances.
 """
 
 from __future__ import annotations

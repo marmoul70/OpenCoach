@@ -17,7 +17,7 @@ from opencoach.planning.knowledge.selection import (
 
 @dataclass(frozen=True)
 class TrainingKnowledgeContext:
-    """Contexte de connaissances remis au stratège IA.
+    """Contexte de connaissances remis au moteur de stratégie.
 
     Ce contexte contient uniquement des connaissances sélectionnées
     et leur provenance. Il ne contient aucune policy Python ni
@@ -92,7 +92,7 @@ def build_training_knowledge_context(
     requirements: TrainingKnowledgeRequirements,
     selection: TrainingKnowledgeSelection,
 ) -> TrainingKnowledgeContext:
-    """Construit le contexte final remis au stratège IA."""
+    """Construit le contexte final remis au moteur de stratégie."""
 
     _validate_selection_matches_requirements(
         requirements=requirements,

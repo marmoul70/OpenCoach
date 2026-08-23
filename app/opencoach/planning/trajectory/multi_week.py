@@ -4,7 +4,7 @@ Une trajectoire décrit l'évolution prévue du cadre d'entraînement
 jusqu'à un objectif.
 
 Elle ne contient aucune séance concrète. Les séances sont produites
-ultérieurement par le coach IA à partir des enveloppes hebdomadaires.
+ultérieurement par le moteur de génération des séances à partir des enveloppes hebdomadaires.
 """
 
 from __future__ import annotations

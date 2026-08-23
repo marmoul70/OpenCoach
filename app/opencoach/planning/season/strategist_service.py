@@ -31,7 +31,7 @@ from opencoach.planning.season.strategy_proposal import (
 
 @dataclass(frozen=True)
 class SeasonStrategistAttempt:
-    """Trace d'une tentative individuelle du stratège IA."""
+    """Trace d'une tentative individuelle du moteur de stratégie."""
 
     attempt_number: int
 
@@ -46,7 +46,7 @@ class SeasonStrategistAttempt:
 
 @dataclass(frozen=True)
 class SeasonStrategistExecution:
-    """Trace complète d'une exécution du stratège IA.
+    """Trace complète d'une exécution du moteur de stratégie.
 
     Une exécution peut contenir plusieurs tentatives lorsque
     le Gate Python demande une révision de la proposition.
@@ -122,7 +122,7 @@ class SeasonStrategistExecution:
 
 
 class SeasonStrategistService:
-    """Orchestre le stratège IA local et les garde-fous Python."""
+    """Orchestre le moteur de stratégie et les garde-fous Python."""
 
     def __init__(
         self,

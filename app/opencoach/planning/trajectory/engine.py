@@ -4,7 +4,7 @@ Le moteur transforme les événements connus par OpenCoach en adaptations
 du cadre d'entraînement.
 
 Il ne génère aucune séance concrète. Cette responsabilité appartient
-au coach IA hebdomadaire.
+au moteur de génération des séances.
 """
 
 from __future__ import annotations

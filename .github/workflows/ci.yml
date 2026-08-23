@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+
   pull_request:
     branches:
       - main
+
 
 jobs:
   bash:
@@ -24,6 +26,7 @@ jobs:
 
       - name: Bash syntax check
         run: |
+          bash -n scripts/bootstrap/install.sh
           bash -n scripts/bootstrap/check-environment.sh
           bash -n scripts/maintenance/shellcheck.sh
           bash -n tests/test-libraries.sh
@@ -32,7 +35,7 @@ jobs:
         run: |
           ./scripts/maintenance/shellcheck.sh
 
-      - name: OpenCoach tests on Debian 13
+      - name: OpenCoach bootstrap tests on Debian 13
         run: |
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/workspace" \
@@ -40,7 +43,65 @@ jobs:
             debian:13 \
             bash -c '
               set -Eeuo pipefail
+
               apt-get update
               apt-get install -y bash git
+
               ./tests/test-libraries.sh
             '
+
+
+  python:
+    name: Python 3.13 tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install OpenCoach
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run Python tests
+        run: |
+          pytest -q
+
+
+  frontend:
+    name: Frontend validation
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+
+      - name: Lint
+        run: |
+          npm run lint
+
+      - name: Build
+        run: |
+          npm run build

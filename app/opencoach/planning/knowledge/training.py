@@ -79,7 +79,7 @@ class TrainingKnowledgeSource:
 
 @dataclass(frozen=True)
 class TrainingKnowledgeItem:
-    """Connaissance consultable par le stratège IA.
+    """Connaissance consultable par le moteur de stratégie.
 
     Une connaissance informe la décision.
     Elle ne constitue pas automatiquement un garde-fou Python.

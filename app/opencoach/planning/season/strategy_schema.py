@@ -3,7 +3,7 @@ from typing import Any
 
 def build_season_strategy_proposal_schema(
 ) -> dict[str, Any]:
-    """Retourne le JSON Schema imposé au stratège IA."""
+    """Retourne le JSON Schema imposé au moteur de stratégie."""
 
     stimulus_types = [
         "aerobic_endurance",

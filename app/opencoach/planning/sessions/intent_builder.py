@@ -15,7 +15,7 @@ Il ne décide pas :
 - du contenu concret des séances.
 
 Ces décisions appartiennent aux étapes ultérieures du moteur
-et au coach IA.
+et au moteur de génération des séances.
 """
 
 from __future__ import annotations

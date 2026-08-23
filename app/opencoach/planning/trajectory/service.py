@@ -8,7 +8,7 @@ Ce module relie :
 - l'analyse des dérives multi-semaines ;
 - le réancrage éventuel de la trajectoire future ;
 - l'adaptation hebdomadaire ;
-- l'enveloppe destinée au coach IA.
+- l'enveloppe destinée au moteur de génération des séances.
 
 La trajectoire originale reste disponible pour l'audit.
 Un réancrage ne réécrit jamais les semaines passées.

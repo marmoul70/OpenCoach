@@ -2,7 +2,7 @@
 
 Ce module décrit ce que le moteur de trajectoire demande à une semaine
 d'entraînement. Il ne décrit volontairement pas le contenu concret des
-séances : cette responsabilité appartient au coach IA.
+séances : cette responsabilité appartient au moteur de génération des séances.
 """
 
 from __future__ import annotations
@@ -72,7 +72,7 @@ class StimulusPriority(StrEnum):
 class TrainingStimulusRequirement:
     """Besoin d'entraînement produit par le moteur de trajectoire.
 
-    Il indique au coach IA ce qui doit être obtenu sans lui imposer
+    Il indique au moteur de génération des séances ce qui doit être obtenu sans lui imposer
     la séance concrète permettant d'y parvenir.
     """
 

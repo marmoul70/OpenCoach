@@ -46,7 +46,7 @@ class SchedulePressure(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class WeeklyTrainingEnvelope:
-    """Cadre transmis au futur coach IA hebdomadaire.
+    """Cadre transmis au futur moteur de génération des séances.
 
     Python définit :
     - la phase ;
@@ -55,7 +55,7 @@ class WeeklyTrainingEnvelope:
     - les disponibilités réelles ;
     - les préférences d'espacement.
 
-    Le coach IA transforme ensuite ce cadre en séances concrètes.
+    Le moteur de génération des séances transforme ensuite ce cadre en séances concrètes.
 
     Les disponibilités de l'athlète sont prioritaires : une semaine
     comprimée sur plusieurs jours consécutifs reste valide lorsque

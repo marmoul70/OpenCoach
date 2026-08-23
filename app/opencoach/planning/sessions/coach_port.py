@@ -1,7 +1,7 @@
-"""Port du coach IA chargé de générer une séance concrète.
+"""Port optionnel chargé de générer une séance concrète.
 
 Ce module définit le contrat entre le moteur déterministe OpenCoach
-et un fournisseur IA.
+et un fournisseur externe optionnel.
 
 Le moteur Python reste responsable :
 - de l'intention ;
@@ -32,28 +32,28 @@ from opencoach.planning.weekly.training_envelope import (
 
 
 class SessionCoachError(RuntimeError):
-    """Erreur générique du coach IA de séance."""
+    """Erreur générique du fournisseur de séance."""
 
 
 class SessionCoachUnavailableError(
     SessionCoachError
 ):
-    """Le fournisseur IA n'est pas disponible."""
+    """Le fournisseur externe n'est pas disponible."""
 
 class SessionCoachTimeoutError(
     SessionCoachError
 ):
-    """Le fournisseur IA n'a pas répondu dans le délai imparti."""
+    """Le fournisseur externe n'a pas répondu dans le délai imparti."""
 
 class SessionCoachInvalidResponseError(
     SessionCoachError
 ):
-    """Le fournisseur IA a renvoyé une réponse inexploitable."""
+    """Le fournisseur externe a renvoyé une réponse inexploitable."""
 
 
 @dataclass(frozen=True, slots=True)
 class SessionCoachRequest:
-    """Contexte transmis au coach IA pour une séance."""
+    """Contexte transmis au fournisseur de séance."""
 
     phase: TrainingPhase
 
@@ -88,7 +88,7 @@ class SessionCoachRequest:
 
 @runtime_checkable
 class SessionCoachPort(Protocol):
-    """Interface implémentée par tout coach IA de séance."""
+    """Interface implémentée par tout fournisseur de séance."""
 
     def generate_session(
         self,

@@ -25,7 +25,7 @@ JsonValue = (
 
 @dataclass(frozen=True)
 class SeasonStrategistRequest:
-    """Payload sérialisable transmis au stratège IA."""
+    """Payload sérialisable transmis au moteur de stratégie."""
 
     schema_version: str
 
@@ -49,7 +49,7 @@ def build_season_strategist_request(
     *,
     context: SeasonStrategistContext,
 ) -> SeasonStrategistRequest:
-    """Construit le payload provider-agnostic du stratège IA."""
+    """Construit le payload provider-agnostic du moteur de stratégie."""
 
     return SeasonStrategistRequest(
         schema_version="1.0",

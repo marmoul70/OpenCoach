@@ -67,7 +67,7 @@ def evaluate_season_strategy_gate(
     proposal: SeasonStrategyProposal,
     policy: SeasonPlanningPolicy,
 ) -> SeasonStrategyGateResult:
-    """Applique tous les garde-fous Python à une proposition IA."""
+    """Applique tous les garde-fous Python à une proposition stratégique."""
 
     contract_reasons = _validate_policy_contract(
         planning_input=planning_input,

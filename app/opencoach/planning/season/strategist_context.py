@@ -10,7 +10,7 @@ from opencoach.planning.knowledge.context import (
 
 @dataclass(frozen=True)
 class SeasonStrategistContext:
-    """Contexte complet remis au stratège IA.
+    """Contexte complet remis au moteur de stratégie.
 
     Il contient les faits de planification et les connaissances
     sélectionnées pour la décision stratégique.
@@ -66,7 +66,7 @@ def build_season_strategist_context(
     planning_input: SeasonPlanningInput,
     training_knowledge: TrainingKnowledgeContext,
 ) -> SeasonStrategistContext:
-    """Construit le contexte final destiné au stratège IA."""
+    """Construit le contexte final destiné au moteur de stratégie."""
 
     return SeasonStrategistContext(
         planning_input=planning_input,

@@ -3,7 +3,7 @@
 Ce module représente le résultat du placement temporel d'une
 SessionIntent.
 
-Il ne contient aucune séance concrète : le coach IA reste responsable
+Il ne contient aucune séance concrète : le moteur de génération des séances reste responsable
 des exercices, intervalles, allures et consignes précises.
 """
 

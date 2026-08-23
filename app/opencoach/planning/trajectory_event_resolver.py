@@ -1,7 +1,11 @@
 """Résolution des événements de trajectoire.
 
-Ce module agrège les adaptations produites par plusieurs événements
-afin de fournir une décision déterministe unique au moteur hebdomadaire.
+Ce module transforme les événements actifs en adaptations métier,
+puis utilise le resolver commun pour produire une décision
+déterministe consolidée.
+
+Il ne contient volontairement aucune règle concurrente de priorité
+entre les adaptations.
 """
 
 from __future__ import annotations
@@ -16,26 +20,12 @@ from .trajectory_adjustment import (
     ProgressionAdjustment,
     TrajectoryAdjustment,
 )
+from .trajectory_adjustment_resolver import (
+    resolve_trajectory_adjustments,
+)
 from .trajectory_event import (
     TrajectoryEvent,
 )
-
-
-_LOAD_ORDER = {
-    LoadAdjustment.MAINTAIN: 0,
-    LoadAdjustment.REDUCE_SLIGHTLY: 1,
-    LoadAdjustment.REDUCE: 2,
-    LoadAdjustment.REDUCE_STRONGLY: 3,
-    LoadAdjustment.SUSPEND: 4,
-}
-
-
-_PROGRESSION_ORDER = {
-    ProgressionAdjustment.CONTINUE: 0,
-    ProgressionAdjustment.SLOW: 1,
-    ProgressionAdjustment.PAUSE: 2,
-    ProgressionAdjustment.REBUILD: 3,
-}
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,34 +75,8 @@ def resolve_trajectory_events(
         for event in events
     )
 
-    if not adjustments:
-        return ResolvedTrajectoryEvents(
-            adjustments=(),
-            load_adjustment=LoadAdjustment.MAINTAIN,
-            progression_adjustment=(
-                ProgressionAdjustment.CONTINUE
-            ),
-            event_requires_recovery=False,
-            requires_return_to_training=False,
-            allow_schedule_compression=True,
-            athlete_schedule_constrained=False,
-            notes=(),
-        )
-
-    load_adjustment = max(
-        (
-            adjustment.load
-            for adjustment in adjustments
-        ),
-        key=_LOAD_ORDER.__getitem__,
-    )
-
-    progression_adjustment = max(
-        (
-            adjustment.progression
-            for adjustment in adjustments
-        ),
-        key=_PROGRESSION_ORDER.__getitem__,
+    resolved = resolve_trajectory_adjustments(
+        adjustments=adjustments,
     )
 
     event_requires_recovery = any(
@@ -125,34 +89,24 @@ def resolve_trajectory_events(
         for adjustment in adjustments
     )
 
-    requires_return_to_training = any(
-        adjustment.requires_return_to_training
-        for adjustment in adjustments
-    )
-
-    allow_schedule_compression = all(
-        adjustment.allow_schedule_compression
-        for adjustment in adjustments
-    )
-
     athlete_schedule_constrained = any(
         event.athlete_imposed
         for event in events
     )
 
-    notes = tuple(
-        note
-        for adjustment in adjustments
-        for note in adjustment.notes
-    )
-
     return ResolvedTrajectoryEvents(
         adjustments=adjustments,
-        load_adjustment=load_adjustment,
-        progression_adjustment=progression_adjustment,
+        load_adjustment=resolved.load,
+        progression_adjustment=resolved.progression,
         event_requires_recovery=event_requires_recovery,
-        requires_return_to_training=requires_return_to_training,
-        allow_schedule_compression=allow_schedule_compression,
-        athlete_schedule_constrained=athlete_schedule_constrained,
-        notes=notes,
+        requires_return_to_training=(
+            resolved.requires_return_to_training
+        ),
+        allow_schedule_compression=(
+            resolved.allow_schedule_compression
+        ),
+        athlete_schedule_constrained=(
+            athlete_schedule_constrained
+        ),
+        notes=resolved.notes,
     )

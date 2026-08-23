@@ -1,11 +1,13 @@
 """Orchestration de la trajectoire hebdomadaire OpenCoach.
 
 Ce module relie la trajectoire multi-semaines et les adaptations
-déterministes du jour afin de produire l'enveloppe hebdomadaire.
+déterministes du moment afin de produire l'enveloppe hebdomadaire.
 
-La trajectoire multi-semaines constitue le plan de référence.
-Les événements et l'état réel de l'athlète peuvent ensuite adapter
-la semaine courante.
+Toutes les adaptations sont consolidées par un resolver commun :
+événements actifs, réconciliation du réel et ajustement explicite.
+
+Le lifecycle de retour à l'entraînement reste sous l'autorité du
+ReturnToTrainingResolver.
 
 Il ne génère aucune séance concrète.
 """
@@ -43,7 +45,14 @@ from .return_to_training_resolver import (
     resolve_return_to_training,
 )
 from .trajectory_adjustment import (
+    AdjustmentSeverity,
     LoadAdjustment,
+    ProgressionAdjustment,
+    TrajectoryAdjustment,
+)
+from .trajectory_adjustment_resolver import (
+    ResolvedTrajectoryAdjustment,
+    resolve_trajectory_adjustments,
 )
 from .trajectory_event import (
     TrajectoryEvent,
@@ -95,6 +104,11 @@ class CoachingTrajectoryInput:
         ...
     ] = ()
 
+    additional_adjustments: tuple[
+        TrajectoryAdjustment,
+        ...
+    ] = ()
+
     return_to_training_readiness: (
         ReturnToTrainingReadiness | None
     ) = None
@@ -120,6 +134,8 @@ class CoachingTrajectoryResult:
     effective_phase: TrainingPhase
 
     race_profile: RaceDemandProfile
+
+    resolved_adjustment: ResolvedTrajectoryAdjustment
 
     load_target: WeeklyLoadTarget
 
@@ -165,8 +181,29 @@ def build_coaching_trajectory(
                 "Aucune phase active à la date de planification."
             )
 
-    resolved_events = resolve_trajectory_events(
+    active_events = _active_events_on(
         events=input_data.events,
+        planning_date=input_data.planning_date,
+    )
+
+    resolved_events = resolve_trajectory_events(
+        events=active_events,
+    )
+
+    manual_adjustment = _build_manual_adjustment(
+        input_data.load_adjustment
+    )
+
+    all_adjustments = (
+        resolved_events.adjustments
+        + input_data.additional_adjustments
+        + (manual_adjustment,)
+    )
+
+    resolved_adjustment = (
+        resolve_trajectory_adjustments(
+            adjustments=all_adjustments,
+        )
     )
 
     return_to_training = resolve_return_to_training(
@@ -175,21 +212,23 @@ def build_coaching_trajectory(
         readiness=input_data.return_to_training_readiness,
     )
 
+    additional_requires_return_to_training = any(
+        adjustment.requires_return_to_training
+        for adjustment in input_data.additional_adjustments
+    )
+
     effective_phase = (
         TrainingPhase.RETURN_TO_TRAINING
-        if return_to_training.active
+        if (
+            return_to_training.active
+            or additional_requires_return_to_training
+        )
         else planned_phase
     )
 
     race_profile = build_race_demand_profile(
         distance_km=input_data.target_distance_km,
         elevation_gain_m=input_data.target_elevation_gain_m,
-    )
-
-    effective_adjustment = (
-        resolved_events.load_adjustment
-        if input_data.events
-        else input_data.load_adjustment
     )
 
     use_trajectory_week = (
@@ -204,7 +243,7 @@ def build_coaching_trajectory(
 
         load_target = _build_load_target_from_trajectory_week(
             trajectory_week=trajectory_week,
-            adjustment=effective_adjustment,
+            adjustment=resolved_adjustment.load,
         )
 
         recovery = _resolve_trajectory_week_recovery(
@@ -226,7 +265,7 @@ def build_coaching_trajectory(
         load_target = calculate_weekly_load_target(
             previous_load=input_data.previous_load,
             phase=effective_phase,
-            adjustment=effective_adjustment,
+            adjustment=resolved_adjustment.load,
         )
 
         recovery = decide_load_recovery(
@@ -271,11 +310,41 @@ def build_coaching_trajectory(
         planned_phase=planned_phase,
         effective_phase=effective_phase,
         race_profile=race_profile,
+        resolved_adjustment=resolved_adjustment,
         load_target=load_target,
         recovery=recovery,
         envelope=envelope,
         return_to_training=return_to_training,
         trajectory_week=input_data.trajectory_week,
+    )
+
+
+def _active_events_on(
+    *,
+    events: tuple[
+        TrajectoryEvent,
+        ...
+    ],
+    planning_date: date,
+) -> tuple[
+    TrajectoryEvent,
+    ...
+]:
+    """Retourne uniquement les événements actifs à la date demandée.
+
+    Les événements historiques restent disponibles pour le lifecycle
+    de retour à l'entraînement, mais ils ne doivent plus modifier
+    directement la charge hebdomadaire une fois terminés.
+    """
+
+    return tuple(
+        event
+        for event in events
+        if (
+            event.start_date
+            <= planning_date
+            <= event.end_date
+        )
     )
 
 
@@ -297,18 +366,42 @@ def _validate_trajectory_week(
         )
 
 
+def _build_manual_adjustment(
+    load_adjustment: LoadAdjustment,
+) -> TrajectoryAdjustment:
+    """Convertit l'ancien ajustement de charge en décision générique."""
+
+    severity = {
+        LoadAdjustment.MAINTAIN: AdjustmentSeverity.MINOR,
+        LoadAdjustment.REDUCE_SLIGHTLY: AdjustmentSeverity.MINOR,
+        LoadAdjustment.REDUCE: AdjustmentSeverity.MODERATE,
+        LoadAdjustment.REDUCE_STRONGLY: AdjustmentSeverity.MAJOR,
+        LoadAdjustment.SUSPEND: AdjustmentSeverity.MAJOR,
+    }[
+        load_adjustment
+    ]
+
+    progression = (
+        ProgressionAdjustment.PAUSE
+        if load_adjustment is LoadAdjustment.SUSPEND
+        else ProgressionAdjustment.CONTINUE
+    )
+
+    return TrajectoryAdjustment(
+        reason="Ajustement hebdomadaire explicite.",
+        severity=severity,
+        load=load_adjustment,
+        progression=progression,
+        athlete_override_allowed=True,
+    )
+
+
 def _build_load_target_from_trajectory_week(
     *,
     trajectory_week: TrajectoryWeek,
     adjustment: LoadAdjustment,
 ) -> WeeklyLoadTarget:
-    """Transforme une semaine planifiée en cible hebdomadaire.
-
-    La progression et les récupérations planifiées sont déjà intégrées
-    dans TrajectoryWeek.target_load.
-
-    Seul un ajustement hebdomadaire supplémentaire est appliqué ici.
-    """
+    """Transforme une semaine planifiée en cible hebdomadaire."""
 
     factor = ADJUSTMENT_FACTORS[
         adjustment

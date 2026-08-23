@@ -21,7 +21,10 @@ from opencoach.planning.return_to_training_resolver import (
     ReturnToTrainingStatus,
 )
 from opencoach.planning.trajectory_adjustment import (
+    AdjustmentSeverity,
     LoadAdjustment,
+    ProgressionAdjustment,
+    TrajectoryAdjustment,
 )
 from opencoach.planning.trajectory_event import (
     EventImpact,
@@ -99,6 +102,26 @@ def create_planned_week(
         load_adjustment=LoadAdjustment.MAINTAIN,
         recovery_trigger=recovery_trigger,
         phase_week_index=1,
+    )
+
+
+def create_additional_adjustment(
+    *,
+    load: LoadAdjustment,
+    progression: ProgressionAdjustment = (
+        ProgressionAdjustment.CONTINUE
+    ),
+    requires_return_to_training: bool = False,
+) -> TrajectoryAdjustment:
+    return TrajectoryAdjustment(
+        reason="Adaptation de test.",
+        severity=AdjustmentSeverity.MODERATE,
+        load=load,
+        progression=progression,
+        requires_return_to_training=(
+            requires_return_to_training
+        ),
+        athlete_override_allowed=True,
     )
 
 
@@ -233,9 +256,79 @@ def test_manual_adjustment_can_reduce_planned_week() -> None:
         )
     )
 
+    assert result.resolved_adjustment.load is LoadAdjustment.REDUCE
+
     assert result.load_target.target_load == pytest.approx(
         104.0 * 0.75
     )
+
+
+def test_additional_adjustment_can_reduce_planned_week() -> None:
+    planned_week = create_planned_week()
+
+    adjustment = create_additional_adjustment(
+        load=LoadAdjustment.REDUCE_SLIGHTLY,
+    )
+
+    result = build_coaching_trajectory(
+        input_data=create_input(
+            trajectory_week=planned_week,
+            additional_adjustments=(adjustment,),
+        )
+    )
+
+    assert (
+        result.resolved_adjustment.load
+        is LoadAdjustment.REDUCE_SLIGHTLY
+    )
+
+    assert result.load_target.target_load == pytest.approx(
+        104.0 * 0.90
+    )
+
+
+def test_event_and_additional_adjustment_are_consolidated() -> None:
+    planned_week = create_planned_week()
+
+    adjustment = create_additional_adjustment(
+        load=LoadAdjustment.REDUCE,
+    )
+
+    event = TrajectoryEvent(
+        event_id="injury",
+        event_type=TrajectoryEventType.INJURY,
+        start_date=date(2027, 2, 25),
+        end_date=date(2027, 3, 14),
+        impact=EventImpact.HIGH,
+    )
+
+    result = build_coaching_trajectory(
+        input_data=create_input(
+            trajectory_week=planned_week,
+            events=(event,),
+            additional_adjustments=(adjustment,),
+        )
+    )
+
+    assert (
+        result.resolved_adjustment.load
+        is LoadAdjustment.SUSPEND
+    )
+
+
+def test_manual_maintain_cannot_cancel_additional_reduce() -> None:
+    adjustment = create_additional_adjustment(
+        load=LoadAdjustment.REDUCE,
+    )
+
+    result = build_coaching_trajectory(
+        input_data=create_input(
+            additional_adjustments=(adjustment,),
+            load_adjustment=LoadAdjustment.MAINTAIN,
+        )
+    )
+
+    assert result.resolved_adjustment.load is LoadAdjustment.REDUCE
 
 
 def test_fatigue_can_reduce_planned_week() -> None:
@@ -326,6 +419,30 @@ def test_load_adjustment_is_applied_without_trajectory() -> None:
     )
 
     assert reduced.envelope.target_load < maintained.envelope.target_load
+
+
+def test_additional_adjustment_can_require_return_phase() -> None:
+    adjustment = create_additional_adjustment(
+        load=LoadAdjustment.SUSPEND,
+        progression=ProgressionAdjustment.REBUILD,
+        requires_return_to_training=True,
+    )
+
+    result = build_coaching_trajectory(
+        input_data=create_input(
+            additional_adjustments=(adjustment,),
+        )
+    )
+
+    assert (
+        result.resolved_adjustment.requires_return_to_training
+        is True
+    )
+
+    assert (
+        result.effective_phase
+        is TrainingPhase.RETURN_TO_TRAINING
+    )
 
 
 def test_active_injury_does_not_start_return_phase() -> None:

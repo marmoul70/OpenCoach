@@ -4,9 +4,14 @@ Ce module relie :
 - l'historique réel de l'athlète ;
 - la baseline de charge ;
 - la trajectoire multi-semaines ;
-- la semaine correspondant à la date de planification ;
+- la réconciliation prévu / réalisé ;
+- l'analyse des dérives multi-semaines ;
+- le réancrage éventuel de la trajectoire future ;
 - l'adaptation hebdomadaire ;
 - l'enveloppe destinée au coach IA.
+
+La trajectoire originale reste disponible pour l'audit.
+Un réancrage ne réécrit jamais les semaines passées.
 
 Il ne génère aucune séance concrète.
 """
@@ -14,12 +19,16 @@ Il ne génère aucune séance concrète.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 from .coaching_trajectory import (
     CoachingTrajectoryInput,
     CoachingTrajectoryResult,
     build_coaching_trajectory,
+)
+from .load_reconciliation_history import (
+    ReconciliationTrend,
+    analyze_reconciliation_history,
 )
 from .multi_week_trajectory import (
     MultiWeekTrajectory,
@@ -27,6 +36,9 @@ from .multi_week_trajectory import (
 )
 from .multi_week_trajectory_builder import (
     build_multi_week_trajectory,
+)
+from .multi_week_trajectory_reanchoring import (
+    reanchor_multi_week_trajectory,
 )
 from .return_to_training_clearance import (
     ReturnToTrainingReadiness,
@@ -40,9 +52,22 @@ from .training_load_baseline import (
 )
 from .trajectory_adjustment import (
     LoadAdjustment,
+    TrajectoryAdjustment,
 )
 from .trajectory_event import (
     TrajectoryEvent,
+)
+from .weekly_load_reconciliation import (
+    WeeklyLoadReconciliation,
+    reconcile_weekly_load,
+)
+from .weekly_load_reconciliation_context import (
+    ContextualWeeklyLoadReconciliation,
+    LoadDeviationCause,
+    contextualize_weekly_load_reconciliation,
+)
+from .weekly_load_reconciliation_policy import (
+    build_reconciliation_adjustment,
 )
 from .weekly_stimulus_slot import (
     Weekday,
@@ -60,16 +85,7 @@ class TrainingTrajectoryResult:
 
 @dataclass(frozen=True, slots=True)
 class CurrentWeekCoachingInput:
-    """Entrée nécessaire à la génération du cadre hebdomadaire.
-
-    trajectory_start_date :
-        date à laquelle la trajectoire de préparation a réellement
-        commencé.
-
-    planning_date :
-        date appartenant à la semaine que nous voulons actuellement
-        planifier.
-    """
+    """Entrée nécessaire à la génération du cadre hebdomadaire."""
 
     trajectory_start_date: date
     planning_date: date
@@ -84,6 +100,21 @@ class CurrentWeekCoachingInput:
         Weekday,
         ...
     ]
+
+    reconciliation_history: tuple[
+        ContextualWeeklyLoadReconciliation,
+        ...
+    ] = ()
+
+    previous_week_actual_load: float | None = None
+
+    previous_week_deviation_cause: (
+        LoadDeviationCause | None
+    ) = None
+
+    previous_week_athlete_imposed: bool = False
+
+    previous_week_note: str | None = None
 
     events: tuple[
         TrajectoryEvent,
@@ -123,6 +154,15 @@ class CurrentWeekCoachingInput:
                 "la course cible."
             )
 
+        if (
+            self.previous_week_actual_load is not None
+            and self.previous_week_actual_load < 0
+        ):
+            raise ValueError(
+                "La charge réalisée de la semaine précédente "
+                "ne peut pas être négative."
+            )
+
 
 @dataclass(frozen=True, slots=True)
 class CurrentWeekCoachingResult:
@@ -130,9 +170,23 @@ class CurrentWeekCoachingResult:
 
     baseline: TrainingLoadBaseline
 
+    original_trajectory: MultiWeekTrajectory
+
     trajectory: MultiWeekTrajectory
 
     trajectory_week: TrajectoryWeek
+
+    previous_trajectory_week: TrajectoryWeek | None
+
+    reconciliation: WeeklyLoadReconciliation | None
+
+    reconciliation_context: (
+        ContextualWeeklyLoadReconciliation | None
+    )
+
+    reconciliation_adjustment: TrajectoryAdjustment | None
+
+    reconciliation_trend: ReconciliationTrend
 
     coaching: CoachingTrajectoryResult
 
@@ -143,15 +197,7 @@ def build_training_trajectory(
     target_race_date: date,
     history_metrics: TrainingHistoryMetrics,
 ) -> TrainingTrajectoryResult:
-    """Construit une trajectoire depuis l'historique réel.
-
-    Le paramètre planning_date représente ici la date d'ancrage de la
-    trajectoire. Cette fonction est conservée pour compatibilité avec
-    les appels existants.
-
-    Pour générer une semaine située plus loin dans une trajectoire,
-    utiliser build_current_week_coaching().
-    """
+    """Construit une trajectoire depuis l'historique réel."""
 
     baseline = calculate_training_load_baseline(
         history_metrics
@@ -181,17 +227,97 @@ def build_current_week_coaching(
         history_metrics=input_data.history_metrics,
     )
 
-    trajectory_week = (
-        trajectory_result.trajectory.week_on(
+    original_trajectory = (
+        trajectory_result.trajectory
+    )
+
+    original_current_week = (
+        original_trajectory.week_on(
             input_data.planning_date
         )
     )
 
-    if trajectory_week is None:
+    if original_current_week is None:
         raise ValueError(
             "Aucune semaine de trajectoire ne couvre "
             "la date de planification."
         )
+
+    previous_trajectory_week = (
+        original_trajectory.week_on(
+            input_data.planning_date
+            - timedelta(days=7)
+        )
+    )
+
+    (
+        reconciliation,
+        reconciliation_context,
+        reconciliation_adjustment,
+    ) = _build_previous_week_reconciliation(
+        previous_trajectory_week=previous_trajectory_week,
+        actual_load=input_data.previous_week_actual_load,
+        cause=input_data.previous_week_deviation_cause,
+        athlete_imposed=(
+            input_data.previous_week_athlete_imposed
+        ),
+        note=input_data.previous_week_note,
+    )
+
+    complete_history = (
+        input_data.reconciliation_history
+        + (
+            ()
+            if reconciliation_context is None
+            else (
+                reconciliation_context,
+            )
+        )
+    )
+
+    reconciliation_trend = (
+        analyze_reconciliation_history(
+            history=complete_history,
+            current_reference_load=(
+                original_current_week.progression_reference_before
+            ),
+        )
+    )
+
+    trajectory = original_trajectory
+
+    if reconciliation_trend.reanchoring_applied:
+        trajectory = reanchor_multi_week_trajectory(
+            trajectory=original_trajectory,
+            from_date=original_current_week.week_start,
+            new_reference_load=(
+                reconciliation_trend.recommended_reference_load
+            ),
+            previous_load=(
+                input_data.previous_week_actual_load
+                if input_data.previous_week_actual_load
+                is not None
+                else original_current_week.previous_load
+            ),
+        )
+
+    trajectory_week = trajectory.week_on(
+        input_data.planning_date
+    )
+
+    if trajectory_week is None:
+        raise ValueError(
+            "Aucune semaine effective ne couvre "
+            "la date de planification."
+        )
+
+    additional_adjustments = (
+        ()
+        if reconciliation_adjustment is None
+        else (
+            reconciliation_adjustment,
+        )
+    )
 
     coaching = build_coaching_trajectory(
         input_data=CoachingTrajectoryInput(
@@ -206,6 +332,9 @@ def build_current_week_coaching(
             available_days=input_data.available_days,
             trajectory_week=trajectory_week,
             events=input_data.events,
+            additional_adjustments=(
+                additional_adjustments
+            ),
             return_to_training_readiness=(
                 input_data.return_to_training_readiness
             ),
@@ -227,7 +356,68 @@ def build_current_week_coaching(
 
     return CurrentWeekCoachingResult(
         baseline=trajectory_result.baseline,
-        trajectory=trajectory_result.trajectory,
+        original_trajectory=original_trajectory,
+        trajectory=trajectory,
         trajectory_week=trajectory_week,
+        previous_trajectory_week=(
+            previous_trajectory_week
+        ),
+        reconciliation=reconciliation,
+        reconciliation_context=(
+            reconciliation_context
+        ),
+        reconciliation_adjustment=(
+            reconciliation_adjustment
+        ),
+        reconciliation_trend=(
+            reconciliation_trend
+        ),
         coaching=coaching,
+    )
+
+
+def _build_previous_week_reconciliation(
+    *,
+    previous_trajectory_week: TrajectoryWeek | None,
+    actual_load: float | None,
+    cause: LoadDeviationCause | None,
+    athlete_imposed: bool,
+    note: str | None,
+) -> tuple[
+    WeeklyLoadReconciliation | None,
+    ContextualWeeklyLoadReconciliation | None,
+    TrajectoryAdjustment | None,
+]:
+    """Réconcilie la semaine précédente lorsqu'elle est disponible."""
+
+    if (
+        previous_trajectory_week is None
+        or actual_load is None
+    ):
+        return (
+            None,
+            None,
+            None,
+        )
+
+    reconciliation = reconcile_weekly_load(
+        planned_load=previous_trajectory_week.target_load,
+        actual_load=actual_load,
+    )
+
+    context = contextualize_weekly_load_reconciliation(
+        reconciliation=reconciliation,
+        cause=cause,
+        athlete_imposed=athlete_imposed,
+        note=note,
+    )
+
+    adjustment = build_reconciliation_adjustment(
+        context
+    )
+
+    return (
+        reconciliation,
+        context,
+        adjustment,
     )

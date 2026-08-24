@@ -27,6 +27,16 @@ interface TrainingSectionProps {
 export function TrainingSection({
   training,
 }: TrainingSectionProps) {
+    const TRAINING_DAYS = [
+    { label: 'L', value: 0, name: 'Lundi' },
+    { label: 'M', value: 1, name: 'Mardi' },
+    { label: 'M', value: 2, name: 'Mercredi' },
+    { label: 'J', value: 3, name: 'Jeudi' },
+    { label: 'V', value: 4, name: 'Vendredi' },
+    { label: 'S', value: 5, name: 'Samedi' },
+    { label: 'D', value: 6, name: 'Dimanche' },
+  ] as const
+
   const [weeklySessions, setWeeklySessions] = useState(
     training.weeklySessions?.toString() ?? '',
   )
@@ -188,24 +198,17 @@ export function TrainingSection({
           </p>
 
           <div className="grid grid-cols-7 gap-2">
-            {[
-              ['L', 1],
-              ['M', 2],
-              ['M', 3],
-              ['J', 4],
-              ['V', 5],
-              ['S', 6],
-              ['D', 0],
-            ].map(([label, day]) => {
-              const numericDay = Number(day)
-              const selected = availableDays.includes(numericDay)
+            {TRAINING_DAYS.map((day) => {
+              const selected = availableDays.includes(day.value)
 
               return (
                 <button
-                  key={numericDay}
+                  key={day.value}
                   type="button"
-                  onClick={() => toggleDay(numericDay)}
+                  onClick={() => toggleDay(day.value)}
                   aria-pressed={selected}
+                  aria-label={day.name}
+                  title={day.name}
                   className={[
                     'btn h-11 min-h-11 flex-1',
                     selected
@@ -213,7 +216,7 @@ export function TrainingSection({
                       : 'btn-ghost border border-base-300 bg-base-100',
                   ].join(' ')}
                 >
-                  {label}
+                  {day.label}
                 </button>
               )
             })}

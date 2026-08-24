@@ -60,3 +60,66 @@ def test_specific_week_before_taper_remains_loading_week() -> None:
         week.week_type
         is TrajectoryWeekType.LOADING
     )
+def test_short_specific_phase_preserves_two_loading_weeks() -> None:
+    """Une phase spécifique courte ne doit pas être consommée par
+    une récupération périodique planifiée.
+    """
+
+    trajectory = build_multi_week_trajectory(
+        planning_date=date(2026, 6, 15),
+        target_race_date=date(2026, 8, 23),
+        baseline_load=100.0,
+        baseline_duration_minutes=254.0,
+        goal_duration_demand_minutes=420.0,
+    )
+
+    specific_weeks = tuple(
+        week
+        for week in trajectory.weeks
+        if week.phase.value == "specific"
+    )
+
+    assert len(specific_weeks) == 2
+
+    assert all(
+        week.week_type
+        is TrajectoryWeekType.LOADING
+        for week in specific_weeks
+    )
+
+
+def test_specific_phase_can_recover_when_two_loading_weeks_remain() -> None:
+    """Une récupération reste possible dans une phase spécifique
+    suffisamment longue.
+    """
+
+    trajectory = build_multi_week_trajectory(
+        planning_date=date(2026, 6, 15),
+        target_race_date=date(2026, 9, 13),
+        baseline_load=100.0,
+    )
+
+    specific_weeks = tuple(
+        week
+        for week in trajectory.weeks
+        if week.phase.value == "specific"
+    )
+
+    recovery_indexes = tuple(
+        index
+        for index, week in enumerate(specific_weeks)
+        if week.week_type
+        is TrajectoryWeekType.RECOVERY
+    )
+
+    for recovery_index in recovery_indexes:
+        loading_after = sum(
+            1
+            for week in specific_weeks[
+                recovery_index + 1:
+            ]
+            if week.week_type
+            is TrajectoryWeekType.LOADING
+        )
+
+        assert loading_after >= 2

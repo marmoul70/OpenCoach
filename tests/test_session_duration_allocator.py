@@ -396,3 +396,225 @@ def test_long_endurance_reference_respects_slot_maximum() -> None:
     }
 
     assert durations["long"] == 140
+
+def test_extra_weekly_volume_is_absorbed_by_aerobic_before_threshold() -> None:
+    """Le surplus de volume privilégie l'aérobie plutôt que le seuil."""
+
+    threshold = create_slot(
+        slot_id="threshold",
+        day=Weekday.MONDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.UPHILL_THRESHOLD,
+            importance=SessionIntentImportance.KEY,
+            minimum=60,
+            maximum=105,
+        ),
+    )
+
+    easy_1 = create_slot(
+        slot_id="easy-1",
+        day=Weekday.WEDNESDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.AEROBIC_EASY,
+            importance=SessionIntentImportance.SUPPORT,
+            minimum=45,
+            maximum=120,
+        ),
+    )
+
+    easy_2 = create_slot(
+        slot_id="easy-2",
+        day=Weekday.FRIDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.AEROBIC_EASY,
+            importance=SessionIntentImportance.SUPPORT,
+            minimum=45,
+            maximum=120,
+        ),
+    )
+
+    long_run = create_slot(
+        slot_id="long",
+        day=Weekday.SUNDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.LONG_ENDURANCE,
+            importance=SessionIntentImportance.KEY,
+            minimum=90,
+            maximum=240,
+        ),
+    )
+
+    result = allocate_session_durations(
+        slots=(
+            threshold,
+            easy_1,
+            easy_2,
+            long_run,
+        ),
+        target_load=185.0,
+        reference_weekly_duration_minutes=420.0,
+        long_endurance_reference_minutes=175.0,
+    )
+
+    durations = {
+        item.slot_id: item.duration_minutes
+        for item in result
+    }
+
+    assert sum(durations.values()) == 420
+
+    assert durations["long"] == 175
+
+    assert durations["threshold"] <= 90
+
+    assert durations["easy-1"] >= durations["threshold"]
+    assert durations["easy-2"] >= durations["threshold"]
+
+
+def test_extra_weekly_volume_is_absorbed_by_aerobic_before_threshold() -> None:
+    """Le surplus de volume privilégie l'aérobie plutôt que le seuil."""
+
+    threshold = create_slot(
+        slot_id="threshold",
+        day=Weekday.MONDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.UPHILL_THRESHOLD,
+            importance=SessionIntentImportance.KEY,
+            minimum=60,
+            maximum=105,
+        ),
+    )
+
+    easy_1 = create_slot(
+        slot_id="easy-1",
+        day=Weekday.WEDNESDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.AEROBIC_EASY,
+            importance=SessionIntentImportance.SUPPORT,
+            minimum=45,
+            maximum=120,
+        ),
+    )
+
+    easy_2 = create_slot(
+        slot_id="easy-2",
+        day=Weekday.FRIDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.AEROBIC_EASY,
+            importance=SessionIntentImportance.SUPPORT,
+            minimum=45,
+            maximum=120,
+        ),
+    )
+
+    long_run = create_slot(
+        slot_id="long",
+        day=Weekday.SUNDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.LONG_ENDURANCE,
+            importance=SessionIntentImportance.KEY,
+            minimum=90,
+            maximum=240,
+        ),
+    )
+
+    result = allocate_session_durations(
+        slots=(
+            threshold,
+            easy_1,
+            easy_2,
+            long_run,
+        ),
+        target_load=185.0,
+        reference_weekly_duration_minutes=420.0,
+        long_endurance_reference_minutes=175.0,
+    )
+
+    durations = {
+        item.slot_id: item.duration_minutes
+        for item in result
+    }
+
+    assert sum(durations.values()) == 420
+
+    assert durations["long"] == 175
+
+    assert durations["threshold"] <= 90
+
+    assert durations["easy-1"] >= durations["threshold"]
+    assert durations["easy-2"] >= durations["threshold"]
+
+
+def test_threshold_reaches_functional_duration_before_aerobic_absorbs_surplus() -> None:
+    """Une séance seuil atteint une durée fonctionnelle sans absorber le surplus."""
+
+    threshold = create_slot(
+        slot_id="threshold",
+        day=Weekday.MONDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.UPHILL_THRESHOLD,
+            importance=SessionIntentImportance.KEY,
+            minimum=30,
+            maximum=120,
+        ),
+    )
+
+    easy_1 = create_slot(
+        slot_id="easy-1",
+        day=Weekday.WEDNESDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.AEROBIC_EASY,
+            importance=SessionIntentImportance.SUPPORT,
+            minimum=45,
+            maximum=120,
+        ),
+    )
+
+    easy_2 = create_slot(
+        slot_id="easy-2",
+        day=Weekday.FRIDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.AEROBIC_EASY,
+            importance=SessionIntentImportance.SUPPORT,
+            minimum=45,
+            maximum=120,
+        ),
+    )
+
+    long_run = create_slot(
+        slot_id="long",
+        day=Weekday.SUNDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.LONG_ENDURANCE,
+            importance=SessionIntentImportance.KEY,
+            minimum=90,
+            maximum=240,
+        ),
+    )
+
+    result = allocate_session_durations(
+        slots=(
+            threshold,
+            easy_1,
+            easy_2,
+            long_run,
+        ),
+        target_load=185.0,
+        reference_weekly_duration_minutes=420.0,
+        long_endurance_reference_minutes=175.0,
+    )
+
+    durations = {
+        item.slot_id: item.duration_minutes
+        for item in result
+    }
+
+    assert sum(durations.values()) == 420
+
+    assert durations["long"] == 175
+
+    assert durations["threshold"] >= 60
+    assert durations["threshold"] <= 90
+
+    assert durations["easy-1"] >= durations["threshold"]
+    assert durations["easy-2"] >= durations["threshold"]

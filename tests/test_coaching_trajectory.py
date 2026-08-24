@@ -71,6 +71,7 @@ def create_planned_week(
     load_min: float = 98.8,
     load_max: float = 109.2,
     recovery_trigger: RecoveryTrigger = RecoveryTrigger.NONE,
+    target_duration_minutes: float | None = None,
 ) -> TrajectoryWeek:
     progression_rate = {
         TrainingPhase.BASE: 0.04,
@@ -102,6 +103,7 @@ def create_planned_week(
         load_adjustment=LoadAdjustment.MAINTAIN,
         recovery_trigger=recovery_trigger,
         phase_week_index=1,
+        target_duration_minutes=target_duration_minutes,
     )
 
 
@@ -600,3 +602,50 @@ def test_persistent_symptoms_keep_return_phase_active() -> None:
     )
 
     assert result.effective_phase is TrainingPhase.RETURN_TO_TRAINING
+
+
+def test_trajectory_week_supplies_weekly_volume_target() -> None:
+    """La cible horaire de trajectoire est prioritaire sur l'historique."""
+
+    planned_week = create_planned_week(
+        target_duration_minutes=420.0,
+    )
+
+    result = build_coaching_trajectory(
+        input_data=create_input(
+            trajectory_week=planned_week,
+            reference_weekly_duration_minutes=300.0,
+        )
+    )
+
+    assert (
+        result.envelope.target_duration_minutes
+        == pytest.approx(420.0)
+    )
+
+
+def test_trajectory_recovery_volume_is_not_reduced_twice() -> None:
+    """Une cible de récupération déjà calculée n'est pas réduite à nouveau."""
+
+    planned_week = create_planned_week(
+        week_type=TrajectoryWeekType.RECOVERY,
+        target_load=78.0,
+        load_min=74.0,
+        load_max=82.0,
+        recovery_trigger=RecoveryTrigger.PLANNED,
+        target_duration_minutes=315.0,
+    )
+
+    result = build_coaching_trajectory(
+        input_data=create_input(
+            trajectory_week=planned_week,
+            reference_weekly_duration_minutes=420.0,
+        )
+    )
+
+    assert result.recovery.recovery_week is True
+
+    assert (
+        result.envelope.target_duration_minutes
+        == pytest.approx(315.0)
+    )

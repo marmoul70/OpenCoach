@@ -31,6 +31,10 @@ def create_week(
     load_min: float = 400.0,
     load_max: float = 440.0,
     phase_week_index: int = 1,
+    previous_duration_minutes: float | None = None,
+    progression_reference_duration_before_minutes: float | None = None,
+    progression_reference_duration_after_minutes: float | None = None,
+    target_duration_minutes: float | None = None,
 ) -> TrajectoryWeek:
     return TrajectoryWeek(
         week_start=week_start,
@@ -50,6 +54,14 @@ def create_week(
         load_adjustment=LoadAdjustment.MAINTAIN,
         recovery_trigger=RecoveryTrigger.NONE,
         phase_week_index=phase_week_index,
+        previous_duration_minutes=previous_duration_minutes,
+        progression_reference_duration_before_minutes=(
+            progression_reference_duration_before_minutes
+        ),
+        progression_reference_duration_after_minutes=(
+            progression_reference_duration_after_minutes
+        ),
+        target_duration_minutes=target_duration_minutes,
     )
 
 
@@ -377,3 +389,56 @@ def test_trajectory_requires_chronological_weeks() -> None:
                 ),
             ),
         )
+
+def test_week_tracks_volume_trajectory() -> None:
+    """Une semaine peut transporter sa trajectoire de volume."""
+
+    week = create_week(
+        previous_duration_minutes=300.0,
+        progression_reference_duration_before_minutes=320.0,
+        progression_reference_duration_after_minutes=340.0,
+        target_duration_minutes=340.0,
+    )
+
+    assert week.previous_duration_minutes == pytest.approx(300.0)
+
+    assert (
+        week.progression_reference_duration_before_minutes
+        == pytest.approx(320.0)
+    )
+
+    assert (
+        week.progression_reference_duration_after_minutes
+        == pytest.approx(340.0)
+    )
+
+    assert week.target_duration_minutes == pytest.approx(340.0)
+
+
+def test_week_rejects_negative_volume_values() -> None:
+    """Les valeurs temporelles d'une trajectoire sont positives."""
+
+    with pytest.raises(
+        ValueError,
+        match="volume",
+    ):
+        create_week(
+            target_duration_minutes=-1.0,
+        )
+
+
+def test_week_allows_missing_volume_trajectory() -> None:
+    """La trajectoire de volume reste optionnelle pendant la migration."""
+
+    week = create_week()
+
+    assert week.previous_duration_minutes is None
+    assert (
+        week.progression_reference_duration_before_minutes
+        is None
+    )
+    assert (
+        week.progression_reference_duration_after_minutes
+        is None
+    )
+    assert week.target_duration_minutes is None

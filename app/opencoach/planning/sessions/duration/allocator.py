@@ -22,6 +22,12 @@ from opencoach.planning.sessions.intent import (
 from opencoach.planning.stimulus.training import (
     TrainingStimulus,
 )
+from opencoach.planning.sessions.families import (
+    session_intent_family,
+)
+from opencoach.planning.stimulus.families import (
+    StimulusFamily,
+)
 from opencoach.planning.weekly.session_intent_slot import (
     WeeklySessionIntentSlot,
 )
@@ -268,35 +274,16 @@ def _allocate_with_long_endurance_reference(
             ),
         )
 
-    other_weights = tuple(
-        _slot_weight(slot)
-        for slot in other_slots
-    )
-
-    total_other_weight = sum(
-        other_weights
-    )
-
     other_allocations = [
         AllocatedSessionDuration(
             slot_id=slot.slot_id,
             duration_minutes=(
-                _resolve_slot_duration(
-                    slot=slot,
-                    target_minutes=(
-                        remaining_budget
-                        * weight
-                        / total_other_weight
-                    ),
+                _functional_minimum_duration(
+                    slot
                 )
             ),
         )
-        for slot, weight
-        in zip(
-            other_slots,
-            other_weights,
-            strict=True,
-        )
+        for slot in other_slots
     ]
 
     durations = {
@@ -331,6 +318,89 @@ def _allocate_with_long_endurance_reference(
             ),
         )
         for slot in slots
+    )
+
+
+_FUNCTIONAL_MINIMUM_BY_FAMILY = {
+    StimulusFamily.THRESHOLD: 60,
+    StimulusFamily.HIGH_INTENSITY: 60,
+    StimulusFamily.SPECIFIC: 60,
+}
+
+
+def _functional_minimum_duration(
+    slot: WeeklySessionIntentSlot,
+) -> int:
+    """Retourne la durée minimale fonctionnelle d'une séance.
+
+    Le minimum de l'intention reste la borne absolue.
+
+    Certaines familles qualitatives nécessitent néanmoins une durée
+    totale suffisante pour contenir échauffement, travail principal
+    et retour au calme sans être artificiellement comprimées.
+    """
+
+    minimum = _minimum_duration(
+        slot
+    )
+
+    family = session_intent_family(
+        slot.intent
+    )
+
+    functional_minimum = max(
+        minimum,
+        _FUNCTIONAL_MINIMUM_BY_FAMILY.get(
+            family,
+            minimum,
+        ),
+    )
+
+    maximum = _maximum_duration(
+        slot
+    )
+
+    if maximum is not None:
+        functional_minimum = min(
+            functional_minimum,
+            maximum,
+        )
+
+    return functional_minimum
+
+
+_VOLUME_ABSORPTION_PRIORITY = {
+    StimulusFamily.AEROBIC: 0,
+    StimulusFamily.SPECIFIC: 1,
+    StimulusFamily.THRESHOLD: 2,
+    StimulusFamily.HIGH_INTENSITY: 3,
+    StimulusFamily.RECOVERY: 4,
+    StimulusFamily.STRENGTH: 5,
+}
+
+
+def _volume_absorption_rank(
+    slot: WeeklySessionIntentSlot,
+) -> tuple[
+    int,
+    float,
+]:
+    """Classe les créneaux selon leur capacité à absorber du volume facile.
+
+    Les familles aérobies absorbent le surplus avant les familles
+    qualitatives. L'importance départage ensuite les séances appartenant
+    à une même famille.
+    """
+
+    family = session_intent_family(
+        slot.intent
+    )
+
+    return (
+        _VOLUME_ABSORPTION_PRIORITY[
+            family
+        ],
+        -_slot_weight(slot),
     )
 
 
@@ -392,30 +462,69 @@ def _reconcile_allocated_budget(
         remaining = difference
 
         candidates = tuple(
-            slot
-            for slot in slots
-            if slot.slot_id
-            not in protected_slot_ids
+            sorted(
+                (
+                    slot
+                    for slot in slots
+                    if slot.slot_id
+                    not in protected_slot_ids
+                ),
+                key=_volume_absorption_rank,
+            )
         )
 
-        for slot in candidates:
-            maximum = _maximum_duration(
+        priorities = tuple(
+            sorted(
+                {
+                    _volume_absorption_rank(
+                        slot
+                    )[0]
+                    for slot in candidates
+                }
+            )
+        )
+
+        for priority in priorities:
+            family_candidates = tuple(
                 slot
+                for slot in candidates
+                if (
+                    _volume_absorption_rank(
+                        slot
+                    )[0]
+                    == priority
+                )
             )
 
             while remaining >= 5:
-                if (
-                    maximum is not None
-                    and durations[slot.slot_id] + 5
-                    > maximum
-                ):
+                progressed = False
+
+                for slot in family_candidates:
+                    maximum = _maximum_duration(
+                        slot
+                    )
+
+                    if (
+                        maximum is not None
+                        and durations[
+                            slot.slot_id
+                        ] + 5
+                        > maximum
+                    ):
+                        continue
+
+                    durations[
+                        slot.slot_id
+                    ] += 5
+
+                    remaining -= 5
+                    progressed = True
+
+                    if remaining < 5:
+                        return durations
+
+                if not progressed:
                     break
-
-                durations[slot.slot_id] += 5
-                remaining -= 5
-
-                if remaining == 0:
-                    return durations
 
     return durations
 

@@ -72,6 +72,12 @@ from opencoach.planning.weekly.load_reconciliation_policy import (
 from opencoach.planning.weekly.schedule_types import (
     Weekday,
 )
+from opencoach.planning.knowledge.race_demand_profile import (
+    build_race_demand_profile,
+)
+from opencoach.planning.weekly.volume_demand import (
+    build_race_volume_demand,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -232,6 +238,8 @@ def build_training_trajectory(
     planning_date: date,
     target_race_date: date,
     history_metrics: TrainingHistoryMetrics,
+    target_distance_km: float | None = None,
+    target_elevation_gain_m: float | None = None,
 ) -> TrainingTrajectoryResult:
     """Construit une trajectoire depuis l'historique réel."""
 
@@ -239,10 +247,40 @@ def build_training_trajectory(
         history_metrics
     )
 
+    baseline_duration_minutes = (
+        history_metrics.last_28_days.duration_minutes
+    )
+
+    goal_duration_demand_minutes: float | None = None
+
+    if target_distance_km is not None:
+        race_profile = build_race_demand_profile(
+            distance_km=target_distance_km,
+            elevation_gain_m=(
+                target_elevation_gain_m
+                if target_elevation_gain_m is not None
+                else 0.0
+            ),
+        )
+
+        volume_demand = build_race_volume_demand(
+            race_profile=race_profile
+        )
+
+        goal_duration_demand_minutes = (
+            volume_demand.specific_peak_duration_minutes
+        )
+
     trajectory = build_multi_week_trajectory(
         planning_date=planning_date,
         target_race_date=target_race_date,
         baseline_load=baseline.baseline_load,
+        baseline_duration_minutes=(
+            baseline_duration_minutes
+        ),
+        goal_duration_demand_minutes=(
+            goal_duration_demand_minutes
+        ),
     )
 
     return TrainingTrajectoryResult(
@@ -260,6 +298,12 @@ def build_current_week_coaching(
     trajectory_result = build_training_trajectory(
         planning_date=input_data.trajectory_start_date,
         target_race_date=input_data.target_race_date,
+        target_distance_km=(
+            input_data.target_distance_km
+        ),
+        target_elevation_gain_m=(
+            input_data.target_elevation_gain_m
+        ),
         history_metrics=input_data.history_metrics,
     )
 

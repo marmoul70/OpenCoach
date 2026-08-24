@@ -71,7 +71,7 @@ def _easy_aerobic_requirement() -> TrainingStimulusRequirement:
             TrainingModality.CYCLING,
             TrainingModality.SWIMMING,
         ),
-        duration_min_minutes=30,
+        duration_min_minutes=45,
         duration_max_minutes=120,
     )
 

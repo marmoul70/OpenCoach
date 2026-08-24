@@ -449,3 +449,141 @@ def test_omitted_intents_are_reported() -> None:
     assert len(
         schedule.omitted_intents
     ) >= 1
+
+
+def test_long_endurance_prefers_sunday_when_available() -> None:
+    """La sortie longue privilégie un jour de week-end disponible."""
+
+    plan = create_plan(
+        (
+            create_requirement(
+                stimulus=TrainingStimulus.LONG_ENDURANCE,
+                priority=StimulusPriority.KEY,
+            ),
+        )
+    )
+
+    schedule = schedule_session_intents(
+        plan=plan,
+        available_days=(
+            Weekday.MONDAY,
+            Weekday.WEDNESDAY,
+            Weekday.FRIDAY,
+            Weekday.SUNDAY,
+        ),
+    )
+
+    assert schedule.session_count == 1
+
+    assert (
+        schedule.slots[0].day
+        is Weekday.SUNDAY
+    )
+
+
+def test_long_endurance_prefers_saturday_when_available() -> None:
+    """Le samedi est préféré lorsqu'il est le week-end disponible."""
+
+    plan = create_plan(
+        (
+            create_requirement(
+                stimulus=TrainingStimulus.LONG_ENDURANCE,
+                priority=StimulusPriority.KEY,
+            ),
+        )
+    )
+
+    schedule = schedule_session_intents(
+        plan=plan,
+        available_days=(
+            Weekday.MONDAY,
+            Weekday.WEDNESDAY,
+            Weekday.FRIDAY,
+            Weekday.SATURDAY,
+        ),
+    )
+
+    assert schedule.session_count == 1
+
+    assert (
+        schedule.slots[0].day
+        is Weekday.SATURDAY
+    )
+
+
+def test_long_endurance_does_not_require_weekend() -> None:
+    """La sortie longue reste possible sans disponibilité le week-end."""
+
+    plan = create_plan(
+        (
+            create_requirement(
+                stimulus=TrainingStimulus.LONG_ENDURANCE,
+                priority=StimulusPriority.KEY,
+            ),
+        )
+    )
+
+    schedule = schedule_session_intents(
+        plan=plan,
+        available_days=(
+            Weekday.MONDAY,
+            Weekday.WEDNESDAY,
+            Weekday.FRIDAY,
+        ),
+    )
+
+    assert schedule.session_count == 1
+
+    assert schedule.slots[0].day in {
+        Weekday.MONDAY,
+        Weekday.WEDNESDAY,
+        Weekday.FRIDAY,
+    }
+
+
+def test_key_spacing_remains_priority_over_weekend_preference() -> None:
+    """La préférence week-end ne détruit pas l'espacement des séances clés."""
+
+    plan = create_plan(
+        (
+            create_requirement(
+                stimulus=TrainingStimulus.LONG_ENDURANCE,
+                priority=StimulusPriority.KEY,
+            ),
+            create_requirement(
+                stimulus=TrainingStimulus.THRESHOLD,
+                priority=StimulusPriority.KEY,
+            ),
+        )
+    )
+
+    schedule = schedule_session_intents(
+        plan=plan,
+        available_days=(
+            Weekday.MONDAY,
+            Weekday.WEDNESDAY,
+            Weekday.FRIDAY,
+            Weekday.SUNDAY,
+        ),
+    )
+
+    long_slot = next(
+        slot
+        for slot in schedule.slots
+        if (
+            slot.intent.primary_stimulus
+            is TrainingStimulus.LONG_ENDURANCE
+        )
+    )
+
+    threshold_slot = next(
+        slot
+        for slot in schedule.slots
+        if (
+            slot.intent.primary_stimulus
+            is TrainingStimulus.THRESHOLD
+        )
+    )
+
+    assert long_slot.day is Weekday.SUNDAY
+    assert threshold_slot.day is Weekday.MONDAY

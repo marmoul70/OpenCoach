@@ -72,6 +72,11 @@ class TrajectoryWeek:
 
     phase_week_index: int = 1
 
+    previous_duration_minutes: float | None = None
+    progression_reference_duration_before_minutes: float | None = None
+    progression_reference_duration_after_minutes: float | None = None
+    target_duration_minutes: float | None = None
+
     notes: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -98,6 +103,21 @@ class TrajectoryWeek:
         if any(load < 0 for load in loads):
             raise ValueError(
                 "Les valeurs de charge ne peuvent pas être négatives."
+            )
+
+        volume_values = (
+            self.previous_duration_minutes,
+            self.progression_reference_duration_before_minutes,
+            self.progression_reference_duration_after_minutes,
+            self.target_duration_minutes,
+        )
+
+        if any(
+            value is not None and value < 0
+            for value in volume_values
+        ):
+            raise ValueError(
+                "Les valeurs de volume ne peuvent pas être négatives."
             )
 
         if self.load_min > self.load_max:
@@ -127,15 +147,36 @@ class MultiWeekTrajectory:
 
     baseline_load: float
 
+    baseline_duration_minutes: float | None = None
+    goal_duration_demand_minutes: float | None = None
+
     weeks: tuple[
         TrajectoryWeek,
         ...
-    ]
+    ] = ()
 
     def __post_init__(self) -> None:
         if self.baseline_load < 0:
             raise ValueError(
                 "La charge de référence ne peut pas être négative."
+            )
+
+        if (
+            self.baseline_duration_minutes is not None
+            and self.baseline_duration_minutes < 0
+        ):
+            raise ValueError(
+                "La durée hebdomadaire de référence "
+                "ne peut pas être négative."
+            )
+
+        if (
+            self.goal_duration_demand_minutes is not None
+            and self.goal_duration_demand_minutes < 0
+        ):
+            raise ValueError(
+                "La demande cible de volume "
+                "ne peut pas être négative."
             )
 
         if (

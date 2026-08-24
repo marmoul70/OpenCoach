@@ -1,6 +1,6 @@
-"""Proposition concrète de séance générée par le moteur de génération des séances.
+"""Proposition concrète de séance produite par OpenCoach.
 
-Une SessionProposal décrit le contenu concret proposé pour une
+Une SessionProposal décrit le contenu concret associé à une
 SessionIntent déjà décidée par le moteur déterministe.
 
 Le moteur Python reste responsable des contraintes structurelles :
@@ -11,14 +11,22 @@ Le moteur Python reste responsable des contraintes structurelles :
 - importance ;
 - charge et trajectoire.
 
-Le moteur de génération des séances peut proposer la manière concrète de réaliser la séance,
-mais ne peut pas redéfinir ces contraintes.
+La proposition matérialise ces contraintes sous forme :
+- de blocs temporels ;
+- d'une prescription d'intensité ;
+- d'une structure de travail concrète.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+from opencoach.planning.sessions.prescription.intervals import (
+    WorkStructure,
+)
+from opencoach.planning.sessions.prescription.models import (
+    SessionIntensityPrescription,
+)
 from opencoach.planning.stimulus.training import (
     TrainingModality,
     TrainingStimulus,
@@ -35,7 +43,9 @@ class SessionBlock:
 
     duration_minutes: int | None = None
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self,
+    ) -> None:
         if not self.name.strip():
             raise ValueError(
                 "Le nom du bloc ne peut pas être vide."
@@ -58,7 +68,7 @@ class SessionBlock:
 
 @dataclass(frozen=True, slots=True)
 class SessionProposal:
-    """Séance concrète proposée par le moteur de génération des séances."""
+    """Séance concrète générée par OpenCoach."""
 
     title: str
 
@@ -68,22 +78,34 @@ class SessionProposal:
 
     covered_stimuli: tuple[
         TrainingStimulus,
-        ...
+        ...,
     ]
 
     blocks: tuple[
         SessionBlock,
-        ...
+        ...,
     ]
 
     objective: str
 
+    intensity_prescription: (
+        SessionIntensityPrescription
+        | None
+    ) = None
+
+    work_structure: (
+        WorkStructure
+        | None
+    ) = None
+
     coach_notes: tuple[
         str,
-        ...
+        ...,
     ] = ()
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self,
+    ) -> None:
         if not self.title.strip():
             raise ValueError(
                 "Le titre de la séance ne peut pas être vide."
@@ -110,13 +132,42 @@ class SessionProposal:
                 "L'objectif de la séance ne peut pas être vide."
             )
 
-        if len(
-            set(self.covered_stimuli)
-        ) != len(
-            self.covered_stimuli
+        if (
+            len(
+                set(
+                    self.covered_stimuli
+                )
+            )
+            != len(
+                self.covered_stimuli
+            )
         ):
             raise ValueError(
                 "Les stimuli couverts ne peuvent pas être dupliqués."
+            )
+
+        if (
+            self.intensity_prescription is not None
+            and (
+                self.intensity_prescription.stimulus
+                not in self.covered_stimuli
+            )
+        ):
+            raise ValueError(
+                "La prescription d'intensité doit concerner "
+                "un stimulus couvert par la séance."
+            )
+
+        if (
+            self.work_structure is not None
+            and (
+                self.work_structure.stimulus
+                not in self.covered_stimuli
+            )
+        ):
+            raise ValueError(
+                "La structure de travail doit concerner "
+                "un stimulus couvert par la séance."
             )
 
         block_duration = sum(
@@ -132,7 +183,8 @@ class SessionProposal:
 
         if (
             fully_timed
-            and block_duration != self.duration_minutes
+            and block_duration
+            != self.duration_minutes
         ):
             raise ValueError(
                 "La somme des durées des blocs doit correspondre "

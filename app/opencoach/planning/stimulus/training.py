@@ -31,6 +31,7 @@ class TrainingStimulus(StrEnum):
     VO2MAX = "vo2max"
 
     UPHILL_STRENGTH = "uphill_strength"
+    UPHILL_STRENGTH_ENDURANCE = "uphill_strength_endurance"
     UPHILL_THRESHOLD = "uphill_threshold"
     DOWNHILL_SPECIFICITY = "downhill_specificity"
 

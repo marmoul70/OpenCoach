@@ -189,10 +189,35 @@ def allocate_coaching_phases(
         - minimum_total
     )
 
+    # Les phases non compressibles sont protégées :
+    # elles atteignent leur durée préférée avant que
+    # le surplus soit distribué aux phases compressibles.
+    for policy in policies:
+        if policy.compressible:
+            continue
+
+        while (
+            remaining_weeks > 0
+            and allocated[
+                policy.phase
+            ] < policy.preferred_weeks
+        ):
+            allocated[
+                policy.phase
+            ] += 1
+
+            remaining_weeks -= 1
+
+    compressible_policies = tuple(
+        policy
+        for policy in policies
+        if policy.compressible
+    )
+
     while remaining_weeks > 0:
         progressed = False
 
-        for policy in policies:
+        for policy in compressible_policies:
             current = allocated[
                 policy.phase
             ]

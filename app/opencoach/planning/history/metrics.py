@@ -1,10 +1,19 @@
 from dataclasses import dataclass
+from statistics import median
 
 from opencoach.models import Activity
 from opencoach.training import TrainingStats
 
 from opencoach.planning.history.training import (
     TrainingHistorySnapshot,
+)
+
+
+_LONG_ENDURANCE_SPORT_TYPES = frozenset(
+    {
+        "Run",
+        "TrailRun",
+    }
 )
 
 
@@ -37,6 +46,8 @@ class TrainingHistoryMetrics:
     highest_elevation_activity: Activity | None
     highest_elevation_gain_m: float | None
 
+    long_endurance_reference_minutes: float | None = None
+
 
 def calculate_training_history_metrics(
     snapshot: TrainingHistorySnapshot,
@@ -45,6 +56,15 @@ def calculate_training_history_metrics(
 
     longest_activity = _find_longest_activity(
         snapshot.activities_84_days
+    )
+
+    long_endurance_reference_minutes = (
+        _calculate_long_endurance_reference_minutes(
+            activities=snapshot.activities_84_days,
+            race_activity_ids=(
+                snapshot.race_activity_ids
+            ),
+        )
     )
 
     highest_elevation_activity = (
@@ -88,6 +108,9 @@ def calculate_training_history_metrics(
             highest_elevation_activity.elevation_gain_m
             if highest_elevation_activity is not None
             else None
+        ),
+        long_endurance_reference_minutes=(
+            long_endurance_reference_minutes
         ),
     )
 
@@ -149,6 +172,51 @@ def _find_longest_activity(
         ),
     )
 
+
+def _calculate_long_endurance_reference_minutes(
+    *,
+    activities: tuple[Activity, ...],
+    race_activity_ids,
+) -> float | None:
+    """Calcule une référence robuste de sortie longue."""
+
+    durations = sorted(
+        (
+            duration
+            for activity in activities
+            if (
+                activity.sport_type
+                in _LONG_ENDURANCE_SPORT_TYPES
+                and (
+                    activity.id is None
+                    or activity.id
+                    not in race_activity_ids
+                )
+            )
+            if (
+                duration := _activity_duration_minutes(
+                    activity
+                )
+            )
+            is not None
+        ),
+        reverse=True,
+    )
+
+    if not durations:
+        return None
+
+    if len(durations) < 3:
+        return durations[0]
+
+    return round(
+        float(
+            median(
+                durations[:3]
+            )
+        ),
+        2,
+    )
 
 def _find_highest_elevation_activity(
     activities: tuple[Activity, ...],

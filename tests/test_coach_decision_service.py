@@ -118,6 +118,16 @@ class FakeTrainingSessionRepository(
     ) -> list[Activity]:
         raise NotImplementedError
 
+    def delete_session(
+        self,
+        session_id,
+    ) -> None:
+        self.sessions = [
+            session
+            for session in self.sessions
+            if session.id != session_id
+        ]
+
 
 class FakeReadinessService:
     def __init__(

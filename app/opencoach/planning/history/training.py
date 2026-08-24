@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import date
+from uuid import UUID
 
 from opencoach.models import Activity
 from opencoach.training import TrainingStats
@@ -17,6 +18,8 @@ class TrainingHistorySnapshot:
     last_84_days: TrainingStats
 
     activities_84_days: tuple[Activity, ...]
+
+    race_activity_ids: frozenset[UUID] = frozenset()
 
     @property
     def has_training_history(self) -> bool:

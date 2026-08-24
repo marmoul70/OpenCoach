@@ -74,6 +74,12 @@ def create_prescription(
             stimulus=TrainingStimulus.UPHILL_STRENGTH,
             priority=StimulusPriority.IMPORTANT,
         ),
+        create_requirement(
+            stimulus=(
+                TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+            ),
+            priority=StimulusPriority.IMPORTANT,
+        ),
     )
 
     return ContextualStimulusPrescription(
@@ -490,3 +496,246 @@ def test_duplicate_stimuli_are_rejected_by_weekly_demand() -> None:
             ),
             maximum_key_exposures=2,
         )
+
+
+
+def test_first_build_week_suppresses_uphill_strength_endurance() -> None:
+    """La première semaine BUILD n'introduit pas encore la force-endurance."""
+
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.BUILD,
+        ),
+        week_type=TrajectoryWeekType.LOADING,
+        target_load=500.0,
+        reference_load=500.0,
+        phase_week_index=1,
+    )
+
+    demand = result.demand_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert demand is not None
+    assert demand.minimum_occurrences == 0
+    assert demand.target_occurrences == 0
+    assert demand.maximum_occurrences == 0
+
+
+def test_second_build_week_allows_uphill_strength_endurance() -> None:
+    """La force-endurance devient disponible à partir de BUILD semaine 2."""
+
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.BUILD,
+        ),
+        week_type=TrajectoryWeekType.LOADING,
+        target_load=500.0,
+        reference_load=500.0,
+        phase_week_index=2,
+    )
+
+    demand = result.demand_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert demand is not None
+    assert demand.minimum_occurrences == 0
+    assert demand.target_occurrences == 1
+    assert demand.maximum_occurrences == 1
+
+
+def test_specific_loading_week_allows_uphill_strength_endurance() -> None:
+    """La phase SPECIFIC conserve une exposition de force-endurance."""
+
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.SPECIFIC,
+        ),
+        week_type=TrajectoryWeekType.LOADING,
+        target_load=500.0,
+        reference_load=500.0,
+        phase_week_index=1,
+    )
+
+    demand = result.demand_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert demand is not None
+    assert demand.minimum_occurrences == 0
+    assert demand.target_occurrences == 1
+    assert demand.maximum_occurrences == 1
+
+
+def test_recovery_suppresses_uphill_strength_endurance() -> None:
+    """Une semaine de récupération neutralise la force-endurance."""
+
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.BUILD,
+        ),
+        week_type=TrajectoryWeekType.RECOVERY,
+        target_load=350.0,
+        reference_load=500.0,
+        phase_week_index=3,
+    )
+
+    demand = result.demand_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert demand is not None
+    assert demand.suppressed
+
+
+def test_taper_suppresses_uphill_strength_endurance() -> None:
+    """L'affûtage neutralise la force-endurance en côte."""
+
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.TAPER,
+        ),
+        week_type=TrajectoryWeekType.TAPER,
+        target_load=300.0,
+        reference_load=500.0,
+        phase_week_index=1,
+    )
+
+    demand = result.demand_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert demand is not None
+    assert demand.suppressed
+
+
+def test_return_to_training_suppresses_uphill_strength_endurance() -> None:
+    """Une semaine de reprise neutralise la force-endurance en côte."""
+
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.RETURN_TO_TRAINING,
+        ),
+        week_type=TrajectoryWeekType.RETURN_TO_TRAINING,
+        target_load=250.0,
+        reference_load=400.0,
+        phase_week_index=1,
+    )
+
+    demand = result.demand_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert demand is not None
+    assert demand.suppressed
+
+
+def test_loading_week_allows_uphill_strength_endurance() -> None:
+    """La force-endurance en côte est disponible en semaine de charge."""
+
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(),
+        week_type=TrajectoryWeekType.LOADING,
+        target_load=500.0,
+        reference_load=500.0,
+        phase_week_index=2,
+    )
+
+    demand = result.demand_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert demand is not None
+    assert demand.minimum_occurrences == 0
+    assert demand.target_occurrences == 1
+    assert demand.maximum_occurrences == 1
+
+
+def test_recovery_week_suppresses_uphill_strength_endurance() -> None:
+    """Une récupération interdit la force-endurance en côte."""
+
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(),
+        week_type=TrajectoryWeekType.RECOVERY,
+        target_load=350.0,
+        reference_load=500.0,
+    )
+
+    demand = result.demand_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert demand is not None
+    assert demand.minimum_occurrences == 0
+    assert demand.target_occurrences == 0
+    assert demand.maximum_occurrences == 0
+
+
+def test_taper_week_suppresses_uphill_strength_endurance() -> None:
+    """L'affûtage interdit la force-endurance en côte."""
+
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.TAPER,
+        ),
+        week_type=TrajectoryWeekType.TAPER,
+        target_load=300.0,
+        reference_load=450.0,
+    )
+
+    demand = result.demand_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert demand is not None
+    assert demand.minimum_occurrences == 0
+    assert demand.target_occurrences == 0
+    assert demand.maximum_occurrences == 0
+
+
+def test_return_to_training_suppresses_uphill_strength_endurance() -> None:
+    """La reprise interdit la force-endurance en côte."""
+
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.RETURN_TO_TRAINING,
+        ),
+        week_type=(
+            TrajectoryWeekType.RETURN_TO_TRAINING
+        ),
+        target_load=250.0,
+        reference_load=400.0,
+    )
+
+    demand = result.demand_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert demand is not None
+    assert demand.minimum_occurrences == 0
+    assert demand.target_occurrences == 0
+    assert demand.maximum_occurrences == 0
+
+
+def test_first_build_week_suppresses_uphill_strength_endurance() -> None:
+    """La première semaine de BUILD n'introduit pas le circuit exigeant."""
+
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.BUILD,
+        ),
+        week_type=TrajectoryWeekType.LOADING,
+        target_load=500.0,
+        reference_load=500.0,
+        phase_week_index=1,
+    )
+
+    demand = result.demand_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert demand is not None
+    assert demand.minimum_occurrences == 0
+    assert demand.target_occurrences == 0
+    assert demand.maximum_occurrences == 0

@@ -428,3 +428,219 @@ def test_taper_uses_taper_stimulus_demand() -> None:
     assert len(
         threshold_slots
     ) <= 1
+def test_recovery_preserves_target_session_frequency() -> None:
+    """Une récupération planifiée conserve la fréquence cible."""
+
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2027, 3, 1),
+            phase=TrainingPhase.BUILD,
+            load_target=create_load_target(),
+            recovery=create_recovery(
+                recovery_week=True,
+                factor=0.75,
+            ),
+            prescription=create_prescription(),
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+                Weekday.SUNDAY,
+            ),
+            target_session_count=4,
+        )
+    )
+
+    assert envelope.session_count == 4
+
+
+def test_target_session_frequency_is_limited_by_availability() -> None:
+    """La fréquence cible ne dépasse jamais les jours disponibles."""
+
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2027, 3, 1),
+            phase=TrainingPhase.BUILD,
+            load_target=create_load_target(),
+            recovery=create_recovery(
+                recovery_week=True,
+                factor=0.75,
+            ),
+            prescription=create_prescription(),
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+            ),
+            target_session_count=4,
+        )
+    )
+
+    assert envelope.session_count == 3
+
+
+def test_zero_load_overrides_target_session_frequency() -> None:
+    """Une suspension complète reste prioritaire sur la fréquence."""
+
+    load_target = calculate_weekly_load_target(
+        previous_load=100.0,
+        phase=TrainingPhase.BUILD,
+        adjustment=LoadAdjustment.SUSPEND,
+    )
+
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2027, 3, 1),
+            phase=TrainingPhase.BUILD,
+            load_target=load_target,
+            recovery=create_recovery(),
+            prescription=create_prescription(),
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+                Weekday.SUNDAY,
+            ),
+            target_session_count=4,
+        )
+    )
+
+    assert envelope.target_load == 0.0
+    assert envelope.session_count == 0
+
+def test_reference_duration_is_propagated_to_envelope() -> None:
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2027, 3, 1),
+            phase=TrainingPhase.BUILD,
+            load_target=create_load_target(),
+            recovery=create_recovery(),
+            prescription=create_prescription(),
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+                Weekday.SUNDAY,
+            ),
+            target_session_count=4,
+            reference_weekly_duration_minutes=300.0,
+        )
+    )
+
+    assert envelope.reference_duration_minutes == 300.0
+    assert envelope.target_duration_minutes == 300.0
+
+
+def test_recovery_reduces_target_duration_but_preserves_reference() -> None:
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2027, 3, 1),
+            phase=TrainingPhase.BUILD,
+            load_target=create_load_target(),
+            recovery=create_recovery(
+                recovery_week=True,
+                factor=0.75,
+            ),
+            prescription=create_prescription(),
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+                Weekday.SUNDAY,
+            ),
+            target_session_count=4,
+            reference_weekly_duration_minutes=300.0,
+        )
+    )
+
+    assert envelope.reference_duration_minutes == 300.0
+    assert envelope.target_duration_minutes == 225.0
+
+
+def test_first_build_week_does_not_schedule_uphill_strength_endurance() -> None:
+    """BUILD semaine 1 ne programme pas encore le circuit force-endurance."""
+
+    prescription = build_contextual_stimulus_prescription(
+        phase=TrainingPhase.BUILD,
+        race_profile=build_race_demand_profile(
+            distance_km=50.0,
+            elevation_gain_m=2500.0,
+        ),
+    )
+
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2027, 3, 1),
+            phase=TrainingPhase.BUILD,
+            load_target=create_load_target(),
+            recovery=create_recovery(),
+            prescription=prescription,
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+                Weekday.SUNDAY,
+            ),
+            phase_week_index=1,
+            target_session_count=4,
+        )
+    )
+
+    stimuli = {
+        stimulus
+        for slot in envelope.session_slots
+        for stimulus in slot.intent.stimuli
+    }
+
+    assert (
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+        not in stimuli
+    )
+
+
+def test_second_build_week_can_schedule_uphill_strength_endurance() -> None:
+    """BUILD semaine 2 peut utiliser le circuit force-endurance."""
+
+    prescription = build_contextual_stimulus_prescription(
+        phase=TrainingPhase.BUILD,
+        race_profile=build_race_demand_profile(
+            distance_km=50.0,
+            elevation_gain_m=2500.0,
+        ),
+    )
+
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2027, 3, 8),
+            phase=TrainingPhase.BUILD,
+            load_target=create_load_target(),
+            recovery=create_recovery(),
+            prescription=prescription,
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+                Weekday.SUNDAY,
+            ),
+            phase_week_index=2,
+            target_session_count=4,
+        )
+    )
+
+    matching = tuple(
+        slot
+        for slot in envelope.session_slots
+        if (
+            TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+            in slot.intent.stimuli
+        )
+    )
+
+    assert len(matching) <= 1
+
+    if matching:
+        assert (
+            TrainingStimulus.UPHILL_STRENGTH
+            in matching[0].intent.stimuli
+        )
+

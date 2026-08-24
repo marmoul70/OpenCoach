@@ -218,8 +218,14 @@ def build_weekly_stimulus_demand(
     week_type: TrajectoryWeekType,
     target_load: float,
     reference_load: float,
+    phase_week_index: int = 1,
 ) -> WeeklyStimulusDemand:
     """Quantifie la prescription pour une semaine donnée."""
+
+    if phase_week_index < 1:
+        raise ValueError(
+            "L'index de semaine dans la phase doit être positif."
+        )
 
     if target_load < 0:
         raise ValueError(
@@ -334,6 +340,8 @@ def build_weekly_stimulus_demand(
         _loading_demand(
             requirement=requirement,
             load_ratio=load_ratio,
+            phase=prescription.phase,
+            phase_week_index=phase_week_index,
         )
         for requirement
         in prescription.requirements
@@ -353,12 +361,40 @@ def build_weekly_stimulus_demand(
     )
 
 
+def _requires_loading_week(
+    stimulus: TrainingStimulus,
+) -> bool:
+    """Indique si un stimulus est réservé aux semaines de charge.
+
+    Ces stimuli produisent une fatigue spécifique suffisamment
+    importante pour être exclus des semaines de récupération,
+    d'affûtage et de reprise.
+    """
+
+    return (
+        stimulus
+        is TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+
 def _loading_demand(
     *,
     requirement: TrainingStimulusRequirement,
     load_ratio: float | None,
+    phase: TrainingPhase,
+    phase_week_index: int,
 ) -> StimulusDemand:
     """Quantifie un stimulus pendant une semaine de développement."""
+
+    if (
+        requirement.stimulus
+        is TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+        and phase is TrainingPhase.BUILD
+        and phase_week_index == 1
+    ):
+        return _suppressed_demand(
+            requirement
+        )
 
     if (
         requirement.stimulus
@@ -422,6 +458,13 @@ def _recovery_demand(
     ultérieurement la multiplication des sollicitations clés.
     """
 
+    if _requires_loading_week(
+        requirement.stimulus
+    ):
+        return _suppressed_demand(
+            requirement
+        )
+
     if (
         requirement.stimulus
         is TrainingStimulus.AEROBIC_EASY
@@ -468,6 +511,13 @@ def _taper_demand(
 ) -> StimulusDemand:
     """Préserve peu de qualité pendant l'affûtage."""
 
+    if _requires_loading_week(
+        requirement.stimulus
+    ):
+        return _suppressed_demand(
+            requirement
+        )
+
     if (
         requirement.priority
         is StimulusPriority.KEY
@@ -502,6 +552,13 @@ def _return_to_training_demand(
     requirement: TrainingStimulusRequirement,
 ) -> StimulusDemand:
     """Produit une demande conservatrice pendant une reprise."""
+
+    if _requires_loading_week(
+        requirement.stimulus
+    ):
+        return _suppressed_demand(
+            requirement
+        )
 
     if (
         requirement.stimulus

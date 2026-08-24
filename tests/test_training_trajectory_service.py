@@ -874,3 +874,85 @@ def test_race_must_follow_trajectory_start() -> None:
             planning_date=date(2027, 4, 19),
             target_race_date=date(2027, 4, 19),
         )
+def test_current_week_propagates_session_frequency_and_uses_trajectory_duration() -> None:
+    input_data = create_current_week_input(
+        target_session_count=4,
+        reference_weekly_duration_minutes=300.0,
+    )
+
+    result = build_current_week_coaching(
+        input_data=input_data
+    )
+
+    envelope = result.coaching.envelope
+
+    assert envelope.session_count == 4
+
+    assert (
+        envelope.reference_duration_minutes
+        == 300.0
+    )
+
+    assert (
+        result.trajectory_week.target_duration_minutes
+        is not None
+    )
+
+    assert (
+        envelope.target_duration_minutes
+        == pytest.approx(
+            result.trajectory_week.target_duration_minutes
+        )
+    )
+
+    assert (
+        envelope.target_duration_minutes
+        != envelope.reference_duration_minutes
+    )
+
+def test_training_trajectory_uses_recent_duration_as_volume_baseline() -> None:
+    """La trajectoire horaire démarre du volume récent de l'athlète."""
+
+    result = build_training_trajectory(
+        planning_date=date(2027, 1, 4),
+        target_race_date=date(2027, 4, 19),
+        target_distance_km=70.0,
+        target_elevation_gain_m=3500.0,
+        history_metrics=create_metrics(),
+    )
+
+    assert (
+        result.trajectory.baseline_duration_minutes
+        == pytest.approx(300.0)
+    )
+
+
+def test_training_trajectory_uses_race_volume_demand() -> None:
+    """La course cible détermine le pic de volume spécifique."""
+
+    result = build_training_trajectory(
+        planning_date=date(2027, 1, 4),
+        target_race_date=date(2027, 4, 19),
+        target_distance_km=70.0,
+        target_elevation_gain_m=3500.0,
+        history_metrics=create_metrics(),
+    )
+
+    assert (
+        result.trajectory.goal_duration_demand_minutes
+        == pytest.approx(420.0)
+    )
+
+    volume_weeks = tuple(
+        week
+        for week in result.trajectory.weeks
+        if week.target_duration_minutes is not None
+    )
+
+    assert volume_weeks
+
+    assert max(
+        week.target_duration_minutes
+        for week in volume_weeks
+        if week.phase is not TrainingPhase.TAPER
+    ) >= 400.0

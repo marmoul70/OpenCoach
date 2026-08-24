@@ -18,6 +18,8 @@ class TrainingSession:
 
     duration_minutes: int
 
+    planning_key: str | None = None
+
     distance_km: float | None = None
     elevation_gain_m: float | None = None
 

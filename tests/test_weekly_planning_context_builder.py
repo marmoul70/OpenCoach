@@ -1,0 +1,604 @@
+"""Tests de préparation du contexte hebdomadaire OpenCoach."""
+
+from datetime import date
+from types import SimpleNamespace
+from uuid import uuid4
+
+import pytest
+
+from opencoach.coaching.generation.context import (
+    WeeklyPlanningContextBuilder,
+    WeeklyPlanningContextError,
+)
+from opencoach.models import (
+    AthleteProfile,
+    AthleteTraining,
+    Race,
+)
+from opencoach.planning.history.metrics import (
+    TrainingHistoryMetrics,
+    WeeklyTrainingAverages,
+)
+from opencoach.planning.weekly.schedule_types import (
+    Weekday,
+)
+
+
+PLANNING_DATE = date(
+    2027,
+    7,
+    5,
+)
+
+TRAJECTORY_START_DATE = date(
+    2027,
+    6,
+    7,
+)
+
+
+class FakePlanningContextService:
+    """Double du service de contexte consolidé."""
+
+    def __init__(
+        self,
+        context,
+    ) -> None:
+        self.context = context
+        self.calls = []
+
+    def build(
+        self,
+        athlete_profile_id,
+        planning_date,
+    ):
+        self.calls.append(
+            {
+                "athlete_profile_id":
+                    athlete_profile_id,
+                "planning_date":
+                    planning_date,
+            }
+        )
+
+        return self.context
+
+
+class FakeHistoryService:
+    """Double du service d'historique."""
+
+    def __init__(
+        self,
+        snapshot=None,
+    ) -> None:
+        self.snapshot = (
+            snapshot
+            if snapshot is not None
+            else object()
+        )
+
+        self.calls = []
+
+    def build(
+        self,
+        athlete_profile_id,
+        reference_date,
+    ):
+        self.calls.append(
+            {
+                "athlete_profile_id":
+                    athlete_profile_id,
+                "reference_date":
+                    reference_date,
+            }
+        )
+
+        return self.snapshot
+
+
+def create_race(
+    *,
+    distance_km=65.0,
+    elevation_gain_m=3000.0,
+):
+    return Race(
+        id=uuid4(),
+        date=date(
+            2027,
+            9,
+            18,
+        ),
+        name="Ultra test",
+        location="Jura",
+        race_type="trail",
+        priority="primary",
+        distance_km=distance_km,
+        elevation_gain_m=(
+            elevation_gain_m
+        ),
+        status="planned",
+    )
+
+
+def create_athlete(
+    *,
+    available_days=None,
+    weekly_sessions=4,
+):
+    if available_days is None:
+        available_days = [
+            0,
+            2,
+            4,
+            6,
+        ]
+
+    return AthleteProfile(
+        training=AthleteTraining(
+            weekly_sessions=(
+                weekly_sessions
+            ),
+            available_days=(
+                available_days
+            ),
+        )
+    )
+
+
+def create_context(
+    *,
+    athlete=None,
+    primary_race=None,
+    readiness=None,
+    constraints=(),
+):
+    if athlete is None:
+        athlete = create_athlete()
+
+    if primary_race is None:
+        primary_race = create_race()
+
+    return SimpleNamespace(
+        athlete=athlete,
+        primary_race=primary_race,
+        readiness=readiness,
+        constraints=tuple(
+            constraints
+        ),
+    )
+
+
+def create_average(
+    *,
+    training_load: float,
+) -> WeeklyTrainingAverages:
+    return WeeklyTrainingAverages(
+        weeks=1.0,
+        sessions=4.0,
+        duration_minutes=300.0,
+        distance_km=40.0,
+        elevation_gain_m=1000.0,
+        training_load=training_load,
+    )
+
+
+def create_metrics() -> TrainingHistoryMetrics:
+    return TrainingHistoryMetrics(
+        last_7_days=create_average(
+            training_load=310.0,
+        ),
+        last_28_days=create_average(
+            training_load=300.0,
+        ),
+        last_42_days=create_average(
+            training_load=300.0,
+        ),
+        last_84_days=create_average(
+            training_load=295.0,
+        ),
+        longest_activity=None,
+        longest_duration_minutes=None,
+        longest_distance_km=None,
+        highest_elevation_activity=None,
+        highest_elevation_gain_m=None,
+    )
+
+
+def create_builder(
+    *,
+    context=None,
+):
+    if context is None:
+        context = create_context()
+
+    planning_service = (
+        FakePlanningContextService(
+            context
+        )
+    )
+
+    history_service = (
+        FakeHistoryService()
+    )
+
+    builder = WeeklyPlanningContextBuilder(
+        planning_context_service=(
+            planning_service
+        ),
+        history_service=(
+            history_service
+        ),
+    )
+
+    return (
+        builder,
+        planning_service,
+        history_service,
+    )
+
+
+def test_available_days_are_converted_to_weekdays() -> None:
+    values = (
+        WeeklyPlanningContextBuilder
+        ._available_days(
+            [
+                0,
+                2,
+                4,
+                6,
+            ]
+        )
+    )
+
+    assert values == (
+        Weekday.MONDAY,
+        Weekday.WEDNESDAY,
+        Weekday.FRIDAY,
+        Weekday.SUNDAY,
+    )
+
+
+def test_invalid_available_day_is_rejected() -> None:
+    with pytest.raises(
+        WeeklyPlanningContextError,
+        match="jour",
+    ):
+        (
+            WeeklyPlanningContextBuilder
+            ._available_days(
+                [
+                    7,
+                ]
+            )
+        )
+
+
+def test_missing_primary_race_is_rejected() -> None:
+    context = create_context()
+
+    context.primary_race = None
+
+    builder, _, _ = create_builder(
+        context=context
+    )
+
+    with pytest.raises(
+        WeeklyPlanningContextError,
+        match="course principale",
+    ):
+        builder.build(
+            athlete_profile_id=uuid4(),
+            planning_date=PLANNING_DATE,
+            trajectory_start_date=(
+                TRAJECTORY_START_DATE
+            ),
+        )
+
+
+def test_missing_available_days_is_rejected() -> None:
+    context = create_context(
+        athlete=create_athlete(
+            available_days=[]
+        )
+    )
+
+    builder, _, _ = create_builder(
+        context=context
+    )
+
+    with pytest.raises(
+        WeeklyPlanningContextError,
+        match="Aucun jour",
+    ):
+        builder.build(
+            athlete_profile_id=uuid4(),
+            planning_date=PLANNING_DATE,
+            trajectory_start_date=(
+                TRAJECTORY_START_DATE
+            ),
+        )
+
+
+def test_missing_race_distance_is_rejected() -> None:
+    context = create_context(
+        primary_race=create_race(
+            distance_km=None
+        )
+    )
+
+    builder, _, _ = create_builder(
+        context=context
+    )
+
+    with pytest.raises(
+        WeeklyPlanningContextError,
+        match="distance",
+    ):
+        builder.build(
+            athlete_profile_id=uuid4(),
+            planning_date=PLANNING_DATE,
+            trajectory_start_date=(
+                TRAJECTORY_START_DATE
+            ),
+        )
+
+
+def test_context_services_receive_correct_dates(
+    monkeypatch,
+) -> None:
+    builder, planning_service, history_service = (
+        create_builder()
+    )
+
+    monkeypatch.setattr(
+        (
+            "opencoach.coaching.generation.context."
+            "calculate_training_history_metrics"
+        ),
+        lambda snapshot: create_metrics(),
+    )
+
+    athlete_profile_id = uuid4()
+
+    builder.build(
+        athlete_profile_id=(
+            athlete_profile_id
+        ),
+        planning_date=PLANNING_DATE,
+        trajectory_start_date=(
+            TRAJECTORY_START_DATE
+        ),
+    )
+
+    assert planning_service.calls == [
+        {
+            "athlete_profile_id":
+                athlete_profile_id,
+            "planning_date":
+                PLANNING_DATE,
+        }
+    ]
+
+    assert history_service.calls == [
+        {
+            "athlete_profile_id":
+                athlete_profile_id,
+            "reference_date":
+                PLANNING_DATE,
+        }
+    ]
+
+
+def test_build_creates_current_week_input(
+    monkeypatch,
+) -> None:
+    builder, _, _ = (
+        create_builder()
+    )
+
+    monkeypatch.setattr(
+        (
+            "opencoach.coaching.generation.context."
+            "calculate_training_history_metrics"
+        ),
+        lambda snapshot: create_metrics(),
+    )
+
+    result = builder.build(
+        athlete_profile_id=uuid4(),
+        planning_date=PLANNING_DATE,
+        trajectory_start_date=(
+            TRAJECTORY_START_DATE
+        ),
+    )
+
+    planning_input = (
+        result.planning_input
+    )
+
+    assert (
+        planning_input.planning_date
+        == PLANNING_DATE
+    )
+
+    assert (
+        planning_input.trajectory_start_date
+        == TRAJECTORY_START_DATE
+    )
+
+    assert (
+        planning_input.target_race_date
+        == date(
+            2027,
+            9,
+            18,
+        )
+    )
+
+    assert (
+        planning_input.target_distance_km
+        == 65.0
+    )
+
+    assert (
+        planning_input.target_elevation_gain_m
+        == 3000.0
+    )
+
+    assert (
+        planning_input.available_days
+        == (
+            Weekday.MONDAY,
+            Weekday.WEDNESDAY,
+            Weekday.FRIDAY,
+            Weekday.SUNDAY,
+        )
+    )
+
+
+def test_missing_elevation_defaults_to_zero(
+    monkeypatch,
+) -> None:
+    context = create_context(
+        primary_race=create_race(
+            elevation_gain_m=None
+        )
+    )
+
+    builder, _, _ = create_builder(
+        context=context
+    )
+
+    monkeypatch.setattr(
+        (
+            "opencoach.coaching.generation.context."
+            "calculate_training_history_metrics"
+        ),
+        lambda snapshot: create_metrics(),
+    )
+
+    result = builder.build(
+        athlete_profile_id=uuid4(),
+        planning_date=PLANNING_DATE,
+        trajectory_start_date=(
+            TRAJECTORY_START_DATE
+        ),
+    )
+
+    assert (
+        result.planning_input
+        .target_elevation_gain_m
+        == 0.0
+    )
+
+
+def test_constraints_mark_schedule_as_constrained(
+    monkeypatch,
+) -> None:
+    context = create_context(
+        constraints=(
+            object(),
+        )
+    )
+
+    builder, _, _ = create_builder(
+        context=context
+    )
+
+    monkeypatch.setattr(
+        (
+            "opencoach.coaching.generation.context."
+            "calculate_training_history_metrics"
+        ),
+        lambda snapshot: create_metrics(),
+    )
+
+    result = builder.build(
+        athlete_profile_id=uuid4(),
+        planning_date=PLANNING_DATE,
+        trajectory_start_date=(
+            TRAJECTORY_START_DATE
+        ),
+    )
+
+    assert (
+        result.planning_input
+        .athlete_schedule_constrained
+        is True
+    )
+
+
+def test_weekly_session_frequency_is_transmitted_to_planning_input(
+    monkeypatch,
+) -> None:
+    """La fréquence déclarée alimente la cible hebdomadaire."""
+
+    context = create_context(
+        athlete=create_athlete(
+            weekly_sessions=4,
+            available_days=[
+                0,
+                2,
+                4,
+                5,
+            ],
+        )
+    )
+
+    builder, _, _ = create_builder(
+        context=context
+    )
+
+    monkeypatch.setattr(
+        "opencoach.coaching.generation.context."
+        "calculate_training_history_metrics",
+        lambda snapshot: create_metrics(),
+    )
+
+    prepared = builder.build(
+        athlete_profile_id=uuid4(),
+        planning_date=PLANNING_DATE,
+        trajectory_start_date=(
+            TRAJECTORY_START_DATE
+        ),
+    )
+
+    assert (
+        prepared.planning_input.target_session_count
+        == 4
+    )
+
+    assert (
+        prepared.planning_input.available_days
+        == (
+            Weekday.MONDAY,
+            Weekday.WEDNESDAY,
+            Weekday.FRIDAY,
+            Weekday.SATURDAY,
+        )
+    )
+
+def test_weekly_duration_reference_is_transmitted_to_planning_input(
+    monkeypatch,
+) -> None:
+    builder, _, _ = create_builder()
+
+    monkeypatch.setattr(
+        "opencoach.coaching.generation.context."
+        "calculate_training_history_metrics",
+        lambda snapshot: create_metrics(),
+    )
+
+    prepared = builder.build(
+        athlete_profile_id=uuid4(),
+        planning_date=PLANNING_DATE,
+        trajectory_start_date=(
+            TRAJECTORY_START_DATE
+        ),
+    )
+
+    assert (
+        prepared.planning_input
+        .reference_weekly_duration_minutes
+        == 300.0
+    )

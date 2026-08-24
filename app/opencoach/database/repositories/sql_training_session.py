@@ -58,6 +58,11 @@ class SqlTrainingSessionRepository(
                 self.session.add(database_session)
 
             database_session.date = session.date
+
+            database_session.planning_key = (
+                session.planning_key
+            )
+
             database_session.type = session.type
             database_session.title = session.title
             database_session.sport_type = session.sport_type
@@ -86,6 +91,44 @@ class SqlTrainingSessionRepository(
 
             raise TrainingSessionRepositoryError(
                 "Impossible d'enregistrer la séance."
+            ) from exc
+
+    def delete_session(
+        self,
+        athlete_profile_id: UUID,
+        session_id: UUID,
+    ) -> None:
+        """Supprime une séance appartenant à l'athlète."""
+
+        database_session = (
+            self.session.scalar(
+                select(
+                    TrainingSessionModel
+                ).where(
+                    TrainingSessionModel.id
+                    == session_id,
+                    TrainingSessionModel.athlete_profile_id
+                    == athlete_profile_id,
+                )
+            )
+        )
+
+        if database_session is None:
+            raise TrainingSessionRepositoryError(
+                "Séance introuvable."
+            )
+
+        try:
+            self.session.delete(
+                database_session
+            )
+            self.session.commit()
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise TrainingSessionRepositoryError(
+                "Impossible de supprimer la séance."
             ) from exc
 
     def get_session(
@@ -383,6 +426,7 @@ class SqlTrainingSessionRepository(
             title=session.title,
             description=session.description,
             duration_minutes=session.duration_minutes,
+            planning_key=session.planning_key,
             distance_km=session.distance_km,
             elevation_gain_m=session.elevation_gain_m,
             intensity=session.intensity,

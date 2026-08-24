@@ -21,6 +21,9 @@ from opencoach.planning.sessions.intent import (
 from opencoach.planning.sessions.intent_builder import (
     SessionIntentPlan,
 )
+from opencoach.planning.stimulus.training import (
+    TrainingStimulus,
+)
 from opencoach.planning.weekly.schedule_capacity import (
     DayScheduleCapacity,
 )
@@ -393,6 +396,10 @@ def _choose_day(
                         for used_index
                         in used_key_indexes
                     ),
+                    _weekend_preference_score(
+                        intent=intent,
+                        day=day,
+                    ),
                     _capacity_score(
                         capacity_by_day[
                             day
@@ -417,6 +424,10 @@ def _choose_day(
                 )
                 for used_index
                 in used_indexes
+            ),
+            _weekend_preference_score(
+                intent=intent,
+                day=day,
             ),
             _capacity_score(
                 capacity_by_day[
@@ -448,12 +459,35 @@ def _choose_initial_day(
     premier jour disponible.
     """
 
+    if (
+        intent.primary_stimulus
+        is TrainingStimulus.LONG_ENDURANCE
+    ):
+        weekend_days = [
+            day
+            for day in remaining_days
+            if day in {
+                Weekday.SATURDAY,
+                Weekday.SUNDAY,
+            }
+        ]
+
+        if weekend_days:
+            return max(
+                weekend_days,
+                key=_WEEKDAY_ORDER.__getitem__,
+            )
+
     if intent.duration_min_minutes is None:
         return remaining_days[0]
 
     return max(
         remaining_days,
         key=lambda day: (
+            _weekend_preference_score(
+                intent=intent,
+                day=day,
+            ),
             _capacity_score(
                 capacity_by_day[
                     day
@@ -464,6 +498,32 @@ def _choose_initial_day(
             ],
         ),
     )
+
+
+def _weekend_preference_score(
+    *,
+    intent: SessionIntent,
+    day: Weekday,
+) -> int:
+    """Privilégie le week-end pour une sortie longue.
+
+    Cette préférence ne remplace jamais les contraintes
+    de disponibilité, de capacité ou d'espacement.
+    """
+
+    if (
+        intent.primary_stimulus
+        is not TrainingStimulus.LONG_ENDURANCE
+    ):
+        return 0
+
+    if day in {
+        Weekday.SATURDAY,
+        Weekday.SUNDAY,
+    }:
+        return 1
+
+    return 0
 
 
 def _capacity_score(

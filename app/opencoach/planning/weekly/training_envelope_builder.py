@@ -32,6 +32,7 @@ from opencoach.planning.trajectory.multi_week import (
 )
 from opencoach.planning.sessions.intent_builder import (
     build_session_intent_plan,
+    complete_session_intent_frequency,
 )
 from opencoach.planning.weekly.load_progression import (
     WeeklyLoadTarget,
@@ -74,6 +75,16 @@ class WeeklyTrainingEnvelopeInput:
         Weekday,
         ...
     ]
+
+    phase_week_index: int = 1
+
+    target_session_count: int | None = None
+
+    reference_weekly_duration_minutes: float | None = None
+
+    target_weekly_duration_minutes: float | None = None
+
+    long_endurance_reference_minutes: float | None = None
 
     day_capacities: tuple[
         DayScheduleCapacity,
@@ -122,12 +133,43 @@ def build_weekly_training_envelope(
             reference_load=(
                 input_data.load_target.theoretical_load
             ),
+            phase_week_index=(
+                input_data.phase_week_index
+            ),
         )
     )
 
     intent_plan = build_session_intent_plan(
         weekly_demand=weekly_demand,
     )
+
+    effective_target_session_count = (
+        min(
+            input_data.target_session_count,
+            len(
+                set(
+                    input_data.available_days
+                )
+            ),
+        )
+        if input_data.target_session_count
+        is not None
+        else None
+    )
+
+    if (
+        adjusted_loads.target_load > 0
+        and effective_target_session_count
+        is not None
+    ):
+        intent_plan = (
+            complete_session_intent_frequency(
+                plan=intent_plan,
+                target_session_count=(
+                    effective_target_session_count
+                ),
+            )
+        )
 
     session_schedule = (
         schedule_session_intents(
@@ -160,6 +202,26 @@ def build_weekly_training_envelope(
         week_end=week_end,
         phase=input_data.phase,
         target_load=adjusted_loads.target_load,
+        reference_duration_minutes=(
+            input_data.reference_weekly_duration_minutes
+        ),
+        target_duration_minutes=(
+            input_data.target_weekly_duration_minutes
+            if input_data.target_weekly_duration_minutes
+            is not None
+            else _resolve_target_duration_minutes(
+                reference_duration_minutes=(
+                    input_data.reference_weekly_duration_minutes
+                ),
+                recovery=input_data.recovery,
+                target_load=(
+                    adjusted_loads.target_load
+                ),
+            )
+        ),
+        long_endurance_reference_minutes=(
+            input_data.long_endurance_reference_minutes
+        ),
         load_min=adjusted_loads.load_min,
         load_max=adjusted_loads.load_max,
         available_days=input_data.available_days,
@@ -292,4 +354,36 @@ def _build_notes(
 
     return tuple(
         notes
+    )
+
+def _resolve_target_duration_minutes(
+    *,
+    reference_duration_minutes: float | None,
+    recovery: LoadRecoveryDecision,
+    target_load: float,
+) -> float | None:
+    """Calcule le budget temporel hebdomadaire.
+
+    La fréquence est conservée ; une récupération planifiée réduit
+    principalement le volume total et la densité qualitative.
+
+    Les règles propres au taper seront affinées séparément.
+    """
+
+    if reference_duration_minutes is None:
+        return None
+
+    if target_load <= 0:
+        return None
+
+    factor = (
+        recovery.load_factor
+        if recovery.recovery_week
+        else 1.0
+    )
+
+    return round(
+        reference_duration_minutes
+        * factor,
+        1,
     )

@@ -154,3 +154,27 @@ def test_recovery_decision_requires_trigger() -> None:
             load_factor=0.8,
             loading_weeks_since_recovery=0,
         )
+
+def test_planned_recovery_can_be_suppressed_before_taper() -> None:
+    decision = decide_load_recovery(
+        phase=TrainingPhase.SPECIFIC,
+        loading_weeks_since_recovery=2,
+        planned_recovery_allowed=False,
+    )
+
+    assert decision.recovery_week is False
+    assert decision.trigger is RecoveryTrigger.NONE
+    assert decision.load_factor == 1.0
+
+
+def test_fatigue_recovery_remains_prioritary_when_planned_recovery_is_disabled(
+) -> None:
+    decision = decide_load_recovery(
+        phase=TrainingPhase.SPECIFIC,
+        loading_weeks_since_recovery=2,
+        fatigue_requires_recovery=True,
+        planned_recovery_allowed=False,
+    )
+
+    assert decision.recovery_week is True
+    assert decision.trigger is RecoveryTrigger.FATIGUE

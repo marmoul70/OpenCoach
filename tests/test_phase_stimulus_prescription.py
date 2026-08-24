@@ -170,3 +170,22 @@ def test_unknown_requirement_returns_none() -> None:
         )
         is None
     )
+
+
+def test_aerobic_easy_has_minimum_duration_of_45_minutes() -> None:
+    """Une endurance facile dure au minimum 45 minutes."""
+
+    prescription = build_phase_stimulus_prescription(
+        TrainingPhase.SPECIFIC
+    )
+
+    requirement = prescription.requirement_for(
+        TrainingStimulus.AEROBIC_EASY
+    )
+
+    assert requirement is not None
+
+    assert (
+        requirement.duration_min_minutes
+        == 45
+    )

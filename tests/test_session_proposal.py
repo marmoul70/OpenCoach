@@ -8,7 +8,13 @@ from opencoach.planning.stimulus.training import (
     TrainingModality,
     TrainingStimulus,
 )
-
+from opencoach.planning.sessions.prescription import (
+    IntensityRange,
+    IntensityReference,
+    SessionIntensityPrescription,
+    WorkStructure,
+    WorkStructureType,
+)
 
 def create_proposal() -> SessionProposal:
     return SessionProposal(
@@ -286,3 +292,73 @@ def test_partially_timed_blocks_are_allowed() -> None:
     )
 
     assert proposal.duration_minutes == 90
+
+def test_proposal_rejects_intensity_for_uncovered_stimulus() -> None:
+    prescription = (
+        SessionIntensityPrescription(
+            stimulus=TrainingStimulus.VO2MAX,
+            primary_target=IntensityRange(
+                reference=IntensityReference.RPE,
+                minimum=8,
+                maximum=9,
+                unit="/10",
+                label="RPE",
+            ),
+        )
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="stimulus couvert",
+    ):
+        SessionProposal(
+            title="Endurance facile",
+            modality=TrainingModality.RUNNING,
+            duration_minutes=45,
+            covered_stimuli=(
+                TrainingStimulus.AEROBIC_EASY,
+            ),
+            blocks=(
+                SessionBlock(
+                    name="Endurance",
+                    description="Course facile.",
+                    duration_minutes=45,
+                ),
+            ),
+            objective="Développer l'endurance.",
+            intensity_prescription=(
+                prescription
+            ),
+        )
+def test_proposal_rejects_work_structure_for_uncovered_stimulus() -> None:
+    structure = WorkStructure(
+        structure_type=(
+            WorkStructureType.CONTINUOUS
+        ),
+        stimulus=TrainingStimulus.VO2MAX,
+        available_minutes=30,
+        continuous_minutes=30,
+        description="VO2max continu.",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="stimulus couvert",
+    ):
+        SessionProposal(
+            title="Endurance facile",
+            modality=TrainingModality.RUNNING,
+            duration_minutes=45,
+            covered_stimuli=(
+                TrainingStimulus.AEROBIC_EASY,
+            ),
+            blocks=(
+                SessionBlock(
+                    name="Endurance",
+                    description="Course facile.",
+                    duration_minutes=45,
+                ),
+            ),
+            objective="Développer l'endurance.",
+            work_structure=structure,
+        )

@@ -118,6 +118,7 @@ def decide_load_recovery(
     fatigue_requires_recovery: bool = False,
     event_requires_recovery: bool = False,
     phase_transition_requires_recovery: bool = False,
+    planned_recovery_allowed: bool = True,
     policies: dict[
         TrainingPhase,
         LoadRecoveryPolicy,
@@ -161,7 +162,8 @@ def decide_load_recovery(
         trigger = RecoveryTrigger.PHASE_TRANSITION
 
     elif (
-        loading_weeks_since_recovery
+        planned_recovery_allowed
+        and loading_weeks_since_recovery
         >= policy.preferred_loading_weeks
     ):
         trigger = RecoveryTrigger.PLANNED

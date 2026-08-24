@@ -1,4 +1,8 @@
-from datetime import datetime
+from datetime import (
+    date,
+    datetime,
+    timezone,
+)
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
@@ -21,6 +25,7 @@ from opencoach.integrations.intervals import (
 from opencoach.models import IntegrationConnection
 from opencoach.services import (
     IntegrationConnectionServiceError,
+    IntervalsSyncResult,
 )
 
 import opencoach.api.intervals as intervals_api
@@ -42,7 +47,7 @@ class FakeIntervalsApplicationService:
         *,
         newest=None,
         days=30,
-    ) -> tuple[int, int]:
+    ) -> IntervalsSyncResult:
         self.calls.append(
             (
                 athlete_profile_id,
@@ -54,9 +59,32 @@ class FakeIntervalsApplicationService:
         if self.error is not None:
             raise self.error
 
-        return (
-            self.result,
-            self.result,
+        resolved_newest = (
+            newest
+            if newest is not None
+            else date(2026, 8, 24)
+        )
+
+        return IntervalsSyncResult(
+            synced_activities=self.result,
+            synced_wellness_days=self.result,
+            oldest=(
+                resolved_newest
+                if days == 0
+                else date.fromordinal(
+                    resolved_newest.toordinal()
+                    - days
+                )
+            ),
+            newest=resolved_newest,
+            synced_at=datetime(
+                2026,
+                8,
+                24,
+                15,
+                0,
+                tzinfo=timezone.utc,
+            ),
         )
 
 class FakeIntegrationConnectionService:

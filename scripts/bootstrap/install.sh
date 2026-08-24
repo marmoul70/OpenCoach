@@ -107,6 +107,19 @@ main() {
 
     run_environment_installation
 
+    log_info \
+        "Installation des services OpenCoach"
+
+    if ! "$BOOTSTRAP_DIR/install-services.sh"; then
+        log_error \
+            "Échec de l'installation des services OpenCoach."
+
+        return 1
+    fi
+
+    log_success \
+        "Services OpenCoach installés et configurés."
+
     log_success \
         "Bootstrap OpenCoach terminé avec succès."
 }

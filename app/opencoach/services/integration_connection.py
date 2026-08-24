@@ -148,18 +148,6 @@ class IntegrationConnectionService:
             secret=secret,
         )
 
-        def mark_synced(
-            self,
-            athlete_profile_id: UUID,
-            provider: str,
-            synced_at: datetime,
-        ) -> None:
-            self.repository.mark_synced(
-                athlete_profile_id,
-                provider,
-                synced_at,
-            )
-
     def mark_synced(
         self,
         athlete_profile_id: UUID,

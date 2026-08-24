@@ -166,6 +166,7 @@ def get_intervals_application_service(
 
     return IntervalsApplicationService(
         sync_service=sync_service,
+        connection_service=connection_service,
     )
 
 @router.get(
@@ -267,17 +268,11 @@ def sync_intervals(
     service: IntervalsApplicationService = Depends(
         get_intervals_application_service,
     ),
-    connection_service: IntegrationConnectionService = Depends(
-        get_integration_connection_service,
-    ),
 ) -> dict[str, str | int]:
     """Synchronise activités et Wellness Intervals.icu."""
 
     try:
-        (
-            synced_activities,
-            synced_wellness_days,
-        ) = service.sync_all(
+        result = service.sync_all(
             athlete_profile_id,
             days=days,
         )
@@ -312,32 +307,12 @@ def sync_intervals(
             detail="Impossible d'enregistrer les données Wellness.",
         ) from exc
 
-    synced_at = datetime.now(
-        timezone.utc,
-    )
-
-    try:
-        connection_service.mark_synced(
-            athlete_profile_id,
-            "intervals",
-            synced_at,
-        )
-
-    except IntegrationConnectionRepositoryError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=(
-                "La synchronisation a réussi, "
-                "mais sa date n'a pas pu être enregistrée."
-            ),
-        ) from exc
-
     return {
         "provider": "intervals",
-        "synced_activities": synced_activities,
-        "synced_wellness_days": synced_wellness_days,
+        "synced_activities": result.synced_activities,
+        "synced_wellness_days": result.synced_wellness_days,
         "days": days,
-        "synced_at": synced_at.isoformat(),
+        "synced_at": result.synced_at.isoformat(),
     }
 
 

@@ -1,0 +1,16 @@
+[Unit]
+Description=OpenCoach Intervals.icu synchronization
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=@OPENCOACH_USER@
+Group=@OPENCOACH_GROUP@
+WorkingDirectory=@PROJECT_ROOT@
+EnvironmentFile=@PROJECT_ROOT@/.env
+
+ExecStart=@PROJECT_ROOT@/.venv/bin/python -m opencoach.commands.sync_intervals
+
+NoNewPrivileges=true
+PrivateTmp=true

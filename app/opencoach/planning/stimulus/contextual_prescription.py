@@ -118,6 +118,12 @@ def _append_race_specific_requirements(
             )
         )
 
+        requirements.append(
+            _uphill_strength_endurance_requirement(
+                phase=phase
+            )
+        )
+
     if (
         race_profile.uphill_demand
         is RaceSpecificityDemand.VERY_HIGH
@@ -171,6 +177,31 @@ def _uphill_strength_requirement(
         ),
         duration_min_minutes=20,
         duration_max_minutes=120,
+    )
+
+
+def _uphill_strength_endurance_requirement(
+    *,
+    phase: TrainingPhase,
+) -> TrainingStimulusRequirement:
+    """Force-endurance spécifique en côte sous pré-fatigue musculaire."""
+
+    return TrainingStimulusRequirement(
+        stimulus=(
+            TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+        ),
+        priority=StimulusPriority.IMPORTANT,
+        specificity=(
+            SpecificityLevel.VERY_HIGH
+            if phase is TrainingPhase.SPECIFIC
+            else SpecificityLevel.HIGH
+        ),
+        substitution=SubstitutionPolicy.FORBIDDEN,
+        required_modalities=(
+            TrainingModality.TRAIL_RUNNING,
+        ),
+        duration_min_minutes=45,
+        duration_max_minutes=75,
     )
 
 

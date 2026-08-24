@@ -335,11 +335,27 @@ def build_coaching_trajectory(
             recovery=recovery,
             prescription=prescription,
             available_days=input_data.available_days,
+            phase_week_index=(
+                input_data.trajectory_week.phase_week_index
+                if (
+                    use_trajectory_week
+                    and input_data.trajectory_week is not None
+                )
+                else 1
+            ),
             target_session_count=(
                 input_data.target_session_count
             ),
             reference_weekly_duration_minutes=(
                 input_data.reference_weekly_duration_minutes
+            ),
+            target_weekly_duration_minutes=(
+                input_data.trajectory_week.target_duration_minutes
+                if (
+                    use_trajectory_week
+                    and input_data.trajectory_week is not None
+                )
+                else None
             ),
             long_endurance_reference_minutes=(
                 input_data.long_endurance_reference_minutes

@@ -1,6 +1,9 @@
 """Prescription déterministe des séances OpenCoach."""
 
 from .intervals import (
+    CircuitStep,
+    CircuitStepType,
+    WorkCircuit,
     WorkDurationUnit,
     WorkInterval,
     WorkStructure,
@@ -26,6 +29,9 @@ __all__ = [
     "IntensityReference",
     "SessionIntensityPrescription",
     "StimulusIntensityPolicy",
+    "CircuitStep",
+    "CircuitStepType",
+    "WorkCircuit",
     "WorkDurationUnit",
     "WorkInterval",
     "WorkStructure",

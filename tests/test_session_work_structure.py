@@ -1,9 +1,11 @@
 from opencoach.planning.sessions.prescription import (
+    CircuitStepType,
     WorkDurationUnit,
     WorkStructureType,
     build_work_structure,
 )
 from opencoach.planning.stimulus.training import (
+    TrainingModality,
     TrainingStimulus,
 )
 from opencoach.planning.weekly.training_envelope import (
@@ -230,3 +232,381 @@ def test_second_based_description_is_human_readable() -> None:
     )
 
     assert " s" in structure.description
+
+def test_short_vo2_window_keeps_interval_structure() -> None:
+    """Un créneau VO2 court conserve une structure fractionnée."""
+
+    structure = build_work_structure(
+        stimulus=TrainingStimulus.VO2MAX,
+        phase=TrainingPhase.BASE,
+        available_minutes=10,
+    )
+
+    assert (
+        structure.structure_type
+        is WorkStructureType.INTERVALS
+    )
+
+    assert structure.intervals
+
+    interval = structure.intervals[0]
+
+    assert interval.repetitions >= 2
+
+    assert (
+        interval.total_duration_minutes
+        <= 10
+    )
+
+    assert (
+        interval.total_work_minutes
+        < interval.total_duration_minutes
+    )
+
+
+def test_circuit_structure_can_describe_multiple_steps() -> None:
+    """Un circuit peut contenir plusieurs étapes de nature différente."""
+
+    from opencoach.planning.sessions.prescription import (
+        CircuitStep,
+        CircuitStepType,
+        WorkCircuit,
+        WorkStructure,
+    )
+
+    circuit = WorkCircuit(
+        repetitions=6,
+        steps=(
+            CircuitStep(
+                step_type=CircuitStepType.STRENGTH,
+                duration_seconds=60,
+                description="Chaise isométrique",
+            ),
+            CircuitStep(
+                step_type=CircuitStepType.WORK,
+                duration_seconds=45,
+                description="Course en côte",
+            ),
+            CircuitStep(
+                step_type=CircuitStepType.RECOVERY,
+                duration_seconds=60,
+                description="Récupération en descente",
+            ),
+        ),
+    )
+
+    assert circuit.repetitions == 6
+    assert len(circuit.steps) == 3
+
+    assert circuit.cycle_duration_seconds == 165
+    assert circuit.total_duration_seconds == 990
+
+
+def test_circuit_rejects_empty_steps() -> None:
+    """Un circuit doit obligatoirement contenir au moins une étape."""
+
+    import pytest
+
+    from opencoach.planning.sessions.prescription import (
+        WorkCircuit,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="étape",
+    ):
+        WorkCircuit(
+            repetitions=6,
+            steps=(),
+        )
+
+
+def test_circuit_rejects_non_positive_repetitions() -> None:
+    """Un circuit doit comporter au moins une répétition."""
+
+    import pytest
+
+    from opencoach.planning.sessions.prescription import (
+        CircuitStep,
+        CircuitStepType,
+        WorkCircuit,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="répétitions",
+    ):
+        WorkCircuit(
+            repetitions=0,
+            steps=(
+                CircuitStep(
+                    step_type=CircuitStepType.WORK,
+                    duration_seconds=60,
+                    description="Course en côte",
+                ),
+            ),
+        )
+
+
+def test_circuit_step_rejects_non_positive_duration() -> None:
+    """Une étape de circuit doit avoir une durée positive."""
+
+    import pytest
+
+    from opencoach.planning.sessions.prescription import (
+        CircuitStep,
+        CircuitStepType,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="durée",
+    ):
+        CircuitStep(
+            step_type=CircuitStepType.STRENGTH,
+            duration_seconds=0,
+            description="Chaise isométrique",
+        )
+
+
+def test_work_structure_can_hold_circuit() -> None:
+    """Une structure de travail peut contenir un circuit composite."""
+
+    from opencoach.planning.sessions.prescription import (
+        CircuitStep,
+        CircuitStepType,
+        WorkCircuit,
+        WorkStructure,
+    )
+
+    circuit = WorkCircuit(
+        repetitions=6,
+        steps=(
+            CircuitStep(
+                step_type=CircuitStepType.STRENGTH,
+                duration_seconds=60,
+                description="Chaise isométrique",
+            ),
+            CircuitStep(
+                step_type=CircuitStepType.WORK,
+                duration_seconds=45,
+                description="Course en côte",
+            ),
+            CircuitStep(
+                step_type=CircuitStepType.RECOVERY,
+                duration_seconds=60,
+                description="Récupération en descente",
+            ),
+        ),
+    )
+
+    structure = WorkStructure(
+        structure_type=WorkStructureType.CIRCUIT,
+        stimulus=TrainingStimulus.UPHILL_STRENGTH,
+        available_minutes=20,
+        circuit=circuit,
+        description="Circuit force-endurance en côte.",
+    )
+
+    assert structure.circuit is circuit
+    assert structure.planned_seconds == 990
+    assert structure.planned_minutes == 16.5
+
+
+def test_work_structure_rejects_intervals_and_circuit_together() -> None:
+    """Une structure ne mélange pas intervalles classiques et circuit."""
+
+    import pytest
+
+    from opencoach.planning.sessions.prescription import (
+        CircuitStep,
+        CircuitStepType,
+        WorkCircuit,
+        WorkInterval,
+        WorkStructure,
+    )
+
+    circuit = WorkCircuit(
+        repetitions=2,
+        steps=(
+            CircuitStep(
+                step_type=CircuitStepType.WORK,
+                duration_seconds=60,
+                description="Course en côte",
+            ),
+        ),
+    )
+
+    interval = WorkInterval(
+        repetitions=2,
+        work_duration=1,
+        work_unit=WorkDurationUnit.MINUTES,
+        recovery_duration=1,
+        recovery_unit=WorkDurationUnit.MINUTES,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="circuit",
+    ):
+        WorkStructure(
+            structure_type=WorkStructureType.CIRCUIT,
+            stimulus=TrainingStimulus.UPHILL_STRENGTH,
+            available_minutes=10,
+            intervals=(interval,),
+            circuit=circuit,
+            description="Structure invalide.",
+        )
+
+
+def test_work_structure_rejects_continuous_and_circuit_together() -> None:
+    """Une structure ne mélange pas continu et circuit."""
+
+    import pytest
+
+    from opencoach.planning.sessions.prescription import (
+        CircuitStep,
+        CircuitStepType,
+        WorkCircuit,
+        WorkStructure,
+    )
+
+    circuit = WorkCircuit(
+        repetitions=2,
+        steps=(
+            CircuitStep(
+                step_type=CircuitStepType.WORK,
+                duration_seconds=60,
+                description="Course en côte",
+            ),
+        ),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="circuit",
+    ):
+        WorkStructure(
+            structure_type=WorkStructureType.CIRCUIT,
+            stimulus=TrainingStimulus.UPHILL_STRENGTH,
+            available_minutes=10,
+            continuous_minutes=5,
+            circuit=circuit,
+            description="Structure invalide.",
+        )
+
+
+def test_uphill_strength_endurance_build_uses_short_circuit() -> None:
+    """BUILD utilise le circuit court de force-endurance en côte."""
+
+    structure = build_work_structure(
+        stimulus=TrainingStimulus.UPHILL_STRENGTH_ENDURANCE,
+        phase=TrainingPhase.BUILD,
+        available_minutes=20,
+    )
+
+    assert (
+        structure.structure_type
+        is WorkStructureType.CIRCUIT
+    )
+
+    assert structure.circuit is not None
+
+    circuit = structure.circuit
+
+    assert circuit.repetitions >= 4
+
+    assert tuple(
+        step.duration_seconds
+        for step in circuit.steps
+    ) == (
+        60,
+        45,
+        60,
+    )
+
+    assert (
+        circuit.total_duration_seconds
+        <= 20 * 60
+    )
+
+
+def test_uphill_strength_endurance_specific_uses_long_circuit() -> None:
+    """SPECIFIC utilise la variante longue du circuit."""
+
+    structure = build_work_structure(
+        stimulus=TrainingStimulus.UPHILL_STRENGTH_ENDURANCE,
+        phase=TrainingPhase.SPECIFIC,
+        available_minutes=25,
+    )
+
+    assert (
+        structure.structure_type
+        is WorkStructureType.CIRCUIT
+    )
+
+    assert structure.circuit is not None
+
+    assert tuple(
+        step.duration_seconds
+        for step in structure.circuit.steps
+    ) == (
+        60,
+        60,
+        90,
+    )
+
+    assert (
+        structure.circuit.total_duration_seconds
+        <= 25 * 60
+    )
+
+
+def test_uphill_strength_endurance_circuit_uses_expected_steps() -> None:
+    """Le circuit décrit explicitement chaise, côte et descente."""
+
+    structure = build_work_structure(
+        stimulus=TrainingStimulus.UPHILL_STRENGTH_ENDURANCE,
+        phase=TrainingPhase.BUILD,
+        available_minutes=20,
+    )
+
+    assert structure.circuit is not None
+
+    steps = structure.circuit.steps
+
+    assert tuple(
+        step.step_type
+        for step in steps
+    ) == (
+        CircuitStepType.STRENGTH,
+        CircuitStepType.WORK,
+        CircuitStepType.RECOVERY,
+    )
+
+    assert "chaise" in steps[0].description.lower()
+    assert "côte" in steps[1].description.lower()
+    assert "descente" in steps[2].description.lower()
+
+
+def test_uphill_strength_endurance_has_session_recipe() -> None:
+    """L'endurance de force en côte possède une recette métier."""
+
+    from opencoach.planning.sessions.generators.catalog import (
+        get_session_recipe,
+    )
+
+    recipe = get_session_recipe(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert recipe.title == "Force-endurance en côte"
+
+    assert "pré-fatigue" in recipe.objective.lower()
+
+    assert (
+        recipe.default_modality
+        is TrainingModality.TRAIL_RUNNING
+    )
+
+    assert "chaise" in recipe.main_block_name.lower()

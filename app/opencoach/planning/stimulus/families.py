@@ -54,6 +54,8 @@ _STIMULUS_FAMILIES: dict[
         StimulusFamily.STRENGTH,
     TrainingStimulus.UPHILL_STRENGTH:
         StimulusFamily.STRENGTH,
+    TrainingStimulus.UPHILL_STRENGTH_ENDURANCE:
+        StimulusFamily.STRENGTH,
 
     TrainingStimulus.DOWNHILL_SPECIFICITY:
         StimulusFamily.SPECIFIC,

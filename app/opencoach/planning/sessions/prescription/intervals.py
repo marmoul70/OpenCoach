@@ -35,6 +35,78 @@ class WorkStructureType(StrEnum):
     REPEATS = "repeats"
     TECHNICAL = "technical"
     STRENGTH = "strength"
+    CIRCUIT = "circuit"
+
+
+class CircuitStepType(StrEnum):
+    """Nature d'une étape dans un circuit composite."""
+
+    STRENGTH = "strength"
+    WORK = "work"
+    RECOVERY = "recovery"
+
+
+@dataclass(frozen=True, slots=True)
+class CircuitStep:
+    """Étape élémentaire d'un circuit composite."""
+
+    step_type: CircuitStepType
+    duration_seconds: int
+    description: str
+
+    def __post_init__(self) -> None:
+        if self.duration_seconds <= 0:
+            raise ValueError(
+                "La durée d'une étape de circuit doit être positive."
+            )
+
+        if not self.description.strip():
+            raise ValueError(
+                "La description d'une étape de circuit ne peut pas être vide."
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class WorkCircuit:
+    """Circuit composite répété plusieurs fois."""
+
+    repetitions: int
+    steps: tuple[
+        CircuitStep,
+        ...
+    ]
+
+    def __post_init__(self) -> None:
+        if self.repetitions <= 0:
+            raise ValueError(
+                "Le nombre de répétitions d'un circuit doit être positif."
+            )
+
+        if not self.steps:
+            raise ValueError(
+                "Un circuit doit contenir au moins une étape."
+            )
+
+    @property
+    def cycle_duration_seconds(self) -> int:
+        return sum(
+            step.duration_seconds
+            for step in self.steps
+        )
+
+    @property
+    def total_duration_seconds(self) -> int:
+        return (
+            self.repetitions
+            * self.cycle_duration_seconds
+        )
+
+    @property
+    def total_duration_minutes(self) -> float:
+        return (
+            self.total_duration_seconds
+            / 60
+        )
 
 
 class WorkDurationUnit(StrEnum):
@@ -198,6 +270,8 @@ class WorkStructure:
 
     continuous_minutes: int | None = None
 
+    circuit: WorkCircuit | None = None
+
     description: str = ""
 
     def __post_init__(
@@ -225,6 +299,25 @@ class WorkStructure:
                 "continue et fractionnée."
             )
 
+        if (
+            self.circuit is not None
+            and self.intervals
+        ):
+            raise ValueError(
+                "Une structure de circuit ne peut pas contenir "
+                "des intervalles classiques."
+            )
+
+        if (
+            self.circuit is not None
+            and self.continuous_minutes is not None
+        ):
+            raise ValueError(
+                "Une structure de circuit ne peut pas être "
+                "simultanément continue."
+            )
+
+
         if not self.description.strip():
             raise ValueError(
                 "La description de la structure ne peut pas être vide."
@@ -248,6 +341,11 @@ class WorkStructure:
             return (
                 self.continuous_minutes
                 * 60
+            )
+
+        if self.circuit is not None:
+            return (
+                self.circuit.total_duration_seconds
             )
 
         return sum(
@@ -300,6 +398,12 @@ def build_work_structure(
 
     if stimulus is TrainingStimulus.UPHILL_STRENGTH:
         return _build_uphill_strength(
+            phase=phase,
+            available_minutes=available_minutes,
+        )
+
+    if stimulus is TrainingStimulus.UPHILL_STRENGTH_ENDURANCE:
+        return _build_uphill_strength_endurance(
             phase=phase,
             available_minutes=available_minutes,
         )
@@ -576,6 +680,96 @@ def _build_uphill_strength(
     )
 
 
+def _build_uphill_strength_endurance(
+    *,
+    phase: TrainingPhase,
+    available_minutes: int,
+) -> WorkStructure:
+    """Construit un circuit de force-endurance en côte.
+
+    Le circuit associe une pré-fatigue isométrique, une course en
+    montée et une récupération active en descente.
+
+    BUILD utilise la variante courte :
+    1 min chaise + 45 s côte + 1 min descente.
+
+    SPECIFIC utilise la variante longue :
+    1 min chaise + 1 min côte + 1 min 30 descente.
+    """
+
+    if phase is TrainingPhase.SPECIFIC:
+        work_seconds = 60
+        recovery_seconds = 90
+    else:
+        work_seconds = 45
+        recovery_seconds = 60
+
+    steps = (
+        CircuitStep(
+            step_type=CircuitStepType.STRENGTH,
+            duration_seconds=60,
+            description="Chaise isométrique",
+        ),
+        CircuitStep(
+            step_type=CircuitStepType.WORK,
+            duration_seconds=work_seconds,
+            description="Course en côte",
+        ),
+        CircuitStep(
+            step_type=CircuitStepType.RECOVERY,
+            duration_seconds=recovery_seconds,
+            description="Récupération active en descente",
+        ),
+    )
+
+    cycle_duration_seconds = sum(
+        step.duration_seconds
+        for step in steps
+    )
+
+    available_seconds = (
+        available_minutes
+        * 60
+    )
+
+    repetitions = (
+        available_seconds
+        // cycle_duration_seconds
+    )
+
+    if repetitions < 2:
+        return _continuous_quality(
+            stimulus=(
+                TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+            ),
+            available_minutes=available_minutes,
+            label="Force-endurance en côte",
+        )
+
+    circuit = WorkCircuit(
+        repetitions=repetitions,
+        steps=steps,
+    )
+
+    description = (
+        f"{circuit.repetitions} × "
+        "1 min chaise isométrique + "
+        f"{work_seconds} s course en côte + "
+        f"{recovery_seconds} s récupération "
+        "active en descente."
+    )
+
+    return WorkStructure(
+        structure_type=WorkStructureType.CIRCUIT,
+        stimulus=(
+            TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+        ),
+        available_minutes=available_minutes,
+        circuit=circuit,
+        description=description,
+    )
+
+
 def _build_downhill(
     *,
     available_minutes: int,
@@ -627,6 +821,36 @@ def _continuous_quality(
     )
 
 
+def _fit_interval_to_available_time(
+    *,
+    interval: WorkInterval,
+    available_seconds: int,
+    minimum_repetitions: int = 2,
+) -> WorkInterval | None:
+    """Réduit uniquement le nombre de répétitions pour tenir dans le temps."""
+
+    for repetitions in range(
+        interval.repetitions,
+        minimum_repetitions - 1,
+        -1,
+    ):
+        candidate = WorkInterval(
+            repetitions=repetitions,
+            work_duration=interval.work_duration,
+            work_unit=interval.work_unit,
+            recovery_duration=interval.recovery_duration,
+            recovery_unit=interval.recovery_unit,
+        )
+
+        if (
+            candidate.total_duration_seconds
+            <= available_seconds
+        ):
+            return candidate
+
+    return None
+
+
 def _best_interval_structure(
     *,
     stimulus: TrainingStimulus,
@@ -655,11 +879,26 @@ def _best_interval_structure(
     )
 
     if not compatible:
-        return _continuous_quality(
-            stimulus=stimulus,
-            available_minutes=available_minutes,
-            label=label,
+        fitted = tuple(
+            candidate
+            for candidate in (
+                _fit_interval_to_available_time(
+                    interval=source,
+                    available_seconds=available_seconds,
+                )
+                for source in candidates
+            )
+            if candidate is not None
         )
+
+        if fitted:
+            compatible = fitted
+        else:
+            return _continuous_quality(
+                stimulus=stimulus,
+                available_minutes=available_minutes,
+                label=label,
+            )
 
     selected = max(
         compatible,

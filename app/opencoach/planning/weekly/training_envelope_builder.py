@@ -76,9 +76,13 @@ class WeeklyTrainingEnvelopeInput:
         ...
     ]
 
+    phase_week_index: int = 1
+
     target_session_count: int | None = None
 
     reference_weekly_duration_minutes: float | None = None
+
+    target_weekly_duration_minutes: float | None = None
 
     long_endurance_reference_minutes: float | None = None
 
@@ -128,6 +132,9 @@ def build_weekly_training_envelope(
             target_load=adjusted_loads.target_load,
             reference_load=(
                 input_data.load_target.theoretical_load
+            ),
+            phase_week_index=(
+                input_data.phase_week_index
             ),
         )
     )
@@ -199,7 +206,10 @@ def build_weekly_training_envelope(
             input_data.reference_weekly_duration_minutes
         ),
         target_duration_minutes=(
-            _resolve_target_duration_minutes(
+            input_data.target_weekly_duration_minutes
+            if input_data.target_weekly_duration_minutes
+            is not None
+            else _resolve_target_duration_minutes(
                 reference_duration_minutes=(
                     input_data.reference_weekly_duration_minutes
                 ),

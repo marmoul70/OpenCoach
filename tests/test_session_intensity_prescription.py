@@ -268,3 +268,29 @@ def test_recovery_keeps_rpe_as_secondary_reference() -> None:
     assert rpe is not None
     assert rpe.minimum == 1
     assert rpe.maximum == 2
+
+
+def test_uphill_strength_endurance_uses_rpe_without_hr_or_vma() -> None:
+    """Le circuit force-endurance en côte est piloté par l'effort perçu."""
+
+    prescription = build_intensity_prescription(
+        stimulus=TrainingStimulus.UPHILL_STRENGTH_ENDURANCE,
+        physiology=None,
+    )
+
+    assert (
+        prescription.primary_target.reference
+        is IntensityReference.RPE
+    )
+
+    assert prescription.primary_target.minimum == 7
+    assert prescription.primary_target.maximum == 8
+
+    assert not prescription.secondary_targets
+
+    guidance = " ".join(
+        prescription.guidance
+    ).lower()
+
+    assert "échec" in guidance
+    assert "côte" in guidance

@@ -43,3 +43,24 @@ def test_long_endurance_is_aerobic_but_not_threshold() -> None:
         TrainingStimulus.LONG_ENDURANCE,
         TrainingStimulus.THRESHOLD,
     )
+
+
+def test_uphill_strength_endurance_is_strength_family() -> None:
+    """L'endurance de force en côte appartient à la famille force."""
+
+    assert (
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE.value
+        == "uphill_strength_endurance"
+    )
+
+    assert (
+        stimulus_family(
+            TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+        )
+        is StimulusFamily.STRENGTH
+    )
+
+    assert same_stimulus_family(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE,
+        TrainingStimulus.UPHILL_STRENGTH,
+    )

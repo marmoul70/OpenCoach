@@ -107,6 +107,12 @@ def build_session_intent_plan(
         TrainingStimulus
     ] = []
 
+    _build_uphill_strength_alternative_intent(
+        remaining=remaining,
+        intents=intents,
+        represented=represented,
+    )
+
     _build_long_endurance_intents(
         remaining=remaining,
         intents=intents,
@@ -151,6 +157,86 @@ def build_session_intent_plan(
             represented
         ),
         unrepresented_stimuli=unrepresented,
+    )
+
+
+def _build_uphill_strength_alternative_intent(
+    *,
+    remaining: list[
+        StimulusDemand
+    ],
+    intents: list[
+        SessionIntent
+    ],
+    represented: list[
+        TrainingStimulus
+    ],
+) -> None:
+    """Regroupe les deux variantes de force en côte.
+
+    Lorsque la force en côte classique et la force-endurance
+    sont toutes les deux demandées, elles représentent un même
+    besoin physiologique principal.
+
+    La variante force-endurance devient alors le stimulus
+    principal de l'intention, tandis que la force en côte
+    classique est considérée comme couverte secondairement.
+
+    Cette règle évite de créer deux séances lourdes distinctes.
+    """
+
+    classic = _find_demand(
+        remaining,
+        TrainingStimulus.UPHILL_STRENGTH,
+    )
+
+    endurance = _find_demand(
+        remaining,
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE,
+    )
+
+    if (
+        classic is None
+        or endurance is None
+    ):
+        return
+
+    if (
+        classic.target_occurrences <= 0
+        or endurance.target_occurrences <= 0
+    ):
+        return
+
+    if not _can_share_session(
+        primary=endurance.requirement,
+        secondary=classic.requirement,
+    ):
+        return
+
+    intent = build_session_intent(
+        primary=endurance.requirement,
+        secondary=(
+            classic.requirement,
+        ),
+    )
+
+    intents.append(
+        intent
+    )
+
+    _mark_represented(
+        intent=intent,
+        represented=represented,
+    )
+
+    _consume_one_occurrence(
+        remaining=remaining,
+        demand=endurance,
+    )
+
+    _consume_one_occurrence(
+        remaining=remaining,
+        demand=classic,
     )
 
 

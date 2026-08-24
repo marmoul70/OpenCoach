@@ -209,3 +209,48 @@ def test_very_high_uphill_demand_prefers_uphill_threshold_over_generic_threshold
         TrainingStimulus.LONG_ENDURANCE
         in stimuli
     )
+
+def test_mountain_build_adds_uphill_strength_endurance() -> None:
+    """Le BUILD montagne peut prescrire la force-endurance en côte."""
+
+    prescription = build_contextual_stimulus_prescription(
+        phase=TrainingPhase.BUILD,
+        race_profile=create_mountain_50k(),
+    )
+
+    requirement = prescription.requirement_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE,
+    )
+
+    assert requirement is not None
+
+
+def test_mountain_specific_adds_uphill_strength_endurance() -> None:
+    """La phase spécifique montagne conserve la force-endurance en côte."""
+
+    prescription = build_contextual_stimulus_prescription(
+        phase=TrainingPhase.SPECIFIC,
+        race_profile=create_mountain_50k(),
+    )
+
+    requirement = prescription.requirement_for(
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE,
+    )
+
+    assert requirement is not None
+
+
+def test_base_does_not_add_uphill_strength_endurance() -> None:
+    """La force-endurance en côte n'est pas introduite en BASE."""
+
+    prescription = build_contextual_stimulus_prescription(
+        phase=TrainingPhase.BASE,
+        race_profile=create_mountain_50k(),
+    )
+
+    assert (
+        prescription.requirement_for(
+            TrainingStimulus.UPHILL_STRENGTH_ENDURANCE,
+        )
+        is None
+    )

@@ -652,3 +652,91 @@ def test_long_endurance_secondary_stimuli_do_not_cap_session_duration(
 
     assert long_intent.duration_min_minutes == 60
     assert long_intent.duration_max_minutes == 300
+
+
+def test_uphill_strength_endurance_absorbs_classic_uphill_strength() -> None:
+    """Le circuit de force-endurance remplace une seconde séance de force en côte."""
+
+    requirements = (
+        create_requirement(
+            stimulus=TrainingStimulus.UPHILL_STRENGTH,
+            priority=StimulusPriority.IMPORTANT,
+            substitution=SubstitutionPolicy.FORBIDDEN,
+            required_modalities=(
+                TrainingModality.TRAIL_RUNNING,
+            ),
+            duration_min_minutes=20,
+            duration_max_minutes=120,
+        ),
+        create_requirement(
+            stimulus=(
+                TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+            ),
+            priority=StimulusPriority.IMPORTANT,
+            substitution=SubstitutionPolicy.FORBIDDEN,
+            required_modalities=(
+                TrainingModality.TRAIL_RUNNING,
+            ),
+            duration_min_minutes=45,
+            duration_max_minutes=75,
+        ),
+    )
+
+    result = build_session_intent_plan(
+        weekly_demand=build_demand(
+            requirements
+        )
+    )
+
+    matching = tuple(
+        intent
+        for intent in result.intents
+        if (
+            TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+            in intent.stimuli
+        )
+    )
+
+    assert len(matching) == 1
+
+    intent = matching[0]
+
+    assert (
+        intent.primary_stimulus
+        is TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+    )
+
+    assert (
+        TrainingStimulus.UPHILL_STRENGTH
+        in intent.secondary_stimuli
+    )
+
+    assert result.session_count == 1
+
+
+def test_classic_uphill_strength_stays_independent_without_endurance_variant() -> None:
+    """La force en côte classique reste disponible sans le circuit."""
+
+    requirements = (
+        create_requirement(
+            stimulus=TrainingStimulus.UPHILL_STRENGTH,
+            priority=StimulusPriority.IMPORTANT,
+            substitution=SubstitutionPolicy.FORBIDDEN,
+            required_modalities=(
+                TrainingModality.TRAIL_RUNNING,
+            ),
+        ),
+    )
+
+    result = build_session_intent_plan(
+        weekly_demand=build_demand(
+            requirements
+        )
+    )
+
+    assert result.session_count == 1
+
+    assert (
+        result.intents[0].primary_stimulus
+        is TrainingStimulus.UPHILL_STRENGTH
+    )

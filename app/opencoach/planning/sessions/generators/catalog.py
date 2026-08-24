@@ -173,6 +173,31 @@ SESSION_RECIPES: dict[
         )
     ),
 
+    TrainingStimulus.UPHILL_STRENGTH_ENDURANCE: (
+        SessionRecipe(
+            title="Force-endurance en côte",
+            objective=(
+                "Développer la capacité à produire un effort en montée "
+                "sous pré-fatigue musculaire."
+            ),
+            structure=SessionStructure.QUALITY,
+            default_modality=TrainingModality.TRAIL_RUNNING,
+            main_block_name="Circuit chaise-côte",
+            main_block_description=(
+                "Enchaîner une chaise isométrique, une course en côte "
+                "puissante et contrôlée, puis une récupération active "
+                "en descente."
+            ),
+            warmup_description=(
+                "Échauffement progressif avec mobilisation des membres "
+                "inférieurs et quelques accélérations en côte."
+            ),
+            cooldown_description=(
+                "Retour au calme facile après le dernier circuit."
+            ),
+        )
+    ),
+
     TrainingStimulus.UPHILL_THRESHOLD: (
         SessionRecipe(
             title="Seuil en montée",

@@ -174,6 +174,22 @@ INTENSITY_POLICIES: dict[
         )
     ),
 
+    TrainingStimulus.UPHILL_STRENGTH_ENDURANCE: (
+        StimulusIntensityPolicy(
+            rpe_min=7,
+            rpe_max=8,
+            guidance=(
+                "Réaliser la chaise avec une tension musculaire "
+                "contrôlée sans aller à l'échec.",
+                "Enchaîner la côte avec une course puissante "
+                "et techniquement propre.",
+                "Utiliser la descente comme récupération active.",
+                "La fréquence cardiaque n'est pas une cible "
+                "pertinente pour ce circuit.",
+            ),
+        )
+    ),
+
     TrainingStimulus.DOWNHILL_SPECIFICITY: (
         StimulusIntensityPolicy(
             rpe_min=4,

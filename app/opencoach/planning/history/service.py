@@ -3,6 +3,7 @@ from uuid import UUID
 
 from opencoach.database.repositories import (
     ActivityRepository,
+    RaceRepository,
 )
 from opencoach.training import (
     TrainingStats,
@@ -21,12 +22,16 @@ class TrainingHistorySnapshotService:
         self,
         training_stats_service: TrainingStatsService,
         activity_repository: ActivityRepository,
+        race_repository: RaceRepository,
     ) -> None:
         self.training_stats_service = (
             training_stats_service
         )
         self.activity_repository = (
             activity_repository
+        )
+        self.race_repository = (
+            race_repository
         )
 
     def build(
@@ -78,6 +83,20 @@ class TrainingHistorySnapshotService:
             )
         )
 
+        races = (
+            self.race_repository.list_races_between(
+                athlete_profile_id,
+                activities_start_date,
+                activities_end_date,
+            )
+        )
+
+        race_activity_ids = frozenset(
+            race.activity_id
+            for race in races
+            if race.activity_id is not None
+        )
+
         return TrainingHistorySnapshot(
             reference_date=reference_date,
             last_7_days=last_7_days,
@@ -85,6 +104,9 @@ class TrainingHistorySnapshotService:
             last_42_days=last_42_days,
             last_84_days=last_84_days,
             activities_84_days=tuple(activities),
+            race_activity_ids=(
+                race_activity_ids
+            ),
         )
 
     def _calculate_window(

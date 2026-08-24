@@ -57,7 +57,9 @@ def build_multi_week_trajectory(
 
     loading_weeks_since_recovery = 0
 
-    for allocated_phase in allocation.phases:
+    for phase_index, allocated_phase in enumerate(
+        allocation.phases
+    ):
         phase = allocated_phase.phase
 
         for phase_week_index in range(
@@ -76,10 +78,24 @@ def build_multi_week_trajectory(
                 + timedelta(days=6)
             )
 
+            next_week_starts_taper = (
+                phase_week_index
+                == allocated_phase.allocated_weeks
+                and phase_index + 1
+                < len(allocation.phases)
+                and allocation.phases[
+                    phase_index + 1
+                ].phase
+                is TrainingPhase.TAPER
+            )
+
             recovery = decide_load_recovery(
                 phase=phase,
                 loading_weeks_since_recovery=(
                     loading_weeks_since_recovery
+                ),
+                planned_recovery_allowed=(
+                    not next_week_starts_taper
                 ),
             )
 

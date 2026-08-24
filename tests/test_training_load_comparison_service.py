@@ -116,6 +116,16 @@ class FakeTrainingSessionRepository(
     ) -> list[Activity]:
         return []
 
+    def delete_session(
+        self,
+        session_id,
+    ) -> None:
+        self.sessions = [
+            session
+            for session in self.sessions
+            if session.id != session_id
+        ]
+
 
 class FakeDailyTrainingLoadService:
     def __init__(

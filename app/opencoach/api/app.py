@@ -22,6 +22,9 @@ from opencoach.api.training_stats import (
 from opencoach.api.races import (
     router as races_router,
 )
+from opencoach.api.coaching.generation import (
+    router as coach_generation_router,
+)
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -39,6 +42,9 @@ def create_app() -> FastAPI:
     app.include_router(training_stats_router)
     app.include_router(readiness_router)
     app.include_router(coach_router)
+    app.include_router(
+        coach_generation_router
+    )
 
     return app
 

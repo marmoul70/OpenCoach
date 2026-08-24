@@ -15,6 +15,9 @@ from opencoach.planning.stimulus.phase_prescription import (
     PhaseStimulusPrescription,
     build_phase_stimulus_prescription,
 )
+from opencoach.planning.stimulus.families import (
+    same_stimulus_family,
+)
 from opencoach.planning.knowledge.race_demand_profile import (
     RaceDemandProfile,
     RaceSpecificityDemand,
@@ -79,6 +82,10 @@ def build_contextual_stimulus_prescription(
             race_profile=race_profile,
             phase=phase,
         )
+
+    requirements = _apply_contextual_specializations(
+        requirements
+    )
 
     requirements = _deduplicate_requirements(
         requirements
@@ -233,6 +240,69 @@ def _race_specific_requirement(
         duration_min_minutes=45,
         duration_max_minutes=300,
     )
+
+
+_SPECIALIZED_STIMULUS_REPLACEMENTS: dict[
+    TrainingStimulus,
+    TrainingStimulus,
+] = {
+    TrainingStimulus.THRESHOLD:
+        TrainingStimulus.UPHILL_THRESHOLD,
+}
+
+
+def _apply_contextual_specializations(
+    requirements: list[
+        TrainingStimulusRequirement
+    ],
+) -> list[
+    TrainingStimulusRequirement
+]:
+    """Remplace une variante générique par sa variante spécialisée.
+
+    Une substitution n'est appliquée que si les deux stimuli sont
+    réellement présents dans la prescription contextualisée et
+    appartiennent à la même famille physiologique.
+    """
+
+    present = {
+        requirement.stimulus
+        for requirement in requirements
+    }
+
+    suppressed: set[
+        TrainingStimulus
+    ] = set()
+
+    for (
+        generic,
+        specialized,
+    ) in _SPECIALIZED_STIMULUS_REPLACEMENTS.items():
+        if (
+            generic not in present
+            or specialized not in present
+        ):
+            continue
+
+        if not same_stimulus_family(
+            generic,
+            specialized,
+        ):
+            raise ValueError(
+                "Une spécialisation de stimulus doit rester "
+                "dans la même famille physiologique."
+            )
+
+        suppressed.add(
+            generic
+        )
+
+    return [
+        requirement
+        for requirement in requirements
+        if requirement.stimulus
+        not in suppressed
+    ]
 
 
 def _deduplicate_requirements(

@@ -874,3 +874,26 @@ def test_race_must_follow_trajectory_start() -> None:
             planning_date=date(2027, 4, 19),
             target_race_date=date(2027, 4, 19),
         )
+def test_current_week_propagates_session_frequency_and_duration_reference() -> None:
+    input_data = create_current_week_input(
+        target_session_count=4,
+        reference_weekly_duration_minutes=300.0,
+    )
+
+    result = build_current_week_coaching(
+        input_data=input_data
+    )
+
+    envelope = result.coaching.envelope
+
+    assert envelope.session_count == 4
+
+    assert (
+        envelope.reference_duration_minutes
+        == 300.0
+    )
+
+    assert (
+        envelope.target_duration_minutes
+        == 300.0
+    )

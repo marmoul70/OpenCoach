@@ -600,3 +600,55 @@ def test_session_count_is_intent_count_not_exposure_count() -> None:
         result.session_count
         < demand.target_exposure_count
     )
+
+
+def test_long_endurance_secondary_stimuli_do_not_cap_session_duration(
+) -> None:
+    """Un stimulus trail secondaire ne plafonne pas la sortie longue."""
+
+    requirements = (
+        create_requirement(
+            stimulus=TrainingStimulus.LONG_ENDURANCE,
+            priority=StimulusPriority.KEY,
+            substitution=SubstitutionPolicy.CONDITIONAL,
+            preferred_modalities=(
+                TrainingModality.TRAIL_RUNNING,
+            ),
+            duration_min_minutes=60,
+            duration_max_minutes=300,
+        ),
+        create_requirement(
+            stimulus=TrainingStimulus.UPHILL_STRENGTH,
+            priority=StimulusPriority.IMPORTANT,
+            substitution=SubstitutionPolicy.FORBIDDEN,
+            preferred_modalities=(
+                TrainingModality.TRAIL_RUNNING,
+            ),
+            required_modalities=(
+                TrainingModality.TRAIL_RUNNING,
+            ),
+            duration_min_minutes=20,
+            duration_max_minutes=120,
+        ),
+    )
+
+    result = build_session_intent_plan(
+        weekly_demand=build_demand(
+            requirements
+        )
+    )
+
+    long_intent = next(
+        intent
+        for intent in result.intents
+        if intent.primary_stimulus
+        is TrainingStimulus.LONG_ENDURANCE
+    )
+
+    assert (
+        TrainingStimulus.UPHILL_STRENGTH
+        in long_intent.secondary_stimuli
+    )
+
+    assert long_intent.duration_min_minutes == 60
+    assert long_intent.duration_max_minutes == 300

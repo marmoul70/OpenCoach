@@ -41,6 +41,12 @@ class TrainingSession(Base):
         index=True,
     )
 
+    planning_key: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        index=True,
+    )
+
     date: Mapped[date] = mapped_column(
         Date,
         nullable=False,

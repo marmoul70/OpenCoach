@@ -428,3 +428,130 @@ def test_taper_uses_taper_stimulus_demand() -> None:
     assert len(
         threshold_slots
     ) <= 1
+def test_recovery_preserves_target_session_frequency() -> None:
+    """Une récupération planifiée conserve la fréquence cible."""
+
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2027, 3, 1),
+            phase=TrainingPhase.BUILD,
+            load_target=create_load_target(),
+            recovery=create_recovery(
+                recovery_week=True,
+                factor=0.75,
+            ),
+            prescription=create_prescription(),
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+                Weekday.SUNDAY,
+            ),
+            target_session_count=4,
+        )
+    )
+
+    assert envelope.session_count == 4
+
+
+def test_target_session_frequency_is_limited_by_availability() -> None:
+    """La fréquence cible ne dépasse jamais les jours disponibles."""
+
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2027, 3, 1),
+            phase=TrainingPhase.BUILD,
+            load_target=create_load_target(),
+            recovery=create_recovery(
+                recovery_week=True,
+                factor=0.75,
+            ),
+            prescription=create_prescription(),
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+            ),
+            target_session_count=4,
+        )
+    )
+
+    assert envelope.session_count == 3
+
+
+def test_zero_load_overrides_target_session_frequency() -> None:
+    """Une suspension complète reste prioritaire sur la fréquence."""
+
+    load_target = calculate_weekly_load_target(
+        previous_load=100.0,
+        phase=TrainingPhase.BUILD,
+        adjustment=LoadAdjustment.SUSPEND,
+    )
+
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2027, 3, 1),
+            phase=TrainingPhase.BUILD,
+            load_target=load_target,
+            recovery=create_recovery(),
+            prescription=create_prescription(),
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+                Weekday.SUNDAY,
+            ),
+            target_session_count=4,
+        )
+    )
+
+    assert envelope.target_load == 0.0
+    assert envelope.session_count == 0
+
+def test_reference_duration_is_propagated_to_envelope() -> None:
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2027, 3, 1),
+            phase=TrainingPhase.BUILD,
+            load_target=create_load_target(),
+            recovery=create_recovery(),
+            prescription=create_prescription(),
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+                Weekday.SUNDAY,
+            ),
+            target_session_count=4,
+            reference_weekly_duration_minutes=300.0,
+        )
+    )
+
+    assert envelope.reference_duration_minutes == 300.0
+    assert envelope.target_duration_minutes == 300.0
+
+
+def test_recovery_reduces_target_duration_but_preserves_reference() -> None:
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2027, 3, 1),
+            phase=TrainingPhase.BUILD,
+            load_target=create_load_target(),
+            recovery=create_recovery(
+                recovery_week=True,
+                factor=0.75,
+            ),
+            prescription=create_prescription(),
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+                Weekday.SUNDAY,
+            ),
+            target_session_count=4,
+            reference_weekly_duration_minutes=300.0,
+        )
+    )
+
+    assert envelope.reference_duration_minutes == 300.0
+    assert envelope.target_duration_minutes == 225.0

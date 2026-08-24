@@ -172,3 +172,40 @@ def test_base_phase_does_not_force_specific_trail_stimuli() -> None:
         )
         is None
     )
+
+def test_very_high_uphill_demand_prefers_uphill_threshold_over_generic_threshold(
+) -> None:
+    """Un trail très exigeant en montée spécialise le travail au seuil."""
+
+    race_profile = build_race_demand_profile(
+        distance_km=70.0,
+        elevation_gain_m=3500.0,
+    )
+
+    prescription = (
+        build_contextual_stimulus_prescription(
+            phase=TrainingPhase.SPECIFIC,
+            race_profile=race_profile,
+        )
+    )
+
+    stimuli = {
+        requirement.stimulus
+        for requirement
+        in prescription.requirements
+    }
+
+    assert (
+        TrainingStimulus.UPHILL_THRESHOLD
+        in stimuli
+    )
+
+    assert (
+        TrainingStimulus.THRESHOLD
+        not in stimuli
+    )
+
+    assert (
+        TrainingStimulus.LONG_ENDURANCE
+        in stimuli
+    )

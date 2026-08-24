@@ -85,6 +85,10 @@ class WeeklyTrainingEnvelope:
 
     athlete_schedule_constrained: bool = False
 
+    reference_duration_minutes: float | None = None
+    target_duration_minutes: float | None = None
+    long_endurance_reference_minutes: float | None = None
+
     notes: tuple[
         str,
         ...
@@ -149,6 +153,36 @@ class WeeklyTrainingEnvelope:
             raise ValueError(
                 "La charge cible doit appartenir à "
                 "la plage autorisée."
+            )
+
+        if (
+            self.reference_duration_minutes
+            is not None
+            and self.reference_duration_minutes <= 0
+        ):
+            raise ValueError(
+                "La durée hebdomadaire de référence "
+                "doit être strictement positive."
+            )
+
+        if (
+            self.target_duration_minutes
+            is not None
+            and self.target_duration_minutes <= 0
+        ):
+            raise ValueError(
+                "La durée hebdomadaire cible "
+                "doit être strictement positive."
+            )
+
+        if (
+            self.long_endurance_reference_minutes
+            is not None
+            and self.long_endurance_reference_minutes <= 0
+        ):
+            raise ValueError(
+                "La durée de référence de sortie longue "
+                "doit être strictement positive."
             )
 
         available = set(

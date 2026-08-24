@@ -97,6 +97,12 @@ class CoachingTrajectoryInput:
         ...
     ]
 
+    target_session_count: int | None = None
+
+    reference_weekly_duration_minutes: float | None = None
+
+    long_endurance_reference_minutes: float | None = None
+
     trajectory_week: TrajectoryWeek | None = None
 
     events: tuple[
@@ -122,6 +128,37 @@ class CoachingTrajectoryInput:
     phase_transition_requires_recovery: bool = False
 
     athlete_schedule_constrained: bool = False
+
+    def __post_init__(self) -> None:
+        if (
+            self.target_session_count is not None
+            and self.target_session_count < 1
+        ):
+            raise ValueError(
+                "Le nombre cible de séances "
+                "doit être strictement positif."
+            )
+
+
+        if (
+            self.reference_weekly_duration_minutes
+            is not None
+            and self.reference_weekly_duration_minutes <= 0
+        ):
+            raise ValueError(
+                "La durée hebdomadaire de référence "
+                "doit être strictement positive."
+            )
+
+        if (
+            self.long_endurance_reference_minutes
+            is not None
+            and self.long_endurance_reference_minutes <= 0
+        ):
+            raise ValueError(
+                "La durée de référence de sortie longue "
+                "doit être strictement positive."
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -298,6 +335,15 @@ def build_coaching_trajectory(
             recovery=recovery,
             prescription=prescription,
             available_days=input_data.available_days,
+            target_session_count=(
+                input_data.target_session_count
+            ),
+            reference_weekly_duration_minutes=(
+                input_data.reference_weekly_duration_minutes
+            ),
+            long_endurance_reference_minutes=(
+                input_data.long_endurance_reference_minutes
+            ),
             athlete_schedule_constrained=(
                 input_data.athlete_schedule_constrained
                 or resolved_events.athlete_schedule_constrained

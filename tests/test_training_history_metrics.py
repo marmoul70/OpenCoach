@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from uuid import UUID, uuid4
 
 from opencoach.models import Activity
 from opencoach.planning import (
@@ -44,12 +45,15 @@ def create_activity(
     duration_minutes: int | None,
     distance_km: float | None,
     elevation_gain_m: float | None,
+    activity_id: UUID | None = None,
+    sport_type: str = "Run",
 ) -> Activity:
     return Activity(
+        id=activity_id,
         provider="intervals",
         provider_activity_id=name,
         name=name,
-        sport_type="Run",
+        sport_type=sport_type,
         start_at=datetime(
             2026,
             8,
@@ -73,6 +77,7 @@ def create_activity(
 
 def create_snapshot(
     activities=(),
+    race_activity_ids=frozenset(),
 ) -> TrainingHistorySnapshot:
     return TrainingHistorySnapshot(
         reference_date=date(
@@ -115,8 +120,10 @@ def create_snapshot(
         activities_84_days=tuple(
             activities
         ),
+        race_activity_ids=frozenset(
+            race_activity_ids
+        ),
     )
-
 
 def test_calculates_weekly_averages() -> None:
     metrics = calculate_training_history_metrics(
@@ -225,4 +232,205 @@ def test_handles_missing_activity_metrics() -> None:
     assert (
         metrics.highest_elevation_gain_m
         is None
+    )
+
+def test_long_endurance_reference_excludes_race_activity() -> None:
+    """Une compétition ne définit pas la baseline de sortie longue."""
+
+    race_id = uuid4()
+
+    race = create_activity(
+        name="Ultra 70K",
+        duration_minutes=690,
+        distance_km=70.0,
+        elevation_gain_m=3500.0,
+        activity_id=race_id,
+    )
+
+    training_long = create_activity(
+        name="Sortie longue",
+        duration_minutes=180,
+        distance_km=28.0,
+        elevation_gain_m=1400.0,
+        activity_id=uuid4(),
+    )
+
+    metrics = calculate_training_history_metrics(
+        create_snapshot(
+            activities=(
+                race,
+                training_long,
+            ),
+            race_activity_ids={
+                race_id,
+            },
+        )
+    )
+
+    assert metrics.longest_activity is race
+    assert metrics.longest_duration_minutes == 690.0
+
+    assert (
+        metrics.long_endurance_reference_minutes
+        == 180.0
+    )
+
+
+def test_long_endurance_reference_is_none_without_training_activity() -> None:
+    """Une compétition seule ne crée pas de baseline d'entraînement."""
+
+    race_id = uuid4()
+
+    race = create_activity(
+        name="Ultra 70K",
+        duration_minutes=690,
+        distance_km=70.0,
+        elevation_gain_m=3500.0,
+        activity_id=race_id,
+    )
+
+    metrics = calculate_training_history_metrics(
+        create_snapshot(
+            activities=(
+                race,
+            ),
+            race_activity_ids={
+                race_id,
+            },
+        )
+    )
+
+    assert metrics.longest_duration_minutes == 690.0
+
+    assert (
+        metrics.long_endurance_reference_minutes
+        is None
+    )
+
+def test_long_endurance_reference_ignores_walking() -> None:
+    """La marche ne définit pas la baseline de sortie longue course."""
+
+    walking = create_activity(
+        name="Longue marche",
+        duration_minutes=240,
+        distance_km=15.0,
+        elevation_gain_m=500.0,
+        activity_id=uuid4(),
+        sport_type="Walk",
+    )
+
+    running = create_activity(
+        name="Sortie longue trail",
+        duration_minutes=170,
+        distance_km=20.0,
+        elevation_gain_m=900.0,
+        activity_id=uuid4(),
+        sport_type="TrailRun",
+    )
+
+    metrics = calculate_training_history_metrics(
+        create_snapshot(
+            activities=(
+                walking,
+                running,
+            ),
+        )
+    )
+
+    assert (
+        metrics.long_endurance_reference_minutes
+        == 170.0
+    )
+
+
+def test_long_endurance_reference_ignores_other_sports() -> None:
+    """Les autres sports ne définissent pas la sortie longue course."""
+
+    football = create_activity(
+        name="Football",
+        duration_minutes=200,
+        distance_km=10.0,
+        elevation_gain_m=0.0,
+        activity_id=uuid4(),
+        sport_type="Soccer",
+    )
+
+    running = create_activity(
+        name="Sortie longue",
+        duration_minutes=150,
+        distance_km=18.0,
+        elevation_gain_m=600.0,
+        activity_id=uuid4(),
+        sport_type="Run",
+    )
+
+    metrics = calculate_training_history_metrics(
+        create_snapshot(
+            activities=(
+                football,
+                running,
+            ),
+        )
+    )
+
+    assert (
+        metrics.long_endurance_reference_minutes
+        == 150.0
+    )
+
+def test_long_endurance_reference_is_robust_to_single_extreme_activity() -> None:
+    """Une activité extrême isolée ne définit pas la baseline."""
+
+    extreme = create_activity(
+        name="Effort exceptionnel",
+        duration_minutes=690,
+        distance_km=61.0,
+        elevation_gain_m=2900.0,
+        activity_id=uuid4(),
+        sport_type="TrailRun",
+    )
+
+    long_one = create_activity(
+        name="Sortie longue 1",
+        duration_minutes=173,
+        distance_km=19.0,
+        elevation_gain_m=650.0,
+        activity_id=uuid4(),
+        sport_type="TrailRun",
+    )
+
+    long_two = create_activity(
+        name="Sortie longue 2",
+        duration_minutes=172,
+        distance_km=21.0,
+        elevation_gain_m=1100.0,
+        activity_id=uuid4(),
+        sport_type="TrailRun",
+    )
+
+    normal = create_activity(
+        name="Sortie normale",
+        duration_minutes=110,
+        distance_km=18.0,
+        elevation_gain_m=250.0,
+        activity_id=uuid4(),
+        sport_type="Run",
+    )
+
+    metrics = calculate_training_history_metrics(
+        create_snapshot(
+            activities=(
+                extreme,
+                long_one,
+                long_two,
+                normal,
+            ),
+        )
+    )
+
+    assert metrics.longest_duration_minutes == 690.0
+
+    assert (
+        metrics.long_endurance_reference_minutes
+        == 173.0
     )

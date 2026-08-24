@@ -20,7 +20,7 @@ et au moteur de génération des séances.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from opencoach.planning.sessions.intent import (
     SessionIntent,
@@ -195,6 +195,16 @@ def _build_long_endurance_intents(
         intent = build_session_intent(
             primary=long_endurance.requirement,
             secondary=secondary,
+        )
+
+        intent = replace(
+            intent,
+            duration_min_minutes=(
+                long_endurance.requirement.duration_min_minutes
+            ),
+            duration_max_minutes=(
+                long_endurance.requirement.duration_max_minutes
+            ),
         )
 
         intents.append(
@@ -634,3 +644,112 @@ def _mark_represented(
             represented.append(
                 stimulus
             )
+
+
+def complete_session_intent_frequency(
+    *,
+    plan: SessionIntentPlan,
+    target_session_count: int,
+) -> SessionIntentPlan:
+    """Complète prudemment la fréquence hebdomadaire.
+
+    Les intentions métier déjà construites sont toujours conservées.
+
+    Si la fréquence cible n'est pas atteinte, seules des intentions
+    AEROBIC_EASY de soutien peuvent être ajoutées. Le moteur ne crée
+    jamais artificiellement une exposition clé pour remplir un quota.
+
+    Le nombre maximal d'occurrences autorisé par la demande
+    hebdomadaire reste respecté.
+    """
+
+    if target_session_count < 0:
+        raise ValueError(
+            "La fréquence cible ne peut pas être négative."
+        )
+
+    if plan.session_count >= target_session_count:
+        return plan
+
+    aerobic_easy_demand = (
+        plan.source_demand.demand_for(
+            TrainingStimulus.AEROBIC_EASY
+        )
+    )
+
+    if (
+        aerobic_easy_demand is None
+        or aerobic_easy_demand.maximum_occurrences <= 0
+    ):
+        return plan
+
+    current_easy_occurrences = sum(
+        1
+        for intent in plan.intents
+        if TrainingStimulus.AEROBIC_EASY
+        in intent.stimuli
+    )
+
+    remaining_easy_capacity = max(
+        0,
+        aerobic_easy_demand.maximum_occurrences
+        - current_easy_occurrences,
+    )
+
+    missing_sessions = (
+        target_session_count
+        - plan.session_count
+    )
+
+    additions = min(
+        missing_sessions,
+        remaining_easy_capacity,
+    )
+
+    if additions <= 0:
+        return plan
+
+    extra_intents = tuple(
+        build_session_intent(
+            primary=(
+                aerobic_easy_demand.requirement
+            ),
+        )
+        for _ in range(additions)
+    )
+
+    represented_stimuli = (
+        plan.represented_stimuli
+    )
+
+    if (
+        TrainingStimulus.AEROBIC_EASY
+        not in represented_stimuli
+    ):
+        represented_stimuli = (
+            *represented_stimuli,
+            TrainingStimulus.AEROBIC_EASY,
+        )
+
+    unrepresented_stimuli = tuple(
+        stimulus
+        for stimulus in plan.unrepresented_stimuli
+        if stimulus
+        is not TrainingStimulus.AEROBIC_EASY
+    )
+
+    return SessionIntentPlan(
+        intents=(
+            *plan.intents,
+            *extra_intents,
+        ),
+        source_demand=(
+            plan.source_demand
+        ),
+        represented_stimuli=(
+            represented_stimuli
+        ),
+        unrepresented_stimuli=(
+            unrepresented_stimuli
+        ),
+    )

@@ -1,7 +1,7 @@
-"""Port optionnel chargé de générer une séance concrète.
+"""Port de génération d'une séance concrète OpenCoach.
 
-Ce module définit le contrat entre le moteur déterministe OpenCoach
-et un fournisseur externe optionnel.
+Ce module définit le contrat utilisé pour transformer une intention
+de séance déjà planifiée en séance concrète.
 
 Le moteur Python reste responsable :
 - de l'intention ;
@@ -9,9 +9,10 @@ Le moteur Python reste responsable :
 - des contraintes de durée ;
 - des modalités ;
 - des stimuli ;
-- de la trajectoire.
+- de la trajectoire ;
+- des données physiologiques utilisables.
 
-L'implémentation du SessionCoachPort transforme ce cadre en
+Une implémentation du SessionCoachPort transforme ce cadre en
 SessionProposal concrète.
 """
 
@@ -20,6 +21,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+from opencoach.planning.physiology.snapshot import (
+    PhysiologicalCalibrationSnapshot,
+)
 from opencoach.planning.sessions.proposal import (
     SessionProposal,
 )
@@ -32,28 +36,30 @@ from opencoach.planning.weekly.training_envelope import (
 
 
 class SessionCoachError(RuntimeError):
-    """Erreur générique du fournisseur de séance."""
+    """Erreur générique de génération d'une séance."""
 
 
 class SessionCoachUnavailableError(
     SessionCoachError
 ):
-    """Le fournisseur externe n'est pas disponible."""
+    """Le fournisseur optionnel n'est pas disponible."""
+
 
 class SessionCoachTimeoutError(
     SessionCoachError
 ):
-    """Le fournisseur externe n'a pas répondu dans le délai imparti."""
+    """Le fournisseur optionnel n'a pas répondu à temps."""
+
 
 class SessionCoachInvalidResponseError(
     SessionCoachError
 ):
-    """Le fournisseur externe a renvoyé une réponse inexploitable."""
+    """Le fournisseur optionnel a renvoyé une réponse invalide."""
 
 
 @dataclass(frozen=True, slots=True)
 class SessionCoachRequest:
-    """Contexte transmis au fournisseur de séance."""
+    """Contexte nécessaire à la génération d'une séance."""
 
     phase: TrainingPhase
 
@@ -61,20 +67,38 @@ class SessionCoachRequest:
 
     target_load: float | None = None
 
+    planned_duration_minutes: int | None = None
+
+    physiology: (
+        PhysiologicalCalibrationSnapshot
+        | None
+    ) = None
+
     athlete_context: str | None = None
 
     additional_context: tuple[
         str,
-        ...
+        ...,
     ] = ()
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self,
+    ) -> None:
         if (
             self.target_load is not None
             and self.target_load < 0
         ):
             raise ValueError(
                 "La charge cible ne peut pas être négative."
+            )
+
+        if (
+            self.planned_duration_minutes is not None
+            and self.planned_duration_minutes <= 0
+        ):
+            raise ValueError(
+                "La durée planifiée doit être "
+                "strictement positive."
             )
 
         if (
@@ -88,7 +112,7 @@ class SessionCoachRequest:
 
 @runtime_checkable
 class SessionCoachPort(Protocol):
-    """Interface implémentée par tout fournisseur de séance."""
+    """Interface d'un générateur de séance OpenCoach."""
 
     def generate_session(
         self,

@@ -18,6 +18,15 @@ class TrainingSessionRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def delete_session(
+        self,
+        athlete_profile_id: UUID,
+        session_id: UUID,
+    ) -> None:
+        """Supprime une séance planifiée."""
+        raise NotImplementedError
+
+    @abstractmethod
     def get_session(
         self,
         athlete_profile_id: UUID,

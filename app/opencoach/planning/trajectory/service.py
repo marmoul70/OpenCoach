@@ -101,6 +101,12 @@ class CurrentWeekCoachingInput:
         ...
     ]
 
+    target_session_count: int | None = None
+
+    reference_weekly_duration_minutes: float | None = None
+
+    long_endurance_reference_minutes: float | None = None
+
     reconciliation_history: tuple[
         ContextualWeeklyLoadReconciliation,
         ...
@@ -136,6 +142,36 @@ class CurrentWeekCoachingInput:
     athlete_schedule_constrained: bool = False
 
     def __post_init__(self) -> None:
+        if (
+            self.target_session_count is not None
+            and self.target_session_count < 1
+        ):
+            raise ValueError(
+                "Le nombre cible de séances "
+                "doit être strictement positif."
+            )
+
+
+        if (
+            self.reference_weekly_duration_minutes
+            is not None
+            and self.reference_weekly_duration_minutes <= 0
+        ):
+            raise ValueError(
+                "La durée hebdomadaire de référence "
+                "doit être strictement positive."
+            )
+
+        if (
+            self.long_endurance_reference_minutes
+            is not None
+            and self.long_endurance_reference_minutes <= 0
+        ):
+            raise ValueError(
+                "La durée de référence de sortie longue "
+                "doit être strictement positive."
+            )
+
         if self.planning_date < self.trajectory_start_date:
             raise ValueError(
                 "La date de planification ne peut pas précéder "
@@ -330,6 +366,15 @@ def build_current_week_coaching(
             previous_load=trajectory_week.previous_load,
             loading_weeks_since_recovery=0,
             available_days=input_data.available_days,
+            target_session_count=(
+                input_data.target_session_count
+            ),
+            reference_weekly_duration_minutes=(
+                input_data.reference_weekly_duration_minutes
+            ),
+            long_endurance_reference_minutes=(
+                input_data.long_endurance_reference_minutes
+            ),
             trajectory_week=trajectory_week,
             events=input_data.events,
             additional_adjustments=(

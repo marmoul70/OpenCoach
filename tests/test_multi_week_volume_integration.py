@@ -119,7 +119,7 @@ def test_volume_recovery_uses_same_recovery_weeks_as_load() -> None:
 
 
 def test_two_week_taper_is_relative_to_volume_peak() -> None:
-    """Le taper horaire utilise 75 puis 50 % du pic construit."""
+    """Le taper horaire utilise 55 puis 35 % du pic construit."""
 
     trajectory = build_multi_week_trajectory(
         planning_date=PLANNING_DATE,
@@ -143,11 +143,11 @@ def test_two_week_taper_is_relative_to_volume_peak() -> None:
     )
 
     assert taper_weeks[0].target_duration_minutes == pytest.approx(
-        peak_reference * 0.75
+        peak_reference * 0.55
     )
 
     assert taper_weeks[1].target_duration_minutes == pytest.approx(
-        peak_reference * 0.50
+        peak_reference * 0.35
     )
 
     assert (

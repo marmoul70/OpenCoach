@@ -646,3 +646,56 @@ def test_second_build_week_can_schedule_uphill_strength_endurance() -> None:
             in matching[0].intent.stimuli
         )
 
+
+
+def test_target_race_day_is_excluded_from_training_availability() -> None:
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2026, 12, 14),
+            phase=TrainingPhase.TAPER,
+            load_target=create_load_target(),
+            recovery=create_recovery(),
+            prescription=create_prescription(
+                phase=TrainingPhase.TAPER,
+            ),
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+                Weekday.SUNDAY,
+            ),
+            target_race_date=date(2026, 12, 20),
+        )
+    )
+
+    assert Weekday.SUNDAY not in envelope.available_days
+
+    assert all(
+        slot.day is not Weekday.SUNDAY
+        for slot in envelope.session_slots
+    )
+
+
+def test_target_race_outside_week_does_not_change_availability() -> None:
+    available_days = (
+        Weekday.MONDAY,
+        Weekday.WEDNESDAY,
+        Weekday.FRIDAY,
+        Weekday.SUNDAY,
+    )
+
+    envelope = build_weekly_training_envelope(
+        input_data=WeeklyTrainingEnvelopeInput(
+            week_start=date(2026, 12, 7),
+            phase=TrainingPhase.TAPER,
+            load_target=create_load_target(),
+            recovery=create_recovery(),
+            prescription=create_prescription(
+                phase=TrainingPhase.TAPER,
+            ),
+            available_days=available_days,
+            target_race_date=date(2026, 12, 20),
+        )
+    )
+
+    assert envelope.available_days == available_days

@@ -177,7 +177,8 @@ def build_trajectory_from_phases(
                     loading_weeks_since_recovery
                 ),
                 planned_recovery_allowed=(
-                    not next_week_starts_taper
+                    phase_week_index > 1
+                    and not next_week_starts_taper
                     and not preserve_short_specific_phase
                 ),
             )
@@ -490,9 +491,9 @@ def _taper_volume_factor(
 
     if phase_week_count == 2:
         return (
-            0.75
+            0.55
             if phase_week_index == 1
-            else 0.50
+            else 0.35
         )
 
     step = (

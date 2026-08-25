@@ -292,8 +292,13 @@ def _allocate_with_long_endurance_reference(
         ),
     )
 
-    long_target = min(
+    progressive_long_target = max(
         long_endurance_reference_minutes,
+        target_weekly_minutes * 0.50,
+    )
+
+    long_target = min(
+        progressive_long_target,
         float(long_budget_ceiling),
     )
 

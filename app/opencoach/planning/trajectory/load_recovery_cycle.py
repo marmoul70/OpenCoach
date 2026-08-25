@@ -101,7 +101,7 @@ DEFAULT_RECOVERY_POLICIES = {
     TrainingPhase.SPECIFIC: LoadRecoveryPolicy(
         phase=TrainingPhase.SPECIFIC,
         preferred_loading_weeks=2,
-        recovery_factor=0.80,
+        recovery_factor=0.70,
     ),
     TrainingPhase.RETURN_TO_TRAINING: LoadRecoveryPolicy(
         phase=TrainingPhase.RETURN_TO_TRAINING,

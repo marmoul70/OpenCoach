@@ -385,6 +385,7 @@ def build_coaching_trajectory(
             recovery=recovery,
             prescription=prescription,
             available_days=input_data.available_days,
+            target_race_date=input_data.target_race_date,
             phase_week_index=phase_week_index,
             target_session_count=(
                 input_data.target_session_count

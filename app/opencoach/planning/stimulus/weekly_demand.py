@@ -500,6 +500,11 @@ def _recovery_demand(
         requirement.stimulus
         is TrainingStimulus.AEROBIC_EASY
     ):
+        requirement = replace(
+            requirement,
+            duration_max_minutes=90,
+        )
+
         return StimulusDemand(
             requirement=requirement,
             minimum_occurrences=1,
@@ -564,6 +569,11 @@ def _taper_demand(
         requirement.stimulus
         is TrainingStimulus.AEROBIC_EASY
     ):
+        requirement = replace(
+            requirement,
+            duration_max_minutes=90,
+        )
+
         return StimulusDemand(
             requirement=requirement,
             minimum_occurrences=0,

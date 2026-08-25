@@ -463,7 +463,7 @@ def test_extra_weekly_volume_is_absorbed_by_aerobic_before_threshold() -> None:
 
     assert sum(durations.values()) == 420
 
-    assert durations["long"] == 175
+    assert durations["long"] == 210
 
     assert durations["threshold"] <= 90
 
@@ -537,7 +537,7 @@ def test_extra_weekly_volume_is_absorbed_by_aerobic_before_threshold() -> None:
 
     assert sum(durations.values()) == 420
 
-    assert durations["long"] == 175
+    assert durations["long"] == 210
 
     assert durations["threshold"] <= 90
 
@@ -611,7 +611,7 @@ def test_threshold_reaches_functional_duration_before_aerobic_absorbs_surplus() 
 
     assert sum(durations.values()) == 420
 
-    assert durations["long"] == 175
+    assert durations["long"] == 210
 
     assert durations["threshold"] >= 60
     assert durations["threshold"] <= 90
@@ -757,3 +757,51 @@ def test_long_reference_without_long_slot_still_reconciles_weekly_budget() -> No
     )
 
     assert easy_total == 245
+
+
+def test_long_endurance_progresses_with_weekly_volume() -> None:
+    long_run = create_slot(
+        slot_id="long",
+        day=Weekday.SUNDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.LONG_ENDURANCE,
+            importance=SessionIntentImportance.KEY,
+            minimum=90,
+            maximum=240,
+        ),
+    )
+
+    easy = create_slot(
+        slot_id="easy",
+        day=Weekday.WEDNESDAY,
+        intent=create_intent(
+            stimulus=TrainingStimulus.AEROBIC_EASY,
+            importance=SessionIntentImportance.SUPPORT,
+            minimum=45,
+            maximum=120,
+        ),
+    )
+
+    def long_duration(
+        weekly_minutes: float,
+    ) -> int:
+        result = allocate_session_durations(
+            slots=(
+                easy,
+                long_run,
+            ),
+            target_load=200.0,
+            reference_weekly_duration_minutes=weekly_minutes,
+            long_endurance_reference_minutes=150.0,
+        )
+
+        durations = {
+            item.slot_id: item.duration_minutes
+            for item in result
+        }
+
+        return durations["long"]
+
+    assert long_duration(300.0) == 150
+    assert long_duration(360.0) == 180
+    assert long_duration(420.0) == 210

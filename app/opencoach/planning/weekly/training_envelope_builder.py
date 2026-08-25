@@ -76,6 +76,8 @@ class WeeklyTrainingEnvelopeInput:
         ...
     ]
 
+    target_race_date: date | None = None
+
     phase_week_index: int = 1
 
     target_session_count: int | None = None
@@ -114,6 +116,14 @@ def build_weekly_training_envelope(
         + timedelta(days=6)
     )
 
+    effective_available_days = (
+        _exclude_target_race_day(
+            week_start=input_data.week_start,
+            available_days=input_data.available_days,
+            target_race_date=input_data.target_race_date,
+        )
+    )
+
     adjusted_loads = _apply_recovery_factor(
         load_target=input_data.load_target,
         recovery=input_data.recovery,
@@ -148,7 +158,7 @@ def build_weekly_training_envelope(
             input_data.target_session_count,
             len(
                 set(
-                    input_data.available_days
+                    effective_available_days
                 )
             ),
         )
@@ -175,7 +185,7 @@ def build_weekly_training_envelope(
         schedule_session_intents(
             plan=intent_plan,
             available_days=(
-                input_data.available_days
+                effective_available_days
             ),
             day_capacities=(
                 input_data.day_capacities
@@ -187,7 +197,7 @@ def build_weekly_training_envelope(
         _classify_schedule_pressure(
             schedule=session_schedule,
             available_days=(
-                input_data.available_days
+                effective_available_days
             ),
         )
     )
@@ -227,7 +237,7 @@ def build_weekly_training_envelope(
         ),
         load_min=adjusted_loads.load_min,
         load_max=adjusted_loads.load_max,
-        available_days=input_data.available_days,
+        available_days=effective_available_days,
         session_slots=session_schedule.slots,
         schedule_pressure=schedule_pressure,
         athlete_schedule_constrained=(
@@ -412,4 +422,56 @@ def _resolve_target_duration_minutes(
         reference_duration_minutes
         * factor,
         1,
+    )
+
+
+_WEEKDAY_INDEX = {
+    Weekday.MONDAY: 0,
+    Weekday.TUESDAY: 1,
+    Weekday.WEDNESDAY: 2,
+    Weekday.THURSDAY: 3,
+    Weekday.FRIDAY: 4,
+    Weekday.SATURDAY: 5,
+    Weekday.SUNDAY: 6,
+}
+
+
+def _exclude_target_race_day(
+    *,
+    week_start: date,
+    available_days: tuple[
+        Weekday,
+        ...
+    ],
+    target_race_date: date | None,
+) -> tuple[
+    Weekday,
+    ...
+]:
+    """Réserve le jour de la course cible à la compétition."""
+
+    if target_race_date is None:
+        return available_days
+
+    week_end = (
+        week_start
+        + timedelta(days=6)
+    )
+
+    if not (
+        week_start
+        <= target_race_date
+        <= week_end
+    ):
+        return available_days
+
+    race_weekday_index = (
+        target_race_date.weekday()
+    )
+
+    return tuple(
+        day
+        for day in available_days
+        if _WEEKDAY_INDEX[day]
+        != race_weekday_index
     )

@@ -227,7 +227,9 @@ update_repository() {
 
 
 validate_environment() {
-    local arguments=()
+    local arguments=(
+        "--install"
+    )
 
     if (( DEV_REQUESTED == 1 )); then
         arguments+=(
@@ -236,7 +238,7 @@ validate_environment() {
     fi
 
     log_info \
-        "Validation de l'environnement OpenCoach"
+        "Validation et mise à niveau de l'environnement OpenCoach"
 
     "$BOOTSTRAP_DIR/check-environment.sh" \
         "${arguments[@]}"

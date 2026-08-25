@@ -223,8 +223,14 @@ data/profile.json
 # OpenCoach runtime data
 data/profile.json
 data/*.db
+data/*.db-wal
+data/*.db-shm
 data/*.sqlite
+data/*.sqlite-wal
+data/*.sqlite-shm
 data/*.sqlite3
+data/*.sqlite3-wal
+data/*.sqlite3-shm
 # Local database backups
 data/*.backup*
 

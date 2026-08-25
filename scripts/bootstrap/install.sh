@@ -99,6 +99,54 @@ run_environment_installation() {
 }
 
 
+get_server_ipv4() {
+    local server_ip=""
+
+    if command -v ip >/dev/null 2>&1; then
+        server_ip="$(
+            ip route get 1.1.1.1 2>/dev/null \
+                | awk '
+                    {
+                        for (i = 1; i <= NF; i++) {
+                            if ($i == "src" && (i + 1) <= NF) {
+                                print $(i + 1)
+                                exit
+                            }
+                        }
+                    }
+                '
+        )"
+    fi
+
+    if [[ -z "$server_ip" ]] \
+        && command -v hostname >/dev/null 2>&1; then
+        server_ip="$(
+            hostname -I 2>/dev/null \
+                | awk '{ print $1 }'
+        )"
+    fi
+
+    printf '%s' "$server_ip"
+}
+
+
+log_access_information() {
+    local server_ip
+
+    server_ip="$(
+        get_server_ipv4
+    )"
+
+    if [[ -n "$server_ip" ]]; then
+        log_info \
+            "OpenCoach est accessible sur : http://$server_ip"
+    else
+        log_warning \
+            "Impossible de déterminer automatiquement l'adresse IP du serveur."
+    fi
+}
+
+
 main() {
     parse_arguments "$@"
 
@@ -142,6 +190,8 @@ main() {
 
     log_success \
         "Services OpenCoach installés et configurés."
+
+    log_access_information
 
     log_success \
         "Bootstrap OpenCoach terminé avec succès."

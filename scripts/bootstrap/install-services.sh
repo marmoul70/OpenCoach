@@ -29,6 +29,11 @@ source "$PROJECT_ROOT/scripts/lib/log.sh"
 SYSTEMD_SOURCE_DIR="$PROJECT_ROOT/systemd"
 SYSTEMD_TARGET_DIR="/etc/systemd/system"
 
+NGINX_SOURCE_FILE="$PROJECT_ROOT/nginx/opencoach.conf"
+NGINX_TARGET_FILE="/etc/nginx/sites-available/opencoach"
+NGINX_ENABLED_FILE="/etc/nginx/sites-enabled/opencoach"
+NGINX_FRONTEND_DIR="/var/www/opencoach"
+
 ENV_FILE="$PROJECT_ROOT/.env"
 ENV_EXAMPLE="$PROJECT_ROOT/.env.example"
 
@@ -238,11 +243,78 @@ install_systemd_units() {
 }
 
 
+install_nginx_configuration() {
+    if [[ ! -f "$NGINX_SOURCE_FILE" ]]; then
+        log_error \
+            "Configuration Nginx source introuvable : $NGINX_SOURCE_FILE"
+
+        return 1
+    fi
+
+    if [[ ! -f "$PROJECT_ROOT/frontend/dist/index.html" ]]; then
+        log_error \
+            "Frontend compilé introuvable : frontend/dist/index.html"
+
+        return 1
+    fi
+
+    log_info \
+        "Déploiement du frontend OpenCoach"
+
+    install \
+        -d \
+        -o root \
+        -g root \
+        -m 755 \
+        "$NGINX_FRONTEND_DIR"
+
+    rm -rf \
+        "$NGINX_FRONTEND_DIR"/*
+
+    cp -a \
+        "$PROJECT_ROOT/frontend/dist/." \
+        "$NGINX_FRONTEND_DIR/"
+
+    find "$NGINX_FRONTEND_DIR" \
+        -type d \
+        -exec chmod 755 {} +
+
+    find "$NGINX_FRONTEND_DIR" \
+        -type f \
+        -exec chmod 644 {} +
+
+    log_info \
+        "Installation de la configuration Nginx OpenCoach"
+
+    cp \
+        "$NGINX_SOURCE_FILE" \
+        "$NGINX_TARGET_FILE"
+
+    ln -sfn \
+        "$NGINX_TARGET_FILE" \
+        "$NGINX_ENABLED_FILE"
+
+    rm -f \
+        /etc/nginx/sites-enabled/default
+
+    if ! nginx -t; then
+        log_error \
+            "La configuration Nginx OpenCoach est invalide."
+
+        return 1
+    fi
+
+    systemctl enable nginx
+    systemctl restart nginx
+
+    log_success \
+        "Nginx OpenCoach installé et démarré."
+}
+
 enable_services() {
-    # Activation du backend pour les démarrages futurs.
-    # Il n'est pas démarré immédiatement pour éviter un conflit
-    # avec un serveur de développement déjà présent sur le port 8000.
-    systemctl enable \
+    # Le backend de production écoute uniquement sur localhost.
+    # Il peut donc être activé et démarré immédiatement.
+    systemctl enable --now \
         opencoach-backend.service
 
     # Le timer Intervals peut être démarré immédiatement.
@@ -257,6 +329,8 @@ main() {
     apply_project_permissions
 
     install_systemd_units
+
+    install_nginx_configuration
 
     enable_services
 

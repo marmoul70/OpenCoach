@@ -12,6 +12,7 @@ readonly OPENCOACH_REQUIRED_PACKAGES=(
     python3-pip
     nodejs
     npm
+    nginx
 )
 
 readonly OPENCOACH_DEV_PACKAGES=(

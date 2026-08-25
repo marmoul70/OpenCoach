@@ -187,12 +187,24 @@ install_frontend_application() {
 
         run_as_project_owner \
             npm ci
+
+        log_info \
+            "Construction du frontend OpenCoach"
+
+        run_as_project_owner \
+            npm run build
     )
 
-    log_success \
-        "Dépendances frontend installées."
-}
+    if [[ ! -f "$FRONTEND_DIR/dist/index.html" ]]; then
+        log_error \
+            "La construction du frontend n'a pas produit dist/index.html."
 
+        return 1
+    fi
+
+    log_success \
+        "Dépendances frontend installées et frontend construit."
+}
 
 apply_database_migrations() {
     if [[ ! -x "$VENV_ALEMBIC" ]]; then

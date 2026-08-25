@@ -32,6 +32,8 @@ VENV_DIR="$PROJECT_ROOT/.venv"
 VENV_PYTHON="$VENV_DIR/bin/python"
 VENV_ALEMBIC="$VENV_DIR/bin/alembic"
 
+PYTHON_CONSTRAINTS_FILE="$PROJECT_ROOT/requirements/constraints.txt"
+
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 
 DEV_REQUESTED=0
@@ -142,10 +144,23 @@ install_python_application() {
         install_target=".[dev]"
     fi
 
+    if [[ ! -f "$PYTHON_CONSTRAINTS_FILE" ]]; then
+        log_error \
+            "Le fichier requirements/constraints.txt est introuvable."
+
+        return 1
+    fi
+
+    log_info \
+        "Utilisation des dépendances Python verrouillées"
+
     log_info \
         "Mise à jour de pip"
 
     run_as_project_owner \
+        env \
+        PIP_CONSTRAINT="$PYTHON_CONSTRAINTS_FILE" \
+        PIP_BUILD_CONSTRAINT="$PYTHON_CONSTRAINTS_FILE" \
         "$VENV_PYTHON" \
         -m pip \
         install \
@@ -159,6 +174,9 @@ install_python_application() {
         cd "$PROJECT_ROOT"
 
         run_as_project_owner \
+            env \
+            PIP_CONSTRAINT="$PYTHON_CONSTRAINTS_FILE" \
+            PIP_BUILD_CONSTRAINT="$PYTHON_CONSTRAINTS_FILE" \
             "$VENV_PYTHON" \
             -m pip \
             install \
@@ -166,8 +184,16 @@ install_python_application() {
             "$install_target"
     )
 
+    log_info \
+        "Vérification des dépendances Python"
+
+    run_as_project_owner \
+        "$VENV_PYTHON" \
+        -m pip \
+        check
+
     log_success \
-        "Dépendances Python installées."
+        "Dépendances Python verrouillées installées et validées."
 }
 
 

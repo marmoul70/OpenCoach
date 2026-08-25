@@ -118,6 +118,25 @@ test_python_venv_is_declared() {
 }
 
 
+test_python_dependencies_use_constraints() {
+    grep -Fq \
+        'requirements/constraints.txt' \
+        "$SCRIPT" \
+        && grep -Fq \
+            'PIP_CONSTRAINT=' \
+            "$SCRIPT" \
+        && grep -Fq \
+            'PIP_BUILD_CONSTRAINT=' \
+            "$SCRIPT" \
+        && grep -Fq \
+            'pip \' \
+            "$SCRIPT" \
+        && grep -Fq \
+            'check' \
+            "$SCRIPT"
+}
+
+
 test_frontend_install_uses_npm_ci() {
     grep -Fq \
         'npm ci' \
@@ -158,6 +177,10 @@ assert_success \
 assert_success \
     "Python et python3-venv sont déclarés" \
     test_python_venv_is_declared
+
+assert_success \
+    "les dépendances Python utilisent le lock" \
+    test_python_dependencies_use_constraints
 
 assert_success \
     "le frontend utilise npm ci" \

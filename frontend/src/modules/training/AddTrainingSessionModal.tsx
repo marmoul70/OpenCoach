@@ -6,6 +6,7 @@ import {
   X,
 } from 'lucide-react'
 import {
+  useCallback,
   useEffect,
   useState,
 } from 'react'
@@ -118,6 +119,38 @@ export function AddTrainingSessionModal({
   )
 
 
+  const loadActivities =
+    useCallback(
+      async (): Promise<void> => {
+        setLoadingActivities(true)
+        setError(null)
+
+        try {
+          const result =
+            await fetchAvailableTrainingActivities(
+              date,
+            )
+
+          setActivities(result)
+        } catch (caughtError) {
+          setError(
+            caughtError instanceof Error
+              ? caughtError.message
+              : (
+                  'Impossible de charger les '
+                  + 'activités Intervals.icu.'
+                ),
+          )
+        } finally {
+          setLoadingActivities(false)
+        }
+      },
+      [
+        date,
+      ],
+    )
+
+
   useEffect(() => {
     if (!open) {
       return
@@ -128,34 +161,10 @@ export function AddTrainingSessionModal({
     setForm(EMPTY_MANUAL_FORM)
 
     void loadActivities()
-  }, [open, date])
-
-
-  async function loadActivities():
-  Promise<void> {
-    setLoadingActivities(true)
-    setError(null)
-
-    try {
-      const result =
-        await fetchAvailableTrainingActivities(
-          date,
-        )
-
-      setActivities(result)
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : (
-              'Impossible de charger les '
-              + 'activités Intervals.icu.'
-            ),
-      )
-    } finally {
-      setLoadingActivities(false)
-    }
-  }
+  }, [
+    open,
+    loadActivities,
+  ])
 
 
   async function addIntervalsActivity(

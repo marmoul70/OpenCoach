@@ -617,31 +617,67 @@ from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
 
-def check(url: str) -> None:
-    try:
-        with urlopen(
-            url,
-            timeout=10,
-        ) as response:
-            status = response.status
+def check(
+    url: str,
+    *,
+    attempts: int = 10,
+    delay_seconds: float = 1.0,
+) -> None:
+    import time
 
-    except HTTPError as exc:
-        raise SystemExit(
-            f"{url} -> HTTP {exc.code}"
-        ) from exc
+    last_error: str | None = None
 
-    except URLError as exc:
-        raise SystemExit(
-            f"{url} -> indisponible : {exc.reason}"
-        ) from exc
+    for attempt in range(
+        1,
+        attempts + 1,
+    ):
+        try:
+            with urlopen(
+                url,
+                timeout=10,
+            ) as response:
+                status = response.status
 
-    if status != 200:
-        raise SystemExit(
-            f"{url} -> HTTP {status}"
+            if status == 200:
+                print(
+                    f"[HTTP 200] {url}"
+                )
+                return
+
+            last_error = (
+                f"HTTP {status}"
+            )
+
+        except HTTPError as exc:
+            last_error = (
+                f"HTTP {exc.code}"
+            )
+
+        except URLError as exc:
+            last_error = (
+                f"indisponible : "
+                f"{exc.reason}"
+            )
+
+        if attempt < attempts:
+            print(
+                (
+                    f"[HTTP RETRY "
+                    f"{attempt}/{attempts}] "
+                    f"{url} -> {last_error}"
+                )
+            )
+
+            time.sleep(
+                delay_seconds
+            )
+
+    raise SystemExit(
+        (
+            f"{url} -> échec après "
+            f"{attempts} tentative(s) : "
+            f"{last_error}"
         )
-
-    print(
-        f"[HTTP 200] {url}"
     )
 
 
@@ -650,7 +686,7 @@ check(
 )
 
 check(
-    "http://127.0.0.1/api/profile"
+    "http://127.0.0.1/api/health/ready"
 )
 PYHTTP
     then

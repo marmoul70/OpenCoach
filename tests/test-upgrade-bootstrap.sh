@@ -201,10 +201,23 @@ test_upgrade_verifies_frontend_http() {
 }
 
 
-test_upgrade_verifies_api_http() {
+test_upgrade_verifies_api_health() {
     grep -Fq \
-        '"http://127.0.0.1/api/profile"' \
+        '"http://127.0.0.1/api/health/ready"' \
         "$UPGRADE_SCRIPT"
+}
+
+
+test_upgrade_retries_http_checks() {
+    grep -Fq \
+        'attempts: int = 10' \
+        "$UPGRADE_SCRIPT" \
+        && grep -Fq \
+            'time.sleep' \
+            "$UPGRADE_SCRIPT" \
+        && grep -Fq \
+            '[HTTP RETRY' \
+            "$UPGRADE_SCRIPT"
 }
 
 
@@ -276,8 +289,12 @@ check \
     test_upgrade_verifies_frontend_http
 
 check \
-    "l'API HTTP est vérifiée" \
-    test_upgrade_verifies_api_http
+    "le readiness healthcheck est vérifié" \
+    test_upgrade_verifies_api_health
+
+check \
+    "les contrôles HTTP tolèrent le démarrage du backend" \
+    test_upgrade_retries_http_checks
 
 check \
     "l'adresse d'accès est affichée" \

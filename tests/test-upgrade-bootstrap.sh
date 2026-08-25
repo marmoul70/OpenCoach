@@ -137,6 +137,19 @@ test_upgrade_checks_backup_integrity() {
 }
 
 
+test_upgrade_environment_uses_install_mode() {
+    grep -Fq \
+        'local arguments=(' \
+        "$UPGRADE_SCRIPT" \
+        && grep -Fq \
+            '"--install"' \
+            "$UPGRADE_SCRIPT" \
+        && grep -Fq \
+            'check-environment.sh' \
+            "$UPGRADE_SCRIPT"
+}
+
+
 test_upgrade_reuses_application_installer() {
     grep -Fq \
         'install-application.sh' \
@@ -233,6 +246,10 @@ check \
 check \
     "l'intégrité de la sauvegarde SQLite est vérifiée" \
     test_upgrade_checks_backup_integrity
+
+check \
+    "l'environnement d'upgrade utilise --install" \
+    test_upgrade_environment_uses_install_mode
 
 check \
     "l'upgrade réutilise install-application.sh" \

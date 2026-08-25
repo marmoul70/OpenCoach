@@ -338,7 +338,7 @@ main() {
         "Services OpenCoach installés."
 
     log_info \
-        "Backend activé pour le prochain démarrage."
+        "Backend OpenCoach actif sur localhost."
 
     log_info \
         "Synchronisation Intervals active toutes les 15 minutes."

@@ -236,3 +236,4 @@ data/*.backup*
 
 # OpenCoach - fichiers locaux générés
 data/opencoach-plan-preview.json
+data/backups/

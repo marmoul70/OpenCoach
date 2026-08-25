@@ -45,6 +45,43 @@ def build_multi_week_trajectory(
 ) -> MultiWeekTrajectory:
     """Construit la courbe de progression jusqu'à une course cible."""
 
+    allocation = allocate_coaching_phases(
+        planning_date=planning_date,
+        target_race_date=target_race_date,
+    )
+
+    return build_trajectory_from_phases(
+        planning_date=planning_date,
+        target_race_date=target_race_date,
+        allocation=allocation,
+        baseline_load=baseline_load,
+        baseline_duration_minutes=(
+            baseline_duration_minutes
+        ),
+        goal_duration_demand_minutes=(
+            goal_duration_demand_minutes
+        ),
+    )
+
+
+def build_trajectory_from_phases(
+    *,
+    planning_date: date,
+    target_race_date: date | None,
+    allocation,
+    baseline_load: float,
+    baseline_duration_minutes: float | None = None,
+    goal_duration_demand_minutes: float | None = None,
+) -> MultiWeekTrajectory:
+    """Construit une trajectoire à partir d'une allocation de phases.
+
+    Cette fonction contient le moteur commun de progression :
+    charge, volume, récupération et création des semaines.
+
+    L'allocation peut provenir d'une préparation de course ou d'un
+    cycle de développement général.
+    """
+
     if baseline_load < 0:
         raise ValueError(
             "La charge de référence ne peut pas être négative."
@@ -76,11 +113,6 @@ def build_multi_week_trajectory(
             "Une baseline de durée est requise "
             "pour planifier une demande de volume."
         )
-
-    allocation = allocate_coaching_phases(
-        planning_date=planning_date,
-        target_race_date=target_race_date,
-    )
 
     weeks: list[TrajectoryWeek] = []
 

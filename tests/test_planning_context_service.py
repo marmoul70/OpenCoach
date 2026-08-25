@@ -2,6 +2,10 @@ import pytest
 from datetime import date
 from uuid import uuid4
 
+from opencoach.coaching.replanning import (
+    CoachingGoalMode,
+)
+
 from opencoach.models import (
     AthleteConstraint,
     AthleteProfile,
@@ -77,6 +81,59 @@ class FakeRaceRepository:
         primary_date,
     ):
         return self.training_races
+
+class FakeDynamicRaceRepository:
+    """Double simulant la résolution dynamique des courses."""
+
+    def __init__(
+        self,
+        races: list[Race],
+    ) -> None:
+        self.races = races
+
+    def get_next_primary_race(
+        self,
+        athlete_profile_id,
+        from_date,
+    ):
+        candidates = [
+            race
+            for race in self.races
+            if (
+                race.date >= from_date
+                and race.priority == "primary"
+                and race.status == "planned"
+            )
+        ]
+
+        if not candidates:
+            return None
+
+        return min(
+            candidates,
+            key=lambda race: (
+                race.date,
+                str(race.id or ""),
+            ),
+        )
+
+    def list_training_races_before(
+        self,
+        athlete_profile_id,
+        from_date,
+        primary_date,
+    ):
+        return [
+            race
+            for race in self.races
+            if (
+                race.date >= from_date
+                and race.date < primary_date
+                and race.priority == "training"
+                and race.status == "planned"
+            )
+        ]
+
 
 class FakeConstraintRepository:
     def __init__(
@@ -197,6 +254,29 @@ def create_stats() -> TrainingStats:
     )
 
 
+def create_dynamic_planning_context_service(
+    races: list[Race],
+) -> PlanningContextService:
+    return PlanningContextService(
+        profile_service=FakeProfileService(
+            AthleteProfile()
+        ),
+        race_repository=FakeDynamicRaceRepository(
+            races
+        ),
+        readiness_service=FakeReadinessService(),
+        recent_load_service=FakeRecentLoadService(
+            create_recent_load()
+        ),
+        training_stats_service=FakeTrainingStatsService(
+            create_stats()
+        ),
+        constraint_repository=FakeConstraintRepository(
+            []
+        ),
+    )
+
+
 def test_builds_complete_planning_context() -> None:
     athlete_profile_id = uuid4()
 
@@ -262,6 +342,16 @@ def test_builds_complete_planning_context() -> None:
     assert context.athlete is athlete
 
     assert context.primary_race is primary_race
+
+    assert (
+        context.goal_resolution.mode
+        is CoachingGoalMode.TARGET_RACE
+    )
+
+    assert (
+        context.goal_resolution.target_race
+        is primary_race
+    )
 
     assert context.training_races == (
         training_race,
@@ -332,6 +422,17 @@ def test_builds_context_without_primary_race() -> None:
     )
 
     assert context.primary_race is None
+
+    assert (
+        context.goal_resolution.mode
+        is CoachingGoalMode.GENERAL_DEVELOPMENT
+    )
+
+    assert (
+        context.goal_resolution.target_race
+        is None
+    )
+
     assert context.training_races == ()
 
 
@@ -455,3 +556,118 @@ def test_rejects_invalid_constraint_horizon() -> None:
             PLANNING_DATE,
             constraint_days=0,
         )
+
+def test_withdrawn_primary_reselects_next_planned_primary() -> None:
+    athlete_profile_id = uuid4()
+
+    first = create_race(
+        name="Objectif A",
+        race_date=date(
+            2026,
+            9,
+            15,
+        ),
+        priority="primary",
+    )
+
+    second = create_race(
+        name="Objectif B",
+        race_date=date(
+            2026,
+            11,
+            15,
+        ),
+        priority="primary",
+    )
+
+    first.status = "planned"
+    second.status = "planned"
+
+    service = create_dynamic_planning_context_service(
+        [
+            first,
+            second,
+        ]
+    )
+
+    initial_context = service.build(
+        athlete_profile_id,
+        PLANNING_DATE,
+    )
+
+    assert initial_context.primary_race is first
+
+    assert (
+        initial_context.goal_resolution.mode
+        is CoachingGoalMode.TARGET_RACE
+    )
+
+    first.status = "not_participated"
+
+    rebuilt_context = service.build(
+        athlete_profile_id,
+        PLANNING_DATE,
+    )
+
+    assert rebuilt_context.primary_race is second
+
+    assert (
+        rebuilt_context.goal_resolution.mode
+        is CoachingGoalMode.TARGET_RACE
+    )
+
+    assert (
+        rebuilt_context.goal_resolution.target_race
+        is second
+    )
+
+
+def test_withdrawn_last_primary_switches_to_general_development() -> None:
+    athlete_profile_id = uuid4()
+
+    race = create_race(
+        name="Objectif A",
+        race_date=date(
+            2026,
+            9,
+            15,
+        ),
+        priority="primary",
+    )
+
+    race.status = "planned"
+
+    service = create_dynamic_planning_context_service(
+        [race]
+    )
+
+    initial_context = service.build(
+        athlete_profile_id,
+        PLANNING_DATE,
+    )
+
+    assert initial_context.primary_race is race
+
+    assert (
+        initial_context.goal_resolution.mode
+        is CoachingGoalMode.TARGET_RACE
+    )
+
+    race.status = "not_participated"
+
+    rebuilt_context = service.build(
+        athlete_profile_id,
+        PLANNING_DATE,
+    )
+
+    assert rebuilt_context.primary_race is None
+
+    assert (
+        rebuilt_context.goal_resolution.mode
+        is CoachingGoalMode.GENERAL_DEVELOPMENT
+    )
+
+    assert (
+        rebuilt_context.goal_resolution.target_race
+        is None
+    )

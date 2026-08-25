@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date
 
 import pytest
@@ -956,3 +957,95 @@ def test_training_trajectory_uses_race_volume_demand() -> None:
         for week in volume_weeks
         if week.phase is not TrainingPhase.TAPER
     ) >= 400.0
+
+
+def test_training_trajectory_can_use_general_development_mode() -> None:
+    result = build_training_trajectory(
+        planning_date=date(
+            2026,
+            8,
+            24,
+        ),
+        target_race_date=None,
+        history_metrics=create_metrics(),
+        target_distance_km=None,
+        target_elevation_gain_m=None,
+    )
+
+    assert result.trajectory.target_race_date is None
+
+    assert result.trajectory.week_count == 12
+
+    assert all(
+        week.phase
+        in {
+            TrainingPhase.BASE,
+            TrainingPhase.BUILD,
+        }
+        for week in result.trajectory.weeks
+    )
+
+
+def test_general_development_trajectory_covers_current_week() -> None:
+    input_data = create_current_week_input(
+        planning_date=date(
+            2026,
+            8,
+            24,
+        ),
+        trajectory_start_date=date(
+            2026,
+            8,
+            24,
+        ),
+    )
+
+    input_data = replace(
+        input_data,
+        target_race_date=None,
+        target_distance_km=None,
+        target_elevation_gain_m=None,
+    )
+
+    result = build_current_week_coaching(
+        input_data=input_data,
+    )
+
+    assert result.trajectory.target_race_date is None
+
+    assert (
+        result.trajectory_week.phase
+        in {
+            TrainingPhase.BASE,
+            TrainingPhase.BUILD,
+        }
+    )
+
+
+def test_general_development_rejects_partial_race_target() -> None:
+    with pytest.raises(
+        ValueError,
+        match="course cible",
+    ):
+        CurrentWeekCoachingInput(
+            trajectory_start_date=date(
+                2026,
+                8,
+                24,
+            ),
+            planning_date=date(
+                2026,
+                8,
+                24,
+            ),
+            target_race_date=None,
+            target_distance_km=50.0,
+            target_elevation_gain_m=None,
+            history_metrics=create_metrics(),
+            available_days=(
+                Weekday.MONDAY,
+                Weekday.WEDNESDAY,
+                Weekday.FRIDAY,
+                Weekday.SUNDAY,
+            ),
+        )

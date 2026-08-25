@@ -37,6 +37,9 @@ from opencoach.planning.trajectory.multi_week import (
 from opencoach.planning.trajectory.multi_week_builder import (
     build_multi_week_trajectory,
 )
+from opencoach.planning.trajectory.general_development import (
+    build_general_development_trajectory,
+)
 from opencoach.planning.trajectory.reanchoring import (
     reanchor_multi_week_trajectory,
 )
@@ -96,9 +99,9 @@ class CurrentWeekCoachingInput:
     trajectory_start_date: date
     planning_date: date
 
-    target_race_date: date
-    target_distance_km: float
-    target_elevation_gain_m: float
+    target_race_date: date | None
+    target_distance_km: float | None
+    target_elevation_gain_m: float | None
 
     history_metrics: TrainingHistoryMetrics
 
@@ -148,6 +151,28 @@ class CurrentWeekCoachingInput:
     athlete_schedule_constrained: bool = False
 
     def __post_init__(self) -> None:
+        target_values = (
+            self.target_race_date,
+            self.target_distance_km,
+            self.target_elevation_gain_m,
+        )
+
+        has_target = any(
+            value is not None
+            for value in target_values
+        )
+
+        complete_target = all(
+            value is not None
+            for value in target_values
+        )
+
+        if has_target and not complete_target:
+            raise ValueError(
+                "Une course cible doit fournir ensemble "
+                "date, distance et dénivelé."
+            )
+
         if (
             self.target_session_count is not None
             and self.target_session_count < 1
@@ -184,13 +209,21 @@ class CurrentWeekCoachingInput:
                 "le début de la trajectoire."
             )
 
-        if self.target_race_date <= self.trajectory_start_date:
+        if (
+            self.target_race_date is not None
+            and self.target_race_date
+            <= self.trajectory_start_date
+        ):
             raise ValueError(
                 "La course cible doit être postérieure "
                 "au début de la trajectoire."
             )
 
-        if self.planning_date >= self.target_race_date:
+        if (
+            self.target_race_date is not None
+            and self.planning_date
+            >= self.target_race_date
+        ):
             raise ValueError(
                 "La date de planification doit précéder "
                 "la course cible."
@@ -236,7 +269,7 @@ class CurrentWeekCoachingResult:
 def build_training_trajectory(
     *,
     planning_date: date,
-    target_race_date: date,
+    target_race_date: date | None,
     history_metrics: TrainingHistoryMetrics,
     target_distance_km: float | None = None,
     target_elevation_gain_m: float | None = None,
@@ -271,17 +304,29 @@ def build_training_trajectory(
             volume_demand.specific_peak_duration_minutes
         )
 
-    trajectory = build_multi_week_trajectory(
-        planning_date=planning_date,
-        target_race_date=target_race_date,
-        baseline_load=baseline.baseline_load,
-        baseline_duration_minutes=(
-            baseline_duration_minutes
-        ),
-        goal_duration_demand_minutes=(
-            goal_duration_demand_minutes
-        ),
-    )
+    if target_race_date is None:
+        trajectory = (
+            build_general_development_trajectory(
+                planning_date=planning_date,
+                baseline_load=baseline.baseline_load,
+                baseline_duration_minutes=(
+                    baseline_duration_minutes
+                ),
+            )
+        )
+
+    else:
+        trajectory = build_multi_week_trajectory(
+            planning_date=planning_date,
+            target_race_date=target_race_date,
+            baseline_load=baseline.baseline_load,
+            baseline_duration_minutes=(
+                baseline_duration_minutes
+            ),
+            goal_duration_demand_minutes=(
+                goal_duration_demand_minutes
+            ),
+        )
 
     return TrainingTrajectoryResult(
         baseline=baseline,

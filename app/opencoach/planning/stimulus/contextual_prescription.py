@@ -40,7 +40,7 @@ class ContextualStimulusPrescription:
     """Prescription de stimuli adaptée à la course cible."""
 
     phase: TrainingPhase
-    race_profile: RaceDemandProfile
+    race_profile: RaceDemandProfile | None
 
     requirements: tuple[
         TrainingStimulusRequirement,
@@ -61,7 +61,7 @@ class ContextualStimulusPrescription:
 def build_contextual_stimulus_prescription(
     *,
     phase: TrainingPhase,
-    race_profile: RaceDemandProfile,
+    race_profile: RaceDemandProfile | None,
 ) -> ContextualStimulusPrescription:
     """Combine phase générale et demandes spécifiques de la course."""
 
@@ -73,10 +73,14 @@ def build_contextual_stimulus_prescription(
         base.requirements
     )
 
-    if phase in {
-        TrainingPhase.BUILD,
-        TrainingPhase.SPECIFIC,
-    }:
+    if (
+        race_profile is not None
+        and phase
+        in {
+            TrainingPhase.BUILD,
+            TrainingPhase.SPECIFIC,
+        }
+    ):
         _append_race_specific_requirements(
             requirements=requirements,
             race_profile=race_profile,

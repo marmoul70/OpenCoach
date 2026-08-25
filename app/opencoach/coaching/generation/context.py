@@ -69,15 +69,23 @@ class WeeklyPlanningContextBuilder:
         primary_race = context.primary_race
 
         if primary_race is None:
-            raise WeeklyPlanningContextError(
-                "Aucune course principale planifiée "
-                "n'est disponible."
-            )
+            target_race_date = None
+            target_distance_km = None
+            target_elevation_gain_m = None
+        else:
+            if primary_race.distance_km is None:
+                raise WeeklyPlanningContextError(
+                    "La course principale ne possède "
+                    "pas de distance."
+                )
 
-        if primary_race.distance_km is None:
-            raise WeeklyPlanningContextError(
-                "La course principale ne possède "
-                "pas de distance."
+            target_race_date = primary_race.date
+            target_distance_km = (
+                primary_race.distance_km
+            )
+            target_elevation_gain_m = (
+                primary_race.elevation_gain_m
+                or 0.0
             )
 
         available_days = self._available_days(
@@ -114,14 +122,13 @@ class WeeklyPlanningContextBuilder:
                     ),
                     planning_date=planning_date,
                     target_race_date=(
-                        primary_race.date
+                        target_race_date
                     ),
                     target_distance_km=(
-                        primary_race.distance_km
+                        target_distance_km
                     ),
                     target_elevation_gain_m=(
-                        primary_race.elevation_gain_m
-                        or 0.0
+                        target_elevation_gain_m
                     ),
                     history_metrics=(
                         history_metrics

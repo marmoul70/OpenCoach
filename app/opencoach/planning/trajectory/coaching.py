@@ -84,9 +84,9 @@ class CoachingTrajectoryInput:
 
     planning_date: date
 
-    target_race_date: date
-    target_distance_km: float
-    target_elevation_gain_m: float
+    target_race_date: date | None
+    target_distance_km: float | None
+    target_elevation_gain_m: float | None
 
     previous_load: float
 
@@ -130,6 +130,28 @@ class CoachingTrajectoryInput:
     athlete_schedule_constrained: bool = False
 
     def __post_init__(self) -> None:
+        target_values = (
+            self.target_race_date,
+            self.target_distance_km,
+            self.target_elevation_gain_m,
+        )
+
+        has_target = any(
+            value is not None
+            for value in target_values
+        )
+
+        complete_target = all(
+            value is not None
+            for value in target_values
+        )
+
+        if has_target and not complete_target:
+            raise ValueError(
+                "Une course cible doit fournir ensemble "
+                "date, distance et dénivelé."
+            )
+
         if (
             self.target_session_count is not None
             and self.target_session_count < 1
@@ -170,7 +192,7 @@ class CoachingTrajectoryResult:
     planned_phase: TrainingPhase
     effective_phase: TrainingPhase
 
-    race_profile: RaceDemandProfile
+    race_profile: RaceDemandProfile | None
 
     resolved_adjustment: ResolvedTrajectoryAdjustment
 
@@ -204,6 +226,12 @@ def build_coaching_trajectory(
         )
 
     else:
+        if input_data.target_race_date is None:
+            raise ValueError(
+                "Une trajectoire hebdomadaire doit être fournie "
+                "en mode développement général."
+            )
+
         allocation = allocate_coaching_phases(
             planning_date=input_data.planning_date,
             target_race_date=input_data.target_race_date,
@@ -263,10 +291,22 @@ def build_coaching_trajectory(
         else planned_phase
     )
 
-    race_profile = build_race_demand_profile(
-        distance_km=input_data.target_distance_km,
-        elevation_gain_m=input_data.target_elevation_gain_m,
-    )
+    race_profile: RaceDemandProfile | None = None
+
+    if input_data.target_distance_km is not None:
+        assert (
+            input_data.target_elevation_gain_m
+            is not None
+        )
+
+        race_profile = build_race_demand_profile(
+            distance_km=(
+                input_data.target_distance_km
+            ),
+            elevation_gain_m=(
+                input_data.target_elevation_gain_m
+            ),
+        )
 
     use_trajectory_week = (
         input_data.trajectory_week is not None

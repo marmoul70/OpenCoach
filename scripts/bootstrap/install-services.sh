@@ -23,6 +23,9 @@ PROJECT_ROOT="$(
     pwd
 )"
 
+# shellcheck source=../lib/log.sh
+source "$PROJECT_ROOT/scripts/lib/log.sh"
+
 SYSTEMD_SOURCE_DIR="$PROJECT_ROOT/systemd"
 SYSTEMD_TARGET_DIR="/etc/systemd/system"
 
@@ -33,9 +36,8 @@ VENV_PYTHON="$PROJECT_ROOT/.venv/bin/python"
 
 
 if (( EUID != 0 )); then
-    printf '%s\n' \
-        "ERREUR : install-services.sh doit être exécuté avec sudo." \
-        >&2
+    log_error \
+        "install-services.sh doit être exécuté avec sudo."
 
     exit 1
 fi
@@ -51,22 +53,16 @@ OPENCOACH_GROUP="$(
 
 
 if [[ "$OPENCOACH_USER" == "root" ]]; then
-    printf '%s\n' \
-        "ERREUR : le projet OpenCoach ne doit pas appartenir à root." \
-        >&2
+    log_error \
+        "Le projet OpenCoach ne doit pas appartenir à root."
 
     exit 1
 fi
 
 
 if [[ ! -x "$VENV_PYTHON" ]]; then
-    printf '%s\n' \
-        "ERREUR : environnement virtuel OpenCoach introuvable :" \
-        >&2
-
-    printf '  %s\n' \
-        "$VENV_PYTHON" \
-        >&2
+    log_error \
+        "Environnement virtuel OpenCoach introuvable : $VENV_PYTHON"
 
     exit 1
 fi
@@ -77,15 +73,14 @@ prepare_environment_file() {
 
     if [[ ! -f "$ENV_FILE" ]]; then
         if [[ ! -f "$ENV_EXAMPLE" ]]; then
-            printf '%s\n' \
-                "ERREUR : .env et .env.example sont absents." \
-                >&2
+            log_error \
+                ".env et .env.example sont absents."
 
             return 1
         fi
 
-        printf '%s\n' \
-            "[INFO] Création du fichier .env"
+        log_info \
+            "Création du fichier .env"
 
         cp \
             "$ENV_EXAMPLE" \
@@ -100,8 +95,8 @@ prepare_environment_file() {
             "s|^OPENCOACH_SECRET_KEY=.*$|OPENCOACH_SECRET_KEY=$generated_key|" \
             "$ENV_FILE"
 
-        printf '%s\n' \
-            "[OK] Nouvelle OPENCOACH_SECRET_KEY générée."
+        log_success \
+            "Nouvelle OPENCOACH_SECRET_KEY générée."
     fi
 
 
@@ -109,13 +104,11 @@ prepare_environment_file() {
         '^[[:space:]]*OPENCOACH_SECRET_KEY=.+$' \
         "$ENV_FILE"; then
 
-        printf '%s\n' \
-            "ERREUR : OPENCOACH_SECRET_KEY est absente ou vide dans .env." \
-            >&2
+        log_error \
+            "OPENCOACH_SECRET_KEY est absente ou vide dans .env."
 
-        printf '%s\n' \
-            "Si une base OpenCoach existante est restaurée, restaurez également sa clé d'origine." \
-            >&2
+        log_error \
+            "Si une base OpenCoach existante est restaurée, restaurez également sa clé d'origine."
 
         return 1
     fi
@@ -131,8 +124,8 @@ prepare_environment_file() {
 
 
 apply_project_permissions() {
-    printf '%s\n' \
-        "[INFO] Application des permissions OpenCoach"
+    log_info \
+        "Application des permissions OpenCoach"
 
 
     # Bibliothèques shell : sourcées, jamais exécutées directement.
@@ -192,9 +185,8 @@ render_unit() {
     local escaped_group
 
     if [[ ! -f "$source_file" ]]; then
-        printf '%s\n' \
-            "ERREUR : unité systemd source introuvable : $source_file" \
-            >&2
+        log_error \
+            "Unité systemd source introuvable : $source_file"
 
         return 1
     fi
@@ -227,8 +219,8 @@ render_unit() {
 
 
 install_systemd_units() {
-    printf '%s\n' \
-        "[INFO] Installation des unités systemd"
+    log_info \
+        "Installation des unités systemd"
 
     render_unit \
         "$SYSTEMD_SOURCE_DIR/opencoach-backend.service" \
@@ -268,14 +260,14 @@ main() {
 
     enable_services
 
-    printf '%s\n' \
-        "[OK] Services OpenCoach installés."
+    log_success \
+        "Services OpenCoach installés."
 
-    printf '%s\n' \
-        "[INFO] Backend activé pour le prochain démarrage."
+    log_info \
+        "Backend activé pour le prochain démarrage."
 
-    printf '%s\n' \
-        "[INFO] Synchronisation Intervals active toutes les 15 minutes."
+    log_info \
+        "Synchronisation Intervals active toutes les 15 minutes."
 }
 
 

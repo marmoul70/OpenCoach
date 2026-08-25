@@ -108,6 +108,29 @@ main() {
     run_environment_installation
 
     log_info \
+        "Installation de l'application OpenCoach"
+
+    application_arguments=()
+
+    if (( DEV_REQUESTED == 1 )); then
+        application_arguments+=(
+            "--dev"
+        )
+    fi
+
+    if ! "$BOOTSTRAP_DIR/install-application.sh" \
+        "${application_arguments[@]}"; then
+
+        log_error \
+            "Échec de l'installation applicative OpenCoach."
+
+        return 1
+    fi
+
+    log_success \
+        "Application OpenCoach installée et migrée."
+
+    log_info \
         "Installation des services OpenCoach"
 
     if ! "$BOOTSTRAP_DIR/install-services.sh"; then

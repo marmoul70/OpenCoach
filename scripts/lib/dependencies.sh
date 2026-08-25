@@ -10,6 +10,7 @@ readonly OPENCOACH_REQUIRED_COMMANDS=(
 )
 
 readonly OPENCOACH_APPLICATION_COMMANDS=(
+    python3
     node
     npm
 )

@@ -201,6 +201,9 @@ def build_weekly_training_envelope(
         week_start=input_data.week_start,
         week_end=week_end,
         phase=input_data.phase,
+        phase_week_index=(
+            input_data.phase_week_index
+        ),
         target_load=adjusted_loads.target_load,
         reference_duration_minutes=(
             input_data.reference_weekly_duration_minutes
@@ -341,16 +344,39 @@ def _build_notes(
         )
 
     if schedule.omitted_intents:
-        omitted = ", ".join(
-            intent.primary_stimulus.value
-            for intent
-            in schedule.omitted_intents
+        required_omitted = tuple(
+            intent
+            for intent in schedule.omitted_intents
+            if intent.required
         )
 
-        notes.append(
-            "Intentions non positionnées : "
-            f"{omitted}."
+        optional_omitted = tuple(
+            intent
+            for intent in schedule.omitted_intents
+            if not intent.required
         )
+
+        if required_omitted:
+            omitted = ", ".join(
+                intent.primary_stimulus.value
+                for intent in required_omitted
+            )
+
+            notes.append(
+                "Intentions obligatoires non positionnées : "
+                f"{omitted}."
+            )
+
+        if optional_omitted:
+            omitted = ", ".join(
+                intent.primary_stimulus.value
+                for intent in optional_omitted
+            )
+
+            notes.append(
+                "Intentions optionnelles non positionnées : "
+                f"{omitted}."
+            )
 
     return tuple(
         notes

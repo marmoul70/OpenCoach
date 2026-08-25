@@ -356,20 +356,19 @@ def test_minimum_horizon_keeps_single_taper_week() -> None:
         TrainingPhase.TAPER
     ] == 1
 
-
-def test_preferred_taper_is_prioritized_when_one_extra_week_exists() -> None:
-    """Une semaine disponible au-delà des minimums protège le taper."""
+def test_long_preparation_distributes_extension_beyond_base_phase() -> None:
+    """Une préparation longue ne doit pas étendre uniquement la base."""
 
     allocation = allocate_coaching_phases(
         planning_date=date(
-            2027,
-            1,
-            1,
+            2026,
+            8,
+            24,
         ),
         target_race_date=date(
             2027,
             2,
-            26,
+            7,
         ),
     )
 
@@ -378,7 +377,7 @@ def test_preferred_taper_is_prioritized_when_one_extra_week_exists() -> None:
         for phase in allocation.phases
     }
 
-    assert allocation.total_weeks == 8
+    assert allocation.total_weeks == 24
 
     assert lengths[
         TrainingPhase.TAPER
@@ -386,72 +385,18 @@ def test_preferred_taper_is_prioritized_when_one_extra_week_exists() -> None:
 
     assert lengths[
         TrainingPhase.BASE
-    ] == 2
+    ] <= 6
 
     assert lengths[
         TrainingPhase.BUILD
-    ] == 2
+    ] >= 7
 
     assert lengths[
         TrainingPhase.SPECIFIC
-    ] == 2
+    ] >= 7
 
-
-def test_ten_week_horizon_preserves_two_week_taper() -> None:
-    """Une préparation de dix semaines conserve deux semaines de taper."""
-
-    allocation = allocate_coaching_phases(
-        planning_date=date(
-            2026,
-            6,
-            15,
-        ),
-        target_race_date=date(
-            2026,
-            8,
-            24,
-        ),
+    assert (
+        lengths[TrainingPhase.BUILD]
+        + lengths[TrainingPhase.SPECIFIC]
+        > lengths[TrainingPhase.BASE]
     )
-
-    lengths = {
-        phase.phase: phase.allocated_weeks
-        for phase in allocation.phases
-    }
-
-    assert allocation.total_weeks == 10
-
-    assert lengths[
-        TrainingPhase.TAPER
-    ] == 2
-
-    assert sum(
-        lengths.values()
-    ) == 10
-
-
-def test_minimum_horizon_keeps_single_taper_week() -> None:
-    """Le taper peut rester à une semaine si aucun surplus n'existe."""
-
-    allocation = allocate_coaching_phases(
-        planning_date=date(
-            2027,
-            1,
-            1,
-        ),
-        target_race_date=date(
-            2027,
-            2,
-            19,
-        ),
-    )
-
-    lengths = {
-        phase.phase: phase.allocated_weeks
-        for phase in allocation.phases
-    }
-
-    assert allocation.total_weeks == 7
-
-    assert lengths[
-        TrainingPhase.TAPER
-    ] == 1

@@ -618,3 +618,142 @@ def test_threshold_reaches_functional_duration_before_aerobic_absorbs_surplus() 
 
     assert durations["easy-1"] >= durations["threshold"]
     assert durations["easy-2"] >= durations["threshold"]
+
+def test_recovery_budget_surplus_is_allocated_to_easy_aerobic() -> None:
+    """Le volume recovery restant doit être absorbé par l'EF."""
+
+    slots = (
+        create_slot(
+            slot_id="easy-1",
+            day=Weekday.MONDAY,
+            intent=create_intent(
+                stimulus=TrainingStimulus.AEROBIC_EASY,
+                importance=SessionIntentImportance.SUPPORT,
+                minimum=45,
+                maximum=120,
+            ),
+        ),
+        create_slot(
+            slot_id="strength",
+            day=Weekday.WEDNESDAY,
+            intent=create_intent(
+                stimulus=TrainingStimulus.STRENGTH_LOWER_BODY,
+                importance=SessionIntentImportance.SUPPORT,
+                minimum=15,
+                maximum=25,
+            ),
+        ),
+        create_slot(
+            slot_id="easy-2",
+            day=Weekday.FRIDAY,
+            intent=create_intent(
+                stimulus=TrainingStimulus.AEROBIC_EASY,
+                importance=SessionIntentImportance.SUPPORT,
+                minimum=45,
+                maximum=120,
+            ),
+        ),
+        create_slot(
+            slot_id="easy-3",
+            day=Weekday.SUNDAY,
+            intent=create_intent(
+                stimulus=TrainingStimulus.AEROBIC_EASY,
+                importance=SessionIntentImportance.SUPPORT,
+                minimum=45,
+                maximum=120,
+            ),
+        ),
+    )
+
+    result = allocate_session_durations(
+        slots=slots,
+        target_load=320.0,
+        reference_weekly_duration_minutes=270.0,
+    )
+
+    durations = {
+        item.slot_id: item.duration_minutes
+        for item in result
+    }
+
+    assert sum(durations.values()) == 270
+
+    assert durations["strength"] <= 25
+
+    easy_total = (
+        durations["easy-1"]
+        + durations["easy-2"]
+        + durations["easy-3"]
+    )
+
+    assert easy_total == 245
+
+
+def test_long_reference_without_long_slot_still_reconciles_weekly_budget() -> None:
+    """Une référence de SL ne doit pas perdre du volume sans slot de SL."""
+
+    slots = (
+        create_slot(
+            slot_id="easy-1",
+            day=Weekday.MONDAY,
+            intent=create_intent(
+                stimulus=TrainingStimulus.AEROBIC_EASY,
+                importance=SessionIntentImportance.SUPPORT,
+                minimum=45,
+                maximum=120,
+            ),
+        ),
+        create_slot(
+            slot_id="strength",
+            day=Weekday.WEDNESDAY,
+            intent=create_intent(
+                stimulus=TrainingStimulus.STRENGTH_LOWER_BODY,
+                importance=SessionIntentImportance.SUPPORT,
+                minimum=15,
+                maximum=25,
+            ),
+        ),
+        create_slot(
+            slot_id="easy-2",
+            day=Weekday.FRIDAY,
+            intent=create_intent(
+                stimulus=TrainingStimulus.AEROBIC_EASY,
+                importance=SessionIntentImportance.SUPPORT,
+                minimum=45,
+                maximum=120,
+            ),
+        ),
+        create_slot(
+            slot_id="easy-3",
+            day=Weekday.SUNDAY,
+            intent=create_intent(
+                stimulus=TrainingStimulus.AEROBIC_EASY,
+                importance=SessionIntentImportance.SUPPORT,
+                minimum=45,
+                maximum=120,
+            ),
+        ),
+    )
+
+    result = allocate_session_durations(
+        slots=slots,
+        target_load=320.0,
+        reference_weekly_duration_minutes=270.0,
+        long_endurance_reference_minutes=150.0,
+    )
+
+    durations = {
+        item.slot_id: item.duration_minutes
+        for item in result
+    }
+
+    assert sum(durations.values()) == 270
+    assert durations["strength"] <= 25
+
+    easy_total = (
+        durations["easy-1"]
+        + durations["easy-2"]
+        + durations["easy-3"]
+    )
+
+    assert easy_total == 245

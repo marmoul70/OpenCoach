@@ -24,8 +24,12 @@ from opencoach.planning.stimulus.training import (
     TrainingStimulusRequirement,
 )
 from opencoach.planning.stimulus.weekly_demand import (
+    StimulusDemandDensity,
+    WeeklyStimulusDemand,
+    StimulusDemand,
     build_weekly_stimulus_demand,
 )
+
 from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
@@ -739,4 +743,134 @@ def test_classic_uphill_strength_stays_independent_without_endurance_variant() -
     assert (
         result.intents[0].primary_stimulus
         is TrainingStimulus.UPHILL_STRENGTH
+    )
+
+
+def test_target_occurrences_above_minimum_create_optional_intents() -> None:
+    demand = StimulusDemand(
+        requirement=TrainingStimulusRequirement(
+            stimulus=TrainingStimulus.AEROBIC_EASY,
+            priority=StimulusPriority.SUPPORT,
+            specificity=SpecificityLevel.LOW,
+            substitution=SubstitutionPolicy.ALLOWED,
+            preferred_modalities=(
+                TrainingModality.RUNNING,
+            ),
+            required_modalities=(),
+            duration_min_minutes=45,
+            duration_max_minutes=120,
+        ),
+        minimum_occurrences=1,
+        target_occurrences=2,
+        maximum_occurrences=3,
+    )
+
+    weekly_demand = WeeklyStimulusDemand(
+        phase=TrainingPhase.BASE,
+        week_type=TrajectoryWeekType.LOADING,
+        target_load=300.0,
+        reference_load=300.0,
+        load_ratio=1.0,
+        density=StimulusDemandDensity.NONE,
+        demands=(
+            demand,
+        ),
+        maximum_key_exposures=0,
+    )
+
+    plan = build_session_intent_plan(
+        weekly_demand=weekly_demand,
+    )
+
+    assert len(plan.intents) == 2
+
+    assert plan.intents[0].required is True
+    assert plan.intents[1].required is False
+
+
+def test_zero_minimum_creates_optional_target_intent() -> None:
+    demand = StimulusDemand(
+        requirement=TrainingStimulusRequirement(
+            stimulus=TrainingStimulus.AEROBIC_EASY,
+            priority=StimulusPriority.SUPPORT,
+            specificity=SpecificityLevel.LOW,
+            substitution=SubstitutionPolicy.ALLOWED,
+            preferred_modalities=(
+                TrainingModality.RUNNING,
+            ),
+            required_modalities=(),
+            duration_min_minutes=45,
+            duration_max_minutes=120,
+        ),
+        minimum_occurrences=0,
+        target_occurrences=1,
+        maximum_occurrences=2,
+    )
+
+    weekly_demand = WeeklyStimulusDemand(
+        phase=TrainingPhase.BASE,
+        week_type=TrajectoryWeekType.LOADING,
+        target_load=300.0,
+        reference_load=300.0,
+        load_ratio=1.0,
+        density=StimulusDemandDensity.NONE,
+        demands=(
+            demand,
+        ),
+        maximum_key_exposures=0,
+    )
+
+    plan = build_session_intent_plan(
+        weekly_demand=weekly_demand,
+    )
+
+    assert len(plan.intents) == 1
+    assert plan.intents[0].required is False
+
+
+def test_multiple_minimum_occurrences_stay_required() -> None:
+    demand = StimulusDemand(
+        requirement=TrainingStimulusRequirement(
+            stimulus=TrainingStimulus.AEROBIC_EASY,
+            priority=StimulusPriority.SUPPORT,
+            specificity=SpecificityLevel.LOW,
+            substitution=SubstitutionPolicy.ALLOWED,
+            preferred_modalities=(
+                TrainingModality.RUNNING,
+            ),
+            required_modalities=(),
+            duration_min_minutes=45,
+            duration_max_minutes=120,
+        ),
+        minimum_occurrences=2,
+        target_occurrences=3,
+        maximum_occurrences=3,
+    )
+
+    weekly_demand = WeeklyStimulusDemand(
+        phase=TrainingPhase.BASE,
+        week_type=TrajectoryWeekType.LOADING,
+        target_load=300.0,
+        reference_load=300.0,
+        load_ratio=1.0,
+        density=StimulusDemandDensity.NONE,
+        demands=(
+            demand,
+        ),
+        maximum_key_exposures=0,
+    )
+
+    plan = build_session_intent_plan(
+        weekly_demand=weekly_demand,
+    )
+
+    assert len(plan.intents) == 3
+
+    assert tuple(
+        intent.required
+        for intent in plan.intents
+    ) == (
+        True,
+        True,
+        False,
     )

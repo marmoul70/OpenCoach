@@ -227,3 +227,6 @@ data/*.sqlite
 data/*.sqlite3
 # Local database backups
 data/*.backup*
+
+# OpenCoach - fichiers locaux générés
+data/opencoach-plan-preview.json

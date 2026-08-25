@@ -116,8 +116,9 @@ def schedule_session_intents(
         return WeeklySessionIntentSchedule(
             slots=(),
             available_days=(),
-            constrained=bool(
-                ordered_intents
+            constrained=any(
+                intent.required
+                for intent in ordered_intents
             ),
             omitted_intents=(
                 ordered_intents
@@ -128,6 +129,14 @@ def schedule_session_intents(
         _assign_days(
             intents=ordered_intents,
             available_days=ordered_days,
+            capacity_by_day=capacity_by_day,
+        )
+    )
+
+    assignments, omitted = (
+        _pair_omitted_strength_with_easy_days(
+            assignments=assignments,
+            omitted=omitted,
             capacity_by_day=capacity_by_day,
         )
     )
@@ -154,8 +163,9 @@ def schedule_session_intents(
     return WeeklySessionIntentSchedule(
         slots=slots,
         available_days=ordered_days,
-        constrained=bool(
-            omitted
+        constrained=any(
+            intent.required
+            for intent in omitted
         ),
         omitted_intents=(
             omitted
@@ -336,6 +346,216 @@ def _assign_days(
             omitted
         ),
     )
+
+
+def _pair_omitted_strength_with_easy_days(
+    *,
+    assignments: tuple[
+        tuple[
+            Weekday,
+            SessionIntent,
+        ],
+        ...
+    ],
+    omitted: tuple[
+        SessionIntent,
+        ...
+    ],
+    capacity_by_day: dict[
+        Weekday,
+        DayScheduleCapacity,
+    ],
+) -> tuple[
+    tuple[
+        tuple[
+            Weekday,
+            SessionIntent,
+        ],
+        ...
+    ],
+    tuple[
+        SessionIntent,
+        ...
+    ],
+]:
+    """Rattache un renforcement support à une journée d'EF.
+
+    Cette règle constitue une exception volontaire au principe
+    général d'une intention par jour.
+
+    Seul un renforcement SUPPORT omis peut partager une journée
+    contenant déjà une endurance facile.
+
+    Les séances qualitatives et les sorties longues ne peuvent
+    jamais recevoir ce second slot.
+    """
+
+    result = list(
+        assignments
+    )
+
+    still_omitted: list[
+        SessionIntent
+    ] = []
+
+    for intent in omitted:
+        if not _is_support_strength_intent(
+            intent
+        ):
+            still_omitted.append(
+                intent
+            )
+            continue
+
+        candidates = [
+            (
+                day,
+                existing_intent,
+            )
+            for (
+                day,
+                existing_intent,
+            )
+            in result
+            if (
+                existing_intent.primary_stimulus
+                is TrainingStimulus.AEROBIC_EASY
+                and _combined_day_can_fit(
+                    day=day,
+                    assignments=result,
+                    additional_intent=intent,
+                    capacity=capacity_by_day[
+                        day
+                    ],
+                )
+            )
+        ]
+
+        if not candidates:
+            still_omitted.append(
+                intent
+            )
+            continue
+
+        day, _ = min(
+            candidates,
+            key=lambda candidate: (
+                _intent_minimum_duration(
+                    candidate[1]
+                ),
+                _WEEKDAY_ORDER[
+                    candidate[0]
+                ],
+            ),
+        )
+
+        result.append(
+            (
+                day,
+                intent,
+            )
+        )
+
+    result.sort(
+        key=lambda assignment: (
+            _WEEKDAY_ORDER[
+                assignment[0]
+            ],
+            _same_day_order(
+                assignment[1]
+            ),
+        )
+    )
+
+    return (
+        tuple(result),
+        tuple(still_omitted),
+    )
+
+
+def _is_support_strength_intent(
+    intent: SessionIntent,
+) -> bool:
+    """Indique si une intention est un renforcement léger associable."""
+
+    return (
+        intent.importance
+        is SessionIntentImportance.SUPPORT
+        and intent.primary_stimulus
+        in {
+            TrainingStimulus.STRENGTH_LOWER_BODY,
+            TrainingStimulus.STRENGTH_CORE,
+        }
+    )
+
+
+def _combined_day_can_fit(
+    *,
+    day: Weekday,
+    assignments: list[
+        tuple[
+            Weekday,
+            SessionIntent,
+        ]
+    ],
+    additional_intent: SessionIntent,
+    capacity: DayScheduleCapacity,
+) -> bool:
+    """Vérifie la capacité minimale cumulée d'une journée."""
+
+    if (
+        capacity.max_duration_minutes
+        is None
+    ):
+        return True
+
+    current_minimum = sum(
+        _intent_minimum_duration(
+            existing_intent
+        )
+        for (
+            existing_day,
+            existing_intent,
+        )
+        in assignments
+        if existing_day is day
+    )
+
+    return (
+        current_minimum
+        + _intent_minimum_duration(
+            additional_intent
+        )
+        <= capacity.max_duration_minutes
+    )
+
+
+def _intent_minimum_duration(
+    intent: SessionIntent,
+) -> int:
+    """Durée minimale connue d'une intention."""
+
+    return (
+        intent.duration_min_minutes
+        or 0
+    )
+
+
+def _same_day_order(
+    intent: SessionIntent,
+) -> int:
+    """Place la course avant le renforcement le même jour."""
+
+    if (
+        intent.primary_stimulus
+        in {
+            TrainingStimulus.STRENGTH_LOWER_BODY,
+            TrainingStimulus.STRENGTH_CORE,
+        }
+    ):
+        return 1
+
+    return 0
 
 
 def _choose_day(

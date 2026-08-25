@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 from opencoach.planning.stimulus.contextual_prescription import (
     ContextualStimulusPrescription,
 )
@@ -61,6 +63,9 @@ def create_plan(
         TrainingStimulusRequirement,
         ...
     ],
+    *,
+    target_load: float = 500.0,
+    reference_load: float = 500.0,
 ):
     prescription = (
         ContextualStimulusPrescription(
@@ -78,8 +83,8 @@ def create_plan(
     demand = build_weekly_stimulus_demand(
         prescription=prescription,
         week_type=TrajectoryWeekType.LOADING,
-        target_load=500.0,
-        reference_load=500.0,
+        target_load=target_load,
+        reference_load=reference_load,
     )
 
     return build_session_intent_plan(
@@ -162,7 +167,7 @@ def test_key_intent_is_selected_before_support() -> None:
         is TrainingStimulus.THRESHOLD
     )
 
-    assert schedule.constrained is True
+    assert schedule.constrained is False
 
 
 def test_important_intent_is_selected_before_support() -> None:
@@ -416,7 +421,7 @@ def test_duplicate_available_days_are_normalized() -> None:
 
     assert schedule.session_count == 1
 
-    assert schedule.constrained is True
+    assert schedule.constrained is False
 
 
 def test_omitted_intents_are_reported() -> None:
@@ -444,7 +449,7 @@ def test_omitted_intents_are_reported() -> None:
         ),
     )
 
-    assert schedule.constrained is True
+    assert schedule.constrained is False
 
     assert len(
         schedule.omitted_intents
@@ -587,3 +592,261 @@ def test_key_spacing_remains_priority_over_weekend_preference() -> None:
 
     assert long_slot.day is Weekday.SUNDAY
     assert threshold_slot.day is Weekday.MONDAY
+
+def test_strength_can_share_day_with_easy_aerobic_when_days_are_limited() -> None:
+    """Le renforcement peut partager la journée d'une EF.
+
+    Cette règle permet de préserver le contenu hebdomadaire lorsque
+    le nombre d'intentions dépasse le nombre de jours disponibles.
+
+    Le renforcement reste une intention distincte : il partage
+    uniquement le jour de planification avec l'EF.
+    """
+
+    plan = create_plan(
+        (
+            create_requirement(
+                stimulus=TrainingStimulus.VO2MAX,
+                priority=StimulusPriority.KEY,
+            ),
+            create_requirement(
+                stimulus=TrainingStimulus.LONG_ENDURANCE,
+                priority=StimulusPriority.KEY,
+            ),
+            create_requirement(
+                stimulus=TrainingStimulus.AEROBIC_EASY,
+                priority=StimulusPriority.SUPPORT,
+            ),
+            create_requirement(
+                stimulus=TrainingStimulus.STRENGTH_LOWER_BODY,
+                priority=StimulusPriority.SUPPORT,
+                preferred_modalities=(
+                    TrainingModality.STRENGTH,
+                ),
+            ),
+        ),
+        target_load=400.0,
+        reference_load=500.0,
+    )
+
+    schedule = schedule_session_intents(
+        plan=plan,
+        available_days=(
+            Weekday.MONDAY,
+            Weekday.WEDNESDAY,
+            Weekday.SUNDAY,
+        ),
+    )
+
+    assert schedule.session_count == 4
+
+    assert schedule.constrained is False
+
+    assert schedule.omitted_intents == ()
+
+    easy_slot = next(
+        slot
+        for slot in schedule.slots
+        if (
+            slot.intent.primary_stimulus
+            is TrainingStimulus.AEROBIC_EASY
+        )
+    )
+
+    strength_slot = next(
+        slot
+        for slot in schedule.slots
+        if (
+            slot.intent.primary_stimulus
+            is TrainingStimulus.STRENGTH_LOWER_BODY
+        )
+    )
+
+    assert strength_slot.day is easy_slot.day
+
+def test_strength_does_not_share_day_with_vo2max() -> None:
+    plan = create_plan(
+        (
+            create_requirement(
+                stimulus=TrainingStimulus.VO2MAX,
+                priority=StimulusPriority.KEY,
+            ),
+            create_requirement(
+                stimulus=TrainingStimulus.STRENGTH_LOWER_BODY,
+                priority=StimulusPriority.SUPPORT,
+                preferred_modalities=(
+                    TrainingModality.STRENGTH,
+                ),
+            ),
+        ),
+        target_load=400.0,
+        reference_load=500.0,
+    )
+
+    schedule = schedule_session_intents(
+        plan=plan,
+        available_days=(
+            Weekday.MONDAY,
+        ),
+    )
+
+    assert schedule.session_count == 1
+    assert schedule.constrained is True
+
+    assert (
+        schedule.slots[0].intent.primary_stimulus
+        is TrainingStimulus.VO2MAX
+    )
+
+    assert any(
+        intent.primary_stimulus
+        is TrainingStimulus.STRENGTH_LOWER_BODY
+        for intent in schedule.omitted_intents
+    )
+
+
+def test_strength_does_not_share_day_with_long_endurance() -> None:
+    plan = create_plan(
+        (
+            create_requirement(
+                stimulus=TrainingStimulus.LONG_ENDURANCE,
+                priority=StimulusPriority.KEY,
+            ),
+            create_requirement(
+                stimulus=TrainingStimulus.STRENGTH_LOWER_BODY,
+                priority=StimulusPriority.SUPPORT,
+                preferred_modalities=(
+                    TrainingModality.STRENGTH,
+                ),
+            ),
+        ),
+        target_load=400.0,
+        reference_load=500.0,
+    )
+
+    schedule = schedule_session_intents(
+        plan=plan,
+        available_days=(
+            Weekday.SUNDAY,
+        ),
+    )
+
+    assert schedule.session_count == 1
+    assert schedule.constrained is True
+
+    assert (
+        schedule.slots[0].intent.primary_stimulus
+        is TrainingStimulus.LONG_ENDURANCE
+    )
+
+    assert any(
+        intent.primary_stimulus
+        is TrainingStimulus.STRENGTH_LOWER_BODY
+        for intent in schedule.omitted_intents
+    )
+
+def test_omitted_optional_intent_does_not_constrain_schedule() -> None:
+    plan = create_plan(
+        (
+            create_requirement(
+                stimulus=TrainingStimulus.THRESHOLD,
+                priority=StimulusPriority.KEY,
+            ),
+            create_requirement(
+                stimulus=TrainingStimulus.AEROBIC_EASY,
+                priority=StimulusPriority.SUPPORT,
+            ),
+        )
+    )
+
+    intents = tuple(
+        replace(
+            intent,
+            required=False,
+        )
+        if (
+            intent.primary_stimulus
+            is TrainingStimulus.AEROBIC_EASY
+        )
+        else intent
+        for intent in plan.intents
+    )
+
+    plan = replace(
+        plan,
+        intents=intents,
+    )
+
+    schedule = schedule_session_intents(
+        plan=plan,
+        available_days=(
+            Weekday.MONDAY,
+        ),
+    )
+
+    assert schedule.session_count == 1
+
+    assert (
+        schedule.slots[0].intent.primary_stimulus
+        is TrainingStimulus.THRESHOLD
+    )
+
+    assert any(
+        intent.primary_stimulus
+        is TrainingStimulus.AEROBIC_EASY
+        and intent.required is False
+        for intent in schedule.omitted_intents
+    )
+
+    assert schedule.constrained is False
+
+
+def test_omitted_required_intent_constrains_schedule() -> None:
+    plan = create_plan(
+        (
+            create_requirement(
+                stimulus=TrainingStimulus.THRESHOLD,
+                priority=StimulusPriority.KEY,
+            ),
+            create_requirement(
+                stimulus=TrainingStimulus.AEROBIC_EASY,
+                priority=StimulusPriority.SUPPORT,
+            ),
+        )
+    )
+
+    intents = tuple(
+        replace(
+            intent,
+            required=True,
+        )
+        if (
+            intent.primary_stimulus
+            is TrainingStimulus.AEROBIC_EASY
+        )
+        else intent
+        for intent in plan.intents
+    )
+
+    plan = replace(
+        plan,
+        intents=intents,
+    )
+
+    schedule = schedule_session_intents(
+        plan=plan,
+        available_days=(
+            Weekday.MONDAY,
+        ),
+    )
+
+    assert schedule.session_count == 1
+
+    assert any(
+        intent.primary_stimulus
+        is TrainingStimulus.AEROBIC_EASY
+        and intent.required is True
+        for intent in schedule.omitted_intents
+    )
+
+    assert schedule.constrained is True

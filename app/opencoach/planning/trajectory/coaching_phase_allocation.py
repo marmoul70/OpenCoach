@@ -28,6 +28,10 @@ class PhaseDurationPolicy:
 
     compressible: bool = True
 
+    maximum_weeks: int | None = None
+
+    extension_priority: int = 0
+
     def __post_init__(self) -> None:
         if self.minimum_weeks < 0:
             raise ValueError(
@@ -38,6 +42,20 @@ class PhaseDurationPolicy:
             raise ValueError(
                 "La durée préférée ne peut pas être inférieure "
                 "à la durée minimale."
+            )
+
+        if (
+            self.maximum_weeks is not None
+            and self.maximum_weeks < self.preferred_weeks
+        ):
+            raise ValueError(
+                "La durée maximale ne peut pas être inférieure "
+                "à la durée préférée."
+            )
+
+        if self.extension_priority < 0:
+            raise ValueError(
+                "La priorité d'extension ne peut pas être négative."
             )
 
 
@@ -109,24 +127,32 @@ DEFAULT_PHASE_POLICIES = (
         minimum_weeks=2,
         preferred_weeks=5,
         compressible=True,
+        maximum_weeks=6,
+        extension_priority=1,
     ),
     PhaseDurationPolicy(
         phase=TrainingPhase.BUILD,
         minimum_weeks=2,
         preferred_weeks=4,
         compressible=True,
+        maximum_weeks=8,
+        extension_priority=3,
     ),
     PhaseDurationPolicy(
         phase=TrainingPhase.SPECIFIC,
         minimum_weeks=2,
         preferred_weeks=4,
         compressible=True,
+        maximum_weeks=8,
+        extension_priority=3,
     ),
     PhaseDurationPolicy(
         phase=TrainingPhase.TAPER,
         minimum_weeks=1,
         preferred_weeks=2,
         compressible=False,
+        maximum_weeks=2,
+        extension_priority=0,
     ),
 )
 
@@ -239,12 +265,54 @@ def allocate_coaching_phases(
             break
 
     if remaining_weeks > 0:
-        # Le temps supplémentaire est attribué à la base.
-        base_phase = policies[0].phase
+        extension_policies = tuple(
+            sorted(
+                (
+                    policy
+                    for policy in policies
+                    if policy.extension_priority > 0
+                ),
+                key=lambda policy: (
+                    -policy.extension_priority,
+                    tuple(
+                        item.phase
+                        for item in policies
+                    ).index(
+                        policy.phase
+                    ),
+                ),
+            )
+        )
 
-        allocated[
-            base_phase
-        ] += remaining_weeks
+        while remaining_weeks > 0:
+            progressed = False
+
+            for policy in extension_policies:
+                current = allocated[
+                    policy.phase
+                ]
+
+                if (
+                    policy.maximum_weeks is not None
+                    and current >= policy.maximum_weeks
+                ):
+                    continue
+
+                allocated[
+                    policy.phase
+                ] += 1
+
+                remaining_weeks -= 1
+                progressed = True
+
+                if remaining_weeks == 0:
+                    break
+
+            if not progressed:
+                raise ValueError(
+                    "Le délai disponible dépasse la capacité "
+                    "d'extension des phases configurées."
+                )
 
     phases: list[
         AllocatedTrainingPhase

@@ -19,6 +19,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from opencoach.planning.sessions.prescription.distance_target import (
+    DistanceRepetitionTarget,
+)
+
 from opencoach.planning.stimulus.training import (
     TrainingStimulus,
 )
@@ -118,12 +122,25 @@ class WorkDurationUnit(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class WorkInterval:
-    """Description d'une série de répétitions."""
+    """Description d'une série de répétitions.
+
+    Le travail peut être défini soit par une durée, soit par une
+    distance. Ces deux représentations sont mutuellement exclusives.
+
+    La récupération reste pour l'instant exprimée en durée.
+    """
 
     repetitions: int
 
-    work_duration: int
-    work_unit: WorkDurationUnit
+    work_duration: int | None = None
+    work_unit: WorkDurationUnit | None = None
+
+    work_distance_meters: int | None = None
+
+    repetition_target: (
+        DistanceRepetitionTarget
+        | None
+    ) = None
 
     recovery_duration: int | None = None
     recovery_unit: WorkDurationUnit | None = None
@@ -136,9 +153,79 @@ class WorkInterval:
                 "Le nombre de répétitions doit être positif."
             )
 
-        if self.work_duration <= 0:
+        has_duration = (
+            self.work_duration is not None
+            or self.work_unit is not None
+        )
+
+        has_distance = (
+            self.work_distance_meters is not None
+        )
+
+        if has_duration and has_distance:
+            raise ValueError(
+                "Une répétition doit définir une durée ou une distance, "
+                "mais pas les deux."
+            )
+
+        if not has_duration and not has_distance:
+            raise ValueError(
+                "Une répétition doit définir une durée ou une distance."
+            )
+
+        if (
+            self.work_duration is None
+            and self.work_unit is not None
+        ):
+            raise ValueError(
+                "Une unité de travail ne peut pas être définie "
+                "sans durée de travail."
+            )
+
+        if (
+            self.work_duration is not None
+            and self.work_unit is None
+        ):
+            raise ValueError(
+                "Une unité de travail est obligatoire "
+                "lorsqu'une durée de travail est définie."
+            )
+
+        if (
+            self.work_duration is not None
+            and self.work_duration <= 0
+        ):
             raise ValueError(
                 "La durée de travail doit être positive."
+            )
+
+        if (
+            self.repetition_target is not None
+            and self.work_distance_meters is None
+        ):
+            raise ValueError(
+                "Une cible de répétition nécessite "
+                "une distance de travail."
+            )
+
+        if (
+            self.repetition_target is not None
+            and (
+                self.repetition_target.distance_meters
+                != self.work_distance_meters
+            )
+        ):
+            raise ValueError(
+                "La cible de répétition doit correspondre "
+                "à la distance de travail."
+            )
+
+        if (
+            self.work_distance_meters is not None
+            and self.work_distance_meters <= 0
+        ):
+            raise ValueError(
+                "La distance de travail doit être positive."
             )
 
         if (
@@ -171,11 +258,38 @@ class WorkInterval:
     def work_seconds(
         self,
     ) -> int:
-        """Durée d'une répétition de travail en secondes."""
+        """Durée d'une répétition de travail en secondes.
+
+        Une répétition définie par distance ne possède pas encore
+        de durée déterminée tant qu'aucune vitesse cible n'est connue.
+        """
+
+        if (
+            self.work_duration is None
+            or self.work_unit is None
+        ):
+            raise ValueError(
+                "La durée de travail n'est pas disponible "
+                "pour un intervalle défini par distance."
+            )
 
         return _duration_to_seconds(
             value=self.work_duration,
             unit=self.work_unit,
+        )
+
+    @property
+    def total_work_distance_meters(
+        self,
+    ) -> int:
+        """Distance totale de travail lorsque la série est métrique."""
+
+        if self.work_distance_meters is None:
+            return 0
+
+        return (
+            self.repetitions
+            * self.work_distance_meters
         )
 
     @property
@@ -348,10 +462,30 @@ class WorkStructure:
                 self.circuit.total_duration_seconds
             )
 
-        return sum(
-            interval.total_duration_seconds
-            for interval in self.intervals
-        )
+        total = 0
+
+        for interval in self.intervals:
+            if interval.work_distance_meters is not None:
+                total += (
+                    interval.repetitions
+                    * _estimate_speed_repetition_seconds(
+                        interval.work_distance_meters
+                    )
+                )
+
+                total += (
+                    max(
+                        interval.repetitions - 1,
+                        0,
+                    )
+                    * interval.recovery_seconds
+                )
+
+                continue
+
+            total += interval.total_duration_seconds
+
+        return total
 
     @property
     def planned_minutes(
@@ -370,6 +504,7 @@ def build_work_structure(
     stimulus: TrainingStimulus,
     phase: TrainingPhase,
     available_minutes: int,
+    phase_week_index: int = 1,
 ) -> WorkStructure:
     """Construit une structure compatible avec le stimulus."""
 
@@ -378,16 +513,30 @@ def build_work_structure(
             "La durée disponible doit être positive."
         )
 
+    if phase_week_index < 1:
+        raise ValueError(
+            "L'indice de semaine dans la phase "
+            "doit être supérieur ou égal à 1."
+        )
+
     if stimulus is TrainingStimulus.THRESHOLD:
         return _build_threshold(
             phase=phase,
             available_minutes=available_minutes,
+            phase_week_index=phase_week_index,
         )
 
     if stimulus is TrainingStimulus.VO2MAX:
         return _build_vo2max(
             phase=phase,
             available_minutes=available_minutes,
+            phase_week_index=phase_week_index,
+        )
+
+    if stimulus is TrainingStimulus.SPEED_DEVELOPMENT:
+        return _build_speed_development(
+            available_minutes=available_minutes,
+            phase_week_index=phase_week_index,
         )
 
     if stimulus is TrainingStimulus.UPHILL_THRESHOLD:
@@ -460,6 +609,7 @@ def _build_threshold(
     *,
     phase: TrainingPhase,
     available_minutes: int,
+    phase_week_index: int,
 ) -> WorkStructure:
     if available_minutes < 16:
         return _continuous_quality(
@@ -485,6 +635,24 @@ def _build_threshold(
                 recovery=2,
             ),
         )
+
+    elif phase is TrainingPhase.TAPER:
+        if phase_week_index == 1:
+            candidates = (
+                _minutes_interval(
+                    repetitions=3,
+                    work=6,
+                    recovery=2,
+                ),
+            )
+        else:
+            candidates = (
+                _minutes_interval(
+                    repetitions=2,
+                    work=5,
+                    recovery=2,
+                ),
+            )
 
     elif phase is TrainingPhase.BUILD:
         candidates = (
@@ -531,15 +699,157 @@ def _build_threshold(
         label="Travail au seuil",
     )
 
+def _build_speed_development(
+    *,
+    available_minutes: int,
+    phase_week_index: int,
+) -> WorkStructure:
+    """Construit un travail de vitesse courte en distance."""
+
+    candidates = (
+        (
+            8,
+            100,
+            45,
+        ),
+        (
+            8,
+            200,
+            60,
+        ),
+        (
+            6,
+            300,
+            75,
+        ),
+        (
+            6,
+            400,
+            90,
+        ),
+    )
+
+    repetitions, distance_meters, recovery_seconds = (
+        candidates[
+            min(
+                phase_week_index - 1,
+                len(candidates) - 1,
+            )
+        ]
+    )
+
+    interval = WorkInterval(
+        repetitions=repetitions,
+        work_distance_meters=distance_meters,
+        recovery_duration=recovery_seconds,
+        recovery_unit=WorkDurationUnit.SECONDS,
+    )
+
+    estimated_work_seconds = (
+        repetitions
+        * _estimate_speed_repetition_seconds(
+            distance_meters
+        )
+    )
+
+    estimated_recovery_seconds = (
+        max(
+            repetitions - 1,
+            0,
+        )
+        * recovery_seconds
+    )
+
+    estimated_total_seconds = (
+        estimated_work_seconds
+        + estimated_recovery_seconds
+    )
+
+    if estimated_total_seconds > available_minutes * 60:
+        raise ValueError(
+            "La structure de vitesse dépasse le temps disponible."
+        )
+
+    description = (
+        f"{repetitions} × {distance_meters} m "
+        f"/ récupération {recovery_seconds} s."
+    )
+
+    return WorkStructure(
+        structure_type=WorkStructureType.REPEATS,
+        stimulus=TrainingStimulus.SPEED_DEVELOPMENT,
+        available_minutes=available_minutes,
+        intervals=(
+            interval,
+        ),
+        description=description,
+    )
+
+
+def _estimate_speed_repetition_seconds(
+    distance_meters: int,
+) -> int:
+    """Estime conservativement la durée d'une répétition métrique.
+
+    Cette estimation sert uniquement au contrôle du budget temporel.
+    La cible exacte sera calculée ensuite à partir de la VMA.
+    """
+
+    if distance_meters <= 0:
+        raise ValueError(
+            "La distance doit être positive."
+        )
+
+    return max(
+        1,
+        round(
+            distance_meters
+            / 4.0
+        ),
+    )
+
 
 def _build_vo2max(
     *,
     phase: TrainingPhase,
     available_minutes: int,
+    phase_week_index: int,
 ) -> WorkStructure:
+    if phase is TrainingPhase.BASE:
+        base_candidates = (
+            _seconds_interval(
+                repetitions=10,
+                work=60,
+                recovery=60,
+            ),
+            _seconds_interval(
+                repetitions=8,
+                work=90,
+                recovery=90,
+            ),
+            _minutes_interval(
+                repetitions=5,
+                work=3,
+                recovery=2,
+            ),
+        )
+
+        candidate = base_candidates[
+            (phase_week_index - 1)
+            % len(base_candidates)
+        ]
+
+        return _best_interval_structure(
+            stimulus=TrainingStimulus.VO2MAX,
+            available_minutes=available_minutes,
+            candidates=(
+                candidate,
+            ),
+            label="Intervalles VO2max",
+        )
+
     if phase in {
         TrainingPhase.FOUNDATION,
-        TrainingPhase.BASE,
         TrainingPhase.RETURN_TO_TRAINING,
     }:
         candidates = (

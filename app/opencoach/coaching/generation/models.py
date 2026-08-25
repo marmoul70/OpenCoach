@@ -120,17 +120,37 @@ class GeneratedTrainingWeek:
             for session in self.sessions
         )
 
+    def sessions_for_day(
+        self,
+        day: Weekday,
+    ) -> tuple[
+        GeneratedTrainingSession,
+        ...,
+    ]:
+        """Retourne toutes les séances planifiées pour un jour."""
+
+        return tuple(
+            session
+            for session in self.sessions
+            if session.day is day
+        )
+
     def session_for_day(
         self,
         day: Weekday,
     ) -> GeneratedTrainingSession | None:
-        """Retourne la séance du jour demandé si elle existe."""
+        """Retourne la première séance du jour si elle existe.
 
-        return next(
-            (
-                session
-                for session in self.sessions
-                if session.day is day
-            ),
-            None,
+        Cette méthode est conservée pour compatibilité.
+        Pour les journées multi-séances, utiliser sessions_for_day().
+        """
+
+        sessions = self.sessions_for_day(
+            day
+        )
+
+        return (
+            sessions[0]
+            if sessions
+            else None
         )

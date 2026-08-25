@@ -498,11 +498,19 @@ def _build_remaining_intents(
     )
 
     for demand in ordered:
-        for _ in range(
+        for occurrence_index in range(
             demand.target_occurrences
         ):
             intent = build_session_intent(
                 primary=demand.requirement,
+            )
+
+            intent = replace(
+                intent,
+                required=(
+                    occurrence_index
+                    < demand.minimum_occurrences
+                ),
             )
 
             intents.append(

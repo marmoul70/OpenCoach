@@ -2,6 +2,10 @@
 
 from datetime import date
 
+from opencoach.planning.sessions.coach_port import (
+    SessionCoachRequest,
+)
+
 from opencoach.coaching.generation import (
     WeeklyTrainingGenerationService,
 )
@@ -90,6 +94,39 @@ def create_physiology() -> PhysiologicalCalibrationSnapshot:
             metric="threshold_heart_rate_2",
             value=165.0,
         ),
+    )
+
+
+def create_speed_slot() -> WeeklySessionIntentSlot:
+    """Construit une séance de développement de vitesse."""
+
+    intent = SessionIntent(
+        primary_stimulus=(
+            TrainingStimulus.SPEED_DEVELOPMENT
+        ),
+        secondary_stimuli=(),
+        importance=SessionIntentImportance.KEY,
+        specificity=SpecificityLevel.MODERATE,
+        substitution=SubstitutionPolicy.FORBIDDEN,
+        preferred_modalities=(
+            TrainingModality.RUNNING,
+        ),
+        required_modalities=(
+            TrainingModality.RUNNING,
+        ),
+        duration_min_minutes=30,
+        duration_max_minutes=60,
+    )
+
+    return WeeklySessionIntentSlot(
+        slot_id="speed",
+        day=Weekday.MONDAY,
+        intent=intent,
+        fatigue_budget=FatigueBudget.HIGH,
+        duration_available_minutes=60,
+        preserve_next_key_session=False,
+        preferred_recovery_before_hours=36,
+        preferred_recovery_after_hours=36,
     )
 
 
@@ -471,3 +508,79 @@ def test_complete_week_uses_same_physiology_for_each_session() -> None:
         threshold_prescription.primary_target.reference
         is IntensityReference.HEART_RATE
     )
+
+
+def test_speed_development_distance_interval_uses_vma_for_repetition_target() -> None:
+    slot = create_speed_slot()
+
+    generator = DeterministicSessionGenerator()
+
+    proposal = generator.generate_session(
+        request=SessionCoachRequest(
+            phase=TrainingPhase.BASE,
+            slot=slot,
+            planned_duration_minutes=45,
+            phase_week_index=2,
+            physiology=create_physiology(),
+        )
+    )
+
+    assert proposal.work_structure is not None
+
+    interval = proposal.work_structure.intervals[0]
+
+    assert interval.work_distance_meters == 200
+
+    assert interval.repetition_target is not None
+
+    assert (
+        interval.repetition_target.rounded_fast_seconds
+        == 42
+    )
+
+    assert (
+        interval.repetition_target.rounded_slow_seconds
+        == 48
+    )
+
+
+def test_speed_development_without_usable_vma_has_no_repetition_target() -> None:
+    physiology = create_physiology()
+
+    unavailable_vma = create_metric(
+        metric="vma",
+        value=15.0,
+        usable=False,
+    )
+
+    physiology = PhysiologicalCalibrationSnapshot(
+        vma=unavailable_vma,
+        max_heart_rate=physiology.max_heart_rate,
+        resting_heart_rate=physiology.resting_heart_rate,
+        threshold_heart_rate_1=(
+            physiology.threshold_heart_rate_1
+        ),
+        threshold_heart_rate_2=(
+            physiology.threshold_heart_rate_2
+        ),
+    )
+
+    generator = DeterministicSessionGenerator()
+
+    proposal = generator.generate_session(
+        request=SessionCoachRequest(
+            phase=TrainingPhase.BASE,
+            slot=create_speed_slot(),
+            planned_duration_minutes=45,
+            phase_week_index=2,
+            physiology=physiology,
+        )
+    )
+
+    assert proposal.work_structure is not None
+
+    interval = proposal.work_structure.intervals[0]
+
+    assert interval.work_distance_meters == 200
+
+    assert interval.repetition_target is None

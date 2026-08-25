@@ -122,6 +122,25 @@ def _strength_core_requirement() -> TrainingStimulusRequirement:
     )
 
 
+def _vo2max_requirement() -> TrainingStimulusRequirement:
+    return TrainingStimulusRequirement(
+        stimulus=TrainingStimulus.VO2MAX,
+        priority=StimulusPriority.KEY,
+        specificity=SpecificityLevel.MODERATE,
+        substitution=SubstitutionPolicy.FORBIDDEN,
+        required_modalities=(
+            TrainingModality.RUNNING,
+            TrainingModality.TRAIL_RUNNING,
+        ),
+        preferred_modalities=(
+            TrainingModality.RUNNING,
+            TrainingModality.TRAIL_RUNNING,
+        ),
+        duration_min_minutes=30,
+        duration_max_minutes=90,
+    )
+
+
 def _threshold_requirement() -> TrainingStimulusRequirement:
     return TrainingStimulusRequirement(
         stimulus=TrainingStimulus.THRESHOLD,
@@ -140,6 +159,25 @@ def _threshold_requirement() -> TrainingStimulusRequirement:
         duration_max_minutes=120,
     )
 
+def _taper_threshold_requirement() -> TrainingStimulusRequirement:
+    """Conserve une touche de seuil avec un volume réduit en taper."""
+
+    return TrainingStimulusRequirement(
+        stimulus=TrainingStimulus.THRESHOLD,
+        priority=StimulusPriority.KEY,
+        specificity=SpecificityLevel.MODERATE,
+        substitution=SubstitutionPolicy.FORBIDDEN,
+        required_modalities=(
+            TrainingModality.RUNNING,
+            TrainingModality.TRAIL_RUNNING,
+        ),
+        preferred_modalities=(
+            TrainingModality.RUNNING,
+            TrainingModality.TRAIL_RUNNING,
+        ),
+        duration_min_minutes=30,
+        duration_max_minutes=60,
+    )
 
 def build_phase_stimulus_prescription(
     phase: TrainingPhase,
@@ -156,6 +194,7 @@ def build_phase_stimulus_prescription(
     elif phase is TrainingPhase.BASE:
         requirements = (
             _easy_aerobic_requirement(),
+            _vo2max_requirement(),
             _long_endurance_requirement(
                 specificity=SpecificityLevel.LOW,
             ),
@@ -188,7 +227,7 @@ def build_phase_stimulus_prescription(
     elif phase is TrainingPhase.TAPER:
         requirements = (
             _easy_aerobic_requirement(),
-            _threshold_requirement(),
+            _taper_threshold_requirement(),
         )
 
     elif phase is TrainingPhase.RECOVERY:

@@ -24,7 +24,7 @@ Elles sont configurables et ne constituent pas des seuils médicaux.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 
 from opencoach.planning.stimulus.contextual_prescription import (
@@ -149,6 +149,8 @@ class WeeklyStimulusDemand:
 
     maximum_key_exposures: int
 
+    maximum_quality_exposures: int = 0
+
     def __post_init__(self) -> None:
         if self.target_load < 0:
             raise ValueError(
@@ -163,6 +165,12 @@ class WeeklyStimulusDemand:
         if self.maximum_key_exposures < 0:
             raise ValueError(
                 "Le nombre maximal d'expositions clés "
+                "ne peut pas être négatif."
+            )
+
+        if self.maximum_quality_exposures < 0:
+            raise ValueError(
+                "Le nombre maximal d'expositions qualitatives "
                 "ne peut pas être négatif."
             )
 
@@ -265,6 +273,7 @@ def build_weekly_stimulus_demand(
             density=StimulusDemandDensity.NONE,
             demands=demands,
             maximum_key_exposures=0,
+            maximum_quality_exposures=0,
         )
 
     if (
@@ -288,6 +297,7 @@ def build_weekly_stimulus_demand(
             density=StimulusDemandDensity.LOW,
             demands=demands,
             maximum_key_exposures=1,
+            maximum_quality_exposures=1,
         )
 
     if (
@@ -311,6 +321,7 @@ def build_weekly_stimulus_demand(
             density=StimulusDemandDensity.LOW,
             demands=demands,
             maximum_key_exposures=1,
+            maximum_quality_exposures=1,
         )
 
     if (
@@ -334,6 +345,7 @@ def build_weekly_stimulus_demand(
             density=StimulusDemandDensity.LOW,
             demands=demands,
             maximum_key_exposures=0,
+            maximum_quality_exposures=0,
         )
 
     demands = tuple(
@@ -347,6 +359,12 @@ def build_weekly_stimulus_demand(
         in prescription.requirements
     )
 
+    maximum_quality_exposures = (
+        1
+        if prescription.phase is TrainingPhase.BASE
+        else 2
+    )
+
     return WeeklyStimulusDemand(
         phase=prescription.phase,
         week_type=week_type,
@@ -358,6 +376,9 @@ def build_weekly_stimulus_demand(
         ),
         demands=demands,
         maximum_key_exposures=2,
+        maximum_quality_exposures=(
+            maximum_quality_exposures
+        ),
     )
 
 
@@ -463,6 +484,16 @@ def _recovery_demand(
     ):
         return _suppressed_demand(
             requirement
+        )
+
+    if requirement.stimulus in {
+        TrainingStimulus.STRENGTH_LOWER_BODY,
+        TrainingStimulus.STRENGTH_CORE,
+    }:
+        requirement = replace(
+            requirement,
+            duration_min_minutes=15,
+            duration_max_minutes=25,
         )
 
     if (

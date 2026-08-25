@@ -163,7 +163,30 @@ def allocate_session_durations(
         )
     )
 
-    return result
+    durations = {
+        item.slot_id: item.duration_minutes
+        for item in result
+    }
+
+    durations = _reconcile_allocated_budget(
+        slots=slots,
+        durations=durations,
+        target_weekly_minutes=(
+            target_weekly_minutes
+        ),
+    )
+
+    return tuple(
+        AllocatedSessionDuration(
+            slot_id=slot.slot_id,
+            duration_minutes=(
+                durations[
+                    slot.slot_id
+                ]
+            ),
+        )
+        for slot in slots
+    )
 
 
 def _allocate_with_long_endurance_reference(
@@ -197,7 +220,7 @@ def _allocate_with_long_endurance_reference(
 
         total_weight = sum(weights)
 
-        return tuple(
+        initial_allocations = tuple(
             AllocatedSessionDuration(
                 slot_id=slot.slot_id,
                 duration_minutes=(
@@ -217,6 +240,31 @@ def _allocate_with_long_endurance_reference(
                 weights,
                 strict=True,
             )
+        )
+
+        durations = {
+            item.slot_id: item.duration_minutes
+            for item in initial_allocations
+        }
+
+        durations = _reconcile_allocated_budget(
+            slots=slots,
+            durations=durations,
+            target_weekly_minutes=(
+                target_weekly_minutes
+            ),
+        )
+
+        return tuple(
+            AllocatedSessionDuration(
+                slot_id=slot.slot_id,
+                duration_minutes=(
+                    durations[
+                        slot.slot_id
+                    ]
+                ),
+            )
+            for slot in slots
         )
 
     long_slot = long_slots[0]

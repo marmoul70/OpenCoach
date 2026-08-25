@@ -526,3 +526,116 @@ def test_unused_quality_time_becomes_easy_complement() -> None:
         block.name == "Complément facile"
         for block in proposal.blocks
     )
+
+def test_session_coach_request_exposes_phase_week_index() -> None:
+    base_request = create_request(
+        primary_stimulus=TrainingStimulus.VO2MAX,
+        minimum=30,
+        maximum=60,
+        available=60,
+        required_modalities=(),
+        preferred_modalities=(
+            TrainingModality.RUNNING,
+        ),
+    )
+
+    request = SessionCoachRequest(
+        phase=TrainingPhase.BASE,
+        slot=base_request.slot,
+        target_load=base_request.target_load,
+        phase_week_index=3,
+    )
+
+    assert request.phase_week_index == 3
+
+
+def test_base_vo2max_progresses_with_phase_week_index() -> None:
+    generator = DeterministicSessionGenerator()
+
+    descriptions = []
+
+    for phase_week_index in (
+        1,
+        2,
+        3,
+    ):
+        base_request = create_request(
+            primary_stimulus=TrainingStimulus.VO2MAX,
+            minimum=45,
+            maximum=45,
+            available=45,
+            required_modalities=(),
+            preferred_modalities=(
+                TrainingModality.RUNNING,
+            ),
+        )
+
+        request = SessionCoachRequest(
+            phase=TrainingPhase.BASE,
+            slot=base_request.slot,
+            target_load=base_request.target_load,
+            planned_duration_minutes=45,
+            phase_week_index=phase_week_index,
+        )
+
+        proposal = generator.generate_session(
+            request=request,
+        )
+
+        assert proposal.work_structure is not None
+
+        descriptions.append(
+            proposal.work_structure.description
+        )
+
+    assert descriptions == [
+        "10 × 60 s / récupération 60 s.",
+        "8 × 90 s / récupération 90 s.",
+        "5 × 3 min / récupération 2 min.",
+    ]
+
+
+def test_base_vo2max_progresses_with_phase_week_index() -> None:
+    generator = DeterministicSessionGenerator()
+
+    descriptions = []
+
+    for phase_week_index in (
+        1,
+        2,
+        3,
+    ):
+        base_request = create_request(
+            primary_stimulus=TrainingStimulus.VO2MAX,
+            minimum=45,
+            maximum=45,
+            available=45,
+            required_modalities=(),
+            preferred_modalities=(
+                TrainingModality.RUNNING,
+            ),
+        )
+
+        request = SessionCoachRequest(
+            phase=TrainingPhase.BASE,
+            slot=base_request.slot,
+            target_load=base_request.target_load,
+            planned_duration_minutes=45,
+            phase_week_index=phase_week_index,
+        )
+
+        proposal = generator.generate_session(
+            request=request,
+        )
+
+        assert proposal.work_structure is not None
+
+        descriptions.append(
+            proposal.work_structure.description
+        )
+
+    assert descriptions == [
+        "10 × 60 s / récupération 60 s.",
+        "8 × 90 s / récupération 90 s.",
+        "5 × 3 min / récupération 2 min.",
+    ]

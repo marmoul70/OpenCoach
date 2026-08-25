@@ -254,3 +254,58 @@ def test_base_does_not_add_uphill_strength_endurance() -> None:
         )
         is None
     )
+
+
+def test_base_contextual_prescription_applies_phase_week_progression() -> None:
+    week_1 = build_contextual_stimulus_prescription(
+        phase=TrainingPhase.BASE,
+        race_profile=None,
+        phase_week_index=1,
+    )
+
+    week_2 = build_contextual_stimulus_prescription(
+        phase=TrainingPhase.BASE,
+        race_profile=None,
+        phase_week_index=2,
+    )
+
+    week_3 = build_contextual_stimulus_prescription(
+        phase=TrainingPhase.BASE,
+        race_profile=None,
+        phase_week_index=3,
+    )
+
+    assert (
+        week_1.requirement_for(
+            TrainingStimulus.SPEED_DEVELOPMENT
+        )
+        is not None
+    )
+
+    assert (
+        week_2.requirement_for(
+            TrainingStimulus.SPEED_DEVELOPMENT
+        )
+        is not None
+    )
+
+    assert (
+        week_3.requirement_for(
+            TrainingStimulus.VO2MAX
+        )
+        is not None
+    )
+
+    assert (
+        week_1.requirement_for(
+            TrainingStimulus.VO2MAX
+        )
+        is None
+    )
+
+    assert (
+        week_3.requirement_for(
+            TrainingStimulus.SPEED_DEVELOPMENT
+        )
+        is None
+    )

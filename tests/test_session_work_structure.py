@@ -1,6 +1,9 @@
+import pytest
+
 from opencoach.planning.sessions.prescription import (
     CircuitStepType,
     WorkDurationUnit,
+    WorkInterval,
     WorkStructureType,
     build_work_structure,
 )
@@ -610,3 +613,82 @@ def test_uphill_strength_endurance_has_session_recipe() -> None:
     )
 
     assert "chaise" in recipe.main_block_name.lower()
+
+def test_work_interval_can_use_distance_in_meters() -> None:
+    interval = WorkInterval(
+        repetitions=8,
+        work_distance_meters=200,
+        recovery_duration=60,
+        recovery_unit=WorkDurationUnit.SECONDS,
+    )
+
+    assert interval.work_distance_meters == 200
+    assert interval.total_work_distance_meters == 1600
+
+def test_work_interval_rejects_duration_and_distance_together() -> None:
+    with pytest.raises(
+        ValueError,
+        match="durée ou une distance",
+    ):
+        WorkInterval(
+            repetitions=8,
+            work_duration=60,
+            work_unit=WorkDurationUnit.SECONDS,
+            work_distance_meters=200,
+            recovery_duration=60,
+            recovery_unit=WorkDurationUnit.SECONDS,
+        )
+
+def test_speed_development_progresses_with_phase_week_index() -> None:
+    descriptions = []
+
+    for phase_week_index in (
+        1,
+        2,
+        3,
+        4,
+    ):
+        structure = build_work_structure(
+            stimulus=TrainingStimulus.SPEED_DEVELOPMENT,
+            phase=TrainingPhase.BASE,
+            available_minutes=30,
+            phase_week_index=phase_week_index,
+        )
+
+        descriptions.append(
+            structure.description
+        )
+
+    assert descriptions == [
+        "8 × 100 m / récupération 45 s.",
+        "8 × 200 m / récupération 60 s.",
+        "6 × 300 m / récupération 75 s.",
+        "6 × 400 m / récupération 90 s.",
+    ]
+
+def test_first_taper_week_uses_reduced_threshold_volume() -> None:
+    structure = build_work_structure(
+        stimulus=TrainingStimulus.THRESHOLD,
+        phase=TrainingPhase.TAPER,
+        available_minutes=45,
+        phase_week_index=1,
+    )
+
+    assert (
+        structure.description
+        == "3 × 6 min / récupération 2 min."
+    )
+
+
+def test_second_taper_week_reduces_threshold_volume_again() -> None:
+    structure = build_work_structure(
+        stimulus=TrainingStimulus.THRESHOLD,
+        phase=TrainingPhase.TAPER,
+        available_minutes=45,
+        phase_week_index=2,
+    )
+
+    assert (
+        structure.description
+        == "2 × 5 min / récupération 2 min."
+    )

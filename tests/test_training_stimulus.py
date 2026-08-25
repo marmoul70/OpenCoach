@@ -2,11 +2,13 @@ import pytest
 
 from opencoach.planning.stimulus.training import (
     SpecificityLevel,
+    StimulusLoadCategory,
     StimulusPriority,
     SubstitutionPolicy,
     TrainingModality,
     TrainingStimulus,
     TrainingStimulusRequirement,
+    stimulus_load_category,
 )
 
 
@@ -118,3 +120,91 @@ def test_maximum_duration_must_be_positive(
             substitution=SubstitutionPolicy.ALLOWED,
             duration_max_minutes=duration,
         )
+
+def test_threshold_is_quality_stimulus() -> None:
+    assert (
+        stimulus_load_category(
+            TrainingStimulus.THRESHOLD
+        )
+        is StimulusLoadCategory.QUALITY
+    )
+
+
+def test_vo2max_is_quality_stimulus() -> None:
+    assert (
+        stimulus_load_category(
+            TrainingStimulus.VO2MAX
+        )
+        is StimulusLoadCategory.QUALITY
+    )
+
+
+def test_uphill_strength_is_quality_stimulus() -> None:
+    assert (
+        stimulus_load_category(
+            TrainingStimulus.UPHILL_STRENGTH
+        )
+        is StimulusLoadCategory.QUALITY
+    )
+
+
+def test_uphill_strength_endurance_is_quality_stimulus() -> None:
+    assert (
+        stimulus_load_category(
+            TrainingStimulus.UPHILL_STRENGTH_ENDURANCE
+        )
+        is StimulusLoadCategory.QUALITY
+    )
+
+
+def test_uphill_threshold_is_quality_stimulus() -> None:
+    assert (
+        stimulus_load_category(
+            TrainingStimulus.UPHILL_THRESHOLD
+        )
+        is StimulusLoadCategory.QUALITY
+    )
+
+
+def test_long_endurance_is_endurance_stimulus() -> None:
+    assert (
+        stimulus_load_category(
+            TrainingStimulus.LONG_ENDURANCE
+        )
+        is StimulusLoadCategory.ENDURANCE
+    )
+
+
+def test_easy_aerobic_is_support_stimulus() -> None:
+    assert (
+        stimulus_load_category(
+            TrainingStimulus.AEROBIC_EASY
+        )
+        is StimulusLoadCategory.SUPPORT
+    )
+
+
+def test_strength_core_is_strength_stimulus() -> None:
+    assert (
+        stimulus_load_category(
+            TrainingStimulus.STRENGTH_CORE
+        )
+        is StimulusLoadCategory.STRENGTH
+    )
+
+
+def test_strength_lower_body_is_strength_stimulus() -> None:
+    assert (
+        stimulus_load_category(
+            TrainingStimulus.STRENGTH_LOWER_BODY
+        )
+        is StimulusLoadCategory.STRENGTH
+    )
+
+def test_speed_development_is_quality_stimulus() -> None:
+    assert (
+        stimulus_load_category(
+            TrainingStimulus.SPEED_DEVELOPMENT
+        )
+        is StimulusLoadCategory.QUALITY
+    )

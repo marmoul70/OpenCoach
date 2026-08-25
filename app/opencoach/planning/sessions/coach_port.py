@@ -69,6 +69,8 @@ class SessionCoachRequest:
 
     planned_duration_minutes: int | None = None
 
+    phase_week_index: int = 1
+
     physiology: (
         PhysiologicalCalibrationSnapshot
         | None
@@ -84,6 +86,12 @@ class SessionCoachRequest:
     def __post_init__(
         self,
     ) -> None:
+        if self.phase_week_index < 1:
+            raise ValueError(
+                "L'indice de semaine dans la phase "
+                "doit être supérieur ou égal à 1."
+            )
+
         if (
             self.target_load is not None
             and self.target_load < 0

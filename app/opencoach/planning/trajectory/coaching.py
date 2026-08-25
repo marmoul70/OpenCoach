@@ -362,9 +362,19 @@ def build_coaching_trajectory(
             ),
         )
 
+    phase_week_index = (
+        input_data.trajectory_week.phase_week_index
+        if (
+            use_trajectory_week
+            and input_data.trajectory_week is not None
+        )
+        else 1
+    )
+
     prescription = build_contextual_stimulus_prescription(
         phase=effective_phase,
         race_profile=race_profile,
+        phase_week_index=phase_week_index,
     )
 
     envelope = build_weekly_training_envelope(
@@ -375,14 +385,7 @@ def build_coaching_trajectory(
             recovery=recovery,
             prescription=prescription,
             available_days=input_data.available_days,
-            phase_week_index=(
-                input_data.trajectory_week.phase_week_index
-                if (
-                    use_trajectory_week
-                    and input_data.trajectory_week is not None
-                )
-                else 1
-            ),
+            phase_week_index=phase_week_index,
             target_session_count=(
                 input_data.target_session_count
             ),

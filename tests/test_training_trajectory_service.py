@@ -887,7 +887,14 @@ def test_current_week_propagates_session_frequency_and_uses_trajectory_duration(
 
     envelope = result.coaching.envelope
 
-    assert envelope.session_count == 4
+    assert envelope.session_count == 5
+
+    training_days = {
+        slot.day
+        for slot in envelope.session_slots
+    }
+
+    assert len(training_days) == 4
 
     assert (
         envelope.reference_duration_minutes

@@ -99,6 +99,9 @@ class WeeklyTrainingGenerationService:
                         slot.slot_id
                     ]
                 ),
+                phase_week_index=(
+                    envelope.phase_week_index
+                ),
                 physiology=physiology,
                 athlete_context=athlete_context,
                 additional_context=(

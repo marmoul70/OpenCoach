@@ -519,3 +519,19 @@ def test_intent_without_durations_keeps_none() -> None:
 
     assert result.duration_min_minutes is None
     assert result.duration_max_minutes is None
+
+
+def test_session_intent_is_required_by_default() -> None:
+    intent = SessionIntent(
+        primary_stimulus=TrainingStimulus.AEROBIC_EASY,
+        secondary_stimuli=(),
+        importance=SessionIntentImportance.SUPPORT,
+        specificity=SpecificityLevel.LOW,
+        substitution=SubstitutionPolicy.ALLOWED,
+        preferred_modalities=(
+            TrainingModality.RUNNING,
+        ),
+        required_modalities=(),
+    )
+
+    assert intent.required is True

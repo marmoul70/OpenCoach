@@ -28,6 +28,7 @@ class TrainingStimulus(StrEnum):
     AEROBIC_ENDURANCE = "aerobic_endurance"
 
     THRESHOLD = "threshold"
+    SPEED_DEVELOPMENT = "speed_development"
     VO2MAX = "vo2max"
 
     UPHILL_STRENGTH = "uphill_strength"
@@ -42,6 +43,47 @@ class TrainingStimulus(StrEnum):
     STRENGTH_CORE = "strength_core"
 
     RECOVERY = "recovery"
+
+
+class StimulusLoadCategory(StrEnum):
+    """Nature de sollicitation d'un stimulus d'entraînement."""
+
+    SUPPORT = "support"
+    ENDURANCE = "endurance"
+    QUALITY = "quality"
+    STRENGTH = "strength"
+
+
+def stimulus_load_category(
+    stimulus: TrainingStimulus,
+) -> StimulusLoadCategory:
+    """Classe un stimulus selon sa nature de sollicitation."""
+
+    if stimulus in {
+        TrainingStimulus.THRESHOLD,
+        TrainingStimulus.SPEED_DEVELOPMENT,
+        TrainingStimulus.VO2MAX,
+        TrainingStimulus.UPHILL_STRENGTH,
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE,
+        TrainingStimulus.UPHILL_THRESHOLD,
+        TrainingStimulus.DOWNHILL_SPECIFICITY,
+        TrainingStimulus.RACE_SPECIFIC,
+    }:
+        return StimulusLoadCategory.QUALITY
+
+    if stimulus in {
+        TrainingStimulus.AEROBIC_ENDURANCE,
+        TrainingStimulus.LONG_ENDURANCE,
+    }:
+        return StimulusLoadCategory.ENDURANCE
+
+    if stimulus in {
+        TrainingStimulus.STRENGTH_LOWER_BODY,
+        TrainingStimulus.STRENGTH_CORE,
+    }:
+        return StimulusLoadCategory.STRENGTH
+
+    return StimulusLoadCategory.SUPPORT
 
 
 class SpecificityLevel(StrEnum):

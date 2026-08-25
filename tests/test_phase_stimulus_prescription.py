@@ -189,3 +189,39 @@ def test_aerobic_easy_has_minimum_duration_of_45_minutes() -> None:
         requirement.duration_min_minutes
         == 45
     )
+
+def test_base_contains_one_quality_stimulus() -> None:
+    prescription = build_phase_stimulus_prescription(
+        TrainingPhase.BASE,
+    )
+
+    vo2max = prescription.requirement_for(
+        TrainingStimulus.VO2MAX,
+    )
+
+    assert vo2max is not None
+
+    assert (
+        vo2max.priority
+        is StimulusPriority.KEY
+    )
+
+    assert (
+        prescription.requirement_for(
+            TrainingStimulus.THRESHOLD,
+        )
+        is None
+    )
+
+def test_taper_threshold_has_reduced_duration_bounds() -> None:
+    prescription = build_phase_stimulus_prescription(
+        TrainingPhase.TAPER,
+    )
+
+    threshold = prescription.requirement_for(
+        TrainingStimulus.THRESHOLD
+    )
+
+    assert threshold is not None
+    assert threshold.duration_min_minutes == 30
+    assert threshold.duration_max_minutes == 60

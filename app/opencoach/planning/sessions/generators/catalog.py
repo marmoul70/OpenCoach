@@ -134,6 +134,28 @@ SESSION_RECIPES: dict[
         )
     ),
 
+    TrainingStimulus.SPEED_DEVELOPMENT: (
+        SessionRecipe(
+            title="Développement de la vitesse",
+            objective=(
+                "Développer la vitesse de course, "
+                "l'économie gestuelle et la qualité d'appui."
+            ),
+            structure=SessionStructure.QUALITY,
+            default_modality=TrainingModality.RUNNING,
+            main_block_name="Vitesse courte",
+            main_block_description=(
+                "Répétitions courtes réalisées avec une "
+                "grande qualité gestuelle et une récupération "
+                "suffisante pour préserver la vitesse."
+            ),
+            warmup_description=(
+                "Échauffement progressif complété par des "
+                "gammes et quelques accélérations contrôlées."
+            ),
+        )
+    ),
+
     TrainingStimulus.VO2MAX: (
         SessionRecipe(
             title="Développement VO2max",

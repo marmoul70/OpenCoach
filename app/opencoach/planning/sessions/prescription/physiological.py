@@ -149,6 +149,23 @@ INTENSITY_POLICIES: dict[
         )
     ),
 
+    TrainingStimulus.SPEED_DEVELOPMENT: (
+        StimulusIntensityPolicy(
+            rpe_min=7,
+            rpe_max=9,
+            vma_min=100,
+            vma_max=115,
+            guidance=(
+                "La priorité est la qualité de course "
+                "et non l'épuisement.",
+                "Conserver une vitesse élevée avec une "
+                "technique propre sur chaque répétition.",
+                "La fréquence cardiaque n'est pas une cible "
+                "pertinente sur les fractions très courtes.",
+            ),
+        )
+    ),
+
     TrainingStimulus.VO2MAX: (
         StimulusIntensityPolicy(
             rpe_min=8,

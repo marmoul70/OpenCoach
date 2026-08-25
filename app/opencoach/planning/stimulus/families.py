@@ -45,6 +45,8 @@ _STIMULUS_FAMILIES: dict[
     TrainingStimulus.UPHILL_THRESHOLD:
         StimulusFamily.THRESHOLD,
 
+    TrainingStimulus.SPEED_DEVELOPMENT:
+        StimulusFamily.HIGH_INTENSITY,
     TrainingStimulus.VO2MAX:
         StimulusFamily.HIGH_INTENSITY,
 

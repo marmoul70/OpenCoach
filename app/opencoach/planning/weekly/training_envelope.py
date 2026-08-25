@@ -83,6 +83,8 @@ class WeeklyTrainingEnvelope:
 
     schedule_pressure: SchedulePressure
 
+    phase_week_index: int = 1
+
     athlete_schedule_constrained: bool = False
 
     reference_duration_minutes: float | None = None
@@ -95,6 +97,12 @@ class WeeklyTrainingEnvelope:
     ] = ()
 
     def __post_init__(self) -> None:
+        if self.phase_week_index < 1:
+            raise ValueError(
+                "L'indice de semaine dans la phase "
+                "doit être supérieur ou égal à 1."
+            )
+
         if self.week_end < self.week_start:
             raise ValueError(
                 "La fin de semaine ne peut pas précéder "

@@ -82,6 +82,8 @@ class SessionIntent:
     duration_min_minutes: int | None = None
     duration_max_minutes: int | None = None
 
+    required: bool = True
+
     source_requirements: tuple[
         TrainingStimulusRequirement,
         ...

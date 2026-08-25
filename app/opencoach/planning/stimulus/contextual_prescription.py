@@ -15,6 +15,9 @@ from opencoach.planning.stimulus.phase_prescription import (
     PhaseStimulusPrescription,
     build_phase_stimulus_prescription,
 )
+from opencoach.planning.stimulus.phase_progression import (
+    apply_phase_stimulus_progression,
+)
 from opencoach.planning.stimulus.families import (
     same_stimulus_family,
 )
@@ -62,6 +65,7 @@ def build_contextual_stimulus_prescription(
     *,
     phase: TrainingPhase,
     race_profile: RaceDemandProfile | None,
+    phase_week_index: int = 1,
 ) -> ContextualStimulusPrescription:
     """Combine phase générale et demandes spécifiques de la course."""
 
@@ -69,8 +73,13 @@ def build_contextual_stimulus_prescription(
         phase
     )
 
+    progressed = apply_phase_stimulus_progression(
+        prescription=base,
+        phase_week_index=phase_week_index,
+    )
+
     requirements = list(
-        base.requirements
+        progressed.requirements
     )
 
     if (

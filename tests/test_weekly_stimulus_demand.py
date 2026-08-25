@@ -26,7 +26,9 @@ from opencoach.planning.stimulus.weekly_demand import (
 from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
-
+from opencoach.planning.stimulus.phase_prescription import (
+    build_phase_stimulus_prescription,
+)
 
 def create_requirement(
     *,
@@ -739,3 +741,108 @@ def test_first_build_week_suppresses_uphill_strength_endurance() -> None:
     assert demand.minimum_occurrences == 0
     assert demand.target_occurrences == 0
     assert demand.maximum_occurrences == 0
+
+def test_base_loading_week_has_one_quality_exposure_budget() -> None:
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.BASE,
+        ),
+        week_type=TrajectoryWeekType.LOADING,
+        target_load=500.0,
+        reference_load=500.0,
+    )
+
+    assert result.maximum_quality_exposures == 1
+
+
+def test_build_loading_week_has_two_quality_exposure_budget() -> None:
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.BUILD,
+        ),
+        week_type=TrajectoryWeekType.LOADING,
+        target_load=500.0,
+        reference_load=500.0,
+    )
+
+    assert result.maximum_quality_exposures == 2
+
+
+def test_specific_loading_week_has_two_quality_exposure_budget() -> None:
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.SPECIFIC,
+        ),
+        week_type=TrajectoryWeekType.LOADING,
+        target_load=500.0,
+        reference_load=500.0,
+    )
+
+    assert result.maximum_quality_exposures == 2
+
+
+def test_recovery_week_has_one_quality_exposure_budget() -> None:
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.BUILD,
+        ),
+        week_type=TrajectoryWeekType.RECOVERY,
+        target_load=350.0,
+        reference_load=500.0,
+    )
+
+    assert result.maximum_quality_exposures == 1
+
+
+def test_taper_week_has_one_quality_exposure_budget() -> None:
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.TAPER,
+        ),
+        week_type=TrajectoryWeekType.TAPER,
+        target_load=300.0,
+        reference_load=450.0,
+    )
+
+    assert result.maximum_quality_exposures == 1
+
+
+def test_return_to_training_has_no_quality_exposure_budget() -> None:
+    result = build_weekly_stimulus_demand(
+        prescription=create_prescription(
+            phase=TrainingPhase.RETURN_TO_TRAINING,
+        ),
+        week_type=TrajectoryWeekType.RETURN_TO_TRAINING,
+        target_load=250.0,
+        reference_load=400.0,
+    )
+
+    assert result.maximum_quality_exposures == 0
+
+def test_recovery_week_reduces_strength_duration_bounds() -> None:
+    prescription = build_phase_stimulus_prescription(
+        TrainingPhase.BUILD,
+    )
+
+    demand = build_weekly_stimulus_demand(
+        prescription=prescription,
+        week_type=TrajectoryWeekType.RECOVERY,
+        target_load=320.0,
+        reference_load=400.0,
+    )
+
+    strength = demand.demand_for(
+        TrainingStimulus.STRENGTH_LOWER_BODY
+    )
+
+    assert strength is not None
+
+    assert (
+        strength.requirement.duration_min_minutes
+        == 15
+    )
+
+    assert (
+        strength.requirement.duration_max_minutes
+        == 25
+    )

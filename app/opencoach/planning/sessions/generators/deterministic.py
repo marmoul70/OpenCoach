@@ -3,7 +3,7 @@
 from __future__ import annotations
 from math import ceil
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from opencoach.planning.sessions.coach_port import (
     SessionCoachRequest,
@@ -17,9 +17,16 @@ from opencoach.planning.sessions.generators.catalog import (
 from opencoach.planning.sessions.intent import (
     SessionIntentImportance,
 )
+from opencoach.planning.sessions.prescription.distance_target import (
+    calculate_distance_repetition_target,
+)
 from opencoach.planning.sessions.prescription.intervals import (
     WorkStructure,
     build_work_structure,
+)
+from opencoach.planning.sessions.prescription.models import (
+    IntensityReference,
+    SessionIntensityPrescription,
 )
 from opencoach.planning.sessions.prescription.physiological import (
     build_intensity_prescription,
@@ -101,6 +108,16 @@ class DeterministicSessionGenerator:
             )
         )
 
+        work_structure = (
+            _enrich_distance_repetition_targets(
+                work_structure=work_structure,
+                intensity_prescription=(
+                    intensity_prescription
+                ),
+                request=request,
+            )
+        )
+
         return SessionProposal(
             title=recipe.title,
             modality=modality,
@@ -120,6 +137,94 @@ class DeterministicSessionGenerator:
                 request
             ),
         )
+
+
+def _enrich_distance_repetition_targets(
+    *,
+    work_structure: WorkStructure,
+    intensity_prescription: SessionIntensityPrescription,
+    request: SessionCoachRequest,
+) -> WorkStructure:
+    """Individualise les répétitions métriques à partir de la VMA.
+
+    Aucun chrono n'est produit lorsque la VMA n'est pas utilisable
+    ou lorsque la séance ne possède pas de cible en pourcentage de VMA.
+    """
+
+    if not work_structure.intervals:
+        return work_structure
+
+    physiology = request.physiology
+
+    if physiology is None:
+        return work_structure
+
+    vma_metric = physiology.vma
+
+    if (
+        not vma_metric.usable
+        or vma_metric.value is None
+        or vma_metric.value <= 0
+    ):
+        return work_structure
+
+    vma_target = (
+        intensity_prescription.target_for(
+            IntensityReference.VMA_PERCENT
+        )
+    )
+
+    if vma_target is None:
+        return work_structure
+
+    enriched_intervals = []
+
+    changed = False
+
+    for interval in work_structure.intervals:
+        distance_meters = (
+            interval.work_distance_meters
+        )
+
+        if distance_meters is None:
+            enriched_intervals.append(
+                interval
+            )
+            continue
+
+        repetition_target = (
+            calculate_distance_repetition_target(
+                distance_meters=distance_meters,
+                vma_kmh=vma_metric.value,
+                vma_percent_min=(
+                    vma_target.minimum
+                ),
+                vma_percent_max=(
+                    vma_target.maximum
+                ),
+            )
+        )
+
+        enriched_intervals.append(
+            replace(
+                interval,
+                repetition_target=(
+                    repetition_target
+                ),
+            )
+        )
+
+        changed = True
+
+    if not changed:
+        return work_structure
+
+    return replace(
+        work_structure,
+        intervals=tuple(
+            enriched_intervals
+        ),
+    )
 
 
 def _resolve_duration(
@@ -288,6 +393,9 @@ def _build_session_content(
             build_work_structure(
                 stimulus=stimulus,
                 phase=request.phase,
+                phase_week_index=(
+                    request.phase_week_index
+                ),
                 available_minutes=(
                     duration_minutes
                 ),
@@ -324,6 +432,9 @@ def _build_session_content(
         build_work_structure(
             stimulus=stimulus,
             phase=request.phase,
+            phase_week_index=(
+                request.phase_week_index
+            ),
             available_minutes=(
                 main_available
             ),

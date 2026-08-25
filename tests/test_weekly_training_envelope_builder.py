@@ -339,8 +339,10 @@ def test_omitted_intentions_are_explained() -> None:
     )
 
     assert any(
-        "intentions non positionnées"
-        in note.lower()
+        (
+            "intentions" in note.lower()
+            and "non positionnées" in note.lower()
+        )
         for note in envelope.notes
     )
 

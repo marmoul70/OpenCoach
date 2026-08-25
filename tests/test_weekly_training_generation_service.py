@@ -537,3 +537,153 @@ def test_generation_uses_long_endurance_reference() -> None:
     ) == 255
 
 
+
+
+def test_generated_week_exposes_multiple_sessions_for_same_day() -> None:
+    envelope = create_envelope(
+        slots=(
+            create_slot(
+                slot_id="monday-easy",
+                day=Weekday.MONDAY,
+                stimulus=TrainingStimulus.AEROBIC_EASY,
+                duration=45,
+            ),
+            create_slot(
+                slot_id="monday-strength",
+                day=Weekday.MONDAY,
+                stimulus=TrainingStimulus.STRENGTH_LOWER_BODY,
+                duration=20,
+            ),
+        )
+    )
+
+    service = WeeklyTrainingGenerationService(
+        session_generator=FakeSessionCoach()
+    )
+
+    week = service.generate(
+        envelope=envelope
+    )
+
+    sessions = week.sessions_for_day(
+        Weekday.MONDAY
+    )
+
+    assert week.session_count == 2
+
+    assert len(sessions) == 2
+
+    assert tuple(
+        session.slot_id
+        for session in sessions
+    ) == (
+        "monday-easy",
+        "monday-strength",
+    )
+
+
+def test_generation_uses_target_weekly_duration_not_reference_duration() -> None:
+    """La génération consomme le budget cible et non la référence historique."""
+
+    def flexible_slot(
+        *,
+        slot_id: str,
+        day: Weekday,
+        stimulus: TrainingStimulus,
+        minimum: int,
+        maximum: int,
+        importance: SessionIntentImportance,
+    ) -> WeeklySessionIntentSlot:
+        intent = SessionIntent(
+            primary_stimulus=stimulus,
+            secondary_stimuli=(),
+            importance=importance,
+            specificity=SpecificityLevel.MODERATE,
+            substitution=SubstitutionPolicy.ALLOWED,
+            preferred_modalities=(
+                TrainingModality.RUNNING,
+            ),
+            required_modalities=(),
+            duration_min_minutes=minimum,
+            duration_max_minutes=maximum,
+        )
+
+        return WeeklySessionIntentSlot(
+            slot_id=slot_id,
+            day=day,
+            intent=intent,
+            fatigue_budget=FatigueBudget.MODERATE,
+            duration_available_minutes=maximum,
+        )
+
+    envelope = create_envelope(
+        slots=(
+            flexible_slot(
+                slot_id="quality",
+                day=Weekday.MONDAY,
+                stimulus=TrainingStimulus.THRESHOLD,
+                minimum=45,
+                maximum=90,
+                importance=(
+                    SessionIntentImportance.IMPORTANT
+                ),
+            ),
+            flexible_slot(
+                slot_id="easy-1",
+                day=Weekday.WEDNESDAY,
+                stimulus=TrainingStimulus.AEROBIC_EASY,
+                minimum=45,
+                maximum=120,
+                importance=(
+                    SessionIntentImportance.SUPPORT
+                ),
+            ),
+            flexible_slot(
+                slot_id="easy-2",
+                day=Weekday.FRIDAY,
+                stimulus=TrainingStimulus.AEROBIC_EASY,
+                minimum=45,
+                maximum=120,
+                importance=(
+                    SessionIntentImportance.SUPPORT
+                ),
+            ),
+            flexible_slot(
+                slot_id="long",
+                day=Weekday.SUNDAY,
+                stimulus=TrainingStimulus.LONG_ENDURANCE,
+                minimum=60,
+                maximum=240,
+                importance=(
+                    SessionIntentImportance.KEY
+                ),
+            ),
+        )
+    )
+
+    envelope = replace(
+        envelope,
+        reference_duration_minutes=300.0,
+        target_duration_minutes=330.0,
+        long_endurance_reference_minutes=150.0,
+    )
+
+    service = WeeklyTrainingGenerationService(
+        session_generator=(
+            DeterministicSessionGenerator()
+        )
+    )
+
+    week = service.generate(
+        envelope=envelope
+    )
+
+    assert (
+        week.total_duration_minutes
+        == 330
+    )
+
+    assert sum(
+        session.proposal.duration_minutes
+        for session in week.sessions
+    ) == 330

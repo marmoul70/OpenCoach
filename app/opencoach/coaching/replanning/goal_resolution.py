@@ -18,6 +18,10 @@ from opencoach.database.repositories import (
 )
 from opencoach.models import Race
 
+from opencoach.coaching.replanning.preparation_horizon import (
+    resolve_preparation_horizon,
+)
+
 
 class CoachingGoalMode(StrEnum):
     """Mode stratégique courant du coach."""
@@ -98,6 +102,43 @@ class CoachingGoalResolution:
         return days / 7.0
 
 
+def resolve_coaching_goal(
+    *,
+    planning_date: date,
+    primary_race: Race | None,
+) -> CoachingGoalResolution:
+    """Résout le mode actif sans masquer une course lointaine du contexte.
+
+    Une course principale peut être connue mais ne devenir une cible
+    active qu'à l'entrée dans son horizon nominal de préparation.
+    """
+
+    if primary_race is None:
+        return CoachingGoalResolution(
+            mode=CoachingGoalMode.MAINTENANCE,
+            target_race=None,
+            planning_date=planning_date,
+        )
+
+    horizon = resolve_preparation_horizon(
+        planning_date=planning_date,
+        target_race_date=primary_race.date,
+    )
+
+    if not horizon.preparation_started:
+        return CoachingGoalResolution(
+            mode=CoachingGoalMode.MAINTENANCE,
+            target_race=None,
+            planning_date=planning_date,
+        )
+
+    return CoachingGoalResolution(
+        mode=CoachingGoalMode.TARGET_RACE,
+        target_race=primary_race,
+        planning_date=planning_date,
+    )
+
+
 @dataclass(
     frozen=True,
     slots=True,
@@ -131,25 +172,19 @@ class CoachingGoalResolver:
             )
         )
 
-        if not primary_races:
-            return CoachingGoalResolution(
-                mode=(
-                    CoachingGoalMode.MAINTENANCE
+        target_race = (
+            None
+            if not primary_races
+            else min(
+                primary_races,
+                key=lambda race: (
+                    race.date,
+                    str(race.id or ""),
                 ),
-                target_race=None,
-                planning_date=planning_date,
             )
-
-        target_race = min(
-            primary_races,
-            key=lambda race: (
-                race.date,
-                str(race.id or ""),
-            ),
         )
 
-        return CoachingGoalResolution(
-            mode=CoachingGoalMode.TARGET_RACE,
-            target_race=target_race,
+        return resolve_coaching_goal(
             planning_date=planning_date,
+            primary_race=target_race,
         )

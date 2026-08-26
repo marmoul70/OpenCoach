@@ -3,6 +3,10 @@ from uuid import UUID, uuid4
 
 import pytest
 
+from opencoach.training.load_estimation import (
+    estimate_prescribed_load,
+)
+
 from opencoach.database.repositories import (
     TrainingSessionRepository,
 )
@@ -393,13 +397,20 @@ def test_comparison_ignores_supplementary_session_as_reference() -> None:
     assert result.status == "rest_broken"
 
 
-def test_comparison_rejects_multiple_coach_reference_sessions() -> None:
+def test_comparison_aggregates_multiple_coach_sessions() -> None:
+    first = create_session(
+        duration_minutes=45,
+    )
+
+    second = create_session(
+        duration_minutes=15,
+        status="completed",
+    )
+
     service = create_service(
         sessions=[
-            create_session(),
-            create_session(
-                status="completed",
-            ),
+            first,
+            second,
         ],
         actual=create_actual(
             duration_minutes=60,
@@ -407,14 +418,29 @@ def test_comparison_rejects_multiple_coach_reference_sessions() -> None:
         ),
     )
 
-    with pytest.raises(
-        RuntimeError,
-        match=(
-            "Plusieurs séances OpenCoach "
-            "de référence"
-        ),
-    ):
-        service.calculate(
-            uuid4(),
-            TARGET_DATE,
+    result = service.calculate(
+        uuid4(),
+        TARGET_DATE,
+    )
+
+    assert (
+        result.planned_duration_minutes
+        == 60
+    )
+
+    assert (
+        result.planned_sessions_count
+        == 2
+    )
+
+    assert (
+        result.planned_load
+        == (
+            estimate_prescribed_load(
+                first,
+            )
+            + estimate_prescribed_load(
+                second,
+            )
         )
+    )

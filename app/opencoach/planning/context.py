@@ -4,6 +4,7 @@ from datetime import date
 from opencoach.coaching.replanning.goal_resolution import (
     CoachingGoalMode,
     CoachingGoalResolution,
+    resolve_coaching_goal,
 )
 
 from opencoach.models import (
@@ -47,25 +48,9 @@ class PlanningContext:
     def goal_resolution(
         self,
     ) -> CoachingGoalResolution:
-        """Résout l'objectif actif à partir du snapshot courant.
+        """Résout le mode actif tout en conservant la course dans le contexte."""
 
-        Le repository a déjà filtré la course principale selon
-        son statut, sa priorité et sa date. Une absence de course
-        principale signifie donc que le coach doit fonctionner
-        en mode de développement général.
-        """
-
-        if self.primary_race is None:
-            return CoachingGoalResolution(
-                mode=(
-                    CoachingGoalMode.MAINTENANCE
-                ),
-                target_race=None,
-                planning_date=self.planning_date,
-            )
-
-        return CoachingGoalResolution(
-            mode=CoachingGoalMode.TARGET_RACE,
-            target_race=self.primary_race,
+        return resolve_coaching_goal(
             planning_date=self.planning_date,
+            primary_race=self.primary_race,
         )

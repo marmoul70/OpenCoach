@@ -103,6 +103,8 @@ class CurrentWeekCoachingInput:
     target_distance_km: float | None
     target_elevation_gain_m: float | None
 
+    trajectory_history_metrics: TrainingHistoryMetrics
+
     history_metrics: TrainingHistoryMetrics
 
     available_days: tuple[
@@ -302,6 +304,11 @@ def build_training_trajectory(
 
     baseline_duration_minutes = (
         history_metrics.last_28_days.duration_minutes
+        if (
+            history_metrics.last_28_days.duration_minutes
+            > 0
+        )
+        else None
     )
 
     goal_duration_demand_minutes: float | None = None
@@ -369,12 +376,16 @@ def build_current_week_coaching(
         target_elevation_gain_m=(
             input_data.target_elevation_gain_m
         ),
-        history_metrics=input_data.history_metrics,
+        history_metrics=(
+            input_data.trajectory_history_metrics
+        ),
     )
 
     original_trajectory = (
         trajectory_result.trajectory
     )
+
+
 
     original_current_week = (
         original_trajectory.week_on(
@@ -431,6 +442,8 @@ def build_current_week_coaching(
 
     trajectory = original_trajectory
 
+
+
     if reconciliation_trend.reanchoring_applied:
         trajectory = reanchor_multi_week_trajectory(
             trajectory=original_trajectory,
@@ -449,6 +462,8 @@ def build_current_week_coaching(
     trajectory_week = trajectory.week_on(
         input_data.planning_date
     )
+
+
 
     if trajectory_week is None:
         raise ValueError(

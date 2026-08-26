@@ -364,3 +364,46 @@ def allocate_coaching_phases(
             phases
         ),
     )
+
+
+def calculate_preferred_preparation_weeks(
+    policies: tuple[
+        PhaseDurationPolicy,
+        ...
+    ] = DEFAULT_PHASE_POLICIES,
+) -> int:
+    """Retourne l'horizon nominal de préparation d'une course.
+
+    L'horizon correspond à la somme des durées préférées des phases.
+    Il permet de distinguer une période de développement général
+    d'une véritable préparation orientée vers une course cible.
+    """
+
+    return sum(
+        policy.preferred_weeks
+        for policy in policies
+    )
+
+
+def calculate_preparation_start_date(
+    *,
+    target_race_date: date,
+    policies: tuple[
+        PhaseDurationPolicy,
+        ...
+    ] = DEFAULT_PHASE_POLICIES,
+) -> date:
+    """Calcule la date nominale d'entrée en préparation spécifique."""
+
+    preparation_weeks = (
+        calculate_preferred_preparation_weeks(
+            policies
+        )
+    )
+
+    return (
+        target_race_date
+        - timedelta(
+            weeks=preparation_weeks,
+        )
+    )

@@ -12,6 +12,13 @@ from dataclasses import dataclass
 from datetime import date
 from uuid import UUID
 
+from opencoach.coaching.replanning.goal_resolution import (
+    resolve_coaching_goal,
+)
+from opencoach.coaching.replanning.preparation_horizon import (
+    resolve_preparation_horizon,
+)
+
 from opencoach.coaching.constraint_impact import (
     evaluate_constraint_return_to_training,
     constraints_require_weekly_recovery,
@@ -85,7 +92,34 @@ class WeeklyPlanningContextBuilder:
             )
         )
 
-        primary_race = context.primary_race
+        goal_resolution = resolve_coaching_goal(
+            planning_date=planning_date,
+            primary_race=context.primary_race,
+        )
+
+        primary_race = (
+            goal_resolution.target_race
+        )
+
+        effective_trajectory_start_date = (
+            trajectory_start_date
+        )
+
+        if primary_race is not None:
+            preparation_horizon = (
+                resolve_preparation_horizon(
+                    planning_date=planning_date,
+                    target_race_date=(
+                        primary_race.date
+                    ),
+                )
+            )
+
+            effective_trajectory_start_date = max(
+                trajectory_start_date,
+                preparation_horizon
+                .preparation_week_start_date,
+            )
 
         if primary_race is None:
             target_race_date = None
@@ -117,18 +151,56 @@ class WeeklyPlanningContextBuilder:
                 "n'est disponible dans le profil."
             )
 
-        history_snapshot = (
+        today = date.today()
+
+        trajectory_history_reference_date = min(
+            effective_trajectory_start_date,
+            today,
+        )
+
+        history_reference_date = min(
+            planning_date,
+            today,
+        )
+
+        trajectory_history_snapshot = (
             self.history_service.build(
                 athlete_profile_id,
-                planning_date,
+                trajectory_history_reference_date,
             )
         )
 
-        history_metrics = (
+        trajectory_history_metrics = (
             calculate_training_history_metrics(
-                history_snapshot
+                trajectory_history_snapshot
             )
         )
+
+        if (
+            history_reference_date
+            == trajectory_history_reference_date
+        ):
+            history_snapshot = (
+                trajectory_history_snapshot
+            )
+
+            history_metrics = (
+                trajectory_history_metrics
+            )
+
+        else:
+            history_snapshot = (
+                self.history_service.build(
+                    athlete_profile_id,
+                    history_reference_date,
+                )
+            )
+
+            history_metrics = (
+                calculate_training_history_metrics(
+                    history_snapshot
+                )
+            )
 
         training_race_events = (
             build_training_race_events(
@@ -182,7 +254,7 @@ class WeeklyPlanningContextBuilder:
             planning_input=(
                 CurrentWeekCoachingInput(
                     trajectory_start_date=(
-                        trajectory_start_date
+                        effective_trajectory_start_date
                     ),
                     planning_date=planning_date,
                     target_race_date=(
@@ -193,6 +265,9 @@ class WeeklyPlanningContextBuilder:
                     ),
                     target_elevation_gain_m=(
                         target_elevation_gain_m
+                    ),
+                    trajectory_history_metrics=(
+                        trajectory_history_metrics
                     ),
                     history_metrics=(
                         history_metrics
@@ -218,6 +293,11 @@ class WeeklyPlanningContextBuilder:
                     ),
                     reference_weekly_duration_minutes=(
                         history_metrics.last_28_days.duration_minutes
+                        if (
+                            history_metrics.last_28_days.duration_minutes
+                            > 0
+                        )
+                        else None
                     ),
                     long_endurance_reference_minutes=(
                         history_metrics.long_endurance_reference_minutes

@@ -130,9 +130,9 @@ def test_withdrawn_primary_is_ignored_and_next_primary_is_selected() -> None:
 
     next_goal = create_race(
         race_date=date(
-            2027,
-            5,
-            16,
+            2026,
+            11,
+            15,
         ),
         status="planned",
         name="Objectif mai 2027",
@@ -175,9 +175,9 @@ def test_training_race_does_not_become_primary_goal() -> None:
 
     primary = create_race(
         race_date=date(
-            2027,
-            5,
-            16,
+            2026,
+            11,
+            15,
         ),
         priority="primary",
     )

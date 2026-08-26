@@ -3,6 +3,10 @@ from datetime import date
 
 import pytest
 
+from opencoach.planning.physiology.training_load_baseline import (
+    calculate_training_load_baseline,
+)
+
 from opencoach.planning.history.load_reconciliation import (
     ReconciliationTrendStatus,
 )
@@ -83,6 +87,8 @@ def create_metrics(
 def create_current_week_input(
     **overrides,
 ) -> CurrentWeekCoachingInput:
+    history_metrics = create_metrics()
+
     data = {
         "trajectory_start_date": date(
             2027,
@@ -101,7 +107,8 @@ def create_current_week_input(
         ),
         "target_distance_km": 50.0,
         "target_elevation_gain_m": 2500.0,
-        "history_metrics": create_metrics(),
+        "trajectory_history_metrics": history_metrics,
+        "history_metrics": history_metrics,
         "available_days": (
             Weekday.MONDAY,
             Weekday.WEDNESDAY,
@@ -1048,7 +1055,8 @@ def test_general_development_rejects_partial_race_target() -> None:
             target_race_date=None,
             target_distance_km=50.0,
             target_elevation_gain_m=None,
-            history_metrics=create_metrics(),
+            trajectory_history_metrics=create_metrics(),
+                history_metrics=create_metrics(),
             available_days=(
                 Weekday.MONDAY,
                 Weekday.WEDNESDAY,
@@ -1056,3 +1064,43 @@ def test_general_development_rejects_partial_race_target() -> None:
                 Weekday.SUNDAY,
             ),
         )
+
+
+def test_trajectory_baseline_uses_trajectory_history_metrics() -> None:
+    trajectory_metrics = create_metrics()
+
+    current_metrics = create_metrics()
+
+    input_data = create_current_week_input(
+        planning_date=date(
+            2027,
+            1,
+            4,
+        ),
+        trajectory_start_date=date(
+            2027,
+            1,
+            4,
+        ),
+        trajectory_history_metrics=(
+            trajectory_metrics
+        ),
+        history_metrics=(
+            current_metrics
+        ),
+    )
+
+    result = build_current_week_coaching(
+        input_data=input_data,
+    )
+
+    expected_baseline = (
+        calculate_training_load_baseline(
+            trajectory_metrics
+        )
+    )
+
+    assert (
+        result.baseline
+        == expected_baseline
+    )

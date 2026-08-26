@@ -40,6 +40,7 @@ from opencoach.planning.trajectory.load_recovery_cycle import (
 )
 from opencoach.planning.trajectory.multi_week import (
     MultiWeekTrajectory,
+    TrajectoryMode,
     TrajectoryWeek,
     TrajectoryWeekType,
 )
@@ -396,6 +397,7 @@ def build_general_development_trajectory(
         planning_date=planning_date,
         target_race_date=None,
         baseline_load=baseline_load,
+        mode=TrajectoryMode.MAINTENANCE,
         baseline_duration_minutes=(
             baseline_duration_minutes
         ),

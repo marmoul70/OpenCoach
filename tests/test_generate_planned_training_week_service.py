@@ -136,6 +136,9 @@ def create_planning_input() -> CurrentWeekCoachingInput:
         ),
         target_distance_km=65.0,
         target_elevation_gain_m=3000.0,
+        trajectory_history_metrics=(
+            create_history_metrics()
+        ),
         history_metrics=(
             create_history_metrics()
         ),

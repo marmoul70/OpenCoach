@@ -177,6 +177,10 @@ def build_weekly_training_envelope(
             phase_week_index=(
                 input_data.phase_week_index
             ),
+            maintenance_mode=(
+                input_data.target_race_date
+                is None
+            ),
         )
     )
 

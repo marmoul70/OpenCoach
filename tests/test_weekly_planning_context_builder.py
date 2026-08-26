@@ -104,16 +104,20 @@ class FakeHistoryService:
 
 def create_race(
     *,
+    race_date=None,
     distance_km=65.0,
     elevation_gain_m=3000.0,
 ):
-    return Race(
-        id=uuid4(),
-        date=date(
+    if race_date is None:
+        race_date = date(
             2027,
             9,
             18,
-        ),
+        )
+
+    return Race(
+        id=uuid4(),
+        date=race_date,
         name="Ultra test",
         location="Jura",
         race_type="trail",
@@ -383,6 +387,20 @@ def test_context_services_receive_correct_dates(
         lambda snapshot: create_metrics(),
     )
 
+    class FrozenDate(date):
+        @classmethod
+        def today(cls) -> date:
+            return date(
+                2026,
+                8,
+                26,
+            )
+
+    monkeypatch.setattr(
+        "opencoach.coaching.generation.context.date",
+        FrozenDate,
+    )
+
     athlete_profile_id = uuid4()
 
     builder.build(
@@ -409,10 +427,13 @@ def test_context_services_receive_correct_dates(
             "athlete_profile_id":
                 athlete_profile_id,
             "reference_date":
-                PLANNING_DATE,
+                date(
+                    2026,
+                    8,
+                    26,
+                ),
         }
     ]
-
 
 def test_build_creates_current_week_input(
     monkeypatch,
@@ -675,4 +696,241 @@ def test_general_development_context_reaches_coaching_pipeline(
             TrainingPhase.BUILD,
         }
         for week in result.trajectory.weeks
+    )
+
+
+def test_past_planning_uses_planning_date_for_history(
+    monkeypatch,
+) -> None:
+    builder, _, history_service = (
+        create_builder()
+    )
+
+    monkeypatch.setattr(
+        (
+            "opencoach.coaching.generation.context."
+            "calculate_training_history_metrics"
+        ),
+        lambda snapshot: create_metrics(),
+    )
+
+    class FrozenDate(date):
+        @classmethod
+        def today(cls) -> date:
+            return date(
+                2026,
+                8,
+                26,
+            )
+
+    monkeypatch.setattr(
+        "opencoach.coaching.generation.context.date",
+        FrozenDate,
+    )
+
+    athlete_profile_id = uuid4()
+
+    past_date = date(
+        2026,
+        8,
+        10,
+    )
+
+    builder.build(
+        athlete_profile_id=athlete_profile_id,
+        planning_date=past_date,
+        trajectory_start_date=past_date,
+    )
+
+    assert history_service.calls == [
+        {
+            "athlete_profile_id":
+                athlete_profile_id,
+            "reference_date":
+                past_date,
+        }
+    ]
+
+
+def test_far_primary_race_stays_known_but_does_not_activate_race_planning(
+    monkeypatch,
+) -> None:
+    far_race = create_race(
+        race_date=date(
+            2027,
+            2,
+            7,
+        ),
+    )
+
+    context = create_context(
+        primary_race=far_race,
+    )
+
+    builder, _, _ = create_builder(
+        context=context,
+    )
+
+    monkeypatch.setattr(
+        (
+            "opencoach.coaching.generation.context."
+            "calculate_training_history_metrics"
+        ),
+        lambda snapshot: create_metrics(),
+    )
+
+    prepared = builder.build(
+        athlete_profile_id=uuid4(),
+        planning_date=date(
+            2026,
+            8,
+            24,
+        ),
+        trajectory_start_date=date(
+            2026,
+            8,
+            24,
+        ),
+    )
+
+    # La course reste connue dans le contexte source.
+    assert context.primary_race is far_race
+
+    # Mais elle n'est pas encore une cible active pour le moteur.
+    assert (
+        prepared.planning_input.target_race_date
+        is None
+    )
+
+    result = build_current_week_coaching(
+        input_data=prepared.planning_input,
+    )
+
+    assert (
+        result.trajectory.target_race_date
+        is None
+    )
+
+    assert (
+        result.trajectory.mode.value
+        == "maintenance"
+    )
+
+
+def test_primary_race_activates_on_preparation_horizon_boundary(
+    monkeypatch,
+) -> None:
+    race = create_race(
+        race_date=date(
+            2027,
+            2,
+            7,
+        ),
+    )
+
+    context = create_context(
+        primary_race=race,
+    )
+
+    builder, _, _ = create_builder(
+        context=context,
+    )
+
+    monkeypatch.setattr(
+        (
+            "opencoach.coaching.generation.context."
+            "calculate_training_history_metrics"
+        ),
+        lambda snapshot: create_metrics(),
+    )
+
+    preparation_week_start = date(
+        2026,
+        10,
+        26,
+    )
+
+    prepared = builder.build(
+        athlete_profile_id=uuid4(),
+        planning_date=preparation_week_start,
+        trajectory_start_date=date(
+            2026,
+            8,
+            24,
+        ),
+    )
+
+    assert (
+        prepared.planning_input.target_race_date
+        == race.date
+    )
+
+    assert (
+        prepared.planning_input.target_distance_km
+        == race.distance_km
+    )
+
+    result = build_current_week_coaching(
+        input_data=prepared.planning_input,
+    )
+
+    assert (
+        result.trajectory.target_race_date
+        == race.date
+    )
+
+    assert (
+        result.trajectory.mode.value
+        == "race_preparation"
+    )
+
+
+def test_race_preparation_keeps_stable_activation_anchor(
+    monkeypatch,
+) -> None:
+    race = create_race(
+        race_date=date(
+            2027,
+            2,
+            7,
+        ),
+    )
+
+    context = create_context(
+        primary_race=race,
+    )
+
+    builder, _, _ = create_builder(
+        context=context,
+    )
+
+    monkeypatch.setattr(
+        (
+            "opencoach.coaching.generation.context."
+            "calculate_training_history_metrics"
+        ),
+        lambda snapshot: create_metrics(),
+    )
+
+    prepared = builder.build(
+        athlete_profile_id=uuid4(),
+        planning_date=date(
+            2026,
+            11,
+            2,
+        ),
+        trajectory_start_date=date(
+            2026,
+            8,
+            24,
+        ),
+    )
+
+    assert (
+        prepared.planning_input.trajectory_start_date
+        == date(
+            2026,
+            10,
+            26,
+        )
     )

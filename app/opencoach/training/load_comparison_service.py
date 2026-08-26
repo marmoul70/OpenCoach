@@ -50,8 +50,8 @@ class TrainingLoadComparisonService:
             )
         )
 
-        planned_session = (
-            self._get_reference_session(
+        planned_sessions = (
+            self._get_reference_sessions(
                 sessions,
             )
         )
@@ -64,27 +64,25 @@ class TrainingLoadComparisonService:
             )
         )
 
-        if planned_session is None:
-            planned_duration_minutes = 0
-            planned_load = 0.0
-            planned_sessions_count = 0
+        planned_duration_minutes = sum(
+            session.duration_minutes
+            for session in planned_sessions
+            if session.type != "rest"
+        )
 
-        else:
-            planned_duration_minutes = (
-                planned_session.duration_minutes
+        planned_load = sum(
+            estimate_prescribed_load(
+                session,
             )
+            for session in planned_sessions
+            if session.type != "rest"
+        )
 
-            planned_load = (
-                estimate_prescribed_load(
-                    planned_session,
-                )
-            )
-
-            planned_sessions_count = (
-                0
-                if planned_session.type == "rest"
-                else 1
-            )
+        planned_sessions_count = sum(
+            1
+            for session in planned_sessions
+            if session.type != "rest"
+        )
 
         actual_load = (
             actual.total_load
@@ -127,24 +125,22 @@ class TrainingLoadComparisonService:
         )
 
     @staticmethod
-    def _get_reference_session(
+    def _get_reference_sessions(
         sessions: list[TrainingSession],
-    ) -> TrainingSession | None:
-        """Retourne la séance OpenCoach de référence de la journée."""
+    ) -> tuple[
+        TrainingSession,
+        ...,
+    ]:
+        """Retourne les séances OpenCoach de référence de la journée.
 
-        coach_sessions = [
+        Plusieurs séances peuvent légitimement partager une même date,
+        par exemple une sortie facile suivie d'un renforcement.
+
+        Les séances supplementary restent exclues de la référence.
+        """
+
+        return tuple(
             session
             for session in sessions
             if session.type != "supplementary"
-        ]
-
-        if not coach_sessions:
-            return None
-
-        if len(coach_sessions) > 1:
-            raise RuntimeError(
-                "Plusieurs séances OpenCoach de référence "
-                "sont disponibles pour la journée."
-            )
-
-        return coach_sessions[0]
+        )

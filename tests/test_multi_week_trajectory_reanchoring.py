@@ -661,3 +661,76 @@ def test_negative_previous_load_is_rejected() -> None:
             new_reference_load=350.0,
             previous_load=-1.0,
         )
+
+def test_maintenance_reanchoring_preserves_relative_cycle() -> None:
+    from datetime import date
+
+    from opencoach.planning.trajectory.general_development import (
+        build_general_development_trajectory,
+    )
+    from opencoach.planning.trajectory.multi_week import (
+        TrajectoryMode,
+    )
+    from opencoach.planning.trajectory.reanchoring import (
+        reanchor_multi_week_trajectory,
+    )
+
+    trajectory = build_general_development_trajectory(
+        planning_date=date(
+            2026,
+            8,
+            24,
+        ),
+        baseline_load=400.0,
+        baseline_duration_minutes=300.0,
+    )
+
+    assert (
+        trajectory.mode
+        is TrajectoryMode.MAINTENANCE
+    )
+
+    reanchored = reanchor_multi_week_trajectory(
+        trajectory=trajectory,
+        from_date=date(
+            2026,
+            8,
+            24,
+        ),
+        new_reference_load=360.0,
+        previous_load=360.0,
+    )
+
+    targets = [
+        week.target_load
+        for week in reanchored.weeks[:4]
+    ]
+
+    assert targets == [
+        342.0,
+        378.0,
+        360.0,
+        288.0,
+    ]
+
+    assert all(
+        week.progression_reference_before
+        == 360.0
+        for week in reanchored.weeks[:4]
+    )
+
+    assert all(
+        week.progression_reference_after
+        == 360.0
+        for week in reanchored.weeks[:4]
+    )
+
+    assert (
+        reanchored.baseline_load
+        == 360.0
+    )
+
+    assert (
+        reanchored.mode
+        is TrajectoryMode.MAINTENANCE
+    )

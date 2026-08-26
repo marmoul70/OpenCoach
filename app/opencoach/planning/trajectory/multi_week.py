@@ -24,6 +24,13 @@ from opencoach.planning.weekly.training_envelope import (
 )
 
 
+class TrajectoryMode(StrEnum):
+    """Intention métier portée par une trajectoire."""
+
+    RACE_PREPARATION = "race_preparation"
+    MAINTENANCE = "maintenance"
+
+
 class TrajectoryWeekType(StrEnum):
     """Rôle principal d'une semaine dans la trajectoire."""
 
@@ -146,6 +153,10 @@ class MultiWeekTrajectory:
     target_race_date: date | None
 
     baseline_load: float
+
+    mode: TrajectoryMode = (
+        TrajectoryMode.RACE_PREPARATION
+    )
 
     baseline_duration_minutes: float | None = None
     goal_duration_demand_minutes: float | None = None

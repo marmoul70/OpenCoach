@@ -21,6 +21,7 @@ from datetime import date
 
 from opencoach.planning.trajectory.multi_week import (
     MultiWeekTrajectory,
+    TrajectoryMode,
     TrajectoryWeek,
     TrajectoryWeekType,
 )
@@ -68,6 +69,14 @@ def reanchor_multi_week_trajectory(
     ):
         raise ValueError(
             "La charge précédente ne peut pas être négative."
+        )
+
+    if trajectory.mode is TrajectoryMode.MAINTENANCE:
+        return _reanchor_maintenance_trajectory(
+            trajectory=trajectory,
+            from_date=from_date,
+            new_reference_load=new_reference_load,
+            previous_load=previous_load,
         )
 
     start_index = _find_week_index(
@@ -242,6 +251,157 @@ def reanchor_multi_week_trajectory(
         planning_date=trajectory.planning_date,
         target_race_date=trajectory.target_race_date,
         baseline_load=trajectory.baseline_load,
+        mode=trajectory.mode,
+        weeks=tuple(
+            preserved_weeks
+            + rebuilt_weeks
+        ),
+    )
+
+
+def _reanchor_maintenance_trajectory(
+    *,
+    trajectory: MultiWeekTrajectory,
+    from_date: date,
+    new_reference_load: float,
+    previous_load: float | None,
+) -> MultiWeekTrajectory:
+    """Ré-ancre une Maintenance sans créer de progression cumulative.
+
+    Les rapports relatifs de charge déjà inscrits dans la trajectoire
+    sont conservés. Une semaine à 95 %, 105 %, 100 % ou 80 % de
+    l'ancienne baseline conserve donc exactement le même rôle autour
+    de la nouvelle baseline.
+    """
+
+    start_index = _find_week_index(
+        trajectory=trajectory,
+        target_date=from_date,
+    )
+
+    if start_index is None:
+        raise ValueError(
+            "Aucune semaine de trajectoire ne couvre "
+            "la date de réancrage."
+        )
+
+    preserved_weeks = list(
+        trajectory.weeks[:start_index]
+    )
+
+    original_suffix = (
+        trajectory.weeks[start_index:]
+    )
+
+    rebuilt_weeks: list[
+        TrajectoryWeek
+    ] = []
+
+    chained_previous_load = (
+        previous_load
+        if previous_load is not None
+        else original_suffix[0].previous_load
+    )
+
+    for original_week in original_suffix:
+        if trajectory.baseline_load > 0:
+            load_factor = (
+                original_week.target_load
+                / trajectory.baseline_load
+            )
+
+            min_factor = (
+                original_week.load_min
+                / trajectory.baseline_load
+            )
+
+            max_factor = (
+                original_week.load_max
+                / trajectory.baseline_load
+            )
+        else:
+            # Une baseline historique nulle ne permet pas de retrouver
+            # mathématiquement le facteur relatif précédent.
+            # La nouvelle référence devient alors la cible neutre.
+            load_factor = 1.0
+            min_factor = 0.95
+            max_factor = 1.05
+
+        target_load = (
+            new_reference_load
+            * load_factor
+        )
+
+        load_min = (
+            new_reference_load
+            * min_factor
+        )
+
+        load_max = (
+            new_reference_load
+            * max_factor
+        )
+
+        rebuilt_week = TrajectoryWeek(
+            week_start=original_week.week_start,
+            week_end=original_week.week_end,
+            phase=original_week.phase,
+            week_type=original_week.week_type,
+            previous_load=chained_previous_load,
+            progression_reference_before=(
+                new_reference_load
+            ),
+            progression_reference_after=(
+                new_reference_load
+            ),
+            target_load=target_load,
+            load_min=load_min,
+            load_max=load_max,
+            load_adjustment=(
+                original_week.load_adjustment
+            ),
+            recovery_trigger=(
+                original_week.recovery_trigger
+            ),
+            phase_week_index=(
+                original_week.phase_week_index
+            ),
+            previous_duration_minutes=(
+                original_week.previous_duration_minutes
+            ),
+            progression_reference_duration_before_minutes=(
+                original_week
+                .progression_reference_duration_before_minutes
+            ),
+            progression_reference_duration_after_minutes=(
+                original_week
+                .progression_reference_duration_after_minutes
+            ),
+            target_duration_minutes=(
+                original_week.target_duration_minutes
+            ),
+            notes=original_week.notes,
+        )
+
+        rebuilt_weeks.append(
+            rebuilt_week
+        )
+
+        chained_previous_load = (
+            target_load
+        )
+
+    return MultiWeekTrajectory(
+        planning_date=trajectory.planning_date,
+        target_race_date=trajectory.target_race_date,
+        baseline_load=new_reference_load,
+        mode=TrajectoryMode.MAINTENANCE,
+        baseline_duration_minutes=(
+            trajectory.baseline_duration_minutes
+        ),
+        goal_duration_demand_minutes=(
+            trajectory.goal_duration_demand_minutes
+        ),
         weeks=tuple(
             preserved_weeks
             + rebuilt_weeks

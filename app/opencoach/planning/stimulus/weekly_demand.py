@@ -227,6 +227,7 @@ def build_weekly_stimulus_demand(
     target_load: float,
     reference_load: float,
     phase_week_index: int = 1,
+    maintenance_mode: bool = False,
 ) -> WeeklyStimulusDemand:
     """Quantifie la prescription pour une semaine donnée."""
 
@@ -354,14 +355,28 @@ def build_weekly_stimulus_demand(
             load_ratio=load_ratio,
             phase=prescription.phase,
             phase_week_index=phase_week_index,
+            maintenance_mode=maintenance_mode,
         )
         for requirement
         in prescription.requirements
     )
 
     maximum_quality_exposures = (
-        1
-        if prescription.phase is TrainingPhase.BASE
+        _maintenance_quality_limit(
+            load_ratio=load_ratio,
+        )
+        if maintenance_mode
+        else (
+            1
+            if prescription.phase
+            is TrainingPhase.BASE
+            else 2
+        )
+    )
+
+    maximum_key_exposures = (
+        maximum_quality_exposures
+        if maintenance_mode
         else 2
     )
 
@@ -373,13 +388,35 @@ def build_weekly_stimulus_demand(
         load_ratio=load_ratio,
         density=_loading_density(
             load_ratio=load_ratio,
+            maintenance_mode=maintenance_mode,
         ),
         demands=demands,
-        maximum_key_exposures=2,
+        maximum_key_exposures=(
+            maximum_key_exposures
+        ),
         maximum_quality_exposures=(
             maximum_quality_exposures
         ),
     )
+
+
+def _maintenance_quality_limit(
+    *,
+    load_ratio: float | None,
+) -> int:
+    """Retourne la densité qualitative maximale en Maintenance.
+
+    Une semaine haute autorise jusqu'à deux expositions
+    qualitatives. Une semaine modérée reste limitée à une.
+    """
+
+    if (
+        load_ratio is not None
+        and load_ratio >= 1.04
+    ):
+        return 2
+
+    return 1
 
 
 def _requires_loading_week(
@@ -404,6 +441,7 @@ def _loading_demand(
     load_ratio: float | None,
     phase: TrainingPhase,
     phase_week_index: int,
+    maintenance_mode: bool = False,
 ) -> StimulusDemand:
     """Quantifie un stimulus pendant une semaine de développement."""
 
@@ -441,9 +479,21 @@ def _loading_demand(
         requirement.priority
         is StimulusPriority.KEY
     ):
+        minimum_occurrences = (
+            0
+            if (
+                maintenance_mode
+                and load_ratio is not None
+                and load_ratio < 0.99
+            )
+            else 1
+        )
+
         return StimulusDemand(
             requirement=requirement,
-            minimum_occurrences=1,
+            minimum_occurrences=(
+                minimum_occurrences
+            ),
             target_occurrences=1,
             maximum_occurrences=1,
         )
@@ -647,14 +697,27 @@ def _suppressed_demand(
 def _loading_density(
     *,
     load_ratio: float | None,
+    maintenance_mode: bool = False,
 ) -> StimulusDemandDensity:
     """Classe la densité structurelle d'une semaine de charge.
 
-    Le ratio est utilisé uniquement comme information relative à la
-    trajectoire. Il ne représente aucun seuil physiologique médical.
+    En préparation d'objectif, les seuils historiques sont conservés.
+
+    En Maintenance, seule une semaine volontairement haute
+    (ratio >= 1.04) reçoit une densité HIGH. Une semaine située
+    autour de la charge de référence reste MODERATE.
+
+    Le ratio est une information relative à la trajectoire et ne
+    représente aucun seuil physiologique médical.
     """
 
     if load_ratio is None:
+        return StimulusDemandDensity.MODERATE
+
+    if maintenance_mode:
+        if load_ratio >= 1.04:
+            return StimulusDemandDensity.HIGH
+
         return StimulusDemandDensity.MODERATE
 
     if load_ratio < 1.0:

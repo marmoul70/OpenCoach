@@ -136,6 +136,26 @@ class CurrentWeekCoachingInput:
         ...
     ] = ()
 
+    reserved_race_dates: tuple[
+        date,
+        ...
+    ] = ()
+
+    race_protection_dates: tuple[
+        date,
+        ...
+    ] = ()
+
+    race_recovery_dates: tuple[
+        date,
+        ...
+    ] = ()
+
+    additional_adjustments: tuple[
+        TrajectoryAdjustment,
+        ...
+    ] = ()
+
     return_to_training_readiness: (
         ReturnToTrainingReadiness | None
     ) = None
@@ -436,12 +456,17 @@ def build_current_week_coaching(
             "la date de planification."
         )
 
-    additional_adjustments = (
+    reconciliation_adjustments = (
         ()
         if reconciliation_adjustment is None
         else (
             reconciliation_adjustment,
         )
+    )
+
+    additional_adjustments = (
+        input_data.additional_adjustments
+        + reconciliation_adjustments
     )
 
     coaching = build_coaching_trajectory(
@@ -466,6 +491,15 @@ def build_current_week_coaching(
             ),
             trajectory_week=trajectory_week,
             events=input_data.events,
+            reserved_race_dates=(
+                input_data.reserved_race_dates
+            ),
+            race_protection_dates=(
+                input_data.race_protection_dates
+            ),
+            race_recovery_dates=(
+                input_data.race_recovery_dates
+            ),
             additional_adjustments=(
                 additional_adjustments
             ),

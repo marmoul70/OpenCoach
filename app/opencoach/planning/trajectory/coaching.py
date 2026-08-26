@@ -15,7 +15,7 @@ Il ne génère aucune séance concrète.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 from opencoach.planning.trajectory.coaching_phase_allocation import (
     CoachingPhaseAllocation,
@@ -107,6 +107,21 @@ class CoachingTrajectoryInput:
 
     events: tuple[
         TrajectoryEvent,
+        ...
+    ] = ()
+
+    reserved_race_dates: tuple[
+        date,
+        ...
+    ] = ()
+
+    race_protection_dates: tuple[
+        date,
+        ...
+    ] = ()
+
+    race_recovery_dates: tuple[
+        date,
         ...
     ] = ()
 
@@ -377,15 +392,31 @@ def build_coaching_trajectory(
         phase_week_index=phase_week_index,
     )
 
+    current_week_start = (
+        input_data.planning_date
+        - timedelta(
+            days=input_data.planning_date.weekday()
+        )
+    )
+
     envelope = build_weekly_training_envelope(
         input_data=WeeklyTrainingEnvelopeInput(
-            week_start=input_data.planning_date,
+            week_start=current_week_start,
             phase=effective_phase,
             load_target=load_target,
             recovery=recovery,
             prescription=prescription,
             available_days=input_data.available_days,
             target_race_date=input_data.target_race_date,
+            reserved_race_dates=(
+                input_data.reserved_race_dates
+            ),
+            race_protection_dates=(
+                input_data.race_protection_dates
+            ),
+            race_recovery_dates=(
+                input_data.race_recovery_dates
+            ),
             phase_week_index=phase_week_index,
             target_session_count=(
                 input_data.target_session_count

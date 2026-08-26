@@ -64,6 +64,16 @@ class RaceRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def list_training_races_between(
+        self,
+        athlete_profile_id: UUID,
+        start_date: date,
+        end_date: date,
+    ) -> list[Race]:
+        """Retourne les courses d'entraînement dans une période."""
+        raise NotImplementedError
+
+    @abstractmethod
     def list_training_races_before(
         self,
         athlete_profile_id: UUID,

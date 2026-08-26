@@ -69,6 +69,22 @@ class CoachingTrajectoryEngine:
             )
 
         if event.race_priority is RacePriority.B:
+            if event.impact is EventImpact.CRITICAL:
+                return TrajectoryAdjustment(
+                    reason=(
+                        "Compétition préparatoire à très forte charge."
+                    ),
+                    severity=AdjustmentSeverity.MAJOR,
+                    load=LoadAdjustment.REDUCE,
+                    progression=ProgressionAdjustment.CONTINUE,
+                    athlete_override_allowed=True,
+                    notes=(
+                        "La course constitue le stimulus majeur du microcycle.",
+                        "Éviter toute séance de qualité lourde autour de la course.",
+                        "Prévoir une récupération post-course suffisante.",
+                    ),
+                )
+
             return TrajectoryAdjustment(
                 reason="Compétition intermédiaire importante.",
                 severity=AdjustmentSeverity.MODERATE,
@@ -78,6 +94,21 @@ class CoachingTrajectoryEngine:
                 notes=(
                     "La course B s'intègre à la préparation principale.",
                     "Éviter un affûtage complet.",
+                ),
+            )
+
+        if event.impact in {
+            EventImpact.HIGH,
+            EventImpact.CRITICAL,
+        }:
+            return TrajectoryAdjustment(
+                reason="Compétition préparatoire exigeante.",
+                severity=AdjustmentSeverity.MODERATE,
+                load=LoadAdjustment.REDUCE_SLIGHTLY,
+                progression=ProgressionAdjustment.CONTINUE,
+                athlete_override_allowed=True,
+                notes=(
+                    "La course remplace une partie de la charge habituelle.",
                 ),
             )
 

@@ -316,6 +316,52 @@ class SqlRaceRepository(
                 )
             ) from exc
 
+    def list_training_races_between(
+        self,
+        athlete_profile_id: UUID,
+        start_date: date,
+        end_date: date,
+    ) -> list[Race]:
+        """Retourne les courses d'entraînement dans une période."""
+
+        try:
+            statement = (
+                select(RaceModel)
+                .where(
+                    RaceModel.athlete_profile_id
+                    == athlete_profile_id,
+                    RaceModel.date >= start_date,
+                    RaceModel.date <= end_date,
+                    RaceModel.priority == "training",
+                )
+                .order_by(
+                    RaceModel.date.asc(),
+                    RaceModel.id.asc(),
+                )
+            )
+
+            database_races = self.session.scalars(
+                statement
+            ).all()
+
+            return [
+                self._to_domain(
+                    database_race
+                )
+                for database_race
+                in database_races
+            ]
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise RaceRepositoryError(
+                (
+                    "Impossible de charger les courses "
+                    "d'entraînement sur la période."
+                )
+            ) from exc
+
     def list_training_races_before(
         self,
         athlete_profile_id: UUID,

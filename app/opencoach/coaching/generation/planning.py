@@ -65,6 +65,7 @@ class GeneratePlannedTrainingWeekService:
         athlete_profile_id: UUID,
         planning_input: CurrentWeekCoachingInput,
         physiological_reference_date: date | None = None,
+        reconcile_from_date: date | None = None,
         additional_context: tuple[
             str,
             ...,
@@ -89,6 +90,9 @@ class GeneratePlannedTrainingWeekService:
                 ),
                 reference_date=(
                     physiological_reference_date
+                ),
+                reconcile_from_date=(
+                    reconcile_from_date
                 ),
                 additional_context=(
                     additional_context

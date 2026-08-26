@@ -32,6 +32,10 @@ from .context import (
     WeeklyPlanningContextBuilder,
     WeeklyPlanningContextError,
 )
+from .current_week import (
+    CurrentWeekPlanningService,
+    current_week_start,
+)
 
 __all__ = [
     "AthleteWeeklyTrainingGenerationService",
@@ -50,4 +54,6 @@ __all__ = [
     "PreparedWeeklyPlanningContext",
     "WeeklyPlanningContextBuilder",
     "WeeklyPlanningContextError",
+    "CurrentWeekPlanningService",
+    "current_week_start",
 ]

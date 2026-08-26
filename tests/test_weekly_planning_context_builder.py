@@ -155,6 +155,7 @@ def create_context(
     *,
     athlete=None,
     primary_race=None,
+    training_races=(),
     readiness=None,
     constraints=(),
 ):
@@ -167,6 +168,9 @@ def create_context(
     return SimpleNamespace(
         athlete=athlete,
         primary_race=primary_race,
+        training_races=tuple(
+            training_races
+        ),
         readiness=readiness,
         constraints=tuple(
             constraints

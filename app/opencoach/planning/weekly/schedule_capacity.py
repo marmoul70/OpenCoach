@@ -18,6 +18,9 @@ from dataclasses import dataclass
 from opencoach.planning.athlete.weekly_availability import (
     WeeklyAvailability,
 )
+from opencoach.planning.stimulus.training import (
+    StimulusLoadCategory,
+)
 from opencoach.planning.weekly.schedule_types import (
     Weekday,
 )
@@ -42,6 +45,10 @@ class DayScheduleCapacity:
 
     max_duration_minutes: int | None = None
 
+    blocked_load_categories: frozenset[
+        StimulusLoadCategory
+    ] = frozenset()
+
     def __post_init__(self) -> None:
         if (
             self.max_duration_minutes is not None
@@ -51,6 +58,17 @@ class DayScheduleCapacity:
                 "La durée maximale disponible doit être "
                 "strictement positive."
             )
+
+    def allows_load_category(
+        self,
+        category: StimulusLoadCategory,
+    ) -> bool:
+        """Indique si cette nature de charge est autorisée."""
+
+        return (
+            category
+            not in self.blocked_load_categories
+        )
 
     def can_fit(
         self,

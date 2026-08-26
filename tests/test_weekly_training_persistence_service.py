@@ -463,3 +463,113 @@ def test_obsolete_session_with_activity_is_preserved() -> None:
         session.id == linked.id
         for session in repository.sessions
     )
+
+
+def test_past_obsolete_generated_session_is_preserved_on_refresh() -> None:
+    """Une séance passée ne peut pas être supprimée par un refresh."""
+
+    past = TrainingSession(
+        id=uuid4(),
+        date=date(
+            2027,
+            7,
+            5,
+        ),
+        type="aerobic_easy",
+        sport_type="Run",
+        title="Séance passée",
+        description="Séance générée avant le refresh.",
+        duration_minutes=45,
+        status="planned",
+        planning_key=(
+            "2027-07-05:obsolete-past-slot"
+        ),
+    )
+
+    repository = (
+        FakeTrainingSessionRepository(
+            (
+                past,
+            )
+        )
+    )
+
+    service = (
+        WeeklyTrainingPersistenceService(
+            repository=repository
+        )
+    )
+
+    service.persist(
+        athlete_profile_id=uuid4(),
+        week=create_week(),
+        reconcile_from_date=date(
+            2027,
+            7,
+            6,
+        ),
+    )
+
+    assert any(
+        session.id == past.id
+        for session in repository.sessions
+    )
+
+
+def test_past_generated_session_is_not_overwritten_on_refresh() -> None:
+    """Une séance passée avec la même planning_key reste immuable."""
+
+    past = create_existing_session()
+
+    past.date = date(
+        2027,
+        7,
+        5,
+    )
+
+    repository = (
+        FakeTrainingSessionRepository(
+            (
+                past,
+            )
+        )
+    )
+
+    service = (
+        WeeklyTrainingPersistenceService(
+            repository=repository
+        )
+    )
+
+    original_title = past.title
+    original_duration = (
+        past.duration_minutes
+    )
+
+    persisted = service.persist(
+        athlete_profile_id=uuid4(),
+        week=create_week(),
+        reconcile_from_date=date(
+            2027,
+            7,
+            6,
+        ),
+    )
+
+    assert persisted == ()
+
+    stored = next(
+        session
+        for session in repository.sessions
+        if session.id == past.id
+    )
+
+    assert (
+        stored.title
+        == original_title
+    )
+
+    assert (
+        stored.duration_minutes
+        == original_duration
+    )

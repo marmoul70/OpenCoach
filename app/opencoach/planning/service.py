@@ -25,6 +25,9 @@ from opencoach.training import (
 from .context import PlanningContext
 
 
+
+CONSTRAINT_HISTORY_DAYS = 7
+
 class PlanningContextService:
     """Construit le contexte consolidé utilisé par le moteur de planification."""
 
@@ -109,9 +112,16 @@ class PlanningContextService:
             )
         )
 
+        constraints_start_date = (
+            planning_date
+            - timedelta(
+                days=CONSTRAINT_HISTORY_DAYS
+            )
+        )
+
         constraints = self._get_constraints(
             athlete_profile_id=athlete_profile_id,
-            start_date=planning_date,
+            start_date=constraints_start_date,
             end_date=constraints_end_date,
         )
 
@@ -139,13 +149,25 @@ class PlanningContextService:
         if primary_race is None:
             return ()
 
-        races = self.race_repository.list_training_races_before(
-            athlete_profile_id,
-            planning_date,
-            primary_race.date,
+        history_start_date = (
+            planning_date
+            - timedelta(days=7)
         )
 
-        return tuple(races)
+        races = (
+            self.race_repository
+            .list_training_races_between(
+                athlete_profile_id,
+                history_start_date,
+                primary_race.date,
+            )
+        )
+
+        return tuple(
+            race
+            for race in races
+            if race.date < primary_race.date
+        )
 
     def _get_readiness(
         self,

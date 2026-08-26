@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from uuid import UUID
 
 from opencoach.database.repositories.training_session import (
@@ -45,6 +46,7 @@ class WeeklyTrainingPersistenceService:
         *,
         athlete_profile_id: UUID,
         week: GeneratedTrainingWeek,
+        reconcile_from_date: date | None = None,
     ) -> tuple[
         TrainingSession,
         ...,
@@ -79,6 +81,9 @@ class WeeklyTrainingPersistenceService:
             generated_planning_keys=(
                 generated_planning_keys
             ),
+            reconcile_from_date=(
+                reconcile_from_date
+            ),
         )
 
         persisted: list[
@@ -86,6 +91,13 @@ class WeeklyTrainingPersistenceService:
         ] = []
 
         for generated in week.sessions:
+            if (
+                reconcile_from_date is not None
+                and generated.date
+                < reconcile_from_date
+            ):
+                continue
+
             planning_key = build_planning_key(
                 week_start=week.week_start,
                 slot_id=generated.slot_id,
@@ -95,6 +107,14 @@ class WeeklyTrainingPersistenceService:
                 sessions=existing_sessions,
                 planning_key=planning_key,
             )
+
+            if (
+                existing is not None
+                and reconcile_from_date is not None
+                and existing.date
+                < reconcile_from_date
+            ):
+                continue
 
             if (
                 existing is not None
@@ -181,6 +201,7 @@ def _remove_obsolete_generated_sessions(
         TrainingSession
     ],
     generated_planning_keys: set[str],
+    reconcile_from_date: date | None = None,
 ) -> None:
     """Supprime les anciennes séances générées devenues obsolètes.
 
@@ -193,6 +214,13 @@ def _remove_obsolete_generated_sessions(
     """
 
     for session in existing_sessions:
+        if (
+            reconcile_from_date is not None
+            and session.date
+            < reconcile_from_date
+        ):
+            continue
+
         if session.planning_key is None:
             continue
 

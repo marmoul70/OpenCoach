@@ -13,6 +13,12 @@ from sqlalchemy.orm import Session
 from opencoach.api.intervals import (
     get_local_athlete_profile_id,
 )
+from opencoach.api.coaching.dependencies import (
+    get_current_week_planning_service,
+)
+from opencoach.coaching.generation import (
+    CurrentWeekPlanningService,
+)
 from opencoach.database.repositories import (
     RaceRepositoryError,
     SqlActivityRepository,
@@ -40,6 +46,41 @@ router = APIRouter(
     prefix="/api/races",
     tags=["races"],
 )
+
+
+def race_affects_current_trajectory(
+    race: Race,
+) -> bool:
+    """Indique si la course doit provoquer un refresh du coaching."""
+
+    return (
+        race.priority == "primary"
+        and race.status == "planned"
+    )
+
+
+def refresh_current_week_for_race(
+    *,
+    race: Race,
+    athlete_profile_id: UUID,
+    planning_service: CurrentWeekPlanningService,
+) -> None:
+    """Régénère la semaine si la course influence la trajectoire."""
+
+    if not race_affects_current_trajectory(
+        race
+    ):
+        return
+
+    planning_service.refresh(
+        athlete_profile_id=(
+            athlete_profile_id
+        ),
+        reference_date=date.today(),
+        additional_context=(
+            "course principale modifiée",
+        ),
+    )
 
 
 def get_race_repository(
@@ -313,6 +354,9 @@ def create_race(
     activity_repository: SqlActivityRepository = Depends(
         get_activity_repository,
     ),
+    planning_service: CurrentWeekPlanningService = Depends(
+        get_current_week_planning_service,
+    ),
 ) -> RaceResponse:
     """Crée une nouvelle course."""
 
@@ -336,6 +380,16 @@ def create_race(
                 "Impossible de créer la course."
             ),
         ) from exc
+
+    refresh_current_week_for_race(
+        race=created_race,
+        athlete_profile_id=(
+            athlete_profile_id
+        ),
+        planning_service=(
+            planning_service
+        ),
+    )
 
     return build_race_response(
         created_race,
@@ -556,6 +610,9 @@ def update_race(
     activity_repository: SqlActivityRepository = Depends(
         get_activity_repository,
     ),
+    planning_service: CurrentWeekPlanningService = Depends(
+        get_current_week_planning_service,
+    ),
 ) -> RaceResponse:
     """Met à jour une course complète."""
 
@@ -602,6 +659,16 @@ def update_race(
                 "Impossible de modifier la course."
             ),
         ) from exc
+
+    refresh_current_week_for_race(
+        race=updated_race,
+        athlete_profile_id=(
+            athlete_profile_id
+        ),
+        planning_service=(
+            planning_service
+        ),
+    )
 
     return build_race_response(
         updated_race,

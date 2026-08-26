@@ -84,6 +84,16 @@ class SessionIntent:
 
     required: bool = True
 
+    preferred_days: tuple[
+        str,
+        ...
+    ] = ()
+
+    allowed_days: tuple[
+        str,
+        ...
+    ] = ()
+
     source_requirements: tuple[
         TrainingStimulusRequirement,
         ...
@@ -143,6 +153,36 @@ class SessionIntent:
             raise ValueError(
                 "Une intention non substituable doit définir "
                 "au moins une modalité obligatoire."
+            )
+
+        if len(
+            self.preferred_days
+        ) != len(
+            set(self.preferred_days)
+        ):
+            raise ValueError(
+                "Un jour préféré ne peut apparaître qu'une seule fois."
+            )
+
+        if len(
+            self.allowed_days
+        ) != len(
+            set(self.allowed_days)
+        ):
+            raise ValueError(
+                "Un jour autorisé ne peut apparaître qu'une seule fois."
+            )
+
+        if (
+            self.preferred_days
+            and self.allowed_days
+            and any(
+                day not in self.allowed_days
+                for day in self.preferred_days
+            )
+        ):
+            raise ValueError(
+                "Un jour préféré doit appartenir aux jours autorisés."
             )
 
     @property

@@ -338,6 +338,31 @@ SESSION_RECIPES: dict[
         )
     ),
 
+    TrainingStimulus.PRE_RACE_ACTIVATION: (
+        SessionRecipe(
+            title="Activation pré-course",
+            objective=(
+                "Maintenir de la tonicité avant la compétition "
+                "sans générer de fatigue résiduelle."
+            ),
+            structure=SessionStructure.RECOVERY,
+            default_modality=TrainingModality.RUNNING,
+            main_block_name="Activation neuromusculaire",
+            main_block_description=(
+                "Footing très facile complété par quelques "
+                "accélérations très courtes et progressives, "
+                "avec récupération complète entre chaque effort."
+            ),
+            warmup_description=(
+                "Mise en route très progressive et relâchée."
+            ),
+            cooldown_description=(
+                "Retour au calme facile. Terminer frais, "
+                "sans sensation de travail accompli."
+            ),
+        )
+    ),
+
     TrainingStimulus.RECOVERY: (
         SessionRecipe(
             title="Récupération active",

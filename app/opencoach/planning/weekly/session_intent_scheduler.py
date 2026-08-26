@@ -23,6 +23,7 @@ from opencoach.planning.sessions.intent_builder import (
 )
 from opencoach.planning.stimulus.training import (
     TrainingStimulus,
+    stimulus_load_category,
 )
 from opencoach.planning.weekly.schedule_capacity import (
     DayScheduleCapacity,
@@ -249,6 +250,26 @@ def _intent_sort_key(
     )
 
 
+def _intent_allows_day(
+    *,
+    intent: SessionIntent,
+    day: Weekday,
+) -> bool:
+    """Vérifie les contraintes calendaires dures d'une intention.
+
+    `preferred_days` influence uniquement le classement.
+
+    `allowed_days` constitue en revanche une contrainte stricte :
+    lorsqu'il est renseigné, l'intention ne peut être placée sur
+    aucun autre jour.
+    """
+
+    return (
+        not intent.allowed_days
+        or day.value in intent.allowed_days
+    )
+
+
 def _assign_days(
     *,
     intents: tuple[
@@ -297,12 +318,25 @@ def _assign_days(
         compatible_days = [
             day
             for day in remaining_days
-            if capacity_by_day[
-                day
-            ].can_fit(
-                minimum_duration_minutes=(
-                    intent.duration_min_minutes
-                ),
+            if (
+                _intent_allows_day(
+                    intent=intent,
+                    day=day,
+                )
+                and capacity_by_day[
+                    day
+                ].can_fit(
+                    minimum_duration_minutes=(
+                        intent.duration_min_minutes
+                    ),
+                )
+                and capacity_by_day[
+                    day
+                ].allows_load_category(
+                    stimulus_load_category(
+                        intent.primary_stimulus
+                    )
+                )
             )
         ]
 
@@ -318,6 +352,16 @@ def _assign_days(
             intent=intent,
             capacity_by_day=capacity_by_day,
         )
+
+        if not _intent_allows_day(
+            intent=intent,
+            day=day,
+        ):
+            raise RuntimeError(
+                "Le scheduler a sélectionné un jour interdit "
+                f"pour le stimulus {intent.primary_stimulus.value!r}: "
+                f"{day.value!r}."
+            )
 
         assignments.append(
             (
@@ -616,6 +660,10 @@ def _choose_day(
                         for used_index
                         in used_key_indexes
                     ),
+                    _intent_day_preference_score(
+                        intent=intent,
+                        day=day,
+                    ),
                     _weekend_preference_score(
                         intent=intent,
                         day=day,
@@ -644,6 +692,10 @@ def _choose_day(
                 )
                 for used_index
                 in used_indexes
+            ),
+            _intent_day_preference_score(
+                intent=intent,
+                day=day,
             ),
             _weekend_preference_score(
                 intent=intent,
@@ -704,6 +756,10 @@ def _choose_initial_day(
     return max(
         remaining_days,
         key=lambda day: (
+            _intent_day_preference_score(
+                intent=intent,
+                day=day,
+            ),
             _weekend_preference_score(
                 intent=intent,
                 day=day,
@@ -717,6 +773,29 @@ def _choose_initial_day(
                 day
             ],
         ),
+    )
+
+
+def _intent_day_preference_score(
+    *,
+    intent: SessionIntent,
+    day: Weekday,
+) -> int:
+    """Score de préférence explicite d'une intention pour un jour."""
+
+    if not intent.preferred_days:
+        return 0
+
+    try:
+        index = intent.preferred_days.index(
+            day.value
+        )
+    except ValueError:
+        return 0
+
+    return (
+        len(intent.preferred_days)
+        - index
     )
 
 

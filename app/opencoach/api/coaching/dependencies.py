@@ -20,6 +20,7 @@ from opencoach.api.training_stats import (
 )
 from opencoach.coaching.generation import (
     AthleteWeeklyTrainingGenerationService,
+    CurrentWeekPlanningService,
     GenerateAndPersistTrainingWeekService,
     GeneratePlannedTrainingWeekService,
     WeeklyPlanningContextBuilder,
@@ -295,4 +296,45 @@ def get_generate_planned_training_week_service(
         generation_service=(
             generation_service
         )
+    )
+
+def get_current_week_planning_service(
+    context_builder: WeeklyPlanningContextBuilder = Depends(
+        get_weekly_planning_context_builder
+    ),
+    generation_service: GeneratePlannedTrainingWeekService = Depends(
+        get_generate_planned_training_week_service
+    ),
+) -> CurrentWeekPlanningService:
+    """Construit le service de refresh de la semaine courante."""
+
+    return CurrentWeekPlanningService(
+        context_builder=context_builder,
+        generation_service=generation_service,
+    )
+
+
+def get_athlete_constraint_planning_service(
+    db: Session = Depends(
+        get_db
+    ),
+    current_week_planning_service: CurrentWeekPlanningService = Depends(
+        get_current_week_planning_service
+    ),
+):
+    """Construit le use case contraintes athlète + refresh du coach."""
+
+    from opencoach.coaching.constraint_planning import (
+        AthleteConstraintPlanningService,
+    )
+
+    return AthleteConstraintPlanningService(
+        repository=(
+            SqlAthleteConstraintRepository(
+                db
+            )
+        ),
+        current_week_planning_service=(
+            current_week_planning_service
+        ),
     )

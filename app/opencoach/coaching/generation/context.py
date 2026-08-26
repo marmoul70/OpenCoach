@@ -12,6 +12,11 @@ from dataclasses import dataclass
 from datetime import date
 from uuid import UUID
 
+from opencoach.coaching.constraint_impact import (
+    constraints_require_return_to_training,
+    constraints_require_weekly_recovery,
+)
+
 from opencoach.planning.history.metrics import (
     calculate_training_history_metrics,
 )
@@ -21,8 +26,19 @@ from opencoach.planning.history.service import (
 from opencoach.planning.service import (
     PlanningContextService,
 )
+from opencoach.planning.trajectory.adjustment import (
+    AdjustmentSeverity,
+    LoadAdjustment,
+    ProgressionAdjustment,
+    TrajectoryAdjustment,
+)
 from opencoach.planning.trajectory.service import (
     CurrentWeekCoachingInput,
+)
+from opencoach.planning.trajectory.race_impact import (
+    build_training_race_events,
+    build_training_race_protection_dates_for_races,
+    build_training_race_recovery_dates_for_races,
 )
 from opencoach.planning.weekly.schedule_types import (
     Weekday,
@@ -111,6 +127,45 @@ class WeeklyPlanningContextBuilder:
             )
         )
 
+        training_race_events = (
+            build_training_race_events(
+                races=(
+                    context.training_races
+                ),
+                history_metrics=(
+                    history_metrics
+                ),
+            )
+        )
+
+        reserved_race_dates = tuple(
+            race.date
+            for race in context.training_races
+            if race.status == "planned"
+        )
+
+        race_protection_dates = (
+            build_training_race_protection_dates_for_races(
+                races=(
+                    context.training_races
+                ),
+                history_metrics=(
+                    history_metrics
+                ),
+            )
+        )
+
+        race_recovery_dates = (
+            build_training_race_recovery_dates_for_races(
+                races=(
+                    context.training_races
+                ),
+                history_metrics=(
+                    history_metrics
+                ),
+            )
+        )
+
         return PreparedWeeklyPlanningContext(
             athlete_profile_id=(
                 athlete_profile_id
@@ -133,6 +188,18 @@ class WeeklyPlanningContextBuilder:
                     history_metrics=(
                         history_metrics
                     ),
+                    events=(
+                        training_race_events
+                    ),
+                    reserved_race_dates=(
+                        reserved_race_dates
+                    ),
+                    race_protection_dates=(
+                        race_protection_dates
+                    ),
+                    race_recovery_dates=(
+                        race_recovery_dates
+                    ),
                     available_days=(
                         available_days
                     ),
@@ -144,6 +211,11 @@ class WeeklyPlanningContextBuilder:
                     ),
                     long_endurance_reference_minutes=(
                         history_metrics.long_endurance_reference_minutes
+                    ),
+                    additional_adjustments=(
+                        self._constraint_adjustments(
+                            context
+                        )
                     ),
                     fatigue_requires_recovery=(
                         self._fatigue_requires_recovery(
@@ -186,24 +258,118 @@ class WeeklyPlanningContextBuilder:
             ) from exc
 
     @staticmethod
+    def _constraint_adjustments(
+        context,
+    ) -> tuple[
+        TrajectoryAdjustment,
+        ...,
+    ]:
+        """Traduit les interruptions physiologiques en trajectoire.
+
+        Une maladie ou blessure prolongée récemment terminée
+        déclenche une phase RETURN_TO_TRAINING.
+
+        Les contraintes logistiques ne produisent aucun ajustement
+        physiologique.
+        """
+
+        constraints = tuple(
+            getattr(
+                context,
+                "constraints",
+                (),
+            )
+        )
+
+        planning_date = getattr(
+            context,
+            "planning_date",
+            None,
+        )
+
+        if (
+            not constraints
+            or planning_date is None
+            or not constraints_require_return_to_training(
+                constraints=constraints,
+                reference_date=planning_date,
+            )
+        ):
+            return ()
+
+        return (
+            TrajectoryAdjustment(
+                reason=(
+                    "Reprise après maladie ou blessure "
+                    "prolongée."
+                ),
+                severity=AdjustmentSeverity.MINOR,
+                load=LoadAdjustment.MAINTAIN,
+                progression=(
+                    ProgressionAdjustment.REBUILD
+                ),
+                allow_schedule_compression=False,
+                requires_return_to_training=True,
+                notes=(
+                    "La progression antérieure n'est pas "
+                    "rattrapée automatiquement.",
+                ),
+            ),
+        )
+
+    @staticmethod
     def _fatigue_requires_recovery(
         context,
     ) -> bool:
-        """Détermine si le readiness impose une récupération.
+        """Détermine si la fatigue justifie une décharge hebdomadaire.
 
-        La décision fine de charge reste dans le moteur de planning.
-        Cette méthode ne fait que transmettre l'état disponible.
+        La décision s'appuie exclusivement sur le DailyReadiness déjà
+        calculé. Elle ne remplace pas l'adaptation quotidienne des
+        séances : elle indique seulement au moteur de trajectoire qu'une
+        réduction structurelle de la charge hebdomadaire est nécessaire.
         """
 
-        readiness = context.readiness
-
-        if readiness is None:
-            return False
-
-        return bool(
+        constraints = tuple(
             getattr(
-                readiness,
-                "requires_recovery",
-                False,
+                context,
+                "constraints",
+                (),
             )
         )
+
+        planning_date = getattr(
+            context,
+            "planning_date",
+            None,
+        )
+
+        if (
+            constraints
+            and planning_date is not None
+            and constraints_require_weekly_recovery(
+                constraints=constraints,
+                reference_date=planning_date,
+            )
+        ):
+            return True
+
+        assessment = context.readiness
+
+        if assessment is None:
+            return False
+
+        readiness = assessment.readiness
+
+        if (
+            "prefer_recovery_or_rest"
+            in readiness.training_constraints
+        ):
+            return True
+
+        if readiness.critical_count > 0:
+            return True
+
+        return readiness.level in {
+            "very_low",
+            "low",
+        }

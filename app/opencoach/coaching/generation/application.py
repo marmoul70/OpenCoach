@@ -64,6 +64,7 @@ class GenerateAndPersistTrainingWeekService:
         athlete_profile_id: UUID,
         envelope: WeeklyTrainingEnvelope,
         reference_date: date | None = None,
+        reconcile_from_date: date | None = None,
         additional_context: tuple[
             str,
             ...,
@@ -94,6 +95,9 @@ class GenerateAndPersistTrainingWeekService:
                     athlete_profile_id
                 ),
                 week=generated_week,
+                reconcile_from_date=(
+                    reconcile_from_date
+                ),
             )
         )
 

@@ -73,6 +73,24 @@ INTENSITY_POLICIES: dict[
         )
     ),
 
+    TrainingStimulus.PRE_RACE_ACTIVATION: (
+        StimulusIntensityPolicy(
+            rpe_min=2,
+            rpe_max=4,
+            hrr_min=0.50,
+            hrr_max=0.68,
+            hrmax_min=0.60,
+            hrmax_max=0.74,
+            guidance=(
+                "Conserver une charge globale très faible.",
+                "Les accélérations doivent rester courtes, "
+                "fluides et techniquement propres.",
+                "Terminer la séance avec une sensation de fraîcheur.",
+                "Aucune fatigue résiduelle ne doit être recherchée.",
+            ),
+        )
+    ),
+
     TrainingStimulus.AEROBIC_EASY: (
         StimulusIntensityPolicy(
             rpe_min=2,
@@ -251,6 +269,32 @@ INTENSITY_POLICIES: dict[
         )
     ),
 }
+
+
+def canonical_intensity_for_stimulus(
+    stimulus: TrainingStimulus,
+) -> str:
+    """Retourne le niveau d'intensité canonique d'un stimulus."""
+
+    policy = INTENSITY_POLICIES[
+        stimulus
+    ]
+
+    rpe_max = policy.rpe_max
+
+    if rpe_max <= 2:
+        return "very_easy"
+
+    if rpe_max <= 4:
+        return "easy"
+
+    if rpe_max <= 6:
+        return "moderate"
+
+    if rpe_max <= 8:
+        return "hard"
+
+    return "very_hard"
 
 
 def build_intensity_prescription(

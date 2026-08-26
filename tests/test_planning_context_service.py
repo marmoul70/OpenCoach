@@ -74,13 +74,24 @@ class FakeRaceRepository:
     ):
         return self.primary_race
 
-    def list_training_races_before(
+    def list_training_races_between(
         self,
         athlete_profile_id,
-        from_date,
-        primary_date,
+        start_date,
+        end_date,
     ):
-        return self.training_races
+        del athlete_profile_id
+
+        return [
+            race
+            for race in self.training_races
+            if (
+                start_date
+                <= race.date
+                <= end_date
+                and race.priority == "training"
+            )
+        ]
 
 class FakeDynamicRaceRepository:
     """Double simulant la résolution dynamique des courses."""
@@ -117,20 +128,26 @@ class FakeDynamicRaceRepository:
             ),
         )
 
-    def list_training_races_before(
+    def list_training_races_between(
         self,
         athlete_profile_id,
-        from_date,
-        primary_date,
+        start_date,
+        end_date,
     ):
+        del athlete_profile_id
+
         return [
             race
             for race in self.races
             if (
-                race.date >= from_date
-                and race.date < primary_date
+                start_date
+                <= race.date
+                <= end_date
                 and race.priority == "training"
-                and race.status == "planned"
+                and race.status in {
+                    "planned",
+                    "completed",
+                }
             )
         ]
 
@@ -384,8 +401,10 @@ def test_builds_complete_planning_context() -> None:
         4,
     )
 
-    assert constraint_repository.start_date == (
-        PLANNING_DATE
+    assert constraint_repository.start_date == date(
+        2026,
+        8,
+        15,
     )
 
     assert constraint_repository.end_date == date(
@@ -516,8 +535,10 @@ def test_constraint_horizon_can_be_configured() -> None:
         28,
     )
 
-    assert constraint_repository.start_date == (
-        PLANNING_DATE
+    assert constraint_repository.start_date == date(
+        2026,
+        8,
+        15,
     )
 
     assert constraint_repository.end_date == date(

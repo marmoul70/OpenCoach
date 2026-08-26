@@ -38,6 +38,7 @@ class FakeGenerateAndPersistService:
         athlete_profile_id,
         envelope,
         reference_date=None,
+        reconcile_from_date=None,
         additional_context=(),
     ):
         self.calls.append(
@@ -48,6 +49,8 @@ class FakeGenerateAndPersistService:
                     envelope,
                 "reference_date":
                     reference_date,
+                "reconcile_from_date":
+                    reconcile_from_date,
                 "additional_context":
                     additional_context,
             }

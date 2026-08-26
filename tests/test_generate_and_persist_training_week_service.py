@@ -70,6 +70,7 @@ class FakePersistenceService:
         *,
         athlete_profile_id,
         week,
+        reconcile_from_date=None,
     ):
         self.calls.append(
             {
@@ -77,6 +78,8 @@ class FakePersistenceService:
                     athlete_profile_id,
                 "week":
                     week,
+                "reconcile_from_date":
+                    reconcile_from_date,
             }
         )
 

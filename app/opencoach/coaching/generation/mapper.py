@@ -8,6 +8,9 @@ from opencoach.models import (
 from opencoach.planning.sessions.prescription import (
     IntensityReference,
 )
+from opencoach.planning.sessions.prescription.physiological import (
+    canonical_intensity_for_stimulus,
+)
 from opencoach.planning.stimulus.training import (
     TrainingModality,
 )
@@ -46,8 +49,10 @@ def generated_session_to_training_session(
         distance_km=None,
         elevation_gain_m=None,
         planning_key=planning_key,
-        intensity=_build_intensity(
-            generated
+        intensity=(
+            canonical_intensity_for_stimulus(
+                proposal.covered_stimuli[0]
+            )
         ),
         heart_rate_zone=(
             _build_heart_rate_zone(
@@ -146,26 +151,6 @@ def _build_description(
         if section.strip()
     )
 
-
-def _build_intensity(
-    generated: GeneratedTrainingSession,
-) -> str:
-    """Construit le résumé d'intensité utilisé par l'ancien modèle."""
-
-    prescription = (
-        generated.proposal
-        .intensity_prescription
-    )
-
-    if prescription is None:
-        return ""
-
-    return " / ".join(
-        _format_target(
-            target
-        )
-        for target in prescription.targets
-    )
 
 
 def _build_heart_rate_zone(

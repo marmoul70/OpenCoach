@@ -43,6 +43,7 @@ class TrainingStimulus(StrEnum):
     STRENGTH_CORE = "strength_core"
 
     RECOVERY = "recovery"
+    PRE_RACE_ACTIVATION = "pre_race_activation"
 
 
 class StimulusLoadCategory(StrEnum):

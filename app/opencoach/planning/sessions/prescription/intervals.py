@@ -539,6 +539,11 @@ def build_work_structure(
             phase_week_index=phase_week_index,
         )
 
+    if stimulus is TrainingStimulus.PRE_RACE_ACTIVATION:
+        return _build_pre_race_activation(
+            available_minutes=available_minutes,
+        )
+
     if stimulus is TrainingStimulus.UPHILL_THRESHOLD:
         return _build_uphill_threshold(
             phase=phase,
@@ -698,6 +703,45 @@ def _build_threshold(
         candidates=candidates,
         label="Travail au seuil",
     )
+
+def _build_pre_race_activation(
+    *,
+    available_minutes: int,
+) -> WorkStructure:
+    """Construit une activation courte avant une course.
+
+    L'objectif n'est pas de créer une charge d'entraînement
+    significative, mais de conserver de la mobilité et quelques
+    accélérations brèves avant l'épreuve.
+    """
+
+    candidates = (
+        _seconds_interval(
+            repetitions=4,
+            work=20,
+            recovery=60,
+        ),
+        _seconds_interval(
+            repetitions=3,
+            work=20,
+            recovery=60,
+        ),
+        _seconds_interval(
+            repetitions=2,
+            work=20,
+            recovery=60,
+        ),
+    )
+
+    return _best_interval_structure(
+        stimulus=(
+            TrainingStimulus.PRE_RACE_ACTIVATION
+        ),
+        available_minutes=available_minutes,
+        candidates=candidates,
+        label="Activation pré-course",
+    )
+
 
 def _build_speed_development(
     *,

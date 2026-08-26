@@ -176,3 +176,15 @@ def test_mapper_preserves_planning_key() -> None:
         session.planning_key
         == "2027-07-05:threshold"
     )
+
+def test_mapper_persists_canonical_intensity() -> None:
+    session = (
+        generated_session_to_training_session(
+            create_generated_session(),
+            planning_key=(
+                "2027-07-05:threshold"
+            ),
+        )
+    )
+
+    assert session.intensity == "hard"

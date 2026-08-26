@@ -15,6 +15,9 @@ from opencoach.api.races import (
     get_activity_repository,
     get_race_repository,
 )
+from opencoach.api.coaching.dependencies import (
+    get_current_week_planning_service,
+)
 from opencoach.models import Race
 
 
@@ -171,6 +174,23 @@ class FakeRaceRepository:
             [],
         )
 
+class FakeCurrentWeekPlanningService:
+    def __init__(
+        self,
+    ) -> None:
+        self.calls = []
+
+    def refresh(
+        self,
+        **kwargs,
+    ):
+        self.calls.append(
+            kwargs
+        )
+
+        return object()
+
+
 class FakeActivityRepository:
     def __init__(
         self,
@@ -214,6 +234,7 @@ def create_race(
 def create_client(
     repository,
     activity_repository=None,
+    planning_service=None,
 ):
     app = create_app()
 
@@ -222,6 +243,11 @@ def create_client(
     if activity_repository is None:
         activity_repository = (
             FakeActivityRepository()
+        )
+
+    if planning_service is None:
+        planning_service = (
+            FakeCurrentWeekPlanningService()
         )
 
     app.dependency_overrides[
@@ -235,6 +261,10 @@ def create_client(
     app.dependency_overrides[
         get_activity_repository
     ] = lambda: activity_repository
+
+    app.dependency_overrides[
+        get_current_week_planning_service
+    ] = lambda: planning_service
 
     return (
         TestClient(
@@ -586,4 +616,89 @@ def test_races_api_unlinks_activity() -> None:
     assert (
         response.json()["activity_id"]
         is None
+    )
+
+def test_primary_race_creation_refreshes_current_week() -> None:
+    repository = FakeRaceRepository()
+    planning_service = (
+        FakeCurrentWeekPlanningService()
+    )
+
+    client, profile_id = create_client(
+        repository,
+        planning_service=(
+            planning_service
+        ),
+    )
+
+    response = client.post(
+        "/api/races",
+        json={
+            "date": "2027-07-10",
+            "name": "Ultra objectif",
+            "location": "Jura",
+            "race_type": "trail",
+            "priority": "primary",
+            "distance_km": 65.0,
+            "elevation_gain_m": 3100.0,
+            "status": "planned",
+        },
+    )
+
+    assert response.status_code == 201
+
+    assert len(
+        planning_service.calls
+    ) == 1
+
+    assert (
+        planning_service.calls[0][
+            "athlete_profile_id"
+        ]
+        == profile_id
+    )
+
+    assert (
+        planning_service.calls[0][
+            "additional_context"
+        ]
+        == (
+            "course principale modifiée",
+        )
+    )
+
+
+def test_training_race_creation_does_not_refresh_current_week(
+) -> None:
+    repository = FakeRaceRepository()
+    planning_service = (
+        FakeCurrentWeekPlanningService()
+    )
+
+    client, _ = create_client(
+        repository,
+        planning_service=(
+            planning_service
+        ),
+    )
+
+    response = client.post(
+        "/api/races",
+        json={
+            "date": "2027-06-20",
+            "name": "Course préparation",
+            "location": "Jura",
+            "race_type": "trail",
+            "priority": "training",
+            "distance_km": 30.0,
+            "elevation_gain_m": 1200.0,
+            "status": "planned",
+        },
+    )
+
+    assert response.status_code == 201
+
+    assert (
+        planning_service.calls
+        == []
     )

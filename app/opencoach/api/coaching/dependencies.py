@@ -12,6 +12,14 @@ from __future__ import annotations
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from opencoach.database.repositories.sql_daily_checkin import (
+    SqlDailyCheckInRepository,
+)
+from opencoach.database.repositories.sql_daily_adaptation import (
+    SqlDailyAdaptationRepository,
+)
+
+
 from opencoach.api.readiness import (
     get_readiness_service,
 )
@@ -337,4 +345,27 @@ def get_athlete_constraint_planning_service(
         current_week_planning_service=(
             current_week_planning_service
         ),
+    )
+
+def get_daily_checkin_repository(
+    db: Session = Depends(
+        get_db
+    ),
+) -> SqlDailyCheckInRepository:
+    """Construit le repository SQL des check-ins quotidiens."""
+
+    return SqlDailyCheckInRepository(
+        db
+    )
+
+
+def get_daily_adaptation_repository(
+    db: Session = Depends(
+        get_db
+    ),
+) -> SqlDailyAdaptationRepository:
+    """Construit le repository SQL des propositions quotidiennes."""
+
+    return SqlDailyAdaptationRepository(
+        db
     )

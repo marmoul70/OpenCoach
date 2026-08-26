@@ -13,7 +13,7 @@ from datetime import date
 from uuid import UUID
 
 from opencoach.coaching.constraint_impact import (
-    constraints_require_return_to_training,
+    evaluate_constraint_return_to_training,
     constraints_require_weekly_recovery,
 )
 
@@ -26,11 +26,14 @@ from opencoach.planning.history.service import (
 from opencoach.planning.service import (
     PlanningContextService,
 )
-from opencoach.planning.trajectory.adjustment import (
-    AdjustmentSeverity,
-    LoadAdjustment,
-    ProgressionAdjustment,
-    TrajectoryAdjustment,
+from opencoach.planning.return_to_training.clearance import (
+    ReadinessAnswer,
+    ReturnToTrainingReadiness,
+)
+from opencoach.planning.trajectory.event import (
+    EventImpact,
+    TrajectoryEvent,
+    TrajectoryEventType,
 )
 from opencoach.planning.trajectory.service import (
     CurrentWeekCoachingInput,
@@ -166,6 +169,12 @@ class WeeklyPlanningContextBuilder:
             )
         )
 
+        constraint_return_events = (
+            self._constraint_return_events(
+                context
+            )
+        )
+
         return PreparedWeeklyPlanningContext(
             athlete_profile_id=(
                 athlete_profile_id
@@ -190,6 +199,7 @@ class WeeklyPlanningContextBuilder:
                     ),
                     events=(
                         training_race_events
+                        + constraint_return_events
                     ),
                     reserved_race_dates=(
                         reserved_race_dates
@@ -212,8 +222,8 @@ class WeeklyPlanningContextBuilder:
                     long_endurance_reference_minutes=(
                         history_metrics.long_endurance_reference_minutes
                     ),
-                    additional_adjustments=(
-                        self._constraint_adjustments(
+                    return_to_training_readiness=(
+                        self._return_to_training_readiness(
                             context
                         )
                     ),
@@ -258,28 +268,20 @@ class WeeklyPlanningContextBuilder:
             ) from exc
 
     @staticmethod
-    def _constraint_adjustments(
+    def _constraint_return_events(
         context,
     ) -> tuple[
-        TrajectoryAdjustment,
+        TrajectoryEvent,
         ...,
     ]:
-        """Traduit les interruptions physiologiques en trajectoire.
+        """Convertit les interruptions physiologiques en événements.
 
-        Une maladie ou blessure prolongée récemment terminée
-        déclenche une phase RETURN_TO_TRAINING.
+        Une maladie ou blessure prolongée récemment terminée est
+        transmise au resolver RETURN_TO_TRAINING existant.
 
-        Les contraintes logistiques ne produisent aucun ajustement
-        physiologique.
+        Les contraintes logistiques ne deviennent jamais des
+        événements physiologiques.
         """
-
-        constraints = tuple(
-            getattr(
-                context,
-                "constraints",
-                (),
-            )
-        )
 
         planning_date = getattr(
             context,
@@ -287,33 +289,117 @@ class WeeklyPlanningContextBuilder:
             None,
         )
 
-        if (
-            not constraints
-            or planning_date is None
-            or not constraints_require_return_to_training(
-                constraints=constraints,
-                reference_date=planning_date,
-            )
-        ):
+        if planning_date is None:
             return ()
 
-        return (
-            TrajectoryAdjustment(
-                reason=(
-                    "Reprise après maladie ou blessure "
-                    "prolongée."
-                ),
-                severity=AdjustmentSeverity.MINOR,
-                load=LoadAdjustment.MAINTAIN,
-                progression=(
-                    ProgressionAdjustment.REBUILD
-                ),
-                allow_schedule_compression=False,
-                requires_return_to_training=True,
-                notes=(
-                    "La progression antérieure n'est pas "
-                    "rattrapée automatiquement.",
-                ),
+        events: list[
+            TrajectoryEvent
+        ] = []
+
+        for constraint in tuple(
+            getattr(
+                context,
+                "constraints",
+                (),
+            )
+        ):
+            impact = (
+                evaluate_constraint_return_to_training(
+                    constraint=constraint,
+                    reference_date=planning_date,
+                )
+            )
+
+            if not impact.requires_return_to_training:
+                continue
+
+            if constraint.constraint_type == "illness":
+                event_type = (
+                    TrajectoryEventType.ILLNESS
+                )
+            elif constraint.constraint_type == "injury":
+                event_type = (
+                    TrajectoryEventType.INJURY
+                )
+            else:
+                continue
+
+            event_impact = (
+                EventImpact.HIGH
+                if impact.disruption_days >= 7
+                else EventImpact.MODERATE
+            )
+
+            events.append(
+                TrajectoryEvent(
+                    event_id=(
+                        "constraint:"
+                        f"{constraint.id}"
+                    ),
+                    event_type=event_type,
+                    start_date=constraint.start_date,
+                    end_date=constraint.end_date,
+                    impact=event_impact,
+                )
+            )
+
+        return tuple(
+            events
+        )
+
+    @staticmethod
+    def _return_to_training_readiness(
+        context,
+    ) -> ReturnToTrainingReadiness:
+        """Construit l'état de reprise à partir du Readiness objectif.
+
+        Les données physiologiques peuvent empêcher une reprise lorsque
+        la récupération paraît insuffisante.
+
+        Elles ne peuvent jamais confirmer seules que l'athlète est
+        suffisamment récupéré ou qu'il ne présente plus de symptômes.
+        Ces confirmations restent déclaratives.
+        """
+
+        assessment = getattr(
+            context,
+            "readiness",
+            None,
+        )
+
+        if assessment is None:
+            return ReturnToTrainingReadiness()
+
+        readiness = assessment.readiness
+
+        recovery_insufficient = (
+            readiness.level
+            in {
+                "very_low",
+                "low",
+            }
+            or readiness.critical_count > 0
+            or (
+                "prefer_recovery_or_rest"
+                in readiness.training_constraints
+            )
+        )
+
+        recovery_sufficient = (
+            ReadinessAnswer.NO
+            if recovery_insufficient
+            else ReadinessAnswer.UNKNOWN
+        )
+
+        return ReturnToTrainingReadiness(
+            blocking_symptoms=(
+                ReadinessAnswer.UNKNOWN
+            ),
+            recovery_sufficient=(
+                recovery_sufficient
+            ),
+            clearance_confirmed=(
+                ReadinessAnswer.UNKNOWN
             ),
         )
 

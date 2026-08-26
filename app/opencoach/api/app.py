@@ -29,6 +29,9 @@ from opencoach.api.coaching.generation import (
 from opencoach.api.coaching.constraints import (
     router as coach_constraints_router,
 )
+from opencoach.api.coaching.daily_checkin import (
+    router as coach_daily_checkin_router,
+)
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -52,6 +55,10 @@ def create_app() -> FastAPI:
     )
     app.include_router(
         coach_constraints_router
+    )
+
+    app.include_router(
+        coach_daily_checkin_router
     )
 
     return app

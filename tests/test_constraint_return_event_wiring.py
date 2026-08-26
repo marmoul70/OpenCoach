@@ -5,11 +5,9 @@ from uuid import uuid4
 from opencoach.coaching.generation.context import (
     WeeklyPlanningContextBuilder,
 )
-from opencoach.models import (
-    AthleteConstraint,
-)
-from opencoach.planning.trajectory.adjustment import (
-    ProgressionAdjustment,
+from opencoach.models import AthleteConstraint
+from opencoach.planning.trajectory.event import (
+    TrajectoryEventType,
 )
 
 
@@ -37,9 +35,9 @@ def _constraint(
     )
 
 
-def test_finished_long_illness_builds_return_to_training_adjustment(
+def test_finished_long_illness_becomes_trajectory_event(
 ) -> None:
-    illness = _constraint(
+    constraint = _constraint(
         constraint_type="illness",
         start_date=date(
             2026,
@@ -56,36 +54,76 @@ def test_finished_long_illness_builds_return_to_training_adjustment(
     context = SimpleNamespace(
         planning_date=PLANNING_DATE,
         constraints=(
-            illness,
+            constraint,
         ),
     )
 
-    adjustments = (
+    events = (
         WeeklyPlanningContextBuilder
-        ._constraint_adjustments(
+        ._constraint_return_events(
             context
         )
     )
 
-    assert len(
-        adjustments
-    ) == 1
-
-    adjustment = adjustments[0]
-
-    assert adjustment.requires_return_to_training
+    assert len(events) == 1
 
     assert (
-        adjustment.progression
-        is ProgressionAdjustment.REBUILD
+        events[0].event_type
+        is TrajectoryEventType.ILLNESS
     )
 
-    assert not adjustment.allow_schedule_compression
+    assert (
+        events[0].start_date
+        == constraint.start_date
+    )
+
+    assert (
+        events[0].end_date
+        == constraint.end_date
+    )
 
 
-def test_active_long_illness_does_not_start_return_to_training(
+def test_finished_long_injury_becomes_trajectory_event(
 ) -> None:
-    illness = _constraint(
+    constraint = _constraint(
+        constraint_type="injury",
+        start_date=date(
+            2026,
+            8,
+            18,
+        ),
+        end_date=date(
+            2026,
+            8,
+            24,
+        ),
+    )
+
+    context = SimpleNamespace(
+        planning_date=PLANNING_DATE,
+        constraints=(
+            constraint,
+        ),
+    )
+
+    events = (
+        WeeklyPlanningContextBuilder
+        ._constraint_return_events(
+            context
+        )
+    )
+
+    assert len(events) == 1
+
+    assert (
+        events[0].event_type
+        is TrajectoryEventType.INJURY
+    )
+
+
+def test_active_illness_does_not_become_return_event(
+) -> None:
+    constraint = _constraint(
         constraint_type="illness",
         start_date=date(
             2026,
@@ -102,21 +140,22 @@ def test_active_long_illness_does_not_start_return_to_training(
     context = SimpleNamespace(
         planning_date=PLANNING_DATE,
         constraints=(
-            illness,
+            constraint,
         ),
     )
 
     assert (
         WeeklyPlanningContextBuilder
-        ._constraint_adjustments(
+        ._constraint_return_events(
             context
         )
         == ()
     )
 
 
-def test_short_illness_does_not_rebuild_progression() -> None:
-    illness = _constraint(
+def test_short_illness_does_not_become_return_event(
+) -> None:
+    constraint = _constraint(
         constraint_type="illness",
         start_date=date(
             2026,
@@ -133,21 +172,22 @@ def test_short_illness_does_not_rebuild_progression() -> None:
     context = SimpleNamespace(
         planning_date=PLANNING_DATE,
         constraints=(
-            illness,
+            constraint,
         ),
     )
 
     assert (
         WeeklyPlanningContextBuilder
-        ._constraint_adjustments(
+        ._constraint_return_events(
             context
         )
         == ()
     )
 
 
-def test_work_absence_does_not_start_return_to_training() -> None:
-    work = _constraint(
+def test_work_absence_never_becomes_return_event(
+) -> None:
+    constraint = _constraint(
         constraint_type="work",
         start_date=date(
             2026,
@@ -164,44 +204,13 @@ def test_work_absence_does_not_start_return_to_training() -> None:
     context = SimpleNamespace(
         planning_date=PLANNING_DATE,
         constraints=(
-            work,
+            constraint,
         ),
     )
 
     assert (
         WeeklyPlanningContextBuilder
-        ._constraint_adjustments(
-            context
-        )
-        == ()
-    )
-
-
-def test_travel_does_not_start_return_to_training() -> None:
-    travel = _constraint(
-        constraint_type="travel",
-        start_date=date(
-            2026,
-            8,
-            17,
-        ),
-        end_date=date(
-            2026,
-            8,
-            24,
-        ),
-    )
-
-    context = SimpleNamespace(
-        planning_date=PLANNING_DATE,
-        constraints=(
-            travel,
-        ),
-    )
-
-    assert (
-        WeeklyPlanningContextBuilder
-        ._constraint_adjustments(
+        ._constraint_return_events(
             context
         )
         == ()

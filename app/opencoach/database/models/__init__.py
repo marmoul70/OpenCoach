@@ -35,3 +35,6 @@ __all__ = [
     "AthleteConstraint",
     "PhysiologicalMeasurement",
 ]
+
+from .daily_checkin import DailyCheckIn
+from .daily_adaptation import DailyAdaptationProposal

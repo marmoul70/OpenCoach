@@ -21,6 +21,10 @@ import type {
   TrainingSessionStatus,
 } from './types'
 
+import {
+  TRAINING_SESSION_UPDATED_EVENT,
+} from '../../core/events'
+
 
 interface TrainingStoreValue {
   sessions: TrainingSession[]
@@ -159,6 +163,27 @@ export function TrainingProvider({
   useEffect(() => {
     void refreshSessions()
   }, [refreshSessions])
+
+
+  useEffect(() => {
+    function handleTrainingSessionUpdated() {
+      void refreshSessions()
+    }
+
+    window.addEventListener(
+      TRAINING_SESSION_UPDATED_EVENT,
+      handleTrainingSessionUpdated,
+    )
+
+    return () => {
+      window.removeEventListener(
+        TRAINING_SESSION_UPDATED_EVENT,
+        handleTrainingSessionUpdated,
+      )
+    }
+  }, [
+    refreshSessions,
+  ])
 
 
   async function createSession(

@@ -22,6 +22,10 @@ import {
 } from '../../components/ui/ToastProvider'
 
 import {
+  notifyTrainingSessionUpdated,
+} from '../../core/events'
+
+import {
   RatingIcons,
 } from './RatingIcons'
 
@@ -303,6 +307,12 @@ export function FeelingDetails() {
         await acceptDailyAdaptation(
           state.checkin.id,
         )
+
+      if (
+        result.session_adapted
+      ) {
+        notifyTrainingSessionUpdated()
+      }
 
       const refreshed =
         await fetchTodayCheckIn()

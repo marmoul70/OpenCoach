@@ -1,8 +1,6 @@
-"""Tests de périodisation du développement général."""
+"""Tests de périodisation du mode Maintenance."""
 
 from datetime import date, timedelta
-
-import pytest
 
 from opencoach.coaching.replanning import (
     GeneralDevelopmentPolicy,
@@ -20,7 +18,7 @@ PLANNING_DATE = date(
 )
 
 
-def test_default_general_development_covers_twelve_weeks() -> None:
+def test_default_maintenance_covers_twelve_weeks() -> None:
     allocation = allocate_general_development_phases(
         planning_date=PLANNING_DATE,
     )
@@ -36,33 +34,35 @@ def test_default_general_development_covers_twelve_weeks() -> None:
     )
 
 
-def test_general_development_contains_base_then_build() -> None:
+def test_maintenance_uses_single_base_phase_temporarily() -> None:
     allocation = allocate_general_development_phases(
         planning_date=PLANNING_DATE,
     )
 
-    assert tuple(
-        phase.phase
-        for phase in allocation.phases
-    ) == (
-        TrainingPhase.BASE,
-        TrainingPhase.BUILD,
-    )
+    assert len(
+        allocation.phases
+    ) == 1
+
+    phase = allocation.phases[0]
+
+    assert phase.phase is TrainingPhase.BASE
+
+    assert phase.allocated_weeks == 12
 
 
-def test_general_development_never_contains_taper() -> None:
+def test_maintenance_never_contains_build() -> None:
     allocation = allocate_general_development_phases(
         planning_date=PLANNING_DATE,
     )
 
     assert all(
         phase.phase
-        is not TrainingPhase.TAPER
+        is not TrainingPhase.BUILD
         for phase in allocation.phases
     )
 
 
-def test_general_development_never_contains_specific() -> None:
+def test_maintenance_never_contains_specific() -> None:
     allocation = allocate_general_development_phases(
         planning_date=PLANNING_DATE,
     )
@@ -74,24 +74,21 @@ def test_general_development_never_contains_specific() -> None:
     )
 
 
-def test_default_policy_uses_six_base_and_six_build_weeks() -> None:
+def test_maintenance_never_contains_taper() -> None:
     allocation = allocate_general_development_phases(
         planning_date=PLANNING_DATE,
     )
 
-    base, build = allocation.phases
-
-    assert base.phase is TrainingPhase.BASE
-    assert base.allocated_weeks == 6
-
-    assert build.phase is TrainingPhase.BUILD
-    assert build.allocated_weeks == 6
+    assert all(
+        phase.phase
+        is not TrainingPhase.TAPER
+        for phase in allocation.phases
+    )
 
 
-def test_custom_policy_controls_phase_duration() -> None:
+def test_custom_policy_controls_cycle_duration() -> None:
     policy = GeneralDevelopmentPolicy(
-        base_weeks=4,
-        build_weeks=8,
+        maintenance_weeks=8,
     )
 
     allocation = allocate_general_development_phases(
@@ -99,46 +96,6 @@ def test_custom_policy_controls_phase_duration() -> None:
         policy=policy,
     )
 
-    assert allocation.total_weeks == 12
+    assert allocation.total_weeks == 8
 
-    assert allocation.phases[0].allocated_weeks == 4
-    assert allocation.phases[1].allocated_weeks == 8
-
-
-@pytest.mark.parametrize(
-    (
-        "base_weeks",
-        "build_weeks",
-    ),
-    [
-        (0, 6),
-        (6, 0),
-        (-1, 6),
-        (6, -1),
-    ],
-)
-def test_policy_rejects_non_positive_phase_duration(
-    base_weeks: int,
-    build_weeks: int,
-) -> None:
-    with pytest.raises(
-        ValueError,
-        match="strictement positive",
-    ):
-        GeneralDevelopmentPolicy(
-            base_weeks=base_weeks,
-            build_weeks=build_weeks,
-        )
-
-
-def test_phase_dates_are_contiguous() -> None:
-    allocation = allocate_general_development_phases(
-        planning_date=PLANNING_DATE,
-    )
-
-    base, build = allocation.phases
-
-    assert (
-        build.start_date
-        == base.end_date + timedelta(days=1)
-    )
+    assert allocation.phases[0].allocated_weeks == 8

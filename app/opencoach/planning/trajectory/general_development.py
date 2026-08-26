@@ -1,28 +1,108 @@
-"""Périodisation du développement général OpenCoach.
+"""Trajectoire d'entretien OpenCoach sans course principale.
 
-Ce mode est utilisé lorsqu'aucune course principale planifiée
-n'est disponible.
+Lorsqu'aucune course principale planifiée n'existe, OpenCoach
+maintient les qualités générales de l'athlète sans construire
+artificiellement un pic de forme.
 
-Il poursuit un objectif de progression athlétique générale sans
-introduire artificiellement une phase spécifique course ou un taper.
+La charge oscille autour de la baseline réelle selon un cycle
+déterministe :
+
+- semaine modérée ;
+- semaine haute ;
+- semaine modérée ;
+- semaine basse / récupération.
+
+Ce mode ne possède :
+- aucune course cible ;
+- aucune phase BUILD ;
+- aucune phase SPECIFIC ;
+- aucun TAPER.
+
+TrainingPhase.BASE reste temporairement utilisée comme phase
+physiologique interne afin de réutiliser les prescriptions générales
+existantes sans étendre prématurément l'enum TrainingPhase.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, timedelta
+from enum import StrEnum
 
+from opencoach.planning.trajectory.adjustment import (
+    LoadAdjustment,
+)
 from opencoach.planning.trajectory.coaching_phase_allocation import (
     AllocatedTrainingPhase,
 )
+from opencoach.planning.trajectory.load_recovery_cycle import (
+    RecoveryTrigger,
+)
 from opencoach.planning.trajectory.multi_week import (
     MultiWeekTrajectory,
-)
-from opencoach.planning.trajectory.multi_week_builder import (
-    build_trajectory_from_phases,
+    TrajectoryWeek,
+    TrajectoryWeekType,
 )
 from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
+)
+
+
+class MaintenanceLoadLevel(StrEnum):
+    """Niveau relatif d'une semaine d'entretien."""
+
+    MODERATE = "moderate"
+    HIGH = "high"
+    LOW = "low"
+
+
+@dataclass(
+    frozen=True,
+    slots=True,
+)
+class MaintenanceCycleStep:
+    """Étape élémentaire du cycle d'entretien."""
+
+    level: MaintenanceLoadLevel
+    factor: float
+    recovery: bool = False
+
+    def __post_init__(self) -> None:
+        if self.factor <= 0:
+            raise ValueError(
+                "Le facteur de charge d'entretien "
+                "doit être strictement positif."
+            )
+
+        if (
+            self.recovery
+            and self.level
+            is not MaintenanceLoadLevel.LOW
+        ):
+            raise ValueError(
+                "Une récupération planifiée doit utiliser "
+                "le niveau LOW."
+            )
+
+
+DEFAULT_MAINTENANCE_CYCLE = (
+    MaintenanceCycleStep(
+        level=MaintenanceLoadLevel.MODERATE,
+        factor=0.95,
+    ),
+    MaintenanceCycleStep(
+        level=MaintenanceLoadLevel.HIGH,
+        factor=1.05,
+    ),
+    MaintenanceCycleStep(
+        level=MaintenanceLoadLevel.MODERATE,
+        factor=1.00,
+    ),
+    MaintenanceCycleStep(
+        level=MaintenanceLoadLevel.LOW,
+        factor=0.80,
+        recovery=True,
+    ),
 )
 
 
@@ -31,29 +111,37 @@ from opencoach.planning.weekly.training_envelope import (
     slots=True,
 )
 class GeneralDevelopmentPolicy:
-    """Politique temporelle du développement général."""
+    """Politique temporelle du mode Maintenance.
 
-    base_weeks: int = 6
-    build_weeks: int = 6
+    Le nom historique de la classe est conservé temporairement
+    pour limiter la portée de la migration.
+    """
+
+    maintenance_weeks: int = 12
+
+    cycle: tuple[
+        MaintenanceCycleStep,
+        ...,
+    ] = DEFAULT_MAINTENANCE_CYCLE
 
     def __post_init__(self) -> None:
-        if (
-            self.base_weeks <= 0
-            or self.build_weeks <= 0
-        ):
+        if self.maintenance_weeks <= 0:
             raise ValueError(
-                "Les durées des phases de développement "
-                "doivent être strictement positives."
+                "La durée du cycle de maintenance "
+                "doit être strictement positive."
+            )
+
+        if not self.cycle:
+            raise ValueError(
+                "Le cycle de maintenance "
+                "ne peut pas être vide."
             )
 
     @property
     def total_weeks(
         self,
     ) -> int:
-        return (
-            self.base_weeks
-            + self.build_weeks
-        )
+        return self.maintenance_weeks
 
 
 @dataclass(
@@ -61,7 +149,7 @@ class GeneralDevelopmentPolicy:
     slots=True,
 )
 class GeneralDevelopmentPhaseAllocation:
-    """Allocation temporelle d'un cycle de développement général."""
+    """Allocation temporelle du mode Maintenance."""
 
     planning_date: date
 
@@ -99,55 +187,35 @@ def allocate_general_development_phases(
         GeneralDevelopmentPolicy()
     ),
 ) -> GeneralDevelopmentPhaseAllocation:
-    """Construit un cycle BASE → BUILD sans taper."""
+    """Construit l'horizon temporel du mode Maintenance.
 
-    base_start = planning_date
+    BASE est conservé temporairement comme phase physiologique
+    interne. Il n'existe plus de transition BASE → BUILD.
+    """
 
-    base_end = (
-        base_start
+    end_date = (
+        planning_date
         + timedelta(
-            weeks=policy.base_weeks,
+            weeks=policy.maintenance_weeks,
         )
         - timedelta(days=1)
     )
 
-    build_start = (
-        base_end
-        + timedelta(days=1)
-    )
-
-    build_end = (
-        build_start
-        + timedelta(
-            weeks=policy.build_weeks,
-        )
-        - timedelta(days=1)
-    )
-
-    phases = (
-        AllocatedTrainingPhase(
-            phase=TrainingPhase.BASE,
-            start_date=base_start,
-            end_date=base_end,
-            allocated_weeks=(
-                policy.base_weeks
-            ),
-            compressed=False,
+    phase = AllocatedTrainingPhase(
+        phase=TrainingPhase.BASE,
+        start_date=planning_date,
+        end_date=end_date,
+        allocated_weeks=(
+            policy.maintenance_weeks
         ),
-        AllocatedTrainingPhase(
-            phase=TrainingPhase.BUILD,
-            start_date=build_start,
-            end_date=build_end,
-            allocated_weeks=(
-                policy.build_weeks
-            ),
-            compressed=False,
-        ),
+        compressed=False,
     )
 
     return GeneralDevelopmentPhaseAllocation(
         planning_date=planning_date,
-        phases=phases,
+        phases=(
+            phase,
+        ),
     )
 
 
@@ -160,17 +228,22 @@ def build_general_development_trajectory(
         GeneralDevelopmentPolicy()
     ),
 ) -> MultiWeekTrajectory:
-    """Construit une trajectoire progressive sans course cible.
+    """Construit une trajectoire d'entretien autour de la baseline."""
 
-    Le développement général réutilise exactement le même moteur
-    de charge, volume et récupération que la préparation de course.
+    if baseline_load < 0:
+        raise ValueError(
+            "La charge de référence "
+            "ne peut pas être négative."
+        )
 
-    Il ne possède toutefois :
-    - aucune course cible ;
-    - aucune demande de volume spécifique à une course ;
-    - aucune phase SPECIFIC ;
-    - aucun TAPER.
-    """
+    if (
+        baseline_duration_minutes is not None
+        and baseline_duration_minutes < 0
+    ):
+        raise ValueError(
+            "La durée hebdomadaire de référence "
+            "ne peut pas être négative."
+        )
 
     allocation = (
         allocate_general_development_phases(
@@ -179,13 +252,155 @@ def build_general_development_trajectory(
         )
     )
 
-    return build_trajectory_from_phases(
+    weeks: list[
+        TrajectoryWeek
+    ] = []
+
+    previous_load = baseline_load
+
+    previous_duration_minutes = (
+        baseline_duration_minutes
+    )
+
+    for week_index in range(
+        1,
+        policy.maintenance_weeks + 1,
+    ):
+        cycle_step = policy.cycle[
+            (week_index - 1)
+            % len(policy.cycle)
+        ]
+
+        week_start = (
+            planning_date
+            + timedelta(
+                weeks=week_index - 1,
+            )
+        )
+
+        week_end = (
+            week_start
+            + timedelta(days=6)
+        )
+
+        target_load = (
+            baseline_load
+            * cycle_step.factor
+        )
+
+        load_min = (
+            target_load
+            * 0.95
+        )
+
+        load_max = (
+            target_load
+            * 1.05
+        )
+
+        target_duration_minutes = (
+            None
+            if baseline_duration_minutes is None
+            else (
+                baseline_duration_minutes
+                * cycle_step.factor
+            )
+        )
+
+        if cycle_step.recovery:
+            week_type = (
+                TrajectoryWeekType.RECOVERY
+            )
+
+            recovery_trigger = (
+                RecoveryTrigger.PLANNED
+            )
+
+        else:
+            week_type = (
+                TrajectoryWeekType.LOADING
+            )
+
+            recovery_trigger = (
+                RecoveryTrigger.NONE
+            )
+
+        notes = (
+            (
+                "Mode maintenance OpenCoach.",
+                (
+                    "Niveau de charge : "
+                    f"{cycle_step.level.value}."
+                ),
+                (
+                    "Charge ancrée sur la baseline "
+                    "sans progression cumulative."
+                ),
+            )
+        )
+
+        week = TrajectoryWeek(
+            week_start=week_start,
+            week_end=week_end,
+            phase=TrainingPhase.BASE,
+            week_type=week_type,
+            previous_load=previous_load,
+            progression_reference_before=(
+                baseline_load
+            ),
+            progression_reference_after=(
+                baseline_load
+            ),
+            target_load=target_load,
+            load_min=load_min,
+            load_max=load_max,
+            load_adjustment=(
+                LoadAdjustment.MAINTAIN
+            ),
+            recovery_trigger=(
+                recovery_trigger
+            ),
+            phase_week_index=week_index,
+            previous_duration_minutes=(
+                previous_duration_minutes
+            ),
+            progression_reference_duration_before_minutes=(
+                baseline_duration_minutes
+            ),
+            progression_reference_duration_after_minutes=(
+                baseline_duration_minutes
+            ),
+            target_duration_minutes=(
+                target_duration_minutes
+            ),
+            notes=notes,
+        )
+
+        weeks.append(
+            week
+        )
+
+        previous_load = (
+            target_load
+        )
+
+        if (
+            target_duration_minutes
+            is not None
+        ):
+            previous_duration_minutes = (
+                target_duration_minutes
+            )
+
+    return MultiWeekTrajectory(
         planning_date=planning_date,
         target_race_date=None,
-        allocation=allocation,
         baseline_load=baseline_load,
         baseline_duration_minutes=(
             baseline_duration_minutes
         ),
         goal_duration_demand_minutes=None,
+        weeks=tuple(
+            weeks
+        ),
     )

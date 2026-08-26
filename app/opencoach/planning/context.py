@@ -58,7 +58,7 @@ class PlanningContext:
         if self.primary_race is None:
             return CoachingGoalResolution(
                 mode=(
-                    CoachingGoalMode.GENERAL_DEVELOPMENT
+                    CoachingGoalMode.MAINTENANCE
                 ),
                 target_race=None,
                 planning_date=self.planning_date,

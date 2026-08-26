@@ -200,7 +200,7 @@ def test_training_race_does_not_become_primary_goal() -> None:
     assert result.target_race is primary
 
 
-def test_no_primary_race_switches_to_general_development() -> None:
+def test_no_primary_race_switches_to_maintenance() -> None:
     resolver = CoachingGoalResolver(
         race_repository=FakeRaceRepository(
             []
@@ -218,13 +218,13 @@ def test_no_primary_race_switches_to_general_development() -> None:
 
     assert (
         result.mode
-        is CoachingGoalMode.GENERAL_DEVELOPMENT
+        is CoachingGoalMode.MAINTENANCE
     )
 
     assert result.target_race is None
 
 
-def test_only_training_races_keep_general_development_mode() -> None:
+def test_only_training_races_keep_maintenance_mode() -> None:
     resolver = CoachingGoalResolver(
         race_repository=FakeRaceRepository(
             [
@@ -251,7 +251,7 @@ def test_only_training_races_keep_general_development_mode() -> None:
 
     assert (
         result.mode
-        is CoachingGoalMode.GENERAL_DEVELOPMENT
+        is CoachingGoalMode.MAINTENANCE
     )
 
     assert result.target_race is None
@@ -287,9 +287,9 @@ def test_resolution_exposes_weeks_until_target() -> None:
     assert result.weeks_until_target == 4.0
 
 
-def test_general_development_has_no_target_horizon() -> None:
+def test_maintenance_has_no_target_horizon() -> None:
     result = CoachingGoalResolution(
-        mode=CoachingGoalMode.GENERAL_DEVELOPMENT,
+        mode=CoachingGoalMode.MAINTENANCE,
         target_race=None,
         planning_date=date(
             2026,

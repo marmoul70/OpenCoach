@@ -23,7 +23,7 @@ class CoachingGoalMode(StrEnum):
     """Mode stratégique courant du coach."""
 
     TARGET_RACE = "target_race"
-    GENERAL_DEVELOPMENT = "general_development"
+    MAINTENANCE = "maintenance"
 
 
 @dataclass(
@@ -52,11 +52,11 @@ class CoachingGoalResolution:
 
         if (
             self.mode
-            is CoachingGoalMode.GENERAL_DEVELOPMENT
+            is CoachingGoalMode.MAINTENANCE
             and self.target_race is not None
         ):
             raise ValueError(
-                "Le mode GENERAL_DEVELOPMENT "
+                "Le mode MAINTENANCE "
                 "ne doit pas posséder de course cible."
             )
 
@@ -134,7 +134,7 @@ class CoachingGoalResolver:
         if not primary_races:
             return CoachingGoalResolution(
                 mode=(
-                    CoachingGoalMode.GENERAL_DEVELOPMENT
+                    CoachingGoalMode.MAINTENANCE
                 ),
                 target_race=None,
                 planning_date=planning_date,

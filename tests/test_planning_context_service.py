@@ -444,7 +444,7 @@ def test_builds_context_without_primary_race() -> None:
 
     assert (
         context.goal_resolution.mode
-        is CoachingGoalMode.GENERAL_DEVELOPMENT
+        is CoachingGoalMode.MAINTENANCE
     )
 
     assert (
@@ -685,7 +685,7 @@ def test_withdrawn_last_primary_switches_to_general_development() -> None:
 
     assert (
         rebuilt_context.goal_resolution.mode
-        is CoachingGoalMode.GENERAL_DEVELOPMENT
+        is CoachingGoalMode.MAINTENANCE
     )
 
     assert (

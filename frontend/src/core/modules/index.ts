@@ -1,5 +1,6 @@
 import '../../modules/dashboard/module'
 import '../../modules/fitness/module'
+import '../../modules/feeling/module'
 import '../../modules/profile/module'
 import '../../modules/training/module'
 import '../../modules/weather/module'

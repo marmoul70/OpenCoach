@@ -26,6 +26,15 @@ class DailyAdaptationRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def delete_for_checkin(
+        self,
+        athlete_profile_id: UUID,
+        checkin_id: UUID,
+    ) -> None:
+        """Supprime la proposition associée à un check-in."""
+        raise NotImplementedError
+
+    @abstractmethod
     def get_for_checkin(
         self,
         athlete_profile_id: UUID,

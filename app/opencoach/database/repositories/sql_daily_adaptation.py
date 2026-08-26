@@ -114,6 +114,42 @@ class SqlDailyAdaptationRepository(
                 "la proposition d'adaptation."
             ) from exc
 
+    def delete_for_checkin(
+        self,
+        athlete_profile_id: UUID,
+        checkin_id: UUID,
+    ) -> None:
+        try:
+            database_proposal = self.session.scalar(
+                select(
+                    DailyAdaptationProposalModel
+                ).where(
+                    DailyAdaptationProposalModel
+                    .athlete_profile_id
+                    == athlete_profile_id,
+                    DailyAdaptationProposalModel
+                    .checkin_id
+                    == checkin_id,
+                )
+            )
+
+            if database_proposal is None:
+                return
+
+            self.session.delete(
+                database_proposal
+            )
+
+            self.session.commit()
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise DailyAdaptationRepositoryError(
+                "Impossible de supprimer "
+                "la proposition d'adaptation."
+            ) from exc
+
     def get_for_checkin(
         self,
         athlete_profile_id: UUID,

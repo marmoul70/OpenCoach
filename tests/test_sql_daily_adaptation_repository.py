@@ -199,3 +199,54 @@ def test_proposal_is_isolated_by_athlete() -> None:
             )
             is None
         )
+
+def test_proposal_can_be_deleted_for_checkin() -> None:
+    with create_session() as session:
+        athlete = create_athlete(
+            session
+        )
+
+        checkin = create_checkin(
+            session,
+            athlete.id,
+        )
+
+        repository = (
+            SqlDailyAdaptationRepository(
+                session
+            )
+        )
+
+        saved = repository.save(
+            athlete.id,
+            CoachAdaptationProposal(
+                checkin_id=checkin.id,
+                reason="Athlète indisponible.",
+                recommendation=(
+                    "Veux-tu adapter la séance ?"
+                ),
+            ),
+        )
+
+        assert saved.id is not None
+
+        assert (
+            repository.get_for_checkin(
+                athlete.id,
+                checkin.id,
+            )
+            is not None
+        )
+
+        repository.delete_for_checkin(
+            athlete.id,
+            checkin.id,
+        )
+
+        assert (
+            repository.get_for_checkin(
+                athlete.id,
+                checkin.id,
+            )
+            is None
+        )

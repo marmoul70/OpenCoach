@@ -102,6 +102,18 @@ class FakeDailyAdaptationRepository:
 
         return saved
 
+    def delete_for_checkin(
+        self,
+        athlete_profile_id,
+        checkin_id,
+    ):
+        del athlete_profile_id
+
+        self.proposals.pop(
+            checkin_id,
+            None,
+        )
+
     def get_for_checkin(
         self,
         athlete_profile_id,
@@ -758,3 +770,111 @@ def test_declined_proposal_cannot_later_be_accepted() -> None:
     )
 
     assert training_sessions.saved == []
+
+def test_pending_adaptation_is_removed_when_checkin_returns_to_normal() -> None:
+    client, _, adaptations, _ = (
+        _client()
+    )
+
+    first = client.post(
+        "/api/coach/check-in",
+        json={
+            "energy_rating": 5,
+            "pain_wellness_rating": 5,
+            "unavailable": True,
+        },
+    )
+
+    assert first.status_code == 201
+
+    first_payload = first.json()
+
+    assert (
+        first_payload["checkin"]["unavailable"]
+        is True
+    )
+
+    assert (
+        first_payload["adaptation"]
+        is not None
+    )
+
+    assert (
+        first_payload["adaptation"]["decision"]
+        == "pending"
+    )
+
+    checkin_id = first_payload[
+        "checkin"
+    ]["id"]
+
+    assert len(
+        adaptations.proposals
+    ) == 1
+
+    second = client.post(
+        "/api/coach/check-in",
+        json={
+            "energy_rating": 5,
+            "pain_wellness_rating": 5,
+            "illness": False,
+            "unavailable": False,
+        },
+    )
+
+    assert second.status_code == 201
+
+    payload = second.json()
+
+    assert (
+        payload["checkin"]["id"]
+        == checkin_id
+    )
+
+    assert (
+        payload["checkin"]["unavailable"]
+        is False
+    )
+
+    assert (
+        payload["checkin"]["illness"]
+        is False
+    )
+
+    assert (
+        payload["checkin"]["energy_rating"]
+        == 5
+    )
+
+    assert (
+        payload["checkin"]["pain_wellness_rating"]
+        == 5
+    )
+
+    assert (
+        payload["adaptation"]
+        is None
+    )
+
+    assert (
+        adaptations.proposals
+        == {}
+    )
+
+    today = client.get(
+        "/api/coach/check-in/today"
+    )
+
+    assert today.status_code == 200
+
+    today_payload = today.json()
+
+    assert (
+        today_payload["checkin"]["unavailable"]
+        is False
+    )
+
+    assert (
+        today_payload["adaptation"]
+        is None
+    )

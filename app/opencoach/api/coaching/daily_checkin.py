@@ -349,6 +349,18 @@ def save_daily_checkin(
             )
         )
 
+    elif (
+        generated_proposal is None
+        and existing_proposal is not None
+        and existing_proposal.awaiting_athlete_decision
+    ):
+        adaptation_repository.delete_for_checkin(
+            athlete_profile_id,
+            saved.id,
+        )
+
+        proposal = None
+
     else:
         proposal = existing_proposal
 

@@ -17,6 +17,7 @@ import {
 
 import {
   getWeatherAlerts,
+  isAlertRelevant,
 } from './alerts'
 
 import {
@@ -1251,54 +1252,5 @@ function formatDate(
     new Date(
       `${value}T12:00:00`,
     ),
-  )
-}
-
-
-function isAlertRelevant(
-  alert:
-    import('./alerts')
-      .WeatherAlert,
-): boolean {
-  if (!alert.time) {
-    return true
-  }
-
-  const now =
-    new Date()
-
-  const today =
-    new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    )
-
-  const tomorrow =
-    new Date(
-      today,
-    )
-
-  tomorrow.setDate(
-    tomorrow.getDate() + 1,
-  )
-
-  const alertDate =
-    new Date(
-      alert.time,
-    )
-
-  const alertDay =
-    new Date(
-      alertDate.getFullYear(),
-      alertDate.getMonth(),
-      alertDate.getDate(),
-    )
-
-  return (
-    alertDay.getTime()
-    === today.getTime()
-    || alertDay.getTime()
-    === tomorrow.getTime()
   )
 }

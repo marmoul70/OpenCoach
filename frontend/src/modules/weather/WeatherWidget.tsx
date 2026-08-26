@@ -25,6 +25,7 @@ import {
 
 import {
   getWeatherAlerts,
+  isAlertRelevant,
 } from './alerts'
 
 import type {
@@ -42,11 +43,13 @@ import type {
 
 interface WeatherWidgetProps {
   onClick: () => void
+  compact?: boolean
 }
 
 
 export function WeatherWidget({
   onClick,
+  compact = false,
 }: WeatherWidgetProps) {
   const {
     toast,
@@ -116,15 +119,21 @@ export function WeatherWidget({
           })
 
         if (!cancelled) {
-          setWeather(data)
+          setWeather(
+            data,
+          )
         }
       } catch {
         if (!cancelled) {
-          setError(true)
+          setError(
+            true,
+          )
         }
       } finally {
         if (!cancelled) {
-          setLoading(false)
+          setLoading(
+            false,
+          )
         }
       }
     }
@@ -155,18 +164,21 @@ export function WeatherWidget({
       getWeatherAlerts(
         weather,
       ).filter(
-        (alert) =>
+        (alert) => (
           alert.time?.slice(
             0,
             10,
-          ) === today,
+          ) === today
+        ),
       )
 
     for (const alert of alerts) {
       const key = [
         alert.type,
         alert.severity,
-      ].join('-')
+      ].join(
+        '-',
+      )
 
       if (
         notifiedAlerts.current.has(
@@ -185,7 +197,8 @@ export function WeatherWidget({
           mapAlertSeverityToToastType(
             alert.severity,
           ),
-        title: alert.title,
+        title:
+          alert.title,
         message:
           alert.time
             ? (
@@ -197,8 +210,8 @@ export function WeatherWidget({
             : alert.message,
         duration:
           alert.severity === 'info'
-          ? 5000
-          : null,
+            ? 5000
+            : null,
       })
     }
   }, [
@@ -207,6 +220,14 @@ export function WeatherWidget({
   ])
 
   if (loading) {
+    if (compact) {
+      return (
+        <div className="flex h-14 items-center justify-end px-3">
+          <span className="loading loading-spinner loading-xs text-info" />
+        </div>
+      )
+    }
+
     return (
       <div className="card w-full border border-base-300 bg-base-100 shadow-sm">
         <div className="card-body flex min-h-28 items-center justify-center p-4">
@@ -220,6 +241,22 @@ export function WeatherWidget({
     error
     || !weather
   ) {
+    if (compact) {
+      return (
+        <button
+          type="button"
+          onClick={onClick}
+          className="btn btn-ghost btn-sm gap-2 text-error"
+        >
+          <CloudSun className="h-5 w-5" />
+
+          <span className="text-xs">
+            Météo indisponible
+          </span>
+        </button>
+      )
+    }
+
     return (
       <button
         type="button"
@@ -250,29 +287,96 @@ export function WeatherWidget({
       weather.current.weatherCode,
     )
 
-  const today =
-    weather.current.time.slice(
-      0,
-      10,
-    )
-
-  const todayAlerts =
+  const relevantAlerts =
     getWeatherAlerts(
       weather,
     ).filter(
-      (alert) =>
-        alert.time?.slice(
-          0,
-          10,
-        ) === today,
+      isAlertRelevant,
     )
 
   const alertSeverity =
     getHighestAlertSeverity(
-      todayAlerts.map(
-        (alert) => alert.severity,
+      relevantAlerts.map(
+        (alert) => (
+          alert.severity
+        ),
       ),
     )
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="
+          group
+          flex items-center
+          justify-end
+          gap-3
+          rounded-xl
+          px-3 py-1.5
+          text-right
+          transition-colors
+          hover:bg-base-300/60
+        "
+        aria-label="Ouvrir les détails météo"
+      >
+        <div className="flex flex-col items-end leading-tight">
+          <div className="flex items-center gap-2">
+            {alertSeverity && (
+              <span
+                className={
+                  getAlertIndicatorClass(
+                    alertSeverity,
+                  )
+                }
+                title={
+                  getAlertIndicatorTitle(
+                    alertSeverity,
+                  )
+                }
+                aria-label={
+                  getAlertIndicatorTitle(
+                    alertSeverity,
+                  )
+                }
+              >
+                <AlertTriangle className="h-5 w-5" />
+              </span>
+            )}
+
+            <span className="text-xl font-bold text-base-content">
+              {Math.round(
+                weather.current.temperature,
+              )}
+              °C
+            </span>
+          </div>
+
+          <span className="mt-0.5 text-sm font-medium text-base-content/60">
+            {description.label}
+          </span>
+        </div>
+
+        <span
+          className="
+            flex
+            h-14 w-14
+            shrink-0
+            items-center
+            justify-center
+            text-5xl
+            leading-none
+            transition-transform
+            group-hover:scale-105
+          "
+          aria-hidden="true"
+        >
+          {description.icon}
+        </span>
+      </button>
+    )
+  }
 
   return (
     <button
@@ -358,7 +462,9 @@ export function WeatherWidget({
 
           <InlineMetric
             label=""
-            value={description.label}
+            value={
+              description.label
+            }
           />
         </div>
       </div>
@@ -441,7 +547,9 @@ function getAlertIndicatorClass(
       'text-info',
   }
 
-  return classes[severity]
+  return classes[
+    severity
+  ]
 }
 
 
@@ -457,19 +565,24 @@ function getAlertIndicatorTitle(
       'Information météo',
   }
 
-  return labels[severity]
+  return labels[
+    severity
+  ]
 }
 
 
 function mapAlertSeverityToToastType(
   severity: WeatherAlertSeverity,
 ): 'info' | 'warning' | 'error' {
-  if (severity === 'danger') {
+  if (
+    severity === 'danger'
+  ) {
     return 'error'
   }
 
   return severity
 }
+
 
 function formatAlertPeriod(
   startTime: string,
@@ -500,7 +613,11 @@ function formatAlertPeriod(
 function formatAlertTime(
   time: string,
 ): string {
-  if (!time.includes('T')) {
+  if (
+    !time.includes(
+      'T',
+    )
+  ) {
     return new Intl.DateTimeFormat(
       'fr-FR',
       {
@@ -521,6 +638,8 @@ function formatAlertTime(
       minute: '2-digit',
     },
   ).format(
-    new Date(time),
+    new Date(
+      time,
+    ),
   )
 }

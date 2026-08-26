@@ -301,3 +301,49 @@ function canMergeAlerts(
     === 60 * 60 * 1000
   )
 }
+
+export function isAlertRelevant(
+  alert: WeatherAlert,
+): boolean {
+  if (!alert.time) {
+    return true
+  }
+
+  const now =
+    new Date()
+
+  const today =
+    new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    )
+
+  const tomorrow =
+    new Date(
+      today,
+    )
+
+  tomorrow.setDate(
+    tomorrow.getDate() + 1,
+  )
+
+  const alertDate =
+    new Date(
+      alert.time,
+    )
+
+  const alertDay =
+    new Date(
+      alertDate.getFullYear(),
+      alertDate.getMonth(),
+      alertDate.getDate(),
+    )
+
+  return (
+    alertDay.getTime()
+      === today.getTime()
+    || alertDay.getTime()
+      === tomorrow.getTime()
+  )
+}

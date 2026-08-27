@@ -26,6 +26,10 @@ from opencoach.api.readiness import (
 from opencoach.api.training_stats import (
     get_training_stats_service,
 )
+from opencoach.coaching.weekly_assessment_service import (
+    CoachWeeklyAssessmentService,
+)
+
 from opencoach.coaching.generation import (
     AthleteWeeklyTrainingGenerationService,
     CurrentWeekPlanningService,
@@ -77,6 +81,7 @@ from opencoach.training import (
     RecentTrainingLoadService,
     TrainingLoadComparisonService,
     TrainingStatsService,
+    WeeklyLoadProjectionService,
 )
 
 
@@ -421,5 +426,73 @@ def get_daily_session_rescheduling_application_service(
         ),
         rescheduling_service=(
             rescheduling_service
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Coach — projection et évaluation hebdomadaires
+# ---------------------------------------------------------------------------
+
+
+def get_weekly_load_projection_service(
+    db: Session = Depends(get_db),
+) -> WeeklyLoadProjectionService:
+    """Construit le service de projection de la semaine courante."""
+
+    training_repository = (
+        SqlTrainingSessionRepository(
+            db
+        )
+    )
+
+    activity_repository = (
+        SqlActivityRepository(
+            db
+        )
+    )
+
+    weekly_plan_repository = (
+        SqlWeeklyTrainingPlanRepository(
+            db
+        )
+    )
+
+    daily_training_load_service = (
+        DailyTrainingLoadService(
+            activity_repository,
+            training_repository,
+        )
+    )
+
+    return WeeklyLoadProjectionService(
+        training_session_repository=(
+            training_repository
+        ),
+        daily_training_load_service=(
+            daily_training_load_service
+        ),
+        weekly_training_plan_repository=(
+            weekly_plan_repository
+        ),
+    )
+
+
+def get_coach_weekly_assessment_service(
+    weekly_load_projection_service: WeeklyLoadProjectionService = Depends(
+        get_weekly_load_projection_service
+    ),
+    training_history_service: TrainingHistorySnapshotService = Depends(
+        get_training_history_snapshot_service
+    ),
+) -> CoachWeeklyAssessmentService:
+    """Construit l'évaluation hebdomadaire exposée par le Coach."""
+
+    return CoachWeeklyAssessmentService(
+        weekly_load_projection_service=(
+            weekly_load_projection_service
+        ),
+        training_history_service=(
+            training_history_service
         ),
     )

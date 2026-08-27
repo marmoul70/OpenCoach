@@ -20,4 +20,20 @@ __all__ = [
     "CoachDecisionService",
     "CoachDecisionServiceError",
     "PlannedSessionUnavailableError",
+    "CoachHistoryConfidenceLevel",
+    "CoachWeeklyAssessment",
+    "CoachWeeklyStatus",
+    "build_coach_weekly_assessment",
+    "CoachWeeklyAssessmentService",
 ]
+
+
+from .weekly_assessment import (
+    CoachHistoryConfidenceLevel,
+    CoachWeeklyAssessment,
+    CoachWeeklyStatus,
+    build_coach_weekly_assessment,
+)
+from .weekly_assessment_service import (
+    CoachWeeklyAssessmentService,
+)

@@ -27,6 +27,7 @@ class WeeklyTrainingPlan:
     week_end: date
 
     phase: str
+    week_type: str | None
     phase_week_index: int
 
     target_load: float | None

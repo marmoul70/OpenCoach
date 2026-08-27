@@ -66,6 +66,31 @@ def adapt_daily_training_session(
     reasons: list[str] = []
 
     # --------------------------------------------------------
+    # Indisponibilité
+    # --------------------------------------------------------
+
+    if checkin.unavailable:
+        reasons.append(
+            "Athlète déclaré indisponible."
+        )
+
+        adapted = replace(
+            session,
+            status="skipped",
+        )
+
+        return DailySessionAdaptationResult(
+            original=session,
+            adapted=adapted,
+            changed=(
+                adapted != session
+            ),
+            reasons=tuple(
+                reasons
+            ),
+        )
+
+    # --------------------------------------------------------
     # Niveau d'adaptation
     # --------------------------------------------------------
 

@@ -55,6 +55,7 @@ def _checkin(
     energy=5,
     pain=5,
     illness=False,
+    unavailable=False,
     locations=(),
 ):
     return AthleteDailyCheckIn(
@@ -63,6 +64,7 @@ def _checkin(
         energy_rating=energy,
         pain_wellness_rating=pain,
         illness=illness,
+        unavailable=unavailable,
         pain_locations=locations,
     )
 
@@ -271,4 +273,47 @@ def test_adaptation_preserves_session_identity() -> None:
     assert (
         result.adapted.date
         == session.date
+    )
+
+
+def test_unavailable_skips_planned_session() -> None:
+    session = _session(
+        intensity="hard",
+        duration=60,
+    )
+
+    result = adapt_daily_training_session(
+        session=session,
+        checkin=_checkin(
+            unavailable=True,
+        ),
+        proposal=_proposal(),
+    )
+
+    assert result.changed
+
+    assert (
+        result.adapted.status
+        == "skipped"
+    )
+
+    # La prescription originale reste identifiable.
+    assert (
+        result.adapted.type
+        == session.type
+    )
+
+    assert (
+        result.adapted.duration_minutes
+        == session.duration_minutes
+    )
+
+    assert (
+        result.adapted.intensity
+        == session.intensity
+    )
+
+    assert (
+        "Athlète déclaré indisponible."
+        in result.reasons
     )

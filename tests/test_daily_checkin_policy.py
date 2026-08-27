@@ -211,7 +211,7 @@ def test_pain_location_is_preserved_for_coach_reasoning() -> None:
     )
 
     assert any(
-        "achilles:left"
+        "tendon d’Achille · côté gauche"
         in reason
         for reason in result.reasons
     )

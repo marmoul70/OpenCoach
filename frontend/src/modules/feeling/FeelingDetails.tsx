@@ -326,18 +326,25 @@ export function FeelingDetails() {
       toast({
         type: 'success',
         title:
-          result.session_adapted
-            ? 'Séance adaptée'
-            : 'Adaptation acceptée',
+          state.checkin.unavailable
+            ? 'Séance annulée'
+            : result.session_adapted
+              ? 'Séance adaptée'
+              : 'Adaptation acceptée',
         message:
-          result.adapted_session
+          state.checkin.unavailable
             ? (
-                `${result.adapted_session.title} · `
-                + `${result.adapted_session.duration_minutes} min`
+                'La séance est conservée dans le planning '
+                + 'comme non réalisée.'
               )
-            : (
-                'Votre décision a été enregistrée.'
-              ),
+            : result.adapted_session
+              ? (
+                  `${result.adapted_session.title} · `
+                  + `${result.adapted_session.duration_minutes} min`
+                )
+              : (
+                  'Votre décision a été enregistrée.'
+                ),
       })
     } catch (reason) {
       toast({
@@ -542,7 +549,7 @@ export function FeelingDetails() {
 
           <input
             type="checkbox"
-            className="toggle"
+            className="toggle toggle-error"
             checked={unavailable}
             onChange={(event) => {
               setUnavailable(
@@ -626,13 +633,38 @@ export function FeelingDetails() {
       </button>
 
       {state?.adaptation?.awaiting_athlete_decision && (
-        <section className="rounded-xl border border-warning/40 bg-warning/5 p-4">
-          <div className="badge badge-warning badge-sm">
-            Proposition du coach
+        <section
+          className={
+            state.checkin.unavailable
+              ? (
+                  'rounded-xl border border-error/40 '
+                  + 'bg-error/5 p-4'
+                )
+              : (
+                  'rounded-xl border border-warning/40 '
+                  + 'bg-warning/5 p-4'
+                )
+          }
+        >
+          <div
+            className={
+              state.checkin.unavailable
+                ? 'badge badge-error badge-sm'
+                : 'badge badge-warning badge-sm'
+            }
+          >
+            {state.checkin.unavailable
+              ? 'Annulation recommandée'
+              : 'Proposition du coach'}
           </div>
 
           <p className="mt-3 font-semibold text-base-content">
-            {state.adaptation.recommendation}
+            {state.checkin.unavailable
+              ? (
+                  'Vous avez indiqué être indisponible aujourd’hui. '
+                  + 'Voulez-vous annuler la séance prévue ?'
+                )
+              : state.adaptation.recommendation}
           </p>
 
           <p className="mt-2 text-sm leading-relaxed text-base-content/60">
@@ -640,20 +672,33 @@ export function FeelingDetails() {
           </p>
 
           <p className="mt-3 text-sm text-base-content/60">
-            Vous restez décisionnaire :
-            souhaitez-vous adapter la séance prévue ?
+            {state.checkin.unavailable
+              ? (
+                  'La séance restera dans votre planning '
+                  + 'comme non réalisée.'
+                )
+              : (
+                  'Vous restez décisionnaire : '
+                  + 'souhaitez-vous adapter la séance prévue ?'
+                )}
           </p>
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <button
               type="button"
-              className="btn btn-warning sm:flex-1"
+              className={
+                state.checkin.unavailable
+                  ? 'btn btn-error sm:flex-1'
+                  : 'btn btn-warning sm:flex-1'
+              }
               disabled={saving}
               onClick={() => {
                 void acceptAdaptation()
               }}
             >
-              Adapter ma séance
+              {state.checkin.unavailable
+                ? 'Annuler la séance'
+                : 'Adapter ma séance'}
             </button>
 
             <button
@@ -664,16 +709,24 @@ export function FeelingDetails() {
                 void declineAdaptation()
               }}
             >
-              Garder ma séance
+              Maintenir la séance
             </button>
           </div>
         </section>
       )}
 
       {state?.adaptation?.decision === 'accepted' && (
-        <div className="alert alert-success">
+        <div
+          className={
+            state.checkin.unavailable
+              ? 'alert alert-error'
+              : 'alert alert-success'
+          }
+        >
           <span>
-            Adaptation acceptée pour aujourd’hui.
+            {state.checkin.unavailable
+              ? 'Séance annulée pour aujourd’hui.'
+              : 'Adaptation acceptée pour aujourd’hui.'}
           </span>
         </div>
       )}

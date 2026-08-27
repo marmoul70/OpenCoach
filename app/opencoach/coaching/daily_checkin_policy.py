@@ -168,9 +168,8 @@ def assess_daily_checkin(
 
     if checkin.pain_locations:
         locations = ", ".join(
-            (
-                f"{location.area.value}"
-                f":{location.side.value}"
+            _format_pain_location(
+                location
             )
             for location
             in checkin.pain_locations
@@ -220,6 +219,53 @@ _ACTION_PRIORITY = {
     CheckInCoachAction.OFFER_ADAPTATION: 2,
     CheckInCoachAction.STRONGLY_RECOMMEND_ADAPTATION: 3,
 }
+
+
+PAIN_AREA_LABELS = {
+    "head": "tête",
+    "neck": "cou",
+    "shoulder": "épaule",
+    "back": "dos",
+    "lower_back": "bas du dos",
+    "hip": "hanche",
+    "groin": "aine",
+    "thigh": "cuisse",
+    "knee": "genou",
+    "calf": "mollet",
+    "shin": "tibia",
+    "ankle": "cheville",
+    "achilles": "tendon d’Achille",
+    "foot": "pied",
+    "other": "autre zone",
+}
+
+
+BODY_SIDE_LABELS = {
+    "left": "côté gauche",
+    "right": "côté droit",
+    "both": "des deux côtés",
+    "center": "au centre",
+}
+
+
+def _format_pain_location(
+    location,
+) -> str:
+    """Formate une localisation anatomique en français."""
+
+    area = PAIN_AREA_LABELS.get(
+        location.area.value,
+        location.area.value,
+    )
+
+    side = BODY_SIDE_LABELS.get(
+        location.side.value,
+    )
+
+    if side is None:
+        return area
+
+    return f"{area} · {side}"
 
 
 def _max_action(

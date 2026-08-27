@@ -74,12 +74,14 @@ def _checkin(
     *,
     energy=5,
     pain=3,
+    unavailable=False,
 ):
     return AthleteDailyCheckIn(
         id=uuid4(),
         date=TODAY,
         energy_rating=energy,
         pain_wellness_rating=pain,
+        unavailable=unavailable,
     )
 
 
@@ -317,3 +319,44 @@ def test_proposal_must_match_checkin() -> None:
             checkin=checkin,
             proposal=proposal,
         )
+
+
+def test_unavailable_session_is_persisted_as_skipped() -> None:
+    checkin = _checkin(
+        pain=5,
+        unavailable=True,
+    )
+
+    repository = FakeTrainingSessionRepository(
+        (
+            _session(),
+        )
+    )
+
+    service = ApplyAcceptedDailyAdaptationService(
+        training_session_repository=repository,
+    )
+
+    result = service.execute(
+        athlete_profile_id=uuid4(),
+        checkin=checkin,
+        proposal=_proposal(
+            checkin,
+        ),
+    )
+
+    assert result.changed
+
+    assert (
+        result.adapted.status
+        == "skipped"
+    )
+
+    assert len(
+        repository.saved
+    ) == 1
+
+    assert (
+        repository.saved[0].status
+        == "skipped"
+    )

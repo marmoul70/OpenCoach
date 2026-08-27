@@ -35,6 +35,7 @@ from .physiological_measurement import (
     PhysiologicalMetric,
 )
 __all__ = [
+    "WeeklyTrainingPlan",
     "AthleteBody",
     "AthleteEquipment",
     "AthleteIdentity",
@@ -60,3 +61,7 @@ __all__ = [
     "PhysiologicalMeasurement",
     "PhysiologicalMetric",
 ]
+
+from .weekly_training_plan import (
+    WeeklyTrainingPlan,
+)

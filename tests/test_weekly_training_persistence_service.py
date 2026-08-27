@@ -138,20 +138,100 @@ def create_existing_session(
     )
 
 
+
+class FakeWeeklyTrainingPlanRepository:
+    """Double de test du repository de plan hebdomadaire."""
+
+    def __init__(self) -> None:
+        self.saved_plans = []
+
+    def save_plan(self, plan):
+        self.saved_plans.append(plan)
+        return plan
+
+    def get_plan_for_week(
+        self,
+        athlete_profile_id,
+        week_start,
+    ):
+        for plan in reversed(
+            self.saved_plans
+        ):
+            if (
+                plan.athlete_profile_id
+                == athlete_profile_id
+                and plan.week_start
+                == week_start
+            ):
+                return plan
+
+        return None
+
+
+class FakeWeeklyEnvelope:
+    """Enveloppe minimale nécessaire à la persistance."""
+
+    def __init__(
+        self,
+        *,
+        week_start,
+        week_end,
+        phase,
+    ) -> None:
+        self.week_start = week_start
+        self.week_end = week_end
+        self.phase = phase
+
+        self.phase_week_index = 1
+
+        self.target_load = 300.0
+        self.load_min = 285.0
+        self.load_max = 315.0
+
+        self.reference_duration_minutes = 240.0
+        self.target_duration_minutes = 240.0
+        self.long_endurance_reference_minutes = 90.0
+
+        self.schedule_pressure = "normal"
+        self.athlete_schedule_constrained = False
+
+
+def create_persistence_service(
+    repository,
+):
+    return WeeklyTrainingPersistenceService(
+        repository=repository,
+        weekly_plan_repository=(
+            FakeWeeklyTrainingPlanRepository()
+        ),
+    )
+
+
+def create_envelope_for_week(
+    week,
+):
+    return FakeWeeklyEnvelope(
+        week_start=week.week_start,
+        week_end=week.week_end,
+        phase=week.phase,
+    )
+
+
 def test_persists_new_generated_session() -> None:
     repository = (
         FakeTrainingSessionRepository()
     )
 
     service = (
-        WeeklyTrainingPersistenceService(
-            repository=repository
-        )
+        create_persistence_service(repository)
     )
 
     persisted = service.persist(
         athlete_profile_id=uuid4(),
         week=create_week(),
+        envelope=create_envelope_for_week(
+            create_week()
+        ),
     )
 
     assert len(
@@ -180,14 +260,15 @@ def test_existing_planned_session_is_updated() -> None:
     )
 
     service = (
-        WeeklyTrainingPersistenceService(
-            repository=repository
-        )
+        create_persistence_service(repository)
     )
 
     persisted = service.persist(
         athlete_profile_id=uuid4(),
         week=create_week(),
+        envelope=create_envelope_for_week(
+            create_week()
+        ),
     )
 
     assert (
@@ -213,9 +294,7 @@ def test_completed_session_is_never_overwritten() -> None:
     )
 
     service = (
-        WeeklyTrainingPersistenceService(
-            repository=repository
-        )
+        create_persistence_service(repository)
     )
 
     with pytest.raises(
@@ -224,6 +303,9 @@ def test_completed_session_is_never_overwritten() -> None:
         service.persist(
             athlete_profile_id=uuid4(),
             week=create_week(),
+            envelope=create_envelope_for_week(
+                create_week()
+            ),
         )
 
 def test_two_sessions_on_same_day_are_independent() -> None:
@@ -264,15 +346,16 @@ def test_two_sessions_on_same_day_are_independent() -> None:
     )
 
     service = (
-        WeeklyTrainingPersistenceService(
-            repository=repository
-        )
+        create_persistence_service(repository)
     )
 
     persisted = service.persist(
         athlete_profile_id=uuid4(),
         week=week,
-    )
+
+            envelope=create_envelope_for_week(
+                week
+            ),    )
 
     assert len(
         persisted
@@ -313,14 +396,15 @@ def test_obsolete_generated_planned_session_is_removed() -> None:
     )
 
     service = (
-        WeeklyTrainingPersistenceService(
-            repository=repository
-        )
+        create_persistence_service(repository)
     )
 
     service.persist(
         athlete_profile_id=uuid4(),
         week=create_week(),
+        envelope=create_envelope_for_week(
+            create_week()
+        ),
     )
 
     assert all(
@@ -357,14 +441,15 @@ def test_manual_planned_session_is_preserved() -> None:
     )
 
     service = (
-        WeeklyTrainingPersistenceService(
-            repository=repository
-        )
+        create_persistence_service(repository)
     )
 
     service.persist(
         athlete_profile_id=uuid4(),
         week=create_week(),
+        envelope=create_envelope_for_week(
+            create_week()
+        ),
     )
 
     assert any(
@@ -403,14 +488,15 @@ def test_obsolete_completed_session_is_preserved() -> None:
     )
 
     service = (
-        WeeklyTrainingPersistenceService(
-            repository=repository
-        )
+        create_persistence_service(repository)
     )
 
     service.persist(
         athlete_profile_id=uuid4(),
         week=create_week(),
+        envelope=create_envelope_for_week(
+            create_week()
+        ),
     )
 
     assert any(
@@ -449,14 +535,15 @@ def test_obsolete_session_with_activity_is_preserved() -> None:
     )
 
     service = (
-        WeeklyTrainingPersistenceService(
-            repository=repository
-        )
+        create_persistence_service(repository)
     )
 
     service.persist(
         athlete_profile_id=uuid4(),
         week=create_week(),
+        envelope=create_envelope_for_week(
+            create_week()
+        ),
     )
 
     assert any(
@@ -495,14 +582,15 @@ def test_past_obsolete_generated_session_is_preserved_on_refresh() -> None:
     )
 
     service = (
-        WeeklyTrainingPersistenceService(
-            repository=repository
-        )
+        create_persistence_service(repository)
     )
 
     service.persist(
         athlete_profile_id=uuid4(),
         week=create_week(),
+        envelope=create_envelope_for_week(
+            create_week()
+        ),
         reconcile_from_date=date(
             2027,
             7,
@@ -536,9 +624,7 @@ def test_past_generated_session_is_not_overwritten_on_refresh() -> None:
     )
 
     service = (
-        WeeklyTrainingPersistenceService(
-            repository=repository
-        )
+        create_persistence_service(repository)
     )
 
     original_title = past.title
@@ -549,6 +635,9 @@ def test_past_generated_session_is_not_overwritten_on_refresh() -> None:
     persisted = service.persist(
         athlete_profile_id=uuid4(),
         week=create_week(),
+        envelope=create_envelope_for_week(
+            create_week()
+        ),
         reconcile_from_date=date(
             2027,
             7,

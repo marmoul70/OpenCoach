@@ -105,4 +105,14 @@ class RecentTrainingLoadService:
                 day.status == "rest_respected"
                 for day in days_tuple
             ),
-        )
+
+            planning_covered_days=sum(
+                day.status != "unplanned"
+                for day in days_tuple
+            ),
+
+            unplanned_days=sum(
+                day.status == "unplanned"
+                for day in days_tuple
+            ),
+)

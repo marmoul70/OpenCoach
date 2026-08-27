@@ -49,6 +49,7 @@ from opencoach.database.repositories import (
     SqlProfileRepository,
     SqlRaceRepository,
     SqlTrainingSessionRepository,
+    SqlWeeklyTrainingPlanRepository,
 )
 from opencoach.database.session import (
     get_db,
@@ -276,7 +277,12 @@ def get_weekly_training_persistence_service(
     """Construit la persistance d'une semaine générée."""
 
     return WeeklyTrainingPersistenceService(
-        repository=repository
+        repository=repository,
+        weekly_plan_repository=(
+            SqlWeeklyTrainingPlanRepository(
+                repository.session
+            )
+        ),
     )
 
 

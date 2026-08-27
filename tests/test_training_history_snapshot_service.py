@@ -157,6 +157,14 @@ def test_builds_expected_training_windows() -> None:
             date(2026, 8, 21),
         ),
         (
+            date(2026, 8, 8),
+            date(2026, 8, 21),
+        ),
+        (
+            date(2026, 8, 1),
+            date(2026, 8, 21),
+        ),
+        (
             date(2026, 7, 25),
             date(2026, 8, 21),
         ),
@@ -169,6 +177,9 @@ def test_builds_expected_training_windows() -> None:
             date(2026, 8, 21),
         ),
     ]
+
+    assert snapshot.last_14_days is not None
+    assert snapshot.last_21_days is not None
 
     assert snapshot.reference_date == (
         REFERENCE_DATE

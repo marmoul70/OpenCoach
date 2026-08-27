@@ -48,6 +48,7 @@ from opencoach.planning.return_to_training.clearance import (
 )
 from opencoach.planning.history.metrics import (
     TrainingHistoryMetrics,
+    resolve_weekly_duration_reference,
 )
 from opencoach.planning.physiology.training_load_baseline import (
     TrainingLoadBaseline,
@@ -303,12 +304,9 @@ def build_training_trajectory(
     )
 
     baseline_duration_minutes = (
-        history_metrics.last_28_days.duration_minutes
-        if (
-            history_metrics.last_28_days.duration_minutes
-            > 0
+        resolve_weekly_duration_reference(
+            history_metrics
         )
-        else None
     )
 
     goal_duration_demand_minutes: float | None = None

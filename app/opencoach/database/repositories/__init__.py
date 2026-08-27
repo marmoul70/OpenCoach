@@ -19,6 +19,13 @@ from .sql_profile import SqlProfileRepository
 from .sql_wellness import SqlWellnessRepository
 from .wellness import WellnessRepository
 from .training_session import TrainingSessionRepository
+from .weekly_training_plan import (
+    WeeklyTrainingPlanRepository,
+)
+from .sql_weekly_training_plan import (
+    SqlWeeklyTrainingPlanRepository,
+    WeeklyTrainingPlanRepositoryError,
+)
 from .integration_connection import (
     IntegrationConnectionRepository,
 )
@@ -58,6 +65,9 @@ __all__ = [
     "SqlIntegrationConnectionRepository",
     "IntegrationConnectionRepositoryError",
     "TrainingSessionRepository",
+    "WeeklyTrainingPlanRepositoryError",
+    "SqlWeeklyTrainingPlanRepository",
+    "WeeklyTrainingPlanRepository",
     "TrainingSessionRepositoryError",
     "SqlTrainingSessionRepository",
     "DailyContextRepository",

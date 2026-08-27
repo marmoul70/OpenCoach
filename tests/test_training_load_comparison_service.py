@@ -444,3 +444,43 @@ def test_comparison_aggregates_multiple_coach_sessions() -> None:
             )
         )
     )
+
+
+def test_comparison_without_prescription_with_activity_is_unplanned() -> None:
+    service = create_service(
+        sessions=[],
+        actual=create_actual(
+            duration_minutes=55,
+            measured_load=25.0,
+            activities_count=1,
+        ),
+    )
+
+    result = service.calculate(
+        uuid4(),
+        TARGET_DATE,
+    )
+
+    assert result.planned_load == 0.0
+    assert result.actual_load == 25.0
+    assert result.status == "unplanned"
+
+
+def test_comparison_without_prescription_and_without_activity_is_unplanned() -> None:
+    service = create_service(
+        sessions=[],
+        actual=create_actual(
+            duration_minutes=0,
+            measured_load=0.0,
+            activities_count=0,
+        ),
+    )
+
+    result = service.calculate(
+        uuid4(),
+        TARGET_DATE,
+    )
+
+    assert result.planned_load == 0.0
+    assert result.actual_load == 0.0
+    assert result.status == "unplanned"

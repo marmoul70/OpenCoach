@@ -95,6 +95,7 @@ class GenerateAndPersistTrainingWeekService:
                     athlete_profile_id
                 ),
                 week=generated_week,
+                envelope=envelope,
                 reconcile_from_date=(
                     reconcile_from_date
                 ),

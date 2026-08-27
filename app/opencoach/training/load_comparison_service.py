@@ -64,6 +64,15 @@ class TrainingLoadComparisonService:
             )
         )
 
+        has_prescription = bool(
+            planned_sessions
+        )
+
+        has_planned_rest = any(
+            session.type == "rest"
+            for session in planned_sessions
+        )
+
         planned_duration_minutes = sum(
             session.duration_minutes
             for session in planned_sessions
@@ -121,6 +130,12 @@ class TrainingLoadComparisonService:
             status=classify_training_load(
                 planned_load=planned_load,
                 actual_load=actual_load,
+                has_prescription=(
+                    has_prescription
+                ),
+                has_planned_rest=(
+                    has_planned_rest
+                ),
             ),
         )
 

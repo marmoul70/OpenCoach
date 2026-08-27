@@ -110,3 +110,48 @@ def test_training_load_comparison_has_no_ratio_for_rest() -> None:
     assert comparison.load_delta == 25.0
     assert comparison.duration_delta_minutes == 55
     assert comparison.load_ratio is None
+
+def test_classify_training_load_without_prescription_is_unplanned() -> None:
+    assert (
+        classify_training_load(
+            planned_load=0.0,
+            actual_load=25.0,
+            has_prescription=False,
+        )
+        == "unplanned"
+    )
+
+
+def test_classify_training_load_without_prescription_and_without_activity_is_unplanned() -> None:
+    assert (
+        classify_training_load(
+            planned_load=0.0,
+            actual_load=0.0,
+            has_prescription=False,
+        )
+        == "unplanned"
+    )
+
+
+def test_classify_training_load_detects_explicit_broken_rest() -> None:
+    assert (
+        classify_training_load(
+            planned_load=0.0,
+            actual_load=25.0,
+            has_prescription=True,
+            has_planned_rest=True,
+        )
+        == "rest_broken"
+    )
+
+
+def test_classify_training_load_detects_explicit_respected_rest() -> None:
+    assert (
+        classify_training_load(
+            planned_load=0.0,
+            actual_load=0.0,
+            has_prescription=True,
+            has_planned_rest=True,
+        )
+        == "rest_respected"
+    )

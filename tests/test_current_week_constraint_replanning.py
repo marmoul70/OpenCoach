@@ -128,6 +128,85 @@ def _wednesday_threshold_session() -> TrainingSession:
     )
 
 
+
+class FakeWeeklyTrainingPlanRepository:
+    """Double de test du repository de plan hebdomadaire."""
+
+    def __init__(self) -> None:
+        self.saved_plans = []
+
+    def save_plan(self, plan):
+        self.saved_plans.append(plan)
+        return plan
+
+    def get_plan_for_week(
+        self,
+        athlete_profile_id,
+        week_start,
+    ):
+        for plan in reversed(
+            self.saved_plans
+        ):
+            if (
+                plan.athlete_profile_id
+                == athlete_profile_id
+                and plan.week_start
+                == week_start
+            ):
+                return plan
+
+        return None
+
+
+class FakeWeeklyEnvelope:
+    """Enveloppe minimale nécessaire à la persistance."""
+
+    def __init__(
+        self,
+        *,
+        week_start,
+        week_end,
+        phase,
+    ) -> None:
+        self.week_start = week_start
+        self.week_end = week_end
+        self.phase = phase
+
+        self.phase_week_index = 1
+
+        self.target_load = 300.0
+        self.load_min = 285.0
+        self.load_max = 315.0
+
+        self.reference_duration_minutes = 240.0
+        self.target_duration_minutes = 240.0
+        self.long_endurance_reference_minutes = 90.0
+
+        self.schedule_pressure = "normal"
+        self.athlete_schedule_constrained = False
+
+
+def create_persistence_service(
+    repository,
+):
+    return WeeklyTrainingPersistenceService(
+        repository=repository,
+        weekly_plan_repository=(
+            FakeWeeklyTrainingPlanRepository()
+        ),
+    )
+
+
+def create_envelope_for_week(
+    week,
+):
+    return FakeWeeklyEnvelope(
+        week_start=week.week_start,
+        week_end=week.week_end,
+        phase=week.phase,
+    )
+
+
 def test_work_absence_moves_future_session_and_preserves_past(
 ) -> None:
     """Une absence mercredi replannifie le futur sans toucher au lundi."""
@@ -235,15 +314,16 @@ def test_work_absence_moves_future_session_and_preserves_past(
     )
 
     persistence = (
-        WeeklyTrainingPersistenceService(
-            repository=repository
-        )
+        create_persistence_service(repository)
     )
 
     persisted = persistence.persist(
         athlete_profile_id=uuid4(),
         week=week,
-        reconcile_from_date=TUESDAY,
+
+            envelope=create_envelope_for_week(
+                week
+            ),        reconcile_from_date=TUESDAY,
     )
 
     assert len(

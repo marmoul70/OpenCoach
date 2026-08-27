@@ -48,6 +48,16 @@ class TrainingHistoryMetrics:
 
     long_endurance_reference_minutes: float | None = None
 
+    # Référence réellement utilisable par le moteur.
+    #
+    # Contrairement à last_28_days, cette moyenne n'est pas
+    # artificiellement divisée par quatre lorsqu'OpenCoach ne
+    # possède qu'une ou deux semaines de données.
+    adaptive_weekly_reference: WeeklyTrainingAverages | None = None
+
+    # 7, 14, 21 ou 28.
+    adaptive_window_days: int = 28
+
 
 def calculate_training_history_metrics(
     snapshot: TrainingHistorySnapshot,
@@ -70,6 +80,26 @@ def calculate_training_history_metrics(
     highest_elevation_activity = (
         _find_highest_elevation_activity(
             snapshot.activities_84_days
+        )
+    )
+
+    adaptive_window_days = (
+        _resolve_adaptive_window_days(
+            snapshot
+        )
+    )
+
+    adaptive_stats = (
+        _select_adaptive_training_stats(
+            snapshot,
+            days=adaptive_window_days,
+        )
+    )
+
+    adaptive_weekly_reference = (
+        _weekly_averages(
+            adaptive_stats,
+            days=adaptive_window_days,
         )
     )
 
@@ -112,6 +142,145 @@ def calculate_training_history_metrics(
         long_endurance_reference_minutes=(
             long_endurance_reference_minutes
         ),
+        adaptive_weekly_reference=(
+            adaptive_weekly_reference
+        ),
+        adaptive_window_days=(
+            adaptive_window_days
+        ),
+    )
+
+
+def resolve_weekly_duration_reference(
+    metrics: TrainingHistoryMetrics,
+) -> float | None:
+    """Retourne la meilleure durée hebdomadaire de référence.
+
+    Les métriques produites par le vrai moteur possèdent une
+    ``adaptive_weekly_reference``.
+
+    Les anciens appels/tests peuvent cependant construire
+    TrainingHistoryMetrics directement. Dans ce cas, on conserve
+    le comportement historique basé sur last_28_days.
+    """
+
+    adaptive = (
+        metrics.adaptive_weekly_reference
+    )
+
+    if (
+        adaptive is not None
+        and adaptive.duration_minutes > 0
+    ):
+        return adaptive.duration_minutes
+
+    legacy_duration = (
+        metrics.last_28_days.duration_minutes
+    )
+
+    if legacy_duration > 0:
+        return legacy_duration
+
+    return None
+
+
+def _resolve_adaptive_window_days(
+    snapshot: TrainingHistorySnapshot,
+) -> int:
+    """Détermine la profondeur d'historique réellement exploitable.
+
+    La fenêtre dépend de l'ancienneté de la première activité
+    connue, et non de la fenêtre maximale que la base sait
+    techniquement interroger.
+
+    Exemples :
+    - historique commencé il y a 5 jours  -> 7 jours ;
+    - historique commencé il y a 10 jours -> 14 jours ;
+    - historique commencé il y a 18 jours -> 21 jours ;
+    - historique >= 22 jours              -> 28 jours.
+
+    Au-delà de quatre semaines, la référence reste une moyenne
+    glissante des 28 derniers jours.
+    """
+
+    if snapshot.activities_84_days:
+        earliest_activity_date = min(
+            activity.start_at.date()
+            for activity
+            in snapshot.activities_84_days
+        )
+
+        history_span_days = max(
+            1,
+            (
+                snapshot.reference_date
+                - earliest_activity_date
+            ).days,
+        )
+
+        if history_span_days <= 7:
+            return 7
+
+        if history_span_days <= 14:
+            return 14
+
+        if history_span_days <= 21:
+            return 21
+
+        return 28
+
+    # Fallback pour les séances manuelles qui peuvent exister
+    # sans Activity associée.
+    if snapshot.last_7_days.sessions_count > 0:
+        return 7
+
+    if (
+        snapshot.last_14_days is not None
+        and snapshot.last_14_days.sessions_count > 0
+    ):
+        return 14
+
+    if (
+        snapshot.last_21_days is not None
+        and snapshot.last_21_days.sessions_count > 0
+    ):
+        return 21
+
+    if snapshot.last_28_days.sessions_count > 0:
+        return 28
+
+    # Aucun historique : conserver une référence minimale
+    # d'une semaine. Les valeurs resteront à zéro.
+    return 7
+
+
+def _select_adaptive_training_stats(
+    snapshot: TrainingHistorySnapshot,
+    *,
+    days: int,
+) -> TrainingStats:
+    """Sélectionne les statistiques correspondant à la fenêtre."""
+
+    if days == 7:
+        return snapshot.last_7_days
+
+    if days == 14:
+        if snapshot.last_14_days is not None:
+            return snapshot.last_14_days
+
+        return snapshot.last_28_days
+
+    if days == 21:
+        if snapshot.last_21_days is not None:
+            return snapshot.last_21_days
+
+        return snapshot.last_28_days
+
+    if days == 28:
+        return snapshot.last_28_days
+
+    raise ValueError(
+        f"Fenêtre adaptative invalide : {days} jours."
     )
 
 

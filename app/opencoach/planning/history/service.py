@@ -47,6 +47,18 @@ class TrainingHistorySnapshotService:
             days=7,
         )
 
+        last_14_days = self._calculate_window(
+            athlete_profile_id=athlete_profile_id,
+            reference_date=reference_date,
+            days=14,
+        )
+
+        last_21_days = self._calculate_window(
+            athlete_profile_id=athlete_profile_id,
+            reference_date=reference_date,
+            days=21,
+        )
+
         last_28_days = self._calculate_window(
             athlete_profile_id=athlete_profile_id,
             reference_date=reference_date,
@@ -104,6 +116,8 @@ class TrainingHistorySnapshotService:
             last_42_days=last_42_days,
             last_84_days=last_84_days,
             activities_84_days=tuple(activities),
+            last_14_days=last_14_days,
+            last_21_days=last_21_days,
             race_activity_ids=(
                 race_activity_ids
             ),

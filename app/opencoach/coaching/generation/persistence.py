@@ -9,6 +9,12 @@ from uuid import UUID
 from opencoach.database.repositories.training_session import (
     TrainingSessionRepository,
 )
+from opencoach.database.repositories.weekly_training_plan import (
+    WeeklyTrainingPlanRepository,
+)
+from opencoach.models import (
+    WeeklyTrainingPlan,
+)
 from opencoach.models import (
     TrainingSession,
 )
@@ -40,18 +46,71 @@ class WeeklyTrainingPersistenceService:
     """Persiste une semaine générée sans créer de doublons."""
 
     repository: TrainingSessionRepository
+    weekly_plan_repository: WeeklyTrainingPlanRepository
 
     def persist(
         self,
         *,
         athlete_profile_id: UUID,
         week: GeneratedTrainingWeek,
+        envelope,
         reconcile_from_date: date | None = None,
     ) -> tuple[
         TrainingSession,
         ...,
     ]:
         """Crée ou actualise les séances planifiées de la semaine."""
+
+        self.weekly_plan_repository.save_plan(
+            WeeklyTrainingPlan(
+                id=None,
+                athlete_profile_id=(
+                    athlete_profile_id
+                ),
+                week_start=envelope.week_start,
+                week_end=envelope.week_end,
+                phase=str(
+                    envelope.phase.value
+                    if hasattr(
+                        envelope.phase,
+                        "value",
+                    )
+                    else envelope.phase
+                ),
+                phase_week_index=(
+                    envelope.phase_week_index
+                ),
+                target_load=(
+                    envelope.target_load
+                ),
+                load_min=(
+                    envelope.load_min
+                ),
+                load_max=(
+                    envelope.load_max
+                ),
+                reference_duration_minutes=(
+                    envelope.reference_duration_minutes
+                ),
+                target_duration_minutes=(
+                    envelope.target_duration_minutes
+                ),
+                long_endurance_reference_minutes=(
+                    envelope.long_endurance_reference_minutes
+                ),
+                schedule_pressure=str(
+                    envelope.schedule_pressure.value
+                    if hasattr(
+                        envelope.schedule_pressure,
+                        "value",
+                    )
+                    else envelope.schedule_pressure
+                ),
+                athlete_schedule_constrained=(
+                    envelope.athlete_schedule_constrained
+                ),
+            )
+        )
 
         existing_sessions = (
             self.repository

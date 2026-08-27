@@ -26,6 +26,7 @@ from opencoach.coaching.constraint_impact import (
 
 from opencoach.planning.history.metrics import (
     calculate_training_history_metrics,
+    resolve_weekly_duration_reference,
 )
 from opencoach.planning.history.service import (
     TrainingHistorySnapshotService,
@@ -292,12 +293,9 @@ class WeeklyPlanningContextBuilder:
                         context.athlete.training.weekly_sessions
                     ),
                     reference_weekly_duration_minutes=(
-                        history_metrics.last_28_days.duration_minutes
-                        if (
-                            history_metrics.last_28_days.duration_minutes
-                            > 0
+                        resolve_weekly_duration_reference(
+                            history_metrics
                         )
-                        else None
                     ),
                     long_endurance_reference_minutes=(
                         history_metrics.long_endurance_reference_minutes

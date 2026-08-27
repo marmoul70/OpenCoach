@@ -4,6 +4,7 @@ from typing import Literal
 
 
 TrainingLoadStatus = Literal[
+    "unplanned",
     "rest_respected",
     "rest_broken",
     "below_plan",
@@ -67,15 +68,39 @@ def classify_training_load(
     *,
     planned_load: float,
     actual_load: float,
+    has_prescription: bool | None = None,
+    has_planned_rest: bool | None = None,
     tolerance: float = 0.20,
 ) -> TrainingLoadStatus:
-    """Classe l'écart entre charge prévue et charge réelle."""
+    """Classe l'écart entre prescription et charge réelle.
 
-    if planned_load <= 0:
+    Lorsque le contexte de prescription est fourni, une absence
+    de planning OpenCoach est classée ``unplanned`` et un repos
+    doit être explicitement prescrit.
+
+    Les appels historiques qui ne fournissent pas encore ce
+    contexte conservent temporairement l'ancienne interprétation
+    fondée uniquement sur la charge planifiée.
+    """
+
+    if has_prescription is None:
+        if planned_load <= 0:
+            if actual_load <= 0:
+                return "rest_respected"
+
+            return "rest_broken"
+
+    elif not has_prescription:
+        return "unplanned"
+
+    if has_planned_rest is True:
         if actual_load <= 0:
             return "rest_respected"
 
         return "rest_broken"
+
+    if planned_load <= 0:
+        return "unplanned"
 
     ratio = (
         actual_load

@@ -19,6 +19,14 @@ class TrainingHistorySnapshot:
 
     activities_84_days: tuple[Activity, ...]
 
+    # Fenêtres intermédiaires utilisées par la référence
+    # hebdomadaire adaptative.
+    #
+    # Elles restent optionnelles pour conserver la compatibilité
+    # avec les anciens constructeurs de TrainingHistorySnapshot.
+    last_14_days: TrainingStats | None = None
+    last_21_days: TrainingStats | None = None
+
     race_activity_ids: frozenset[UUID] = frozenset()
 
     @property

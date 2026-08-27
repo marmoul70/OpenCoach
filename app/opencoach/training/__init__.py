@@ -46,7 +46,16 @@ from .stats_service import (
     TrainingStatsService,
 )
 
+from .weekly_load_projection import (
+    WeeklyLoadProjection,
+)
+from .weekly_load_projection_service import (
+    WeeklyLoadProjectionService,
+)
+
 __all__ = [
+    "WeeklyLoadProjection",
+    "WeeklyLoadProjectionService",
     "ActivityMatchResult",
     "CANONICAL_INTENSITIES",
     "DailyTrainingLoad",

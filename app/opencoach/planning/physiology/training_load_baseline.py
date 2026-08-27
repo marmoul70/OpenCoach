@@ -64,18 +64,51 @@ def calculate_training_load_baseline(
 
     long_term_load = load_84
 
-    baseline_load = (
-        short_term_load * 0.20
-        + medium_term_load * 0.50
-        + long_term_load * 0.30
+    adaptive_reference = (
+        metrics.adaptive_weekly_reference
     )
 
-    confidence = _calculate_confidence(
-        load_7=load_7,
-        load_28=load_28,
-        load_42=load_42,
-        load_84=load_84,
-    )
+    if adaptive_reference is not None:
+        # Lorsque calculate_training_history_metrics() connaît
+        # la profondeur réelle de l'historique, cette référence
+        # devient la source de vérité.
+        #
+        # Exemple :
+        # 1 semaine connue avec 233 points -> baseline 233,
+        # et non 233 artificiellement dilués sur 4/6/12 semaines.
+        baseline_load = (
+            adaptive_reference.training_load
+        )
+
+        medium_term_load = (
+            adaptive_reference.training_load
+        )
+
+        long_term_load = (
+            adaptive_reference.training_load
+        )
+
+        confidence = min(
+            1.0,
+            metrics.adaptive_window_days
+            / 28.0,
+        )
+
+    else:
+        # Compatibilité avec les anciens TrainingHistoryMetrics
+        # construits directement dans certains tests.
+        baseline_load = (
+            short_term_load * 0.20
+            + medium_term_load * 0.50
+            + long_term_load * 0.30
+        )
+
+        confidence = _calculate_confidence(
+            load_7=load_7,
+            load_28=load_28,
+            load_42=load_42,
+            load_84=load_84,
+        )
 
     return TrainingLoadBaseline(
         baseline_load=round(

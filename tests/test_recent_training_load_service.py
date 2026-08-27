@@ -326,3 +326,88 @@ def test_recent_training_load_rejects_invalid_period() -> None:
             TARGET_DATE,
             days=0,
         )
+
+def test_recent_training_load_tracks_planning_coverage() -> None:
+    day_1 = (
+        TARGET_DATE
+        - timedelta(days=1)
+    )
+
+    day_2 = (
+        TARGET_DATE
+        - timedelta(days=2)
+    )
+
+    day_3 = (
+        TARGET_DATE
+        - timedelta(days=3)
+    )
+
+    results = {
+        day_1: create_comparison(
+            comparison_date=day_1,
+            planned_load=30.0,
+            actual_load=30.0,
+            status="on_plan",
+        ),
+        day_2: create_comparison(
+            comparison_date=day_2,
+            planned_load=0.0,
+            actual_load=25.0,
+            status="unplanned",
+        ),
+        day_3: create_comparison(
+            comparison_date=day_3,
+            planned_load=0.0,
+            actual_load=0.0,
+            status="unplanned",
+        ),
+    }
+
+    service = RecentTrainingLoadService(
+        FakeTrainingLoadComparisonService(
+            results,
+        )
+    )
+
+    result = service.calculate(
+        uuid4(),
+        TARGET_DATE,
+        days=3,
+    )
+
+    assert result.analyzed_days == 3
+
+    assert (
+        result.planning_covered_days
+        == 1
+    )
+
+    assert (
+        result.unplanned_days
+        == 2
+    )
+
+    assert (
+        result.planning_coverage_ratio
+        == pytest.approx(
+            1 / 3,
+            abs=0.001,
+        )
+    )
+
+    # Les journées sans prescription OpenCoach
+    # ne sont pas des écarts au planning.
+    assert result.broken_rest_days == 0
+    assert result.respected_rest_days == 0
+    assert result.above_plan_days == 0
+    assert result.below_plan_days == 0
+
+    assert result.on_plan_days == 1
+
+    # Leur charge réelle reste néanmoins
+    # comptabilisée dans l'activité observée.
+    assert (
+        result.actual_load_total
+        == 55.0
+    )

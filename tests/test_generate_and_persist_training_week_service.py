@@ -70,6 +70,7 @@ class FakePersistenceService:
         *,
         athlete_profile_id,
         week,
+        envelope,
         reconcile_from_date=None,
     ):
         self.calls.append(

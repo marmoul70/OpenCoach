@@ -265,6 +265,7 @@ def create_service(
                 30,
             ),
             phase="base",
+            week_type="loading",
             phase_week_index=1,
             target_load=target_load,
             load_min=(

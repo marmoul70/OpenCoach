@@ -25,6 +25,7 @@ def create_plan(
             30,
         ),
         "phase": "base",
+        "week_type": "loading",
         "phase_week_index": 2,
         "target_load": 200.0,
         "load_min": 190.0,

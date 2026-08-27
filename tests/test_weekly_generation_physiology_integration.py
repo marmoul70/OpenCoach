@@ -30,6 +30,10 @@ from opencoach.planning.stimulus.training import (
     TrainingModality,
     TrainingStimulus,
 )
+from opencoach.planning.trajectory.multi_week import (
+    TrajectoryWeekType,
+)
+
 from opencoach.planning.weekly.schedule_types import (
     FatigueBudget,
     Weekday,
@@ -201,6 +205,7 @@ def create_envelope(
             11,
         ),
         phase=TrainingPhase.SPECIFIC,
+        week_type=TrajectoryWeekType.LOADING,
         target_load=420.0,
         load_min=380.0,
         load_max=460.0,

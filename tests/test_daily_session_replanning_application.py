@@ -417,7 +417,11 @@ def test_obsolete_target_date_is_rejected() -> None:
                 DailyReplanningAction
                 .MOVE_ADAPTED
             ),
-            target_date=FRIDAY,
+            target_date=date(
+                2026,
+                8,
+                31,
+            ),
         )
 
 

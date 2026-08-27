@@ -1,5 +1,8 @@
 import {
+  CalendarDays,
+  CircleX,
   Heart,
+  MoveRight,
   Star,
 } from 'lucide-react'
 import {
@@ -9,14 +12,18 @@ import {
 
 import {
   acceptDailyAdaptation,
-  acceptDailyRescheduling,
+  applyDailyReplanning,
   declineDailyAdaptation,
+  fetchDailyReplanning,
   fetchTodayCheckIn,
   saveDailyCheckIn,
   type BodySide,
   type DailyCheckInState,
+  type DailyReplanningState,
   type PainArea,
-  type ReschedulingProposal,
+  type ReplanningAction,
+  type ReplanningOption,
+  type ReplanningProposal,
 } from '../../core/checkin'
 
 import {
@@ -92,16 +99,9 @@ export function FeelingDetails() {
   )
 
   const [
-    reschedulingProposal,
-    setReschedulingProposal,
-  ] = useState<ReschedulingProposal | null>(
-    null,
-  )
-
-  const [
-    reschedulingSourceSessionId,
-    setReschedulingSourceSessionId,
-  ] = useState<string | null>(
+    replanning,
+    setReplanning,
+  ] = useState<DailyReplanningState | null>(
     null,
   )
 
@@ -309,6 +309,22 @@ export function FeelingDetails() {
     }
   }
 
+  async function loadReplanning(
+    checkinId: string,
+  ) {
+    const result =
+      await fetchDailyReplanning(
+        checkinId,
+      )
+
+    setReplanning(
+      result,
+    )
+
+    return result
+  }
+
+
   async function acceptAdaptation() {
     if (!state) {
       return
@@ -331,22 +347,14 @@ export function FeelingDetails() {
       }
 
       if (
-        result.rescheduling_proposal
-        && result.adapted_session?.id
+        state.checkin.unavailable
+        && result.session_adapted
       ) {
-        setReschedulingProposal(
-          result.rescheduling_proposal,
-        )
-
-        setReschedulingSourceSessionId(
-          result.adapted_session.id,
+        await loadReplanning(
+          state.checkin.id,
         )
       } else {
-        setReschedulingProposal(
-          null,
-        )
-
-        setReschedulingSourceSessionId(
+        setReplanning(
           null,
         )
       }
@@ -400,10 +408,13 @@ export function FeelingDetails() {
     }
   }
 
-  async function acceptRescheduling() {
+  async function applyReplanning(
+    proposal: ReplanningProposal,
+    option: ReplanningOption,
+  ) {
     if (
       !state
-      || !reschedulingSourceSessionId
+      || !proposal.source_session.id
     ) {
       return
     }
@@ -414,44 +425,69 @@ export function FeelingDetails() {
       )
 
       const result =
-        await acceptDailyRescheduling(
+        await applyDailyReplanning(
           state.checkin.id,
-          reschedulingSourceSessionId,
+          {
+            source_session_id:
+              proposal.source_session.id,
+            action:
+              option.action,
+            target_date:
+              option.target_date,
+          },
         )
 
       notifyTrainingSessionUpdated()
       notifyUpdated()
 
-      setReschedulingProposal(
-        null,
-      )
+      const refreshed =
+        await loadReplanning(
+          state.checkin.id,
+        )
 
-      setReschedulingSourceSessionId(
-        null,
-      )
+      const remaining =
+        refreshed.proposals.filter(
+          (item) =>
+            item.source_session.id
+            !== proposal.source_session.id,
+        )
+
+      setReplanning({
+        ...refreshed,
+        proposals:
+          remaining,
+      })
 
       toast({
         type: 'success',
         title:
-          result.already_rescheduled
-            ? 'Séance déjà reportée'
-            : 'Séance reportée',
-        message:
-          (
-            `${result.rescheduled_session.title} · `
-            + `${formatReschedulingDate(
-              result.rescheduled_session.date,
-            )}`
+          getReplanningSuccessTitle(
+            result.action,
           ),
+        message:
+          result.applied_session
+            ? (
+                `${result.applied_session.title} · `
+                + `${formatReschedulingDate(
+                  result.applied_session.date,
+                )}`
+              )
+            : (
+                'La séance reste annulée.'
+              ),
       })
     } catch (reason) {
       toast({
         type: 'error',
-        title: 'Report impossible',
+        title:
+          'Replanification impossible',
         message:
           reason instanceof Error
             ? reason.message
-            : 'Impossible de reporter la séance.',
+            : (
+                'Impossible d’appliquer '
+                + 'ce choix.'
+              ),
       })
     } finally {
       setSaving(
@@ -831,62 +867,92 @@ export function FeelingDetails() {
 
       {(
         state?.adaptation?.decision === 'accepted'
-        && reschedulingProposal
-        && reschedulingSourceSessionId
+        && state.checkin.unavailable
+        && replanning
+        && replanning.proposals.length > 0
       ) && (
-        <section className="rounded-xl border border-info/40 bg-info/5 p-4">
-          <div className="badge badge-info badge-sm">
-            Report possible
+        <section
+          className="
+            rounded-2xl
+            border
+            border-info/30
+            bg-info/5
+            p-4
+          "
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className="
+                flex
+                size-9
+                shrink-0
+                items-center
+                justify-center
+                rounded-xl
+                bg-info/10
+                text-info
+              "
+            >
+              <CalendarDays
+                className="h-5 w-5"
+              />
+            </div>
+
+            <div className="min-w-0">
+              <h3 className="font-semibold text-base-content">
+                Réorganiser le reste de la semaine
+              </h3>
+
+              <p className="mt-1 text-sm text-base-content/55">
+                OpenCoach a analysé les séances restantes
+                et vous propose plusieurs choix.
+              </p>
+            </div>
           </div>
 
-          <p className="mt-3 font-semibold text-base-content">
-            La séance annulée peut être reprogrammée{' '}
-            {formatReschedulingDate(
-              reschedulingProposal.suggested_date,
-            )}.
-          </p>
-
-          <p className="mt-2 text-sm leading-relaxed text-base-content/60">
-            Le coach a vérifié les créneaux restants de la semaine
-            et propose ce jour pour conserver la cohérence du planning.
-          </p>
-
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              className="btn btn-info sm:flex-1"
-              disabled={saving}
-              onClick={() => {
-                void acceptRescheduling()
-              }}
+          {replanning.coordination_reasons.length > 0 && (
+            <div
+              className="
+                mt-4
+                rounded-xl
+                border
+                border-info/20
+                bg-base-100/70
+                px-3
+                py-2.5
+              "
             >
-              {saving && (
-                <span className="loading loading-spinner loading-xs" />
-              )}
+              <p className="text-xs font-semibold text-info">
+                Conseil OpenCoach
+              </p>
 
-              Reporter au{' '}
-              {formatReschedulingDate(
-                reschedulingProposal.suggested_date,
-                true,
-              )}
-            </button>
+              <p className="mt-1 text-sm leading-relaxed text-base-content/60">
+                {replanning.coordination_reasons[0]}
+              </p>
+            </div>
+          )}
 
-            <button
-              type="button"
-              className="btn btn-ghost sm:flex-1"
-              disabled={saving}
-              onClick={() => {
-                setReschedulingProposal(
-                  null,
-                )
-
-                setReschedulingSourceSessionId(
-                  null,
-                )
-              }}
-            >
-              Ne pas reporter
-            </button>
+          <div className="mt-4 space-y-4">
+            {replanning.proposals.map(
+              (proposal) => (
+                <ReplanningProposalCard
+                  key={
+                    proposal.source_session.id
+                    ?? proposal.source_session.title
+                  }
+                  proposal={proposal}
+                  saving={saving}
+                  onChoose={
+                    (option) => {
+                      void applyReplanning(
+                        proposal,
+                        option,
+                      )
+                    }
+                  }
+                />
+              ),
+            )}
           </div>
         </section>
       )}
@@ -900,6 +966,304 @@ export function FeelingDetails() {
       )}
     </div>
   )
+}
+
+
+function ReplanningProposalCard({
+  proposal,
+  saving,
+  onChoose,
+}: {
+  proposal: ReplanningProposal
+  saving: boolean
+  onChoose: (
+    option: ReplanningOption,
+  ) => void
+}) {
+  return (
+    <article
+      className="
+        rounded-xl
+        border
+        border-base-300
+        bg-base-100
+        p-3.5
+      "
+    >
+      <div>
+        <p className="font-semibold text-base-content">
+          {proposal.source_session.title}
+        </p>
+
+        <p className="mt-0.5 text-xs text-base-content/45">
+          {proposal.source_session.duration_minutes} min
+          {' · '}
+          {formatReplanningIntensity(
+            proposal.source_session.intensity,
+          )}
+        </p>
+      </div>
+
+      <div className="mt-3 grid gap-2">
+        {proposal.options.map(
+          (option) => (
+            <ReplanningOptionButton
+              key={
+                (
+                  option.action
+                  + ':'
+                  + (
+                    option.target_date
+                    ?? 'none'
+                  )
+                )
+              }
+              option={option}
+              disabled={saving}
+              onClick={() => {
+                onChoose(
+                  option,
+                )
+              }}
+            />
+          ),
+        )}
+      </div>
+    </article>
+  )
+}
+
+
+function ReplanningOptionButton({
+  option,
+  disabled,
+  onClick,
+}: {
+  option: ReplanningOption
+  disabled: boolean
+  onClick: () => void
+}) {
+  const recommended =
+    option.recommended
+
+  const session =
+    option.session
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`
+        relative
+        flex
+        w-full
+        items-center
+        gap-3
+        rounded-xl
+        border
+        px-3
+        py-3
+        text-left
+        transition
+        ${
+          recommended
+            ? (
+                'border-primary/50 '
+                + 'bg-primary/5 '
+                + 'hover:bg-primary/10'
+              )
+            : (
+                'border-base-300 '
+                + 'hover:bg-base-200/50'
+              )
+        }
+      `}
+    >
+      <div
+        className={`
+          flex
+          size-8
+          shrink-0
+          items-center
+          justify-center
+          rounded-lg
+          ${
+            recommended
+              ? 'bg-primary/10 text-primary'
+              : 'bg-base-200 text-base-content/55'
+          }
+        `}
+      >
+        {getReplanningIcon(
+          option.action,
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-base-content">
+            {getReplanningActionLabel(
+              option.action,
+            )}
+          </span>
+
+          {recommended && (
+            <span className="badge badge-primary badge-sm">
+              Conseil OpenCoach
+            </span>
+          )}
+
+          <span
+            className={`
+              badge
+              badge-sm
+              ${getRiskBadgeClass(
+                option.risk,
+              )}
+            `}
+          >
+            {getRiskLabel(
+              option.risk,
+            )}
+          </span>
+        </div>
+
+        <p className="mt-1 text-xs text-base-content/50">
+          {option.target_date
+            ? formatReschedulingDate(
+                option.target_date,
+              )
+            : 'Aucun report'}
+          {session
+            ? (
+                ` · ${session.duration_minutes} min`
+              )
+            : ''}
+        </p>
+
+        {(
+          option.action
+          === 'move_adapted'
+          && session
+        ) && (
+          <p className="mt-1 text-xs text-base-content/60">
+            {session.title}
+          </p>
+        )}
+      </div>
+
+      <MoveRight
+        className="h-4 w-4 shrink-0 text-base-content/30"
+      />
+    </button>
+  )
+}
+
+
+function getReplanningIcon(
+  action: ReplanningAction,
+) {
+  if (action === 'cancel') {
+    return (
+      <CircleX className="h-4 w-4" />
+    )
+  }
+
+  return (
+    <CalendarDays className="h-4 w-4" />
+  )
+}
+
+
+function getReplanningActionLabel(
+  action: ReplanningAction,
+): string {
+  if (action === 'cancel') {
+    return 'Annuler définitivement'
+  }
+
+  if (
+    action
+    === 'move_adapted'
+  ) {
+    return 'Déplacer et adapter'
+  }
+
+  return 'Déplacer sans modifier'
+}
+
+
+function getReplanningSuccessTitle(
+  action: ReplanningAction,
+): string {
+  if (action === 'cancel') {
+    return 'Séance annulée'
+  }
+
+  if (
+    action
+    === 'move_adapted'
+  ) {
+    return 'Séance déplacée et adaptée'
+  }
+
+  return 'Séance déplacée'
+}
+
+
+function getRiskLabel(
+  risk: ReplanningOption['risk'],
+): string {
+  if (risk === 'high') {
+    return 'Charge élevée'
+  }
+
+  if (risk === 'moderate') {
+    return 'À surveiller'
+  }
+
+  return 'Faible impact'
+}
+
+
+function getRiskBadgeClass(
+  risk: ReplanningOption['risk'],
+): string {
+  if (risk === 'high') {
+    return 'badge-error'
+  }
+
+  if (risk === 'moderate') {
+    return 'badge-warning'
+  }
+
+  return 'badge-success'
+}
+
+
+function formatReplanningIntensity(
+  intensity: string,
+): string {
+  const normalized =
+    intensity
+      .trim()
+      .toLowerCase()
+
+  if (
+    normalized === 'hard'
+    || normalized === 'very_hard'
+  ) {
+    return 'Intense'
+  }
+
+  if (
+    normalized === 'easy'
+  ) {
+    return 'Facile'
+  }
+
+  return intensity
 }
 
 

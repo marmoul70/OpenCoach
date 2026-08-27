@@ -14,6 +14,7 @@ import { TrainingProvider } from './modules/training/trainingStore'
 import { RacePage } from './modules/races/RacePage'
 import { RaceProvider } from './modules/races/raceStore'
 import { ActivityPage } from './modules/activities/ActivityPage'
+import { FeelingPage } from './modules/feeling/FeelingPage'
 import { Settings } from './modules/settings'
 import { Connections } from './modules/connections'
 
@@ -21,6 +22,7 @@ type Page =
   | 'dashboard'
   | 'coach'
   | 'training'
+  | 'feeling'
   | 'profile-personal'
   | 'profile-sport'
   | 'settings'
@@ -202,6 +204,22 @@ function App() {
                         className={page === 'training' ? 'text-primary font-semibold' : ''}
                       >
                         Entraînement
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          setPage('feeling')
+                          event.currentTarget.blur()
+                        }}
+                        className={
+                          page === 'feeling'
+                            ? 'text-primary font-semibold'
+                            : ''
+                        }
+                      >
+                        Ressenti
                       </button>
                     </li>
                     <li>
@@ -396,11 +414,13 @@ function App() {
             <Dashboard
               onOpenTraining={() => setPage('training')}
               onOpenCoach={() => setPage('coach')}
+              onOpenFeeling={() => setPage('feeling')}
             />
           )}
 
           {page === 'coach' && <CoachPage />}
           {page === 'training' && <TrainingWeek />}
+          {page === 'feeling' && <FeelingPage />}
           {page === 'activities' && <ActivityPage />}
           {page === 'races' && <RacePage />}
           {page === 'profile-personal' && <PersonalProfile />}

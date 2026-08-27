@@ -602,6 +602,162 @@ def accept_daily_adaptation(
 
     accepted = proposal.accept()
 
+    # --------------------------------------------------------
+    # Indisponibilité totale
+    # --------------------------------------------------------
+    #
+    # Une indisponibilité concerne la journée entière.
+    # Il peut donc y avoir plusieurs séances planifiées.
+    #
+    # On ne passe pas par ApplyAcceptedDailyAdaptationService,
+    # qui est volontairement conçu pour adapter une séance unique.
+    #
+    # Toutes les séances planifiées du jour, sans activité liée,
+    # deviennent "skipped". Le nouveau moteur de replanification
+    # multi-séances décidera ensuite quoi proposer pour chacune.
+    #
+    if checkin.unavailable:
+        sessions_today = (
+            training_session_repository
+            .list_sessions_between(
+                athlete_profile_id,
+                checkin.date,
+                checkin.date,
+            )
+        )
+
+        sessions_to_skip = tuple(
+            session
+            for session in sessions_today
+            if (
+                session.status == "planned"
+                and session.activity_id is None
+            )
+        )
+
+        if not sessions_to_skip:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Aucune séance planifiée "
+                    "à annuler aujourd'hui."
+                ),
+            )
+
+        skipped_sessions = []
+
+        for session in sessions_to_skip:
+            if session.id is None:
+                continue
+
+            skipped_sessions.append(
+                training_session_repository
+                .update_status(
+                    athlete_profile_id,
+                    session.id,
+                    "skipped",
+                )
+            )
+
+        saved_proposal = (
+            adaptation_repository.save(
+                athlete_profile_id,
+                accepted,
+            )
+        )
+
+        adapted_session = None
+        rescheduling_proposal = None
+
+        if len(skipped_sessions) == 1:
+            session = skipped_sessions[0]
+
+            adapted_session = {
+                "id": (
+                    str(session.id)
+                    if session.id is not None
+                    else None
+                ),
+                "date": session.date.isoformat(),
+                "type": session.type,
+                "sport_type": session.sport_type,
+                "title": session.title,
+                "description": session.description,
+                "duration_minutes": (
+                    session.duration_minutes
+                ),
+                "distance_km": (
+                    session.distance_km
+                ),
+                "elevation_gain_m": (
+                    session.elevation_gain_m
+                ),
+                "intensity": session.intensity,
+                "heart_rate_zone": (
+                    session.heart_rate_zone
+                ),
+                "status": session.status,
+                "activity_id": (
+                    str(session.activity_id)
+                    if session.activity_id is not None
+                    else None
+                ),
+            }
+
+            athlete = (
+                profile_service.get_profile()
+            )
+
+            rescheduling = (
+                rescheduling_service.propose(
+                    athlete_profile_id=(
+                        athlete_profile_id
+                    ),
+                    athlete=athlete,
+                    session=session,
+                )
+            )
+
+            if rescheduling is not None:
+                rescheduling_proposal = {
+                    "suggested_date": (
+                        rescheduling
+                        .suggested_date
+                        .isoformat()
+                    ),
+                    "requires_confirmation": (
+                        rescheduling
+                        .requires_confirmation
+                    ),
+                    "reasons": list(
+                        rescheduling.reasons
+                    ),
+                }
+
+        return {
+            "proposal": _adaptation_response(
+                saved_proposal
+            ),
+            "session_adapted": bool(
+                skipped_sessions
+            ),
+            "already_accepted": False,
+            "adapted_session": adapted_session,
+            "reasons": [
+                (
+                    f"{len(skipped_sessions)} séance(s) "
+                    "annulée(s) pour aujourd'hui."
+                ),
+            ],
+            "rescheduling_proposal": (
+                rescheduling_proposal
+            ),
+        }
+
+    # --------------------------------------------------------
+    # Adaptation classique : une séance ciblée
+    # --------------------------------------------------------
+
     service = (
         ApplyAcceptedDailyAdaptationService(
             training_session_repository=(

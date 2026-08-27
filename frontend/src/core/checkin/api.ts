@@ -104,6 +104,72 @@ export interface AcceptReschedulingResponse {
   rescheduled_session: RescheduledSession
 }
 
+export type ReplanningAction =
+  | 'cancel'
+  | 'move_unchanged'
+  | 'move_adapted'
+
+
+export type ReplanningRisk =
+  | 'low'
+  | 'moderate'
+  | 'high'
+
+
+export interface ReplanningSession {
+  id: string | null
+  date: string
+  type: string
+  sport_type: string
+  title: string
+  description: string
+  duration_minutes: number
+  distance_km?: number | null
+  elevation_gain_m?: number | null
+  intensity: string
+  heart_rate_zone: string | null
+  status: string
+}
+
+
+export interface ReplanningOption {
+  action: ReplanningAction
+  target_date: string | null
+  risk: ReplanningRisk
+  recommended: boolean
+  globally_recommended?: boolean
+  requires_confirmation: boolean
+  reasons: string[]
+  session: ReplanningSession | null
+}
+
+
+export interface ReplanningProposal {
+  source_session: ReplanningSession
+  recommended_action: ReplanningAction
+  recommended_target_date: string | null
+  options: ReplanningOption[]
+}
+
+
+export interface DailyReplanningState {
+  checkin_id: string
+  date: string
+  coordination_reasons: string[]
+  proposals: ReplanningProposal[]
+}
+
+
+export interface ApplyReplanningResponse {
+  source_session_id: string | null
+  action: ReplanningAction
+  created: boolean
+  cancelled: boolean
+  already_applied: boolean
+  applied_session: ReplanningSession | null
+}
+
+
 export interface AcceptAdaptationResponse {
   proposal: AdaptationProposal
   session_adapted: boolean
@@ -262,5 +328,66 @@ export async function acceptDailyRescheduling(
 
   return response.json() as Promise<
     AcceptReschedulingResponse
+  >
+}
+
+
+export async function fetchDailyReplanning(
+  checkinId: string,
+): Promise<DailyReplanningState> {
+  const response = await fetch(
+    (
+      '/api/coach/check-in/'
+      + `${checkinId}`
+      + '/replanning'
+    ),
+  )
+
+  if (!response.ok) {
+    throw await apiError(
+      response,
+    )
+  }
+
+  return response.json() as Promise<
+    DailyReplanningState
+  >
+}
+
+
+export async function applyDailyReplanning(
+  checkinId: string,
+  input: {
+    source_session_id: string
+    action: ReplanningAction
+    target_date: string | null
+  },
+): Promise<ApplyReplanningResponse> {
+  const response = await fetch(
+    (
+      '/api/coach/check-in/'
+      + `${checkinId}`
+      + '/replanning/apply'
+    ),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type':
+          'application/json',
+      },
+      body: JSON.stringify(
+        input,
+      ),
+    },
+  )
+
+  if (!response.ok) {
+    throw await apiError(
+      response,
+    )
+  }
+
+  return response.json() as Promise<
+    ApplyReplanningResponse
   >
 }

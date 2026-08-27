@@ -32,12 +32,14 @@ import {
 interface DashboardProps {
   onOpenTraining: () => void
   onOpenCoach: () => void
+  onOpenFeeling: () => void
 }
 
 
 export function Dashboard({
   onOpenTraining,
   onOpenCoach,
+  onOpenFeeling,
 }: DashboardProps) {
   const profile =
     useAthleteProfile()
@@ -173,6 +175,14 @@ export function Dashboard({
               === 'training'
             ) {
               onOpenTraining()
+              return
+            }
+
+            if (
+              widget.id
+              === 'feeling'
+            ) {
+              onOpenFeeling()
               return
             }
 

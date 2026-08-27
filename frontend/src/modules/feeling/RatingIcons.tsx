@@ -29,13 +29,13 @@ export function RatingIcons({
 }: RatingIconsProps) {
   const Icon =
     kind === 'energy'
-      ? Star
-      : Heart
+      ? Heart
+      : Star
 
   const colorClass =
     kind === 'energy'
-      ? 'text-success'
-      : 'text-error'
+      ? 'text-error'
+      : 'text-success'
 
   const iconClass =
     size === 'md'

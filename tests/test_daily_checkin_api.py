@@ -238,6 +238,27 @@ class FakeTrainingSessionRepository:
             )
         ]
 
+    def update_status(
+        self,
+        athlete_profile_id,
+        session_id,
+        status,
+    ):
+        session = self.get_session(
+            athlete_profile_id,
+            session_id,
+        )
+
+        if session is None:
+            raise RuntimeError(
+                "Séance introuvable."
+            )
+
+        session.status = status
+
+        return session
+
+
     def save_session(
         self,
         athlete_profile_id,

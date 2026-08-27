@@ -736,31 +736,35 @@ def _mark_recommended_option(
 
     recommended_option = None
 
-    safe_unchanged = next(
-        (
-            option
-            for option in unchanged
-            if (
-                option.risk
-                is not DailyReplanningRisk.HIGH
-            )
-        ),
-        None,
+    best_unchanged = (
+        unchanged[0]
+        if unchanged
+        else None
     )
 
-    if safe_unchanged is not None:
+    best_adapted = (
+        adapted[0]
+        if adapted
+        else None
+    )
+
+    if (
+        best_unchanged is not None
+        and best_unchanged.risk
+        is not DailyReplanningRisk.HIGH
+    ):
         recommended_option = (
-            safe_unchanged
+            best_unchanged
         )
 
-    elif adapted:
+    elif best_adapted is not None:
         recommended_option = (
-            adapted[0]
+            best_adapted
         )
 
-    elif unchanged:
+    elif best_unchanged is not None:
         recommended_option = (
-            unchanged[0]
+            best_unchanged
         )
 
     else:

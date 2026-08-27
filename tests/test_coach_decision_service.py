@@ -644,25 +644,76 @@ def test_coach_decision_service_keeps_recent_load_when_no_session() -> None:
         )
     ]
 
-def test_coach_decision_service_raises_when_multiple_sessions() -> None:
+def test_coach_decision_service_handles_multiple_sessions() -> None:
+    first = create_session(
+        duration_minutes=60,
+        intensity="high",
+    )
+
+    second = create_session(
+        duration_minutes=30,
+        intensity="easy",
+    )
+
     service, _, readiness_service = create_service(
         sessions=[
-            create_session(),
-            create_session(),
+            first,
+            second,
         ],
         readiness_score=90.0,
     )
 
+    profile_id = uuid4()
+
+    result = service.calculate(
+        profile_id,
+        TARGET_DATE,
+    )
+
+    assert len(
+        result.session_decisions
+    ) == 2
+
+    assert (
+        result.session_decisions[0]
+        .session
+        is first
+    )
+
+    assert (
+        result.session_decisions[1]
+        .session
+        is second
+    )
+
+    assert (
+        result.session_decisions[0]
+        .decision.action
+        == "keep"
+    )
+
+    assert (
+        result.session_decisions[1]
+        .decision.action
+        == "keep"
+    )
+
+    # Le raccourci historique n'est valable
+    # que pour une journée mono-séance.
+    assert result.session is None
+
     with pytest.raises(
         CoachDecisionServiceError,
-        match="Plusieurs séances planifiées",
+        match="plusieurs décisions",
     ):
-        service.calculate(
-            uuid4(),
+        _ = result.decision
+
+    assert readiness_service.calls == [
+        (
+            profile_id,
             TARGET_DATE,
         )
-
-    assert readiness_service.calls == []
+    ]
 
 
 def test_completed_session_does_not_conflict_with_planned_session() -> None:

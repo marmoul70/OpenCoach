@@ -15,6 +15,10 @@ from opencoach.coaching import (
     CoachDecisionAssessment,
     PlannedSessionUnavailableError,
 )
+from opencoach.coaching.service import (
+    CoachSessionDecision,
+)
+
 from opencoach.models import (
     TrainingSession,
     WellnessDay,
@@ -222,9 +226,13 @@ def create_assessment() -> CoachDecisionAssessment:
 
     return CoachDecisionAssessment(
         date=TODAY,
-        session=session,
+        session_decisions=(
+            CoachSessionDecision(
+                session=session,
+                decision=decision,
+            ),
+        ),
         readiness=readiness_assessment,
-        decision=decision,
     )
 
 def create_stale_assessment() -> CoachDecisionAssessment:
@@ -248,9 +256,8 @@ def create_stale_assessment() -> CoachDecisionAssessment:
 
     return CoachDecisionAssessment(
         date=assessment.date,
-        session=assessment.session,
+        session_decisions=assessment.session_decisions,
         readiness=stale_readiness,
-        decision=assessment.decision,
         recent_load=assessment.recent_load,
         recent_load_assessment=(
             assessment.recent_load_assessment
@@ -295,6 +302,17 @@ def test_coach_api_returns_today_decision() -> None:
 
     payload = response.json()
 
+    assert "session_decisions" in payload
+
+    assert isinstance(
+        payload["session_decisions"],
+        list,
+    )
+
+    assert len(
+        payload["session_decisions"]
+    ) == 1
+
     assert "signals" in payload["readiness"]
 
     assert isinstance(
@@ -318,12 +336,12 @@ def test_coach_api_returns_today_decision() -> None:
         TODAY.isoformat()
     )
 
-    assert payload["session"]["title"] == (
+    assert payload["session_decisions"][0]["session"]["title"] == (
         "Fractionné"
     )
 
     assert (
-        payload["session"]["duration_minutes"]
+        payload["session_decisions"][0]["session"]["duration_minutes"]
         == 60
     )
 
@@ -347,7 +365,7 @@ def test_coach_api_returns_today_decision() -> None:
 
     assert payload["data_warning"] is None
 
-    assert payload["decision"]["action"] == "reduce"
+    assert payload["session_decisions"][0]["decision"]["action"] == "reduce"
     assert payload["recent_load"] is None
 
     assert (
@@ -355,14 +373,14 @@ def test_coach_api_returns_today_decision() -> None:
         is None
     )
     assert (
-        payload["decision"][
+        payload["session_decisions"][0]["decision"][
             "recommended_duration_minutes"
         ]
         == 36
     )
 
     assert (
-        payload["decision"][
+        payload["session_decisions"][0]["decision"][
             "recommended_intensity"
         ]
         == "easy"
@@ -374,6 +392,112 @@ def test_coach_api_returns_today_decision() -> None:
             TODAY,
         )
     ]
+
+
+def test_coach_api_returns_multiple_session_decisions() -> None:
+    from dataclasses import replace
+
+    assessment = create_assessment()
+
+    first_item = assessment.session_decisions[0]
+
+    assert first_item.session is not None
+
+    second_session = replace(
+        first_item.session,
+        title="Renforcement",
+        type="strength",
+        sport_type="Strength",
+        duration_minutes=30,
+        intensity="easy",
+        heart_rate_zone=None,
+    )
+
+    second_decision = replace(
+        first_item.decision,
+        original_duration_minutes=30,
+        recommended_duration_minutes=30,
+        original_intensity="easy",
+        recommended_intensity="easy",
+    )
+
+    multi_assessment = CoachDecisionAssessment(
+        date=assessment.date,
+        session_decisions=(
+            first_item,
+            CoachSessionDecision(
+                session=second_session,
+                decision=second_decision,
+            ),
+        ),
+        readiness=assessment.readiness,
+        recent_load=assessment.recent_load,
+        recent_load_assessment=(
+            assessment.recent_load_assessment
+        ),
+    )
+
+    service = FakeCoachDecisionService(
+        assessment=multi_assessment,
+    )
+
+    client, _ = create_client(service)
+
+    response = client.get(
+        "/api/coach/today"
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+
+    assert "session_decisions" in payload
+
+    assert len(
+        payload["session_decisions"]
+    ) == 2
+
+    first = payload["session_decisions"][0]
+    second = payload["session_decisions"][1]
+
+    assert first["session"]["title"] == "Fractionné"
+
+    assert (
+        first["session"]["duration_minutes"]
+        == 60
+    )
+
+    assert second["session"]["title"] == "Renforcement"
+
+    assert (
+        second["session"]["duration_minutes"]
+        == 30
+    )
+
+    assert second["session"]["type"] == "strength"
+    assert second["session"]["sport_type"] == "Strength"
+
+    assert "decision" in first
+    assert "decision" in second
+
+    assert (
+        second["decision"][
+            "original_duration_minutes"
+        ]
+        == 30
+    )
+
+    assert (
+        second["decision"][
+            "recommended_duration_minutes"
+        ]
+        == 30
+    )
+
+    # L'ancien contrat mono-séance ne doit plus
+    # être exposé au niveau racine.
+    assert "session" not in payload
+    assert "decision" not in payload
 
 
 def create_rest_assessment() -> CoachDecisionAssessment:
@@ -396,9 +520,13 @@ def create_rest_assessment() -> CoachDecisionAssessment:
 
     return CoachDecisionAssessment(
         date=TODAY,
-        session=None,
+        session_decisions=(
+            CoachSessionDecision(
+                session=None,
+                decision=decision,
+            ),
+        ),
         readiness=assessment.readiness,
-        decision=decision,
     )
 
 def test_coach_api_returns_rest_without_planned_session() -> None:
@@ -437,11 +565,16 @@ def test_coach_api_returns_rest_without_planned_session() -> None:
     assert "current_value" in signal
     assert "reference_value" in signal
 
-    assert payload["session"] is None
-    assert payload["decision"]["action"] == "rest"
+    assert len(payload["session_decisions"]) == 1
 
     assert (
-        payload["decision"][
+        payload["session_decisions"][0]["session"]
+        is None
+    )
+    assert payload["session_decisions"][0]["decision"]["action"] == "rest"
+
+    assert (
+        payload["session_decisions"][0]["decision"][
             "recommended_duration_minutes"
         ]
         is None

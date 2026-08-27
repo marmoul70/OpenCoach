@@ -36,16 +36,66 @@ class PlannedSessionUnavailableError(
 
 
 @dataclass(frozen=True)
-class CoachDecisionAssessment:
-    """Décision complète du coach pour une séance planifiée."""
+class CoachSessionDecision:
+    """Décision du coach associée à une séance."""
 
-    date: date
     session: TrainingSession | None
-    readiness: ReadinessAssessment
     decision: CoachDecision
 
+
+@dataclass(frozen=True)
+class CoachDecisionAssessment:
+    """Décision complète du coach pour une journée."""
+
+    date: date
+
+    session_decisions: tuple[
+        CoachSessionDecision,
+        ...
+    ]
+
+    readiness: ReadinessAssessment
+
     recent_load: RecentTrainingLoad | None = None
-    recent_load_assessment: RecentLoadAssessment | None = None
+
+    recent_load_assessment: (
+        RecentLoadAssessment
+        | None
+    ) = None
+
+    @property
+    def session(
+        self,
+    ) -> TrainingSession | None:
+        """Compatibilité historique pour une seule séance."""
+
+        if len(
+            self.session_decisions
+        ) != 1:
+            return None
+
+        return (
+            self.session_decisions[0]
+            .session
+        )
+
+    @property
+    def decision(
+        self,
+    ) -> CoachDecision:
+        """Compatibilité historique pour une seule décision."""
+
+        if len(
+            self.session_decisions
+        ) != 1:
+            raise CoachDecisionServiceError(
+                "La journée contient plusieurs décisions de séance."
+            )
+
+        return (
+            self.session_decisions[0]
+            .decision
+        )
 
 
 class CoachDecisionService:
@@ -104,14 +154,6 @@ class CoachDecisionService:
             if session.status == "completed"
             and session.type != "rest"
         ]
-
-        if len(planned_sessions) > 1:
-            raise CoachDecisionServiceError(
-                (
-                    "Plusieurs séances planifiées sont "
-                    f"disponibles pour le {target_date.isoformat()}."
-                )
-            )
 
         readiness = self.readiness_service.calculate(
             athlete_profile_id,
@@ -179,29 +221,46 @@ class CoachDecisionService:
 
             return CoachDecisionAssessment(
                 date=target_date,
-                session=historical_session,
+                session_decisions=(
+                    CoachSessionDecision(
+                        session=historical_session,
+                        decision=decision,
+                    ),
+                ),
                 readiness=readiness,
-                decision=decision,
                 recent_load=recent_load,
                 recent_load_assessment=(
                     recent_load_assessment
                 ),
             )
 
-        session = planned_sessions[0]
-
-        decision = decide_training_session(
-            session=session,
-            readiness=readiness.readiness,
-            thresholds=self.thresholds.coach_decision,
-            recent_load=recent_load_assessment,
+        session_decisions = tuple(
+            CoachSessionDecision(
+                session=session,
+                decision=decide_training_session(
+                    session=session,
+                    readiness=(
+                        readiness.readiness
+                    ),
+                    thresholds=(
+                        self.thresholds
+                        .coach_decision
+                    ),
+                    recent_load=(
+                        recent_load_assessment
+                    ),
+                ),
+            )
+            for session
+            in planned_sessions
         )
 
         return CoachDecisionAssessment(
             date=target_date,
-            session=session,
+            session_decisions=(
+                session_decisions
+            ),
             readiness=readiness,
-            decision=decision,
             recent_load=recent_load,
             recent_load_assessment=(
                 recent_load_assessment

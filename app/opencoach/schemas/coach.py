@@ -65,6 +65,13 @@ class CoachDecisionResponse(BaseModel):
 
     constraints: list[str]
 
+class CoachSessionDecisionResponse(BaseModel):
+    """Décision du coach associée à une séance."""
+
+    session: CoachSessionResponse | None
+    decision: CoachDecisionResponse
+
+
 class CoachRecentLoadResponse(BaseModel):
     """Synthèse de la charge d'entraînement récente."""
 
@@ -109,9 +116,11 @@ class CoachRecentLoadAssessmentResponse(BaseModel):
 class CoachTodayResponse(BaseModel):
     date: date
 
-    session: CoachSessionResponse | None
+    session_decisions: list[
+        CoachSessionDecisionResponse
+    ]
+
     readiness: CoachReadinessResponse
-    decision: CoachDecisionResponse
 
     recent_load: (
         CoachRecentLoadResponse

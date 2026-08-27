@@ -45,6 +45,7 @@ from opencoach.schemas.coach import (
     CoachRecentLoadAssessmentResponse,
     CoachRecentLoadResponse,
     CoachRecentLoadSignalResponse,
+    CoachSessionDecisionResponse,
     CoachSessionResponse,
     CoachTodayResponse,
 )
@@ -177,9 +178,7 @@ def get_today_coach_decision(
 def _to_response(
     assessment: CoachDecisionAssessment,
 ) -> CoachTodayResponse:
-    session = assessment.session
     readiness = assessment.readiness.readiness
-    decision = assessment.decision
 
     readiness_assessment = (
         assessment.readiness
@@ -198,30 +197,72 @@ def _to_response(
     return CoachTodayResponse(
         date=assessment.date,
 
-        session=(
-            CoachSessionResponse(
-                id=session.id,
-                date=session.date,
-                type=session.type,
-                sport_type=session.sport_type,
-                title=session.title,
-                description=session.description,
-                duration_minutes=(
-                    session.duration_minutes
+        session_decisions=[
+            CoachSessionDecisionResponse(
+                session=(
+                    CoachSessionResponse(
+                        id=item.session.id,
+                        date=item.session.date,
+                        type=item.session.type,
+                        sport_type=(
+                            item.session.sport_type
+                        ),
+                        title=item.session.title,
+                        description=(
+                            item.session.description
+                        ),
+                        duration_minutes=(
+                            item.session.duration_minutes
+                        ),
+                        distance_km=(
+                            item.session.distance_km
+                        ),
+                        elevation_gain_m=(
+                            item.session.elevation_gain_m
+                        ),
+                        intensity=(
+                            item.session.intensity
+                        ),
+                        heart_rate_zone=(
+                            item.session.heart_rate_zone
+                        ),
+                        status=item.session.status,
+                    )
+                    if item.session is not None
+                    else None
                 ),
-                distance_km=session.distance_km,
-                elevation_gain_m=(
-                    session.elevation_gain_m
+                decision=CoachDecisionResponse(
+                    action=item.decision.action,
+                    reason=item.decision.reason,
+                    original_duration_minutes=(
+                        item.decision
+                        .original_duration_minutes
+                    ),
+                    recommended_duration_minutes=(
+                        item.decision
+                        .recommended_duration_minutes
+                    ),
+                    duration_factor=(
+                        item.decision.duration_factor
+                    ),
+                    intensity_factor=(
+                        item.decision.intensity_factor
+                    ),
+                    original_intensity=(
+                        item.decision.original_intensity
+                    ),
+                    recommended_intensity=(
+                        item.decision
+                        .recommended_intensity
+                    ),
+                    constraints=list(
+                        item.decision.constraints
+                    ),
                 ),
-                intensity=session.intensity,
-                heart_rate_zone=(
-                    session.heart_rate_zone
-                ),
-                status=session.status,
             )
-            if session is not None
-            else None
-        ),
+            for item
+            in assessment.session_decisions
+        ],
 
         readiness=CoachReadinessResponse(
             score=readiness.score,
@@ -260,31 +301,6 @@ def _to_response(
             ),
         ),
 
-        decision=CoachDecisionResponse(
-            action=decision.action,
-            reason=decision.reason,
-            original_duration_minutes=(
-                decision.original_duration_minutes
-            ),
-            recommended_duration_minutes=(
-                decision.recommended_duration_minutes
-            ),
-            duration_factor=(
-                decision.duration_factor
-            ),
-            intensity_factor=(
-                decision.intensity_factor
-            ),
-            original_intensity=(
-                decision.original_intensity
-            ),
-            recommended_intensity=(
-                decision.recommended_intensity
-            ),
-            constraints=list(
-                decision.constraints
-            ),
-        ),
 
         recent_load=(
             CoachRecentLoadResponse(

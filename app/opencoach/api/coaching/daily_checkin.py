@@ -58,6 +58,23 @@ from opencoach.coaching.daily_session_rescheduling_application import (
     DailySessionReschedulingSourceNotFoundError,
     DailySessionReschedulingUnavailableError,
 )
+from opencoach.coaching.daily_session_replanning import (
+    DailyReplanningAction,
+    DailySessionReplanningOption,
+)
+from opencoach.coaching.daily_session_replanning_service import (
+    DailySessionReplanningService,
+)
+from opencoach.coaching.daily_session_replanning_application import (
+    DailySessionReplanningApplicationError,
+    DailySessionReplanningApplicationService,
+    DailySessionReplanningInvalidSourceError,
+    DailySessionReplanningOptionUnavailableError,
+    DailySessionReplanningSourceNotFoundError,
+)
+from opencoach.coaching.daily_week_replanning import (
+    coordinate_daily_week_replanning,
+)
 from opencoach.coaching.daily_adaptation_service import (
     build_daily_adaptation_proposal,
 )
@@ -78,6 +95,8 @@ from opencoach.database.repositories.sql_training_session import (
 from .dependencies import (
     get_daily_adaptation_repository,
     get_daily_checkin_repository,
+    get_daily_session_replanning_application_service,
+    get_daily_session_replanning_service,
     get_daily_session_rescheduling_application_service,
     get_daily_session_rescheduling_service,
     get_training_session_repository,
@@ -104,6 +123,16 @@ class DailyReschedulingAcceptPayload(BaseModel):
     """Acceptation explicite du report d'une séance annulée."""
 
     source_session_id: UUID
+
+
+class DailyReplanningApplyPayload(BaseModel):
+    """Choix explicite d'une option de replanification."""
+
+    source_session_id: UUID
+
+    action: DailyReplanningAction
+
+    target_date: date | None = None
 
 
 class DailyCheckInPayload(BaseModel):
@@ -709,6 +738,70 @@ def accept_daily_adaptation(
 
 
 
+def _replanning_session_response(
+    session,
+):
+    """Sérialise une séance proposée par le moteur."""
+
+    if session is None:
+        return None
+
+    return {
+        "id": (
+            str(session.id)
+            if session.id is not None
+            else None
+        ),
+        "date": session.date.isoformat(),
+        "type": session.type,
+        "sport_type": session.sport_type,
+        "title": session.title,
+        "description": session.description,
+        "duration_minutes": (
+            session.duration_minutes
+        ),
+        "distance_km": session.distance_km,
+        "elevation_gain_m": (
+            session.elevation_gain_m
+        ),
+        "intensity": session.intensity,
+        "heart_rate_zone": (
+            session.heart_rate_zone
+        ),
+        "status": session.status,
+    }
+
+
+def _replanning_option_response(
+    option: DailySessionReplanningOption,
+):
+    """Sérialise une option de replanification."""
+
+    return {
+        "action": option.action.value,
+        "target_date": (
+            option.target_date.isoformat()
+            if option.target_date is not None
+            else None
+        ),
+        "risk": option.risk.value,
+        "recommended": (
+            option.recommended
+        ),
+        "requires_confirmation": (
+            option.requires_confirmation
+        ),
+        "reasons": list(
+            option.reasons
+        ),
+        "session": (
+            _replanning_session_response(
+                option.session
+            )
+        ),
+    }
+
+
 @router.post(
     "/{checkin_id}/rescheduling/accept",
 )
@@ -854,6 +947,332 @@ def accept_daily_rescheduling(
                 session.planning_key
             ),
         },
+    }
+
+
+@router.get(
+    "/{checkin_id}/replanning",
+)
+def get_daily_replanning_options(
+    checkin_id: UUID,
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id
+    ),
+    checkin_repository: DailyCheckInRepository = Depends(
+        get_daily_checkin_repository
+    ),
+    training_session_repository: SqlTrainingSessionRepository = Depends(
+        get_training_session_repository
+    ),
+    profile_service: ProfileService = Depends(
+        get_profile_service
+    ),
+    replanning_service: DailySessionReplanningService = Depends(
+        get_daily_session_replanning_service
+    ),
+):
+    """Retourne les choix coordonnés de replanification du jour."""
+
+    checkin = (
+        checkin_repository
+        .get_for_date(
+            athlete_profile_id,
+            date.today(),
+        )
+    )
+
+    if (
+        checkin is None
+        or checkin.id != checkin_id
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Check-in introuvable.",
+        )
+
+    sessions = (
+        training_session_repository
+        .list_sessions_between(
+            athlete_profile_id,
+            checkin.date,
+            checkin.date,
+        )
+    )
+
+    skipped_sessions = tuple(
+        session
+        for session in sessions
+        if (
+            session.status == "skipped"
+            and session.activity_id is None
+        )
+    )
+
+    athlete = (
+        profile_service.get_profile()
+    )
+
+    individual_proposals = []
+
+    for session in skipped_sessions:
+        proposal = (
+            replanning_service.propose(
+                athlete_profile_id=(
+                    athlete_profile_id
+                ),
+                athlete=athlete,
+                session=session,
+            )
+        )
+
+        if proposal is not None:
+            individual_proposals.append(
+                proposal
+            )
+
+    coordinated = (
+        coordinate_daily_week_replanning(
+            proposals=tuple(
+                individual_proposals
+            ),
+        )
+    )
+
+    coordinated_by_source_id = {
+        (
+            decision
+            .proposal
+            .original_session
+            .id
+        ): decision
+        for decision in coordinated.decisions
+    }
+
+    proposals_response = []
+
+    for proposal in individual_proposals:
+        source_id = (
+            proposal.original_session.id
+        )
+
+        decision = (
+            coordinated_by_source_id.get(
+                source_id
+            )
+        )
+
+        if decision is None:
+            continue
+
+        globally_recommended = (
+            decision.recommended_option
+        )
+
+        options_response = []
+
+        for option in proposal.options:
+            serialized = (
+                _replanning_option_response(
+                    option
+                )
+            )
+
+            # La recommandation exposée au frontend est désormais
+            # celle du coordinateur global et non la recommandation
+            # individuelle de la séance.
+            serialized[
+                "recommended"
+            ] = (
+                option.action
+                is globally_recommended.action
+                and option.target_date
+                == globally_recommended.target_date
+            )
+
+            serialized[
+                "globally_recommended"
+            ] = (
+                serialized[
+                    "recommended"
+                ]
+            )
+
+            options_response.append(
+                serialized
+            )
+
+        proposals_response.append(
+            {
+                "source_session": (
+                    _replanning_session_response(
+                        proposal.original_session
+                    )
+                ),
+                "recommended_action": (
+                    globally_recommended
+                    .action
+                    .value
+                ),
+                "recommended_target_date": (
+                    globally_recommended
+                    .target_date
+                    .isoformat()
+                    if (
+                        globally_recommended
+                        .target_date
+                        is not None
+                    )
+                    else None
+                ),
+                "options": (
+                    options_response
+                ),
+            }
+        )
+
+    return {
+        "checkin_id": str(
+            checkin_id
+        ),
+        "date": (
+            checkin.date.isoformat()
+        ),
+        "coordination_reasons": list(
+            coordinated.reasons
+        ),
+        "proposals": (
+            proposals_response
+        ),
+    }
+
+
+@router.post(
+    "/{checkin_id}/replanning/apply",
+)
+def apply_daily_replanning_option(
+    checkin_id: UUID,
+    payload: DailyReplanningApplyPayload = Body(
+        ...
+    ),
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id
+    ),
+    checkin_repository: DailyCheckInRepository = Depends(
+        get_daily_checkin_repository
+    ),
+    training_session_repository: SqlTrainingSessionRepository = Depends(
+        get_training_session_repository
+    ),
+    profile_service: ProfileService = Depends(
+        get_profile_service
+    ),
+    application_service: DailySessionReplanningApplicationService = Depends(
+        get_daily_session_replanning_application_service
+    ),
+):
+    """Applique le choix explicite de l'athlète."""
+
+    checkin = (
+        checkin_repository
+        .get_for_date(
+            athlete_profile_id,
+            date.today(),
+        )
+    )
+
+    if (
+        checkin is None
+        or checkin.id != checkin_id
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Check-in introuvable.",
+        )
+
+    source = (
+        training_session_repository
+        .get_session(
+            athlete_profile_id,
+            payload.source_session_id,
+        )
+    )
+
+    if (
+        source is None
+        or source.date != checkin.date
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Séance annulée associée "
+                "au check-in introuvable."
+            ),
+        )
+
+    athlete = (
+        profile_service.get_profile()
+    )
+
+    try:
+        result = (
+            application_service.apply(
+                athlete_profile_id=(
+                    athlete_profile_id
+                ),
+                athlete=athlete,
+                source_session_id=(
+                    payload.source_session_id
+                ),
+                action=payload.action,
+                target_date=(
+                    payload.target_date
+                ),
+            )
+        )
+
+    except (
+        DailySessionReplanningSourceNotFoundError
+    ) as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+
+    except (
+        DailySessionReplanningInvalidSourceError,
+        DailySessionReplanningOptionUnavailableError,
+        DailySessionReplanningApplicationError,
+    ) as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    return {
+        "source_session_id": (
+            str(
+                result.source_session.id
+            )
+            if result.source_session.id
+            is not None
+            else None
+        ),
+        "action": (
+            result.action.value
+        ),
+        "created": result.created,
+        "cancelled": (
+            result.cancelled
+        ),
+        "already_applied": (
+            not result.created
+            and not result.cancelled
+        ),
+        "applied_session": (
+            _replanning_session_response(
+                result.applied_session
+            )
+        ),
     }
 
 

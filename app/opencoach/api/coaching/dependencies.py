@@ -45,6 +45,12 @@ from opencoach.coaching.daily_session_rescheduling_service import (
 from opencoach.coaching.daily_session_rescheduling_application import (
     DailySessionReschedulingApplicationService,
 )
+from opencoach.coaching.daily_session_replanning_service import (
+    DailySessionReplanningService,
+)
+from opencoach.coaching.daily_session_replanning_application import (
+    DailySessionReplanningApplicationService,
+)
 
 from opencoach.database.repositories import (
     SqlActivityRepository,
@@ -426,6 +432,47 @@ def get_daily_session_rescheduling_application_service(
         ),
         rescheduling_service=(
             rescheduling_service
+        ),
+    )
+
+
+def get_daily_session_replanning_service(
+    db: Session = Depends(
+        get_db
+    ),
+) -> DailySessionReplanningService:
+    """Construit le moteur de replanification quotidienne multi-options."""
+
+    return DailySessionReplanningService(
+        training_session_repository=(
+            SqlTrainingSessionRepository(
+                db
+            )
+        ),
+        athlete_constraint_repository=(
+            SqlAthleteConstraintRepository(
+                db
+            )
+        ),
+    )
+
+
+def get_daily_session_replanning_application_service(
+    training_session_repository: SqlTrainingSessionRepository = Depends(
+        get_training_session_repository
+    ),
+    replanning_service: DailySessionReplanningService = Depends(
+        get_daily_session_replanning_service
+    ),
+) -> DailySessionReplanningApplicationService:
+    """Construit l'application d'un choix de replanification."""
+
+    return DailySessionReplanningApplicationService(
+        training_session_repository=(
+            training_session_repository
+        ),
+        replanning_service=(
+            replanning_service
         ),
     )
 

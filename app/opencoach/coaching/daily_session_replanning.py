@@ -146,8 +146,8 @@ def propose_daily_session_replanning(
         )
     )
 
-    unchanged_candidate = (
-        _find_unchanged_candidate(
+    unchanged_candidates = (
+        _find_unchanged_candidates(
             session=session,
             week=week,
             existing_sessions=(
@@ -157,14 +157,14 @@ def propose_daily_session_replanning(
         )
     )
 
-    unchanged_option = (
+    unchanged_options = [
         _build_unchanged_option(
             session=session,
-            candidate=unchanged_candidate,
+            candidate=candidate,
         )
-        if unchanged_candidate is not None
-        else None
-    )
+        for candidate
+        in unchanged_candidates
+    ]
 
     adapted_session = (
         _build_adapted_session(
@@ -172,8 +172,8 @@ def propose_daily_session_replanning(
         )
     )
 
-    adapted_candidate = (
-        _find_adapted_candidate(
+    adapted_candidates = (
+        _find_adapted_candidates(
             session=adapted_session,
             week=week,
             existing_sessions=(
@@ -182,34 +182,27 @@ def propose_daily_session_replanning(
             reference_date=reference_date,
         )
         if adapted_session is not None
-        else None
+        else ()
     )
 
-    adapted_option = (
-        _build_adapted_option(
-            session=adapted_session,
-            candidate=adapted_candidate,
-        )
-        if (
-            adapted_session is not None
-            and adapted_candidate is not None
-        )
-        else None
+    adapted_options = (
+        [
+            _build_adapted_option(
+                session=adapted_session,
+                candidate=candidate,
+            )
+            for candidate
+            in adapted_candidates
+        ]
+        if adapted_session is not None
+        else []
     )
 
     options = [
         cancel_option,
+        *unchanged_options,
+        *adapted_options,
     ]
-
-    if unchanged_option is not None:
-        options.append(
-            unchanged_option
-        )
-
-    if adapted_option is not None:
-        options.append(
-            adapted_option
-        )
 
     options = (
         _mark_recommended_option(
@@ -225,7 +218,7 @@ def propose_daily_session_replanning(
     )
 
 
-def _find_unchanged_candidate(
+def _find_unchanged_candidates(
     *,
     session: TrainingSession,
     week: WeeklyAvailability,
@@ -234,8 +227,16 @@ def _find_unchanged_candidate(
         ...,
     ],
     reference_date: date,
-) -> SessionPlacementCandidate | None:
-    """Cherche un jour futur pour la séance intacte."""
+) -> tuple[
+    SessionPlacementCandidate,
+    ...,
+]:
+    """Retourne tous les jours futurs admissibles.
+
+    Les jours libres restent prioritaires dans l'ordre,
+    mais un jour déjà occupé peut rester proposé comme
+    choix volontaire de l'athlète.
+    """
 
     candidates = (
         _rank_future_candidates(
@@ -260,16 +261,14 @@ def _find_unchanged_candidate(
     )
 
     if not acceptable:
-        return None
+        return ()
 
-    return (
-        _prefer_free_day(
-            acceptable
-        )[0]
+    return _prefer_free_day(
+        acceptable
     )
 
 
-def _find_adapted_candidate(
+def _find_adapted_candidates(
     *,
     session: TrainingSession,
     week: WeeklyAvailability,
@@ -278,8 +277,16 @@ def _find_adapted_candidate(
         ...,
     ],
     reference_date: date,
-) -> SessionPlacementCandidate | None:
-    """Cherche un jour futur pour la version adaptée."""
+) -> tuple[
+    SessionPlacementCandidate,
+    ...,
+]:
+    """Retourne les jours possibles pour la version adaptée.
+
+    Une collision de densité ou de même jour peut rester
+    négociable. Les vraies contraintes d'indisponibilité
+    restent exclues par les règles non négociables.
+    """
 
     candidates = (
         _rank_future_candidates(
@@ -292,19 +299,22 @@ def _find_adapted_candidate(
         )
     )
 
-    eligible = tuple(
+    acceptable = tuple(
         candidate
         for candidate in candidates
-        if candidate.eligible
+        if (
+            candidate.eligible
+            or _only_spacing_conflicts(
+                candidate
+            )
+        )
     )
 
-    if not eligible:
-        return None
+    if not acceptable:
+        return ()
 
-    return (
-        _prefer_free_day(
-            eligible
-        )[0]
+    return _prefer_free_day(
+        acceptable
     )
 
 
@@ -353,9 +363,20 @@ def _prefer_free_day(
     ],
 ) -> tuple[
     SessionPlacementCandidate,
-    ...,
+        ...,
 ]:
-    """Évite de cumuler deux séances le même jour."""
+    """Préfère un jour libre sans interdire un cumul volontaire.
+
+    Un jour contenant déjà une séance reste une option valide.
+
+    OpenCoach doit :
+    - recommander prioritairement les jours libres ;
+    - conserver les jours occupés comme choix explicite ;
+    - signaler le risque et demander confirmation si nécessaire.
+
+    Une préférence de placement ne constitue donc pas une
+    interdiction métier.
+    """
 
     free = tuple(
         candidate
@@ -365,10 +386,17 @@ def _prefer_free_day(
         )
     )
 
+    occupied = tuple(
+        candidate
+        for candidate in candidates
+        if _has_same_day_conflict(
+            candidate
+        )
+    )
+
     return (
-        free
-        if free
-        else candidates
+        *free,
+        *occupied,
     )
 
 
@@ -405,6 +433,7 @@ def _only_spacing_conflicts(
     negotiable = {
         "hard_session_previous_day",
         "hard_session_next_day",
+        "existing_session_same_day",
     }
 
     return all(
@@ -467,6 +496,7 @@ def _build_unchanged_option(
         recommended=False,
         requires_confirmation=(
             candidate.requires_confirmation
+            or same_day_conflict
             or risk
             is DailyReplanningRisk.HIGH
         ),
@@ -513,6 +543,9 @@ def _build_adapted_option(
         recommended=False,
         requires_confirmation=(
             candidate.requires_confirmation
+            or _has_same_day_conflict(
+                candidate
+            )
         ),
         reasons=(
             (
@@ -668,71 +701,86 @@ def _mark_recommended_option(
 ) -> list[
     DailySessionReplanningOption
 ]:
-    """Choisit la recommandation OpenCoach."""
+    """Choisit exactement une recommandation OpenCoach.
 
-    unchanged = next(
-        (
-            option
-            for option in options
-            if (
-                option.action
-                is DailyReplanningAction
-                .MOVE_UNCHANGED
-            )
-        ),
-        None,
-    )
+    Les options sont déjà ordonnées par qualité de
+    placement : les jours libres précèdent les jours
+    comportant un conflit de même journée.
 
-    adapted = next(
-        (
-            option
-            for option in options
-            if (
-                option.action
-                is DailyReplanningAction
-                .MOVE_ADAPTED
-            )
-        ),
-        None,
-    )
+    La recommandation privilégie :
+    1. un déplacement intact à risque faible/modéré ;
+    2. une version adaptée si l'intact est à risque élevé ;
+    3. toute autre option de déplacement disponible ;
+    4. l'annulation en dernier recours.
+    """
 
-    if (
-        adapted is not None
-        and (
-            unchanged is None
-            or unchanged.risk
-            is DailyReplanningRisk.HIGH
-        )
-    ):
-        recommended_action = (
-            DailyReplanningAction
-            .MOVE_ADAPTED
-        )
-
-    elif unchanged is not None:
-        recommended_action = (
-            DailyReplanningAction
+    unchanged = tuple(
+        option
+        for option in options
+        if (
+            option.action
+            is DailyReplanningAction
             .MOVE_UNCHANGED
         )
+    )
 
-    elif adapted is not None:
-        recommended_action = (
-            DailyReplanningAction
+    adapted = tuple(
+        option
+        for option in options
+        if (
+            option.action
+            is DailyReplanningAction
             .MOVE_ADAPTED
+        )
+    )
+
+    recommended_option = None
+
+    safe_unchanged = next(
+        (
+            option
+            for option in unchanged
+            if (
+                option.risk
+                is not DailyReplanningRisk.HIGH
+            )
+        ),
+        None,
+    )
+
+    if safe_unchanged is not None:
+        recommended_option = (
+            safe_unchanged
+        )
+
+    elif adapted:
+        recommended_option = (
+            adapted[0]
+        )
+
+    elif unchanged:
+        recommended_option = (
+            unchanged[0]
         )
 
     else:
-        recommended_action = (
-            DailyReplanningAction.CANCEL
+        recommended_option = next(
+            option
+            for option in options
+            if (
+                option.action
+                is DailyReplanningAction.CANCEL
+            )
         )
 
     return [
         replace(
             option,
             recommended=(
-                option.action
-                is recommended_action
+                option
+                is recommended_option
             ),
         )
         for option in options
     ]
+

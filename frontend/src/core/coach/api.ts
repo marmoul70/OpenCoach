@@ -8,26 +8,58 @@ import type {
 interface CoachTodayApiResponse {
   date: string
 
-  session: {
-    id: string | null
+  session_decisions: Array<{
+    session: {
+      id: string | null
 
-    date: string
-    type: string
-    sport_type: string
+      date: string
+      type: string
+      sport_type: string
 
-    title: string
-    description: string
+      title: string
+      description: string
 
-    duration_minutes: number
+      duration_minutes: number
 
-    distance_km: number | null
-    elevation_gain_m: number | null
+      distance_km: number | null
+      elevation_gain_m: number | null
 
-    intensity: string
-    heart_rate_zone: string | null
+      intensity: string
+      heart_rate_zone: string | null
 
-    status: string
-  } | null
+      status: string
+    } | null
+
+    decision: {
+      action:
+        | 'keep'
+        | 'reduce'
+        | 'replace'
+        | 'rest'
+
+      reason: string
+
+      original_duration_minutes:
+        number | null
+
+      recommended_duration_minutes:
+        number | null
+
+      duration_factor:
+        number | null
+
+      intensity_factor:
+        number | null
+
+      original_intensity:
+        string | null
+
+      recommended_intensity:
+        string | null
+
+      constraints: string[]
+    }
+  }>
 
   readiness: {
     score: number
@@ -50,36 +82,6 @@ interface CoachTodayApiResponse {
     source_date: string
     data_age_days: number
     data_status: 'fresh' | 'stale'
-  }
-
-  decision: {
-    action:
-      | 'keep'
-      | 'reduce'
-      | 'replace'
-      | 'rest'
-
-    reason: string
-
-    original_duration_minutes:
-      number | null
-
-    recommended_duration_minutes:
-      number | null
-
-    duration_factor:
-      number | null
-
-    intensity_factor:
-      number | null
-
-    original_intensity:
-      string | null
-
-    recommended_intensity:
-      string | null
-
-    constraints: string[]
   }
 
   recent_load: {
@@ -183,50 +185,93 @@ Promise<CoachToday> {
     date:
       data.date,
 
-    session:
-      data.session
-        ? {
-            id:
-              data.session.id
+    sessionDecisions:
+      data.session_decisions.map(
+        (item) => ({
+          session:
+            item.session
+              ? {
+                  id:
+                    item.session.id
+                    ?? undefined,
+
+                  date:
+                    item.session.date,
+
+                  type:
+                    item.session.type,
+
+                  sportType:
+                    item.session.sport_type,
+
+                  title:
+                    item.session.title,
+
+                  description:
+                    item.session.description,
+
+                  durationMinutes:
+                    item.session.duration_minutes,
+
+                  distanceKm:
+                    item.session.distance_km
+                    ?? undefined,
+
+                  elevationGainM:
+                    item.session.elevation_gain_m
+                    ?? undefined,
+
+                  intensity:
+                    item.session.intensity,
+
+                  heartRateZone:
+                    item.session.heart_rate_zone
+                    ?? undefined,
+
+                  status:
+                    item.session.status,
+                }
+              : null,
+
+          decision: {
+            action:
+              item.decision.action,
+
+            reason:
+              item.decision.reason,
+
+            originalDurationMinutes:
+              item.decision
+                .original_duration_minutes
               ?? undefined,
 
-            date:
-              data.session.date,
-
-            type:
-              data.session.type,
-
-            sportType:
-              data.session.sport_type,
-
-            title:
-              data.session.title,
-
-            description:
-              data.session.description,
-
-            durationMinutes:
-              data.session.duration_minutes,
-
-            distanceKm:
-              data.session.distance_km
+            recommendedDurationMinutes:
+              item.decision
+                .recommended_duration_minutes
               ?? undefined,
 
-            elevationGainM:
-              data.session.elevation_gain_m
+            durationFactor:
+              item.decision.duration_factor
               ?? undefined,
 
-            intensity:
-              data.session.intensity,
-
-            heartRateZone:
-              data.session.heart_rate_zone
+            intensityFactor:
+              item.decision.intensity_factor
               ?? undefined,
 
-            status:
-              data.session.status,
-          }
-        : null,
+            originalIntensity:
+              item.decision.original_intensity
+              ?? undefined,
+
+            recommendedIntensity:
+              item.decision
+                .recommended_intensity
+              ?? undefined,
+
+            constraints:
+              item.decision.constraints,
+          },
+        }),
+      ),
 
     readiness: {
       score:
@@ -266,6 +311,7 @@ Promise<CoachToday> {
               ?? undefined,
           }),
         ),
+
       sourceDate:
         data.readiness.source_date,
 
@@ -274,44 +320,6 @@ Promise<CoachToday> {
 
       dataStatus:
         data.readiness.data_status,
-    },
-
-    decision: {
-      action:
-        data.decision.action,
-
-      reason:
-        data.decision.reason,
-
-      originalDurationMinutes:
-        data.decision
-          .original_duration_minutes
-        ?? undefined,
-
-      recommendedDurationMinutes:
-        data.decision
-          .recommended_duration_minutes
-        ?? undefined,
-
-      durationFactor:
-        data.decision.duration_factor
-        ?? undefined,
-
-      intensityFactor:
-        data.decision.intensity_factor
-        ?? undefined,
-
-      originalIntensity:
-        data.decision.original_intensity
-        ?? undefined,
-
-      recommendedIntensity:
-        data.decision
-          .recommended_intensity
-        ?? undefined,
-
-      constraints:
-        data.decision.constraints,
     },
 
     recentLoad:

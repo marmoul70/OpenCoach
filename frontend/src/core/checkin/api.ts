@@ -78,12 +78,39 @@ export interface AdaptedSession {
   status: string
 }
 
+export interface ReschedulingProposal {
+  suggested_date: string
+  requires_confirmation: boolean
+  reasons: string[]
+}
+
+export interface RescheduledSession {
+  id: string | null
+  date: string
+  type: string
+  sport_type: string
+  title: string
+  description: string
+  duration_minutes: number
+  intensity: string
+  heart_rate_zone: string | null
+  status: string
+}
+
+export interface AcceptReschedulingResponse {
+  created: boolean
+  already_rescheduled: boolean
+  source_session_id: string
+  rescheduled_session: RescheduledSession
+}
+
 export interface AcceptAdaptationResponse {
   proposal: AdaptationProposal
   session_adapted: boolean
   already_accepted: boolean
   adapted_session: AdaptedSession | null
   reasons: string[]
+  rescheduling_proposal: ReschedulingProposal | null
 }
 
 async function apiError(
@@ -202,4 +229,38 @@ export async function declineDailyAdaptation(
   }
 
   return response.json() as Promise<AdaptationProposal>
+}
+
+export async function acceptDailyRescheduling(
+  checkinId: string,
+  sourceSessionId: string,
+): Promise<AcceptReschedulingResponse> {
+  const response = await fetch(
+    (
+      '/api/coach/check-in/'
+      + `${checkinId}`
+      + '/rescheduling/accept'
+    ),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type':
+          'application/json',
+      },
+      body: JSON.stringify({
+        source_session_id:
+          sourceSessionId,
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    throw await apiError(
+      response,
+    )
+  }
+
+  return response.json() as Promise<
+    AcceptReschedulingResponse
+  >
 }

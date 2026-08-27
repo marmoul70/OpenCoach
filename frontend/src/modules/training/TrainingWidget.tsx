@@ -6,10 +6,6 @@ import {
   useTrainingSessions,
 } from './trainingStore'
 
-import {
-  formatTrainingIntensity,
-} from './intensity'
-
 import type {
   TrainingSession,
 } from './types'
@@ -40,30 +36,6 @@ export function TrainingWidget({
         && item.type !== 'supplementary',
     )
 
-  const plannedSession =
-    todaySessions.find(
-      (item) =>
-        item.status === 'planned',
-    )
-
-  const completedSession =
-    todaySessions.find(
-      (item) =>
-        item.status === 'completed',
-    )
-
-  const skippedSession =
-    todaySessions.find(
-      (item) =>
-        item.status === 'skipped',
-    )
-
-  const session =
-    plannedSession
-    ?? completedSession
-    ?? skippedSession
-
-
   if (loading) {
     return (
       <div className="card w-full border border-base-300 bg-base-100 shadow-sm">
@@ -74,26 +46,17 @@ export function TrainingWidget({
     )
   }
 
-
   if (error) {
     return (
       <div className="card w-full border border-error/30 bg-base-100 shadow-sm">
         <div className="card-body p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-error">
-                Entraînement
-              </p>
+          <p className="text-xs font-medium uppercase tracking-wide text-error">
+            Entraînement du jour
+          </p>
 
-              <p className="mt-1 font-semibold text-error">
-                Indisponible
-              </p>
-            </div>
-
-            <span className="badge badge-error badge-sm">
-              Erreur
-            </span>
-          </div>
+          <p className="mt-1 font-semibold text-error">
+            Indisponible
+          </p>
 
           <p className="mt-2 text-sm text-base-content/60">
             {error}
@@ -102,48 +65,6 @@ export function TrainingWidget({
       </div>
     )
   }
-
-
-  if (!session) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className="
-          card w-full
-          border border-base-300
-          bg-base-100
-          text-left
-          shadow-sm
-          transition-all
-          duration-200
-          hover:-translate-y-0.5
-          hover:shadow-md
-        "
-      >
-        <div className="card-body gap-2 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-base-content/50">
-                Entraînement du jour
-              </p>
-
-              <h2 className="mt-1 text-lg font-bold">
-                Repos
-              </h2>
-            </div>
-
-            <CalendarDays className="h-4 w-4 text-base-content/40" />
-          </div>
-
-          <p className="text-sm text-base-content/55">
-            Aucune séance planifiée aujourd’hui.
-          </p>
-        </div>
-      </button>
-    )
-  }
-
 
   return (
     <button
@@ -163,125 +84,72 @@ export function TrainingWidget({
     >
       <div className="card-body gap-3 p-4">
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
+          <div>
             <p className="text-xs font-medium uppercase tracking-wide text-base-content/50">
-              {getWidgetLabel(
-                session.status,
-              )}
+              Entraînement du jour
             </p>
 
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <h2 className="truncate text-lg font-bold">
-                {session.title}
-              </h2>
-
-              <StatusBadge
-                status={
-                  session.status
-                }
-              />
-            </div>
+            {todaySessions.length > 0 && (
+              <p className="mt-1 text-sm text-base-content/50">
+                {todaySessions.length}{' '}
+                séance
+                {todaySessions.length > 1
+                  ? 's'
+                  : ''}
+              </p>
+            )}
           </div>
 
-          <CalendarDays className="h-4 w-4 shrink-0 text-base-content/40" />
+          <CalendarDays className="h-4 w-4 text-base-content/40" />
         </div>
 
+        {todaySessions.length > 0 ? (
+          <div className="divide-y divide-base-300">
+            {todaySessions.map(
+              (
+                session,
+                index,
+              ) => (
+                <div
+                  key={
+                    session.id
+                    ?? `${session.date}-${index}`
+                  }
+                  className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">
+                      {formatActivityType(
+                        session.sportType,
+                        session.type,
+                      )}
+                    </p>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <InlineMetric
-            label="Durée"
-            value={
-              `${session.durationMinutes} min`
-            }
-          />
+                    <p className="mt-0.5 truncate text-xs text-base-content/50">
+                      {session.title}
+                    </p>
+                  </div>
 
-          <InlineMetric
-            label="Intensité"
-            value={
-              formatTrainingIntensity(
-                session.intensity,
-              )
-            }
-          />
+                  <span className="shrink-0 text-sm font-semibold">
+                    {session.durationMinutes} min
+                  </span>
 
-          <InlineMetric
-            label="Zone"
-            value={
-              session.heartRateZone
-              ?? '—'
-            }
-          />
-
-          {session.distanceKm !== undefined && (
-            <InlineMetric
-              label="Distance"
-              value={
-                `${session.distanceKm} km`
-              }
-            />
-          )}
-        </div>
-
-
-        <p className="text-sm text-base-content/55">
-          {getStatusDescription(
-            session.status,
-          )}
-        </p>
+                  <StatusBadge
+                    status={
+                      session.status
+                    }
+                  />
+                </div>
+              ),
+            )}
+          </div>
+        ) : (
+          <p className="py-2 font-semibold">
+            Repos
+          </p>
+        )}
       </div>
     </button>
-  )
-}
-
-
-function getWidgetLabel(
-  status:
-    TrainingSession['status'],
-): string {
-  if (
-    status === 'completed'
-  ) {
-    return (
-      'Séance réalisée aujourd’hui'
-    )
-  }
-
-  if (
-    status === 'skipped'
-  ) {
-    return (
-      'Séance non réalisée'
-    )
-  }
-
-  return (
-    'Entraînement du jour'
-  )
-}
-
-
-function getStatusDescription(
-  status:
-    TrainingSession['status'],
-): string {
-  if (
-    status === 'completed'
-  ) {
-    return (
-      'Cette séance a été marquée comme réalisée.'
-    )
-  }
-
-  if (
-    status === 'skipped'
-  ) {
-    return (
-      'Cette séance a été marquée comme non réalisée.'
-    )
-  }
-
-  return (
-    'Séance prévue aujourd’hui.'
   )
 }
 
@@ -292,9 +160,7 @@ function StatusBadge({
   status:
     TrainingSession['status']
 }) {
-  if (
-    status === 'completed'
-  ) {
+  if (status === 'completed') {
     return (
       <span className="badge badge-success badge-sm">
         Réalisée
@@ -302,9 +168,7 @@ function StatusBadge({
     )
   }
 
-  if (
-    status === 'skipped'
-  ) {
+  if (status === 'skipped') {
     return (
       <span className="badge badge-error badge-sm">
         Non réalisée
@@ -320,24 +184,31 @@ function StatusBadge({
 }
 
 
-function InlineMetric({
-  label,
-  value,
-}: {
-  label: string
-  value: string
-}) {
-  return (
-    <div className="flex items-baseline gap-1.5 text-sm">
-      <span className="text-xs text-base-content/45">
-        {label}
-      </span>
+function formatActivityType(
+  sportType: string,
+  type: string,
+): string {
+  const value =
+    sportType.toLowerCase()
 
-      <span className="font-semibold text-base-content">
-        {value}
-      </span>
-    </div>
-  )
+  const labels:
+    Record<string, string> = {
+      run: 'Course',
+      running: 'Course',
+      trailrunning: 'Trail',
+      trail_running: 'Trail',
+      strength: 'Renforcement',
+      strength_training: 'Renforcement',
+      bike: 'Vélo',
+      cycling: 'Vélo',
+      walking: 'Marche',
+      hiking: 'Randonnée',
+      swimming: 'Natation',
+    }
+
+  return labels[value]
+    ?? sportType
+    ?? type
 }
 
 

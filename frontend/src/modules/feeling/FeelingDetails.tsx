@@ -9,12 +9,14 @@ import {
 
 import {
   acceptDailyAdaptation,
+  acceptDailyRescheduling,
   declineDailyAdaptation,
   fetchTodayCheckIn,
   saveDailyCheckIn,
   type BodySide,
   type DailyCheckInState,
   type PainArea,
+  type ReschedulingProposal,
 } from '../../core/checkin'
 
 import {
@@ -87,6 +89,20 @@ export function FeelingDetails() {
     setSaving,
   ] = useState(
     false,
+  )
+
+  const [
+    reschedulingProposal,
+    setReschedulingProposal,
+  ] = useState<ReschedulingProposal | null>(
+    null,
+  )
+
+  const [
+    reschedulingSourceSessionId,
+    setReschedulingSourceSessionId,
+  ] = useState<string | null>(
+    null,
   )
 
   const [
@@ -314,6 +330,27 @@ export function FeelingDetails() {
         notifyTrainingSessionUpdated()
       }
 
+      if (
+        result.rescheduling_proposal
+        && result.adapted_session?.id
+      ) {
+        setReschedulingProposal(
+          result.rescheduling_proposal,
+        )
+
+        setReschedulingSourceSessionId(
+          result.adapted_session.id,
+        )
+      } else {
+        setReschedulingProposal(
+          null,
+        )
+
+        setReschedulingSourceSessionId(
+          null,
+        )
+      }
+
       const refreshed =
         await fetchTodayCheckIn()
 
@@ -362,6 +399,67 @@ export function FeelingDetails() {
       )
     }
   }
+
+  async function acceptRescheduling() {
+    if (
+      !state
+      || !reschedulingSourceSessionId
+    ) {
+      return
+    }
+
+    try {
+      setSaving(
+        true,
+      )
+
+      const result =
+        await acceptDailyRescheduling(
+          state.checkin.id,
+          reschedulingSourceSessionId,
+        )
+
+      notifyTrainingSessionUpdated()
+      notifyUpdated()
+
+      setReschedulingProposal(
+        null,
+      )
+
+      setReschedulingSourceSessionId(
+        null,
+      )
+
+      toast({
+        type: 'success',
+        title:
+          result.already_rescheduled
+            ? 'Séance déjà reportée'
+            : 'Séance reportée',
+        message:
+          (
+            `${result.rescheduled_session.title} · `
+            + `${formatReschedulingDate(
+              result.rescheduled_session.date,
+            )}`
+          ),
+      })
+    } catch (reason) {
+      toast({
+        type: 'error',
+        title: 'Report impossible',
+        message:
+          reason instanceof Error
+            ? reason.message
+            : 'Impossible de reporter la séance.',
+      })
+    } finally {
+      setSaving(
+        false,
+      )
+    }
+  }
+
 
   async function declineAdaptation() {
     if (!state) {
@@ -731,6 +829,68 @@ export function FeelingDetails() {
         </div>
       )}
 
+      {(
+        state?.adaptation?.decision === 'accepted'
+        && reschedulingProposal
+        && reschedulingSourceSessionId
+      ) && (
+        <section className="rounded-xl border border-info/40 bg-info/5 p-4">
+          <div className="badge badge-info badge-sm">
+            Report possible
+          </div>
+
+          <p className="mt-3 font-semibold text-base-content">
+            La séance annulée peut être reprogrammée{' '}
+            {formatReschedulingDate(
+              reschedulingProposal.suggested_date,
+            )}.
+          </p>
+
+          <p className="mt-2 text-sm leading-relaxed text-base-content/60">
+            Le coach a vérifié les créneaux restants de la semaine
+            et propose ce jour pour conserver la cohérence du planning.
+          </p>
+
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              className="btn btn-info sm:flex-1"
+              disabled={saving}
+              onClick={() => {
+                void acceptRescheduling()
+              }}
+            >
+              {saving && (
+                <span className="loading loading-spinner loading-xs" />
+              )}
+
+              Reporter au{' '}
+              {formatReschedulingDate(
+                reschedulingProposal.suggested_date,
+                true,
+              )}
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-ghost sm:flex-1"
+              disabled={saving}
+              onClick={() => {
+                setReschedulingProposal(
+                  null,
+                )
+
+                setReschedulingSourceSessionId(
+                  null,
+                )
+              }}
+            >
+              Ne pas reporter
+            </button>
+          </div>
+        </section>
+      )}
+
       {state?.adaptation?.decision === 'declined' && (
         <div className="alert">
           <span>
@@ -739,6 +899,32 @@ export function FeelingDetails() {
         </div>
       )}
     </div>
+  )
+}
+
+
+function formatReschedulingDate(
+  value: string,
+  short = false,
+): string {
+  const parsed = new Date(
+    `${value}T12:00:00`,
+  )
+
+  return new Intl.DateTimeFormat(
+    'fr-FR',
+    short
+      ? {
+          weekday: 'long',
+          day: 'numeric',
+        }
+      : {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        },
+  ).format(
+    parsed,
   )
 }
 

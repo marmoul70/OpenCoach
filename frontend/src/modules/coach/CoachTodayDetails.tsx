@@ -4,10 +4,10 @@ import {
   Clock3,
   HeartPulse,
   ShieldAlert,
-  ShieldCheck,
 } from 'lucide-react'
 
 import type {
+  CoachAction,
   CoachToday,
 } from './types'
 
@@ -23,9 +23,8 @@ export function CoachTodayDetails({
   coach,
 }: CoachTodayDetailsProps) {
   const {
-    session,
+    sessionDecisions,
     readiness,
-    decision,
     recentLoad,
     recentLoadAssessment,
     dataWarning,
@@ -35,22 +34,23 @@ export function CoachTodayDetails({
     <div className="space-y-6">
       <section>
         <p className="text-xs font-semibold uppercase tracking-wide text-base-content/50">
-          Décision OpenCoach
+          Décisions OpenCoach
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <DecisionBadge
-            action={decision.action}
-          />
-
-          <span className="text-sm text-base-content/60">
+          <span className="badge badge-outline">
             Readiness {Math.round(readiness.score)}/100
           </span>
-        </div>
 
-        <p className="mt-4 text-base leading-relaxed text-base-content">
-          {decision.reason}
-        </p>
+          <span className="text-sm text-base-content/60">
+            {sessionDecisions.length}{' '}
+            décision
+            {sessionDecisions.length > 1
+              ? 's'
+              : ''}
+            {' '}pour aujourd’hui
+          </span>
+        </div>
       </section>
 
       {dataWarning && (
@@ -296,151 +296,200 @@ export function CoachTodayDetails({
 
       <section>
         <h3 className="font-semibold text-base-content">
-          Planning du jour
+          Séances du jour
         </h3>
 
-        {session ? (
-          <div className="mt-3 rounded-xl border border-base-300 p-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="font-semibold">
-                  {session.title}
-                </p>
+        <p className="mt-1 text-sm text-base-content/50">
+          Détail du planning et recommandation
+          pour chaque activité.
+        </p>
 
-                <p className="mt-1 text-sm text-base-content/60">
-                  {session.description}
-                </p>
-              </div>
+        <div className="mt-4 space-y-4">
+          {sessionDecisions.map(
+            (
+              item,
+              index,
+            ) => {
+              const session =
+                item.session
 
-              <span className="badge badge-outline">
-                {session.sportType}
-              </span>
-            </div>
+              const decision =
+                item.decision
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <InfoCard
-                icon={
-                  <Clock3 className="h-4 w-4" />
-                }
-                label="Durée prévue"
-                value={`${session.durationMinutes} min`}
-                detail={
-                  session.distanceKm !== undefined
-                    ? `${session.distanceKm} km`
-                    : 'Distance non renseignée'
-                }
-              />
+              if (!session) {
+                return (
+                  <div
+                    key={`rest-${index}`}
+                    className="rounded-xl border border-base-300 bg-base-200/50 p-4"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <DecisionBadge
+                        action={
+                          decision.action
+                        }
+                      />
 
-              <InfoCard
-                icon={
-                  <Activity className="h-4 w-4" />
-                }
-                label="Intensité prévue"
-                value={session.intensity}
-                detail={
-                  session.heartRateZone
-                    ?? 'Zone cardiaque non renseignée'
-                }
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="mt-3 rounded-xl border border-base-300 bg-base-200/50 p-4">
-            <div className="flex items-start gap-3">
-              <ShieldCheck className="mt-0.5 h-5 w-5 text-success" />
+                      <span className="font-semibold">
+                        Journée de repos
+                      </span>
+                    </div>
 
-              <div>
-                <p className="font-semibold">
-                  Journée de repos
-                </p>
+                    <p className="mt-3 text-sm leading-relaxed text-base-content/60">
+                      {decision.reason}
+                    </p>
+                  </div>
+                )
+              }
 
-                <p className="mt-1 text-sm text-base-content/60">
-                  Aucune séance d&apos;entraînement
-                  n&apos;est planifiée aujourd&apos;hui.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </section>
+              return (
+                <div
+                  key={
+                    session.id
+                    ?? `${session.date}-${session.type}-${index}`
+                  }
+                  className="rounded-xl border border-base-300 p-4"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-semibold">
+                        {session.title}
+                      </p>
 
-      <div className="divider my-0" />
+                      <p className="mt-1 text-sm text-base-content/60">
+                        {session.description}
+                      </p>
+                    </div>
 
-      <section>
-        <h3 className="font-semibold text-base-content">
-          Adaptation recommandée
-        </h3>
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <span className="badge badge-outline">
+                        {session.sportType}
+                      </span>
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <InfoCard
-            icon={
-              <Clock3 className="h-4 w-4" />
-            }
-            label="Durée recommandée"
-            value={
-              decision.recommendedDurationMinutes
-                !== undefined
-                ? `${decision.recommendedDurationMinutes} min`
-                : 'Repos'
-            }
-            detail={
-              formatDurationChange(
-                decision.originalDurationMinutes,
-                decision.recommendedDurationMinutes,
+                      <DecisionBadge
+                        action={
+                          decision.action
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <InfoCard
+                      icon={
+                        <Clock3 className="h-4 w-4" />
+                      }
+                      label="Durée prévue"
+                      value={`${session.durationMinutes} min`}
+                      detail={
+                        session.distanceKm !== undefined
+                          ? `${session.distanceKm} km`
+                          : 'Distance non renseignée'
+                      }
+                    />
+
+                    <InfoCard
+                      icon={
+                        <Activity className="h-4 w-4" />
+                      }
+                      label="Intensité prévue"
+                      value={
+                        formatIntensity(
+                          session.intensity,
+                        )
+                      }
+                      detail={
+                        session.heartRateZone
+                        ?? 'Zone cardiaque non renseignée'
+                      }
+                    />
+
+                    <InfoCard
+                      icon={
+                        <Clock3 className="h-4 w-4" />
+                      }
+                      label="Durée recommandée"
+                      value={
+                        decision.recommendedDurationMinutes
+                          !== undefined
+                          ? (
+                              `${decision.recommendedDurationMinutes} min`
+                            )
+                          : 'Repos'
+                      }
+                      detail={
+                        formatDurationChange(
+                          decision.originalDurationMinutes,
+                          decision.recommendedDurationMinutes,
+                        )
+                      }
+                    />
+
+                    <InfoCard
+                      icon={
+                        <Activity className="h-4 w-4" />
+                      }
+                      label="Intensité recommandée"
+                      value={
+                        formatIntensity(
+                          decision.recommendedIntensity,
+                        )
+                      }
+                      detail={
+                        decision.originalIntensity
+                          ? (
+                              'Initialement : '
+                              + formatIntensity(
+                                decision.originalIntensity,
+                              )
+                            )
+                          : 'Aucune intensité initiale'
+                      }
+                    />
+                  </div>
+
+                  <div className="mt-4 rounded-xl bg-base-200 p-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-base-content/45">
+                      Analyse du coach
+                    </p>
+
+                    <p className="mt-2 text-sm leading-relaxed text-base-content/70">
+                      {decision.reason}
+                    </p>
+                  </div>
+
+                  {decision.constraints.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-xs font-medium text-base-content/50">
+                        Garde-fous actifs
+                      </p>
+
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {decision.constraints.map(
+                          (
+                            constraint:
+                              string,
+                          ) => (
+                            <span
+                              key={constraint}
+                              className="badge badge-outline"
+                            >
+                              {formatConstraint(
+                                constraint,
+                              )}
+                            </span>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )
-            }
-          />
-
-          <InfoCard
-            icon={
-              <Activity className="h-4 w-4" />
-            }
-            label="Intensité recommandée"
-            value={
-              formatIntensity(
-                decision.recommendedIntensity,
-              )
-            }
-            detail={
-              decision.originalIntensity
-                ? `Initialement : ${decision.originalIntensity}`
-                : 'Aucune séance initialement prévue'
-            }
-          />
+            },
+          )}
         </div>
       </section>
 
-      {decision.constraints.length > 0 && (
-        <>
-          <div className="divider my-0" />
-
-          <section>
-            <h3 className="font-semibold text-base-content">
-              Garde-fous actifs
-            </h3>
-
-            <p className="mt-1 text-sm text-base-content/50">
-              Ces contraintes ont été prises en compte
-              dans la recommandation.
-            </p>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              {decision.constraints.map(
-                (constraint) => (
-                  <span
-                    key={constraint}
-                    className="badge badge-outline badge-lg"
-                  >
-                    {formatConstraint(
-                      constraint,
-                    )}
-                  </span>
-                ),
-              )}
-            </div>
-          </section>
-        </>
-      )}
+      <div className="divider my-0" />
 
       <div className="rounded-xl bg-base-200 p-4 text-sm text-base-content/60">
         Cette recommandation est informative. La séance
@@ -455,7 +504,7 @@ export function CoachTodayDetails({
 function DecisionBadge({
   action,
 }: {
-  action: CoachToday['decision']['action']
+  action: CoachAction
 }) {
   const label = {
     keep: 'Maintenir',

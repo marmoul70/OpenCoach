@@ -1,9 +1,11 @@
 export {
   acceptDailyAdaptation,
+  acceptDailyRescheduling,
   declineDailyAdaptation,
   fetchTodayCheckIn,
   saveDailyCheckIn,
   type AcceptAdaptationResponse,
+  type AcceptReschedulingResponse,
   type AdaptationProposal,
   type AdaptedSession,
   type BodySide,
@@ -11,5 +13,7 @@ export {
   type DailyCheckInState,
   type PainArea,
   type PainLocation,
+  type RescheduledSession,
+  type ReschedulingProposal,
   type SaveDailyCheckInPayload,
 } from './api'

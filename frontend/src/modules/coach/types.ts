@@ -121,13 +121,18 @@ export interface CoachRecentLoadAssessment {
 }
 
 
+export interface CoachSessionDecision {
+  session: CoachSession | null
+  decision: CoachDecision
+}
+
+
 export interface CoachToday {
   date: string
 
-  session: CoachSession | null
+  sessionDecisions: CoachSessionDecision[]
 
   readiness: CoachReadiness
-  decision: CoachDecision
 
   recentLoad: CoachRecentLoad | null
   recentLoadAssessment:

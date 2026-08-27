@@ -7,6 +7,9 @@ from opencoach.api.app import create_app
 from opencoach.api.coach import (
     get_coach_decision_service,
 )
+from opencoach.api.coaching.dependencies import (
+    get_coach_weekly_assessment_service,
+)
 from opencoach.api.intervals import (
     get_local_athlete_profile_id,
 )
@@ -14,6 +17,11 @@ from opencoach.coaching import (
     CoachDecision,
     CoachDecisionAssessment,
     PlannedSessionUnavailableError,
+)
+from opencoach.coaching.weekly_assessment import (
+    CoachHistoryConfidenceLevel,
+    CoachWeeklyAssessment,
+    CoachWeeklyStatus,
 )
 from opencoach.coaching.service import (
     CoachSessionDecision,
@@ -70,6 +78,73 @@ class FakeCoachDecisionService:
             raise self.error
 
         return self.assessment
+
+
+class FakeCoachWeeklyAssessmentService:
+    def __init__(
+        self,
+        *,
+        assessment: CoachWeeklyAssessment,
+    ) -> None:
+        self.assessment = assessment
+        self.calls = []
+
+    def calculate(
+        self,
+        athlete_profile_id,
+        reference_date,
+    ) -> CoachWeeklyAssessment:
+        self.calls.append(
+            (
+                athlete_profile_id,
+                reference_date,
+            )
+        )
+
+        return self.assessment
+
+
+def create_weekly_assessment() -> CoachWeeklyAssessment:
+    return CoachWeeklyAssessment(
+        status=CoachWeeklyStatus.ALIGNED,
+
+        target_load=152.95,
+        actual_load_to_date=72.0,
+        remaining_planned_load=79.5,
+        projected_week_load=151.5,
+
+        projected_gap=-1.45,
+        projected_gap_percent=-0.9,
+
+        remaining_days=3,
+        remaining_sessions_count=4,
+
+        adaptation_opportunity=False,
+        adaptation_direction=None,
+
+        history_window_days=7,
+        history_confidence=0.25,
+        history_confidence_level=(
+            CoachHistoryConfidenceLevel.LOW
+        ),
+
+        headline=(
+            "Votre semaine est dans la trajectoire"
+        ),
+        analysis=(
+            "En tenant compte de la charge déjà réalisée "
+            "et des séances encore prévues, votre projection "
+            "termine à 0.9 % de la cible. "
+            "La trajectoire actuelle est cohérente. "
+            "La référence repose encore sur 1 semaine "
+            "d'historique et reste provisoire."
+        ),
+        instruction=(
+            "Conservez le programme prévu. "
+            "Aucune adaptation de charge n'est nécessaire "
+            "pour le moment."
+        ),
+    )
 
 
 def create_assessment() -> CoachDecisionAssessment:
@@ -266,10 +341,20 @@ def create_stale_assessment() -> CoachDecisionAssessment:
 
 def create_client(
     service: FakeCoachDecisionService,
+    weekly_service: FakeCoachWeeklyAssessmentService | None = None,
 ):
     app = create_app()
 
     profile_id = uuid4()
+
+    if weekly_service is None:
+        weekly_service = (
+            FakeCoachWeeklyAssessmentService(
+                assessment=(
+                    create_weekly_assessment()
+                ),
+            )
+        )
 
     app.dependency_overrides[
         get_local_athlete_profile_id
@@ -278,6 +363,10 @@ def create_client(
     app.dependency_overrides[
         get_coach_decision_service
     ] = lambda: service
+
+    app.dependency_overrides[
+        get_coach_weekly_assessment_service
+    ] = lambda: weekly_service
 
     return (
         TestClient(app),
@@ -301,6 +390,76 @@ def test_coach_api_returns_today_decision() -> None:
     assert response.status_code == 200
 
     payload = response.json()
+
+    assert "weekly_assessment" in payload
+
+    weekly = payload[
+        "weekly_assessment"
+    ]
+
+    assert weekly["status"] == "aligned"
+
+    assert (
+        weekly["target_load"]
+        == 152.95
+    )
+
+    assert (
+        weekly["actual_load_to_date"]
+        == 72.0
+    )
+
+    assert (
+        weekly["remaining_planned_load"]
+        == 79.5
+    )
+
+    assert (
+        weekly["projected_week_load"]
+        == 151.5
+    )
+
+    assert (
+        weekly["projected_gap_percent"]
+        == -0.9
+    )
+
+    assert weekly["remaining_days"] == 3
+
+    assert (
+        weekly["remaining_sessions_count"]
+        == 4
+    )
+
+    assert (
+        weekly["adaptation_opportunity"]
+        is False
+    )
+
+    assert (
+        weekly["adaptation_direction"]
+        is None
+    )
+
+    assert (
+        weekly["history_window_days"]
+        == 7
+    )
+
+    assert (
+        weekly["history_confidence"]
+        == 0.25
+    )
+
+    assert (
+        weekly["history_confidence_level"]
+        == "low"
+    )
+
+    assert (
+        weekly["headline"]
+        == "Votre semaine est dans la trajectoire"
+    )
 
     assert "session_decisions" in payload
 

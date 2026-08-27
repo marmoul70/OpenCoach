@@ -13,6 +13,9 @@ from opencoach.planning.stimulus.training import (
     TrainingStimulus,
     TrainingStimulusRequirement,
 )
+from opencoach.planning.trajectory.multi_week import (
+    TrajectoryWeekType,
+)
 from opencoach.planning.weekly.session_intent_slot import (
     WeeklySessionIntentSlot,
 )
@@ -66,6 +69,7 @@ def test_four_consecutive_days_are_allowed() -> None:
         week_start=date(2027, 3, 1),
         week_end=date(2027, 3, 7),
         phase=TrainingPhase.BUILD,
+        week_type=TrajectoryWeekType.LOADING,
         target_load=320.0,
         load_min=290.0,
         load_max=340.0,
@@ -115,6 +119,7 @@ def test_session_count_uses_session_slots() -> None:
         week_start=date(2027, 3, 1),
         week_end=date(2027, 3, 7),
         phase=TrainingPhase.BUILD,
+        week_type=TrajectoryWeekType.LOADING,
         target_load=320.0,
         load_min=290.0,
         load_max=340.0,
@@ -149,6 +154,7 @@ def test_session_slot_cannot_use_unavailable_day() -> None:
             week_start=date(2027, 3, 1),
             week_end=date(2027, 3, 7),
             phase=TrainingPhase.BASE,
+            week_type=TrajectoryWeekType.LOADING,
             target_load=300.0,
             load_min=280.0,
             load_max=320.0,
@@ -177,6 +183,7 @@ def test_load_range_must_be_consistent() -> None:
             week_start=date(2027, 3, 1),
             week_end=date(2027, 3, 7),
             phase=TrainingPhase.BASE,
+            week_type=TrajectoryWeekType.LOADING,
             target_load=300.0,
             load_min=330.0,
             load_max=310.0,
@@ -195,6 +202,7 @@ def test_target_load_must_fit_allowed_range() -> None:
             week_start=date(2027, 3, 1),
             week_end=date(2027, 3, 7),
             phase=TrainingPhase.BASE,
+            week_type=TrajectoryWeekType.LOADING,
             target_load=350.0,
             load_min=280.0,
             load_max=320.0,
@@ -209,6 +217,7 @@ def test_empty_week_has_no_consecutive_days() -> None:
         week_start=date(2027, 3, 1),
         week_end=date(2027, 3, 7),
         phase=TrainingPhase.RECOVERY,
+        week_type=TrajectoryWeekType.RECOVERY,
         target_load=0.0,
         load_min=0.0,
         load_max=50.0,

@@ -1,6 +1,7 @@
+import type { ReactNode } from 'react'
 /* oxlint-disable react/only-export-components */
 interface FormFieldProps {
-  label: string
+  label: ReactNode
   value: string
   onChange: (value: string) => void
   placeholder?: string

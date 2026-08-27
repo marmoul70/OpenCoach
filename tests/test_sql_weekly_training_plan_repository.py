@@ -74,6 +74,7 @@ def create_plan(
             30,
         ),
         "phase": "base",
+        "week_type": "loading",
         "phase_week_index": 2,
         "target_load": 200.0,
         "load_min": 190.0,
@@ -117,6 +118,7 @@ def test_sql_weekly_training_plan_repository_saves_plan() -> None:
         )
 
         assert saved.id is not None
+        assert saved.week_type == "loading"
         assert saved.athlete_profile_id == profile.id
         assert saved.week_start == date(
             2026,
@@ -168,6 +170,8 @@ def test_sql_weekly_training_plan_repository_reads_plan() -> None:
         assert loaded.target_load == 200.0
         assert loaded.phase == "base"
         assert loaded.phase_week_index == 2
+
+        assert loaded.week_type == "loading"
 
     finally:
         db.close()

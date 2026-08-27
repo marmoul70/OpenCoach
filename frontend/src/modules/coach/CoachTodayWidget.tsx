@@ -1,35 +1,26 @@
 import {
-  useState,
-} from 'react'
-
-import {
-  Eye,
+  Activity,
+  CircleCheck,
+  Info,
+  Minus,
+  TrendingDown,
+  TrendingUp,
+  TriangleAlert,
 } from 'lucide-react'
-
-import {
-  Modal,
-} from '../../components/ui/Modal'
-
-import {
-  CoachTodayDetails,
-} from './CoachTodayDetails'
-
-import type {
-  CoachAction,
-  CoachToday,
-} from './types'
 
 import {
   useCoachToday,
 } from './useCoachToday'
 
 
-export function CoachTodayWidget() {
-  const [
-    detailsOpen,
-    setDetailsOpen,
-  ] = useState(false)
+interface CoachTodayWidgetProps {
+  onOpenCoach: () => void
+}
 
+
+export function CoachTodayWidget({
+  onOpenCoach,
+}: CoachTodayWidgetProps) {
   const {
     coach,
     loading,
@@ -40,7 +31,7 @@ export function CoachTodayWidget() {
   if (loading) {
     return (
       <div className="card w-full border border-base-300 bg-base-100 shadow-sm">
-        <div className="card-body flex min-h-28 items-center justify-center p-4">
+        <div className="card-body flex min-h-32 items-center justify-center p-4">
           <span className="loading loading-spinner loading-sm text-primary" />
         </div>
       </div>
@@ -50,16 +41,16 @@ export function CoachTodayWidget() {
   if (error) {
     return (
       <div className="card w-full border border-error/30 bg-base-100 shadow-sm">
-        <div className="card-body p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-error">
-            Coach du jour
-          </p>
+        <div className="card-body gap-3 p-4">
+          <div className="flex items-center gap-2 text-error">
+            <TriangleAlert className="h-4 w-4" />
 
-          <p className="mt-1 font-semibold text-error">
-            Indisponible
-          </p>
+            <p className="font-semibold">
+              Coach indisponible
+            </p>
+          </div>
 
-          <p className="mt-2 text-sm text-base-content/60">
+          <p className="text-sm text-base-content/60">
             {error}
           </p>
         </div>
@@ -73,480 +64,540 @@ export function CoachTodayWidget() {
   ) {
     return (
       <div className="card w-full border border-base-300 bg-base-100 shadow-sm">
-        <div className="card-body p-4">
+        <div className="card-body gap-2 p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-base-content/50">
-            Coach du jour
+            Coach
           </p>
 
-          <p className="mt-1 font-semibold">
-            Données indisponibles
+          <p className="font-semibold">
+            Analyse en attente
           </p>
 
-          <p className="mt-1 text-sm text-base-content/50">
-            Les données nécessaires au coach
-            ne sont pas encore disponibles.
+          <p className="text-sm text-base-content/55">
+            Les données nécessaires ne sont pas encore disponibles.
           </p>
         </div>
       </div>
     )
   }
 
-  const summary =
-    buildCoachSummary(
-      coach,
+  const {
+    readiness,
+    recentLoad,
+    recentLoadAssessment,
+    dataWarning,
+  } = coach
+
+  const summary = buildWeeklySummary(
+    recentLoadAssessment,
+  )
+
+  const guidance = buildCoachGuidance(
+    coach,
+  )
+
+  const signalCount = (
+    readiness.warningCount
+    + readiness.criticalCount
+  )
+
+  const readinessTrend = (
+    resolveReadinessTrend(
+      readiness.score,
     )
+  )
+
+  const loadTrend = (
+    resolveLoadTrend(
+      recentLoad?.actualLoadTotal,
+      recentLoad?.plannedLoadTotal,
+    )
+  )
 
   return (
-    <>
-      <div className="card w-full border border-base-300 bg-base-100 shadow-sm">
-        <div className="card-body gap-4 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-base-content/50">
-                Coach du jour
-              </p>
+    <div
+      role="button"
+      tabIndex={0}
+      className={[
+        'card w-full cursor-pointer',
+        'border border-base-300 bg-base-100 shadow-sm',
+        'transition-all duration-150',
+        'hover:border-primary/30 hover:shadow-md',
+        'focus:outline-none focus-visible:ring-2',
+        'focus-visible:ring-primary/40',
+      ].join(' ')}
+      onClick={onOpenCoach}
+      onKeyDown={(event) => {
+        if (
+          event.key === 'Enter'
+          || event.key === ' '
+        ) {
+          event.preventDefault()
+          onOpenCoach()
+        }
+      }}
+      aria-label="Ouvrir le Coach"
+    >
+      <div className="card-body gap-4 p-4 sm:p-5">
 
-              <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h2 className="text-lg font-bold">
-                  Forme du jour
-                </h2>
-
-                <FormBadge
-                  level={
-                    summary.formLevel
-                  }
-                  label={
-                    summary.formLabel
-                  }
-                />
-              </div>
-
-              <p className="mt-1 text-sm text-base-content/50">
-                Readiness{' '}
-                <span className="font-semibold text-base-content">
-                  {Math.round(
-                    coach.readiness.score,
-                  )}/100
-                </span>
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm btn-circle shrink-0"
-              onClick={() =>
-                setDetailsOpen(true)
-              }
-              aria-label="Voir le détail du coach"
-              title="Voir le détail"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div>
-            <p className="font-semibold text-base-content">
-              {summary.headline}
-            </p>
-
-            <p className="mt-1 text-sm leading-relaxed text-base-content/60">
-              {summary.context}
-            </p>
-          </div>
-
-          {summary.sessionsLabel && (
-            <div className="rounded-lg bg-base-200/60 px-3 py-2">
-              <p className="text-sm font-medium text-base-content">
-                {summary.sessionsLabel}
-              </p>
-            </div>
-          )}
-
-          <div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-base-content/45">
-              Conseil
+              Coach
+            </p>
+
+            <div className="mt-1 flex items-center gap-2">
+              {summary.level === 'good' ? (
+                <CircleCheck className="h-5 w-5 shrink-0 text-success" />
+              ) : summary.level === 'warning' ? (
+                <TriangleAlert className="h-5 w-5 shrink-0 text-warning" />
+              ) : (
+                <Info className="h-5 w-5 shrink-0 text-info" />
+              )}
+
+              <h2 className="truncate text-lg font-bold">
+                {summary.title}
+              </h2>
+            </div>
+          </div>
+
+          <Activity className="h-5 w-5 shrink-0 text-base-content/25" />
+        </div>
+
+        <div className="grid grid-cols-3 divide-x divide-base-300 rounded-box border border-base-300 bg-base-200/40">
+          <Metric
+            label="Forme"
+            value={`${Math.round(readiness.score)}/100`}
+            trend={readinessTrend}
+          />
+
+          <Metric
+            label="Charge 7 j"
+            value={
+              recentLoad
+                ? formatNumber(
+                    recentLoad.actualLoadTotal,
+                  )
+                : '—'
+            }
+            trend={loadTrend}
+          />
+
+          <Metric
+            label="Signaux"
+            value={`${signalCount}`}
+          />
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-base-content/40">
+              Analyse
             </p>
 
             <p className="mt-1 text-sm leading-relaxed text-base-content/70">
-              {summary.advice}
+              {guidance.analysis}
+            </p>
+          </div>
+
+          <div className="rounded-box bg-primary/5 px-3.5 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary/70">
+              Consigne du coach
+            </p>
+
+            <p className="mt-1 text-sm font-medium leading-relaxed text-base-content">
+              {guidance.instruction}
             </p>
           </div>
         </div>
-      </div>
 
-      <Modal
-        title="Coach du jour"
-        open={detailsOpen}
-        onClose={() =>
-          setDetailsOpen(false)
-        }
-      >
-        <CoachTodayDetails
-          coach={coach}
-        />
-      </Modal>
-    </>
+        {dataWarning && (
+          <p className="text-xs text-warning">
+            {dataWarning}
+          </p>
+        )}
+
+      </div>
+    </div>
   )
 }
 
 
-interface CoachSummary {
-  formLevel:
-    | 'good'
-    | 'moderate'
-    | 'low'
+function Metric({
+  label,
+  value,
+  trend,
+}: {
+  label: string
+  value: string
+  trend?: 'up' | 'down' | 'stable'
+}) {
+  return (
+    <div className="px-3 py-2.5 text-center">
+      <p className="text-[11px] font-medium text-base-content/45">
+        {label}
+      </p>
 
-  formLabel: string
+      <div className="mt-0.5 flex items-center justify-center gap-1.5">
+        {trend && (
+          <TrendIcon
+            trend={trend}
+          />
+        )}
 
-  headline: string
-  context: string
-  advice: string
-
-  sessionsLabel:
-    string | null
+        <p className="font-bold tabular-nums text-base-content">
+          {value}
+        </p>
+      </div>
+    </div>
+  )
 }
 
 
-function buildCoachSummary(
-  coach: CoachToday,
-): CoachSummary {
-  const readiness =
-    coach.readiness.score
-
-  const sessionItems =
-    coach.sessionDecisions.filter(
-      (item) =>
-        item.session !== null,
+function TrendIcon({
+  trend,
+}: {
+  trend: 'up' | 'down' | 'stable'
+}) {
+  if (trend === 'up') {
+    return (
+      <TrendingUp
+        className="h-4 w-4 text-success"
+        aria-label="En hausse"
+      />
     )
+  }
 
-  const activeItems =
-    sessionItems.filter(
-      (item) =>
-        item.session?.status
-        === 'planned',
+  if (trend === 'down') {
+    return (
+      <TrendingDown
+        className="h-4 w-4 text-warning"
+        aria-label="En baisse"
+      />
     )
+  }
 
-  const actions =
-    activeItems.map(
-      (item) =>
-        item.decision.action,
-    )
+  return (
+    <Minus
+      className="h-4 w-4 text-base-content/35"
+      aria-label="Stable"
+    />
+  )
+}
 
-  const hasRest =
-    actions.includes('rest')
 
-  const hasReplace =
-    actions.includes('replace')
-
-  const hasReduce =
-    actions.includes('reduce')
-
-  const hasCriticalLoad =
-    coach.recentLoadAssessment
-      ?.hasCritical
-    ?? false
-
-  const hasLoadWarning =
-    coach.recentLoadAssessment
-      ?.hasWarning
-    ?? false
-
-  const hasCriticalReadiness =
-    coach.readiness.criticalCount > 0
-
-  const hasReadinessWarning =
-    coach.readiness.warningCount > 0
-
-  const sessionsLabel =
-    buildSessionsLabel(
-      sessionItems,
-    )
-
-  if (
-    readiness < 40
-    || hasRest
-    || hasCriticalReadiness
-    || hasCriticalLoad
-  ) {
+function buildWeeklySummary(
+  assessment: {
+    hasWarning: boolean
+    hasCritical: boolean
+    hasOverload: boolean
+    hasBrokenRest: boolean
+  } | null,
+): {
+  title: string
+  level: 'good' | 'warning' | 'info'
+} {
+  if (!assessment) {
     return {
-      formLevel: 'low',
-      formLabel: 'Faible',
+      title: 'Semaine en cours',
+      level: 'info',
+    }
+  }
 
-      headline:
-        'Priorité récupération.',
-
-      context:
-        (
-          'Les signaux du jour indiquent '
-          + 'que la charge prévue doit être '
-          + 'fortement adaptée.'
-        ),
-
-      advice:
-        buildLowFormAdvice(
-          activeItems.map(
-            (item) =>
-              item.decision.action,
-          ),
-        ),
-
-      sessionsLabel,
+  if (assessment.hasCritical) {
+    return {
+      title: 'Semaine à surveiller',
+      level: 'warning',
     }
   }
 
   if (
-    readiness < 70
-    || hasReduce
-    || hasReplace
-    || hasReadinessWarning
-    || hasLoadWarning
+    assessment.hasWarning
+    || assessment.hasOverload
+    || assessment.hasBrokenRest
   ) {
     return {
-      formLevel: 'moderate',
-      formLabel: 'Moyenne',
-
-      headline:
-        'Journée à gérer avec prudence.',
-
-      context:
-        (
-          'La récupération ou la charge '
-          + 'récente demande quelques '
-          + 'ajustements aujourd’hui.'
-        ),
-
-      advice:
-        buildModerateFormAdvice(
-          activeItems.map(
-            (item) =>
-              item.decision.action,
-          ),
-          activeItems.length,
-        ),
-
-      sessionsLabel,
-    }
-  }
-
-  if (activeItems.length === 0) {
-    return {
-      formLevel: 'good',
-      formLabel: 'Bonne',
-
-      headline:
-        'Profite de la récupération.',
-
-      context:
-        (
-          'Aucune séance n’est actuellement '
-          + 'à réaliser aujourd’hui.'
-        ),
-
-      advice:
-        (
-          'Garde cette journée légère '
-          + 'et profite-en pour récupérer.'
-        ),
-
-      sessionsLabel,
+      title: 'Quelques points à surveiller',
+      level: 'warning',
     }
   }
 
   return {
-    formLevel: 'good',
-    formLabel: 'Bonne',
-
-    headline:
-      'Bonne journée pour s’entraîner.',
-
-    context:
-      (
-        'La récupération est bonne '
-        + 'et le programme prévu peut '
-        + 'être suivi aujourd’hui.'
-      ),
-
-    advice:
-      buildGoodFormAdvice(
-        activeItems.length,
-      ),
-
-    sessionsLabel,
+    title: 'Semaine sous contrôle',
+    level: 'good',
   }
 }
 
 
-function buildGoodFormAdvice(
-  sessionCount: number,
-): string {
-  if (sessionCount > 1) {
-    return (
-      'Tu peux réaliser les séances prévues. '
-      + 'Garde néanmoins de la marge sur la '
-      + 'deuxième pour éviter une fatigue inutile.'
-    )
-  }
-
-  return (
-    'Tu peux suivre la séance prévue '
-    + 'dans les conditions planifiées.'
-  )
-}
-
-
-function buildModerateFormAdvice(
-  actions: CoachAction[],
-  sessionCount: number,
-): string {
-  if (
-    actions.includes('replace')
-  ) {
-    return (
-      'Privilégie la séance de remplacement '
-      + 'proposée et évite de chercher '
-      + 'de l’intensité supplémentaire.'
-    )
-  }
-
-  if (
-    actions.includes('reduce')
-  ) {
-    if (sessionCount > 1) {
-      return (
-        'Réduis les séances concernées '
-        + 'et conserve la deuxième activité '
-        + 'facile pour limiter la charge totale.'
-      )
+function buildCoachGuidance(
+  coach: {
+    readiness: {
+      score: number
+      warningCount: number
+      criticalCount: number
+      signals: Array<{
+        level: string
+        reason: string
+      }>
     }
 
-    return (
-      'Respecte la réduction proposée '
-      + 'et ne compense pas par davantage '
-      + 'd’intensité.'
-    )
-  }
+    recentLoad: {
+      actualLoadTotal: number
+      plannedLoadTotal: number
+    } | null
 
-  return (
-    'Reste attentif aux sensations '
-    + 'et garde une marge sur la séance.'
+    recentLoadAssessment: {
+      hasWarning: boolean
+      hasCritical: boolean
+      hasOverload: boolean
+      hasBrokenRest: boolean
+      signals: Array<{
+        level: string
+        reason: string
+      }>
+    } | null
+  },
+): {
+  analysis: string
+  instruction: string
+} {
+  const {
+    readiness,
+    recentLoad,
+    recentLoadAssessment,
+  } = coach
+
+  const loadAssessment =
+    recentLoadAssessment
+
+  const actualLoad =
+    recentLoad?.actualLoadTotal
+
+  const plannedLoad =
+    recentLoad?.plannedLoadTotal
+
+  const loadIsAbovePlan = (
+    actualLoad !== undefined
+    && plannedLoad !== undefined
+    && plannedLoad > 0
+    && actualLoad > plannedLoad * 1.15
   )
-}
 
+  // --------------------------------------------------------
+  // Situation critique
+  // --------------------------------------------------------
 
-function buildLowFormAdvice(
-  actions: CoachAction[],
-): string {
   if (
-    actions.includes('rest')
+    readiness.criticalCount > 0
+    || loadAssessment?.hasCritical
   ) {
-    return (
-      'Le repos est recommandé aujourd’hui. '
-      + 'Évite d’ajouter une séance non prévue.'
-    )
-  }
+    return {
+      analysis:
+        'Un signal important de récupération ou de charge '
+        + 'est actuellement présent. La priorité est de ne '
+        + 'pas accentuer la fatigue avant de poursuivre la progression.',
 
-  return (
-    'Réduis fortement la charge du jour '
-    + 'et privilégie la récupération.'
-  )
-}
-
-
-function buildSessionsLabel(
-  items:
-    CoachToday['sessionDecisions'],
-): string | null {
-  const sessions =
-    items
-      .map(
-        (item) =>
-          item.session,
-      )
-      .filter(
-        (
-          session,
-        ): session is NonNullable<
-          typeof session
-        > =>
-          session !== null,
-      )
-
-  if (sessions.length === 0) {
-    return null
-  }
-
-  const activityNames =
-    sessions.map(
-      (session) =>
-        formatActivityType(
-          session.sportType,
-          session.type,
-        ),
-    )
-
-  return (
-    `${sessions.length} séance`
-    + (
-      sessions.length > 1
-        ? 's'
-        : ''
-    )
-    + ' · '
-    + activityNames.join(' + ')
-  )
-}
-
-
-function FormBadge({
-  level,
-  label,
-}: {
-  level:
-    CoachSummary['formLevel']
-
-  label: string
-}) {
-  const className = {
-    good: 'badge-success',
-    moderate: 'badge-warning',
-    low: 'badge-error',
-  }[level]
-
-  return (
-    <span
-      className={`badge badge-sm ${className}`}
-    >
-      {label}
-    </span>
-  )
-}
-
-
-function formatActivityType(
-  sportType: string,
-  type: string,
-): string {
-  const value =
-    sportType.toLowerCase()
-
-  const labels:
-    Record<string, string> = {
-      run: 'Course',
-      running: 'Course',
-      trailrunning: 'Trail',
-      trail_running: 'Trail',
-      strength: 'Renforcement',
-      strength_training: 'Renforcement',
-      bike: 'Vélo',
-      cycling: 'Vélo',
-      walking: 'Marche',
-      hiking: 'Randonnée',
-      swimming: 'Natation',
+      instruction:
+        'N’ajoute aucune charge supplémentaire. '
+        + 'Privilégie la récupération et suis uniquement '
+        + 'les adaptations proposées par OpenCoach.',
     }
+  }
 
-  return (
-    labels[value]
-    ?? sportType
-    ?? type
+  // --------------------------------------------------------
+  // Repos programmé non respecté
+  // --------------------------------------------------------
+
+  if (loadAssessment?.hasBrokenRest) {
+    return {
+      analysis:
+        'Une période de repos prévue n’a pas été totalement '
+        + 'respectée. Cette charge supplémentaire doit être '
+        + 'prise en compte dans la récupération actuelle.',
+
+      instruction:
+        'N’essaie pas de compenser avec davantage '
+        + 'd’entraînement. Respecte les prochaines séances '
+        + 'faciles et les périodes de récupération prévues.',
+    }
+  }
+
+  // --------------------------------------------------------
+  // Charge élevée + readiness encore bon
+  // --------------------------------------------------------
+
+  if (
+    (
+      loadAssessment?.hasOverload
+      || loadIsAbovePlan
+    )
+    && readiness.score >= 80
+  ) {
+    return {
+      analysis:
+        'Ta disponibilité reste très bonne, mais la charge '
+        + 'récente est supérieure au programme prévu. '
+        + 'Aucun signal critique de fatigue n’est détecté pour le moment.',
+
+      instruction:
+        'Garde le programme prévu sans ajouter de charge '
+        + 'supplémentaire. Sois attentif aux sensations '
+        + 'et à la qualité de récupération.',
+    }
+  }
+
+  // --------------------------------------------------------
+  // Charge élevée + readiness moyen
+  // --------------------------------------------------------
+
+  if (
+    loadAssessment?.hasOverload
+    || loadIsAbovePlan
+  ) {
+    return {
+      analysis:
+        'La charge récente est élevée alors que ta '
+        + 'disponibilité n’est pas optimale. Le cumul '
+        + 'mérite davantage de prudence.',
+
+      instruction:
+        'Évite toute séance supplémentaire et reste '
+        + 'strictement sur le programme prévu. '
+        + 'Réévalue tes sensations avant les efforts exigeants.',
+    }
+  }
+
+  // --------------------------------------------------------
+  // Readiness élevé
+  // --------------------------------------------------------
+
+  if (
+    readiness.score >= 80
+    && readiness.warningCount === 0
+  ) {
+    return {
+      analysis:
+        'Ta disponibilité est très bonne aujourd’hui. '
+        + 'Les indicateurs de récupération sont favorables '
+        + 'et aucun signal majeur de charge n’est détecté.',
+
+      instruction:
+        'Conserve le programme prévu. Il n’est pas '
+        + 'nécessaire d’ajouter du volume ou de '
+        + 'l’intensité pour le moment.',
+    }
+  }
+
+  // --------------------------------------------------------
+  // Readiness élevé avec vigilance
+  // --------------------------------------------------------
+
+  if (readiness.score >= 80) {
+    return {
+      analysis:
+        'Ta disponibilité générale est bonne, malgré '
+        + 'un signal de vigilance isolé. À lui seul, '
+        + 'il ne justifie pas de modifier la séance prévue.',
+
+      instruction:
+        'Conserve le programme prévu, mais surveille '
+        + 'tes sensations pendant l’échauffement et '
+        + 'réduis l’effort si elles se dégradent.',
+    }
+  }
+
+  // --------------------------------------------------------
+  // Readiness intermédiaire
+  // --------------------------------------------------------
+
+  if (readiness.score >= 60) {
+    return {
+      analysis:
+        'Ta disponibilité est correcte sans être optimale. '
+        + 'La séance reste envisageable, mais la réponse '
+        + 'à l’effort doit guider son exécution.',
+
+      instruction:
+        'Respecte strictement l’intensité prévue et '
+        + 'n’ajoute pas de travail supplémentaire. '
+        + 'Ralentis si les sensations sont moins bonnes que prévu.',
+    }
+  }
+
+  // --------------------------------------------------------
+  // Readiness faible
+  // --------------------------------------------------------
+
+  return {
+    analysis:
+      'Ta disponibilité est réduite aujourd’hui. '
+      + 'Les indicateurs suggèrent de privilégier '
+      + 'la récupération plutôt que la charge supplémentaire.',
+
+    instruction:
+      'Évite d’augmenter la charge et privilégie '
+      + 'une séance allégée ou la récupération selon '
+      + 'les adaptations proposées par OpenCoach.',
+  }
+}
+
+
+function resolveReadinessTrend(
+  score: number,
+): 'up' | 'down' | 'stable' {
+  if (score >= 80) {
+    return 'up'
+  }
+
+  if (score < 60) {
+    return 'down'
+  }
+
+  return 'stable'
+}
+
+
+function resolveLoadTrend(
+  actualLoad: number | undefined,
+  plannedLoad: number | undefined,
+): 'up' | 'down' | 'stable' | undefined {
+  if (
+    actualLoad === undefined
+    || plannedLoad === undefined
+  ) {
+    return undefined
+  }
+
+  if (plannedLoad <= 0) {
+    return actualLoad > 0
+      ? 'up'
+      : 'stable'
+  }
+
+  const ratio = (
+    actualLoad
+    / plannedLoad
   )
+
+  if (ratio > 1.15) {
+    return 'up'
+  }
+
+  if (ratio < 0.85) {
+    return 'down'
+  }
+
+  return 'stable'
+}
+
+
+function formatNumber(
+  value: number,
+): string {
+  return new Intl.NumberFormat(
+    'fr-FR',
+    {
+      maximumFractionDigits: 0,
+    },
+  ).format(value)
 }

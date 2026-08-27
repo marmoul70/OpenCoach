@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { MetricTooltip } from '../../components/metrics/MetricTooltip'
 
 import {
   updateAthleteProfile,
@@ -124,10 +125,6 @@ export function Profile() {
               </div>
             </div>
 
-            <div className="badge badge-outline gap-2 px-3 py-3">
-              <span className="size-2 rounded-full bg-success" />
-              Profil local
-            </div>
           </div>
         </header>
 
@@ -174,9 +171,16 @@ export function Profile() {
             description="Vos principaux paramètres physiologiques."
           >
             <div className="space-y-6">
+
+
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <FormField
-                  label="VMA"
+                  label={
+                    <MetricTooltip
+                      metric="vma"
+                      label="VMA"
+                    />
+                  }
                   type="number"
                   value={vma}
                   onChange={setVma}
@@ -187,7 +191,12 @@ export function Profile() {
                 />
 
                 <FormField
-                  label="FC maximale"
+                  label={
+                    <MetricTooltip
+                      metric="max_hr"
+                      label="FC maximale"
+                    />
+                  }
                   type="number"
                   value={maxHeartRate}
                   onChange={setMaxHeartRate}
@@ -209,7 +218,12 @@ export function Profile() {
                 />
 
                 <FormField
-                  label="SV1"
+                  label={
+                    <MetricTooltip
+                      metric="sv1"
+                      label="SV1"
+                    />
+                  }
                   type="number"
                   value={thresholdHeartRate1}
                   onChange={setThresholdHeartRate1}
@@ -220,7 +234,12 @@ export function Profile() {
                 />
 
                 <FormField
-                  label="SV2"
+                  label={
+                    <MetricTooltip
+                      metric="sv2"
+                      label="SV2"
+                    />
+                  }
                   type="number"
                   value={thresholdHeartRate2}
                   onChange={setThresholdHeartRate2}

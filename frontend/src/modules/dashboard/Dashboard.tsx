@@ -31,11 +31,13 @@ import {
 
 interface DashboardProps {
   onOpenTraining: () => void
+  onOpenCoach: () => void
 }
 
 
 export function Dashboard({
   onOpenTraining,
+  onOpenCoach,
 }: DashboardProps) {
   const profile =
     useAthleteProfile()
@@ -230,8 +232,10 @@ export function Dashboard({
 
         <div className="space-y-4">
 
-          <section aria-label="Coach du jour">
-            <CoachTodayWidget />
+          <section aria-label="Coach">
+            <CoachTodayWidget
+              onOpenCoach={onOpenCoach}
+            />
           </section>
 
           {fitnessWidget && (

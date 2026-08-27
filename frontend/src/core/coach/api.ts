@@ -116,6 +116,68 @@ interface CoachTodayApiResponse {
     }>
   } | null
 
+  weekly_plan: {
+    week_start: string
+    week_end: string
+
+    phase:
+      | 'foundation'
+      | 'base'
+      | 'build'
+      | 'specific'
+      | 'taper'
+      | 'recovery'
+      | 'return_to_training'
+
+    week_type:
+      | 'loading'
+      | 'recovery'
+      | 'taper'
+      | 'return_to_training'
+      | 'suspended'
+      | null
+
+    phase_week_index: number
+  } | null
+
+  weekly_assessment: {
+    status:
+      | 'aligned'
+      | 'under_target'
+      | 'over_target'
+      | 'unknown'
+
+    target_load: number | null
+    actual_load_to_date: number
+    remaining_planned_load: number
+    projected_week_load: number
+
+    projected_gap: number | null
+    projected_gap_percent: number | null
+
+    remaining_days: number
+    remaining_sessions_count: number
+
+    adaptation_opportunity: boolean
+    adaptation_direction:
+      | 'increase'
+      | 'reduce'
+      | null
+
+    history_window_days: number
+    history_confidence: number
+
+    history_confidence_level:
+      | 'low'
+      | 'moderate'
+      | 'good'
+      | 'high'
+
+    headline: string
+    analysis: string
+    instruction: string
+  }
+
   data_warning: string | null
 }
 
@@ -408,6 +470,97 @@ Promise<CoachToday> {
                 ),
           }
         : null,
+
+    weeklyPlan:
+      data.weekly_plan
+        ? {
+            weekStart:
+              data.weekly_plan.week_start,
+
+            weekEnd:
+              data.weekly_plan.week_end,
+
+            phase:
+              data.weekly_plan.phase,
+
+            weekType:
+              data.weekly_plan.week_type
+              ?? undefined,
+
+            phaseWeekIndex:
+              data.weekly_plan
+                .phase_week_index,
+          }
+        : null,
+
+    weeklyAssessment: {
+      status:
+        data.weekly_assessment.status,
+
+      targetLoad:
+        data.weekly_assessment.target_load
+        ?? undefined,
+
+      actualLoadToDate:
+        data.weekly_assessment
+          .actual_load_to_date,
+
+      remainingPlannedLoad:
+        data.weekly_assessment
+          .remaining_planned_load,
+
+      projectedWeekLoad:
+        data.weekly_assessment
+          .projected_week_load,
+
+      projectedGap:
+        data.weekly_assessment
+          .projected_gap
+        ?? undefined,
+
+      projectedGapPercent:
+        data.weekly_assessment
+          .projected_gap_percent
+        ?? undefined,
+
+      remainingDays:
+        data.weekly_assessment
+          .remaining_days,
+
+      remainingSessionsCount:
+        data.weekly_assessment
+          .remaining_sessions_count,
+
+      adaptationOpportunity:
+        data.weekly_assessment
+          .adaptation_opportunity,
+
+      adaptationDirection:
+        data.weekly_assessment
+          .adaptation_direction
+        ?? undefined,
+
+      historyWindowDays:
+        data.weekly_assessment
+          .history_window_days,
+
+      historyConfidence:
+        data.weekly_assessment
+          .history_confidence,
+
+      historyConfidenceLevel:
+        data.weekly_assessment
+          .history_confidence_level,
+
+      headline:
+        data.weekly_assessment.headline,
+
+      analysis:
+        data.weekly_assessment.analysis,
+
+      instruction:
+        data.weekly_assessment.instruction,
+    },
 
     dataWarning:
       data.data_warning

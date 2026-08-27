@@ -73,6 +73,11 @@ class WeeklyTrainingPlan(Base):
         nullable=False,
     )
 
+    week_type: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
     phase_week_index: Mapped[int] = mapped_column(
         Integer,
         nullable=False,

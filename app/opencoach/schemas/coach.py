@@ -113,6 +113,45 @@ class CoachRecentLoadAssessmentResponse(BaseModel):
         CoachRecentLoadSignalResponse
     ]
 
+class CoachWeeklyAssessmentResponse(BaseModel):
+    """Évaluation de la trajectoire hebdomadaire du Coach."""
+
+    status: str
+
+    target_load: float | None
+    actual_load_to_date: float
+    remaining_planned_load: float
+    projected_week_load: float
+
+    projected_gap: float | None
+    projected_gap_percent: float | None
+
+    remaining_days: int
+    remaining_sessions_count: int
+
+    adaptation_opportunity: bool
+    adaptation_direction: str | None
+
+    history_window_days: int
+    history_confidence: float
+    history_confidence_level: str
+
+    headline: str
+    analysis: str
+    instruction: str
+
+
+class CoachWeeklyPlanResponse(BaseModel):
+    """Intention persistée du plan hebdomadaire OpenCoach."""
+
+    week_start: date
+    week_end: date
+
+    phase: str
+    week_type: str | None
+    phase_week_index: int
+
+
 class CoachTodayResponse(BaseModel):
     date: date
 
@@ -131,5 +170,9 @@ class CoachTodayResponse(BaseModel):
         CoachRecentLoadAssessmentResponse
         | None
     )
+
+    weekly_assessment: CoachWeeklyAssessmentResponse
+
+    weekly_plan: CoachWeeklyPlanResponse | None
 
     data_warning: str | None

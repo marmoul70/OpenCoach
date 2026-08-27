@@ -127,6 +127,78 @@ export interface CoachSessionDecision {
 }
 
 
+export type CoachWeeklyStatus =
+  | 'aligned'
+  | 'under_target'
+  | 'over_target'
+  | 'unknown'
+
+
+export type CoachHistoryConfidenceLevel =
+  | 'low'
+  | 'moderate'
+  | 'good'
+  | 'high'
+
+
+export type CoachWeekType =
+  | 'loading'
+  | 'recovery'
+  | 'taper'
+  | 'return_to_training'
+  | 'suspended'
+
+
+export type CoachTrainingPhase =
+  | 'foundation'
+  | 'base'
+  | 'build'
+  | 'specific'
+  | 'taper'
+  | 'recovery'
+  | 'return_to_training'
+
+
+export interface CoachWeeklyPlan {
+  weekStart: string
+  weekEnd: string
+
+  phase: CoachTrainingPhase
+  weekType?: CoachWeekType
+  phaseWeekIndex: number
+}
+
+
+export interface CoachWeeklyAssessment {
+  status: CoachWeeklyStatus
+
+  targetLoad?: number
+  actualLoadToDate: number
+  remainingPlannedLoad: number
+  projectedWeekLoad: number
+
+  projectedGap?: number
+  projectedGapPercent?: number
+
+  remainingDays: number
+  remainingSessionsCount: number
+
+  adaptationOpportunity: boolean
+  adaptationDirection?:
+    | 'increase'
+    | 'reduce'
+
+  historyWindowDays: number
+  historyConfidence: number
+  historyConfidenceLevel:
+    CoachHistoryConfidenceLevel
+
+  headline: string
+  analysis: string
+  instruction: string
+}
+
+
 export interface CoachToday {
   date: string
 
@@ -137,6 +209,10 @@ export interface CoachToday {
   recentLoad: CoachRecentLoad | null
   recentLoadAssessment:
     CoachRecentLoadAssessment | null
+
+  weeklyAssessment: CoachWeeklyAssessment
+
+  weeklyPlan: CoachWeeklyPlan | null
 
   dataWarning?: string
 }

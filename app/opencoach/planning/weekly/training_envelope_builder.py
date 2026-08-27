@@ -290,6 +290,7 @@ def build_weekly_training_envelope(
         week_start=input_data.week_start,
         week_end=week_end,
         phase=input_data.phase,
+        week_type=week_type,
         phase_week_index=(
             input_data.phase_week_index
         ),

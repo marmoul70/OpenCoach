@@ -181,6 +181,7 @@ class FakeWeeklyEnvelope:
         self.week_start = week_start
         self.week_end = week_end
         self.phase = phase
+        self.week_type = "loading"
 
         self.phase_week_index = 1
 

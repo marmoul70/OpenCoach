@@ -77,6 +77,14 @@ class WeeklyTrainingPersistenceService:
                     )
                     else envelope.phase
                 ),
+                week_type=str(
+                    envelope.week_type.value
+                    if hasattr(
+                        envelope.week_type,
+                        "value",
+                    )
+                    else envelope.week_type
+                ),
                 phase_week_index=(
                     envelope.phase_week_index
                 ),

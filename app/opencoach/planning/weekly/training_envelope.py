@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from opencoach.planning.weekly.session_intent_slot import (
     WeeklySessionIntentSlot,
@@ -22,6 +23,12 @@ from opencoach.planning.weekly.session_intent_slot import (
 from opencoach.planning.weekly.schedule_types import (
     Weekday,
 )
+
+
+if TYPE_CHECKING:
+    from opencoach.planning.trajectory.multi_week import (
+        TrajectoryWeekType,
+    )
 
 
 class TrainingPhase(StrEnum):
@@ -66,6 +73,7 @@ class WeeklyTrainingEnvelope:
     week_end: date
 
     phase: TrainingPhase
+    week_type: TrajectoryWeekType
 
     target_load: float | None
     load_min: float | None

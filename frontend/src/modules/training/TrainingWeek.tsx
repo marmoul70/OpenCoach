@@ -39,6 +39,10 @@ import {
 } from './TrainingDetails'
 
 import {
+  useCoachToday,
+} from '../coach/useCoachToday'
+
+import {
   useTrainingSessions,
 } from './trainingStore'
 
@@ -64,6 +68,10 @@ const dayLabels = [
 
 
 export function TrainingWeek() {
+  const {
+    coach,
+  } = useCoachToday()
+
   const {
     races,
   } = useRaces()
@@ -160,6 +168,12 @@ export function TrainingWeek() {
       sessions,
     )
 
+  const weekStartDate =
+    weekDays.at(0)?.date
+
+  const weekEndDate =
+    weekDays.at(-1)?.date
+
   const selectedSession =
     selectedSessionId
       ? sessions.find(
@@ -169,35 +183,73 @@ export function TrainingWeek() {
         )
       : undefined
 
-  const plannedCount =
+  const trainingSessions =
     sessions.filter(
       (session) =>
-        session.status
-        === 'planned'
-        && session.type
-        !== 'rest'
-        && session.type
-        !== 'supplementary',
+        session.type !== 'rest'
+        && session.type !== 'supplementary',
+    )
+
+  const completedCount =
+    trainingSessions.filter(
+      (session) =>
+        session.status === 'completed',
+    ).length
+
+  const remainingCount =
+    trainingSessions.filter(
+      (session) =>
+        session.status === 'planned',
+    ).length
+
+  const skippedCount =
+    trainingSessions.filter(
+      (session) =>
+        session.status === 'skipped',
     ).length
 
   const supplementaryCount =
     sessions.filter(
       (session) =>
-        session.type
-        === 'supplementary',
+        session.type === 'supplementary',
     ).length
 
   const restCount =
     sessions.filter(
       (session) =>
-        session.type
-        === 'rest',
+        session.type === 'rest',
     ).length
+
 
   const nextPrimaryRace =
     getNextPrimaryRace(
       races,
     )
+
+
+  const weeklyAssessment =
+    coach?.weeklyAssessment
+
+  const weeklyPlan =
+    coach?.weeklyPlan
+
+  const weeklyActualPercent = (
+    weeklyAssessment?.targetLoad
+      ? percentageOfTarget(
+          weeklyAssessment.actualLoadToDate,
+          weeklyAssessment.targetLoad,
+        )
+      : undefined
+  )
+
+  const weeklyProjectedPercent = (
+    weeklyAssessment?.targetLoad
+      ? percentageOfTarget(
+          weeklyAssessment.projectedWeekLoad,
+          weeklyAssessment.targetLoad,
+        )
+      : undefined
+  )
 
 
   function openSession(
@@ -236,55 +288,116 @@ export function TrainingWeek() {
     <main>
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
         <header className="mb-6">
-          <div className="flex items-start gap-4">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <CalendarDays
-                size={24}
-                strokeWidth={2}
-              />
-            </div>
+          <div className="flex items-start justify-between gap-6">
 
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-base-content">
-                Entraînement
-              </h1>
+            <div className="min-w-0">
 
-              <p className="mt-1 text-sm text-base-content/60">
-                Votre semaine d&apos;entraînement et vos séances prévues.
+              <p className="text-sm text-base-content/60">
+                {weeklyPlan
+                  ? formatTrainingWeekRange(
+                      weeklyPlan.weekStart,
+                      weeklyPlan.weekEnd,
+                    )
+                  : (
+                      weekStartDate
+                      && weekEndDate
+                        ? formatTrainingWeekRange(
+                            weekStartDate,
+                            weekEndDate,
+                          )
+                        : 'Planning hebdomadaire'
+                    )}
               </p>
+
+              {weeklyPlan && (
+                <div
+                  className="
+                    mt-3
+                    flex
+                    items-center
+                    justify-between
+                    gap-4
+                  "
+                >
+
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+
+                    {weeklyPlan.weekType && (
+                      <div
+                        className={
+                          weekTypeBadgeClass(
+                            weeklyPlan.weekType,
+                          )
+                        }
+                      >
+                        <span className="size-2 rounded-full bg-current opacity-80" />
+
+                        <span className="font-semibold">
+                          {formatWeekType(
+                            weeklyPlan.weekType,
+                          )}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-1.5 text-sm">
+
+                      <span className="text-base-content/40">
+                        Phase
+                      </span>
+
+                      <span
+                        className={
+                          phaseTextClass(
+                            weeklyPlan.phase,
+                          )
+                        }
+                      >
+                        {formatTrainingPhase(
+                          weeklyPlan.phase,
+                        )}
+                      </span>
+
+                    </div>
+
+                  </div>
+
+
+                  <div className="shrink-0 text-right">
+
+                    <span className="text-xs text-base-content/40">
+                      Semaine
+                    </span>
+
+                    <span className="ml-1.5 font-semibold tabular-nums text-base-content/80">
+                      {weeklyPlan.phaseWeekIndex}
+                    </span>
+
+                  </div>
+
+                </div>
+              )}
             </div>
+
+            <div className="flex shrink-0 items-center gap-3">
+
+              <div className="text-right">
+                <h1 className="text-3xl font-bold tracking-tight text-base-content">
+                  Entraînement
+                </h1>
+              </div>
+
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <CalendarDays
+                  size={24}
+                  strokeWidth={2}
+                />
+              </div>
+
+            </div>
+
           </div>
         </header>
-
-
-        <TrainingOverview
-          distanceKm={
-            stats?.totalDistanceKm
-            ?? 0
-          }
-          completedSessions={
-            stats?.sessionsCount
-            ?? 0
-          }
-          loading={
-            statsLoading
-          }
-          raceName={
-            nextPrimaryRace?.name
-            ?? 'Aucun objectif prioritaire'
-          }
-          raceDescription={
-            nextPrimaryRace
-              ? (
-                  `${formatRaceDate(
-                    nextPrimaryRace.date,
-                  )} · ${
-                    nextPrimaryRace.distanceKm
-                  } km`
-                )
-              : 'Aucun objectif principal programmé'
-          }
-        />
 
 
         {statsError && (
@@ -305,50 +418,255 @@ export function TrainingWeek() {
 
 
         <section className="mt-7 space-y-4">
-          <div
-            className="
-              flex flex-col
-              gap-3
-              sm:flex-row
-              sm:items-end
-              sm:justify-between
-            "
-          >
-            <div>
-              <h2 className="text-xl font-bold text-base-content">
-                Cette semaine
-              </h2>
 
-              <p className="mt-1 text-sm text-base-content/60">
-                Votre planning et les séances réellement effectuées.
-              </p>
-            </div>
+          {weeklyAssessment && (
+            <section
+              aria-label="Synthèse de la semaine"
+              className="
+                overflow-hidden
+                rounded-2xl
+                border border-base-300
+                bg-base-100
+                shadow-sm
+              "
+            >
 
-            <div className="flex flex-wrap gap-2">
-              <span className="badge badge-outline">
-                {plannedCount}{' '}
-                prévue
-                {plannedCount > 1
-                  ? 's'
-                  : ''}
-              </span>
+              {/* --------------------------------------------
+                  Progression hebdomadaire
+              --------------------------------------------- */}
 
-              {supplementaryCount > 0 && (
-                <span className="badge badge-outline">
-                  {supplementaryCount}{' '}
-                  supplémentaire
-                  {supplementaryCount > 1
-                    ? 's'
-                    : ''}
-                </span>
-              )}
+              <div className="px-4 py-4 sm:px-5">
 
-              <span className="badge badge-ghost">
-                {restCount}{' '}
-                repos
-              </span>
-            </div>
-          </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+                  <div>
+
+                    <p className="text-xs font-medium text-base-content/45">
+                      Charge semaine
+                    </p>
+
+                    <p className="mt-0.5 text-xl font-bold tabular-nums">
+                      {weeklyActualPercent !== undefined
+                        ? `${Math.round(
+                            weeklyActualPercent,
+                          )} %`
+                        : '—'}
+
+                      <span className="ml-1 text-xs font-medium text-base-content/40">
+                        réalisé
+                      </span>
+                    </p>
+
+                  </div>
+
+
+                  <div className="flex flex-wrap gap-1.5 sm:justify-end">
+
+                    <span
+                      className={
+                        weeklyAssessment.status === 'aligned'
+                          ? 'badge badge-success badge-outline'
+                          : (
+                              weeklyAssessment.status === 'over_target'
+                                ? 'badge badge-warning badge-outline'
+                                : 'badge badge-outline'
+                            )
+                      }
+                    >
+                      {humanizeWeeklyTrainingStatus(
+                        weeklyAssessment.status,
+                      )}
+                    </span>
+
+
+                    {completedCount > 0 && (
+                      <span className="badge badge-success badge-outline gap-1">
+
+                        <Check
+                          size={12}
+                          strokeWidth={2.5}
+                        />
+
+                        {completedCount}{' '}
+                        réalisée
+                        {completedCount > 1
+                          ? 's'
+                          : ''}
+
+                      </span>
+                    )}
+
+
+                    {remainingCount > 0 && (
+                      <span className="badge badge-primary badge-outline gap-1">
+
+                        <Clock3
+                          size={12}
+                          strokeWidth={2}
+                        />
+
+                        {remainingCount}{' '}
+                        à faire
+
+                      </span>
+                    )}
+
+
+                    {skippedCount > 0 && (
+                      <span className="badge badge-error badge-outline gap-1">
+
+                        <X
+                          size={12}
+                          strokeWidth={2}
+                        />
+
+                        {skippedCount}{' '}
+                        non réalisée
+                        {skippedCount > 1
+                          ? 's'
+                          : ''}
+
+                      </span>
+                    )}
+
+
+                    {supplementaryCount > 0 && (
+                      <span className="badge badge-outline">
+
+                        {supplementaryCount}{' '}
+                        supplémentaire
+                        {supplementaryCount > 1
+                          ? 's'
+                          : ''}
+
+                      </span>
+                    )}
+
+
+                    {restCount > 0 && (
+                      <span className="badge badge-ghost">
+
+                        {restCount}{' '}
+                        repos
+
+                      </span>
+                    )}
+
+                  </div>
+
+                </div>
+
+
+                <progress
+                  className="progress progress-primary mt-3 h-2 w-full"
+                  value={
+                    weeklyActualPercent !== undefined
+                      ? Math.min(
+                          100,
+                          Math.max(
+                            0,
+                            weeklyActualPercent,
+                          ),
+                        )
+                      : 0
+                  }
+                  max={100}
+                />
+
+
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-base-content/50">
+
+                  <span>
+                    {weeklyProjectedPercent !== undefined
+                      ? `${Math.round(
+                          weeklyProjectedPercent,
+                        )} % projeté`
+                      : 'Projection indisponible'}
+                  </span>
+
+                  <span aria-hidden="true">
+                    ·
+                  </span>
+
+                  <span>
+                    {weeklyAssessment.remainingSessionsCount} séance${
+                      weeklyAssessment.remainingSessionsCount > 1
+                        ? 's'
+                        : ''
+                    } restante${
+                      weeklyAssessment.remainingSessionsCount > 1
+                        ? 's'
+                        : ''
+                    }
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              {/* --------------------------------------------
+                  Statistiques générales
+              --------------------------------------------- */}
+
+              <div
+                className="
+                  grid
+                  border-t border-base-300
+                  divide-y divide-base-300
+                  sm:grid-cols-[1fr_1fr_1.4fr]
+                  sm:divide-x
+                  sm:divide-y-0
+                "
+              >
+
+                <CompactOverviewItem
+                  icon={Route}
+                  value={
+                    statsLoading
+                      ? '…'
+                      : `${formatNumber(
+                          stats?.totalDistanceKm
+                          ?? 0,
+                        )} km`
+                  }
+                  label="Cette année"
+                />
+
+                <CompactOverviewItem
+                  icon={Check}
+                  value={
+                    statsLoading
+                      ? '…'
+                      : `${stats?.sessionsCount ?? 0}`
+                  }
+                  label="Séances réalisées"
+                />
+
+                <CompactOverviewItem
+                  icon={Trophy}
+                  value={
+                    nextPrimaryRace?.name
+                    ?? 'Aucun objectif'
+                  }
+                  label={
+                    nextPrimaryRace
+                      ? (
+                          `${formatRaceDate(
+                            nextPrimaryRace.date,
+                          )} · ${
+                            nextPrimaryRace.distanceKm
+                          } km`
+                        )
+                      : 'Aucune course prioritaire'
+                  }
+                  wide
+                />
+
+              </div>
+
+            </section>
+          )}
 
 
           <div className="space-y-3">
@@ -443,133 +761,47 @@ export function TrainingWeek() {
 }
 
 
-interface TrainingOverviewProps {
-  distanceKm: number
-  completedSessions: number
-  loading: boolean
-  raceName: string
-  raceDescription: string
-}
-
-
-function TrainingOverview({
-  distanceKm,
-  completedSessions,
-  loading,
-  raceName,
-  raceDescription,
-}: TrainingOverviewProps) {
-  return (
-    <section
-      aria-label="Synthèse entraînement"
-      className="
-        overflow-hidden
-        rounded-2xl
-        border border-base-300
-        bg-base-100
-        shadow-sm
-      "
-    >
-      <div
-        className="
-          grid
-          divide-y divide-base-300
-          sm:grid-cols-[1fr_1fr_1.4fr]
-          sm:divide-x
-          sm:divide-y-0
-        "
-      >
-        <OverviewItem
-          icon={Route}
-          value={
-            loading
-              ? '…'
-              : (
-                  `${formatNumber(
-                    distanceKm,
-                  )} km`
-                )
-          }
-          label="Kilomètres"
-          description="Depuis le début de l'année"
-        />
-
-        <OverviewItem
-          icon={Check}
-          value={
-            loading
-              ? '…'
-              : `${completedSessions}`
-          }
-          label="Séances réalisées"
-          description="Depuis le début de l'année"
-        />
-
-        <OverviewItem
-          icon={Trophy}
-          value={raceName}
-          label="Objectif principal"
-          description={
-            raceDescription
-          }
-          wide
-        />
-      </div>
-    </section>
-  )
-}
-
-
-interface OverviewItemProps {
+interface CompactOverviewItemProps {
   icon: typeof Route
   value: string
   label: string
-  description: string
   wide?: boolean
 }
 
 
-function OverviewItem({
+function CompactOverviewItem({
   icon: Icon,
   value,
   label,
-  description,
   wide = false,
-}: OverviewItemProps) {
+}: CompactOverviewItemProps) {
   return (
-    <div
-      className="
-        flex min-w-0
-        items-center
-        gap-3
-        px-4 py-3.5
-        sm:px-5
-      "
-    >
+    <div className="flex min-w-0 items-center gap-3 px-4 py-3 sm:px-5">
+
       <div
         className="
-          flex size-9
-          shrink-0
-          items-center
-          justify-center
-          rounded-xl
+          flex size-8 shrink-0
+          items-center justify-center
+          rounded-lg
           bg-primary/10
           text-primary
         "
       >
         <Icon
-          size={18}
+          size={16}
           strokeWidth={2}
         />
       </div>
 
+
       <div className="min-w-0">
+
         <p
           className={[
             'font-bold text-base-content',
             wide
-              ? 'truncate text-base'
-              : 'text-lg',
+              ? 'truncate text-sm'
+              : 'text-base',
           ].join(' ')}
           title={
             wide
@@ -580,34 +812,12 @@ function OverviewItem({
           {value}
         </p>
 
-        <div
-          className="
-            mt-0.5
-            flex flex-wrap
-            items-baseline
-            gap-x-2
-          "
-        >
-          <span
-            className="
-              text-xs
-              font-medium
-              text-base-content/65
-            "
-          >
-            {label}
-          </span>
+        <p className="mt-0.5 truncate text-xs text-base-content/45">
+          {label}
+        </p>
 
-          <span
-            className="
-              text-xs
-              text-base-content/40
-            "
-          >
-            {description}
-          </span>
-        </div>
       </div>
+
     </div>
   )
 }
@@ -880,6 +1090,43 @@ interface SessionRowProps {
 }
 
 
+function SessionStatusLabel({
+  status,
+}: {
+  status: TrainingSession['status']
+}) {
+  if (status === 'completed') {
+    return (
+      <span className="badge badge-success badge-sm gap-1">
+        <Check
+          size={11}
+          strokeWidth={3}
+        />
+        Réalisée
+      </span>
+    )
+  }
+
+  if (status === 'skipped') {
+    return (
+      <span className="badge badge-error badge-outline badge-sm gap-1">
+        <X
+          size={11}
+          strokeWidth={2.5}
+        />
+        Non réalisée
+      </span>
+    )
+  }
+
+  return (
+    <span className="badge badge-primary badge-outline badge-sm">
+      À faire
+    </span>
+  )
+}
+
+
 function SessionRow({
   session,
   onOpen,
@@ -894,20 +1141,21 @@ function SessionRow({
       onClick={
         onOpen
       }
-      className="
-        flex w-full
-        flex-col
-        gap-3
-        rounded-xl
-        border border-base-300
-        px-4 py-3
-        text-left
-        transition
-        hover:bg-base-200/60
-        sm:flex-row
-        sm:items-center
-        sm:justify-between
-      "
+      className={[
+        'flex w-full flex-col gap-3 rounded-xl border px-4 py-3',
+        'text-left transition',
+        'sm:flex-row sm:items-center sm:justify-between',
+        session.status === 'completed'
+          ? 'border-success/25 bg-success/5 hover:bg-success/10'
+          : '',
+        session.status === 'skipped'
+          ? 'border-error/25 bg-error/5 hover:bg-error/10'
+          : '',
+        session.status !== 'completed'
+          && session.status !== 'skipped'
+          ? 'border-base-300 hover:bg-base-200/60'
+          : '',
+      ].join(' ')}
     >
       <div className="min-w-0">
         <div
@@ -926,6 +1174,10 @@ function SessionRow({
           >
             {session.title}
           </h3>
+
+          <SessionStatusLabel
+            status={session.status}
+          />
 
           {supplementary && (
             <span className="badge badge-outline badge-sm">
@@ -1190,6 +1442,225 @@ function formatLongDate(
 }
 
 
+function formatWeekType(
+  weekType: NonNullable<
+    NonNullable<
+      ReturnType<typeof useCoachToday>['coach']
+    >['weeklyPlan']
+  >['weekType'],
+): string {
+  if (weekType === 'loading') {
+    return 'Travail'
+  }
+
+  if (weekType === 'recovery') {
+    return 'Récupération'
+  }
+
+  if (weekType === 'taper') {
+    return 'Affûtage'
+  }
+
+  if (weekType === 'return_to_training') {
+    return 'Reprise'
+  }
+
+  return 'Suspendue'
+}
+
+
+function weekTypeBadgeClass(
+  weekType: NonNullable<
+    NonNullable<
+      ReturnType<typeof useCoachToday>['coach']
+    >['weeklyPlan']
+  >['weekType'],
+): string {
+  const base = (
+    'inline-flex items-center gap-2 '
+    + 'rounded-full border px-3 py-1.5 '
+    + 'text-xs shadow-sm'
+  )
+
+  if (weekType === 'recovery') {
+    return (
+      base
+      + ' border-success/25'
+      + ' bg-success/10'
+      + ' text-success'
+    )
+  }
+
+  if (weekType === 'taper') {
+    return (
+      base
+      + ' border-secondary/25'
+      + ' bg-secondary/10'
+      + ' text-secondary'
+    )
+  }
+
+  if (weekType === 'return_to_training') {
+    return (
+      base
+      + ' border-info/25'
+      + ' bg-info/10'
+      + ' text-info'
+    )
+  }
+
+  if (weekType === 'suspended') {
+    return (
+      base
+      + ' border-warning/25'
+      + ' bg-warning/10'
+      + ' text-warning'
+    )
+  }
+
+  return (
+    base
+    + ' border-primary/25'
+    + ' bg-primary/10'
+    + ' text-primary'
+  )
+}
+
+
+function phaseTextClass(
+  phase: NonNullable<
+    NonNullable<
+      ReturnType<typeof useCoachToday>['coach']
+    >['weeklyPlan']
+  >['phase'],
+): string {
+  const base =
+    'font-semibold'
+
+  if (phase === 'foundation') {
+    return (
+      base
+      + ' text-info'
+    )
+  }
+
+  if (phase === 'base') {
+    return (
+      base
+      + ' text-primary'
+    )
+  }
+
+  if (phase === 'build') {
+    return (
+      base
+      + ' text-warning'
+    )
+  }
+
+  if (phase === 'specific') {
+    return (
+      base
+      + ' text-secondary'
+    )
+  }
+
+  if (phase === 'taper') {
+    return (
+      base
+      + ' text-accent'
+    )
+  }
+
+  if (phase === 'recovery') {
+    return (
+      base
+      + ' text-success'
+    )
+  }
+
+  return (
+    base
+    + ' text-info'
+  )
+}
+
+
+function formatTrainingPhase(
+  phase: NonNullable<
+    NonNullable<
+      ReturnType<typeof useCoachToday>['coach']
+    >['weeklyPlan']
+  >['phase'],
+): string {
+  if (phase === 'foundation') {
+    return 'Fondation'
+  }
+
+  if (phase === 'base') {
+    return 'Base'
+  }
+
+  if (phase === 'build') {
+    return 'Développement'
+  }
+
+  if (phase === 'specific') {
+    return 'Spécifique'
+  }
+
+  if (phase === 'taper') {
+    return 'Affûtage'
+  }
+
+  if (phase === 'recovery') {
+    return 'Récupération'
+  }
+
+  return 'Reprise'
+}
+
+
+function formatTrainingWeekRange(
+  start: string,
+  end: string,
+): string {
+  const startDate = new Date(
+    `${start}T12:00:00`,
+  )
+
+  const endDate = new Date(
+    `${end}T12:00:00`,
+  )
+
+  const startDay =
+    new Intl.DateTimeFormat(
+      'fr-FR',
+      {
+        day: 'numeric',
+      },
+    ).format(
+      startDate,
+    )
+
+  const endDateFormatted =
+    new Intl.DateTimeFormat(
+      'fr-FR',
+      {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      },
+    ).format(
+      endDate,
+    )
+
+  return (
+    `Semaine du ${startDay} au ${endDateFormatted}`
+  )
+}
+
+
 function formatRaceDate(
   dateString: string,
 ): string {
@@ -1204,6 +1675,41 @@ function formatRaceDate(
       `${dateString}T12:00:00`,
     ),
   )
+}
+
+
+function percentageOfTarget(
+  value: number,
+  target: number,
+): number {
+  if (target <= 0) {
+    return 0
+  }
+
+  return (
+    value
+    / target
+    * 100
+  )
+}
+
+
+function humanizeWeeklyTrainingStatus(
+  status: string,
+): string {
+  if (status === 'aligned') {
+    return 'Semaine dans la cible'
+  }
+
+  if (status === 'under_target') {
+    return 'Charge sous la cible'
+  }
+
+  if (status === 'over_target') {
+    return 'Charge au-dessus de la cible'
+  }
+
+  return 'Cible en cours d’évaluation'
 }
 
 

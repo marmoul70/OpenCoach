@@ -81,6 +81,10 @@ class SqlWeeklyTrainingPlanRepository(
                 plan.phase
             )
 
+            database_plan.week_type = (
+                plan.week_type
+            )
+
             database_plan.phase_week_index = (
                 plan.phase_week_index
             )
@@ -182,6 +186,7 @@ class SqlWeeklyTrainingPlanRepository(
             week_start=plan.week_start,
             week_end=plan.week_end,
             phase=plan.phase,
+            week_type=plan.week_type,
             phase_week_index=(
                 plan.phase_week_index
             ),

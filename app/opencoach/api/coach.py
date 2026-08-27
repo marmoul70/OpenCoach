@@ -8,6 +8,14 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 
+from opencoach.database.session import (
+    get_db,
+)
+
+from opencoach.database.repositories.sql_weekly_training_plan import (
+    SqlWeeklyTrainingPlanRepository,
+)
+
 from opencoach.api.intervals import (
     get_local_athlete_profile_id,
 )
@@ -16,6 +24,19 @@ from opencoach.coaching import (
     CoachDecisionService,
     CoachDecisionServiceError,
     PlannedSessionUnavailableError,
+)
+from opencoach.coaching.generation.current_week import (
+    current_week_start,
+)
+
+from opencoach.coaching.weekly_assessment import (
+    CoachWeeklyAssessment,
+)
+from opencoach.coaching.weekly_assessment_service import (
+    CoachWeeklyAssessmentService,
+)
+from opencoach.api.coaching.dependencies import (
+    get_coach_weekly_assessment_service,
 )
 from opencoach.database.repositories import (
     ActivityRepositoryError,
@@ -48,6 +69,8 @@ from opencoach.schemas.coach import (
     CoachSessionDecisionResponse,
     CoachSessionResponse,
     CoachTodayResponse,
+    CoachWeeklyAssessmentResponse,
+    CoachWeeklyPlanResponse,
 )
 
 
@@ -131,11 +154,37 @@ def get_today_coach_decision(
     service: CoachDecisionService = Depends(
         get_coach_decision_service,
     ),
+    weekly_assessment_service: CoachWeeklyAssessmentService = Depends(
+        get_coach_weekly_assessment_service,
+    ),
+    db: Session = Depends(
+        get_db,
+    ),
 ) -> CoachTodayResponse:
     try:
+        reference_date = date.today()
+
         assessment = service.calculate(
             athlete_profile_id,
-            date.today(),
+            reference_date,
+        )
+
+        weekly_assessment = (
+            weekly_assessment_service.calculate(
+                athlete_profile_id,
+                reference_date,
+            )
+        )
+
+        weekly_plan = (
+            SqlWeeklyTrainingPlanRepository(
+                db
+            ).get_plan_for_week(
+                athlete_profile_id,
+                current_week_start(
+                    reference_date
+                ),
+            )
         )
 
     except PlannedSessionUnavailableError as exc:
@@ -171,12 +220,16 @@ def get_today_coach_decision(
         ) from exc
 
     return _to_response(
-        assessment
+        assessment,
+        weekly_assessment,
+        weekly_plan,
     )
 
 
 def _to_response(
     assessment: CoachDecisionAssessment,
+    weekly_assessment: CoachWeeklyAssessment,
+    weekly_plan,
 ) -> CoachTodayResponse:
     readiness = assessment.readiness.readiness
 
@@ -367,6 +420,75 @@ def _to_response(
                 ],
             )
             if recent_load_assessment is not None
+            else None
+        ),
+
+        weekly_assessment=(
+            CoachWeeklyAssessmentResponse(
+                status=weekly_assessment.status,
+                target_load=(
+                    weekly_assessment.target_load
+                ),
+                actual_load_to_date=(
+                    weekly_assessment.actual_load_to_date
+                ),
+                remaining_planned_load=(
+                    weekly_assessment.remaining_planned_load
+                ),
+                projected_week_load=(
+                    weekly_assessment.projected_week_load
+                ),
+                projected_gap=(
+                    weekly_assessment.projected_gap
+                ),
+                projected_gap_percent=(
+                    weekly_assessment.projected_gap_percent
+                ),
+                remaining_days=(
+                    weekly_assessment.remaining_days
+                ),
+                remaining_sessions_count=(
+                    weekly_assessment.remaining_sessions_count
+                ),
+                adaptation_opportunity=(
+                    weekly_assessment.adaptation_opportunity
+                ),
+                adaptation_direction=(
+                    weekly_assessment.adaptation_direction
+                ),
+                history_window_days=(
+                    weekly_assessment.history_window_days
+                ),
+                history_confidence=(
+                    weekly_assessment.history_confidence
+                ),
+                history_confidence_level=(
+                    weekly_assessment
+                    .history_confidence_level
+                ),
+                headline=(
+                    weekly_assessment.headline
+                ),
+                analysis=(
+                    weekly_assessment.analysis
+                ),
+                instruction=(
+                    weekly_assessment.instruction
+                ),
+            )
+        ),
+
+        weekly_plan=(
+            CoachWeeklyPlanResponse(
+                week_start=weekly_plan.week_start,
+                week_end=weekly_plan.week_end,
+                phase=weekly_plan.phase,
+                week_type=weekly_plan.week_type,
+                phase_week_index=(
+                    weekly_plan.phase_week_index
+                ),
+            )
+            if weekly_plan is not None
             else None
         ),
 

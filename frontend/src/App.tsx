@@ -6,6 +6,7 @@ import {
 } from './core/profile'
 
 import { Dashboard } from './modules/dashboard/Dashboard'
+import { CoachPage } from './modules/coach/CoachPage'
 import { Profile } from './modules/profile/Profile'
 import { PersonalProfile } from './modules/profile/PersonalProfile'
 import { TrainingWeek } from './modules/training/TrainingWeek'
@@ -18,6 +19,7 @@ import { Connections } from './modules/connections'
 
 type Page =
   | 'dashboard'
+  | 'coach'
   | 'training'
   | 'profile-personal'
   | 'profile-sport'
@@ -170,6 +172,23 @@ function App() {
                         }}
                       >
                         Tableau de bord
+                      </button>
+                    </li>
+
+                    <li>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          setPage('coach')
+                          event.currentTarget.blur()
+                        }}
+                        className={
+                          page === 'coach'
+                            ? 'text-primary font-semibold'
+                            : ''
+                        }
+                      >
+                        Coach
                       </button>
                     </li>
 
@@ -376,9 +395,11 @@ function App() {
           {page === 'dashboard' && (
             <Dashboard
               onOpenTraining={() => setPage('training')}
+              onOpenCoach={() => setPage('coach')}
             />
           )}
 
+          {page === 'coach' && <CoachPage />}
           {page === 'training' && <TrainingWeek />}
           {page === 'activities' && <ActivityPage />}
           {page === 'races' && <RacePage />}

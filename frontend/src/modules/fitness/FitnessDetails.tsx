@@ -1,3 +1,4 @@
+import { MetricTooltip } from '../../components/metrics/MetricTooltip'
 import {
   Activity,
   BatteryCharging,
@@ -153,11 +154,16 @@ export function FitnessDetails() {
         date={readiness.date}
       />
 
-      <section className="overflow-hidden rounded-xl border border-base-300">
+      <section className="rounded-xl border border-base-300">
         <div className="grid divide-y divide-base-300 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <OverviewItem
             icon={Activity}
-            label="CTL"
+            label={
+              <MetricTooltip
+                metric="ctl"
+                label="CTL"
+              />
+            }
             value={formatNumber(
               state.fitness_ctl,
             )}
@@ -166,7 +172,12 @@ export function FitnessDetails() {
 
           <OverviewItem
             icon={BatteryCharging}
-            label="ATL"
+            label={
+              <MetricTooltip
+                metric="atl"
+                label="ATL"
+              />
+            }
             value={formatNumber(
               state.fatigue_atl,
             )}
@@ -175,7 +186,12 @@ export function FitnessDetails() {
 
           <OverviewItem
             icon={HeartPulse}
-            label="Balance"
+            label={
+              <MetricTooltip
+                metric="tsb"
+                label="Balance"
+              />
+            }
             value={formatNumber(
               state.training_balance,
             )}
@@ -211,7 +227,12 @@ export function FitnessDetails() {
 
           <MetricCard
             icon={HeartPulse}
-            label="HRV"
+            label={
+              <MetricTooltip
+                metric="hrv"
+                label="HRV"
+              />
+            }
             value={
               wellness.hrv != null
                 ? `${Math.round(wellness.hrv)} ms`
@@ -260,7 +281,8 @@ export function FitnessDetails() {
           </p>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-base-300">
+
+        <div className="rounded-xl border border-base-300">
           <TrendRow
             label="Sommeil"
             trend={trends.metrics.sleep_score}
@@ -268,7 +290,12 @@ export function FitnessDetails() {
           />
 
           <TrendRow
-            label="HRV"
+            label={
+              <MetricTooltip
+                metric="hrv"
+                label="HRV"
+              />
+            }
             trend={trends.metrics.hrv}
             formatValue={(value) => `${Math.round(value)} ms`}
           />
@@ -281,14 +308,24 @@ export function FitnessDetails() {
           />
 
           <TrendRow
-            label="CTL"
+            label={
+              <MetricTooltip
+                metric="ctl"
+                label="CTL"
+              />
+            }
             trend={trends.metrics.fitness_ctl}
             formatValue={(value) => value.toFixed(1)}
             neutral
           />
 
           <TrendRow
-            label="ATL"
+            label={
+              <MetricTooltip
+                metric="atl"
+                label="ATL"
+              />
+            }
             trend={trends.metrics.fatigue_atl}
             formatValue={(value) => value.toFixed(1)}
             inverse
@@ -308,7 +345,7 @@ function TrendRow({
   inverse = false,
   neutral = false,
 }: {
-  label: string
+  label: React.ReactNode
   trend: WellnessMetricTrend
   formatValue: (
     value: number,
@@ -499,7 +536,7 @@ function OverviewItem({
   description,
 }: {
   icon: typeof Activity
-  label: string
+  label: React.ReactNode
   value: string
   description: string
 }) {
@@ -537,7 +574,7 @@ function MetricCard({
   detail,
 }: {
   icon: typeof HeartPulse
-  label: string
+  label: React.ReactNode
   value: string
   detail: string
 }) {

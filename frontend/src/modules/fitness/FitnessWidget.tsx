@@ -181,7 +181,7 @@ function InlineMetric({
   value,
 }: {
   icon?: React.ReactNode
-  label: string
+  label: React.ReactNode
   value: string
 }) {
   return (

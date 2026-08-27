@@ -429,3 +429,61 @@ def test_soft_rule_keeps_candidate_eligible() -> None:
         thursday.placement_score
         == thursday.calendar_score - 35
     )
+
+
+def test_run_sport_type_is_case_insensitive() -> None:
+    athlete = create_athlete()
+
+    thursday = date(
+        2026,
+        8,
+        27,
+    )
+
+    running_forbidden = AthleteConstraint(
+        id=uuid4(),
+        start_date=thursday,
+        end_date=thursday,
+        constraint_type="personal",
+        availability="limited",
+        running_allowed=False,
+        cross_training_allowed=True,
+    )
+
+    week = build_weekly_availability(
+        athlete=athlete,
+        week_start=WEEK_START,
+        constraints=(
+            running_forbidden,
+        ),
+    )
+
+    target = TrainingSession(
+        id=uuid4(),
+        date=WEDNESDAY,
+        type="run",
+        sport_type="Run",
+        title="Séance course",
+        description="",
+        duration_minutes=60,
+        intensity="easy",
+    )
+
+    context = build_session_placement_context(
+        session=target,
+        week=week,
+        existing_sessions=(
+            target,
+        ),
+    )
+
+    candidates = (
+        rank_session_placement_candidates(
+            context=context,
+        )
+    )
+
+    assert all(
+        candidate.date != thursday
+        for candidate in candidates
+    )

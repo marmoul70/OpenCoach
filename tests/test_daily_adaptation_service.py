@@ -110,7 +110,7 @@ def test_three_hearts_creates_pending_adaptation_proposal() -> None:
     )
 
     assert (
-        "lower_back:center"
+        "bas du dos · au centre"
         in proposal.reason
     )
 

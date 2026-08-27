@@ -35,6 +35,13 @@ from opencoach.coaching.generation import (
     WeeklyTrainingGenerationService,
     WeeklyTrainingPersistenceService,
 )
+from opencoach.coaching.daily_session_rescheduling_service import (
+    DailySessionReschedulingService,
+)
+from opencoach.coaching.daily_session_rescheduling_application import (
+    DailySessionReschedulingApplicationService,
+)
+
 from opencoach.database.repositories import (
     SqlActivityRepository,
     SqlAthleteConstraintRepository,
@@ -368,4 +375,45 @@ def get_daily_adaptation_repository(
 
     return SqlDailyAdaptationRepository(
         db
+    )
+
+
+def get_daily_session_rescheduling_service(
+    db: Session = Depends(
+        get_db
+    ),
+) -> DailySessionReschedulingService:
+    """Construit le service de proposition de report quotidien."""
+
+    return DailySessionReschedulingService(
+        training_session_repository=(
+            SqlTrainingSessionRepository(
+                db
+            )
+        ),
+        athlete_constraint_repository=(
+            SqlAthleteConstraintRepository(
+                db
+            )
+        ),
+    )
+
+
+def get_daily_session_rescheduling_application_service(
+    training_session_repository: SqlTrainingSessionRepository = Depends(
+        get_training_session_repository
+    ),
+    rescheduling_service: DailySessionReschedulingService = Depends(
+        get_daily_session_rescheduling_service
+    ),
+) -> DailySessionReschedulingApplicationService:
+    """Construit l'application explicite d'un report quotidien."""
+
+    return DailySessionReschedulingApplicationService(
+        training_session_repository=(
+            training_session_repository
+        ),
+        rescheduling_service=(
+            rescheduling_service
+        ),
     )

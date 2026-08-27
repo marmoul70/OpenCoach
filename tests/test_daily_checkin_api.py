@@ -7,10 +7,14 @@ from opencoach.api.app import create_app
 from opencoach.api.coaching.dependencies import (
     get_daily_adaptation_repository,
     get_daily_checkin_repository,
+    get_daily_session_rescheduling_service,
     get_training_session_repository,
 )
 from opencoach.api.intervals import (
     get_local_athlete_profile_id,
+)
+from opencoach.api.profile import (
+    get_profile_service,
 )
 from opencoach.coaching.daily_adaptation import (
     CoachAdaptationProposal,
@@ -18,7 +22,11 @@ from opencoach.coaching.daily_adaptation import (
 from opencoach.coaching.daily_checkin import (
     AthleteDailyCheckIn,
 )
+from opencoach.coaching.daily_session_rescheduling import (
+    DailySessionReschedulingProposal,
+)
 from opencoach.models import (
+    AthleteProfile,
     TrainingSession,
 )
 
@@ -127,6 +135,53 @@ class FakeDailyAdaptationRepository:
 
 
 
+class FakeProfileService:
+    def get_profile(
+        self,
+    ) -> AthleteProfile:
+        athlete = AthleteProfile()
+
+        athlete.training.available_days = [
+            0,
+            2,
+            4,
+            6,
+        ]
+
+        return athlete
+
+
+class FakeDailySessionReschedulingService:
+    def propose(
+        self,
+        *,
+        athlete_profile_id,
+        athlete,
+        session,
+    ):
+        del athlete_profile_id
+        del athlete
+
+        if session.status != "skipped":
+            return None
+
+        return DailySessionReschedulingProposal(
+            original_session=session,
+            suggested_date=(
+                session.date
+                + __import__(
+                    "datetime"
+                ).timedelta(
+                    days=2,
+                )
+            ),
+            requires_confirmation=True,
+            reasons=(
+                "Créneau futur compatible.",
+            ),
+        )
+
+
 class FakeTrainingSessionRepository:
     def __init__(self) -> None:
         self.sessions = [
@@ -147,6 +202,23 @@ class FakeTrainingSessionRepository:
         ]
 
         self.saved = []
+
+    def get_session(
+        self,
+        athlete_profile_id,
+        session_id,
+    ):
+        del athlete_profile_id
+
+        return next(
+            (
+                session
+                for session
+                in self.sessions
+                if session.id == session_id
+            ),
+            None,
+        )
 
     def list_sessions_between(
         self,
@@ -173,16 +245,28 @@ class FakeTrainingSessionRepository:
     ):
         del athlete_profile_id
 
+        if session.id is None:
+            session.id = uuid4()
+
+            self.sessions.append(
+                session
+            )
+
+        else:
+            for index, existing in enumerate(
+                self.sessions
+            ):
+                if existing.id == session.id:
+                    self.sessions[index] = session
+                    break
+            else:
+                self.sessions.append(
+                    session
+                )
+
         self.saved.append(
             session
         )
-
-        for index, existing in enumerate(
-            self.sessions
-        ):
-            if existing.id == session.id:
-                self.sessions[index] = session
-                break
 
         return session
 
@@ -203,6 +287,14 @@ def _client():
         FakeTrainingSessionRepository()
     )
 
+    profile_service = (
+        FakeProfileService()
+    )
+
+    rescheduling_service = (
+        FakeDailySessionReschedulingService()
+    )
+
     app.dependency_overrides[
         get_local_athlete_profile_id
     ] = lambda: athlete_profile_id
@@ -218,6 +310,14 @@ def _client():
     app.dependency_overrides[
         get_training_session_repository
     ] = lambda: training_sessions
+
+    app.dependency_overrides[
+        get_profile_service
+    ] = lambda: profile_service
+
+    app.dependency_overrides[
+        get_daily_session_rescheduling_service
+    ] = lambda: rescheduling_service
 
     return (
         TestClient(app),
@@ -466,6 +566,82 @@ def test_athlete_can_accept_proposal() -> None:
             "intensity"
         ]
         == "easy"
+    )
+
+    assert (
+        payload["rescheduling_proposal"]
+        is None
+    )
+
+
+def test_unavailable_accept_returns_rescheduling_proposal() -> None:
+    client, _, _, _ = _client()
+
+    created = client.post(
+        "/api/coach/check-in",
+        json={
+            "energy_rating": 5,
+            "pain_wellness_rating": 5,
+            "unavailable": True,
+        },
+    )
+
+    assert created.status_code == 201
+
+    checkin_id = (
+        created.json()[
+            "checkin"
+        ]["id"]
+    )
+
+    response = client.post(
+        (
+            "/api/coach/check-in/"
+            f"{checkin_id}"
+            "/adaptation/accept"
+        )
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+
+    assert (
+        payload["session_adapted"]
+        is True
+    )
+
+    assert (
+        payload["adapted_session"]["status"]
+        == "skipped"
+    )
+
+    rescheduling = (
+        payload["rescheduling_proposal"]
+    )
+
+    assert rescheduling is not None
+
+    assert (
+        rescheduling["requires_confirmation"]
+        is True
+    )
+
+    assert (
+        rescheduling["suggested_date"]
+        == (
+            date.today()
+            + __import__(
+                "datetime"
+            ).timedelta(
+                days=2,
+            )
+        ).isoformat()
+    )
+
+    assert (
+        "Créneau futur compatible."
+        in rescheduling["reasons"]
     )
 
 
@@ -877,4 +1053,170 @@ def test_pending_adaptation_is_removed_when_checkin_returns_to_normal() -> None:
     assert (
         today_payload["adaptation"]
         is None
+    )
+
+
+def test_unavailable_session_can_be_rescheduled_end_to_end() -> None:
+    client, _, _, training_sessions = (
+        _client()
+    )
+
+    created = client.post(
+        "/api/coach/check-in",
+        json={
+            "energy_rating": 5,
+            "pain_wellness_rating": 5,
+            "unavailable": True,
+        },
+    )
+
+    assert created.status_code == 201
+
+    checkin_id = (
+        created.json()[
+            "checkin"
+        ]["id"]
+    )
+
+    accepted = client.post(
+        (
+            "/api/coach/check-in/"
+            f"{checkin_id}"
+            "/adaptation/accept"
+        )
+    )
+
+    assert accepted.status_code == 200
+
+    accepted_payload = (
+        accepted.json()
+    )
+
+    source_session = (
+        accepted_payload[
+            "adapted_session"
+        ]
+    )
+
+    assert (
+        source_session["status"]
+        == "skipped"
+    )
+
+    assert (
+        accepted_payload[
+            "rescheduling_proposal"
+        ]
+        is not None
+    )
+
+    source_session_id = (
+        source_session["id"]
+    )
+
+    rescheduled = client.post(
+        (
+            "/api/coach/check-in/"
+            f"{checkin_id}"
+            "/rescheduling/accept"
+        ),
+        json={
+            "source_session_id":
+                source_session_id,
+        },
+    )
+
+    assert (
+        rescheduled.status_code
+        == 200
+    )
+
+    payload = (
+        rescheduled.json()
+    )
+
+    assert (
+        payload["created"]
+        is True
+    )
+
+    assert (
+        payload["already_rescheduled"]
+        is False
+    )
+
+    assert (
+        payload["source_session_id"]
+        == source_session_id
+    )
+
+    assert (
+        payload[
+            "rescheduled_session"
+        ]["status"]
+        == "planned"
+    )
+
+    assert (
+        payload[
+            "rescheduled_session"
+        ]["id"]
+        != source_session_id
+    )
+
+    source = next(
+        session
+        for session
+        in training_sessions.sessions
+        if (
+            str(session.id)
+            == source_session_id
+        )
+    )
+
+    assert (
+        source.status
+        == "skipped"
+    )
+
+    second = client.post(
+        (
+            "/api/coach/check-in/"
+            f"{checkin_id}"
+            "/rescheduling/accept"
+        ),
+        json={
+            "source_session_id":
+                source_session_id,
+        },
+    )
+
+    assert (
+        second.status_code
+        == 200
+    )
+
+    second_payload = (
+        second.json()
+    )
+
+    assert (
+        second_payload["created"]
+        is False
+    )
+
+    assert (
+        second_payload[
+            "already_rescheduled"
+        ]
+        is True
+    )
+
+    assert (
+        second_payload[
+            "rescheduled_session"
+        ]["id"]
+        == payload[
+            "rescheduled_session"
+        ]["id"]
     )

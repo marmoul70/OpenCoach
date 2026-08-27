@@ -14,6 +14,7 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
+    Body,
     Depends,
     HTTPException,
     status,
@@ -25,6 +26,9 @@ from pydantic import (
 
 from opencoach.api.intervals import (
     get_local_athlete_profile_id,
+)
+from opencoach.api.profile import (
+    get_profile_service,
 )
 from opencoach.coaching.daily_adaptation import (
     CoachAdaptationProposal,
@@ -44,9 +48,23 @@ from opencoach.coaching.daily_checkin import (
 from opencoach.coaching.daily_checkin_policy import (
     assess_daily_checkin,
 )
+from opencoach.coaching.daily_session_rescheduling_service import (
+    DailySessionReschedulingService,
+)
+from opencoach.coaching.daily_session_rescheduling_application import (
+    DailySessionReschedulingApplicationError,
+    DailySessionReschedulingApplicationService,
+    DailySessionReschedulingInvalidSourceError,
+    DailySessionReschedulingSourceNotFoundError,
+    DailySessionReschedulingUnavailableError,
+)
 from opencoach.coaching.daily_adaptation_service import (
     build_daily_adaptation_proposal,
 )
+from opencoach.services import (
+    ProfileService,
+)
+
 from opencoach.database.repositories.daily_adaptation import (
     DailyAdaptationRepository,
 )
@@ -60,6 +78,8 @@ from opencoach.database.repositories.sql_training_session import (
 from .dependencies import (
     get_daily_adaptation_repository,
     get_daily_checkin_repository,
+    get_daily_session_rescheduling_application_service,
+    get_daily_session_rescheduling_service,
     get_training_session_repository,
 )
 
@@ -78,6 +98,12 @@ class PainLocationPayload(BaseModel):
     side: BodySide = (
         BodySide.NOT_APPLICABLE
     )
+
+
+class DailyReschedulingAcceptPayload(BaseModel):
+    """Acceptation explicite du report d'une séance annulée."""
+
+    source_session_id: UUID
 
 
 class DailyCheckInPayload(BaseModel):
@@ -466,10 +492,6 @@ def _change_adaptation_decision(
 
 @router.post(
     "/{checkin_id}/adaptation/accept",
-    response_model=AdaptationProposalResponse,
-)
-@router.post(
-    "/{checkin_id}/adaptation/accept",
 )
 def accept_daily_adaptation(
     checkin_id: UUID,
@@ -484,6 +506,12 @@ def accept_daily_adaptation(
     ),
     training_session_repository: SqlTrainingSessionRepository = Depends(
         get_training_session_repository
+    ),
+    profile_service: ProfileService = Depends(
+        get_profile_service
+    ),
+    rescheduling_service: DailySessionReschedulingService = Depends(
+        get_daily_session_rescheduling_service
     ),
 ):
     """Accepte et applique l'adaptation de la séance du jour."""
@@ -532,6 +560,7 @@ def accept_daily_adaptation(
             "already_accepted": True,
             "adapted_session": None,
             "reasons": [],
+            "rescheduling_proposal": None,
         }
 
     if not proposal.awaiting_athlete_decision:
@@ -587,6 +616,41 @@ def accept_daily_adaptation(
     )
 
     adapted_session = None
+    rescheduling_proposal = None
+
+    if (
+        result.changed
+        and result.adapted.status == "skipped"
+    ):
+        athlete = (
+            profile_service.get_profile()
+        )
+
+        rescheduling = (
+            rescheduling_service.propose(
+                athlete_profile_id=(
+                    athlete_profile_id
+                ),
+                athlete=athlete,
+                session=result.adapted,
+            )
+        )
+
+        if rescheduling is not None:
+            rescheduling_proposal = {
+                "suggested_date": (
+                    rescheduling
+                    .suggested_date
+                    .isoformat()
+                ),
+                "requires_confirmation": (
+                    rescheduling
+                    .requires_confirmation
+                ),
+                "reasons": list(
+                    rescheduling.reasons
+                ),
+            }
 
     if result.changed:
         adapted_session = {
@@ -638,8 +702,159 @@ def accept_daily_adaptation(
         "reasons": list(
             result.reasons
         ),
+        "rescheduling_proposal": (
+            rescheduling_proposal
+        ),
     }
 
+
+
+@router.post(
+    "/{checkin_id}/rescheduling/accept",
+)
+def accept_daily_rescheduling(
+    checkin_id: UUID,
+    payload: DailyReschedulingAcceptPayload = Body(
+        ...
+    ),
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id
+    ),
+    checkin_repository: DailyCheckInRepository = Depends(
+        get_daily_checkin_repository
+    ),
+    training_session_repository: SqlTrainingSessionRepository = Depends(
+        get_training_session_repository
+    ),
+    profile_service: ProfileService = Depends(
+        get_profile_service
+    ),
+    application_service: DailySessionReschedulingApplicationService = Depends(
+        get_daily_session_rescheduling_application_service
+    ),
+):
+    """Accepte explicitement le report proposé par le coach."""
+
+    checkin = checkin_repository.get_for_date(
+        athlete_profile_id,
+        date.today(),
+    )
+
+    if (
+        checkin is None
+        or checkin.id != checkin_id
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Check-in introuvable.",
+        )
+
+    source = (
+        training_session_repository
+        .get_session(
+            athlete_profile_id,
+            payload.source_session_id,
+        )
+    )
+
+    if (
+        source is None
+        or source.date != checkin.date
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Séance annulée associée "
+                "au check-in introuvable."
+            ),
+        )
+
+    athlete = (
+        profile_service.get_profile()
+    )
+
+    try:
+        result = application_service.apply(
+            athlete_profile_id=(
+                athlete_profile_id
+            ),
+            athlete=athlete,
+            source_session_id=(
+                payload.source_session_id
+            ),
+        )
+
+    except DailySessionReschedulingSourceNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+
+    except (
+        DailySessionReschedulingInvalidSourceError,
+        DailySessionReschedulingUnavailableError,
+        DailySessionReschedulingApplicationError,
+    ) as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    session = (
+        result.rescheduled_session
+    )
+
+    return {
+        "created": result.created,
+        "already_rescheduled": (
+            not result.created
+        ),
+        "source_session_id": (
+            str(
+                result.source_session.id
+            )
+            if result.source_session.id
+            is not None
+            else None
+        ),
+        "rescheduled_session": {
+            "id": (
+                str(session.id)
+                if session.id is not None
+                else None
+            ),
+            "date": (
+                session.date.isoformat()
+            ),
+            "type": session.type,
+            "sport_type": (
+                session.sport_type
+            ),
+            "title": session.title,
+            "description": (
+                session.description
+            ),
+            "duration_minutes": (
+                session.duration_minutes
+            ),
+            "distance_km": (
+                session.distance_km
+            ),
+            "elevation_gain_m": (
+                session.elevation_gain_m
+            ),
+            "intensity": (
+                session.intensity
+            ),
+            "heart_rate_zone": (
+                session.heart_rate_zone
+            ),
+            "status": session.status,
+            "planning_key": (
+                session.planning_key
+            ),
+        },
+    }
 
 
 @router.post(

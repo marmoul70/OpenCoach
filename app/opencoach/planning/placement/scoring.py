@@ -43,7 +43,7 @@ def rank_session_placement_candidates(
     """Classe les jours candidats selon calendrier et règles métier."""
 
     for_running = (
-        context.session.sport_type
+        context.session.sport_type.lower()
         == "run"
     )
 

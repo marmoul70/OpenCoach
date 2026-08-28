@@ -1,3 +1,7 @@
+from .stream_repetition_detection import (
+    StreamRepetitionCandidate,
+    detect_distance_repetitions_from_streams,
+)
 from .structure import assess_session_structure
 from .stream_analysis import (
     StreamRangeAnalysis,
@@ -51,6 +55,8 @@ __all__ = [
     "parse_structured_session_prescription",
     "DEFAULT_TARGET_ADHERENCE_THRESHOLDS",
     "StreamRangeAnalysis",
+    "StreamRepetitionCandidate",
+    "detect_distance_repetitions_from_streams",
     "TargetAdherenceThresholds",
     "calculate_time_in_range",
     "analyze_session_execution",

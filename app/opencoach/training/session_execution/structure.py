@@ -329,8 +329,8 @@ def _assess_recovery_duration(
         strict=False,
     ):
         recovery = (
-            following.source_interval.start_time_seconds
-            - current.source_interval.end_time_seconds
+            following.start_time_seconds
+            - current.end_time_seconds
         )
 
         if recovery >= 0:

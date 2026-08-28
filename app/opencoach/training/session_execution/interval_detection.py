@@ -10,6 +10,9 @@ from opencoach.models import (
     ActivityInterval,
 )
 
+from .stream_repetition_detection import (
+    detect_distance_repetitions_from_streams,
+)
 from .interval_prescription import (
     IntervalSetPrescription,
 )
@@ -21,9 +24,13 @@ DEFAULT_DURATION_TOLERANCE_PERCENT = 25.0
 
 @dataclass(frozen=True, slots=True)
 class ObservedRepetition:
-    """Répétition réellement détectée dans l'activité."""
+    """Répétition réellement reconstruite."""
 
-    source_interval: ActivityInterval
+    start_index: int
+    end_index: int
+
+    start_time_seconds: float
+    end_time_seconds: float
 
     distance_m: float | None
     duration_seconds: float
@@ -33,14 +40,6 @@ class ObservedRepetition:
     max_heart_rate: float | None
 
     match_score: float
-
-    @property
-    def start_index(self) -> int:
-        return self.source_interval.start_index
-
-    @property
-    def end_index(self) -> int:
-        return self.source_interval.end_index
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,6 +95,44 @@ def detect_repetitions(
             "La tolérance de distance "
             "ne peut pas être négative."
         )
+
+    if prescription.work_distance_m is not None:
+        stream_repetitions = (
+            detect_distance_repetitions_from_streams(
+                activity_detail,
+                prescription,
+            )
+        )
+
+        if stream_repetitions:
+            return RepetitionDetectionResult(
+                expected_repetitions=(
+                    prescription.repetitions
+                ),
+                repetitions=tuple(
+                    ObservedRepetition(
+                        start_index=rep.start_index,
+                        end_index=rep.end_index,
+                        start_time_seconds=(
+                            rep.start_time_seconds
+                        ),
+                        end_time_seconds=(
+                            rep.end_time_seconds
+                        ),
+                        distance_m=rep.distance_m,
+                        duration_seconds=(
+                            rep.duration_seconds
+                        ),
+                        average_speed_mps=(
+                            rep.average_speed_mps
+                        ),
+                        average_heart_rate=None,
+                        max_heart_rate=None,
+                        match_score=rep.match_score,
+                    )
+                    for rep in stream_repetitions
+                ),
+            )
 
     if duration_tolerance_percent < 0:
         raise ValueError(
@@ -473,7 +510,14 @@ def _to_observed_repetition(
     interval = candidate.interval
 
     return ObservedRepetition(
-        source_interval=interval,
+        start_index=interval.start_index,
+        end_index=interval.end_index,
+        start_time_seconds=float(
+            interval.start_time_seconds
+        ),
+        end_time_seconds=float(
+            interval.end_time_seconds
+        ),
         distance_m=interval.distance_m,
         duration_seconds=(
             candidate.duration_seconds

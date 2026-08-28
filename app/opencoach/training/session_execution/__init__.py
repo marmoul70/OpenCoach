@@ -6,6 +6,11 @@ from .stream_analysis import (
 
 from .analyzer import analyze_session_execution
 from .intensity import assess_session_intensity
+from .interval_detection import (
+    ObservedRepetition,
+    RepetitionDetectionResult,
+    detect_repetitions,
+)
 from .interval_prescription import (
     IntervalSetPrescription,
     RepetitionTarget,
@@ -37,6 +42,9 @@ from .volume import assess_session_volume
 __all__ = [
     "AssessmentStatus",
     "IntervalSetPrescription",
+    "ObservedRepetition",
+    "RepetitionDetectionResult",
+    "detect_repetitions",
     "RepetitionTarget",
     "StructuredSessionPrescription",
     "parse_structured_session_prescription",

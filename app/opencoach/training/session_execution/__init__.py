@@ -6,6 +6,12 @@ from .stream_analysis import (
 
 from .analyzer import analyze_session_execution
 from .intensity import assess_session_intensity
+from .interval_prescription import (
+    IntervalSetPrescription,
+    RepetitionTarget,
+    StructuredSessionPrescription,
+    parse_structured_session_prescription,
+)
 from .load import assess_session_load
 from .metric import (
     NumericMetricAssessment,
@@ -30,6 +36,10 @@ from .volume import assess_session_volume
 
 __all__ = [
     "AssessmentStatus",
+    "IntervalSetPrescription",
+    "RepetitionTarget",
+    "StructuredSessionPrescription",
+    "parse_structured_session_prescription",
     "DEFAULT_TARGET_ADHERENCE_THRESHOLDS",
     "StreamRangeAnalysis",
     "TargetAdherenceThresholds",

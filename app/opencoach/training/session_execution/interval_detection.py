@@ -10,8 +10,14 @@ from opencoach.models import (
     ActivityInterval,
 )
 
-from .stream_repetition_detection import (
-    detect_distance_repetitions_from_streams,
+from .repetition_selection import (
+    select_evidenced_distance_repetitions,
+)
+from .repetition_boundary import (
+    refine_repetition_boundary,
+)
+from .repetition_measurement import (
+    measure_refined_repetition,
 )
 from .interval_prescription import (
     IntervalSetPrescription,
@@ -24,7 +30,7 @@ DEFAULT_DURATION_TOLERANCE_PERCENT = 25.0
 
 @dataclass(frozen=True, slots=True)
 class ObservedRepetition:
-    """Répétition réellement reconstruite."""
+    """Répétition réellement reconstruite et mesurée."""
 
     start_index: int
     end_index: int
@@ -40,6 +46,10 @@ class ObservedRepetition:
     max_heart_rate: float | None
 
     match_score: float
+
+    average_cadence: float | None = None
+    average_watts: float | None = None
+    boundary_confidence: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,41 +107,93 @@ def detect_repetitions(
         )
 
     if prescription.work_distance_m is not None:
-        stream_repetitions = (
-            detect_distance_repetitions_from_streams(
+        evidenced_repetitions = (
+            select_evidenced_distance_repetitions(
                 activity_detail,
                 prescription,
             )
         )
 
-        if stream_repetitions:
+        if evidenced_repetitions:
+            repetitions = []
+
+            for item in evidenced_repetitions:
+                boundary = refine_repetition_boundary(
+                    activity_detail,
+                    item.candidate,
+                    prescription,
+                )
+
+                measurement = measure_refined_repetition(
+                    activity_detail,
+                    boundary,
+                )
+
+                repetitions.append(
+                    ObservedRepetition(
+                        start_index=(
+                            item.candidate.start_index
+                        ),
+                        end_index=(
+                            item.candidate.end_index
+                        ),
+                        start_time_seconds=(
+                            measurement.start_time_seconds
+                        ),
+                        end_time_seconds=(
+                            measurement.end_time_seconds
+                        ),
+                        distance_m=(
+                            measurement.distance_m
+                        ),
+                        duration_seconds=(
+                            measurement.duration_seconds
+                        ),
+                        average_speed_mps=(
+                            measurement.average_speed_mps
+                        ),
+                        average_heart_rate=(
+                            measurement.average_heart_rate
+                        ),
+                        max_heart_rate=(
+                            measurement.max_heart_rate
+                        ),
+                        average_cadence=(
+                            measurement.average_cadence
+                        ),
+                        average_watts=(
+                            measurement.average_watts
+                        ),
+                        match_score=(
+                            item.evidence.confidence
+                        ),
+                        boundary_confidence=(
+                            boundary.confidence
+                        ),
+                    )
+                )
+
             return RepetitionDetectionResult(
                 expected_repetitions=(
                     prescription.repetitions
                 ),
                 repetitions=tuple(
-                    ObservedRepetition(
-                        start_index=rep.start_index,
-                        end_index=rep.end_index,
-                        start_time_seconds=(
-                            rep.start_time_seconds
-                        ),
-                        end_time_seconds=(
-                            rep.end_time_seconds
-                        ),
-                        distance_m=rep.distance_m,
-                        duration_seconds=(
-                            rep.duration_seconds
-                        ),
-                        average_speed_mps=(
-                            rep.average_speed_mps
-                        ),
-                        average_heart_rate=None,
-                        max_heart_rate=None,
-                        match_score=rep.match_score,
-                    )
-                    for rep in stream_repetitions
+                    repetitions
                 ),
+            )
+
+        # Les streams étaient disponibles mais aucune répétition
+        # n'est suffisamment prouvée : ne pas fabriquer des laps
+        # depuis les intervalles fournisseur.
+        if (
+            activity_detail.streams.time is not None
+            and activity_detail.streams.distance is not None
+        ):
+            return RepetitionDetectionResult(
+                expected_repetitions=(
+                    prescription.repetitions
+                ),
+                repetitions=(),
             )
 
     if duration_tolerance_percent < 0:

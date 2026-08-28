@@ -1,4 +1,26 @@
+from .repetition_measurement import (
+    MeasuredRepetition,
+    measure_refined_repetition,
+)
+from .repetition_boundary import (
+    RefinedRepetitionBoundary,
+    refine_repetition_boundary,
+)
+from .repetition_transition import (
+    RepetitionTransitionEvidence,
+    score_repetition_transition,
+)
+from .repetition_selection import (
+    EvidencedRepetitionCandidate,
+    select_evidenced_distance_repetitions,
+)
+from .repetition_evidence import (
+    RepetitionEvidence,
+    RepetitionEvidenceScorer,
+    score_repetition_candidate,
+)
 from .stream_repetition_detection import (
+    build_distance_repetition_candidates,
     StreamRepetitionCandidate,
     detect_distance_repetitions_from_streams,
 )
@@ -48,7 +70,18 @@ __all__ = [
     "AssessmentStatus",
     "IntervalSetPrescription",
     "ObservedRepetition",
+    "MeasuredRepetition",
+    "measure_refined_repetition",
     "RepetitionDetectionResult",
+    "RepetitionEvidence",
+    "RefinedRepetitionBoundary",
+    "refine_repetition_boundary",
+    "RepetitionTransitionEvidence",
+    "score_repetition_transition",
+    "RepetitionEvidenceScorer",
+    "EvidencedRepetitionCandidate",
+    "select_evidenced_distance_repetitions",
+    "score_repetition_candidate",
     "detect_repetitions",
     "RepetitionTarget",
     "StructuredSessionPrescription",
@@ -57,6 +90,7 @@ __all__ = [
     "StreamRangeAnalysis",
     "StreamRepetitionCandidate",
     "detect_distance_repetitions_from_streams",
+    "build_distance_repetition_candidates",
     "TargetAdherenceThresholds",
     "calculate_time_in_range",
     "analyze_session_execution",

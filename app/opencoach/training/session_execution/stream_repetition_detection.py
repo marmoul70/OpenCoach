@@ -33,6 +33,45 @@ class StreamRepetitionCandidate:
     match_score: float
 
 
+def build_distance_repetition_candidates(
+    activity_detail: ActivityDetail,
+    prescription: IntervalSetPrescription,
+) -> tuple[StreamRepetitionCandidate, ...]:
+    """Construit tous les segments plausibles prescrits par distance.
+
+    Cette fonction ne décide pas si une répétition a réellement
+    été effectuée. Elle génère uniquement les candidats qui seront
+    ensuite évalués par le moteur multi-signal.
+    """
+
+    target_distance = prescription.work_distance_m
+
+    if target_distance is None:
+        return ()
+
+    time_stream = activity_detail.streams.time
+    distance_stream = activity_detail.streams.distance
+
+    if (
+        time_stream is None
+        or distance_stream is None
+    ):
+        return ()
+
+    points = _build_monotonic_points(
+        time_stream.data,
+        distance_stream.data,
+    )
+
+    if len(points) < 2:
+        return ()
+
+    return _build_candidates(
+        points,
+        prescription,
+    )
+
+
 def detect_distance_repetitions_from_streams(
     activity_detail: ActivityDetail,
     prescription: IntervalSetPrescription,

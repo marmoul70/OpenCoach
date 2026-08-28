@@ -1,0 +1,598 @@
+"""Analyse déterministe de l'intensité d'une séance réalisée."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from opencoach.models import Activity, TrainingSession
+
+from .metric import (
+    NumericMetricAssessment,
+    NumericTarget,
+)
+from .models import SessionExecutionIntensityAssessment
+from .status import AssessmentStatus
+
+
+RANGE_PARTIAL_TOLERANCE_PERCENT = 5.0
+
+
+def assess_session_intensity(
+    session: TrainingSession,
+    activity: Activity | None,
+) -> SessionExecutionIntensityAssessment:
+    """Compare l'intensité prévue et l'intensité réalisée.
+
+    Les moyennes globales ne sont volontairement pas utilisées
+    pour juger l'intensité d'une séance fractionnée.
+
+    Les répétitions et récupérations nécessiteront des laps ou
+    streams détaillés dans une étape ultérieure.
+    """
+
+    structured_intervals = _has_structured_intervals(
+        session,
+    )
+
+    heart_rate = _assess_average_heart_rate(
+        session,
+        activity,
+        structured_intervals=structured_intervals,
+    )
+
+    average_speed = _assess_average_speed(
+        session,
+        activity,
+        structured_intervals=structured_intervals,
+    )
+
+    average_pace = _assess_average_pace(
+        session,
+        activity,
+        structured_intervals=structured_intervals,
+    )
+
+    return SessionExecutionIntensityAssessment(
+        average_heart_rate=heart_rate,
+        average_speed=average_speed,
+        average_pace=average_pace,
+        average_vma_percent=None,
+        time_in_heart_rate_target=None,
+        time_in_pace_target=None,
+    )
+
+
+def _assess_average_heart_rate(
+    session: TrainingSession,
+    activity: Activity | None,
+    *,
+    structured_intervals: bool,
+) -> NumericMetricAssessment:
+    target = _find_target(
+        session,
+        reference="heart_rate",
+    )
+
+    if target is None:
+        return _not_applicable(
+            key="average_heart_rate",
+            label="Fréquence cardiaque moyenne",
+            details=(
+                "Aucune cible cardiaque absolue structurée "
+                "n'est prescrite pour cette séance."
+            ),
+        )
+
+    numeric_target = NumericTarget(
+        minimum=target["minimum"],
+        maximum=target["maximum"],
+        unit=target["unit"],
+    )
+
+    if structured_intervals:
+        return _not_applicable(
+            key="average_heart_rate",
+            label="Fréquence cardiaque moyenne",
+            target=numeric_target,
+            details=(
+                "La fréquence cardiaque moyenne globale "
+                "n'est pas utilisée pour juger une séance "
+                "fractionnée."
+            ),
+        )
+
+    if activity is None:
+        return _insufficient(
+            key="average_heart_rate",
+            label="Fréquence cardiaque moyenne",
+            target=numeric_target,
+            details="Aucune activité associée à la séance.",
+        )
+
+    if activity.average_heart_rate is None:
+        return _insufficient(
+            key="average_heart_rate",
+            label="Fréquence cardiaque moyenne",
+            target=numeric_target,
+            details=(
+                "La fréquence cardiaque moyenne "
+                "n'est pas disponible."
+            ),
+        )
+
+    return _compare_range(
+        key="average_heart_rate",
+        label="Fréquence cardiaque moyenne",
+        target=numeric_target,
+        actual=float(
+            activity.average_heart_rate
+        ),
+    )
+
+
+def _assess_average_speed(
+    session: TrainingSession,
+    activity: Activity | None,
+    *,
+    structured_intervals: bool,
+) -> NumericMetricAssessment:
+    target = _find_vma_target(
+        session,
+    )
+
+    speed_target = _derived_speed_target(
+        target,
+    )
+
+    if speed_target is None:
+        return _not_applicable(
+            key="average_speed",
+            label="Vitesse moyenne",
+            details=(
+                "Aucune cible de vitesse structurée "
+                "n'est disponible pour cette séance."
+            ),
+        )
+
+    if structured_intervals:
+        return _not_applicable(
+            key="average_speed",
+            label="Vitesse moyenne",
+            target=speed_target,
+            details=(
+                "La vitesse moyenne globale n'est pas "
+                "utilisée pour juger une séance fractionnée."
+            ),
+        )
+
+    if activity is None:
+        return _insufficient(
+            key="average_speed",
+            label="Vitesse moyenne",
+            target=speed_target,
+            details="Aucune activité associée à la séance.",
+        )
+
+    if activity.average_speed_mps is None:
+        return _insufficient(
+            key="average_speed",
+            label="Vitesse moyenne",
+            target=speed_target,
+            details=(
+                "La vitesse moyenne de l'activité "
+                "n'est pas disponible."
+            ),
+        )
+
+    actual_kmh = (
+        float(activity.average_speed_mps)
+        * 3.6
+    )
+
+    return _compare_range(
+        key="average_speed",
+        label="Vitesse moyenne",
+        target=speed_target,
+        actual=actual_kmh,
+    )
+
+
+def _assess_average_pace(
+    session: TrainingSession,
+    activity: Activity | None,
+    *,
+    structured_intervals: bool,
+) -> NumericMetricAssessment:
+    target = _find_vma_target(
+        session,
+    )
+
+    pace_target = _derived_pace_target(
+        target,
+    )
+
+    if pace_target is None:
+        return _not_applicable(
+            key="average_pace",
+            label="Allure moyenne",
+            details=(
+                "Aucune cible d'allure structurée "
+                "n'est disponible pour cette séance."
+            ),
+        )
+
+    if structured_intervals:
+        return _not_applicable(
+            key="average_pace",
+            label="Allure moyenne",
+            target=pace_target,
+            details=(
+                "L'allure moyenne globale n'est pas "
+                "utilisée pour juger une séance fractionnée."
+            ),
+        )
+
+    if activity is None:
+        return _insufficient(
+            key="average_pace",
+            label="Allure moyenne",
+            target=pace_target,
+            details="Aucune activité associée à la séance.",
+        )
+
+    speed_mps = activity.average_speed_mps
+
+    if speed_mps is None or speed_mps <= 0:
+        return _insufficient(
+            key="average_pace",
+            label="Allure moyenne",
+            target=pace_target,
+            details=(
+                "La vitesse nécessaire au calcul "
+                "de l'allure n'est pas disponible."
+            ),
+        )
+
+    actual_seconds_per_km = (
+        1000.0
+        / float(speed_mps)
+    )
+
+    return _compare_range(
+        key="average_pace",
+        label="Allure moyenne",
+        target=pace_target,
+        actual=actual_seconds_per_km,
+    )
+
+
+def _compare_range(
+    *,
+    key: str,
+    label: str,
+    target: NumericTarget,
+    actual: float,
+) -> NumericMetricAssessment:
+    """Compare une valeur à une plage prescrite.
+
+    Dans la plage :
+    - delta = 0 ;
+    - delta_percent = 0 ;
+    - COMPLIANT.
+
+    Hors plage, l'écart est calculé par rapport à la borne
+    la plus proche.
+    """
+
+    if (
+        target.minimum
+        <= actual
+        <= target.maximum
+    ):
+        return NumericMetricAssessment(
+            key=key,
+            label=label,
+            status=AssessmentStatus.COMPLIANT,
+            target=target,
+            actual_value=round(
+                actual,
+                2,
+            ),
+            delta=0.0,
+            delta_percent=0.0,
+        )
+
+    if actual < target.minimum:
+        boundary = target.minimum
+    else:
+        boundary = target.maximum
+
+    delta = actual - boundary
+
+    delta_percent = (
+        delta
+        / boundary
+        * 100.0
+    )
+
+    if (
+        abs(delta_percent)
+        <= RANGE_PARTIAL_TOLERANCE_PERCENT
+    ):
+        status = AssessmentStatus.PARTIAL
+    else:
+        status = AssessmentStatus.NON_COMPLIANT
+
+    return NumericMetricAssessment(
+        key=key,
+        label=label,
+        status=status,
+        target=target,
+        actual_value=round(
+            actual,
+            2,
+        ),
+        delta=round(
+            delta,
+            2,
+        ),
+        delta_percent=round(
+            delta_percent,
+            2,
+        ),
+    )
+
+
+def _find_vma_target(
+    session: TrainingSession,
+) -> dict[str, Any] | None:
+    return _find_target(
+        session,
+        reference="vma_percent",
+    )
+
+
+def _find_target(
+    session: TrainingSession,
+    *,
+    reference: str,
+) -> dict[str, Any] | None:
+    prescription = session.prescription
+
+    if not isinstance(
+        prescription,
+        dict,
+    ):
+        return None
+
+    intensity = prescription.get(
+        "intensity"
+    )
+
+    if not isinstance(
+        intensity,
+        dict,
+    ):
+        return None
+
+    targets = intensity.get(
+        "targets"
+    )
+
+    if not isinstance(
+        targets,
+        list,
+    ):
+        return None
+
+    for raw_target in targets:
+        if not isinstance(
+            raw_target,
+            dict,
+        ):
+            continue
+
+        if (
+            raw_target.get("reference")
+            != reference
+        ):
+            continue
+
+        minimum = raw_target.get(
+            "minimum"
+        )
+        maximum = raw_target.get(
+            "maximum"
+        )
+        unit = raw_target.get(
+            "unit"
+        )
+
+        if not isinstance(
+            minimum,
+            (int, float),
+        ):
+            continue
+
+        if not isinstance(
+            maximum,
+            (int, float),
+        ):
+            continue
+
+        if not isinstance(
+            unit,
+            str,
+        ):
+            continue
+
+        return raw_target
+
+    return None
+
+
+def _derived_speed_target(
+    target: dict[str, Any] | None,
+) -> NumericTarget | None:
+    if target is None:
+        return None
+
+    derived = target.get(
+        "derived"
+    )
+
+    if not isinstance(
+        derived,
+        dict,
+    ):
+        return None
+
+    speed = derived.get(
+        "speed_kmh"
+    )
+
+    if not isinstance(
+        speed,
+        dict,
+    ):
+        return None
+
+    minimum = speed.get(
+        "minimum"
+    )
+    maximum = speed.get(
+        "maximum"
+    )
+
+    if not isinstance(
+        minimum,
+        (int, float),
+    ):
+        return None
+
+    if not isinstance(
+        maximum,
+        (int, float),
+    ):
+        return None
+
+    return NumericTarget(
+        minimum=float(minimum),
+        maximum=float(maximum),
+        unit="km/h",
+    )
+
+
+def _derived_pace_target(
+    target: dict[str, Any] | None,
+) -> NumericTarget | None:
+    if target is None:
+        return None
+
+    derived = target.get(
+        "derived"
+    )
+
+    if not isinstance(
+        derived,
+        dict,
+    ):
+        return None
+
+    pace = derived.get(
+        "pace_seconds_per_km"
+    )
+
+    if not isinstance(
+        pace,
+        dict,
+    ):
+        return None
+
+    fastest = pace.get(
+        "fastest"
+    )
+    slowest = pace.get(
+        "slowest"
+    )
+
+    if not isinstance(
+        fastest,
+        (int, float),
+    ):
+        return None
+
+    if not isinstance(
+        slowest,
+        (int, float),
+    ):
+        return None
+
+    return NumericTarget(
+        minimum=float(fastest),
+        maximum=float(slowest),
+        unit="s/km",
+    )
+
+
+def _has_structured_intervals(
+    session: TrainingSession,
+) -> bool:
+    prescription = session.prescription
+
+    if not isinstance(
+        prescription,
+        dict,
+    ):
+        return False
+
+    structure = prescription.get(
+        "work_structure"
+    )
+
+    if not isinstance(
+        structure,
+        dict,
+    ):
+        return False
+
+    intervals = structure.get(
+        "intervals"
+    )
+
+    return (
+        isinstance(intervals, list)
+        and len(intervals) > 0
+    )
+
+
+def _not_applicable(
+    *,
+    key: str,
+    label: str,
+    details: str,
+    target: NumericTarget | None = None,
+) -> NumericMetricAssessment:
+    return NumericMetricAssessment(
+        key=key,
+        label=label,
+        status=AssessmentStatus.NOT_APPLICABLE,
+        target=target,
+        details=details,
+    )
+
+
+def _insufficient(
+    *,
+    key: str,
+    label: str,
+    target: NumericTarget,
+    details: str,
+) -> NumericMetricAssessment:
+    return NumericMetricAssessment(
+        key=key,
+        label=label,
+        status=AssessmentStatus.INSUFFICIENT_DATA,
+        target=target,
+        details=details,
+    )

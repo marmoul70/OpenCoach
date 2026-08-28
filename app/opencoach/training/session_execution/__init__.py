@@ -1,3 +1,7 @@
+from .continuous_effort_detection import (
+    ContinuousEffortWindow,
+    locate_continuous_effort_window,
+)
 from .repetition_measurement import (
     MeasuredRepetition,
     measure_refined_repetition,
@@ -70,6 +74,8 @@ __all__ = [
     "AssessmentStatus",
     "IntervalSetPrescription",
     "ObservedRepetition",
+    "ContinuousEffortWindow",
+    "locate_continuous_effort_window",
     "MeasuredRepetition",
     "measure_refined_repetition",
     "RepetitionDetectionResult",

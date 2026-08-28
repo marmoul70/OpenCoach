@@ -11,6 +11,10 @@ from opencoach.models import (
     TrainingSession,
 )
 
+from .goal_analysis import (
+    GoalComplianceStatus,
+    evaluate_session_goal,
+)
 from .intensity import assess_session_intensity
 from .load import assess_session_load
 from .metric import NumericMetricAssessment
@@ -74,7 +78,7 @@ def analyze_session_execution(
         activity_detail,
     )
 
-    overall_status = _resolve_overall_status(
+    technical_status = _resolve_overall_status(
         session=session,
         activity=activity,
         volume=volume,
@@ -82,6 +86,34 @@ def analyze_session_execution(
         load=load,
         structure=structure,
     )
+
+    goal_analysis = evaluate_session_goal(
+        session=session,
+        activity=activity,
+        activity_detail=activity_detail,
+        volume=volume,
+        intensity=intensity,
+        load=load,
+        structure=structure,
+    )
+
+    overall_status = _goal_status_to_assessment_status(
+        goal_analysis.overall_status
+    )
+
+    # L'absence réelle d'activité pour une séance planifiée
+    # est une non-conformité d'exécution.
+    #
+    # Cette règle appartient à l'orchestrateur, qui connaît
+    # l'existence de l'activité, et non à evaluate_session_goal(),
+    # qui doit pouvoir interpréter des assessments isolément.
+    if (
+        activity is None
+        and session.type != "rest"
+    ):
+        overall_status = (
+            AssessmentStatus.NON_COMPLIANT
+        )
 
     observations = _build_observations(
         session=session,
@@ -102,7 +134,27 @@ def analyze_session_execution(
         load=load,
         structure=structure,
         observations=observations,
+        technical_status=technical_status,
+        goal_analysis=goal_analysis,
     )
+
+
+
+def _goal_status_to_assessment_status(
+    status: GoalComplianceStatus,
+) -> AssessmentStatus:
+    """Projette le verdict coach dans le statut global existant."""
+
+    if status is GoalComplianceStatus.OK:
+        return AssessmentStatus.COMPLIANT
+
+    if status is GoalComplianceStatus.ATTENTION:
+        return AssessmentStatus.PARTIAL
+
+    if status is GoalComplianceStatus.NON_COMPLIANT:
+        return AssessmentStatus.NON_COMPLIANT
+
+    return AssessmentStatus.NOT_APPLICABLE
 
 
 def _resolve_overall_status(

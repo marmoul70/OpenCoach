@@ -401,4 +401,3 @@ def test_production_detection_does_not_force_prescribed_distance() -> None:
         repetition.boundary_confidence is not None
         for repetition in result.repetitions
     )
-

@@ -196,9 +196,17 @@ def test_one_non_compliant_metric_makes_session_non_compliant() -> None:
         is AssessmentStatus.NON_COMPLIANT
     )
 
+    # Le constat technique reste NON_COMPLIANT.
+    assert (
+        result.technical_status
+        is AssessmentStatus.NON_COMPLIANT
+    )
+
+    # Le verdict coach dépend désormais de l'importance
+    # de la métrique pour l'objectif de séance.
     assert (
         result.overall_status
-        is AssessmentStatus.NON_COMPLIANT
+        is AssessmentStatus.PARTIAL
     )
 
 

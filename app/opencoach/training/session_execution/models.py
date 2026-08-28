@@ -4,9 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from uuid import UUID
+from typing import TYPE_CHECKING
 
 from .metric import NumericMetricAssessment
 from .status import AssessmentStatus
+
+
+if TYPE_CHECKING:
+    from .goal_analysis.models import (
+        SessionGoalAnalysis,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,3 +91,11 @@ class SessionExecutionAssessment:
     structure: SessionExecutionStructureAssessment
 
     observations: tuple[str, ...] = ()
+
+    # Statut technique brut calculé à partir de toutes les
+    # métriques disponibles, indépendamment de leur importance
+    # pour l'objectif physiologique de la séance.
+    technical_status: AssessmentStatus | None = None
+
+    # Interprétation métier orientée objectif.
+    goal_analysis: "SessionGoalAnalysis | None" = None

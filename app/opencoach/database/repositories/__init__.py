@@ -1,3 +1,5 @@
+from .activity_detail import ActivityDetailRepository
+from .sql_activity_detail import SqlActivityDetailRepository
 from .activity import ActivityRepository
 from .sql_athlete_constraint import (
     SqlAthleteConstraintRepository,
@@ -53,6 +55,8 @@ from .sql_physiological_measurement import (
 )
 __all__ = [
     "ActivityRepository",
+    "ActivityDetailRepository",
+    "SqlActivityDetailRepository",
     "ActivityRepositoryError",
     "ProfileRepository",
     "ProfileRepositoryError",

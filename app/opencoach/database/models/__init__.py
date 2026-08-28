@@ -1,4 +1,9 @@
 from opencoach.database.models.activity import Activity
+from .activity_detail import (
+    ActivityDetail,
+    ActivityInterval,
+    ActivityStream,
+)
 from opencoach.database.models.athlete_profile import AthleteProfile
 from opencoach.database.models.bike import Bike
 from opencoach.database.models.shoe import Shoe
@@ -25,6 +30,9 @@ from .physiological_measurement import (
 
 __all__ = [
     "Activity",
+    "ActivityDetail",
+    "ActivityInterval",
+    "ActivityStream",
     "AthleteProfile",
     "Bike",
     "Shoe",

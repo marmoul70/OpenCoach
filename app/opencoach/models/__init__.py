@@ -13,6 +13,12 @@ from .profile import (
     Watch,
 )
 from .activity import Activity
+from .activity_detail import (
+    ActivityDetail,
+    ActivityInterval,
+    ActivityStream,
+    ActivityStreams,
+)
 from .wellness import WellnessDay
 from .integration import IntegrationConnection
 from .training_session import TrainingSession
@@ -49,6 +55,10 @@ __all__ = [
     "Shoe",
     "Watch",
     "Activity",
+    "ActivityDetail",
+    "ActivityInterval",
+    "ActivityStream",
+    "ActivityStreams",
     "WellnessDay",
     "IntegrationConnection",
     "TrainingSession",

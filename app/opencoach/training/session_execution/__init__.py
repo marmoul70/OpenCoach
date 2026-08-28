@@ -1,5 +1,6 @@
 """Évaluation déterministe de l'exécution des séances OpenCoach."""
 
+from .analyzer import analyze_session_execution
 from .intensity import assess_session_intensity
 from .load import assess_session_load
 from .metric import (
@@ -23,6 +24,7 @@ from .volume import assess_session_volume
 
 __all__ = [
     "AssessmentStatus",
+    "analyze_session_execution",
     "DEFAULT_VOLUME_THRESHOLDS",
     "MetricTolerance",
     "NumericMetricAssessment",

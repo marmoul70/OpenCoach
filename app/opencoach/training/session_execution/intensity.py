@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from opencoach.models import Activity, TrainingSession
+from opencoach.models import (
+    Activity,
+    ActivityDetail,
+    TrainingSession,
+)
 
 from .metric import (
     NumericMetricAssessment,
@@ -12,6 +16,11 @@ from .metric import (
 )
 from .models import SessionExecutionIntensityAssessment
 from .status import AssessmentStatus
+from .stream_analysis import calculate_time_in_range
+from .thresholds import (
+    DEFAULT_TARGET_ADHERENCE_THRESHOLDS,
+    TargetAdherenceThresholds,
+)
 
 
 RANGE_PARTIAL_TOLERANCE_PERCENT = 5.0
@@ -20,6 +29,11 @@ RANGE_PARTIAL_TOLERANCE_PERCENT = 5.0
 def assess_session_intensity(
     session: TrainingSession,
     activity: Activity | None,
+    activity_detail: ActivityDetail | None = None,
+    *,
+    adherence_thresholds: TargetAdherenceThresholds = (
+        DEFAULT_TARGET_ADHERENCE_THRESHOLDS
+    ),
 ) -> SessionExecutionIntensityAssessment:
     """Compare l'intensité prévue et l'intensité réalisée.
 
@@ -52,13 +66,33 @@ def assess_session_intensity(
         structured_intervals=structured_intervals,
     )
 
+    time_in_heart_rate_target = (
+        _assess_time_in_heart_rate_target(
+            session,
+            activity_detail,
+            structured_intervals=structured_intervals,
+            thresholds=adherence_thresholds,
+        )
+    )
+
+    time_in_pace_target = (
+        _assess_time_in_speed_target(
+            session,
+            activity_detail,
+            structured_intervals=structured_intervals,
+            thresholds=adherence_thresholds,
+        )
+    )
+
     return SessionExecutionIntensityAssessment(
         average_heart_rate=heart_rate,
         average_speed=average_speed,
         average_pace=average_pace,
         average_vma_percent=None,
-        time_in_heart_rate_target=None,
-        time_in_pace_target=None,
+        time_in_heart_rate_target=(
+            time_in_heart_rate_target
+        ),
+        time_in_pace_target=time_in_pace_target,
     )
 
 
@@ -263,6 +297,271 @@ def _assess_average_pace(
         label="Allure moyenne",
         target=pace_target,
         actual=actual_seconds_per_km,
+    )
+
+
+def _assess_time_in_heart_rate_target(
+    session: TrainingSession,
+    activity_detail: ActivityDetail | None,
+    *,
+    structured_intervals: bool,
+    thresholds: TargetAdherenceThresholds,
+) -> NumericMetricAssessment:
+    target = _find_target(
+        session,
+        reference="heart_rate",
+    )
+
+    if target is None:
+        return _not_applicable(
+            key="time_in_heart_rate_target",
+            label="Temps dans la cible cardiaque",
+            details=(
+                "Aucune cible cardiaque absolue structurée "
+                "n'est prescrite pour cette séance."
+            ),
+        )
+
+    adherence_target = NumericTarget(
+        minimum=thresholds.compliant_percent,
+        maximum=100.0,
+        unit="%",
+    )
+
+    if structured_intervals:
+        return _not_applicable(
+            key="time_in_heart_rate_target",
+            label="Temps dans la cible cardiaque",
+            target=adherence_target,
+            details=(
+                "Le temps global dans la cible cardiaque "
+                "n'est pas utilisé pour juger une séance "
+                "fractionnée."
+            ),
+        )
+
+    if activity_detail is None:
+        return _insufficient(
+            key="time_in_heart_rate_target",
+            label="Temps dans la cible cardiaque",
+            target=adherence_target,
+            details=(
+                "Les streams détaillés de l'activité "
+                "ne sont pas disponibles."
+            ),
+        )
+
+    time_stream = activity_detail.streams.time
+    heart_rate_stream = (
+        activity_detail.streams.heartrate
+    )
+
+    if (
+        time_stream is None
+        or heart_rate_stream is None
+    ):
+        return _insufficient(
+            key="time_in_heart_rate_target",
+            label="Temps dans la cible cardiaque",
+            target=adherence_target,
+            details=(
+                "Les streams temps et fréquence cardiaque "
+                "sont requis."
+            ),
+        )
+
+    analysis = calculate_time_in_range(
+        time_stream.data,
+        heart_rate_stream.data,
+        minimum=float(target["minimum"]),
+        maximum=float(target["maximum"]),
+    )
+
+    return _adherence_metric(
+        key="time_in_heart_rate_target",
+        label="Temps dans la cible cardiaque",
+        analysis=analysis,
+        thresholds=thresholds,
+        target_description=(
+            f'{target["minimum"]:.0f}'
+            f'–{target["maximum"]:.0f} '
+            f'{target["unit"]}'
+        ),
+    )
+
+
+def _assess_time_in_speed_target(
+    session: TrainingSession,
+    activity_detail: ActivityDetail | None,
+    *,
+    structured_intervals: bool,
+    thresholds: TargetAdherenceThresholds,
+) -> NumericMetricAssessment:
+    vma_target = _find_vma_target(
+        session
+    )
+
+    speed_target = _derived_speed_target(
+        vma_target
+    )
+
+    if speed_target is None:
+        return _not_applicable(
+            key="time_in_pace_target",
+            label="Temps dans la cible d'allure",
+            details=(
+                "Aucune cible d'allure structurée "
+                "n'est disponible pour cette séance."
+            ),
+        )
+
+    adherence_target = NumericTarget(
+        minimum=thresholds.compliant_percent,
+        maximum=100.0,
+        unit="%",
+    )
+
+    if structured_intervals:
+        return _not_applicable(
+            key="time_in_pace_target",
+            label="Temps dans la cible d'allure",
+            target=adherence_target,
+            details=(
+                "Le temps global dans la cible d'allure "
+                "n'est pas utilisé pour juger une séance "
+                "fractionnée."
+            ),
+        )
+
+    if activity_detail is None:
+        return _insufficient(
+            key="time_in_pace_target",
+            label="Temps dans la cible d'allure",
+            target=adherence_target,
+            details=(
+                "Les streams détaillés de l'activité "
+                "ne sont pas disponibles."
+            ),
+        )
+
+    time_stream = activity_detail.streams.time
+    velocity_stream = (
+        activity_detail.streams.velocity_smooth
+    )
+
+    if (
+        time_stream is None
+        or velocity_stream is None
+    ):
+        return _insufficient(
+            key="time_in_pace_target",
+            label="Temps dans la cible d'allure",
+            target=adherence_target,
+            details=(
+                "Les streams temps et vitesse "
+                "sont requis."
+            ),
+        )
+
+    minimum_mps = (
+        speed_target.minimum / 3.6
+    )
+
+    maximum_mps = (
+        speed_target.maximum / 3.6
+    )
+
+    analysis = calculate_time_in_range(
+        time_stream.data,
+        velocity_stream.data,
+        minimum=minimum_mps,
+        maximum=maximum_mps,
+    )
+
+    return _adherence_metric(
+        key="time_in_pace_target",
+        label="Temps dans la cible d'allure",
+        analysis=analysis,
+        thresholds=thresholds,
+        target_description=(
+            f"{speed_target.minimum:.2f}"
+            f"–{speed_target.maximum:.2f} km/h"
+        ),
+    )
+
+
+def _adherence_metric(
+    *,
+    key: str,
+    label: str,
+    analysis,
+    thresholds: TargetAdherenceThresholds,
+    target_description: str,
+) -> NumericMetricAssessment:
+    target = NumericTarget(
+        minimum=thresholds.compliant_percent,
+        maximum=100.0,
+        unit="%",
+    )
+
+    if not analysis.has_data:
+        return _insufficient(
+            key=key,
+            label=label,
+            target=target,
+            details=(
+                "Aucune durée de stream exploitable "
+                "n'est disponible."
+            ),
+        )
+
+    percent = analysis.in_range_percent
+
+    if percent is None:
+        return _insufficient(
+            key=key,
+            label=label,
+            target=target,
+            details=(
+                "Aucune durée de stream exploitable "
+                "n'est disponible."
+            ),
+        )
+
+    if percent >= thresholds.compliant_percent:
+        status = AssessmentStatus.COMPLIANT
+    elif percent >= thresholds.partial_percent:
+        status = AssessmentStatus.PARTIAL
+    else:
+        status = AssessmentStatus.NON_COMPLIANT
+
+    delta = min(
+        0.0,
+        percent - thresholds.compliant_percent,
+    )
+
+    return NumericMetricAssessment(
+        key=key,
+        label=label,
+        status=status,
+        target=target,
+        actual_value=round(
+            percent,
+            2,
+        ),
+        delta=round(
+            delta,
+            2,
+        ),
+        delta_percent=None,
+        details=(
+            f"Cible physiologique : "
+            f"{target_description}. "
+            f"Temps exploitable : "
+            f"{analysis.valid_duration_seconds:.0f} s. "
+            f"Temps dans cible : "
+            f"{analysis.in_range_duration_seconds:.0f} s."
+        ),
     )
 
 

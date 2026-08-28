@@ -48,3 +48,27 @@ class VolumeAssessmentThresholds:
 
 
 DEFAULT_VOLUME_THRESHOLDS = VolumeAssessmentThresholds()
+
+@dataclass(frozen=True, slots=True)
+class TargetAdherenceThresholds:
+    """Seuils de temps passé dans une cible prescrite."""
+
+    compliant_percent: float = 80.0
+    partial_percent: float = 60.0
+
+    def __post_init__(self) -> None:
+        if not (
+            0.0
+            <= self.partial_percent
+            <= self.compliant_percent
+            <= 100.0
+        ):
+            raise ValueError(
+                "Les seuils d'adhérence doivent respecter "
+                "0 <= partial <= compliant <= 100."
+            )
+
+
+DEFAULT_TARGET_ADHERENCE_THRESHOLDS = (
+    TargetAdherenceThresholds()
+)

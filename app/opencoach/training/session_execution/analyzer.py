@@ -5,7 +5,11 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import fields
 
-from opencoach.models import Activity, TrainingSession
+from opencoach.models import (
+    Activity,
+    ActivityDetail,
+    TrainingSession,
+)
 
 from .intensity import assess_session_intensity
 from .load import assess_session_load
@@ -28,6 +32,7 @@ from .volume import assess_session_volume
 def analyze_session_execution(
     session: TrainingSession,
     activity: Activity | None,
+    activity_detail: ActivityDetail | None = None,
     *,
     volume_thresholds: VolumeAssessmentThresholds = (
         DEFAULT_VOLUME_THRESHOLDS
@@ -55,6 +60,7 @@ def analyze_session_execution(
     intensity = assess_session_intensity(
         session,
         activity,
+        activity_detail,
     )
 
     load = assess_session_load(

@@ -1,3 +1,7 @@
+from .stream_analysis import (
+    StreamRangeAnalysis,
+    calculate_time_in_range,
+)
 """Évaluation déterministe de l'exécution des séances OpenCoach."""
 
 from .analyzer import analyze_session_execution
@@ -16,6 +20,8 @@ from .models import (
 )
 from .status import AssessmentStatus
 from .thresholds import (
+    DEFAULT_TARGET_ADHERENCE_THRESHOLDS,
+    TargetAdherenceThresholds,
     DEFAULT_VOLUME_THRESHOLDS,
     MetricTolerance,
     VolumeAssessmentThresholds,
@@ -24,6 +30,10 @@ from .volume import assess_session_volume
 
 __all__ = [
     "AssessmentStatus",
+    "DEFAULT_TARGET_ADHERENCE_THRESHOLDS",
+    "StreamRangeAnalysis",
+    "TargetAdherenceThresholds",
+    "calculate_time_in_range",
     "analyze_session_execution",
     "DEFAULT_VOLUME_THRESHOLDS",
     "MetricTolerance",

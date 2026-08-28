@@ -73,6 +73,90 @@ class IntervalsClient:
             },
         )
 
+    def get_activity_details(
+        self,
+        activity_id: str,
+        *,
+        include_intervals: bool = True,
+    ) -> dict:
+        """Retourne le détail d'une activité Intervals.icu.
+
+        Lorsque ``include_intervals`` est activé, la réponse contient
+        notamment les intervalles analysés dans ``icu_intervals``.
+        """
+
+        activity_id = self._validate_activity_id(
+            activity_id,
+        )
+
+        return self._get_object(
+            f"/activity/{activity_id}",
+            params={
+                "intervals": (
+                    "true"
+                    if include_intervals
+                    else "false"
+                ),
+            },
+        )
+
+    def get_activity_streams(
+        self,
+        activity_id: str,
+        *,
+        types: tuple[str, ...] = (
+            "time",
+            "distance",
+            "heartrate",
+            "velocity_smooth",
+            "cadence",
+            "watts",
+        ),
+    ) -> list[dict]:
+        """Retourne les streams utiles à l'analyse d'une activité.
+
+        Les flux GPS ne font volontairement pas partie du contrat
+        OpenCoach.
+        """
+
+        activity_id = self._validate_activity_id(
+            activity_id,
+        )
+
+        cleaned_types = tuple(
+            stream_type.strip()
+            for stream_type in types
+            if stream_type.strip()
+        )
+
+        if not cleaned_types:
+            raise ValueError(
+                "Au moins un type de stream est requis."
+            )
+
+        return self._get_list(
+            f"/activity/{activity_id}/streams.json",
+            params={
+                "types": ",".join(
+                    cleaned_types,
+                ),
+            },
+        )
+
+    @staticmethod
+    def _validate_activity_id(
+        activity_id: str,
+    ) -> str:
+        value = activity_id.strip()
+
+        if not value:
+            raise ValueError(
+                "L'identifiant d'activité Intervals.icu "
+                "est obligatoire."
+            )
+
+        return value
+
     def _request(
         self,
         path: str,

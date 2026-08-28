@@ -300,6 +300,110 @@ def _assess_average_pace(
     )
 
 
+
+def _moving_time_in_range(
+    *,
+    times,
+    values,
+    speeds,
+    minimum: float,
+    maximum: float,
+):
+    """Calcule l'adhérence uniquement pendant le temps actif.
+
+    Le stream ``time`` représente le temps écoulé, pauses
+    comprises. Pour une séance continue, chaque intervalle
+    temporel est conservé uniquement lorsque la vitesse au
+    début de l'intervalle est strictement positive.
+
+    La timeline est ensuite compactée afin que les pauses ne
+    participent ni au numérateur ni au dénominateur.
+    """
+
+    compact_times = [0.0]
+    compact_values = []
+
+    elapsed_active = 0.0
+
+    size = min(
+        len(times),
+        len(values),
+        len(speeds),
+    )
+
+    for index in range(size - 1):
+        try:
+            current_time = float(
+                times[index]
+            )
+
+            next_time = float(
+                times[index + 1]
+            )
+
+            value = float(
+                values[index]
+            )
+
+            speed = float(
+                speeds[index]
+            )
+
+        except (
+            TypeError,
+            ValueError,
+        ):
+            continue
+
+        delta = (
+            next_time
+            - current_time
+        )
+
+        if (
+            delta <= 0
+            or delta > 10
+        ):
+            continue
+
+        if speed <= 0:
+            continue
+
+        compact_values.append(
+            value
+        )
+
+        elapsed_active += delta
+
+        compact_times.append(
+            elapsed_active
+        )
+
+    if not compact_values:
+        return calculate_time_in_range(
+            (),
+            (),
+            minimum=minimum,
+            maximum=maximum,
+        )
+
+    # calculate_time_in_range() interprète la valeur située à
+    # l'index i sur l'intervalle [time[i], time[i + 1]).
+    #
+    # Il faut donc N + 1 timestamps pour N intervalles actifs.
+    # La dernière valeur est uniquement ajoutée pour conserver
+    # un alignement compatible avec le contrat du helper.
+    compact_values.append(
+        compact_values[-1]
+    )
+
+    return calculate_time_in_range(
+        compact_times,
+        compact_values,
+        minimum=minimum,
+        maximum=maximum,
+    )
+
 def _assess_time_in_heart_rate_target(
     session: TrainingSession,
     activity_detail: ActivityDetail | None,
@@ -352,8 +456,13 @@ def _assess_time_in_heart_rate_target(
         )
 
     time_stream = activity_detail.streams.time
+
     heart_rate_stream = (
         activity_detail.streams.heartrate
+    )
+
+    velocity_stream = (
+        activity_detail.streams.velocity_smooth
     )
 
     if (
@@ -370,12 +479,22 @@ def _assess_time_in_heart_rate_target(
             ),
         )
 
-    analysis = calculate_time_in_range(
-        time_stream.data,
-        heart_rate_stream.data,
-        minimum=float(target["minimum"]),
-        maximum=float(target["maximum"]),
-    )
+    if velocity_stream is None:
+        analysis = calculate_time_in_range(
+            time_stream.data,
+            heart_rate_stream.data,
+            minimum=float(target["minimum"]),
+            maximum=float(target["maximum"]),
+        )
+
+    else:
+        analysis = _moving_time_in_range(
+            times=time_stream.data,
+            values=heart_rate_stream.data,
+            speeds=velocity_stream.data,
+            minimum=float(target["minimum"]),
+            maximum=float(target["maximum"]),
+        )
 
     return _adherence_metric(
         key="time_in_heart_rate_target",

@@ -69,6 +69,15 @@ def build_session_debriefing(
     """Produit le résumé principal du coach."""
 
     if (
+        goal_type is GoalType.ENDURANCE
+        and metrics
+    ):
+        return _build_endurance_debriefing(
+            overall_status=overall_status,
+            metrics=metrics,
+        )
+
+    if (
         goal_type is GoalType.INTERVALS
         and metrics
     ):
@@ -132,6 +141,241 @@ def build_session_debriefing(
 
 
 
+
+
+def _build_endurance_debriefing(
+    *,
+    overall_status: GoalComplianceStatus,
+    metrics: tuple[GoalMetricAssessment, ...],
+) -> str:
+    """Produit un débriefing chiffré d'une séance d'endurance."""
+
+    values = {
+        metric.key: metric
+        for metric in metrics
+    }
+
+    heart_rate = values.get(
+        "time_in_heart_rate_target"
+    )
+
+    pace = values.get(
+        "time_in_pace_target"
+    )
+
+    duration = values.get(
+        "duration"
+    )
+
+    sentences: list[str] = []
+
+    # --------------------------------------------------------
+    # Intensité physiologique principale
+    # --------------------------------------------------------
+
+    if (
+        heart_rate is not None
+        and heart_rate.actual_value is not None
+        and heart_rate.status
+        is not GoalComplianceStatus.NOT_USED
+    ):
+        adherence = heart_rate.actual_value
+
+        if (
+            heart_rate.status
+            is GoalComplianceStatus.OK
+        ):
+            sentences.append(
+                "L'intensité d'endurance a été correctement "
+                f"maîtrisée : {adherence:.0f} % du temps actif "
+                "a été passé dans la zone cardiaque cible."
+            )
+
+        elif (
+            heart_rate.status
+            is GoalComplianceStatus.ATTENTION
+        ):
+            sentences.append(
+                f"{adherence:.0f} % du temps actif a été passé "
+                "dans la zone cardiaque cible. L'intensité est "
+                "proche de l'objectif, mais pourrait être mieux "
+                "maîtrisée."
+            )
+
+        elif (
+            heart_rate.status
+            is GoalComplianceStatus.NON_COMPLIANT
+        ):
+            sentences.append(
+                f"Seulement {adherence:.0f} % du temps actif "
+                "a été passé dans la zone cardiaque cible. "
+                "L'intensité d'endurance prévue n'a donc pas "
+                "été suffisamment respectée."
+            )
+
+    # Une cible d'allure peut remplacer/compléter la FC
+    # lorsqu'elle est réellement prescrite.
+    elif (
+        pace is not None
+        and pace.actual_value is not None
+        and pace.status
+        is not GoalComplianceStatus.NOT_USED
+    ):
+        adherence = pace.actual_value
+
+        if (
+            pace.status
+            is GoalComplianceStatus.OK
+        ):
+            sentences.append(
+                f"{adherence:.0f} % du temps actif a été passé "
+                "dans l'allure prescrite."
+            )
+
+        elif (
+            pace.status
+            is GoalComplianceStatus.ATTENTION
+        ):
+            sentences.append(
+                f"{adherence:.0f} % du temps actif a été passé "
+                "dans l'allure prescrite. L'intensité est "
+                "globalement proche de la cible."
+            )
+
+        else:
+            sentences.append(
+                f"Seulement {adherence:.0f} % du temps actif "
+                "a été passé dans l'allure prescrite. "
+                "L'intensité prévue n'a pas été suffisamment "
+                "respectée."
+            )
+
+    # --------------------------------------------------------
+    # Volume secondaire
+    # --------------------------------------------------------
+
+    if (
+        duration is not None
+        and duration.actual_value is not None
+        and duration.target_minimum is not None
+    ):
+        actual = duration.actual_value
+
+        target = duration.target_minimum
+
+        if (
+            duration.status
+            is GoalComplianceStatus.OK
+        ):
+            sentences.append(
+                f"La durée prévue est respectée : "
+                f"{actual:.0f} min pour "
+                f"{target:.0f} min prescrites."
+            )
+
+        elif (
+            duration.delta is not None
+            and duration.delta > 0
+        ):
+            percentage = (
+                duration.delta_percent
+            )
+
+            message = (
+                f"La séance a duré {actual:.0f} min au lieu "
+                f"des {target:.0f} min prescrites"
+            )
+
+            if percentage is not None:
+                message += (
+                    f", soit environ "
+                    f"{abs(percentage):.0f} % de plus"
+                )
+
+            sentences.append(
+                message + "."
+            )
+
+        elif (
+            duration.delta is not None
+            and duration.delta < 0
+        ):
+            percentage = (
+                duration.delta_percent
+            )
+
+            message = (
+                f"La séance a duré {actual:.0f} min au lieu "
+                f"des {target:.0f} min prescrites"
+            )
+
+            if percentage is not None:
+                message += (
+                    f", soit environ "
+                    f"{abs(percentage):.0f} % de moins"
+                )
+
+            sentences.append(
+                message + "."
+            )
+
+    # --------------------------------------------------------
+    # Conclusion coach
+    # --------------------------------------------------------
+
+    if (
+        overall_status
+        is GoalComplianceStatus.NON_COMPLIANT
+    ):
+        if (
+            heart_rate is not None
+            and heart_rate.status
+            is GoalComplianceStatus.NON_COMPLIANT
+        ):
+            sentences.append(
+                "Pour une prochaine séance d'endurance facile, "
+                "réduis l'intensité lorsque la fréquence "
+                "cardiaque dépasse durablement la zone cible ; "
+                "en montée, ralentir ou marcher peut être "
+                "nécessaire pour préserver le stimulus recherché."
+            )
+
+        else:
+            sentences.append(
+                "Pour la prochaine séance de même objectif, "
+                "rapproche l'exécution de la prescription afin "
+                "de préserver le stimulus d'endurance recherché."
+            )
+
+    elif (
+        overall_status
+        is GoalComplianceStatus.ATTENTION
+    ):
+        sentences.append(
+            "La séance reste exploitable, mais une meilleure "
+            "maîtrise de l'intensité ou du volume permettra de "
+            "mieux cibler le stimulus recherché."
+        )
+
+    elif (
+        overall_status
+        is GoalComplianceStatus.OK
+    ):
+        sentences.append(
+            "Le stimulus d'endurance recherché est correctement "
+            "respecté."
+        )
+
+    if sentences:
+        return " ".join(
+            sentences
+        )
+
+    return (
+        "Les données disponibles ne permettent pas de produire "
+        "un débriefing suffisamment précis de cette séance "
+        "d'endurance."
+    )
 
 def _format_pace_from_repetition(
     *,

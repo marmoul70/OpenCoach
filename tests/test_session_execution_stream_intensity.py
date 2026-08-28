@@ -284,3 +284,88 @@ def test_fractionated_session_does_not_use_global_adherence() -> None:
         result.time_in_pace_target.status
         is AssessmentStatus.NOT_APPLICABLE
     )
+
+
+def test_heart_rate_adherence_excludes_stopped_time() -> None:
+    """Une pause montre ne doit pas dégrader le temps en zone."""
+
+    session_value = session()
+
+    session.prescription = {
+        "version": 1,
+        "intensity": {
+            "targets": [
+                {
+                    "reference": "heart_rate",
+                    "minimum": 129,
+                    "maximum": 152,
+                    "unit": "bpm",
+                },
+            ],
+        },
+    }
+
+    # 10 secondes écoulées :
+    # - 8 secondes réellement en mouvement et dans la cible ;
+    # - 2 secondes arrêtées avec FC hors cible.
+    detail = ActivityDetail(
+        provider_activity_id="test",
+        streams=ActivityStreams(
+            time=ActivityStream(
+                stream_type="time",
+                data=tuple(
+                    float(value)
+                    for value in range(11)
+                ),
+            ),
+            heartrate=ActivityStream(
+                stream_type="heartrate",
+                data=(
+                    140,
+                    140,
+                    140,
+                    140,
+                    170,
+                    170,
+                    140,
+                    140,
+                    140,
+                    140,
+                    140,
+                ),
+            ),
+            velocity_smooth=ActivityStream(
+                stream_type="velocity_smooth",
+                data=(
+                    2.0,
+                    2.0,
+                    2.0,
+                    2.0,
+                    0.0,
+                    0.0,
+                    2.0,
+                    2.0,
+                    2.0,
+                    2.0,
+                    2.0,
+                ),
+            ),
+        ),
+    )
+
+    result = assess_session_intensity(
+        session_value,
+        activity(),
+        detail,
+    )
+
+    metric = result.time_in_heart_rate_target
+
+    assert metric is not None
+
+    assert metric.actual_value == 100.0
+
+    assert (
+        metric.status
+        is AssessmentStatus.COMPLIANT
+    )

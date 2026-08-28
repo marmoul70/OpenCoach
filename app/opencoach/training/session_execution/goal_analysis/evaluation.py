@@ -368,6 +368,61 @@ def _build_goal_metric(
     definition,
     source: NumericMetricAssessment | None,
 ) -> GoalMetricAssessment:
+    if (
+        definition.importance
+        is MetricImportance.INFORMATIONAL
+    ):
+        return GoalMetricAssessment(
+            key=definition.key,
+            label=definition.label,
+            importance=definition.importance,
+            status=GoalComplianceStatus.NOT_USED,
+            target_minimum=(
+                source.target.minimum
+                if (
+                    source is not None
+                    and source.target is not None
+                )
+                else None
+            ),
+            target_maximum=(
+                source.target.maximum
+                if (
+                    source is not None
+                    and source.target is not None
+                )
+                else None
+            ),
+            unit=(
+                source.target.unit
+                if (
+                    source is not None
+                    and source.target is not None
+                )
+                else None
+            ),
+            actual_value=(
+                source.actual_value
+                if source is not None
+                else None
+            ),
+            delta=(
+                source.delta
+                if source is not None
+                else None
+            ),
+            delta_percent=(
+                source.delta_percent
+                if source is not None
+                else None
+            ),
+            message=(
+                f"{definition.label} : indicateur informatif, "
+                "non utilisé pour déterminer la conformité "
+                "de cette séance."
+            ),
+        )
+
     if source is None:
         result = GoalMetricAssessment(
             key=definition.key,

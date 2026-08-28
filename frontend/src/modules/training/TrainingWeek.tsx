@@ -56,6 +56,16 @@ import {
 } from './intensity'
 
 
+import {
+  formatPhysiologicalTestProtocol,
+  getPendingPhysiologicalTests,
+} from '../physiological-tests'
+
+import type {
+  PhysiologicalTestProposal,
+} from '../physiological-tests'
+
+
 const dayLabels = [
   'Lundi',
   'Mardi',
@@ -68,6 +78,57 @@ const dayLabels = [
 
 
 export function TrainingWeek() {
+
+  const [
+    physiologicalTestProposals,
+    setPhysiologicalTestProposals,
+  ] = useState<
+    PhysiologicalTestProposal[]
+  >([])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadPhysiologicalTests() {
+      try {
+        const proposals =
+          await getPendingPhysiologicalTests()
+
+        if (!cancelled) {
+          setPhysiologicalTestProposals(
+            proposals,
+          )
+        }
+      } catch {
+        if (!cancelled) {
+          setPhysiologicalTestProposals(
+            [],
+          )
+        }
+      }
+    }
+
+    void loadPhysiologicalTests()
+
+    function handleTrainingChanged() {
+      void loadPhysiologicalTests()
+    }
+
+    window.addEventListener(
+      'opencoach:training-changed',
+      handleTrainingChanged,
+    )
+
+    return () => {
+      cancelled = true
+
+      window.removeEventListener(
+        'opencoach:training-changed',
+        handleTrainingChanged,
+      )
+    }
+  }, [])
+
   const {
     coach,
   } = useCoachToday()
@@ -685,6 +746,9 @@ export function TrainingWeek() {
                   sessions={
                     daySessions
                   }
+          physiologicalTestProposals={
+            physiologicalTestProposals
+          }
                   isToday={
                     isToday
                   }
@@ -830,6 +894,9 @@ interface DayRowProps {
   sessions:
     TrainingSession[]
 
+  physiologicalTestProposals:
+    PhysiologicalTestProposal[]
+
   isToday: boolean
 
   onOpenSession: (
@@ -844,6 +911,7 @@ function DayRow({
   label,
   date,
   sessions,
+  physiologicalTestProposals,
   isToday,
   onOpenSession,
   onAddSession,
@@ -918,6 +986,14 @@ function DayRow({
                 }
                 session={
                   session
+                }
+                physiologicalTestProposal={
+                  physiologicalTestProposals.find(
+                    (proposal) =>
+                      proposal.target_session_id
+                      === session.id,
+                  )
+                  ?? null
                 }
                 onOpen={() =>
                   onOpenSession(
@@ -1086,6 +1162,11 @@ function EmptyDay() {
 
 interface SessionRowProps {
   session: TrainingSession
+
+  physiologicalTestProposal:
+    PhysiologicalTestProposal
+    | null
+
   onOpen: () => void
 }
 
@@ -1129,6 +1210,7 @@ function SessionStatusLabel({
 
 function SessionRow({
   session,
+  physiologicalTestProposal,
   onOpen,
 }: SessionRowProps) {
   const supplementary =
@@ -1178,6 +1260,28 @@ function SessionRow({
           <SessionStatusLabel
             status={session.status}
           />
+
+
+          {physiologicalTestProposal && (
+            <span
+              className="
+                badge
+                badge-primary
+                badge-outline
+                badge-sm
+                gap-1
+              "
+              title={
+                physiologicalTestProposal.recommendation
+              }
+            >
+              Test proposé · {
+                formatPhysiologicalTestProtocol(
+                  physiologicalTestProposal.protocol,
+                )
+              }
+            </span>
+          )}
 
           {supplementary && (
             <span className="badge badge-outline badge-sm">
@@ -1240,11 +1344,6 @@ function SessionRow({
           />
         )}
 
-        <StatusBadge
-          status={
-            session.status
-          }
-        />
       </div>
     </button>
   )

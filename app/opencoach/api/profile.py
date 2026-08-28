@@ -78,6 +78,9 @@ def schema_to_domain(
             available_days=list(profile.training.available_days),
             fatigue_threshold=profile.training.fatigue_threshold,
             experience=profile.training.experience,
+            sport_disciplines=list(
+                profile.training.sport_disciplines
+            ),
         ),
         location=AthleteLocation(
             name=profile.location.name,

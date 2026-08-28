@@ -11,6 +11,12 @@ Experience = Literal[
 ]
 
 
+SportDiscipline = Literal[
+    "road_running",
+    "trail_running",
+]
+
+
 @dataclass
 class AthleteIdentity:
     first_name: str = ""
@@ -43,6 +49,11 @@ class AthleteTraining:
     available_days: list[int] = field(default_factory=list)
     fatigue_threshold: float | None = None
     experience: Experience = "beginner"
+    sport_disciplines: list[
+        SportDiscipline
+    ] = field(
+        default_factory=list
+    )
 
 
 @dataclass

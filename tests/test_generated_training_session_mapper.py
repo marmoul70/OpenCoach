@@ -1,4 +1,11 @@
+from dataclasses import replace
 from datetime import date
+
+from opencoach.planning.sessions.prescription import (
+    IntensityRange,
+    IntensityReference,
+    SessionIntensityPrescription,
+)
 
 from opencoach.coaching.generation.mapper import (
     generated_session_to_training_session,
@@ -188,3 +195,132 @@ def test_mapper_persists_canonical_intensity() -> None:
     )
 
     assert session.intensity == "hard"
+
+
+def test_mapper_persists_vma_speed_and_pace_targets() -> None:
+    generated = create_generated_session()
+
+    vma_target = IntensityRange(
+        reference=(
+            IntensityReference.VMA_PERCENT
+        ),
+        minimum=60.0,
+        maximum=70.0,
+        unit="% VMA",
+        label="Pourcentage de VMA",
+    )
+
+    rpe_target = IntensityRange(
+        reference=(
+            IntensityReference.RPE
+        ),
+        minimum=2.0,
+        maximum=3.0,
+        unit="/10",
+        label="Perception de l'effort",
+    )
+
+    prescription = (
+        SessionIntensityPrescription(
+            stimulus=(
+                generated.proposal
+                .covered_stimuli[0]
+            ),
+            primary_target=(
+                vma_target
+            ),
+            secondary_targets=(
+                rpe_target,
+            ),
+        )
+    )
+
+    proposal = replace(
+        generated.proposal,
+        intensity_prescription=(
+            prescription
+        ),
+    )
+
+    generated = replace(
+        generated,
+        proposal=proposal,
+        vma_kmh=15.0,
+    )
+
+    mapped = (
+        generated_session_to_training_session(
+            generated,
+            planning_key=(
+                "test-vma-targets"
+            ),
+        )
+    )
+
+    assert mapped.prescription is not None
+
+    intensity = mapped.prescription[
+        "intensity"
+    ]
+
+    assert intensity is not None
+
+    persisted_vma_target = next(
+        target
+        for target
+        in intensity["targets"]
+        if (
+            target["reference"]
+            == "vma_percent"
+        )
+    )
+
+    assert (
+        persisted_vma_target[
+            "minimum"
+        ]
+        == 60.0
+    )
+
+    assert (
+        persisted_vma_target[
+            "maximum"
+        ]
+        == 70.0
+    )
+
+    derived = persisted_vma_target[
+        "derived"
+    ]
+
+    assert (
+        derived["vma_kmh"]
+        == 15.0
+    )
+
+    assert (
+        derived["speed_kmh"][
+            "minimum"
+        ]
+        == 9.0
+    )
+
+    assert (
+        derived["speed_kmh"][
+            "maximum"
+        ]
+        == 10.5
+    )
+
+    assert (
+        derived[
+            "pace_seconds_per_km"
+        ]["slowest"]
+        == 400.0
+    )
+
+    assert round(
+        derived[
+            "pace_seconds_per_km"
+        ]["fastest"],
+    ) == 343

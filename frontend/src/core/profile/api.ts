@@ -26,6 +26,10 @@ interface ApiProfile {
     available_days: number[]
     fatigue_threshold?: number | null
     experience?: 'beginner' | 'intermediate' | 'advanced' | 'expert'
+    sport_disciplines: Array<
+      'road_running'
+      | 'trail_running'
+    >
   }
   location: {
     name?: string | null
@@ -114,6 +118,9 @@ function fromApi(profile: ApiProfile): AthleteProfile {
         profile.training.fatigue_threshold,
       ),
       experience: profile.training.experience,
+      sportDisciplines: [
+        ...(profile.training.sport_disciplines ?? []),
+      ],
     },
 
     location: {
@@ -199,6 +206,9 @@ function toApi(profile: AthleteProfile): ApiProfile {
       fatigue_threshold:
         profile.training.fatigueThreshold ?? null,
       experience: profile.training.experience ?? 'beginner',
+      sport_disciplines: [
+        ...profile.training.sportDisciplines,
+      ],
     },
 
     location: {

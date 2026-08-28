@@ -78,6 +78,9 @@ class SqlTrainingSessionRepository(
             database_session.heart_rate_zone = (
                 session.heart_rate_zone
             )
+            database_session.prescription = (
+                session.prescription
+            )
             database_session.status = session.status
             database_session.activity_id = session.activity_id
 
@@ -431,6 +434,7 @@ class SqlTrainingSessionRepository(
             elevation_gain_m=session.elevation_gain_m,
             intensity=session.intensity,
             heart_rate_zone=session.heart_rate_zone,
+            prescription=session.prescription,
             status=session.status,
             activity_id=session.activity_id,
         )

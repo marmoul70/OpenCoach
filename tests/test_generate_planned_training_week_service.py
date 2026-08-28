@@ -23,6 +23,10 @@ from opencoach.planning.weekly.schedule_types import (
     Weekday,
 )
 
+from opencoach.physiology.testing.models import (
+    SportDiscipline,
+)
+
 
 class FakeGenerateAndPersistService:
     """Double de la génération concrète."""
@@ -77,6 +81,25 @@ class FakeGenerateAndPersistService:
                 persisted_sessions=(),
             )
         )
+
+
+class FakePhysiologicalTestService:
+    """Espion du raccord automatique des tests physiologiques."""
+
+    def __init__(
+        self,
+    ) -> None:
+        self.calls = []
+
+    def evaluate_week(
+        self,
+        request,
+    ):
+        self.calls.append(
+            request
+        )
+
+        return None
 
 
 def create_average(
@@ -294,3 +317,125 @@ def test_result_exposes_session_count() -> None:
     )
 
     assert result.session_count == 0
+
+
+def test_service_evaluates_physiological_test_after_generation() -> None:
+    """Le planning transmet le contexte au moteur automatique de tests."""
+
+    generator = (
+        FakeGenerateAndPersistService()
+    )
+
+    physiological_service = (
+        FakePhysiologicalTestService()
+    )
+
+    service = (
+        GeneratePlannedTrainingWeekService(
+            generation_service=(
+                generator
+            ),
+            physiological_test_service=(
+                physiological_service
+            ),
+        )
+    )
+
+    athlete_profile_id = uuid4()
+
+    reference_date = date(
+        2027,
+        7,
+        5,
+    )
+
+    disciplines = (
+        SportDiscipline.ROAD_RUNNING,
+        SportDiscipline.TRAIL_RUNNING,
+    )
+
+    result = service.execute(
+        athlete_profile_id=(
+            athlete_profile_id
+        ),
+        planning_input=(
+            create_planning_input()
+        ),
+        physiological_reference_date=(
+            reference_date
+        ),
+        sport_disciplines=(
+            disciplines
+        ),
+    )
+
+    assert len(
+        physiological_service.calls
+    ) == 1
+
+    request = (
+        physiological_service.calls[
+            0
+        ]
+    )
+
+    assert (
+        request.athlete_profile_id
+        == athlete_profile_id
+    )
+
+    assert (
+        request.reference_date
+        == reference_date
+    )
+
+    assert (
+        request.week_start
+        == result.generation.generated_week.week_start
+    )
+
+    assert (
+        request.week_end
+        == result.generation.generated_week.week_end
+    )
+
+    assert (
+        request.phase
+        == result.generation.generated_week.phase
+    )
+
+    assert (
+        request.disciplines
+        == disciplines
+    )
+
+
+def test_service_does_not_evaluate_test_without_sport_disciplines() -> None:
+    """Aucune proposition automatique sans préférence sportive."""
+
+    physiological_service = (
+        FakePhysiologicalTestService()
+    )
+
+    service = (
+        GeneratePlannedTrainingWeekService(
+            generation_service=(
+                FakeGenerateAndPersistService()
+            ),
+            physiological_test_service=(
+                physiological_service
+            ),
+        )
+    )
+
+    service.execute(
+        athlete_profile_id=uuid4(),
+        planning_input=(
+            create_planning_input()
+        ),
+    )
+
+    assert (
+        physiological_service.calls
+        == []
+    )

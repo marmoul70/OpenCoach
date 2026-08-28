@@ -123,6 +123,17 @@ class WeeklyTrainingGenerationService:
                     day=slot.day,
                     phase=envelope.phase,
                     proposal=proposal,
+                    vma_kmh=(
+                        physiology.vma.value
+                        if (
+                            physiology is not None
+                            and physiology.vma.usable
+                            and physiology.vma.value
+                            is not None
+                            and physiology.vma.value > 0
+                        )
+                        else None
+                    ),
                 )
             )
 

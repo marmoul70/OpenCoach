@@ -50,6 +50,8 @@ class FakeContextBuilder:
         )
 
         return SimpleNamespace(
+            sport_disciplines=(),
+
             planning_input=(
                 SimpleNamespace()
             )
@@ -64,6 +66,7 @@ class FakeGenerationService:
         planning_input,
         physiological_reference_date=None,
         additional_context=(),
+        sport_disciplines=(),
     ):
         del planning_input
 

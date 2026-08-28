@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
 
 from opencoach.database.base import Base
@@ -336,3 +337,38 @@ def failing_commit() -> None:
         {},
         RuntimeError("database failure"),
     )
+
+def test_profile_repository_persists_sport_disciplines() -> None:
+    engine = create_engine(
+        "sqlite+pysqlite:///:memory:",
+    )
+
+    Base.metadata.create_all(
+        engine
+    )
+
+    with Session(engine) as db:
+        repository = SqlProfileRepository(
+            db
+        )
+
+        profile = AthleteProfile()
+
+        profile.training.sport_disciplines = [
+            "road_running",
+            "trail_running",
+        ]
+
+        repository.save_profile(
+            profile
+        )
+
+        loaded = repository.get_profile()
+
+        assert (
+            loaded.training.sport_disciplines
+            == [
+                "road_running",
+                "trail_running",
+            ]
+        )

@@ -33,6 +33,10 @@ from opencoach.api.coaching.daily_checkin import (
     router as coach_daily_checkin_router,
 )
 
+from opencoach.api.coaching.physiological_tests import (
+    router as coach_physiological_tests_router,
+)
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="OpenCoach API",
@@ -59,6 +63,10 @@ def create_app() -> FastAPI:
 
     app.include_router(
         coach_daily_checkin_router
+    )
+
+    app.include_router(
+        coach_physiological_tests_router
     )
 
     return app

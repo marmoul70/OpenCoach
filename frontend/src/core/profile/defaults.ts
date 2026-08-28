@@ -29,6 +29,7 @@ export const defaultAthleteProfile: AthleteProfile = {
     availableDays: [],
     fatigueThreshold: undefined,
     experience: undefined,
+    sportDisciplines: [],
   },
 
   location: {

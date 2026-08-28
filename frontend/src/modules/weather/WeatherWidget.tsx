@@ -312,9 +312,11 @@ export function WeatherWidget({
           group
           flex items-center
           justify-end
-          gap-3
+          gap-2
+          sm:gap-3
           rounded-xl
-          px-3 py-1.5
+          px-2 py-1
+          sm:px-3 sm:py-1.5
           text-right
           transition-colors
           hover:bg-base-300/60
@@ -353,7 +355,14 @@ export function WeatherWidget({
             </span>
           </div>
 
-          <span className="mt-0.5 text-sm font-medium text-base-content/60">
+          <span
+            className="
+              mt-0.5
+              text-sm
+              font-medium
+              text-base-content/60
+            "
+          >
             {description.label}
           </span>
         </div>
@@ -361,13 +370,15 @@ export function WeatherWidget({
         <span
           className="
             flex
-            h-14 w-14
+            h-9 w-9
             shrink-0
             items-center
             justify-center
-            text-5xl
+            text-3xl
             leading-none
             transition-transform
+            sm:h-14 sm:w-14
+            sm:text-5xl
             group-hover:scale-105
           "
           aria-hidden="true"

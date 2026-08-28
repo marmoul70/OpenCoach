@@ -42,3 +42,7 @@ __all__ = [
 
 from .daily_checkin import DailyCheckIn
 from .daily_adaptation import DailyAdaptationProposal
+
+from .physiological_test_proposal import (
+    PhysiologicalTestProposal,
+)

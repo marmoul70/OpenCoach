@@ -26,6 +26,8 @@ class TrainingSession:
     intensity: str = ""
     heart_rate_zone: str | None = None
 
+    prescription: dict | None = None
+
     status: str = "planned"
 
     activity_id: UUID | None = None

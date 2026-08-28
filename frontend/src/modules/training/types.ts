@@ -7,6 +7,14 @@ export type TrainingSessionType =
   | 'trail'
   | 'rest'
   | 'supplementary'
+  | 'aerobic_easy'
+  | 'long_endurance'
+  | 'threshold'
+  | 'vo2max'
+  | 'speed_development'
+  | 'strength_lower_body'
+  | 'physiological_test'
+
 
 export type TrainingSessionStatus =
   | 'planned'

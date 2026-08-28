@@ -9,6 +9,18 @@ aucune règle métier d'entraînement.
 
 from __future__ import annotations
 
+from opencoach.database.repositories.sql_physiological_test_proposal import (
+    SqlPhysiologicalTestProposalRepository,
+)
+
+from opencoach.physiology.testing import (
+    ApplyPhysiologicalTestDecisionService,
+)
+
+from opencoach.physiology.testing.automatic_proposal import (
+    AutomaticPhysiologicalTestProposalService,
+)
+
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
@@ -317,9 +329,38 @@ def get_generate_and_persist_training_week_service(
     )
 
 
+def get_automatic_physiological_test_proposal_service(
+    db: Session = Depends(
+        get_db
+    ),
+) -> AutomaticPhysiologicalTestProposalService:
+    """Construit la proposition automatique de test physiologique."""
+
+    return AutomaticPhysiologicalTestProposalService(
+        measurement_repository=(
+            SqlPhysiologicalMeasurementRepository(
+                db
+            )
+        ),
+        proposal_repository=(
+            SqlPhysiologicalTestProposalRepository(
+                db
+            )
+        ),
+        training_session_repository=(
+            SqlTrainingSessionRepository(
+                db
+            )
+        ),
+    )
+
+
 def get_generate_planned_training_week_service(
     generation_service: GenerateAndPersistTrainingWeekService = Depends(
         get_generate_and_persist_training_week_service
+    ),
+    physiological_test_service: AutomaticPhysiologicalTestProposalService = Depends(
+        get_automatic_physiological_test_proposal_service
     ),
 ) -> GeneratePlannedTrainingWeekService:
     """Construit le pipeline complet du coach hebdomadaire."""
@@ -327,7 +368,10 @@ def get_generate_planned_training_week_service(
     return GeneratePlannedTrainingWeekService(
         generation_service=(
             generation_service
-        )
+        ),
+        physiological_test_service=(
+            physiological_test_service
+        ),
     )
 
 def get_current_week_planning_service(
@@ -541,5 +585,36 @@ def get_coach_weekly_assessment_service(
         ),
         training_history_service=(
             training_history_service
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Coach — tests physiologiques
+# ---------------------------------------------------------------------------
+
+
+def get_physiological_test_proposal_repository(
+    db: Session = Depends(
+        get_db
+    ),
+) -> SqlPhysiologicalTestProposalRepository:
+    """Construit le repository SQL des propositions de tests."""
+
+    return SqlPhysiologicalTestProposalRepository(
+        db
+    )
+
+
+def get_physiological_test_application_service(
+    training_session_repository: SqlTrainingSessionRepository = Depends(
+        get_training_session_repository
+    ),
+) -> ApplyPhysiologicalTestDecisionService:
+    """Construit l'application d'une décision de test."""
+
+    return ApplyPhysiologicalTestDecisionService(
+        training_session_repository=(
+            training_session_repository
         ),
     )

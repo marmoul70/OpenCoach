@@ -113,6 +113,9 @@ class SqlProfileRepository(ProfileRepository):
                 profile.training.fatigue_threshold
             )
             database_profile.experience = profile.training.experience
+            database_profile.sport_disciplines = list(
+                profile.training.sport_disciplines
+            )
 
             # Localisation
             database_profile.location_name = profile.location.name
@@ -224,6 +227,10 @@ class SqlProfileRepository(ProfileRepository):
                 available_days=list(profile.available_days or []),
                 fatigue_threshold=profile.fatigue_threshold,
                 experience=profile.experience,
+                sport_disciplines=list(
+                    profile.sport_disciplines
+                    or []
+                ),
             ),
             location=AthleteLocation(
                 name=profile.location_name,

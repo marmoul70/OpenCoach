@@ -141,6 +141,24 @@ class AthleteProfile(Base):
         nullable=False,
     )
 
+
+    # Disciplines sportives pratiquées
+    #
+    # Ces préférences permettent au moteur de coaching
+    # d'adapter les séances, tests et recommandations
+    # aux pratiques réelles de l'athlète.
+    #
+    # Exemples :
+    # - road_running
+    # - trail_running
+    #
+    # Plusieurs disciplines peuvent être sélectionnées.
+    sport_disciplines: Mapped[list[str]] = mapped_column(
+        JSON,
+        default=list,
+        nullable=False,
+    )
+
     # Localisation
     location_name: Mapped[str | None] = mapped_column(
         String(255),

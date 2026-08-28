@@ -14,6 +14,12 @@ Experience = Literal[
 ]
 
 
+SportDiscipline = Literal[
+    "road_running",
+    "trail_running",
+]
+
+
 class AthleteIdentitySchema(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -113,6 +119,26 @@ class AthleteTrainingSchema(BaseModel):
     available_days: list[int] = Field(default_factory=list)
     fatigue_threshold: float | None = Field(default=None, ge=0)
     experience: Experience = "beginner"
+    sport_disciplines: list[
+        SportDiscipline
+    ] = Field(
+        default_factory=list
+    )
+
+    @field_validator("sport_disciplines")
+    @classmethod
+    def validate_sport_disciplines(
+        cls,
+        value: list[SportDiscipline],
+    ) -> list[SportDiscipline]:
+        if len(value) != len(set(value)):
+            raise ValueError(
+                "Les disciplines sportives "
+                "ne peuvent pas être dupliquées."
+            )
+
+        return value
+
 
     @field_validator("available_days")
     @classmethod

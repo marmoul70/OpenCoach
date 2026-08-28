@@ -1,6 +1,8 @@
 from datetime import date
 from uuid import UUID
 
+from pydantic import BaseModel, Field
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -8,6 +10,11 @@ from fastapi import (
     Query,
 )
 from sqlalchemy.orm import Session
+
+from opencoach.coaching.session_guidance import (
+    SessionGuidanceStep,
+    build_session_guidance,
+)
 
 from opencoach.api.intervals import (
     get_local_athlete_profile_id,
@@ -67,6 +74,84 @@ def to_response(
         status=session.status,
         activity_id=session.activity_id,
     )
+
+
+
+
+class SessionGuidanceIntensityTargetResponse(
+    BaseModel
+):
+    reference: str
+    label: str
+
+    minimum: float
+    maximum: float
+
+    unit: str
+
+    speed_min_kmh: float | None = None
+    speed_max_kmh: float | None = None
+
+    pace_fastest_seconds_per_km: float | None = None
+    pace_slowest_seconds_per_km: float | None = None
+
+
+class SessionGuidanceStepResponse(
+    BaseModel
+):
+    title: str
+    description: str
+
+    duration_minutes: int | None = None
+
+    intensity_target: str | None = None
+    heart_rate_target: str | None = None
+
+    intensity_targets: list[
+        SessionGuidanceIntensityTargetResponse
+    ] = Field(
+        default_factory=list
+    )
+
+    repetitions: int | None = None
+
+    work_distance_meters: int | None = None
+
+    repetition_fast_seconds: float | None = None
+    repetition_slow_seconds: float | None = None
+
+    recovery_description: str | None = None
+
+
+class SessionGuidanceResponse(
+    BaseModel
+):
+    session_type: str
+
+    objective: str
+    coach_rationale: str
+
+    terrain_recommendation: str
+
+    preparation: list[str]
+
+    warmup: list[
+        SessionGuidanceStepResponse
+    ]
+
+    main_set: list[
+        SessionGuidanceStepResponse
+    ]
+
+    cooldown: list[
+        SessionGuidanceStepResponse
+    ]
+
+    execution_advice: list[str]
+
+    warnings: list[str]
+
+    analysis_targets: list[str]
 
 
 @router.get(
@@ -448,3 +533,142 @@ def list_candidate_activities(
         )
         for activity, match in candidates
     ]
+
+
+@router.get(
+    "/{session_id}/guidance",
+    response_model=SessionGuidanceResponse,
+)
+def get_training_session_guidance(
+    session_id: UUID,
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id
+    ),
+    db: Session = Depends(get_db),
+) -> SessionGuidanceResponse:
+    """Retourne la fiche explicative complète d'une séance."""
+
+    repository = (
+        SqlTrainingSessionRepository(
+            db
+        )
+    )
+
+    session = repository.get_session(
+        athlete_profile_id,
+        session_id,
+    )
+
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Séance d'entraînement "
+                "introuvable."
+            ),
+        )
+
+    guidance = (
+        build_session_guidance(
+            session
+        )
+    )
+
+    def map_step(
+        step: SessionGuidanceStep,
+    ) -> SessionGuidanceStepResponse:
+        return SessionGuidanceStepResponse(
+            title=step.title,
+            description=(
+                step.description
+            ),
+            duration_minutes=(
+                step.duration_minutes
+            ),
+            intensity_target=(
+                step.intensity_target
+            ),
+            heart_rate_target=(
+                step.heart_rate_target
+            ),
+            intensity_targets=[
+                SessionGuidanceIntensityTargetResponse(
+                    reference=target.reference,
+                    label=target.label,
+                    minimum=target.minimum,
+                    maximum=target.maximum,
+                    unit=target.unit,
+                    speed_min_kmh=(
+                        target.speed_min_kmh
+                    ),
+                    speed_max_kmh=(
+                        target.speed_max_kmh
+                    ),
+                    pace_fastest_seconds_per_km=(
+                        target.pace_fastest_seconds_per_km
+                    ),
+                    pace_slowest_seconds_per_km=(
+                        target.pace_slowest_seconds_per_km
+                    ),
+                )
+                for target
+                in step.intensity_targets
+            ],
+            repetitions=(
+                step.repetitions
+            ),
+            work_distance_meters=(
+                step.work_distance_meters
+            ),
+            repetition_fast_seconds=(
+                step.repetition_fast_seconds
+            ),
+            repetition_slow_seconds=(
+                step.repetition_slow_seconds
+            ),
+            recovery_description=(
+                step.recovery_description
+            ),
+        )
+
+    return SessionGuidanceResponse(
+        session_type=(
+            guidance.session_type
+        ),
+        objective=(
+            guidance.objective
+        ),
+        coach_rationale=(
+            guidance.coach_rationale
+        ),
+        terrain_recommendation=(
+            guidance.terrain_recommendation
+        ),
+        preparation=list(
+            guidance.preparation
+        ),
+        warmup=[
+            map_step(step)
+            for step
+            in guidance.warmup
+        ],
+        main_set=[
+            map_step(step)
+            for step
+            in guidance.main_set
+        ],
+        cooldown=[
+            map_step(step)
+            for step
+            in guidance.cooldown
+        ],
+        execution_advice=list(
+            guidance.execution_advice
+        ),
+        warnings=list(
+            guidance.warnings
+        ),
+        analysis_targets=list(
+            guidance.analysis_targets
+        ),
+    )

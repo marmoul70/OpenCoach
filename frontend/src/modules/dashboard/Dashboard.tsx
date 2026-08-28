@@ -25,6 +25,10 @@ import {
   CoachTodayWidget,
 } from '../coach/CoachTodayWidget'
 import {
+  PhysiologicalTestProposalCard,
+} from '../physiological-tests'
+
+import {
   WeatherWidget,
 } from '../weather/WeatherWidget'
 
@@ -212,9 +216,9 @@ export function Dashboard({
       <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
 
         <header className="mb-5">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-base-content sm:text-3xl">
+          <div className="flex items-center justify-between gap-2">
+            <div className="w-1/2 min-w-0">
+              <h1 className="text-xl font-bold tracking-tight text-base-content sm:text-3xl">
                 Bonjour
                 {firstName
                   ? ` ${firstName}`
@@ -228,17 +232,21 @@ export function Dashboard({
             </div>
 
             {weatherWidget && (
-              <WeatherWidget
-                compact
-                onClick={() => {
-                  openWidget(
-                    'weather',
-                  )
-                }}
-              />
+              <div className="flex w-1/2 min-w-0 justify-end">
+                <WeatherWidget
+                  compact
+                  onClick={() => {
+                    openWidget(
+                      'weather',
+                    )
+                  }}
+                />
+              </div>
             )}
           </div>
         </header>
+
+        <PhysiologicalTestProposalCard />
 
         <div className="space-y-4">
 

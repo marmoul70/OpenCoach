@@ -55,6 +55,10 @@ from opencoach.planning.weekly.schedule_types import (
     Weekday,
 )
 
+from opencoach.physiology.testing.models import (
+    SportDiscipline,
+)
+
 
 class WeeklyPlanningContextError(RuntimeError):
     """Erreur de préparation du contexte hebdomadaire."""
@@ -67,6 +71,11 @@ class PreparedWeeklyPlanningContext:
     athlete_profile_id: UUID
 
     planning_input: CurrentWeekCoachingInput
+
+    sport_disciplines: tuple[
+        SportDiscipline,
+        ...,
+    ]
 
 
 @dataclass(slots=True)
@@ -252,6 +261,11 @@ class WeeklyPlanningContextBuilder:
             athlete_profile_id=(
                 athlete_profile_id
             ),
+            sport_disciplines=(
+                self._sport_disciplines(
+                    context.athlete.training.sport_disciplines
+                )
+            ),
             planning_input=(
                 CurrentWeekCoachingInput(
                     trajectory_start_date=(
@@ -316,6 +330,42 @@ class WeeklyPlanningContextBuilder:
                 )
             ),
         )
+
+    @staticmethod
+    def _sport_disciplines(
+        values: list[str],
+    ) -> tuple[
+        SportDiscipline,
+        ...,
+    ]:
+        """Convertit les préférences profil vers le domaine tests."""
+
+        disciplines: list[
+            SportDiscipline
+        ] = []
+
+        for value in values:
+            try:
+                discipline = (
+                    SportDiscipline(
+                        value
+                    )
+                )
+            except ValueError as exc:
+                raise WeeklyPlanningContextError(
+                    "Le profil contient une discipline "
+                    f"sportive invalide : {value}."
+                ) from exc
+
+            if discipline not in disciplines:
+                disciplines.append(
+                    discipline
+                )
+
+        return tuple(
+            disciplines
+        )
+
 
     @staticmethod
     def _available_days(

@@ -378,3 +378,70 @@ def test_sql_training_session_repository_ignores_other_days() -> None:
 
     finally:
         db.close()
+
+
+def test_training_session_repository_persists_prescription() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(
+            db
+        )
+
+        prescription = {
+            "version": 1,
+            "structure": {
+                "kind": "intervals",
+                "intervals": [
+                    {
+                        "repetitions": 6,
+                        "work": {
+                            "duration_seconds": 180,
+                        },
+                        "recovery": {
+                            "duration_seconds": 120,
+                        },
+                        "target": {
+                            "vma_percent_min": 95.0,
+                            "vma_percent_max": 100.0,
+                        },
+                    },
+                ],
+            },
+        }
+
+        training_session = (
+            create_training_session()
+        )
+
+        training_session.prescription = (
+            prescription
+        )
+
+        repository = (
+            SqlTrainingSessionRepository(
+                db
+            )
+        )
+
+        saved = repository.save_session(
+            profile.id,
+            training_session,
+        )
+
+        assert saved.id is not None
+
+        loaded = repository.get_session(
+            profile.id,
+            saved.id,
+        )
+
+        assert loaded is not None
+
+        assert (
+            loaded.prescription
+            == prescription
+        )
+
+    finally:
+        db.close()

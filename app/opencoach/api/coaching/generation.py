@@ -124,6 +124,9 @@ def generate_training_week(
                 physiological_reference_date=(
                     week_start
                 ),
+                sport_disciplines=(
+                    prepared.sport_disciplines
+                ),
                 additional_context=tuple(
                     payload.additional_context
                 ),

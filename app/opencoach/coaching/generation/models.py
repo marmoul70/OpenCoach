@@ -30,6 +30,8 @@ class GeneratedTrainingSession:
 
     proposal: SessionProposal
 
+    vma_kmh: float | None = None
+
     def __post_init__(
         self,
     ) -> None:

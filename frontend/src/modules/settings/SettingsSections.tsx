@@ -21,13 +21,34 @@ interface TrainingSectionProps {
     availableDays: number[]
     fatigueThreshold?: number
     experience?: 'beginner' | 'intermediate' | 'advanced' | 'expert'
+    sportDisciplines: Array<
+      'road_running'
+      | 'trail_running'
+    >
   }
 }
 
 export function TrainingSection({
   training,
 }: TrainingSectionProps) {
-    const TRAINING_DAYS = [
+    const SPORT_DISCIPLINES = [
+    {
+      value: 'road_running',
+      label: 'Course sur route',
+      description: (
+        'Route, piste cyclable et terrain roulant.'
+      ),
+    },
+    {
+      value: 'trail_running',
+      label: 'Trail',
+      description: (
+        'Sentiers, dénivelé et terrain naturel.'
+      ),
+    },
+  ] as const
+
+  const TRAINING_DAYS = [
     { label: 'L', value: 0, name: 'Lundi' },
     { label: 'M', value: 1, name: 'Mardi' },
     { label: 'M', value: 2, name: 'Mercredi' },
@@ -55,6 +76,18 @@ export function TrainingSection({
   const [experience, setExperience] = useState(
     training.experience ?? 'intermediate',
   )
+
+  const [
+    sportDisciplines,
+    setSportDisciplines,
+  ] = useState<
+    Array<
+      'road_running'
+      | 'trail_running'
+    >
+  >(
+    training.sportDisciplines ?? [],
+  )
   const [saved, setSaved] = useState(false)
 
   function toggleDay(day: number) {
@@ -64,6 +97,29 @@ export function TrainingSection({
         : [...current, day].sort(),
     )
   }
+
+  function toggleSportDiscipline(
+    discipline:
+      | 'road_running'
+      | 'trail_running',
+  ) {
+    setSportDisciplines(
+      (current) => (
+        current.includes(
+          discipline,
+        )
+          ? current.filter(
+              (value) =>
+                value !== discipline,
+            )
+          : [
+              ...current,
+              discipline,
+            ]
+      ),
+    )
+  }
+
 
   async function handleSave() {
     await updateAthleteProfile((currentProfile) => ({
@@ -82,6 +138,7 @@ export function TrainingSection({
           fatigueThreshold,
         ),
         experience,
+        sportDisciplines,
       },
     }))
 
@@ -107,6 +164,9 @@ export function TrainingSection({
       training.fatigueThreshold?.toString() ?? '',
     )
     setExperience(training.experience ?? 'intermediate')
+    setSportDisciplines(
+      training.sportDisciplines ?? [],
+    )
     setSaved(false)
   }
 
@@ -191,6 +251,89 @@ export function TrainingSection({
           </fieldset>
 
         </div>
+
+        <div>
+          <p className="text-sm font-semibold text-base-content">
+            Disciplines pratiquées
+          </p>
+
+          <p className="mt-1 text-sm text-base-content/50">
+            Sélectionnez toutes les disciplines que vous pratiquez.
+            OpenCoach pourra adapter les séances et les tests proposés.
+          </p>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {SPORT_DISCIPLINES.map(
+              (discipline) => {
+                const selected =
+                  sportDisciplines.includes(
+                    discipline.value,
+                  )
+
+                return (
+                  <button
+                    key={
+                      discipline.value
+                    }
+                    type="button"
+                    aria-pressed={
+                      selected
+                    }
+                    onClick={() =>
+                      toggleSportDiscipline(
+                        discipline.value,
+                      )
+                    }
+                    className={[
+                      'flex items-start gap-3',
+                      'rounded-xl border p-4',
+                      'text-left transition',
+                      selected
+                        ? (
+                            'border-primary '
+                            + 'bg-primary/10'
+                          )
+                        : (
+                            'border-base-300 '
+                            + 'bg-base-100 '
+                            + 'hover:bg-base-200/60'
+                          ),
+                    ].join(' ')}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      readOnly
+                      tabIndex={-1}
+                      className="
+                        checkbox
+                        checkbox-primary
+                        mt-0.5
+                        shrink-0
+                      "
+                      aria-hidden="true"
+                    />
+
+                    <span>
+                      <span className="block font-semibold text-base-content">
+                        {
+                          discipline.label
+                        }
+                      </span>
+
+                      <span className="mt-1 block text-sm text-base-content/50">
+                        {
+                          discipline.description
+                        }
+                      </span>
+                    </span>
+                  </button>
+                )
+              },
+            )}
+          </div>
+        </div>
+
 
         <div>
           <p className="text-sm font-semibold text-base-content">

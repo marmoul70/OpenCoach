@@ -26,6 +26,15 @@ from opencoach.planning.trajectory.service import (
     build_current_week_coaching,
 )
 
+from opencoach.physiology.testing.automatic_proposal import (
+    AutomaticPhysiologicalTestProposalRequest,
+    AutomaticPhysiologicalTestProposalResult,
+    AutomaticPhysiologicalTestProposalService,
+)
+from opencoach.physiology.testing.models import (
+    SportDiscipline,
+)
+
 from .application import (
     GenerateAndPersistTrainingWeekResult,
     GenerateAndPersistTrainingWeekService,
@@ -39,6 +48,11 @@ class GeneratePlannedTrainingWeekResult:
     planning: CurrentWeekCoachingResult
 
     generation: GenerateAndPersistTrainingWeekResult
+
+    physiological_test: (
+        AutomaticPhysiologicalTestProposalResult
+        | None
+    ) = None
 
     @property
     def session_count(
@@ -59,12 +73,21 @@ class GeneratePlannedTrainingWeekService:
         GenerateAndPersistTrainingWeekService
     )
 
+    physiological_test_service: (
+        AutomaticPhysiologicalTestProposalService
+        | None
+    ) = None
+
     def execute(
         self,
         *,
         athlete_profile_id: UUID,
         planning_input: CurrentWeekCoachingInput,
         physiological_reference_date: date | None = None,
+        sport_disciplines: tuple[
+            SportDiscipline,
+            ...,
+        ] = (),
         reconcile_from_date: date | None = None,
         additional_context: tuple[
             str,
@@ -100,7 +123,48 @@ class GeneratePlannedTrainingWeekService:
             )
         )
 
+        physiological_test = None
+
+        if (
+            self.physiological_test_service
+            is not None
+            and sport_disciplines
+        ):
+            reference_date = (
+                physiological_reference_date
+                or generation.generated_week.week_start
+            )
+
+            physiological_test = (
+                self.physiological_test_service
+                .evaluate_week(
+                    AutomaticPhysiologicalTestProposalRequest(
+                        athlete_profile_id=(
+                            athlete_profile_id
+                        ),
+                        reference_date=(
+                            reference_date
+                        ),
+                        week_start=(
+                            generation.generated_week.week_start
+                        ),
+                        week_end=(
+                            generation.generated_week.week_end
+                        ),
+                        phase=(
+                            generation.generated_week.phase
+                        ),
+                        disciplines=(
+                            sport_disciplines
+                        ),
+                    )
+                )
+            )
+
         return GeneratePlannedTrainingWeekResult(
             planning=planning,
             generation=generation,
+            physiological_test=(
+                physiological_test
+            ),
         )

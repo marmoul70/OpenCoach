@@ -19,6 +19,11 @@ export interface AthletePhysiology {
   thresholdHeartRate2?: number
 }
 
+export type SportDiscipline =
+  | 'road_running'
+  | 'trail_running'
+
+
 export interface AthleteTraining {
   weeklySessions?: number
   weeklyDurationMinutes?: number
@@ -26,6 +31,7 @@ export interface AthleteTraining {
   availableDays: number[]
   fatigueThreshold?: number
   experience?: 'beginner' | 'intermediate' | 'advanced' | 'expert'
+  sportDisciplines: SportDiscipline[]
 }
 
 export interface AthleteLocation {

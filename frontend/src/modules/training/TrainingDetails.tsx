@@ -24,6 +24,18 @@ import {
 import type {
   TrainingSession,
 } from './types'
+
+import {
+  fetchSessionGuidance,
+} from './sessionGuidanceApi'
+
+import type {
+  SessionGuidance,
+} from './sessionGuidanceApi'
+
+import {
+  SessionGuidancePanel,
+} from './SessionGuidancePanel'
 import {
   formatTrainingIntensity,
 } from './intensity'
@@ -73,9 +85,81 @@ export function TrainingDetails({
   )
 
   const [
+    guidance,
+    setGuidance,
+  ] = useState<
+    SessionGuidance
+    | null
+  >(null)
+
+  const [
+    loadingGuidance,
+    setLoadingGuidance,
+  ] = useState(true)
+
+  const [
+    guidanceError,
+    setGuidanceError,
+  ] = useState<string | null>(
+    null,
+  )
+
+  const [
     savingStatus,
     setSavingStatus,
   ] = useState(false)
+
+
+  useEffect(() => {
+    let mounted = true
+
+    setLoadingGuidance(true)
+    setGuidanceError(null)
+
+    fetchSessionGuidance(
+      session.id,
+    )
+      .then((result) => {
+        if (!mounted) {
+          return
+        }
+
+        setGuidance(
+          result,
+        )
+      })
+      .catch((reason: unknown) => {
+        if (!mounted) {
+          return
+        }
+
+        setGuidance(
+          null,
+        )
+
+        setGuidanceError(
+          reason instanceof Error
+            ? reason.message
+            : (
+                'Impossible de charger '
+                + 'les consignes.'
+              ),
+        )
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoadingGuidance(
+            false,
+          )
+        }
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [
+    session.id,
+  ])
 
 
   useEffect(() => {
@@ -188,21 +272,58 @@ export function TrainingDetails({
         session={session}
       />
 
-      {session.description && (
-        <p
-          className="
-            text-sm
-            leading-relaxed
-            text-base-content/60
-          "
-        >
-          {session.description}
-        </p>
-      )}
-
       <SessionSummary
         session={session}
       />
+
+      <div
+        className="
+          border-t
+          border-base-300
+          pt-5
+        "
+      >
+        {loadingGuidance && (
+          <div
+            className="
+              flex min-h-32
+              items-center
+              justify-center
+            "
+          >
+            <span
+              className="
+                loading
+                loading-spinner
+                loading-sm
+                text-primary
+              "
+            />
+          </div>
+        )}
+
+        {!loadingGuidance
+          && guidance && (
+            <SessionGuidancePanel
+              guidance={
+                guidance
+              }
+            />
+          )}
+
+        {!loadingGuidance
+          && guidanceError && (
+            <div
+              className="
+                alert
+                alert-warning
+                text-sm
+              "
+            >
+              {guidanceError}
+            </div>
+          )}
+      </div>
 
       {session.type
         !== 'rest' && (

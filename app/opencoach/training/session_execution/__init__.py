@@ -1,6 +1,7 @@
 """Évaluation déterministe de l'exécution des séances OpenCoach."""
 
 from .intensity import assess_session_intensity
+from .load import assess_session_load
 from .metric import (
     NumericMetricAssessment,
     NumericTarget,
@@ -33,5 +34,6 @@ __all__ = [
     "SessionExecutionVolumeAssessment",
     "VolumeAssessmentThresholds",
     "assess_session_intensity",
+    "assess_session_load",
     "assess_session_volume",
 ]

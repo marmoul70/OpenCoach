@@ -72,3 +72,69 @@ class TargetAdherenceThresholds:
 DEFAULT_TARGET_ADHERENCE_THRESHOLDS = (
     TargetAdherenceThresholds()
 )
+
+@dataclass(frozen=True, slots=True)
+class StructureAssessmentThresholds:
+    """Seuils déterministes d'évaluation du fractionné."""
+
+    repetition_partial_percent: float = 80.0
+
+    work_distance_compliant_percent: float = 10.0
+    work_distance_partial_percent: float = 20.0
+
+    work_duration_partial_percent: float = 10.0
+
+    recovery_compliant_percent: float = 15.0
+    recovery_partial_percent: float = 30.0
+
+    regularity_compliant_percent: float = 5.0
+    regularity_partial_percent: float = 10.0
+
+    degradation_compliant_percent: float = 5.0
+    degradation_partial_percent: float = 10.0
+
+    def __post_init__(self) -> None:
+        if not (
+            0.0
+            <= self.repetition_partial_percent
+            <= 100.0
+        ):
+            raise ValueError(
+                "Le seuil partiel de répétitions "
+                "doit être compris entre 0 et 100."
+            )
+
+        pairs = (
+            (
+                self.work_distance_compliant_percent,
+                self.work_distance_partial_percent,
+            ),
+            (
+                self.recovery_compliant_percent,
+                self.recovery_partial_percent,
+            ),
+            (
+                self.regularity_compliant_percent,
+                self.regularity_partial_percent,
+            ),
+            (
+                self.degradation_compliant_percent,
+                self.degradation_partial_percent,
+            ),
+        )
+
+        for compliant, partial in pairs:
+            if compliant < 0 or partial < compliant:
+                raise ValueError(
+                    "Les seuils structurels sont invalides."
+                )
+
+        if self.work_duration_partial_percent < 0:
+            raise ValueError(
+                "La tolérance de durée ne peut pas être négative."
+            )
+
+
+DEFAULT_STRUCTURE_THRESHOLDS = (
+    StructureAssessmentThresholds()
+)

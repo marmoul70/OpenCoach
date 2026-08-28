@@ -22,6 +22,7 @@ from .models import (
     SessionExecutionVolumeAssessment,
 )
 from .status import AssessmentStatus
+from .structure import assess_session_structure
 from .thresholds import (
     DEFAULT_VOLUME_THRESHOLDS,
     VolumeAssessmentThresholds,
@@ -68,8 +69,9 @@ def analyze_session_execution(
         activity,
     )
 
-    structure = (
-        SessionExecutionStructureAssessment()
+    structure = assess_session_structure(
+        session,
+        activity_detail,
     )
 
     overall_status = _resolve_overall_status(

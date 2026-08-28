@@ -1,3 +1,4 @@
+from .structure import assess_session_structure
 from .stream_analysis import (
     StreamRangeAnalysis,
     calculate_time_in_range,
@@ -64,6 +65,7 @@ __all__ = [
     "SessionExecutionVolumeAssessment",
     "VolumeAssessmentThresholds",
     "assess_session_intensity",
+    "assess_session_structure",
     "assess_session_load",
     "assess_session_volume",
 ]

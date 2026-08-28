@@ -10,6 +10,7 @@ from opencoach.database.models import AthleteProfile, User
 from opencoach.database.repositories import (
     ActivityRepositoryError,
     IntegrationConnectionRepositoryError,
+    SqlActivityDetailRepository,
     SqlActivityRepository,
     SqlIntegrationConnectionRepository,
     SqlWellnessRepository,
@@ -156,12 +157,18 @@ def get_intervals_application_service(
     )
 
     activity_repository = SqlActivityRepository(db)
+    activity_detail_repository = (
+        SqlActivityDetailRepository(db)
+    )
     wellness_repository = SqlWellnessRepository(db)
 
     sync_service = IntervalsSyncService(
         client=client,
         repository=activity_repository,
         wellness_repository=wellness_repository,
+        activity_detail_repository=(
+            activity_detail_repository
+        ),
     )
 
     return IntervalsApplicationService(

@@ -331,6 +331,290 @@ export async function fetchAvailableTrainingActivities(
   }))
 }
 
+export interface SessionExecutionMetric {
+  key: string
+  label: string
+
+  importance: string
+  status: string
+
+  targetMinimum?: number
+  targetMaximum?: number
+  unit?: string
+
+  actualValue?: number
+  delta?: number
+  deltaPercent?: number
+
+  message?: string
+}
+
+
+export interface SessionExecutionDebrief {
+  id: string
+
+  trainingSessionId: string
+  activityId: string
+
+  goalType: string
+  overallStatus: string
+  technicalStatus?: string
+
+  objective: string
+
+  metrics: SessionExecutionMetric[]
+
+  strengths: string[]
+  attentionPoints: string[]
+
+  debriefing: string
+
+  derivedResults: Array<{
+    key: string
+    value: number
+  }>
+
+  analyzedAt: string
+}
+
+
+interface SessionExecutionMetricApiResponse {
+  key: string
+  label: string
+
+  importance: string
+  status: string
+
+  target_minimum: number | null
+  target_maximum: number | null
+  unit: string | null
+
+  actual_value: number | null
+  delta: number | null
+  delta_percent: number | null
+
+  message: string | null
+}
+
+
+interface SessionExecutionDebriefApiResponse {
+  id: string
+
+  training_session_id: string
+  activity_id: string
+
+  goal_type: string
+  overall_status: string
+  technical_status: string | null
+
+  objective: string
+
+  metrics: SessionExecutionMetricApiResponse[]
+
+  strengths: string[]
+  attention_points: string[]
+
+  debriefing: string
+
+  derived_results: Array<{
+    key: string
+    value: number
+  }>
+
+  analyzed_at: string
+}
+
+
+interface TrainingSessionValidationApiResponse {
+  session: TrainingSessionApiResponse
+
+  analysis: SessionExecutionDebriefApiResponse
+}
+
+
+export interface TrainingSessionValidationResult {
+  session: TrainingSession
+
+  analysis: SessionExecutionDebrief
+}
+
+
+function mapSessionExecutionDebrief(
+  data: SessionExecutionDebriefApiResponse,
+): SessionExecutionDebrief {
+  return {
+    id: data.id,
+
+    trainingSessionId:
+      data.training_session_id,
+
+    activityId:
+      data.activity_id,
+
+    goalType:
+      data.goal_type,
+
+    overallStatus:
+      data.overall_status,
+
+    technicalStatus:
+      data.technical_status ?? undefined,
+
+    objective:
+      data.objective,
+
+    metrics:
+      data.metrics.map(
+        (metric) => ({
+          key: metric.key,
+          label: metric.label,
+
+          importance:
+            metric.importance,
+
+          status:
+            metric.status,
+
+          targetMinimum:
+            metric.target_minimum
+            ?? undefined,
+
+          targetMaximum:
+            metric.target_maximum
+            ?? undefined,
+
+          unit:
+            metric.unit
+            ?? undefined,
+
+          actualValue:
+            metric.actual_value
+            ?? undefined,
+
+          delta:
+            metric.delta
+            ?? undefined,
+
+          deltaPercent:
+            metric.delta_percent
+            ?? undefined,
+
+          message:
+            metric.message
+            ?? undefined,
+        }),
+      ),
+
+    strengths:
+      data.strengths,
+
+    attentionPoints:
+      data.attention_points,
+
+    debriefing:
+      data.debriefing,
+
+    derivedResults:
+      data.derived_results,
+
+    analyzedAt:
+      data.analyzed_at,
+  }
+}
+
+
+export async function validateTrainingSession(
+  sessionId: string,
+  activityId: string,
+): Promise<TrainingSessionValidationResult> {
+  const response = await fetch(
+    `/api/training-sessions/${sessionId}/validate`,
+    {
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/json',
+      },
+
+      body: JSON.stringify({
+        activity_id: activityId,
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    let detail:
+      string | undefined
+
+    try {
+      const payload = (
+        await response.json()
+      ) as {
+        detail?: string
+      }
+
+      detail = payload.detail
+    } catch {
+      detail = undefined
+    }
+
+    throw new Error(
+      detail
+      ?? (
+        'Impossible de valider '
+        + `la séance (${response.status}).`
+      ),
+    )
+  }
+
+  const data = (
+    await response.json()
+  ) as TrainingSessionValidationApiResponse
+
+  return {
+    session:
+      mapTrainingSession(
+        data.session,
+      ),
+
+    analysis:
+      mapSessionExecutionDebrief(
+        data.analysis,
+      ),
+  }
+}
+
+
+export async function fetchTrainingSessionDebrief(
+  sessionId: string,
+): Promise<SessionExecutionDebrief | null> {
+  const response = await fetch(
+    `/api/training-sessions/${sessionId}/debrief`,
+  )
+
+  if (response.status === 404) {
+    return null
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      (
+        'Impossible de charger '
+        + `le débriefing (${response.status}).`
+      ),
+    )
+  }
+
+  const data = (
+    await response.json()
+  ) as SessionExecutionDebriefApiResponse
+
+  return mapSessionExecutionDebrief(
+    data,
+  )
+}
+
+
 interface TrainingStatsApiResponse {
   start_date: string
   end_date: string

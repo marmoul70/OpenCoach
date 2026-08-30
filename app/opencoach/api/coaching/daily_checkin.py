@@ -81,6 +81,9 @@ from opencoach.coaching.daily_adaptation_service import (
 from opencoach.services import (
     ProfileService,
 )
+from opencoach.planning.physiology.snapshot_service import (
+    PhysiologicalCalibrationSnapshotService,
+)
 
 from opencoach.database.repositories.daily_adaptation import (
     DailyAdaptationRepository,
@@ -99,6 +102,7 @@ from .dependencies import (
     get_daily_session_replanning_service,
     get_daily_session_rescheduling_application_service,
     get_daily_session_rescheduling_service,
+    get_physiological_snapshot_service,
     get_training_session_repository,
 )
 
@@ -539,6 +543,9 @@ def accept_daily_adaptation(
     profile_service: ProfileService = Depends(
         get_profile_service
     ),
+    physiology_service: PhysiologicalCalibrationSnapshotService = Depends(
+        get_physiological_snapshot_service
+    ),
     rescheduling_service: DailySessionReschedulingService = Depends(
         get_daily_session_rescheduling_service
     ),
@@ -762,7 +769,13 @@ def accept_daily_adaptation(
         ApplyAcceptedDailyAdaptationService(
             training_session_repository=(
                 training_session_repository
-            )
+            ),
+            profile_service=(
+                profile_service
+            ),
+            physiology_service=(
+                physiology_service
+            ),
         )
     )
 

@@ -23,14 +23,31 @@ from opencoach.database.repositories import (
     SqlTrainingSessionRepository,
     TrainingSessionRepositoryError,
 )
+from opencoach.database.repositories.sql_activity import (
+    SqlActivityRepository,
+)
+from opencoach.database.repositories.sql_activity_detail import (
+    SqlActivityDetailRepository,
+)
+from opencoach.database.repositories.sql_session_execution_analysis import (
+    SqlSessionExecutionAnalysisRepository,
+)
+from opencoach.database.repositories.sql_training_session_validation import (
+    SqlTrainingSessionValidationWriter,
+    TrainingSessionValidationPersistenceError,
+)
 from opencoach.database.session import get_db
 from opencoach.schemas.training_session import (
+    SessionExecutionDebriefResponse,
+    SessionExecutionMetricResponse,
     TrainingActivityCandidateResponse,
+    TrainingAvailableActivityResponse,
     TrainingSessionActivityUpdate,
+    TrainingSessionCreate,
     TrainingSessionResponse,
     TrainingSessionStatusUpdate,
-    TrainingSessionCreate,
-    TrainingAvailableActivityResponse,
+    TrainingSessionValidateRequest,
+    TrainingSessionValidationResponse,
 )
 from opencoach.config import (
     get_threshold_settings,
@@ -39,6 +56,14 @@ from opencoach.training import (
     match_activity_to_session,
 )
 from opencoach.models import TrainingSession
+from opencoach.training.session_execution.validation_service import (
+    TrainingSessionActivityNotFoundError,
+    TrainingSessionAlreadyValidatedError,
+    TrainingSessionInvalidPrescriptionError,
+    TrainingSessionMissingActivityDetailError,
+    TrainingSessionNotFoundError,
+    ValidateTrainingSessionService,
+)
 
 router = APIRouter(
     prefix="/api/training-sessions",
@@ -76,6 +101,85 @@ def to_response(
     )
 
 
+
+
+def _debrief_response(
+    analysis,
+) -> SessionExecutionDebriefResponse:
+    """Convertit un débriefing persistant vers l'API."""
+
+    return SessionExecutionDebriefResponse(
+        id=analysis.id,
+        training_session_id=(
+            analysis.training_session_id
+        ),
+        activity_id=analysis.activity_id,
+        goal_type=analysis.goal_type,
+        overall_status=(
+            analysis.overall_status
+        ),
+        technical_status=(
+            analysis.technical_status
+        ),
+        objective=analysis.objective,
+        metrics=[
+            SessionExecutionMetricResponse(
+                key=metric["key"],
+                label=metric["label"],
+                importance=(
+                    metric["importance"]
+                ),
+                status=metric["status"],
+                target_minimum=(
+                    metric.get(
+                        "target_minimum"
+                    )
+                ),
+                target_maximum=(
+                    metric.get(
+                        "target_maximum"
+                    )
+                ),
+                unit=metric.get("unit"),
+                actual_value=(
+                    metric.get(
+                        "actual_value"
+                    )
+                ),
+                delta=metric.get(
+                    "delta"
+                ),
+                delta_percent=(
+                    metric.get(
+                        "delta_percent"
+                    )
+                ),
+                message=metric.get(
+                    "message"
+                ),
+            )
+            for metric
+            in analysis.metrics
+        ],
+        strengths=list(
+            analysis.strengths
+        ),
+        attention_points=list(
+            analysis.attention_points
+        ),
+        debriefing=analysis.debriefing,
+        derived_results=[
+            {
+                "key": key,
+                "value": value,
+            }
+            for key, value
+            in analysis.derived_results
+        ],
+        analyzed_at=(
+            analysis.analyzed_at
+        ),
+    )
 
 
 class SessionGuidanceIntensityTargetResponse(
@@ -671,4 +775,177 @@ def get_training_session_guidance(
         analysis_targets=list(
             guidance.analysis_targets
         ),
+    )
+
+
+@router.post(
+    "/{session_id}/validate",
+    response_model=(
+        TrainingSessionValidationResponse
+    ),
+)
+def validate_training_session(
+    session_id: UUID,
+    payload: TrainingSessionValidateRequest,
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id
+    ),
+    db: Session = Depends(
+        get_db
+    ),
+) -> TrainingSessionValidationResponse:
+    """Valide l'activité choisie explicitement par l'athlète."""
+
+    service = ValidateTrainingSessionService(
+        training_session_repository=(
+            SqlTrainingSessionRepository(
+                db
+            )
+        ),
+        activity_repository=(
+            SqlActivityRepository(
+                db
+            )
+        ),
+        activity_detail_repository=(
+            SqlActivityDetailRepository(
+                db
+            )
+        ),
+        validation_writer=(
+            SqlTrainingSessionValidationWriter(
+                db
+            )
+        ),
+    )
+
+    try:
+        result = service.execute(
+            athlete_profile_id=(
+                athlete_profile_id
+            ),
+            training_session_id=(
+                session_id
+            ),
+            activity_id=(
+                payload.activity_id
+            ),
+        )
+
+    except (
+        TrainingSessionNotFoundError
+    ) as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+
+    except (
+        TrainingSessionActivityNotFoundError
+    ) as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        ) from exc
+
+    except (
+        TrainingSessionAlreadyValidatedError
+    ) as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    except (
+        TrainingSessionMissingActivityDetailError
+    ) as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    except (
+        TrainingSessionInvalidPrescriptionError
+    ) as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    except (
+        TrainingSessionValidationPersistenceError
+    ) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Impossible de valider "
+                "la séance."
+            ),
+        ) from exc
+
+    return TrainingSessionValidationResponse(
+        session=to_response(
+            result.session
+        ),
+        analysis=_debrief_response(
+            result.analysis
+        ),
+    )
+
+
+@router.get(
+    "/{session_id}/debrief",
+    response_model=(
+        SessionExecutionDebriefResponse
+    ),
+)
+def get_training_session_debrief(
+    session_id: UUID,
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id
+    ),
+    db: Session = Depends(
+        get_db
+    ),
+) -> SessionExecutionDebriefResponse:
+    """Retourne le débriefing d'une séance validée."""
+
+    repository = (
+        SqlSessionExecutionAnalysisRepository(
+            db
+        )
+    )
+
+    try:
+        analysis = (
+            repository.get_for_session(
+                athlete_profile_id=(
+                    athlete_profile_id
+                ),
+                training_session_id=(
+                    session_id
+                ),
+            )
+        )
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Impossible de charger "
+                "le débriefing."
+            ),
+        ) from exc
+
+    if analysis is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Aucun débriefing n'existe "
+                "pour cette séance."
+            ),
+        )
+
+    return _debrief_response(
+        analysis
     )

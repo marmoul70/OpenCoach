@@ -1,3 +1,4 @@
+from datetime import datetime
 from datetime import date
 from uuid import UUID
 
@@ -122,3 +123,60 @@ class TrainingAvailableActivityResponse(BaseModel):
 
     training_load: float | None = None
     feel: int | None = None
+
+
+class TrainingSessionValidateRequest(BaseModel):
+    """Activité choisie explicitement par l'athlète."""
+
+    activity_id: UUID
+
+
+class SessionExecutionMetricResponse(BaseModel):
+    key: str
+    label: str
+
+    importance: str
+    status: str
+
+    target_minimum: float | None = None
+    target_maximum: float | None = None
+    unit: str | None = None
+
+    actual_value: float | None = None
+    delta: float | None = None
+    delta_percent: float | None = None
+
+    message: str | None = None
+
+
+class SessionExecutionDebriefResponse(BaseModel):
+    id: UUID
+
+    training_session_id: UUID
+    activity_id: UUID
+
+    goal_type: str
+    overall_status: str
+    technical_status: str | None
+
+    objective: str
+
+    metrics: list[
+        SessionExecutionMetricResponse
+    ]
+
+    strengths: list[str]
+    attention_points: list[str]
+
+    debriefing: str
+
+    derived_results: list[
+        dict
+    ]
+
+    analyzed_at: datetime
+
+
+class TrainingSessionValidationResponse(BaseModel):
+    session: TrainingSessionResponse
+    analysis: SessionExecutionDebriefResponse

@@ -139,8 +139,7 @@ export function TrainingWeek() {
 
   const {
     sessions,
-    updateSessionStatus,
-    updateSessionActivity,
+    validateSession,
   } = useTrainingSessions()
 
   const [
@@ -228,6 +227,19 @@ export function TrainingWeek() {
     getWeekSessions(
       sessions,
     )
+
+  const todayDay =
+    weekDays.find(
+      (day) =>
+        day.isToday,
+    )
+
+  const otherWeekDays =
+    weekDays.filter(
+      (day) =>
+        !day.isToday,
+    )
+
 
   const weekStartDate =
     weekDays.at(0)?.date
@@ -480,6 +492,211 @@ export function TrainingWeek() {
 
         <section className="mt-7 space-y-4">
 
+          {todayDay && (
+            <section
+              aria-label="Entraînement du jour"
+              className="
+                rounded-2xl
+                border
+                border-primary/25
+                bg-primary/5
+                p-4
+                sm:p-5
+              "
+            >
+              <div
+                className="
+                  flex
+                  items-center
+                  justify-between
+                  gap-4
+                "
+              >
+                <div>
+                  <p
+                    className="
+                      text-xs
+                      font-semibold
+                      uppercase
+                      tracking-wide
+                      text-primary
+                    "
+                  >
+                    Aujourd’hui
+                  </p>
+
+                  <p
+                    className="
+                      mt-1
+                      text-sm
+                      text-base-content/55
+                    "
+                  >
+                    Votre entraînement prévu
+                    pour aujourd’hui.
+                  </p>
+                </div>
+
+                <span
+                  className="
+                    badge
+                    badge-primary
+                    badge-outline
+                  "
+                >
+                  {
+                    todayDay.sessions.length
+                  } séance{
+                    todayDay.sessions.length > 1
+                      ? 's'
+                      : ''
+                  }
+                </span>
+              </div>
+
+              <div
+                className="
+                  mt-4
+                  space-y-2
+                "
+              >
+                {todayDay.sessions.length === 0 && (
+                  <div
+                    className="
+                      rounded-xl
+                      bg-base-100/70
+                      px-4 py-3
+                      text-sm
+                      text-base-content/55
+                    "
+                  >
+                    Aucune séance prévue aujourd’hui.
+                  </div>
+                )}
+
+                {todayDay.sessions.map(
+                  (session) => (
+                    <button
+                      key={session.id}
+                      type="button"
+                      onClick={() =>
+                        openSession(
+                          session.id,
+                        )
+                      }
+                      className="
+                        flex
+                        w-full
+                        items-center
+                        justify-between
+                        gap-4
+                        rounded-xl
+                        border
+                        border-base-300
+                        bg-base-100
+                        px-4 py-3
+                        text-left
+                        transition
+                        hover:border-primary/40
+                        hover:bg-base-100
+                      "
+                    >
+                      <div className="min-w-0">
+                        <div
+                          className="
+                            flex
+                            flex-wrap
+                            items-center
+                            gap-2
+                          "
+                        >
+                          <p
+                            className="
+                              truncate
+                              font-semibold
+                              text-base-content
+                            "
+                          >
+                            {session.title}
+                          </p>
+
+                          <span
+                            className={[
+                              'badge badge-sm',
+                              session.status
+                              === 'completed'
+                                ? 'badge-success'
+                                : (
+                                  session.status
+                                  === 'skipped'
+                                    ? 'badge-error'
+                                    : 'badge-warning'
+                                ),
+                            ].join(' ')}
+                          >
+                            {
+                              session.status
+                              === 'completed'
+                                ? 'Analysée'
+                                : (
+                                  session.status
+                                  === 'skipped'
+                                    ? 'Non réalisée'
+                                    : 'À faire'
+                                )
+                            }
+                          </span>
+                        </div>
+
+                        <p
+                          className="
+                            mt-1
+                            text-sm
+                            text-base-content/50
+                          "
+                        >
+                          {session.type === 'rest'
+                            ? 'Repos'
+                            : (
+                              `${session.durationMinutes} min`
+                            )}
+
+                          {session.intensity
+                            ? (
+                              ` · ${
+                                formatTrainingIntensity(
+                                  session.intensity,
+                                )
+                              }`
+                            )
+                            : ''}
+
+                          {session.heartRateZone
+                            ? (
+                              ` · ${session.heartRateZone}`
+                            )
+                            : ''}
+                        </p>
+                      </div>
+
+                      <span
+                        className="
+                          shrink-0
+                          text-sm
+                          font-semibold
+                          text-primary
+                        "
+                      >
+                        Ouvrir
+                      </span>
+                    </button>
+                  ),
+                )}
+              </div>
+            </section>
+          )}
+
+
           {weeklyAssessment && (
             <section
               aria-label="Synthèse de la semaine"
@@ -670,16 +887,38 @@ export function TrainingWeek() {
                   Statistiques générales
               --------------------------------------------- */}
 
-              <div
+              <details
                 className="
-                  grid
-                  border-t border-base-300
-                  divide-y divide-base-300
-                  sm:grid-cols-[1fr_1fr_1.4fr]
-                  sm:divide-x
-                  sm:divide-y-0
+                  border-t
+                  border-base-300
                 "
               >
+                <summary
+                  className="
+                    cursor-pointer
+                    list-none
+                    px-4 py-3
+                    text-sm
+                    font-medium
+                    text-base-content/60
+                    sm:px-5
+                  "
+                >
+                  Statistiques générales
+                </summary>
+
+                <div
+                  className="
+                    grid
+                    border-t
+                    border-base-300
+                    divide-y
+                    divide-base-300
+                    sm:grid-cols-2
+                    sm:divide-x
+                    sm:divide-y-0
+                  "
+                >
 
                 <CompactOverviewItem
                   icon={Route}
@@ -704,34 +943,134 @@ export function TrainingWeek() {
                   label="Séances réalisées"
                 />
 
-                <CompactOverviewItem
-                  icon={Trophy}
-                  value={
-                    nextPrimaryRace?.name
-                    ?? 'Aucun objectif'
-                  }
-                  label={
-                    nextPrimaryRace
-                      ? (
-                          `${formatRaceDate(
-                            nextPrimaryRace.date,
-                          )} · ${
-                            nextPrimaryRace.distanceKm
-                          } km`
-                        )
-                      : 'Aucune course prioritaire'
-                  }
-                  wide
-                />
 
-              </div>
+                </div>
+              </details>
 
             </section>
           )}
 
 
-          <div className="space-y-3">
-            {weekDays.map(
+          <section
+            aria-label="Objectif principal"
+            className="
+              rounded-2xl
+              border
+              border-base-300
+              bg-base-100
+              px-4 py-4
+              sm:px-5
+            "
+          >
+            <div
+              className="
+                flex
+                items-center
+                gap-3
+              "
+            >
+              <div
+                className="
+                  flex
+                  size-10
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-xl
+                  bg-primary/10
+                  text-primary
+                "
+              >
+                <Trophy
+                  size={19}
+                  strokeWidth={2}
+                />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p
+                  className="
+                    text-xs
+                    font-semibold
+                    uppercase
+                    tracking-wide
+                    text-base-content/40
+                  "
+                >
+                  Objectif
+                </p>
+
+                <p
+                  className="
+                    mt-0.5
+                    truncate
+                    font-semibold
+                    text-base-content
+                  "
+                >
+                  {
+                    nextPrimaryRace?.name
+                    ?? 'Aucun objectif prioritaire'
+                  }
+                </p>
+
+                {nextPrimaryRace && (
+                  <p
+                    className="
+                      mt-0.5
+                      text-sm
+                      text-base-content/50
+                    "
+                  >
+                    {formatRaceDate(
+                      nextPrimaryRace.date,
+                    )}
+
+                    {' · '}
+
+                    {
+                      nextPrimaryRace.distanceKm
+                    } km
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
+
+
+          <div>
+            <div
+              className="
+                mb-3
+                flex
+                items-center
+                justify-between
+              "
+            >
+              <div>
+                <h2
+                  className="
+                    font-semibold
+                    text-base-content
+                  "
+                >
+                  Cette semaine
+                </h2>
+
+                <p
+                  className="
+                    mt-0.5
+                    text-sm
+                    text-base-content/45
+                  "
+                >
+                  Les autres séances du planning.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+            {otherWeekDays.map(
               ({
                 label,
                 date,
@@ -763,6 +1102,7 @@ export function TrainingWeek() {
                 />
               ),
             )}
+            </div>
           </div>
         </section>
       </div>
@@ -782,25 +1122,18 @@ export function TrainingWeek() {
             session={
               selectedSession
             }
-            onStatusChange={async (
-              status,
-            ) => {
-              await updateSessionStatus(
-                selectedSession.id,
-                status,
-              )
-
-              await loadStats()
-            }}
-            onActivityChange={async (
+            onValidateSession={async (
               activityId,
             ) => {
-              await updateSessionActivity(
-                selectedSession.id,
-                activityId,
-              )
+              const analysis =
+                await validateSession(
+                  selectedSession.id,
+                  activityId,
+                )
 
               await loadStats()
+
+              return analysis
             }}
           />
         </Modal>

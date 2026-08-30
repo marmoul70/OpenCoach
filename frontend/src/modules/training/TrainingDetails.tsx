@@ -3,23 +3,28 @@ import {
   Check,
   Clock3,
   Gauge,
-  Link2,
   MapPin,
   Mountain,
   Star,
-  Unlink,
   X,
 } from 'lucide-react'
 
 import {
   useEffect,
+  useRef,
   useState,
 } from 'react'
 
 import {
   fetchTrainingSessionActivityCandidates,
+  fetchTrainingSessionDebrief,
+  type SessionExecutionDebrief,
   type TrainingActivityCandidate,
 } from '../../core/training/api'
+
+import {
+  useToast,
+} from '../../components/ui/ToastProvider'
 
 import type {
   TrainingSession,
@@ -43,21 +48,24 @@ import {
 interface TrainingDetailsProps {
   session: TrainingSession
 
-  onStatusChange: (
-    status: TrainingSession['status'],
-  ) => Promise<void>
-
-  onActivityChange: (
-    activityId: string | null,
-  ) => Promise<void>
+  onValidateSession: (
+    activityId: string,
+  ) => Promise<SessionExecutionDebrief>
 }
 
 
 export function TrainingDetails({
   session,
-  onStatusChange,
-  onActivityChange,
+  onValidateSession,
 }: TrainingDetailsProps) {
+  const {
+    toast,
+  } = useToast()
+
+  const debriefRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    )
   const [
     activities,
     setActivities,
@@ -78,11 +86,39 @@ export function TrainingDetails({
   )
 
   const [
-    savingActivityId,
-    setSavingActivityId,
+    selectedActivityId,
+    setSelectedActivityId,
+  ] = useState<string | null>(
+    session.activityId ?? null,
+  )
+
+  const [
+    validating,
+    setValidating,
+  ] = useState(false)
+
+  const [
+    validationError,
+    setValidationError,
   ] = useState<string | null>(
     null,
   )
+
+  const [
+    debrief,
+    setDebrief,
+  ] = useState<
+    SessionExecutionDebrief
+    | null
+  >(null)
+
+  const [
+    loadingDebrief,
+    setLoadingDebrief,
+  ] = useState(
+    session.status === 'completed',
+  )
+
 
   const [
     guidance,
@@ -104,10 +140,13 @@ export function TrainingDetails({
     null,
   )
 
-  const [
-    savingStatus,
-    setSavingStatus,
-  ] = useState(false)
+  useEffect(() => {
+    setSelectedActivityId(
+      session.activityId ?? null,
+    )
+  }, [
+    session.activityId,
+  ])
 
 
   useEffect(() => {
@@ -164,6 +203,53 @@ export function TrainingDetails({
 
   useEffect(() => {
     if (
+      session.status !== 'completed'
+    ) {
+      setDebrief(null)
+      setLoadingDebrief(false)
+      return
+    }
+
+    let mounted = true
+
+    setLoadingDebrief(true)
+
+    fetchTrainingSessionDebrief(
+      session.id,
+    )
+      .then((result) => {
+        if (!mounted) {
+          return
+        }
+
+        setDebrief(
+          result,
+        )
+      })
+      .catch(() => {
+        if (!mounted) {
+          return
+        }
+
+        setDebrief(null)
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoadingDebrief(false)
+        }
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [
+    session.id,
+    session.status,
+  ])
+
+
+  useEffect(() => {
+    if (
       session.type === 'rest'
     ) {
       setLoadingActivities(false)
@@ -214,56 +300,84 @@ export function TrainingDetails({
   ])
 
 
-  async function handleActivityChange(
+  function handleActivitySelect(
     activityId: string,
   ) {
-    setActivityError(null)
+    if (
+      session.status === 'completed'
+    ) {
+      return
+    }
 
-    const nextActivityId =
-      session.activityId
-      === activityId
-        ? null
-        : activityId
+    setValidationError(null)
 
-    setSavingActivityId(
-      activityId,
+    setSelectedActivityId(
+      current =>
+        current === activityId
+          ? null
+          : activityId,
     )
+  }
+
+
+  async function handleValidateSession() {
+    if (!selectedActivityId) {
+      setValidationError(
+        'Sélectionnez une activité réalisée.',
+      )
+      return
+    }
+
+    setValidationError(null)
+    setValidating(true)
 
     try {
-      await onActivityChange(
-        nextActivityId,
+      const result =
+        await onValidateSession(
+          selectedActivityId,
+        )
+
+      setDebrief(
+        result,
       )
+
+      toast({
+        type: 'success',
+        title: 'Séance analysée',
+        message: (
+          'Le débriefing du coach '
+          + 'est disponible.'
+        ),
+        duration: 8000,
+        actionLabel:
+          'Voir le débriefing',
+        onAction: () => {
+          window.requestAnimationFrame(
+            () => {
+              debriefRef.current
+                ?.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'start',
+                })
+            },
+          )
+        },
+      })
     } catch (reason) {
-      setActivityError(
+      setValidationError(
         reason instanceof Error
           ? reason.message
           : (
-              "Impossible d'associer "
-              + "l'activité."
+              'Impossible de valider '
+              + 'la séance.'
             ),
       )
     } finally {
-      setSavingActivityId(
-        null,
-      )
+      setValidating(false)
     }
   }
 
 
-  async function handleStatusChange(
-    status:
-      TrainingSession['status'],
-  ) {
-    setSavingStatus(true)
-
-    try {
-      await onStatusChange(
-        status,
-      )
-    } finally {
-      setSavingStatus(false)
-    }
-  }
 
 
   return (
@@ -304,11 +418,74 @@ export function TrainingDetails({
 
         {!loadingGuidance
           && guidance && (
-            <SessionGuidancePanel
-              guidance={
-                guidance
-              }
-            />
+            <details
+              className="
+                group
+                rounded-xl
+                border
+                border-base-300
+                bg-base-100
+              "
+            >
+              <summary
+                className="
+                  cursor-pointer
+                  list-none
+                  px-4 py-3
+                  font-semibold
+                  text-base-content
+                "
+              >
+                <div
+                  className="
+                    flex items-center
+                    justify-between
+                    gap-3
+                  "
+                >
+                  <div>
+                    <p>
+                      Déroulé de la séance
+                    </p>
+
+                    <p
+                      className="
+                        mt-0.5
+                        text-xs
+                        font-normal
+                        text-base-content/45
+                      "
+                    >
+                      Échauffement, bloc principal,
+                      récupération et conseils.
+                    </p>
+                  </div>
+
+                  <span
+                    className="
+                      text-sm
+                      text-primary
+                    "
+                  >
+                    Voir
+                  </span>
+                </div>
+              </summary>
+
+              <div
+                className="
+                  border-t
+                  border-base-300
+                  p-4
+                "
+              >
+                <SessionGuidancePanel
+                  guidance={
+                    guidance
+                  }
+                />
+              </div>
+            </details>
           )}
 
         {!loadingGuidance
@@ -338,24 +515,44 @@ export function TrainingDetails({
             error={
               activityError
             }
-            savingActivityId={
-              savingActivityId
+            selectedActivityId={
+              selectedActivityId
             }
-            onActivityChange={
-              handleActivityChange
+            validating={
+              validating
+            }
+            validationError={
+              validationError
+            }
+            onActivitySelect={
+              handleActivitySelect
+            }
+            onValidate={() =>
+              void handleValidateSession()
             }
           />
         )}
 
-      <StatusSection
-        session={session}
-        saving={
-          savingStatus
-        }
-        onChange={
-          handleStatusChange
-        }
-      />
+      {(loadingDebrief || debrief) && (
+        <div
+          ref={
+            debriefRef
+          }
+          className="
+            scroll-mt-4
+          "
+        >
+          <DebriefSection
+            loading={
+              loadingDebrief
+            }
+            debrief={
+              debrief
+            }
+          />
+        </div>
+      )}
+
     </div>
   )
 }
@@ -590,12 +787,19 @@ interface ActivitySectionProps {
   error:
     string | null
 
-  savingActivityId:
+  selectedActivityId:
     string | null
 
-  onActivityChange: (
+  validating: boolean
+
+  validationError:
+    string | null
+
+  onActivitySelect: (
     activityId: string,
-  ) => Promise<void>
+  ) => void
+
+  onValidate: () => void
 }
 
 
@@ -604,9 +808,15 @@ function ActivitySection({
   activities,
   loading,
   error,
-  savingActivityId,
-  onActivityChange,
+  selectedActivityId,
+  validating,
+  validationError,
+  onActivitySelect,
+  onValidate,
 }: ActivitySectionProps) {
+  const completed =
+    session.status === 'completed'
+
   return (
     <section
       className="
@@ -615,54 +825,27 @@ function ActivitySection({
         pt-5
       "
     >
-      <div
-        className="
-          flex flex-col
-          gap-2
-          sm:flex-row
-          sm:items-end
-          sm:justify-between
-        "
-      >
-        <div>
-          <h3
-            className="
-              font-semibold
-              text-base-content
-            "
-          >
-            Activité réalisée
-          </h3>
+      <div>
+        <h3
+          className="
+            font-semibold
+            text-base-content
+          "
+        >
+          Activité réalisée
+        </h3>
 
-          <p
-            className="
-              mt-1 text-sm
-              text-base-content/50
-            "
-          >
-            Activités Intervals.icu
-            détectées le même jour.
-          </p>
-        </div>
-
-        {session.activityId && (
-          <span
-            className="
-              badge
-              badge-success
-              badge-sm
-              gap-1
-            "
-          >
-            <Link2
-              size={12}
-            />
-
-            Associée
-          </span>
-        )}
+        <p
+          className="
+            mt-1 text-sm
+            text-base-content/50
+          "
+        >
+          Choisissez l&apos;activité
+          Intervals.icu correspondant
+          à cette séance.
+        </p>
       </div>
-
 
       {loading && (
         <div
@@ -694,7 +877,6 @@ function ActivitySection({
         </div>
       )}
 
-
       {!loading
         && error && (
           <div
@@ -713,11 +895,9 @@ function ActivitySection({
           </div>
         )}
 
-
       {!loading
         && !error
-        && activities.length
-        === 0 && (
+        && activities.length === 0 && (
           <div
             className="
               mt-4
@@ -742,18 +922,16 @@ function ActivitySection({
                 text-base-content/45
               "
             >
-              Synchronisez Intervals.icu
-              si votre activité vient
-              d&apos;être enregistrée.
+              La prochaine synchronisation
+              Intervals.icu pourra faire
+              apparaître votre activité.
             </p>
           </div>
         )}
 
-
       {!loading
         && !error
-        && activities.length
-        > 0 && (
+        && activities.length > 0 && (
           <div className="mt-4 space-y-2">
             {activities.map(
               (activity) => (
@@ -761,22 +939,19 @@ function ActivitySection({
                   key={
                     activity.id
                   }
-                  session={
-                    session
-                  }
                   activity={
                     activity
                   }
-                  saving={
-                    savingActivityId
+                  selected={
+                    selectedActivityId
                     === activity.id
                   }
                   disabled={
-                    savingActivityId
-                    !== null
+                    completed
+                    || validating
                   }
                   onClick={() =>
-                    void onActivityChange(
+                    onActivitySelect(
                       activity.id,
                     )
                   }
@@ -785,19 +960,94 @@ function ActivitySection({
             )}
           </div>
         )}
+
+      {validationError && (
+        <div
+          className="
+            mt-4
+            rounded-xl
+            border
+            border-error/30
+            bg-error/5
+            px-4 py-3
+            text-sm
+            text-error
+          "
+        >
+          {validationError}
+        </div>
+      )}
+
+      {!completed
+        && activities.length > 0 && (
+          <div
+            className="
+              mt-5 flex
+              justify-end
+            "
+          >
+            <button
+              type="button"
+              className="
+                btn
+                btn-primary
+              "
+              disabled={
+                !selectedActivityId
+                || validating
+              }
+              onClick={
+                onValidate
+              }
+            >
+              {validating && (
+                <span
+                  className="
+                    loading
+                    loading-spinner
+                    loading-sm
+                  "
+                />
+              )}
+
+              Valider la séance
+            </button>
+          </div>
+        )}
+
+      {completed && (
+        <div
+          className="
+            mt-4
+            flex items-center
+            gap-2
+            rounded-xl
+            border
+            border-success/30
+            bg-success/5
+            px-4 py-3
+            text-sm
+            text-success
+          "
+        >
+          <Check
+            size={16}
+          />
+
+          Séance analysée
+        </div>
+      )}
     </section>
   )
 }
 
 
 interface ActivityRowProps {
-  session:
-    TrainingSession
-
   activity:
     TrainingActivityCandidate
 
-  saving: boolean
+  selected: boolean
+
   disabled: boolean
 
   onClick: () => void
@@ -805,15 +1055,11 @@ interface ActivityRowProps {
 
 
 function ActivityRow({
-  session,
   activity,
-  saving,
+  selected,
   disabled,
   onClick,
 }: ActivityRowProps) {
-  const selected =
-    session.activityId
-    === activity.id
 
   return (
     <button
@@ -953,29 +1199,6 @@ function ActivityRow({
             %
           </span>
 
-          {saving ? (
-            <span
-              className="
-                loading
-                loading-spinner
-                loading-sm
-              "
-            />
-          ) : selected ? (
-            <Unlink
-              size={15}
-              className="
-                text-primary
-              "
-            />
-          ) : (
-            <Link2
-              size={15}
-              className="
-                text-base-content/40
-              "
-            />
-          )}
         </div>
       </div>
 
@@ -1034,24 +1257,54 @@ function ActivityRow({
 }
 
 
-interface StatusSectionProps {
-  session:
-    TrainingSession
+interface DebriefSectionProps {
+  loading: boolean
 
-  saving: boolean
-
-  onChange: (
-    status:
-      TrainingSession['status'],
-  ) => Promise<void>
+  debrief:
+    SessionExecutionDebrief
+    | null
 }
 
 
-function StatusSection({
-  session,
-  saving,
-  onChange,
-}: StatusSectionProps) {
+function DebriefSection({
+  loading,
+  debrief,
+}: DebriefSectionProps) {
+  if (loading) {
+    return (
+      <section
+        className="
+          border-t
+          border-base-300
+          pt-5
+        "
+      >
+        <div
+          className="
+            flex items-center
+            gap-2
+            text-sm
+            text-base-content/55
+          "
+        >
+          <span
+            className="
+              loading
+              loading-spinner
+              loading-sm
+            "
+          />
+
+          Chargement du débriefing…
+        </div>
+      </section>
+    )
+  }
+
+  if (!debrief) {
+    return null
+  }
+
   return (
     <section
       className="
@@ -1062,105 +1315,213 @@ function StatusSection({
     >
       <div
         className="
-          flex flex-col
-          gap-3
-          sm:flex-row
-          sm:items-center
-          sm:justify-between
+          rounded-xl
+          border
+          border-base-300
+          bg-base-100
+          p-4
         "
       >
-        <div>
-          <h3
-            className="
-              font-semibold
-              text-base-content
-            "
-          >
-            Statut
-          </h3>
-
-          <p
-            className="
-              mt-1 text-sm
-              text-base-content/50
-            "
-          >
-            Indiquez si la séance
-            a été réalisée.
-          </p>
-        </div>
-
         <div
           className="
             flex flex-wrap
-            gap-2
+            items-start
+            justify-between
+            gap-3
           "
         >
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() =>
-              void onChange(
-                'completed',
-              )
-            }
+          <div className="min-w-0">
+            <p
+              className="
+                text-xs
+                font-semibold
+                uppercase
+                tracking-wide
+                text-base-content/40
+              "
+            >
+              Débriefing coach
+            </p>
+
+            <h3
+              className="
+                mt-1
+                font-semibold
+                text-base-content
+              "
+            >
+              {debrief.objective}
+            </h3>
+          </div>
+
+          <span
             className={[
-              'btn btn-sm',
-              session.status
-              === 'completed'
-                ? 'btn-success'
-                : (
-                  'btn-success '
-                  + 'btn-outline'
-                ),
+              'badge',
+              getDebriefBadgeClass(
+                debrief.overallStatus,
+              ),
             ].join(' ')}
           >
-            {saving ? (
-              <span
-                className="
-                  loading
-                  loading-spinner
-                  loading-xs
-                "
-              />
-            ) : (
-              <Check
-                size={14}
-              />
+            {formatDebriefStatus(
+              debrief.overallStatus,
             )}
-
-            Réalisée
-          </button>
-
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() =>
-              void onChange(
-                'skipped',
-              )
-            }
-            className={[
-              'btn btn-sm',
-              session.status
-              === 'skipped'
-                ? 'btn-error'
-                : (
-                  'btn-error '
-                  + 'btn-outline'
-                ),
-            ].join(' ')}
-          >
-            <X
-              size={14}
-            />
-
-            Non réalisée
-          </button>
+          </span>
         </div>
+
+        <p
+          className="
+            mt-4
+            text-sm
+            leading-6
+            text-base-content/75
+          "
+        >
+          {debrief.debriefing}
+        </p>
+
+        {debrief.strengths.length > 0 && (
+          <div className="mt-5">
+            <p
+              className="
+                text-xs
+                font-semibold
+                uppercase
+                tracking-wide
+                text-success
+              "
+            >
+              Points forts
+            </p>
+
+            <ul
+              className="
+                mt-2
+                space-y-2
+                text-sm
+                text-base-content/70
+              "
+            >
+              {debrief.strengths.map(
+                (strength) => (
+                  <li
+                    key={strength}
+                    className="
+                      flex
+                      items-start
+                      gap-2
+                    "
+                  >
+                    <Check
+                      size={15}
+                      className="
+                        mt-0.5
+                        shrink-0
+                        text-success
+                      "
+                    />
+
+                    <span>
+                      {strength}
+                    </span>
+                  </li>
+                ),
+              )}
+            </ul>
+          </div>
+        )}
+
+        {debrief.attentionPoints.length > 0 && (
+          <div className="mt-5">
+            <p
+              className="
+                text-xs
+                font-semibold
+                uppercase
+                tracking-wide
+                text-warning
+              "
+            >
+              Points d&apos;attention
+            </p>
+
+            <ul
+              className="
+                mt-2
+                space-y-2
+                text-sm
+                text-base-content/70
+              "
+            >
+              {debrief.attentionPoints.map(
+                (point) => (
+                  <li
+                    key={point}
+                    className="
+                      flex
+                      items-start
+                      gap-2
+                    "
+                  >
+                    <span
+                      className="
+                        mt-1
+                        size-1.5
+                        shrink-0
+                        rounded-full
+                        bg-warning
+                      "
+                    />
+
+                    <span>
+                      {point}
+                    </span>
+                  </li>
+                ),
+              )}
+            </ul>
+          </div>
+        )}
       </div>
     </section>
   )
+}
+
+
+function getDebriefBadgeClass(
+  status: string,
+): string {
+  switch (status) {
+    case 'compliant':
+      return 'badge-success'
+
+    case 'partial':
+      return 'badge-warning'
+
+    case 'non_compliant':
+      return 'badge-error'
+
+    default:
+      return 'badge-ghost'
+  }
+}
+
+
+function formatDebriefStatus(
+  status: string,
+): string {
+  switch (status) {
+    case 'compliant':
+      return 'Objectif respecté'
+
+    case 'partial':
+      return 'Partiellement respecté'
+
+    case 'non_compliant':
+      return 'Objectif non respecté'
+
+    default:
+      return status
+  }
 }
 
 

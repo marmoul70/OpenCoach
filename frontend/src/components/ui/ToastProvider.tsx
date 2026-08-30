@@ -28,6 +28,9 @@ interface ToastInput {
   title: string
   message?: string
   duration?: number | null
+
+  actionLabel?: string
+  onAction?: () => void
 }
 
 
@@ -101,6 +104,12 @@ export function ToastProvider({
             input.duration !== undefined
               ? input.duration
               : 5000,
+
+          actionLabel:
+            input.actionLabel,
+
+          onAction:
+            input.onAction,
         }
 
         setToasts(
@@ -225,6 +234,24 @@ function ToastNotification({
           </p>
         )}
       </div>
+
+      {toast.actionLabel && toast.onAction && (
+        <button
+          type="button"
+          className="
+            btn
+            btn-sm
+            btn-ghost
+            shrink-0
+          "
+          onClick={() => {
+            toast.onAction?.()
+            onClose()
+          }}
+        >
+          {toast.actionLabel}
+        </button>
+      )}
 
       <button
         type="button"

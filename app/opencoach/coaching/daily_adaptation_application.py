@@ -11,7 +11,7 @@ Une seule séance planifiée doit être identifiable sans ambiguïté.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from uuid import UUID
 
 from opencoach.coaching.daily_adaptation import (
@@ -29,6 +29,22 @@ from opencoach.database.repositories.training_session import (
 )
 from opencoach.models import (
     TrainingSession,
+)
+from opencoach.planning.physiology.snapshot_service import (
+    PhysiologicalCalibrationSnapshotService,
+)
+from opencoach.planning.sessions.prescription.continuous import (
+    build_continuous_session_prescription,
+)
+from opencoach.planning.sessions.prescription.integrity import (
+    TrainingSessionPrescriptionIntegrityError,
+    validate_training_session_prescription,
+)
+from opencoach.planning.stimulus.training import (
+    TrainingStimulus,
+)
+from opencoach.services import (
+    ProfileService,
 )
 
 
@@ -56,6 +72,12 @@ class ApplyAcceptedDailyAdaptationService:
 
     training_session_repository: (
         TrainingSessionRepository
+    )
+
+    profile_service: ProfileService
+
+    physiology_service: (
+        PhysiologicalCalibrationSnapshotService
     )
 
     def execute(
@@ -124,11 +146,36 @@ class ApplyAcceptedDailyAdaptationService:
         if not result.changed:
             return result
 
+        adapted = result.adapted
+
+        if adapted.status != "skipped":
+            adapted = (
+                self._rebuild_prescription(
+                    athlete_profile_id=(
+                        athlete_profile_id
+                    ),
+                    original=result.original,
+                    adapted=adapted,
+                )
+            )
+
+        try:
+            validate_training_session_prescription(
+                adapted
+            )
+
+        except TrainingSessionPrescriptionIntegrityError as exc:
+            raise DailyAdaptationApplicationError(
+                "L'adaptation produirait une séance "
+                "dont la prescription n'est plus "
+                "cohérente avec l'objectif."
+            ) from exc
+
         persisted = (
             self.training_session_repository
             .save_session(
                 athlete_profile_id,
-                result.adapted,
+                adapted,
             )
         )
 
@@ -138,3 +185,139 @@ class ApplyAcceptedDailyAdaptationService:
             changed=True,
             reasons=result.reasons,
         )
+
+
+    def _rebuild_prescription(
+        self,
+        *,
+        athlete_profile_id: UUID,
+        original: TrainingSession,
+        adapted: TrainingSession,
+    ) -> TrainingSession:
+        """Reconstruit le contrat structuré après adaptation."""
+
+        # ------------------------------------------------------
+        # Changement réel de stimulus
+        # ------------------------------------------------------
+
+        if adapted.type != original.type:
+            try:
+                stimulus = TrainingStimulus(
+                    adapted.type
+                )
+            except ValueError as exc:
+                raise DailyAdaptationApplicationError(
+                    "Le nouveau stimulus de la séance "
+                    "n'est pas reconnu par OpenCoach."
+                ) from exc
+
+            if stimulus not in {
+                TrainingStimulus.RECOVERY,
+                TrainingStimulus.AEROBIC_EASY,
+                TrainingStimulus.AEROBIC_ENDURANCE,
+                TrainingStimulus.LONG_ENDURANCE,
+            }:
+                raise DailyAdaptationApplicationError(
+                    "L'adaptation demande une "
+                    "reconstruction de prescription "
+                    "non supportée pour ce stimulus."
+                )
+
+            athlete = (
+                self.profile_service.get_profile()
+            )
+
+            physiology = (
+                self.physiology_service.build(
+                    athlete_profile_id=(
+                        athlete_profile_id
+                    ),
+                    athlete=athlete,
+                    reference_date=adapted.date,
+                )
+            )
+
+            prescription = (
+                build_continuous_session_prescription(
+                    stimulus=stimulus,
+                    duration_minutes=(
+                        adapted.duration_minutes
+                    ),
+                    physiology=physiology,
+                )
+            )
+
+            return replace(
+                adapted,
+                prescription=prescription,
+            )
+
+        # ------------------------------------------------------
+        # Même stimulus, durée modifiée
+        # ------------------------------------------------------
+
+        if (
+            adapted.duration_minutes
+            != original.duration_minutes
+        ):
+            prescription = adapted.prescription
+
+            if not isinstance(
+                prescription,
+                dict,
+            ):
+                raise DailyAdaptationApplicationError(
+                    "La séance adaptée ne possède "
+                    "pas de prescription structurée."
+                )
+
+            work_structure = (
+                prescription.get(
+                    "work_structure"
+                )
+            )
+
+            if not isinstance(
+                work_structure,
+                dict,
+            ):
+                raise DailyAdaptationApplicationError(
+                    "La structure de travail de la "
+                    "séance est absente."
+                )
+
+            if (
+                work_structure.get("type")
+                != "continuous"
+            ):
+                raise DailyAdaptationApplicationError(
+                    "Une réduction de durée automatique "
+                    "n'est actuellement supportée que "
+                    "pour les séances continues."
+                )
+
+            updated_structure = {
+                **work_structure,
+                "available_minutes": (
+                    adapted.duration_minutes
+                ),
+                "continuous_minutes": (
+                    adapted.duration_minutes
+                ),
+            }
+
+            updated_prescription = {
+                **prescription,
+                "work_structure": (
+                    updated_structure
+                ),
+            }
+
+            return replace(
+                adapted,
+                prescription=(
+                    updated_prescription
+                ),
+            )
+
+        return adapted

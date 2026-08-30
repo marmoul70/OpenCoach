@@ -13,6 +13,11 @@ import {
   fetchTrainingSessions,
   updateTrainingSessionActivity as updateTrainingSessionActivityApi,
   updateTrainingSessionStatus as updateTrainingSessionStatusApi,
+  validateTrainingSession as validateTrainingSessionApi,
+} from '../../core/training/api'
+
+import type {
+  SessionExecutionDebrief,
 } from '../../core/training/api'
 
 import type {
@@ -44,6 +49,11 @@ interface TrainingStoreValue {
     sessionId: string,
     activityId: string | null,
   ) => Promise<void>
+
+  validateSession: (
+    sessionId: string,
+    activityId: string,
+  ) => Promise<SessionExecutionDebrief>
 
   refreshSessions: () => Promise<void>
 }
@@ -298,6 +308,43 @@ export function TrainingProvider({
   }
 
 
+  async function validateSession(
+    sessionId: string,
+    activityId: string,
+  ): Promise<SessionExecutionDebrief> {
+    setError(null)
+
+    try {
+      const result =
+        await validateTrainingSessionApi(
+          sessionId,
+          activityId,
+        )
+
+      setSessions((current) =>
+        current.map((session) =>
+          session.id === result.session.id
+            ? result.session
+            : session,
+        ),
+      )
+
+      return result.analysis
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : (
+              'Impossible de valider '
+              + 'la séance.'
+            ),
+      )
+
+      throw caughtError
+    }
+  }
+
+
   return (
     <TrainingStoreContext.Provider
       value={{
@@ -307,6 +354,7 @@ export function TrainingProvider({
         createSession,
         updateSessionStatus,
         updateSessionActivity,
+        validateSession,
         refreshSessions,
       }}
     >

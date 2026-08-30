@@ -40,3 +40,8 @@ __all__ = [
     "build_work_structure",
     "validate_intensity_policy_catalog",
 ]
+
+from .integrity import (
+    TrainingSessionPrescriptionIntegrityError,
+    validate_training_session_prescription,
+)

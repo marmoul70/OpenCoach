@@ -20,6 +20,42 @@ from opencoach.models import (
 )
 
 
+class FakeProfileService:
+    def get_profile(self):
+        from opencoach.models import (
+            AthleteProfile,
+        )
+
+        return AthleteProfile()
+
+
+class FakePhysiologyService:
+    def build(
+        self,
+        *,
+        athlete_profile_id,
+        athlete,
+        reference_date,
+    ):
+        return None
+
+
+def _adaptation_service(
+    repository,
+):
+    return ApplyAcceptedDailyAdaptationService(
+        training_session_repository=(
+            repository
+        ),
+        profile_service=(
+            FakeProfileService()
+        ),
+        physiology_service=(
+            FakePhysiologyService()
+        ),
+    )
+
+
 TODAY = date(
     2026,
     8,
@@ -121,6 +157,45 @@ def _session(
         planning_key=(
             f"2026-08-24:{slot}"
         ),
+        prescription={
+            "version": 1,
+            "blocks": [],
+            "work_structure": {
+                "type": "continuous",
+                "stimulus": "threshold",
+                "available_minutes": 60,
+                "continuous_minutes": 60,
+                "description": (
+                    "Travail continu au seuil."
+                ),
+                "circuit": None,
+                "intervals": [],
+            },
+            "intensity": {
+                "targets": [
+                    {
+                        "reference": "heart_rate",
+                        "minimum": 155,
+                        "maximum": 170,
+                        "unit": "bpm",
+                        "label": "Fréquence cardiaque seuil",
+                    },
+                    {
+                        "reference": "rpe",
+                        "minimum": 7,
+                        "maximum": 8,
+                        "unit": "/10",
+                        "label": "Perception de l'effort",
+                    },
+                ],
+                "guidance": [
+                    (
+                        "L'effort doit être soutenu "
+                        "mais contrôlé."
+                    ),
+                ],
+            },
+        },
     )
 
 
@@ -136,11 +211,9 @@ def test_accepted_proposal_adapts_unique_session() -> None:
     )
 
     service = (
-        ApplyAcceptedDailyAdaptationService(
-            training_session_repository=(
-                repository
-            )
-        )
+        _adaptation_service(
+    repository
+)
     )
 
     result = service.execute(
@@ -180,9 +253,7 @@ def test_declined_proposal_is_never_applied() -> None:
     )
 
     service = (
-        ApplyAcceptedDailyAdaptationService(
-            training_session_repository=repository
-        )
+        _adaptation_service(repository)
     )
 
     with pytest.raises(
@@ -203,11 +274,15 @@ def test_declined_proposal_is_never_applied() -> None:
 def test_missing_session_is_reported() -> None:
     checkin = _checkin()
 
+    repository = (
+        FakeTrainingSessionRepository(
+            ()
+        )
+    )
+
     service = (
-        ApplyAcceptedDailyAdaptationService(
-            training_session_repository=(
-                FakeTrainingSessionRepository()
-            )
+        _adaptation_service(
+            repository
         )
     )
 
@@ -240,9 +315,7 @@ def test_multiple_sessions_are_never_chosen_arbitrarily() -> None:
     )
 
     service = (
-        ApplyAcceptedDailyAdaptationService(
-            training_session_repository=repository
-        )
+        _adaptation_service(repository)
     )
 
     with pytest.raises(
@@ -265,15 +338,17 @@ def test_completed_session_is_not_candidate() -> None:
     session = _session()
     session.status = "completed"
 
-    service = (
-        ApplyAcceptedDailyAdaptationService(
-            training_session_repository=(
-                FakeTrainingSessionRepository(
-                    (
-                        session,
-                    )
-                )
+    repository = (
+        FakeTrainingSessionRepository(
+            (
+                session,
             )
+        )
+    )
+
+    service = (
+        _adaptation_service(
+            repository
         )
     )
 
@@ -299,15 +374,17 @@ def test_proposal_must_match_checkin() -> None:
         recommendation="Adapter ?",
     ).accept()
 
-    service = (
-        ApplyAcceptedDailyAdaptationService(
-            training_session_repository=(
-                FakeTrainingSessionRepository(
-                    (
-                        _session(),
-                    )
-                )
+    repository = (
+        FakeTrainingSessionRepository(
+            (
+                _session(),
             )
+        )
+    )
+
+    service = (
+        _adaptation_service(
+            repository
         )
     )
 
@@ -333,9 +410,9 @@ def test_unavailable_session_is_persisted_as_skipped() -> None:
         )
     )
 
-    service = ApplyAcceptedDailyAdaptationService(
-        training_session_repository=repository,
-    )
+    service = _adaptation_service(
+    repository
+)
 
     result = service.execute(
         athlete_profile_id=uuid4(),
@@ -359,4 +436,75 @@ def test_unavailable_session_is_persisted_as_skipped() -> None:
     assert (
         repository.saved[0].status
         == "skipped"
+    )
+
+
+def test_adapted_hard_session_rebuilds_aerobic_easy_prescription() -> None:
+    checkin = _checkin()
+
+    repository = (
+        FakeTrainingSessionRepository(
+            (
+                _session(),
+            )
+        )
+    )
+
+    service = (
+        _adaptation_service(
+            repository
+        )
+    )
+
+    result = service.execute(
+        athlete_profile_id=uuid4(),
+        checkin=checkin,
+        proposal=_proposal(
+            checkin
+        ),
+    )
+
+    adapted = result.adapted
+
+    assert adapted.type == "aerobic_easy"
+
+    assert adapted.duration_minutes == 45
+
+    assert adapted.prescription is not None
+
+    structure = adapted.prescription[
+        "work_structure"
+    ]
+
+    assert (
+        structure["stimulus"]
+        == "aerobic_easy"
+    )
+
+    assert (
+        structure["type"]
+        == "continuous"
+    )
+
+    assert (
+        structure["available_minutes"]
+        == 45
+    )
+
+    assert (
+        structure["continuous_minutes"]
+        == 45
+    )
+
+    targets = adapted.prescription[
+        "intensity"
+    ][
+        "targets"
+    ]
+
+    assert targets
+
+    assert (
+        targets[0]["reference"]
+        == "rpe"
     )

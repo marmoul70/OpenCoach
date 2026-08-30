@@ -18,6 +18,10 @@ from opencoach.models import (
 from opencoach.models import (
     TrainingSession,
 )
+from opencoach.planning.sessions.prescription.integrity import (
+    TrainingSessionPrescriptionIntegrityError,
+    validate_training_session_prescription,
+)
 
 from .mapper import (
     generated_session_to_training_session,
@@ -209,6 +213,17 @@ class WeeklyTrainingPersistenceService:
                     ),
                 )
             )
+
+            try:
+                validate_training_session_prescription(
+                    mapped
+                )
+
+            except TrainingSessionPrescriptionIntegrityError as exc:
+                raise WeeklyTrainingPersistenceError(
+                    "La séance générée possède une "
+                    "prescription incohérente."
+                ) from exc
 
             saved = (
                 self.repository

@@ -54,3 +54,7 @@ from .daily_adaptation import DailyAdaptationProposal
 from .physiological_test_proposal import (
     PhysiologicalTestProposal,
 )
+
+from .session_execution_analysis import (
+    SessionExecutionAnalysis,
+)

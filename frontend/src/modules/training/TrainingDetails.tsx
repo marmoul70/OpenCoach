@@ -1,10 +1,5 @@
 import {
-  Activity,
   Check,
-  Clock3,
-  Gauge,
-  MapPin,
-  Mountain,
   Star,
   X,
 } from 'lucide-react'
@@ -386,8 +381,29 @@ export function TrainingDetails({
         session={session}
       />
 
+      {(loadingDebrief || debrief) && (
+        <div
+          ref={
+            debriefRef
+          }
+          className="
+            scroll-mt-4
+          "
+        >
+          <DebriefSection
+            loading={
+              loadingDebrief
+            }
+            debrief={
+              debrief
+            }
+          />
+        </div>
+      )}
+
       <SessionSummary
         session={session}
+        guidance={guidance}
       />
 
       <div
@@ -418,74 +434,11 @@ export function TrainingDetails({
 
         {!loadingGuidance
           && guidance && (
-            <details
-              className="
-                group
-                rounded-xl
-                border
-                border-base-300
-                bg-base-100
-              "
-            >
-              <summary
-                className="
-                  cursor-pointer
-                  list-none
-                  px-4 py-3
-                  font-semibold
-                  text-base-content
-                "
-              >
-                <div
-                  className="
-                    flex items-center
-                    justify-between
-                    gap-3
-                  "
-                >
-                  <div>
-                    <p>
-                      Déroulé de la séance
-                    </p>
-
-                    <p
-                      className="
-                        mt-0.5
-                        text-xs
-                        font-normal
-                        text-base-content/45
-                      "
-                    >
-                      Échauffement, bloc principal,
-                      récupération et conseils.
-                    </p>
-                  </div>
-
-                  <span
-                    className="
-                      text-sm
-                      text-primary
-                    "
-                  >
-                    Voir
-                  </span>
-                </div>
-              </summary>
-
-              <div
-                className="
-                  border-t
-                  border-base-300
-                  p-4
-                "
-              >
-                <SessionGuidancePanel
-                  guidance={
-                    guidance
-                  }
-                />
-              </div>
-            </details>
+            <SessionGuidancePanel
+              guidance={
+                guidance
+              }
+            />
           )}
 
         {!loadingGuidance
@@ -532,26 +485,6 @@ export function TrainingDetails({
             }
           />
         )}
-
-      {(loadingDebrief || debrief) && (
-        <div
-          ref={
-            debriefRef
-          }
-          className="
-            scroll-mt-4
-          "
-        >
-          <DebriefSection
-            loading={
-              loadingDebrief
-            }
-            debrief={
-              debrief
-            }
-          />
-        </div>
-      )}
 
     </div>
   )
@@ -630,148 +563,231 @@ function SessionHeader({
 
 function SessionSummary({
   session,
+  guidance,
 }: {
   session: TrainingSession
+  guidance: SessionGuidance | null
 }) {
+  const estimatedDistance =
+    estimateSessionDistance(
+      session.durationMinutes,
+      guidance,
+    )
+
   return (
     <div
       className="
-        overflow-hidden
-        rounded-xl
-        border border-base-300
+        flex
+        flex-wrap
+        gap-2
       "
     >
-      <div
+      <span
         className="
-          grid
-          divide-y divide-base-300
-          sm:grid-cols-2
-          sm:divide-x
-          sm:divide-y-0
-          lg:grid-cols-5
+          badge
+          badge-outline
         "
       >
-        <SummaryValue
-          icon={Clock3}
-          label="Durée"
-          value={
-            session.type
-            === 'rest'
-              ? 'Repos'
-              : (
-                `${session.durationMinutes} min`
-              )
-          }
-        />
+        {session.type === 'rest'
+          ? 'Repos'
+          : `${session.durationMinutes} min`}
+      </span>
 
-        <SummaryValue
-          icon={MapPin}
-          label="Distance"
-          value={
-            session.distanceKm
-            !== undefined
-              ? (
-                `${formatNumber(
-                  session.distanceKm,
-                )} km`
-              )
-              : '—'
-          }
-        />
+      {estimatedDistance && (
+        <span
+          className="
+            badge
+            badge-outline
+          "
+        >
+          ≈ {estimatedDistance}
+        </span>
+      )}
 
-        <SummaryValue
-          icon={Mountain}
-          label="Dénivelé"
-          value={
-            session.elevationGainM
-            !== undefined
-              ? (
-                `${Math.round(
-                  session.elevationGainM,
-                )} m`
-              )
-              : '—'
-          }
-        />
+      {session.distanceKm !== undefined && (
+        <span
+          className="
+            badge
+            badge-outline
+          "
+        >
+          {
+            formatNumber(
+              session.distanceKm,
+            )
+          } km
+        </span>
+      )}
 
-        <SummaryValue
-          icon={Gauge}
-          label="Intensité"
-          value={
+      {session.elevationGainM !== undefined && (
+        <span
+          className="
+            badge
+            badge-outline
+          "
+        >
+          +{
+            Math.round(
+              session.elevationGainM,
+            )
+          } m
+        </span>
+      )}
+
+      <span
+        className="
+          badge
+          badge-primary
+          badge-outline
+        "
+      >
+        {
+          formatSessionType(
+            session.type,
+          )
+        }
+      </span>
+
+      {session.intensity && (
+        <span
+          className="
+            badge
+            badge-outline
+          "
+        >
+          {
             formatTrainingIntensity(
               session.intensity,
             )
-            || '—'
           }
-        />
+        </span>
+      )}
 
-        <SummaryValue
-          icon={Activity}
-          label="Zone"
-          value={
-            session.heartRateZone
-            ?? '—'
+      {session.heartRateZone && (
+        <span
+          className="
+            badge
+            badge-secondary
+            badge-outline
+          "
+        >
+          {
+            formatHeartRateZone(
+              session.heartRateZone,
+            )
           }
-        />
-      </div>
+        </span>
+      )}
     </div>
   )
 }
 
 
-interface SummaryValueProps {
-  icon:
-    typeof Clock3
-  label: string
-  value: string
+function estimateSessionDistance(
+  durationMinutes: number,
+  guidance: SessionGuidance | null,
+): string | null {
+  if (
+    !guidance
+    || durationMinutes <= 0
+  ) {
+    return null
+  }
+
+  const allSteps = [
+    ...guidance.warmup,
+    ...guidance.main_set,
+    ...guidance.cooldown,
+  ]
+
+  const target = allSteps
+    .flatMap(
+      step =>
+        step.intensity_targets,
+    )
+    .find(
+      intensity =>
+        intensity.speed_min_kmh != null
+        && intensity.speed_max_kmh != null,
+    )
+
+  if (
+    !target
+    || target.speed_min_kmh == null
+    || target.speed_max_kmh == null
+  ) {
+    return null
+  }
+
+  const averageSpeed = (
+    target.speed_min_kmh
+    + target.speed_max_kmh
+  ) / 2
+
+  const distanceKm = (
+    averageSpeed
+    * durationMinutes
+    / 60
+  )
+
+  const roundedKm =
+    Math.round(
+      distanceKm * 2,
+    ) / 2
+
+  return `${formatNumber(
+    roundedKm,
+  )} km`
 }
 
 
-function SummaryValue({
-  icon: Icon,
-  label,
-  value,
-}: SummaryValueProps) {
-  return (
-    <div
-      className="
-        flex items-center
-        gap-3 px-3 py-3
-      "
-    >
-      <Icon
-        size={16}
-        className="
-          shrink-0
-          text-base-content/40
-        "
-      />
+function formatHeartRateZone(
+  value: string,
+): string {
+  const compact = value
+    .replace(
+      /^Fréquence cardiaque individualisée\s*:\s*/i,
+      '',
+    )
+    .replace(
+      /^Fréquence cardiaque\s*:\s*/i,
+      '',
+    )
+    .trim()
 
-      <div className="min-w-0">
-        <p
-          className="
-            text-[11px]
-            uppercase
-            tracking-wide
-            text-base-content/40
-          "
-        >
-          {label}
-        </p>
+  return `FC ${compact}`
+}
 
-        <p
-          className="
-            truncate
-            text-sm
-            font-semibold
-            text-base-content
-          "
-        >
-          {value}
-        </p>
-      </div>
-    </div>
-  )
+
+function formatSessionType(
+  type: string,
+): string {
+  switch (type) {
+    case 'aerobic_easy':
+      return 'Endurance facile'
+
+    case 'threshold':
+      return 'Seuil'
+
+    case 'long_run':
+      return 'Sortie longue'
+
+    case 'intervals':
+      return 'Intervalles'
+
+    case 'recovery':
+      return 'Récupération'
+
+    case 'rest':
+      return 'Repos'
+
+    case 'supplementary':
+      return 'Supplémentaire'
+
+    default:
+      return type
+        .replaceAll('_', ' ')
+  }
 }
 
 
@@ -817,6 +833,48 @@ function ActivitySection({
   const completed =
     session.status === 'completed'
 
+  const [
+    expanded,
+    setExpanded,
+  ] = useState(
+    !completed,
+  )
+
+  useEffect(() => {
+    if (completed) {
+      setExpanded(false)
+    }
+  }, [
+    completed,
+  ])
+
+  const selectedCount =
+    selectedActivityId
+      ? 1
+      : 0
+
+  const selectionLabel =
+    completed
+      ? (
+        selectedCount > 0
+          ? '1 activité associée'
+          : 'Aucune activité associée'
+      )
+      : (
+        `${selectedCount} activité`
+        + (
+          selectedCount > 1
+            ? 's'
+            : ''
+        )
+        + ' sélectionnée'
+        + (
+          selectedCount > 1
+            ? 's'
+            : ''
+        )
+      )
+
   return (
     <section
       className="
@@ -825,218 +883,255 @@ function ActivitySection({
         pt-5
       "
     >
-      <div>
-        <h3
+      <details
+        open={
+          expanded
+        }
+        onToggle={(event) => {
+          setExpanded(
+            event.currentTarget.open,
+          )
+        }}
+        className="
+          overflow-hidden
+          rounded-xl
+          border
+          border-base-300
+          bg-base-100
+        "
+      >
+        <summary
           className="
-            font-semibold
-            text-base-content
-          "
-        >
-          Activité réalisée
-        </h3>
-
-        <p
-          className="
-            mt-1 text-sm
-            text-base-content/50
-          "
-        >
-          Choisissez l&apos;activité
-          Intervals.icu correspondant
-          à cette séance.
-        </p>
-      </div>
-
-      {loading && (
-        <div
-          className="
-            mt-4
-            flex items-center
-            gap-2
-            rounded-xl
-            bg-base-200/60
+            cursor-pointer
+            list-none
             px-4 py-3
           "
         >
-          <span
-            className="
-              loading
-              loading-spinner
-              loading-sm
-            "
-          />
-
-          <span
-            className="
-              text-sm
-              text-base-content/55
-            "
-          >
-            Recherche des activités…
-          </span>
-        </div>
-      )}
-
-      {!loading
-        && error && (
           <div
             className="
-              mt-4
-              rounded-xl
-              border
-              border-error/30
-              bg-error/5
-              px-4 py-3
-              text-sm
-              text-error
+              flex
+              items-center
+              justify-between
+              gap-3
             "
           >
-            {error}
+            <div className="min-w-0">
+              <p
+                className="
+                  font-semibold
+                  text-base-content
+                "
+              >
+                Activité réalisée
+              </p>
+
+              {!completed && (
+                <p
+                  className="
+                    mt-0.5
+                    text-xs
+                    text-base-content/45
+                  "
+                >
+                  Associer l&apos;activité
+                  Intervals.icu correspondante.
+                </p>
+              )}
+            </div>
+
+            <span
+              className={[
+                'badge shrink-0',
+                completed
+                  ? 'badge-success badge-outline'
+                  : (
+                    selectedCount > 0
+                      ? 'badge-primary'
+                      : 'badge-ghost'
+                  ),
+              ].join(' ')}
+            >
+              {selectionLabel}
+            </span>
           </div>
-        )}
+        </summary>
 
-      {!loading
-        && !error
-        && activities.length === 0 && (
-          <div
-            className="
-              mt-4
-              rounded-xl
-              bg-base-200/60
-              px-4 py-3
-            "
-          >
-            <p
+        <div
+          className="
+            border-t
+            border-base-300
+            px-4 py-4
+          "
+        >
+          {loading && (
+            <div
               className="
+                flex
+                items-center
+                gap-2
+                rounded-xl
+                bg-base-200/60
+                px-4 py-3
+              "
+            >
+              <span
+                className="
+                  loading
+                  loading-spinner
+                  loading-sm
+                "
+              />
+
+              <span
+                className="
+                  text-sm
+                  text-base-content/55
+                "
+              >
+                Recherche des activités…
+              </span>
+            </div>
+          )}
+
+          {!loading
+            && error && (
+              <div
+                className="
+                  rounded-xl
+                  border
+                  border-error/30
+                  bg-error/5
+                  px-4 py-3
+                  text-sm
+                  text-error
+                "
+              >
+                {error}
+              </div>
+            )}
+
+          {!loading
+            && !error
+            && activities.length === 0 && (
+              <div
+                className="
+                  rounded-xl
+                  bg-base-200/60
+                  px-4 py-3
+                "
+              >
+                <p
+                  className="
+                    text-sm
+                    font-medium
+                    text-base-content/70
+                  "
+                >
+                  Aucune activité détectée
+                </p>
+
+                <p
+                  className="
+                    mt-1
+                    text-xs
+                    text-base-content/45
+                  "
+                >
+                  Une prochaine synchronisation
+                  Intervals.icu peut faire
+                  apparaître l&apos;activité.
+                </p>
+              </div>
+            )}
+
+          {!loading
+            && !error
+            && activities.length > 0 && (
+              <div className="space-y-2">
+                {activities.map(
+                  (activity) => (
+                    <ActivityRow
+                      key={
+                        activity.id
+                      }
+                      activity={
+                        activity
+                      }
+                      selected={
+                        selectedActivityId
+                        === activity.id
+                      }
+                      disabled={
+                        completed
+                        || validating
+                      }
+                      onClick={() =>
+                        onActivitySelect(
+                          activity.id,
+                        )
+                      }
+                    />
+                  ),
+                )}
+              </div>
+            )}
+
+          {validationError && (
+            <div
+              className="
+                mt-3
+                rounded-xl
+                border
+                border-error/30
+                bg-error/5
+                px-4 py-3
                 text-sm
-                font-medium
-                text-base-content/70
+                text-error
               "
             >
-              Aucune activité détectée
-            </p>
+              {validationError}
+            </div>
+          )}
 
-            <p
-              className="
-                mt-1 text-xs
-                text-base-content/45
-              "
-            >
-              La prochaine synchronisation
-              Intervals.icu pourra faire
-              apparaître votre activité.
-            </p>
-          </div>
-        )}
-
-      {!loading
-        && !error
-        && activities.length > 0 && (
-          <div className="mt-4 space-y-2">
-            {activities.map(
-              (activity) => (
-                <ActivityRow
-                  key={
-                    activity.id
-                  }
-                  activity={
-                    activity
-                  }
-                  selected={
-                    selectedActivityId
-                    === activity.id
-                  }
+          {!completed
+            && activities.length > 0 && (
+              <div
+                className="
+                  mt-4
+                  flex
+                  justify-end
+                "
+              >
+                <button
+                  type="button"
+                  className="
+                    btn
+                    btn-primary
+                  "
                   disabled={
-                    completed
+                    !selectedActivityId
                     || validating
                   }
-                  onClick={() =>
-                    onActivitySelect(
-                      activity.id,
-                    )
+                  onClick={
+                    onValidate
                   }
-                />
-              ),
+                >
+                  {validating && (
+                    <span
+                      className="
+                        loading
+                        loading-spinner
+                        loading-sm
+                      "
+                    />
+                  )}
+
+                  Valider la séance
+                </button>
+              </div>
             )}
-          </div>
-        )}
-
-      {validationError && (
-        <div
-          className="
-            mt-4
-            rounded-xl
-            border
-            border-error/30
-            bg-error/5
-            px-4 py-3
-            text-sm
-            text-error
-          "
-        >
-          {validationError}
         </div>
-      )}
-
-      {!completed
-        && activities.length > 0 && (
-          <div
-            className="
-              mt-5 flex
-              justify-end
-            "
-          >
-            <button
-              type="button"
-              className="
-                btn
-                btn-primary
-              "
-              disabled={
-                !selectedActivityId
-                || validating
-              }
-              onClick={
-                onValidate
-              }
-            >
-              {validating && (
-                <span
-                  className="
-                    loading
-                    loading-spinner
-                    loading-sm
-                  "
-                />
-              )}
-
-              Valider la séance
-            </button>
-          </div>
-        )}
-
-      {completed && (
-        <div
-          className="
-            mt-4
-            flex items-center
-            gap-2
-            rounded-xl
-            border
-            border-success/30
-            bg-success/5
-            px-4 py-3
-            text-sm
-            text-success
-          "
-        >
-          <Check
-            size={16}
-          />
-
-          Séance analysée
-        </div>
-      )}
+      </details>
     </section>
   )
 }

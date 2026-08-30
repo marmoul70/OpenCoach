@@ -540,12 +540,54 @@ def _build_vma_target(
     ):
         return None
 
+    assert physiology.vma.value is not None
+
+    vma_kmh = physiology.vma.value
+
+    speed_min_kmh = (
+        vma_kmh
+        * policy.vma_min
+        / 100
+    )
+
+    speed_max_kmh = (
+        vma_kmh
+        * policy.vma_max
+        / 100
+    )
+
+    pace_fastest_seconds_per_km = (
+        3600
+        / speed_max_kmh
+    )
+
+    pace_slowest_seconds_per_km = (
+        3600
+        / speed_min_kmh
+    )
+
     return IntensityRange(
         reference=IntensityReference.VMA_PERCENT,
         minimum=policy.vma_min,
         maximum=policy.vma_max,
         unit="% VMA",
         label="Pourcentage de VMA",
+        speed_min_kmh=round(
+            speed_min_kmh,
+            2,
+        ),
+        speed_max_kmh=round(
+            speed_max_kmh,
+            2,
+        ),
+        pace_fastest_seconds_per_km=round(
+            pace_fastest_seconds_per_km,
+            1,
+        ),
+        pace_slowest_seconds_per_km=round(
+            pace_slowest_seconds_per_km,
+            1,
+        ),
     )
 
 

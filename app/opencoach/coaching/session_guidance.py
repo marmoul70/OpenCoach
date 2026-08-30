@@ -468,10 +468,7 @@ def _build_structured_main_step(
         return SessionGuidanceStep(
             title=title,
             description=(
-                structure.get(
-                    "description"
-                )
-                or fallback_description
+                fallback_description
             ),
             duration_minutes=None,
             intensity_target=(
@@ -560,7 +557,7 @@ def _main_session_step(
     fallback_title: str,
     fallback_description: str,
 ) -> SessionGuidanceStep:
-    """Conserve les consignes spécifiques déjà générées."""
+    """Construit un bloc principal concis depuis la prescription."""
 
     structured = (
         _build_structured_main_step(
@@ -577,14 +574,11 @@ def _main_session_step(
     if structured is not None:
         return structured
 
-    description = (
-        session.description.strip()
-        or fallback_description
-    )
-
     return SessionGuidanceStep(
         title=fallback_title,
-        description=description,
+        description=(
+            fallback_description
+        ),
         duration_minutes=(
             session.duration_minutes
         ),

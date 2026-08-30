@@ -79,7 +79,7 @@ def test_threshold_explains_warmup_and_cooldown() -> None:
     )
 
 
-def test_existing_generated_description_is_preserved() -> None:
+def test_existing_generated_description_is_not_reused_in_guidance() -> None:
     guidance = build_session_guidance(
         session(
             "vo2max",
@@ -90,11 +90,20 @@ def test_existing_generated_description_is_preserved() -> None:
         )
     )
 
+    main_step = guidance.main_set[0]
+
+    assert (
+        main_step.description
+        == (
+            "Réaliser les répétitions prévues "
+            "à haute intensité en conservant "
+            "une exécution régulière."
+        )
+    )
+
     assert (
         "6 × 3 min"
-        in guidance.main_set[
-            0
-        ].description
+        not in main_step.description
     )
 
 

@@ -46,6 +46,12 @@ class IntensityRange:
 
     label: str
 
+    speed_min_kmh: float | None = None
+    speed_max_kmh: float | None = None
+
+    pace_fastest_seconds_per_km: float | None = None
+    pace_slowest_seconds_per_km: float | None = None
+
     def __post_init__(
         self,
     ) -> None:

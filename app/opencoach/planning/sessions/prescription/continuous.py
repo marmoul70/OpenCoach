@@ -104,7 +104,7 @@ def _serialize_intensity(
 def _serialize_target(
     target: IntensityRange,
 ) -> dict:
-    return {
+    result = {
         "reference": (
             target.reference.value
         ),
@@ -113,3 +113,44 @@ def _serialize_target(
         "unit": target.unit,
         "label": target.label,
     }
+
+    if (
+        target.speed_min_kmh is not None
+        and target.speed_max_kmh is not None
+    ):
+        result["derived"] = {
+            "speed_kmh": {
+                "minimum": (
+                    target.speed_min_kmh
+                ),
+                "maximum": (
+                    target.speed_max_kmh
+                ),
+            },
+        }
+
+    if (
+        target.pace_fastest_seconds_per_km
+        is not None
+        and target.pace_slowest_seconds_per_km
+        is not None
+    ):
+        derived = result.setdefault(
+            "derived",
+            {},
+        )
+
+        derived[
+            "pace_seconds_per_km"
+        ] = {
+            "fastest": (
+                target
+                .pace_fastest_seconds_per_km
+            ),
+            "slowest": (
+                target
+                .pace_slowest_seconds_per_km
+            ),
+        }
+
+    return result

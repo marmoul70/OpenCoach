@@ -3,7 +3,6 @@ import type {
 } from 'react'
 
 import {
-  Activity,
   AlertTriangle,
   Brain,
   CheckCircle2,
@@ -29,37 +28,16 @@ export function SessionGuidancePanel({
   guidance,
 }: Props) {
   return (
-    <div className="space-y-6">
-      <section
-        className="
-          rounded-2xl
-          border
-          border-primary/20
-          bg-primary/5
-          p-4
-        "
-      >
+    <div className="space-y-5">
+      <section>
         <div
           className="
-            flex items-start gap-3
+            mb-3
+            flex
+            items-center
+            justify-between
           "
         >
-          <div
-            className="
-              flex h-10 w-10
-              shrink-0
-              items-center
-              justify-center
-              rounded-xl
-              bg-primary/10
-              text-primary
-            "
-          >
-            <Target
-              size={20}
-            />
-          </div>
-
           <div>
             <p
               className="
@@ -70,217 +48,282 @@ export function SessionGuidancePanel({
                 text-primary
               "
             >
-              Objectif
+              Séance
             </p>
 
-            <p
+            <h3
               className="
-                mt-1
-                font-semibold
-                leading-6
+                mt-0.5
+                font-bold
                 text-base-content
               "
             >
-              {
-                guidance.objective
-              }
-            </p>
+              Déroulé
+            </h3>
           </div>
-        </div>
-      </section>
 
-
-      <GuidanceSection
-        title="Pourquoi cette séance ?"
-        icon={
-          <Brain size={18} />
-        }
-      >
-        <p>
-          {
-            guidance.coach_rationale
-          }
-        </p>
-      </GuidanceSection>
-
-
-      <GuidanceSection
-        title="Terrain recommandé"
-        icon={
-          <MapPin size={18} />
-        }
-      >
-        <p>
-          {
-            guidance.terrain_recommendation
-          }
-        </p>
-      </GuidanceSection>
-
-
-      {guidance.preparation.length
-        > 0 && (
-          <GuidanceSection
-            title="Avant la séance"
-            icon={
-              <CheckCircle2
-                size={18}
-              />
-            }
+          <span
+            className="
+              badge
+              badge-primary
+              badge-outline
+            "
           >
-            <BulletList
-              values={
-                guidance.preparation
-              }
-            />
-          </GuidanceSection>
-        )}
+            3 étapes
+          </span>
+        </div>
 
-
-      {guidance.warmup.length
-        > 0 && (
-          <StepsSection
+        <div className="space-y-4">
+          <ExecutionStage
+            number={1}
             title="Échauffement"
             steps={
               guidance.warmup
             }
           />
-        )}
 
-
-      {guidance.main_set.length
-        > 0 && (
-          <StepsSection
-            title="Bloc principal"
+          <ExecutionStage
+            number={2}
+            title="Cœur de séance"
             steps={
               guidance.main_set
             }
             emphasized
           />
-        )}
 
-
-      {guidance.cooldown.length
-        > 0 && (
-          <StepsSection
+          <ExecutionStage
+            number={3}
             title="Retour au calme"
             steps={
               guidance.cooldown
             }
           />
-        )}
+        </div>
+      </section>
 
-
-      {guidance.execution_advice.length
-        > 0 && (
-          <GuidanceSection
-            title="Conseils du coach"
-            icon={
-              <Gauge size={18} />
-            }
+      <details
+        className="
+          overflow-hidden
+          rounded-xl
+          border
+          border-base-300
+          bg-base-100
+        "
+      >
+        <summary
+          className="
+            cursor-pointer
+            list-none
+            px-4 py-3
+            font-semibold
+            text-base-content
+          "
+        >
+          <div
+            className="
+              flex
+              items-center
+              justify-between
+              gap-3
+            "
           >
-            <BulletList
-              values={
-                guidance.execution_advice
-              }
-            />
-          </GuidanceSection>
-        )}
+            <span>
+              Conseils & contexte
+            </span>
 
+            <span
+              className="
+                text-xs
+                font-normal
+                text-base-content/45
+              "
+            >
+              Objectif, terrain, conseils
+            </span>
+          </div>
+        </summary>
 
-      {guidance.warnings.length
-        > 0 && (
+        <div
+          className="
+            space-y-5
+            border-t
+            border-base-300
+            p-4
+          "
+        >
           <section
             className="
-              rounded-2xl
+              rounded-xl
               border
-              border-warning/30
-              bg-warning/5
+              border-primary/20
+              bg-primary/5
               p-4
             "
           >
             <div
               className="
-                flex items-center
-                gap-2
+                flex
+                items-start
+                gap-3
               "
             >
-              <AlertTriangle
+              <Target
                 size={18}
                 className="
-                  text-warning
-                "
-              />
-
-              <h3
-                className="
-                  font-bold
-                  text-base-content
-                "
-              >
-                À éviter
-              </h3>
-            </div>
-
-            <div
-              className="
-                mt-3
-                text-sm
-                leading-6
-                text-base-content/65
-              "
-            >
-              <BulletList
-                values={
-                  guidance.warnings
-                }
-              />
-            </div>
-          </section>
-        )}
-
-
-      {guidance.analysis_targets.length
-        > 0 && (
-          <section
-            className="
-              rounded-2xl
-              bg-base-200/60
-              p-4
-            "
-          >
-            <div
-              className="
-                flex items-center
-                gap-2
-              "
-            >
-              <Activity
-                size={18}
-                className="
+                  mt-0.5
+                  shrink-0
                   text-primary
                 "
               />
 
-              <h3
+              <div>
+                <p
+                  className="
+                    text-xs
+                    font-semibold
+                    uppercase
+                    tracking-wide
+                    text-primary
+                  "
+                >
+                  Objectif
+                </p>
+
+                <p
+                  className="
+                    mt-1
+                    text-sm
+                    font-semibold
+                    leading-6
+                    text-base-content
+                  "
+                >
+                  {guidance.objective}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <GuidanceSection
+            title="Pourquoi ?"
+            icon={
+              <Brain size={18} />
+            }
+          >
+            <p>
+              {guidance.coach_rationale}
+            </p>
+          </GuidanceSection>
+
+          <GuidanceSection
+            title="Terrain"
+            icon={
+              <MapPin size={18} />
+            }
+          >
+            <p>
+              {
+                guidance
+                  .terrain_recommendation
+              }
+            </p>
+          </GuidanceSection>
+
+          {guidance.preparation.length > 0 && (
+            <GuidanceSection
+              title="Avant"
+              icon={
+                <CheckCircle2
+                  size={18}
+                />
+              }
+            >
+              <BulletList
+                values={
+                  guidance.preparation
+                }
+              />
+            </GuidanceSection>
+          )}
+
+          {guidance.execution_advice.length > 0 && (
+            <GuidanceSection
+              title="Conseils"
+              icon={
+                <Gauge size={18} />
+              }
+            >
+              <BulletList
+                values={
+                  guidance
+                    .execution_advice
+                }
+              />
+            </GuidanceSection>
+          )}
+
+          {guidance.warnings.length > 0 && (
+            <section
+              className="
+                rounded-xl
+                border
+                border-warning/30
+                bg-warning/5
+                p-4
+              "
+            >
+              <div
                 className="
-                  font-bold
-                  text-base-content
+                  flex
+                  items-center
+                  gap-2
                 "
               >
-                Ce qu’OpenCoach analysera
-              </h3>
-            </div>
+                <AlertTriangle
+                  size={18}
+                  className="
+                    text-warning
+                  "
+                />
 
+                <h3
+                  className="
+                    font-bold
+                    text-base-content
+                  "
+                >
+                  À éviter
+                </h3>
+              </div>
+
+              <div
+                className="
+                  mt-3
+                  text-sm
+                  leading-6
+                  text-base-content/65
+                "
+              >
+                <BulletList
+                  values={
+                    guidance.warnings
+                  }
+                />
+              </div>
+            </section>
+          )}
+
+          {guidance.analysis_targets.length > 0 && (
             <div
               className="
-                mt-3
-                flex flex-wrap
+                flex
+                flex-wrap
                 gap-2
               "
             >
               {
-                guidance.analysis_targets
+                guidance
+                  .analysis_targets
                   .map(
                     (target) => (
                       <span
@@ -301,9 +344,114 @@ export function SessionGuidancePanel({
                   )
               }
             </div>
-          </section>
-        )}
+          )}
+        </div>
+      </details>
     </div>
+  )
+}
+
+
+function ExecutionStage({
+  number,
+  title,
+  steps,
+  emphasized = false,
+}: {
+  number: number
+  title: string
+  steps: SessionGuidanceStep[]
+  emphasized?: boolean
+}) {
+  return (
+    <section
+      className={[
+        (
+          'rounded-xl border '
+          + 'p-3 sm:p-4'
+        ),
+        emphasized
+          ? (
+            'border-primary/30 '
+            + 'bg-primary/5'
+          )
+          : (
+            'border-base-300 '
+            + 'bg-base-100'
+          ),
+      ].join(' ')}
+    >
+      <div
+        className="
+          mb-3
+          flex
+          items-center
+          gap-3
+        "
+      >
+        <span
+          className={[
+            (
+              'flex size-7 '
+              + 'items-center '
+              + 'justify-center '
+              + 'rounded-full '
+              + 'text-xs font-bold'
+            ),
+            emphasized
+              ? (
+                'bg-primary '
+                + 'text-primary-content'
+              )
+              : (
+                'bg-base-200 '
+                + 'text-base-content/60'
+              ),
+          ].join(' ')}
+        >
+          {number}
+        </span>
+
+        <h3
+          className="
+            font-bold
+            text-base-content
+          "
+        >
+          {title}
+        </h3>
+      </div>
+
+      {steps.length > 0 ? (
+        <div className="space-y-3">
+          {steps.map(
+            (
+              step,
+              index,
+            ) => (
+              <GuidanceStepCard
+                key={
+                  `${step.title}-${index}`
+                }
+                step={step}
+                emphasized={
+                  emphasized
+                }
+              />
+            ),
+          )}
+        </div>
+      ) : (
+        <p
+          className="
+            text-sm
+            text-base-content/45
+          "
+        >
+          Aucune consigne spécifique.
+        </p>
+      )}
+    </section>
   )
 }
 
@@ -359,52 +507,6 @@ function GuidanceSection({
   )
 }
 
-
-function StepsSection({
-  title,
-  steps,
-  emphasized = false,
-}: {
-  title: string
-
-  steps:
-    SessionGuidanceStep[]
-
-  emphasized?: boolean
-}) {
-  return (
-    <section>
-      <h3
-        className="
-          mb-3
-          font-bold
-          text-base-content
-        "
-      >
-        {title}
-      </h3>
-
-      <div className="space-y-3">
-        {steps.map(
-          (
-            step,
-            index,
-          ) => (
-            <GuidanceStepCard
-              key={
-                `${step.title}-${index}`
-              }
-              step={step}
-              emphasized={
-                emphasized
-              }
-            />
-          ),
-        )}
-      </div>
-    </section>
-  )
-}
 
 
 function GuidanceStepCard({

@@ -6,8 +6,13 @@ import {
   ToastProvider,
 } from './components/ui/ToastProvider'
 import App from './App.tsx'
-import { VersionWatcher } from './modules/pwa'
+import {
+  VersionWatcher,
+  registerServiceWorker,
+} from './modules/pwa'
 import { AuthGate } from './modules/auth'
+
+registerServiceWorker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

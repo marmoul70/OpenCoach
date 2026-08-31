@@ -9,6 +9,10 @@ import {
 } from './NotificationsSection'
 
 import {
+  TasksSection,
+} from './TasksSection'
+
+import {
   LocationSection,
 } from './SettingsSections'
 
@@ -42,6 +46,8 @@ export function Settings() {
           <IntervalsSection />
 
           <NotificationsSection />
+
+          <TasksSection />
 
           <BackupSection />
         </div>

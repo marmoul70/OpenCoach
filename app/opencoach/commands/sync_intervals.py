@@ -15,6 +15,7 @@ from opencoach.database.models import (
     User,
 )
 from opencoach.database.repositories import (
+    SqlActivityDetailRepository,
     SqlActivityRepository,
     SqlIntegrationConnectionRepository,
     SqlWellnessRepository,
@@ -149,6 +150,11 @@ def build_service(
         client=client,
         repository=SqlActivityRepository(
             session
+        ),
+        activity_detail_repository=(
+            SqlActivityDetailRepository(
+                session
+            )
         ),
         wellness_repository=SqlWellnessRepository(
             session

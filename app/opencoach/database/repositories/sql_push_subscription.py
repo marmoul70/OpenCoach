@@ -130,3 +130,75 @@ class SqlPushSubscriptionRepository:
                 "Impossible de supprimer "
                 "l'abonnement push."
             ) from exc
+
+    def increment_badge(
+        self,
+        endpoint: str,
+    ) -> int:
+        try:
+            subscription = self.session.scalar(
+                select(
+                    PushSubscription
+                ).where(
+                    PushSubscription.endpoint
+                    == endpoint
+                )
+            )
+
+            if subscription is None:
+                raise PushSubscriptionRepositoryError(
+                    "Abonnement Push introuvable."
+                )
+
+            subscription.badge_count += 1
+
+            self.session.commit()
+            self.session.refresh(
+                subscription
+            )
+
+            return subscription.badge_count
+
+        except PushSubscriptionRepositoryError:
+            self.session.rollback()
+            raise
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise PushSubscriptionRepositoryError(
+                "Impossible d'incrémenter "
+                "le badge Push."
+            ) from exc
+
+    def reset_badge(
+        self,
+        endpoint: str,
+    ) -> None:
+        try:
+            subscription = self.session.scalar(
+                select(
+                    PushSubscription
+                ).where(
+                    PushSubscription.endpoint
+                    == endpoint
+                )
+            )
+
+            if subscription is None:
+                return
+
+            subscription.badge_count = 0
+
+            self.session.commit()
+            self.session.refresh(
+                subscription
+            )
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise PushSubscriptionRepositoryError(
+                "Impossible de remettre "
+                "le badge Push à zéro."
+            ) from exc

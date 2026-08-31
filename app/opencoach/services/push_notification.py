@@ -77,26 +77,36 @@ class PushNotificationService:
             self.repository.list_all()
         )
 
-        payload = json.dumps(
-            {
-                "title": title,
-                "body": body,
-                "url": url,
-            },
-            ensure_ascii=False,
-        )
-
         sent = 0
         failed = 0
         removed = 0
 
         for subscription in subscriptions:
             try:
+                badge_count = (
+                    subscription.badge_count
+                    + 1
+                )
+
+                payload = json.dumps(
+                    {
+                        "title": title,
+                        "body": body,
+                        "url": url,
+                        "badge": badge_count,
+                    },
+                    ensure_ascii=False,
+                )
+
                 self._send_one(
                     subscription=subscription,
                     payload=payload,
                     private_key=private_key,
                     subject=subject,
+                )
+
+                self.repository.increment_badge(
+                    subscription.endpoint
                 )
 
                 sent += 1

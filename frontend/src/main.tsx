@@ -19,8 +19,8 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ToastProvider>
       <VersionWatcher />
-      <AppBadgeManager />
       <AuthGate>
+        <AppBadgeManager />
         <App />
       </AuthGate>
     </ToastProvider>

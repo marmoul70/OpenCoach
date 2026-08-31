@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import (
     DateTime,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -50,6 +51,12 @@ class PushSubscription(Base):
     user_agent: Mapped[str | None] = mapped_column(
         String(512),
         nullable=True,
+    )
+
+    badge_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(

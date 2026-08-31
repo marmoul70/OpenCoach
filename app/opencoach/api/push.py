@@ -174,3 +174,39 @@ def send_test_notification(
         "failed": report.failed,
         "removed": report.removed,
     }
+
+
+class PushBadgeReset(
+    BaseModel
+):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+    endpoint: str = Field(
+        min_length=1,
+    )
+
+
+@router.post(
+    "/badge/reset",
+)
+def reset_push_badge(
+    payload: PushBadgeReset,
+    session: Session = Depends(
+        get_db
+    ),
+) -> dict[str, int]:
+    repository = (
+        SqlPushSubscriptionRepository(
+            session
+        )
+    )
+
+    repository.reset_badge(
+        payload.endpoint
+    )
+
+    return {
+        "badge": 0,
+    }

@@ -167,3 +167,30 @@ export function urlBase64ToUint8Array(
 
   return output
 }
+
+
+export async function resetPushBadge(
+  endpoint: string,
+): Promise<void> {
+  const response = await fetch(
+    '/api/push/badge/reset',
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type':
+          'application/json',
+      },
+      body: JSON.stringify({
+        endpoint,
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      'Impossible de réinitialiser '
+      + 'le badge Push.',
+    )
+  }
+}

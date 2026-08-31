@@ -20,6 +20,7 @@ export const defaultAthleteProfile: AthleteProfile = {
     vma: undefined,
     thresholdHeartRate1: undefined,
     thresholdHeartRate2: undefined,
+    heartRateZones: {},
   },
 
   training: {

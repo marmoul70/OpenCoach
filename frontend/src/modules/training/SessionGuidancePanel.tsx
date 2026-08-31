@@ -466,6 +466,16 @@ function GuidanceStepCard({
   step: SessionGuidanceStep
   emphasized: boolean
 }) {
+  const hasIntervalStructure = (
+    step.repetitions != null
+    && step.work_distance_meters != null
+  )
+
+  const hasRepetitionDuration = (
+    step.repetition_fast_seconds != null
+    && step.repetition_slow_seconds != null
+  )
+
   return (
     <div
       className={[
@@ -499,47 +509,24 @@ function GuidanceStepCard({
           {step.title}
         </p>
 
-        <div
-          className="
-            flex flex-wrap
-            gap-1.5
-          "
-        >
-          {step.duration_minutes
-            != null && (
-              <span
-                className="
-                  badge
-                  badge-outline
-                  badge-sm
-                  gap-1
-                "
-              >
-                <Clock3
-                  size={11}
-                />
+        {step.duration_minutes != null && (
+          <span
+            className="
+              badge
+              badge-outline
+              badge-sm
+              gap-1
+            "
+          >
+            <Clock3
+              size={11}
+            />
 
-                {
-                  step.duration_minutes
-                } min
-              </span>
-            )}
-
-          {step.repetitions
-            != null && (
-              <span
-                className="
-                  badge
-                  badge-outline
-                  badge-sm
-                "
-              >
-                {
-                  step.repetitions
-                } répétitions
-              </span>
-            )}
-        </div>
+            {
+              step.duration_minutes
+            } min
+          </span>
+        )}
       </div>
 
 
@@ -555,18 +542,182 @@ function GuidanceStepCard({
       </p>
 
 
+      {hasIntervalStructure && (
+        <div
+          className="
+            mt-4
+            overflow-hidden
+            rounded-xl
+            border
+            border-base-300
+            bg-base-100
+          "
+        >
+          <div className="p-3">
+            <p
+              className="
+                text-xs
+                font-semibold
+                uppercase
+                tracking-wide
+                text-primary
+              "
+            >
+              Effort
+            </p>
+
+            <div
+              className="
+                mt-2
+                flex
+                flex-wrap
+                items-baseline
+                gap-x-3
+                gap-y-1
+              "
+            >
+              <span
+                className="
+                  text-base
+                  font-bold
+                  text-base-content
+                "
+              >
+                {step.work_distance_meters} m
+                {' '}
+                par répétition
+              </span>
+
+              {hasRepetitionDuration && (
+                <span
+                  className="
+                    text-sm
+                    font-medium
+                    text-base-content/60
+                  "
+                >
+                  {
+                    formatDuration(
+                      step.repetition_fast_seconds!,
+                    )
+                  }
+                  {'–'}
+                  {
+                    formatDuration(
+                      step.repetition_slow_seconds!,
+                    )
+                  }
+                </span>
+              )}
+            </div>
+
+            {step.intensity_targets.length > 0 && (
+              <IntensityTargets
+                targets={
+                  step.intensity_targets
+                }
+              />
+            )}
+
+            {(
+              step.intensity_targets.length === 0
+              && (
+                step.intensity_target
+                || step.heart_rate_target
+              )
+            ) && (
+              <div
+                className="
+                  mt-3
+                  flex
+                  flex-wrap
+                  gap-2
+                "
+              >
+                {step.intensity_target && (
+                  <span
+                    className="
+                      badge
+                      badge-primary
+                      badge-outline
+                      badge-sm
+                    "
+                  >
+                    Intensité · {
+                      formatIntensity(
+                        step.intensity_target,
+                      )
+                    }
+                  </span>
+                )}
+
+                {step.heart_rate_target && (
+                  <span
+                    className="
+                      badge
+                      badge-secondary
+                      badge-outline
+                      badge-sm
+                    "
+                  >
+                    FC · {
+                      step.heart_rate_target
+                    }
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {step.recovery_description && (
+            <div
+              className="
+                border-t
+                border-base-300
+                bg-base-200/50
+                px-3
+                py-3
+              "
+            >
+              <p
+                className="
+                  text-xs
+                  font-semibold
+                  uppercase
+                  tracking-wide
+                  text-base-content/50
+                "
+              >
+                Récupération entre les répétitions
+              </p>
+
+              <p
+                className="
+                  mt-1
+                  text-base
+                  font-bold
+                  text-base-content
+                "
+              >
+                {step.recovery_description}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+
       {(
-        step.repetition_fast_seconds
-        != null
-        && step.repetition_slow_seconds
-        != null
+        !hasIntervalStructure
+        && hasRepetitionDuration
       ) && (
         <div
           className="
             mt-3
             rounded-xl
             bg-base-200/60
-            px-3 py-2.5
+            px-3
+            py-2.5
           "
         >
           <p
@@ -587,57 +738,48 @@ function GuidanceStepCard({
           >
             {
               formatDuration(
-                step.repetition_fast_seconds,
+                step.repetition_fast_seconds!,
               )
             }
             {'–'}
             {
               formatDuration(
-                step.repetition_slow_seconds,
+                step.repetition_slow_seconds!,
               )
             }
           </p>
         </div>
       )}
 
-      {step.recovery_description && (
-        <p
-          className="
-            mt-2
-            text-xs
-            text-base-content/50
-          "
-        >
-          Récupération · {
-            step.recovery_description
+
+      {(
+        !hasIntervalStructure
+        && step.intensity_targets.length > 0
+      ) && (
+        <IntensityTargets
+          targets={
+            step.intensity_targets
           }
-        </p>
+        />
       )}
 
 
-      {step.intensity_targets.length
-        > 0 && (
-          <IntensityTargets
-            targets={
-              step.intensity_targets
-            }
-          />
-        )}
-
-
       {(
-        step.intensity_targets.length
-        === 0
+        !hasIntervalStructure
         && (
-          step.intensity_target
-          || step.heart_rate_target
-          || step.recovery_description
+          step.intensity_targets.length === 0
+          && (
+            step.intensity_target
+            || step.heart_rate_target
+            || step.recovery_description
+          )
         )
       ) && (
         <div
           className="
             mt-3
-            flex flex-wrap
+            flex
+            flex-wrap
             gap-2
           "
         >

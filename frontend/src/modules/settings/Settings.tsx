@@ -1,6 +1,10 @@
 import { useAthleteProfile } from '../../core/profile'
 
 import {
+  BackupSection,
+} from './BackupSection'
+
+import {
   EquipmentSection,
   LocationSection,
   NutritionSection,
@@ -41,6 +45,8 @@ export function Settings() {
           <NutritionSection
             nutrition={profile.nutrition}
           />
+
+          <BackupSection />
         </div>
       </div>
     </main>

@@ -40,6 +40,26 @@ export function Profile() {
     profile.physiology.thresholdHeartRate2?.toString() ?? '',
   )
 
+  const [z1Max, setZ1Max] = useState(
+    profile.physiology.heartRateZones.z1?.maxBpm?.toString() ?? '',
+  )
+
+  const [z2Max, setZ2Max] = useState(
+    profile.physiology.heartRateZones.z2?.maxBpm?.toString() ?? '',
+  )
+
+  const [z3Max, setZ3Max] = useState(
+    profile.physiology.heartRateZones.z3?.maxBpm?.toString() ?? '',
+  )
+
+  const [z4Max, setZ4Max] = useState(
+    profile.physiology.heartRateZones.z4?.maxBpm?.toString() ?? '',
+  )
+
+  const [z5Max, setZ5Max] = useState(
+    profile.physiology.heartRateZones.z5?.maxBpm?.toString() ?? '',
+  )
+
   const [savedSection, setSavedSection] = useState<string | null>(null)
 
   async function handleSaveBody() {
@@ -67,6 +87,24 @@ export function Profile() {
           parseOptionalNumber(thresholdHeartRate1),
         thresholdHeartRate2:
           parseOptionalNumber(thresholdHeartRate2),
+
+        heartRateZones: {
+          z1: buildHeartRateZone(
+            z1Max,
+          ),
+          z2: buildHeartRateZone(
+            z2Max,
+          ),
+          z3: buildHeartRateZone(
+            z3Max,
+          ),
+          z4: buildHeartRateZone(
+            z4Max,
+          ),
+          z5: buildHeartRateZone(
+            z5Max,
+          ),
+        },
       },
     }))
 
@@ -92,6 +130,25 @@ export function Profile() {
     )
     setThresholdHeartRate2(
       profile.physiology.thresholdHeartRate2?.toString() ?? '',
+    )
+        setZ1Max(
+      profile.physiology.heartRateZones.z1?.maxBpm?.toString() ?? '',
+    )
+
+        setZ2Max(
+      profile.physiology.heartRateZones.z2?.maxBpm?.toString() ?? '',
+    )
+
+        setZ3Max(
+      profile.physiology.heartRateZones.z3?.maxBpm?.toString() ?? '',
+    )
+
+        setZ4Max(
+      profile.physiology.heartRateZones.z4?.maxBpm?.toString() ?? '',
+    )
+
+        setZ5Max(
+      profile.physiology.heartRateZones.z5?.maxBpm?.toString() ?? '',
     )
     setSavedSection(null)
   }
@@ -250,6 +307,64 @@ export function Profile() {
                 />
               </div>
 
+              <div
+                className="
+                  rounded-xl
+                  border border-base-300
+                  bg-base-100
+                  p-4
+                "
+              >
+                <div className="mb-4">
+                  <h3 className="font-semibold text-base-content">
+                    Zones de fréquence cardiaque
+                  </h3>
+
+                  <p className="mt-1 text-sm text-base-content/55">
+                    Plages BPM personnalisées utilisées par OpenCoach
+                    pour les consignes d'entraînement.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <HeartRateZoneRow
+                    zone="Z1"
+                    label="Récupération"
+                    maxValue={z1Max}
+                    onMaxChange={setZ1Max}
+                  />
+
+                  <HeartRateZoneRow
+                    zone="Z2"
+                    label="Endurance"
+                    maxValue={z2Max}
+                    onMaxChange={setZ2Max}
+                  />
+
+                  <HeartRateZoneRow
+                    zone="Z3"
+                    label="Tempo"
+                    maxValue={z3Max}
+                    onMaxChange={setZ3Max}
+                  />
+
+                  <HeartRateZoneRow
+                    zone="Z4"
+                    label="Seuil"
+                    maxValue={z4Max}
+                    onMaxChange={setZ4Max}
+                  />
+
+                  <HeartRateZoneRow
+                    zone="Z5"
+                    label="Haute intensité"
+                    maxValue={z5Max}
+                    onMaxChange={setZ5Max}
+                  />
+                </div>
+              </div>
+
+
               <SectionActions
                 saved={savedSection === 'physiology'}
                 onReset={handleResetPhysiology}
@@ -261,5 +376,80 @@ export function Profile() {
         </div>
       </div>
     </main>
+  )
+}
+
+function buildHeartRateZone(
+  maximum: string,
+): {
+  maxBpm: number
+} | undefined {
+  const maxBpm =
+    parseOptionalNumber(
+      maximum,
+    )
+
+  if (maxBpm === undefined) {
+    return undefined
+  }
+
+  return {
+    maxBpm,
+  }
+}
+
+
+function HeartRateZoneRow({
+  zone,
+  label,
+  maxValue,
+  onMaxChange,
+}: {
+  zone: string
+  label: string
+  maxValue: string
+  onMaxChange: (value: string) => void
+}) {
+  return (
+    <div
+      className="
+        grid
+        grid-cols-[3rem_1fr_6rem_3rem]
+        items-center
+        gap-3
+      "
+    >
+      <span className="font-semibold text-base-content">
+        {zone}
+      </span>
+
+      <span className="text-sm text-base-content/65">
+        {label}
+      </span>
+
+      <input
+        type="number"
+        value={maxValue}
+        min="30"
+        max="230"
+        step="1"
+        placeholder="Max"
+        onChange={(event) =>
+          onMaxChange(
+            event.target.value,
+          )
+        }
+        className="
+          input
+          input-bordered
+          input-sm
+          w-full
+        "
+      />
+
+      <span className="text-xs text-base-content/40">
+        bpm
+      </span>
+    </div>
   )
 }

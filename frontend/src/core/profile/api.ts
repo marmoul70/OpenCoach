@@ -18,6 +18,24 @@ interface ApiProfile {
     vma?: number | null
     threshold_heart_rate_1?: number | null
     threshold_heart_rate_2?: number | null
+
+    heart_rate_zones: {
+      z1?: {
+        max_bpm: number
+      } | null
+      z2?: {
+        max_bpm: number
+      } | null
+      z3?: {
+        max_bpm: number
+      } | null
+      z4?: {
+        max_bpm: number
+      } | null
+      z5?: {
+        max_bpm: number
+      } | null
+    }
   }
   training: {
     weekly_sessions?: number | null
@@ -101,6 +119,47 @@ function fromApi(profile: ApiProfile): AthleteProfile {
       thresholdHeartRate2: optionalNumber(
         profile.physiology.threshold_heart_rate_2,
       ),
+      heartRateZones: {
+        z1:
+          profile.physiology.heart_rate_zones.z1
+            ? {
+                maxBpm:
+                  profile.physiology.heart_rate_zones.z1.max_bpm,
+              }
+            : undefined,
+
+        z2:
+          profile.physiology.heart_rate_zones.z2
+            ? {
+                maxBpm:
+                  profile.physiology.heart_rate_zones.z2.max_bpm,
+              }
+            : undefined,
+
+        z3:
+          profile.physiology.heart_rate_zones.z3
+            ? {
+                maxBpm:
+                  profile.physiology.heart_rate_zones.z3.max_bpm,
+              }
+            : undefined,
+
+        z4:
+          profile.physiology.heart_rate_zones.z4
+            ? {
+                maxBpm:
+                  profile.physiology.heart_rate_zones.z4.max_bpm,
+              }
+            : undefined,
+
+        z5:
+          profile.physiology.heart_rate_zones.z5
+            ? {
+                maxBpm:
+                  profile.physiology.heart_rate_zones.z5.max_bpm,
+              }
+            : undefined,
+      },
     },
 
     training: {
@@ -193,6 +252,47 @@ function toApi(profile: AthleteProfile): ApiProfile {
         profile.physiology.thresholdHeartRate1 ?? null,
       threshold_heart_rate_2:
         profile.physiology.thresholdHeartRate2 ?? null,
+      heart_rate_zones: {
+        z1:
+          profile.physiology.heartRateZones.z1
+            ? {
+                max_bpm:
+                  profile.physiology.heartRateZones.z1.maxBpm,
+              }
+            : null,
+
+        z2:
+          profile.physiology.heartRateZones.z2
+            ? {
+                max_bpm:
+                  profile.physiology.heartRateZones.z2.maxBpm,
+              }
+            : null,
+
+        z3:
+          profile.physiology.heartRateZones.z3
+            ? {
+                max_bpm:
+                  profile.physiology.heartRateZones.z3.maxBpm,
+              }
+            : null,
+
+        z4:
+          profile.physiology.heartRateZones.z4
+            ? {
+                max_bpm:
+                  profile.physiology.heartRateZones.z4.maxBpm,
+              }
+            : null,
+
+        z5:
+          profile.physiology.heartRateZones.z5
+            ? {
+                max_bpm:
+                  profile.physiology.heartRateZones.z5.maxBpm,
+              }
+            : null,
+      },
     },
 
     training: {

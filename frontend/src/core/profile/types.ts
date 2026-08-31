@@ -11,12 +11,27 @@ export interface AthleteBody {
   weightKg?: number
 }
 
+export interface HeartRateZone {
+  maxBpm: number
+}
+
+export interface HeartRateZones {
+  z1?: HeartRateZone
+  z2?: HeartRateZone
+  z3?: HeartRateZone
+  z4?: HeartRateZone
+  z5?: HeartRateZone
+}
+
+
 export interface AthletePhysiology {
   maxHeartRate?: number
   restingHeartRate?: number
   vma?: number
   thresholdHeartRate1?: number
   thresholdHeartRate2?: number
+
+  heartRateZones: HeartRateZones
 }
 
 export type SportDiscipline =

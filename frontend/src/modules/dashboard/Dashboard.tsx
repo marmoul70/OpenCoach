@@ -7,6 +7,9 @@ import {
   Modal,
 } from '../../components/ui/Modal'
 import {
+  useToast,
+} from '../../components/ui/ToastProvider'
+import {
   WidgetCard,
 } from '../../components/widgets/WidgetCard'
 import {
@@ -31,6 +34,9 @@ import {
 import {
   WeatherWidget,
 } from '../weather/WeatherWidget'
+import {
+  fetchBackupStatus,
+} from '../settings/backupApi'
 
 
 interface DashboardProps {
@@ -47,6 +53,10 @@ export function Dashboard({
 }: DashboardProps) {
   const profile =
     useAthleteProfile()
+
+  const {
+    toast,
+  } = useToast()
 
   const firstName =
     profile.identity.firstName.trim()
@@ -114,6 +124,71 @@ export function Dashboard({
   ] = useState<string | null>(
     null,
   )
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function checkBackupStatus() {
+      try {
+        const status =
+          await fetchBackupStatus()
+
+        if (
+          cancelled
+          || status.status !== 'failed'
+          || !status.executedAt
+        ) {
+          return
+        }
+
+        const storageKey =
+          'opencoach.backup.failure.seen'
+
+        const alreadySeen =
+          window.localStorage.getItem(
+            storageKey,
+          )
+
+        if (
+          alreadySeen
+          === status.executedAt
+        ) {
+          return
+        }
+
+        window.localStorage.setItem(
+          storageKey,
+          status.executedAt,
+        )
+
+        toast({
+          type: 'error',
+          title:
+            'Échec de la sauvegarde automatique',
+          message:
+            status.error
+            ?? (
+              'La sauvegarde nocturne '
+              + 'de la base OpenCoach a échoué.'
+            ),
+          duration: null,
+        })
+
+      } catch {
+        // Le contrôle du backup ne doit jamais
+        // empêcher le Dashboard de fonctionner.
+      }
+    }
+
+    void checkBackupStatus()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    toast,
+  ])
+
 
   useEffect(() => {
     function closeWidgetModal() {

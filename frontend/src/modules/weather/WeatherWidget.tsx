@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useRef,
   useState,
 } from 'react'
 
@@ -54,11 +53,6 @@ export function WeatherWidget({
   const {
     toast,
   } = useToast()
-
-  const notifiedAlerts =
-    useRef<Set<string>>(
-      new Set(),
-    )
 
   const profile =
     useAthleteProfile()
@@ -173,24 +167,44 @@ export function WeatherWidget({
       )
 
     for (const alert of alerts) {
-      const key = [
-        alert.type,
-        alert.severity,
-      ].join(
-        '-',
-      )
-
-      if (
-        notifiedAlerts.current.has(
-          key,
+        const key = [
+          'opencoach',
+          'weather-alert',
+          today,
+          alert.type,
+          alert.severity,
+          alert.time ?? 'no-time',
+          alert.endTime ?? 'no-end',
+        ].join(
+          ':',
         )
-      ) {
-        continue
-      }
 
-      notifiedAlerts.current.add(
-        key,
-      )
+        let alreadyNotified =
+          false
+
+        try {
+          alreadyNotified =
+            window.localStorage.getItem(
+              key,
+            ) !== null
+        } catch {
+          alreadyNotified =
+            false
+        }
+
+        if (alreadyNotified) {
+          continue
+        }
+
+        try {
+          window.localStorage.setItem(
+            key,
+            new Date().toISOString(),
+          )
+        } catch {
+          // Notification toujours possible
+          // si localStorage est indisponible.
+        }
 
       toast({
         type:

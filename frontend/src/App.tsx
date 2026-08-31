@@ -32,11 +32,25 @@ type Page =
 
 type Theme = 'light' | 'dark' | 'system'
 
+interface BuildInfo {
+  application: string
+  version: string
+  commit: string
+  built_at: string
+}
+
 function App() {
   const [page, setPage] = useState<Page>('dashboard')
   const profile = useAthleteProfile()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [
+    buildInfo,
+    setBuildInfo,
+  ] = useState<BuildInfo | null>(
+    null,
+  )
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('opencoach-theme')
 
@@ -76,6 +90,45 @@ function App() {
       mounted = false
     }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    void fetch(
+      '/version.json',
+      {
+        cache: 'no-store',
+      },
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            'Version indisponible.',
+          )
+        }
+
+        return response.json()
+      })
+      .then((data: BuildInfo) => {
+        if (!cancelled) {
+          setBuildInfo(
+            data,
+          )
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setBuildInfo(
+            null,
+          )
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
 
   useEffect(() => {
     const root = document.documentElement
@@ -402,6 +455,48 @@ function App() {
                           </li>
                         </ul>
                       </details>
+                    </li>
+
+                    <div className="divider my-1" />
+
+                    <li
+                      className="
+                        pointer-events-none
+                        px-3
+                        py-1
+                      "
+                    >
+                      <div
+                        className="
+                          flex
+                          flex-col
+                          gap-0
+                          p-0
+                          text-[11px]
+                          leading-4
+                          text-base-content/40
+                        "
+                      >
+                        <span>
+                          Version : {
+                            buildInfo
+                              ? `v${buildInfo.version}`
+                              : 'développement'
+                          }
+                        </span>
+
+                        {buildInfo && (
+                          <span
+                            className="
+                              font-mono
+                              text-[10px]
+                              text-base-content/30
+                            "
+                          >
+                            {buildInfo.commit}
+                          </span>
+                        )}
+                      </div>
                     </li>
 
                   </ul>

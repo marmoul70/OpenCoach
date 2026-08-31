@@ -91,13 +91,13 @@ class PushNotificationService:
                 payload = json.dumps(
                     {
                         "web_push": 8030,
+                        "app_badge": str(
+                            badge_count
+                        ),
                         "notification": {
                             "title": title,
                             "body": body,
                             "navigate": url,
-                            "app_badge": str(
-                                badge_count
-                            ),
                         },
                     },
                     ensure_ascii=False,
@@ -167,4 +167,4 @@ class PushNotificationService:
                 "sub": subject,
             },
             timeout=15,
-        )\n
+        )

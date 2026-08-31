@@ -376,7 +376,7 @@ self.addEventListener(
         Math.max(
           1,
           Number(
-            notification.app_badge,
+            data.app_badge,
           ) || 1,
         )
 

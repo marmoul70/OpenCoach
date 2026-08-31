@@ -1,3 +1,47 @@
+interface VersionResponse {
+  version?: string
+  commit?: string
+}
+
+
+async function getServiceWorkerUrl():
+Promise<string> {
+  try {
+    const response = await fetch(
+      '/version.json',
+      {
+        cache: 'no-store',
+      },
+    )
+
+    if (!response.ok) {
+      return '/sw.js'
+    }
+
+    const version = (
+      await response.json()
+    ) as VersionResponse
+
+    const identifier =
+      version.commit
+      || version.version
+
+    if (!identifier) {
+      return '/sw.js'
+    }
+
+    return (
+      '/sw.js?v='
+      + encodeURIComponent(
+          identifier,
+        )
+    )
+  } catch {
+    return '/sw.js'
+  }
+}
+
+
 export function registerServiceWorker() {
   if (
     !import.meta.env.PROD
@@ -18,41 +62,38 @@ export function registerServiceWorker() {
   window.addEventListener(
     'load',
     () => {
-      void navigator
-        .serviceWorker
-        .register(
-          '/sw.js',
-          {
-            scope: '/',
-            updateViaCache: 'none',
-          },
-        )
-        .then(
-          async (
-            registration,
-          ) => {
+      void (
+        async () => {
+          try {
+            const serviceWorkerUrl =
+              await getServiceWorkerUrl()
+
+            const registration =
+              await navigator
+                .serviceWorker
+                .register(
+                  serviceWorkerUrl,
+                  {
+                    scope: '/',
+                    updateViaCache: 'none',
+                  },
+                )
+
             /*
-             * Vérification explicite afin
-             * d'éviter qu'iOS conserve trop
-             * longtemps un ancien worker.
+             * Force également une vérification
+             * explicite du worker.
              */
-            try {
-              await registration
-                .update()
-            } catch {
-              // La PWA reste fonctionnelle.
-            }
-          },
-        )
-        .catch(
-          (reason) => {
+            await registration
+              .update()
+          } catch (reason) {
             console.error(
               'Impossible d’enregistrer '
               + 'le service worker OpenCoach.',
               reason,
             )
-          },
-        )
+          }
+        }
+      )()
     },
   )
 }

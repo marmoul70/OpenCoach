@@ -352,7 +352,7 @@ self.addEventListener(
   'push',
   (event) => {
     event.waitUntil(
-      diagnosePushBadge(
+      handleOpenCoachPush(
         event,
       ),
     )
@@ -360,10 +360,13 @@ self.addEventListener(
 )
 
 
-async function diagnosePushBadge(
+async function handleOpenCoachPush(
   event,
 ) {
   let payload = {
+    title: 'OpenCoach',
+    body: 'Nouvelle information disponible.',
+    url: '/',
     badge: 1,
   }
 
@@ -374,7 +377,8 @@ async function diagnosePushBadge(
         ...event.data.json(),
       }
     } catch {
-      // Payload non JSON.
+      payload.body =
+        event.data.text()
     }
   }
 
@@ -386,9 +390,13 @@ async function diagnosePushBadge(
       ) || 1,
     )
 
-  let result =
-    'API setAppBadge absente'
-
+  /*
+   * Le badge est appliqué directement
+   * depuis le Service Worker.
+   *
+   * Cette méthode est validée sur
+   * l'installation iOS OpenCoach.
+   */
   if (
     'setAppBadge'
     in self.navigator
@@ -398,32 +406,26 @@ async function diagnosePushBadge(
         .setAppBadge(
           badgeCount,
         )
-
-      result =
-        `setAppBadge(${badgeCount}) OK`
-    } catch (error) {
-      const name =
-        error?.name
-        || 'Erreur inconnue'
-
-      const message =
-        error?.message
-        || ''
-
-      result =
-        `${name}: ${message}`
+    } catch {
+      /*
+       * Une erreur de badge ne doit jamais
+       * empêcher l'affichage du Push.
+       */
     }
   }
 
   await self.registration
     .showNotification(
-      'OpenCoach SW-DIAG',
+      payload.title,
       {
-        body: result,
+        body:
+          payload.body,
         icon:
           '/icons/icon-192.png',
         data: {
-          url: '/',
+          url:
+            payload.url
+            || '/',
         },
       },
     )

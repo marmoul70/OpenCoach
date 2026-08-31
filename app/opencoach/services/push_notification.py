@@ -90,10 +90,15 @@ class PushNotificationService:
 
                 payload = json.dumps(
                     {
-                        "title": title,
-                        "body": body,
-                        "url": url,
-                        "badge": badge_count,
+                        "web_push": 8030,
+                        "notification": {
+                            "title": title,
+                            "body": body,
+                            "navigate": url,
+                            "app_badge": str(
+                                badge_count
+                            ),
+                        },
                     },
                     ensure_ascii=False,
                 )
@@ -162,4 +167,4 @@ class PushNotificationService:
                 "sub": subject,
             },
             timeout=15,
-        )
+        )\n

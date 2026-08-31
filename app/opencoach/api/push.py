@@ -139,3 +139,38 @@ def get_public_key() -> dict[str, str]:
     return {
         "public_key": public_key,
     }
+
+
+@router.post(
+    "/test",
+)
+def send_test_notification(
+    session: Session = Depends(
+        get_db
+    ),
+) -> dict[str, int | bool]:
+    from opencoach.services.push_notification import (
+        PushNotificationService,
+    )
+
+    service = PushNotificationService(
+        session
+    )
+
+    report = service.send_to_all(
+        title="OpenCoach",
+        body=(
+            "Les notifications "
+            "fonctionnent ! 🏃"
+        ),
+        url="/",
+    )
+
+    return {
+        "success": (
+            report.failed == 0
+        ),
+        "sent": report.sent,
+        "failed": report.failed,
+        "removed": report.removed,
+    }

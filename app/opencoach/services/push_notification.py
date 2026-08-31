@@ -90,15 +90,10 @@ class PushNotificationService:
 
                 payload = json.dumps(
                     {
-                        "web_push": 8030,
-                        "app_badge": str(
-                            badge_count
-                        ),
-                        "notification": {
-                            "title": title,
-                            "body": body,
-                            "navigate": url,
-                        },
+                        "title": title,
+                        "body": body,
+                        "url": url,
+                        "badge": badge_count,
                     },
                     ensure_ascii=False,
                 )

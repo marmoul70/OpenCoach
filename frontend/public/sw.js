@@ -351,70 +351,90 @@ function isStaticAsset(
 self.addEventListener(
   'push',
   (event) => {
-    let data = null
-
-    if (event.data) {
-      try {
-        data = event.data.json()
-      } catch {
-        data = null
-      }
-    }
-
-    /*
-     * Declarative Web Push.
-     *
-     * Sur les versions récentes de WebKit,
-     * le navigateur gère lui-même :
-     *
-     * - l'affichage de la notification ;
-     * - la navigation ;
-     * - app_badge.
-     *
-     * Ne pas appeler showNotification()
-     * ici : cela remplacerait la
-     * notification déclarative proposée
-     * par WebKit.
-     */
-    if (
-      data?.web_push === 8030
-      && data?.notification
-    ) {
-      return
-    }
-
-    /*
-     * Fallback historique pour un éventuel
-     * Push non déclaratif.
-     */
-    const title =
-      data?.title
-      || 'OpenCoach'
-
-    const body =
-      data?.body
-      || 'Nouvelle information disponible.'
-
-    const url =
-      data?.url
-      || '/'
-
     event.waitUntil(
-      self.registration
-        .showNotification(
-          title,
-          {
-            body,
-            icon:
-              '/icons/icon-192.png',
-            data: {
-              url,
-            },
-          },
-        ),
+      handlePushDiagnostic(
+        event,
+      ),
     )
   },
 )
+
+
+async function handlePushDiagnostic(
+  event,
+) {
+  let payload = {
+    title: 'OpenCoach',
+    body: 'Notification OpenCoach',
+    url: '/',
+    badge: 1,
+  }
+
+  if (event.data) {
+    try {
+      payload = {
+        ...payload,
+        ...event.data.json(),
+      }
+    } catch {
+      payload.body =
+        event.data.text()
+    }
+  }
+
+  const badgeCount =
+    Math.max(
+      1,
+      Number(
+        payload.badge,
+      ) || 1,
+    )
+
+  let badgeDiagnostic =
+    'Badge API absente'
+
+  if (
+    'setAppBadge'
+    in self.navigator
+  ) {
+    try {
+      await self.navigator
+        .setAppBadge(
+          badgeCount,
+        )
+
+      badgeDiagnostic =
+        `Badge SW OK (${badgeCount})`
+    } catch (error) {
+      const errorName =
+        error?.name
+        || 'Erreur'
+
+      const errorMessage =
+        error?.message
+        || ''
+
+      badgeDiagnostic =
+        `Badge SW ERREUR: ${errorName} ${errorMessage}`
+    }
+  }
+
+  await self.registration
+    .showNotification(
+      payload.title,
+      {
+        body:
+          `${payload.body}\n${badgeDiagnostic}`,
+        icon:
+          '/icons/icon-192.png',
+        data: {
+          url:
+            payload.url
+            || '/',
+        },
+      },
+    )
+}
 
 
 self.addEventListener(

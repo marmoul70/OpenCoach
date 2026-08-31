@@ -17,6 +17,7 @@ import { ActivityPage } from './modules/activities/ActivityPage'
 import { FeelingPage } from './modules/feeling/FeelingPage'
 import { Settings } from './modules/settings'
 import { Connections } from './modules/connections'
+import { logout as logoutOpenCoach } from './modules/auth'
 
 type Page =
   | 'dashboard'
@@ -497,6 +498,23 @@ function App() {
                           </span>
                         )}
                       </div>
+                    </li>
+
+                    <div className="divider my-1" />
+
+                    <li>
+                      <button
+                        type="button"
+                        className="text-error"
+                        onClick={() => {
+                          void logoutOpenCoach()
+                            .finally(() => {
+                              window.location.reload()
+                            })
+                        }}
+                      >
+                        Se déconnecter
+                      </button>
                     </li>
 
                   </ul>

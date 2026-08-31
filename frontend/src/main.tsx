@@ -6,11 +6,14 @@ import {
   ToastProvider,
 } from './components/ui/ToastProvider'
 import App from './App.tsx'
+import { AuthGate } from './modules/auth'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ToastProvider>
-      <App />
+      <AuthGate>
+        <App />
+      </AuthGate>
     </ToastProvider>
   </StrictMode>,
 )

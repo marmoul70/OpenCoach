@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 
+from opencoach.api.auth import router as auth_router
+from opencoach.authentication.middleware import AuthenticationMiddleware
+
 from opencoach.api.backups import router as backups_router
 from opencoach.api.intervals import router as intervals_router
 from opencoach.api.health import router as health_router
@@ -44,7 +47,13 @@ def create_app() -> FastAPI:
         version="0.1.0",
     )
 
+
+    app.add_middleware(
+        AuthenticationMiddleware
+    )
+
     app.include_router(health_router)
+    app.include_router(auth_router)
     app.include_router(backups_router)
     app.include_router(profile_router)
     app.include_router(intervals_router)

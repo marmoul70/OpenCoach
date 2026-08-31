@@ -4,10 +4,6 @@ import {
 } from 'react'
 
 import {
-  LockKeyhole,
-} from 'lucide-react'
-
-import {
   loginWithPin,
 } from './api'
 
@@ -113,38 +109,16 @@ export function LoginPage({
             text-center
           "
         >
-          <div
+          <img
+            src="/opencoach-logo.png"
+            alt="OpenCoach"
             className="
               mx-auto
-              flex
-              h-16
-              w-16
-              items-center
-              justify-center
-              rounded-2xl
-              bg-primary
-              text-primary-content
-              shadow-lg
+              h-32
+              w-auto
+              object-contain
             "
-          >
-            <LockKeyhole
-              className="
-                h-7
-                w-7
-              "
-            />
-          </div>
-
-          <h1
-            className="
-              mt-5
-              text-3xl
-              font-bold
-              tracking-tight
-            "
-          >
-            OpenCoach
-          </h1>
+          />
 
           <p
             className="

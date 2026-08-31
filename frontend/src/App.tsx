@@ -219,6 +219,9 @@ function App() {
                     tabIndex={-1}
                     className="menu menu-sm dropdown-content z-50 mt-3 w-52 rounded-box bg-base-100 p-2 shadow"
                   >
+                    
+                    <div className="divider my-1" />
+
                     <li>
                       <button
                         type="button"
@@ -458,9 +461,23 @@ function App() {
                       </details>
                     </li>
 
-                    <div className="divider my-1" />
+                    <li>
+                      <button
+                        type="button"
+                        className="text-error"
+                        onClick={() => {
+                          void logoutOpenCoach()
+                            .finally(() => {
+                              window.location.reload()
+                            })
+                        }}
+                      >
+                        Se déconnecter
+                      </button>
+                    </li>
 
-                    <li
+                    <div className="divider my-1" />
+<li
                       className="
                         pointer-events-none
                         px-3
@@ -498,23 +515,6 @@ function App() {
                           </span>
                         )}
                       </div>
-                    </li>
-
-                    <div className="divider my-1" />
-
-                    <li>
-                      <button
-                        type="button"
-                        className="text-error"
-                        onClick={() => {
-                          void logoutOpenCoach()
-                            .finally(() => {
-                              window.location.reload()
-                            })
-                        }}
-                      >
-                        Se déconnecter
-                      </button>
                     </li>
 
                   </ul>

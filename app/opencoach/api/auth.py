@@ -161,12 +161,31 @@ def login(
         create_session_token()
     )
 
+    host = (
+        request.headers
+        .get(
+            "host",
+            "",
+        )
+        .split(
+            ":",
+            1,
+        )[0]
+        .lower()
+    )
+
+    secure_cookie = host not in {
+        "localhost",
+        "127.0.0.1",
+        "::1",
+    }
+
     response.set_cookie(
         key=COOKIE_NAME,
         value=token,
         max_age=max_age,
         httponly=True,
-        secure=True,
+        secure=secure_cookie,
         samesite="lax",
         path="/",
     )
@@ -214,7 +233,6 @@ def logout(
     response.delete_cookie(
         COOKIE_NAME,
         path="/",
-        secure=True,
         httponly=True,
         samesite="lax",
     )

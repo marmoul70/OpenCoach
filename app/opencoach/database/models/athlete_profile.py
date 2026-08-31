@@ -108,6 +108,13 @@ class AthleteProfile(Base):
         nullable=True,
     )
 
+
+    heart_rate_zones: Mapped[dict[str, dict[str, int]]] = mapped_column(
+        JSON,
+        default=dict,
+        nullable=False,
+    )
+
     # Entraînement
     weekly_sessions: Mapped[int | None] = mapped_column(
         Integer,

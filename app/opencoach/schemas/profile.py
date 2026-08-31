@@ -62,6 +62,54 @@ class AthleteBodySchema(BaseModel):
     weight_kg: float | None = Field(default=None, gt=0, le=500)
 
 
+class HeartRateZoneSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    max_bpm: int = Field(
+        gt=0,
+        le=250,
+    )
+
+
+class HeartRateZonesSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    z1: HeartRateZoneSchema | None = None
+    z2: HeartRateZoneSchema | None = None
+    z3: HeartRateZoneSchema | None = None
+    z4: HeartRateZoneSchema | None = None
+    z5: HeartRateZoneSchema | None = None
+
+    @model_validator(mode="after")
+    def validate_order(
+        self,
+    ) -> "HeartRateZonesSchema":
+        previous_max: int | None = None
+
+        for zone in (
+            self.z1,
+            self.z2,
+            self.z3,
+            self.z4,
+            self.z5,
+        ):
+            if zone is None:
+                continue
+
+            if (
+                previous_max is not None
+                and zone.max_bpm <= previous_max
+            ):
+                raise ValueError(
+                    "Les plafonds des zones FC "
+                    "doivent être strictement croissants."
+                )
+
+            previous_max = zone.max_bpm
+
+        return self
+
+
 class AthletePhysiologySchema(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -70,6 +118,9 @@ class AthletePhysiologySchema(BaseModel):
     vma: float | None = Field(default=None, gt=0, le=40)
     threshold_heart_rate_1: int | None = Field(default=None, gt=0, le=250)
     threshold_heart_rate_2: int | None = Field(default=None, gt=0, le=250)
+    heart_rate_zones: HeartRateZonesSchema = Field(
+        default_factory=HeartRateZonesSchema,
+    )
 
     @model_validator(mode="after")
     def validate_thresholds(self) -> "AthletePhysiologySchema":

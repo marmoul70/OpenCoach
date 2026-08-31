@@ -33,12 +33,29 @@ class AthleteBody:
 
 
 @dataclass
+class HeartRateZone:
+    max_bpm: int
+
+
+@dataclass
+class HeartRateZones:
+    z1: HeartRateZone | None = None
+    z2: HeartRateZone | None = None
+    z3: HeartRateZone | None = None
+    z4: HeartRateZone | None = None
+    z5: HeartRateZone | None = None
+
+
+@dataclass
 class AthletePhysiology:
     max_heart_rate: int | None = None
     resting_heart_rate: int | None = None
     vma: float | None = None
     threshold_heart_rate_1: int | None = None
     threshold_heart_rate_2: int | None = None
+    heart_rate_zones: HeartRateZones = field(
+        default_factory=HeartRateZones,
+    )
 
 
 @dataclass

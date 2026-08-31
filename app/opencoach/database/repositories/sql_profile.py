@@ -19,6 +19,8 @@ from opencoach.models import (
     AthleteEquipment,
     AthleteIdentity,
     AthleteLocation,
+    HeartRateZone,
+    HeartRateZones,
     AthleteNutrition,
     AthletePhysiology,
     AthleteProfile,
@@ -94,6 +96,11 @@ class SqlProfileRepository(ProfileRepository):
             )
             database_profile.threshold_heart_rate_2 = (
                 profile.physiology.threshold_heart_rate_2
+            )
+            database_profile.heart_rate_zones = (
+                self._heart_rate_zones_to_database(
+                    profile.physiology.heart_rate_zones
+                )
             )
 
             # Entraînement
@@ -219,6 +226,12 @@ class SqlProfileRepository(ProfileRepository):
                 vma=profile.vma,
                 threshold_heart_rate_1=profile.threshold_heart_rate_1,
                 threshold_heart_rate_2=profile.threshold_heart_rate_2,
+                heart_rate_zones=(
+                    SqlProfileRepository
+                    ._heart_rate_zones_to_domain(
+                        profile.heart_rate_zones
+                    )
+                ),
             ),
             training=AthleteTraining(
                 weekly_sessions=profile.weekly_sessions,
@@ -274,6 +287,66 @@ class SqlProfileRepository(ProfileRepository):
                 fluids_per_hour=profile.fluids_per_hour,
                 sodium_per_hour=profile.sodium_per_hour,
             ),
+        )
+
+    @staticmethod
+    def _heart_rate_zones_to_database(
+        zones: HeartRateZones,
+    ) -> dict[str, dict[str, int]]:
+        result: dict[str, dict[str, int]] = {}
+
+        for name in (
+            "z1",
+            "z2",
+            "z3",
+            "z4",
+            "z5",
+        ):
+            zone = getattr(
+                zones,
+                name,
+            )
+
+            if zone is not None:
+                result[name] = {
+                    "max_bpm": zone.max_bpm,
+                }
+
+        return result
+
+    @staticmethod
+    def _heart_rate_zones_to_domain(
+        data: dict[str, dict[str, int]] | None,
+    ) -> HeartRateZones:
+        data = data or {}
+
+        def load_zone(
+            name: str,
+        ) -> HeartRateZone | None:
+            raw = data.get(name)
+
+            if not raw:
+                return None
+
+            max_bpm = raw.get(
+                "max_bpm",
+            )
+
+            if max_bpm is None:
+                return None
+
+            return HeartRateZone(
+                max_bpm=int(
+                    max_bpm,
+                ),
+            )
+
+        return HeartRateZones(
+            z1=load_zone("z1"),
+            z2=load_zone("z2"),
+            z3=load_zone("z3"),
+            z4=load_zone("z4"),
+            z5=load_zone("z5"),
         )
 
     @staticmethod

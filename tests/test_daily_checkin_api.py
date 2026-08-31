@@ -514,14 +514,15 @@ def test_today_returns_saved_checkin_and_proposal() -> None:
     )
 
 
-def test_today_returns_404_without_checkin() -> None:
+def test_today_returns_null_without_checkin() -> None:
     client, _, _, _ = _client()
 
     response = client.get(
         "/api/coach/check-in/today"
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 200
+    assert response.json() is None
 
 
 def test_athlete_can_accept_proposal() -> None:

@@ -1,7 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 from opencoach.models import (
+    HeartRateZones,
     PhysiologicalMeasurement,
     PhysiologicalMetric,
 )
@@ -45,6 +46,10 @@ class PhysiologicalCalibrationSnapshot:
     resting_heart_rate: PhysiologicalCalibrationMetric
     threshold_heart_rate_1: PhysiologicalCalibrationMetric
     threshold_heart_rate_2: PhysiologicalCalibrationMetric
+
+    heart_rate_zones: HeartRateZones = field(
+        default_factory=HeartRateZones,
+    )
 
     @property
     def metrics(

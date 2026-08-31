@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from datetime import date
 from uuid import UUID
 
 from opencoach.database.repositories.activity import (
@@ -43,6 +44,12 @@ class TrainingSessionActivityNotFoundError(
     TrainingSessionValidationError
 ):
     pass
+
+
+class TrainingSessionFutureValidationError(
+    TrainingSessionValidationError
+):
+    """Une séance future ne peut pas être déclarée réalisée."""
 
 
 class TrainingSessionAlreadyValidatedError(
@@ -99,6 +106,18 @@ class ValidateTrainingSessionService:
         if session is None:
             raise TrainingSessionNotFoundError(
                 "Séance introuvable."
+            )
+
+        if session.date > date.today():
+            raise TrainingSessionFutureValidationError(
+                "Une séance future ne peut pas être "
+                "validée comme réalisée."
+            )
+
+        if session.date > date.today():
+            raise TrainingSessionFutureValidationError(
+                "Une séance future ne peut pas "
+                "être validée comme réalisée."
             )
 
         if (

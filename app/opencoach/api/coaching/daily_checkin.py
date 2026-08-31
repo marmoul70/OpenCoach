@@ -431,7 +431,7 @@ def save_daily_checkin(
 
 @router.get(
     "/today",
-    response_model=DailyCheckInStateResponse,
+    response_model=DailyCheckInStateResponse | None,
 )
 def get_today_daily_checkin(
     athlete_profile_id: UUID = Depends(
@@ -443,7 +443,7 @@ def get_today_daily_checkin(
     adaptation_repository: DailyAdaptationRepository = Depends(
         get_daily_adaptation_repository
     ),
-) -> DailyCheckInStateResponse:
+) -> DailyCheckInStateResponse | None:
     """Retourne le dialogue quotidien du jour."""
 
     checkin = (
@@ -454,12 +454,7 @@ def get_today_daily_checkin(
     )
 
     if checkin is None:
-        raise HTTPException(
-            status_code=404,
-            detail=(
-                "Aucun check-in pour aujourd'hui."
-            ),
-        )
+        return None
 
     if checkin.id is None:
         raise RuntimeError(

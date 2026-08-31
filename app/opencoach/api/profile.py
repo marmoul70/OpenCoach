@@ -13,6 +13,8 @@ from opencoach.models import (
     AthleteIdentity,
     AthleteLocation,
     AthleteNutrition,
+    HeartRateZone,
+    HeartRateZones,
     AthletePhysiology,
     AthleteProfile,
     AthleteTraining,
@@ -67,6 +69,63 @@ def schema_to_domain(
             ),
             threshold_heart_rate_2=(
                 profile.physiology.threshold_heart_rate_2
+            ),
+            heart_rate_zones=HeartRateZones(
+                z1=(
+                    HeartRateZone(
+                        max_bpm=(
+                            profile.physiology
+                            .heart_rate_zones.z1.max_bpm
+                        ),
+                    )
+                    if profile.physiology
+                    .heart_rate_zones.z1
+                    else None
+                ),
+                z2=(
+                    HeartRateZone(
+                        max_bpm=(
+                            profile.physiology
+                            .heart_rate_zones.z2.max_bpm
+                        ),
+                    )
+                    if profile.physiology
+                    .heart_rate_zones.z2
+                    else None
+                ),
+                z3=(
+                    HeartRateZone(
+                        max_bpm=(
+                            profile.physiology
+                            .heart_rate_zones.z3.max_bpm
+                        ),
+                    )
+                    if profile.physiology
+                    .heart_rate_zones.z3
+                    else None
+                ),
+                z4=(
+                    HeartRateZone(
+                        max_bpm=(
+                            profile.physiology
+                            .heart_rate_zones.z4.max_bpm
+                        ),
+                    )
+                    if profile.physiology
+                    .heart_rate_zones.z4
+                    else None
+                ),
+                z5=(
+                    HeartRateZone(
+                        max_bpm=(
+                            profile.physiology
+                            .heart_rate_zones.z5.max_bpm
+                        ),
+                    )
+                    if profile.physiology
+                    .heart_rate_zones.z5
+                    else None
+                ),
             ),
         ),
         training=AthleteTraining(

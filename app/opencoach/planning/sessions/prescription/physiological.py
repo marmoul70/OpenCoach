@@ -36,6 +36,8 @@ class StimulusIntensityPolicy:
 
     prefer_threshold_hr2: bool = False
 
+    heart_rate_zone: str | None = None
+
     guidance: tuple[
         str,
         ...,
@@ -62,6 +64,7 @@ INTENSITY_POLICIES: dict[
         StimulusIntensityPolicy(
             rpe_min=1,
             rpe_max=2,
+            heart_rate_zone="z1",
             hrr_min=0.50,
             hrr_max=0.60,
             hrmax_min=0.60,
@@ -95,6 +98,7 @@ INTENSITY_POLICIES: dict[
         StimulusIntensityPolicy(
             rpe_min=2,
             rpe_max=3,
+            heart_rate_zone="z2",
             hrr_min=0.55,
             hrr_max=0.70,
             hrmax_min=0.65,
@@ -112,6 +116,7 @@ INTENSITY_POLICIES: dict[
         StimulusIntensityPolicy(
             rpe_min=3,
             rpe_max=4,
+            heart_rate_zone="z2",
             hrr_min=0.60,
             hrr_max=0.75,
             hrmax_min=0.68,
@@ -128,6 +133,7 @@ INTENSITY_POLICIES: dict[
         StimulusIntensityPolicy(
             rpe_min=3,
             rpe_max=4,
+            heart_rate_zone="z2",
             hrr_min=0.55,
             hrr_max=0.72,
             hrmax_min=0.65,
@@ -145,6 +151,7 @@ INTENSITY_POLICIES: dict[
         StimulusIntensityPolicy(
             rpe_min=7,
             rpe_max=8,
+            heart_rate_zone="z4",
             vma_min=80,
             vma_max=90,
             prefer_threshold_hr2=True,
@@ -159,6 +166,7 @@ INTENSITY_POLICIES: dict[
         StimulusIntensityPolicy(
             rpe_min=7,
             rpe_max=8,
+            heart_rate_zone="z4",
             prefer_threshold_hr2=True,
             guidance=(
                 "Maintenir un effort régulier dans la montée.",
@@ -389,18 +397,6 @@ def _build_physiological_targets(
         IntensityRange
     ] = []
 
-    if policy.prefer_threshold_hr2:
-        threshold_target = (
-            _build_threshold_hr2_target(
-                physiology.threshold_heart_rate_2
-            )
-        )
-
-        if threshold_target is not None:
-            targets.append(
-                threshold_target
-            )
-
     heart_rate_target = (
         _build_heart_rate_target(
             policy=policy,
@@ -412,6 +408,18 @@ def _build_physiological_targets(
         targets.append(
             heart_rate_target
         )
+
+    if policy.prefer_threshold_hr2:
+        threshold_target = (
+            _build_threshold_hr2_target(
+                physiology.threshold_heart_rate_2
+            )
+        )
+
+        if threshold_target is not None:
+            targets.append(
+                threshold_target
+            )
 
     vma_target = (
         _build_vma_target(
@@ -460,6 +468,16 @@ def _build_heart_rate_target(
     policy: StimulusIntensityPolicy,
     physiology: PhysiologicalCalibrationSnapshot,
 ) -> IntensityRange | None:
+    personalized = (
+        _build_personalized_heart_rate_zone_target(
+            policy=policy,
+            physiology=physiology,
+        )
+    )
+
+    if personalized is not None:
+        return personalized
+
     max_hr = physiology.max_heart_rate
     resting_hr = physiology.resting_heart_rate
 
@@ -499,7 +517,7 @@ def _build_heart_rate_target(
                 maximum
             ),
             unit="bpm",
-            label="Fréquence cardiaque individualisée",
+            label="FC",
         )
 
     if (
@@ -520,10 +538,75 @@ def _build_heart_rate_target(
                 * policy.hrmax_max
             ),
             unit="bpm",
-            label="Fréquence cardiaque",
+            label="FC",
         )
 
     return None
+
+
+def _build_personalized_heart_rate_zone_target(
+    *,
+    policy: StimulusIntensityPolicy,
+    physiology: PhysiologicalCalibrationSnapshot,
+) -> IntensityRange | None:
+    zone_name = policy.heart_rate_zone
+
+    if zone_name is None:
+        return None
+
+    zones = physiology.heart_rate_zones
+
+    names = (
+        "z1",
+        "z2",
+        "z3",
+        "z4",
+        "z5",
+    )
+
+    if zone_name not in names:
+        return None
+
+    zone = getattr(
+        zones,
+        zone_name,
+    )
+
+    if zone is None:
+        return None
+
+    index = names.index(
+        zone_name
+    )
+
+    if index == 0:
+        minimum = (
+            physiology.resting_heart_rate.value
+            if _usable_value(
+                physiology.resting_heart_rate
+            )
+            else 1
+        )
+    else:
+        previous = getattr(
+            zones,
+            names[index - 1],
+        )
+
+        if previous is None:
+            return None
+
+        minimum = previous.max_bpm + 1
+
+    return IntensityRange(
+        reference=IntensityReference.HEART_RATE,
+        minimum=round(
+            minimum
+        ),
+        maximum=zone.max_bpm,
+        unit="bpm",
+        label=zone_name.upper(),
+    )
 
 
 def _build_vma_target(

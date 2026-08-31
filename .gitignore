@@ -240,3 +240,6 @@ data/backups/
 
 # OpenCoach - Database backups
 data/backups/
+
+# Temporary patch backups
+.patch-backup-*/

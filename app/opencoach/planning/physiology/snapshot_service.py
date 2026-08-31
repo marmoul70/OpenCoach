@@ -77,6 +77,9 @@ class PhysiologicalCalibrationSnapshotService:
                 ),
                 reference_date=reference_date,
             ),
+            heart_rate_zones=(
+                athlete.physiology.heart_rate_zones
+            ),
         )
 
     def _build_metric(

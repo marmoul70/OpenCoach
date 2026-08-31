@@ -294,3 +294,182 @@ def test_uphill_strength_endurance_uses_rpe_without_hr_or_vma() -> None:
 
     assert "échec" in guidance
     assert "côte" in guidance
+
+
+def heart_rate_zones():
+    from opencoach.models import (
+        HeartRateZone,
+        HeartRateZones,
+    )
+
+    return HeartRateZones(
+        z1=HeartRateZone(
+            max_bpm=120,
+        ),
+        z2=HeartRateZone(
+            max_bpm=140,
+        ),
+        z3=HeartRateZone(
+            max_bpm=160,
+        ),
+        z4=HeartRateZone(
+            max_bpm=180,
+        ),
+        z5=HeartRateZone(
+            max_bpm=199,
+        ),
+    )
+
+
+def snapshot_with_heart_rate_zones():
+    return PhysiologicalCalibrationSnapshot(
+        vma=metric(
+            value=15.0,
+        ),
+        max_heart_rate=metric(
+            value=199.0,
+        ),
+        resting_heart_rate=metric(
+            value=44.0,
+        ),
+        threshold_heart_rate_1=metric(
+            value=160.0,
+        ),
+        threshold_heart_rate_2=metric(
+            value=180.0,
+        ),
+        heart_rate_zones=heart_rate_zones(),
+    )
+
+
+def test_recovery_prefers_personalized_z1() -> None:
+    prescription = build_intensity_prescription(
+        stimulus=TrainingStimulus.RECOVERY,
+        physiology=snapshot_with_heart_rate_zones(),
+    )
+
+    target = prescription.target_for(
+        IntensityReference.HEART_RATE,
+    )
+
+    assert target is not None
+    assert target.minimum == 44
+    assert target.maximum == 120
+    assert target.unit == "bpm"
+    assert target.label == "Z1"
+
+
+def test_easy_running_prefers_personalized_z2() -> None:
+    prescription = build_intensity_prescription(
+        stimulus=TrainingStimulus.AEROBIC_EASY,
+        physiology=snapshot_with_heart_rate_zones(),
+    )
+
+    target = prescription.target_for(
+        IntensityReference.HEART_RATE,
+    )
+
+    assert target is not None
+    assert target.minimum == 121
+    assert target.maximum == 140
+    assert target.unit == "bpm"
+    assert target.label == "Z2"
+
+
+def test_aerobic_endurance_prefers_personalized_z2() -> None:
+    prescription = build_intensity_prescription(
+        stimulus=TrainingStimulus.AEROBIC_ENDURANCE,
+        physiology=snapshot_with_heart_rate_zones(),
+    )
+
+    target = prescription.target_for(
+        IntensityReference.HEART_RATE,
+    )
+
+    assert target is not None
+    assert target.minimum == 121
+    assert target.maximum == 140
+    assert target.label == "Z2"
+
+
+def test_long_endurance_prefers_personalized_z2() -> None:
+    prescription = build_intensity_prescription(
+        stimulus=TrainingStimulus.LONG_ENDURANCE,
+        physiology=snapshot_with_heart_rate_zones(),
+    )
+
+    target = prescription.target_for(
+        IntensityReference.HEART_RATE,
+    )
+
+    assert target is not None
+    assert target.minimum == 121
+    assert target.maximum == 140
+    assert target.label == "Z2"
+
+
+def test_threshold_exposes_personalized_z4() -> None:
+    prescription = build_intensity_prescription(
+        stimulus=TrainingStimulus.THRESHOLD,
+        physiology=snapshot_with_heart_rate_zones(),
+    )
+
+    target = prescription.target_for(
+        IntensityReference.HEART_RATE,
+    )
+
+    assert target is not None
+    assert target.minimum == 161
+    assert target.maximum == 180
+    assert target.label == "Z4"
+
+
+def test_uphill_threshold_exposes_personalized_z4() -> None:
+    prescription = build_intensity_prescription(
+        stimulus=TrainingStimulus.UPHILL_THRESHOLD,
+        physiology=snapshot_with_heart_rate_zones(),
+    )
+
+    target = prescription.target_for(
+        IntensityReference.HEART_RATE,
+    )
+
+    assert target is not None
+    assert target.minimum == 161
+    assert target.maximum == 180
+    assert target.label == "Z4"
+
+
+def test_missing_personalized_zones_keeps_existing_fallback() -> None:
+    prescription = build_intensity_prescription(
+        stimulus=TrainingStimulus.AEROBIC_EASY,
+        physiology=snapshot(),
+    )
+
+    target = prescription.target_for(
+        IntensityReference.HEART_RATE_RESERVE,
+    )
+
+    assert target is not None
+    assert target.minimum == 127
+    assert target.maximum == 148
+    assert target.unit == "bpm"
+
+
+def test_vo2max_does_not_force_personalized_hr_zone() -> None:
+    prescription = build_intensity_prescription(
+        stimulus=TrainingStimulus.VO2MAX,
+        physiology=snapshot_with_heart_rate_zones(),
+    )
+
+    heart_rate_target = prescription.target_for(
+        IntensityReference.HEART_RATE,
+    )
+
+    assert heart_rate_target is None
+
+    vma_target = prescription.target_for(
+        IntensityReference.VMA_PERCENT,
+    )
+
+    assert vma_target is not None

@@ -609,6 +609,11 @@ phaseLabel={
               onOpenSession={
                 openSession
               }
+              onAddSession={() =>
+                openAddSession(
+                  todayDay.date,
+                )
+              }
             />
           )}
 

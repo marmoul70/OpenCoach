@@ -1,3 +1,7 @@
+import {
+  Plus,
+} from 'lucide-react'
+
 import type {
   TrainingSession,
 } from './types'
@@ -13,12 +17,15 @@ interface TodayTrainingCardProps {
   onOpenSession: (
     sessionId: string,
   ) => void
+
+  onAddSession: () => void
 }
 
 
 export function TodayTrainingCard({
   sessions,
   onOpenSession,
+  onAddSession,
 }: TodayTrainingCardProps) {
   return (
     <section
@@ -28,91 +35,143 @@ export function TodayTrainingCard({
         border
         border-primary/25
         bg-primary/5
-        p-4
-        sm:p-5
+        shadow-sm
+        ring-1
+        ring-primary/10
       "
     >
       <div
         className="
-          flex
-          items-center
-          justify-between
+          grid
           gap-4
+          p-4
+          md:grid-cols-[150px_minmax(0,1fr)_auto]
+          md:items-start
         "
       >
         <div>
-          <p
+          <div
             className="
-              text-xs
-              font-semibold
-              uppercase
-              tracking-wide
-              text-primary
+              flex
+              flex-wrap
+              items-center
+              gap-2
             "
           >
-            Aujourd’hui
-          </p>
+            <p
+              className="
+                text-sm
+                font-bold
+                uppercase
+                tracking-wide
+                text-base-content
+              "
+            >
+              Aujourd’hui
+            </p>
+
+            <span
+              className="
+                badge
+                badge-primary
+                badge-sm
+              "
+            >
+              Aujourd&apos;hui
+            </span>
+          </div>
 
           <p
             className="
               mt-1
-              text-sm
-              text-base-content/55
+              text-xs
+              text-base-content/50
             "
           >
-            Votre entraînement prévu
-            pour aujourd’hui.
+            Séance du jour
           </p>
         </div>
 
-        <span
+        <div
           className="
-            badge
-            badge-primary
-            badge-outline
+            min-w-0
+            space-y-2
           "
         >
-          {sessions.length} séance{
-            sessions.length > 1
-              ? 's'
-              : ''
-          }
-        </span>
-      </div>
+          {sessions.length === 0 && (
+            <div
+              className="
+                rounded-xl
+                border
+                border-base-300
+                bg-base-100
+                px-4
+                py-3
+                shadow-sm
+              "
+            >
+              <p
+                className="
+                  font-medium
+                  text-base-content/70
+                "
+              >
+                Repos
+              </p>
 
-      <div
-        className="
-          mt-4
-          space-y-2
-        "
-      >
-        {sessions.length === 0 && (
-          <div
+              <p
+                className="
+                  mt-1
+                  text-sm
+                  text-base-content/45
+                "
+              >
+                Aucune séance prévue
+              </p>
+            </div>
+          )}
+
+          {sessions.map(
+            (session) => (
+              <TodayTrainingSession
+                key={session.id}
+                session={session}
+                onOpen={() =>
+                  onOpenSession(
+                    session.id,
+                  )
+                }
+              />
+            ),
+          )}
+        </div>
+
+        <div
+          className="
+            flex
+            md:justify-end
+          "
+        >
+          <button
+            type="button"
             className="
-              rounded-xl
-              bg-base-100/70
-              px-4 py-3
-              text-sm
-              text-base-content/55
+              btn
+              btn-ghost
+              btn-sm
+              gap-1
+              text-base-content/60
             "
+            onClick={
+              onAddSession
+            }
           >
-            Aucune séance prévue aujourd’hui.
-          </div>
-        )}
-
-        {sessions.map(
-          (session) => (
-            <TodayTrainingSession
-              key={session.id}
-              session={session}
-              onOpen={() =>
-                onOpenSession(
-                  session.id,
-                )
-              }
+            <Plus
+              size={15}
             />
-          ),
-        )}
+
+            Ajouter
+          </button>
+        </div>
       </div>
     </section>
   )
@@ -129,56 +188,39 @@ function TodayTrainingSession({
   return (
     <button
       type="button"
-      onClick={onOpen}
+      onClick={
+        onOpen
+      }
       className="
         flex
         w-full
-        items-center
-        justify-between
-        gap-4
+        flex-col
+        gap-3
         rounded-xl
         border
         border-base-300
         bg-base-100
-        px-4 py-3
+        px-4
+        py-3
+        shadow-sm
         text-left
         transition
-        hover:border-primary/40
-        hover:bg-base-100
+        hover:bg-base-200/60
+        sm:flex-row
+        sm:items-center
+        sm:justify-between
       "
     >
       <div className="min-w-0">
-        <div
+        <p
           className="
-            flex
-            flex-wrap
-            items-center
-            gap-2
+            truncate
+            font-semibold
+            text-base-content
           "
         >
-          <p
-            className="
-              truncate
-              font-semibold
-              text-base-content
-            "
-          >
-            {session.title}
-          </p>
-
-          <span
-            className={[
-              'badge badge-sm',
-              getSessionStatusClass(
-                session.status,
-              ),
-            ].join(' ')}
-          >
-            {formatSessionStatus(
-              session.status,
-            )}
-          </span>
-        </div>
+          {session.title}
+        </p>
 
         <p
           className="
@@ -192,13 +234,11 @@ function TodayTrainingSession({
             : `${session.durationMinutes} min`}
 
           {session.intensity
-            ? (
-              ` · ${
+            ? ` · ${
                 formatTrainingIntensity(
                   session.intensity,
                 )
               }`
-            )
             : ''}
 
           {session.heartRateZone
@@ -219,36 +259,4 @@ function TodayTrainingSession({
       </span>
     </button>
   )
-}
-
-
-function getSessionStatusClass(
-  status: TrainingSession['status'],
-): string {
-  switch (status) {
-    case 'completed':
-      return 'badge-success'
-
-    case 'skipped':
-      return 'badge-error'
-
-    default:
-      return 'badge-warning'
-  }
-}
-
-
-function formatSessionStatus(
-  status: TrainingSession['status'],
-): string {
-  switch (status) {
-    case 'completed':
-      return 'Analysée'
-
-    case 'skipped':
-      return 'Non réalisée'
-
-    default:
-      return 'À faire'
-  }
 }

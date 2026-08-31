@@ -12,6 +12,9 @@ import {
   registerServiceWorker,
 } from './modules/pwa'
 import { AuthGate } from './modules/auth'
+import {
+  BadgeDiagnostic,
+} from './modules/pwa/BadgeDiagnostic'
 
 registerServiceWorker()
 
@@ -21,6 +24,7 @@ createRoot(document.getElementById('root')!).render(
       <VersionWatcher />
       <AuthGate>
         <AppBadgeManager />
+      <BadgeDiagnostic />
         <App />
       </AuthGate>
     </ToastProvider>

@@ -5,6 +5,10 @@ import {
 } from './BackupSection'
 
 import {
+  NotificationsSection,
+} from './NotificationsSection'
+
+import {
   EquipmentSection,
   LocationSection,
   NutritionSection,
@@ -45,6 +49,8 @@ export function Settings() {
           <NutritionSection
             nutrition={profile.nutrition}
           />
+
+          <NotificationsSection />
 
           <BackupSection />
         </div>

@@ -342,3 +342,107 @@ function isStaticAsset(
       )
   )
 }
+
+
+/* ==========================================================
+   OpenCoach Web Push
+   ========================================================== */
+
+self.addEventListener(
+  'push',
+  (event) => {
+    let payload = {
+      title: 'OpenCoach',
+      body: 'Nouvelle information disponible.',
+      url: '/',
+    }
+
+    if (event.data) {
+      try {
+        payload = {
+          ...payload,
+          ...event.data.json(),
+        }
+      } catch {
+        payload.body =
+          event.data.text()
+      }
+    }
+
+    event.waitUntil(
+      self.registration
+        .showNotification(
+          payload.title,
+          {
+            body:
+              payload.body,
+            icon:
+              '/icons/icon-192.png',
+            badge:
+              '/icons/icon-192.png',
+            data: {
+              url:
+                payload.url
+                || '/',
+            },
+          },
+        ),
+    )
+  },
+)
+
+
+self.addEventListener(
+  'notificationclick',
+  (event) => {
+    event.notification.close()
+
+    const targetUrl =
+      event.notification
+        .data?.url
+      || '/'
+
+    event.waitUntil(
+      self.clients
+        .matchAll({
+          type: 'window',
+          includeUncontrolled: true,
+        })
+        .then(
+          async (clients) => {
+            for (
+              const client
+              of clients
+            ) {
+              if (
+                'focus'
+                in client
+              ) {
+                await client.focus()
+
+                if (
+                  'navigate'
+                  in client
+                ) {
+                  await client.navigate(
+                    targetUrl,
+                  )
+                }
+
+                return
+              }
+            }
+
+            if (
+              self.clients.openWindow
+            ) {
+              await self.clients
+                .openWindow(
+                  targetUrl,
+                )
+            }
+          },
+        ),
+    )
+  },
+)

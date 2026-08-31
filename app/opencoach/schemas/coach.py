@@ -152,6 +152,36 @@ class CoachWeeklyPlanResponse(BaseModel):
     phase_week_index: int
 
 
+class CoachTrajectoryWeekResponse(BaseModel):
+    """Une semaine de progression OpenCoach."""
+
+    week_start: date
+    week_end: date
+
+    mode: str
+
+    phase: str
+    week_type: str
+    phase_week_index: int
+
+    target_load: float
+    load_min: float
+    load_max: float
+
+
+class CoachTrajectoryResponse(BaseModel):
+    """Progression continue jusqu'à la prochaine course principale."""
+
+    target_race_name: str
+    target_race_date: date
+
+    preparation_start_date: date
+
+    weeks: list[
+        CoachTrajectoryWeekResponse
+    ]
+
+
 class CoachTodayResponse(BaseModel):
     date: date
 

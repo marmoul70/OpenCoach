@@ -29,77 +29,37 @@ export function SessionGuidancePanel({
 }: Props) {
   return (
     <div className="space-y-5">
-      <section>
-        <div
-          className="
-            mb-3
-            flex
-            items-center
-            justify-between
-          "
-        >
-          <div>
-            <p
-              className="
-                text-xs
-                font-semibold
-                uppercase
-                tracking-wide
-                text-primary
-              "
-            >
-              Séance
-            </p>
+      <div
+        className="
+          divide-y
+          divide-base-300
+        "
+      >
+        <ExecutionStage
+          number={1}
+          title="Échauffement"
+          steps={
+            guidance.warmup
+          }
+        />
 
-            <h3
-              className="
-                mt-0.5
-                font-bold
-                text-base-content
-              "
-            >
-              Déroulé
-            </h3>
-          </div>
+        <ExecutionStage
+          number={2}
+          title="Cœur de séance"
+          steps={
+            guidance.main_set
+          }
+          emphasized
+        />
 
-          <span
-            className="
-              badge
-              badge-primary
-              badge-outline
-            "
-          >
-            3 étapes
-          </span>
-        </div>
-
-        <div className="space-y-4">
-          <ExecutionStage
-            number={1}
-            title="Échauffement"
-            steps={
-              guidance.warmup
-            }
-          />
-
-          <ExecutionStage
-            number={2}
-            title="Cœur de séance"
-            steps={
-              guidance.main_set
-            }
-            emphasized
-          />
-
-          <ExecutionStage
-            number={3}
-            title="Retour au calme"
-            steps={
-              guidance.cooldown
-            }
-          />
-        </div>
-      </section>
+        <ExecutionStage
+          number={3}
+          title="Retour au calme"
+          steps={
+            guidance.cooldown
+          }
+        />
+      </div>
 
       <details
         className="
@@ -365,21 +325,11 @@ function ExecutionStage({
 }) {
   return (
     <section
-      className={[
-        (
-          'rounded-xl border '
-          + 'p-3 sm:p-4'
-        ),
-        emphasized
-          ? (
-            'border-primary/30 '
-            + 'bg-primary/5'
-          )
-          : (
-            'border-base-300 '
-            + 'bg-base-100'
-          ),
-      ].join(' ')}
+      className="
+        py-4
+        first:pt-0
+        last:pb-0
+      "
     >
       <div
         className="

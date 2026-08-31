@@ -36,6 +36,13 @@ interface TrainingStoreValue {
   loading: boolean
   error: string | null
 
+  weekStart: string
+  weekEnd: string
+
+  goToPreviousWeek: () => void
+  goToNextWeek: () => void
+  goToCurrentWeek: () => void
+
   createSession: (
     session: TrainingSessionCreate,
   ) => Promise<TrainingSession>
@@ -87,20 +94,22 @@ function formatLocalDate(
 }
 
 
-function getCurrentWeekRange(): {
+function getWeekRangeFromDate(
+  referenceDate: Date,
+): {
   start: string
   end: string
 } {
-  const today = new Date()
-
-  const currentDay = today.getDay()
+  const currentDay =
+    referenceDate.getDay()
 
   const mondayOffset =
     currentDay === 0
       ? -6
       : 1 - currentDay
 
-  const monday = new Date(today)
+  const monday =
+    new Date(referenceDate)
 
   monday.setHours(
     12,
@@ -110,10 +119,12 @@ function getCurrentWeekRange(): {
   )
 
   monday.setDate(
-    today.getDate() + mondayOffset,
+    referenceDate.getDate()
+    + mondayOffset,
   )
 
-  const sunday = new Date(monday)
+  const sunday =
+    new Date(monday)
 
   sunday.setDate(
     monday.getDate() + 6,
@@ -123,6 +134,39 @@ function getCurrentWeekRange(): {
     start: formatLocalDate(monday),
     end: formatLocalDate(sunday),
   }
+}
+
+
+function shiftWeek(
+  weekStart: string,
+  offsetWeeks: number,
+): {
+  start: string
+  end: string
+} {
+  const reference =
+    new Date(
+      `${weekStart}T12:00:00`,
+    )
+
+  reference.setDate(
+    reference.getDate()
+    + offsetWeeks * 7,
+  )
+
+  return getWeekRangeFromDate(
+    reference,
+  )
+}
+
+
+function getCurrentWeekRange(): {
+  start: string
+  end: string
+} {
+  return getWeekRangeFromDate(
+    new Date(),
+  )
 }
 
 
@@ -139,6 +183,13 @@ export function TrainingProvider({
   const [error, setError] =
     useState<string | null>(null)
 
+  const [
+    selectedWeek,
+    setSelectedWeek,
+  ] = useState(
+    getCurrentWeekRange,
+  )
+
 
   const refreshSessions =
     useCallback(async () => {
@@ -146,15 +197,10 @@ export function TrainingProvider({
       setError(null)
 
       try {
-        const {
-          start,
-          end,
-        } = getCurrentWeekRange()
-
         const result =
           await fetchTrainingSessions(
-            start,
-            end,
+            selectedWeek.start,
+            selectedWeek.end,
           )
 
         setSessions(result)
@@ -167,12 +213,44 @@ export function TrainingProvider({
       } finally {
         setLoading(false)
       }
-    }, [])
+    }, [
+      selectedWeek.start,
+      selectedWeek.end,
+    ])
 
 
   useEffect(() => {
     void refreshSessions()
   }, [refreshSessions])
+
+
+  function goToPreviousWeek() {
+    setSelectedWeek(
+      current =>
+        shiftWeek(
+          current.start,
+          -1,
+        ),
+    )
+  }
+
+
+  function goToNextWeek() {
+    setSelectedWeek(
+      current =>
+        shiftWeek(
+          current.start,
+          1,
+        ),
+    )
+  }
+
+
+  function goToCurrentWeek() {
+    setSelectedWeek(
+      getCurrentWeekRange(),
+    )
+  }
 
 
   useEffect(() => {
@@ -351,6 +429,11 @@ export function TrainingProvider({
         sessions,
         loading,
         error,
+        weekStart: selectedWeek.start,
+        weekEnd: selectedWeek.end,
+        goToPreviousWeek,
+        goToNextWeek,
+        goToCurrentWeek,
         createSession,
         updateSessionStatus,
         updateSessionActivity,

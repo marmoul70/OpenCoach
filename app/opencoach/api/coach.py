@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from uuid import UUID
 
 from fastapi import (
@@ -6,7 +6,12 @@ from fastapi import (
     Depends,
     HTTPException,
 )
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from opencoach.database.models import (
+    Race as RaceModel,
+)
 
 from opencoach.database.session import (
     get_db,
@@ -71,8 +76,28 @@ from opencoach.schemas.coach import (
     CoachTodayResponse,
     CoachWeeklyAssessmentResponse,
     CoachWeeklyPlanResponse,
+    CoachTrajectoryResponse,
+    CoachTrajectoryWeekResponse,
 )
 
+
+from opencoach.api.coaching.dependencies import (
+    get_weekly_planning_context_builder,
+)
+from opencoach.coaching.generation.context import (
+    WeeklyPlanningContextBuilder,
+    WeeklyPlanningContextError,
+)
+from opencoach.coaching.replanning.preparation_horizon import (
+    resolve_preparation_horizon,
+)
+from opencoach.planning.trajectory.general_development import (
+    build_general_development_trajectory,
+)
+
+from opencoach.planning.trajectory.service import (
+    build_training_trajectory,
+)
 
 router = APIRouter(
     prefix="/api/coach",
@@ -142,6 +167,253 @@ def get_coach_decision_service(
             recent_load_service
         ),
     )
+
+@router.get(
+    "/trajectory",
+    response_model=CoachTrajectoryResponse | None,
+)
+def get_coach_trajectory(
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id,
+    ),
+    context_builder: WeeklyPlanningContextBuilder = Depends(
+        get_weekly_planning_context_builder,
+    ),
+    db: Session = Depends(
+        get_db,
+    ),
+) -> CoachTrajectoryResponse | None:
+    """Retourne la progression continue jusqu'à la course principale."""
+
+    today = date.today()
+
+    current_week_start = (
+        today
+        - timedelta(
+            days=today.weekday(),
+        )
+    )
+
+    race = db.scalar(
+        select(
+            RaceModel
+        )
+        .where(
+            RaceModel.athlete_profile_id
+            == athlete_profile_id,
+            RaceModel.date > today,
+            RaceModel.priority == "primary",
+            RaceModel.status == "planned",
+        )
+        .order_by(
+            RaceModel.date.asc()
+        )
+        .limit(1)
+    )
+
+    if race is None:
+        return None
+
+    horizon = resolve_preparation_horizon(
+        planning_date=today,
+        target_race_date=race.date,
+    )
+
+    preparation_start = (
+        horizon.preparation_week_start_date
+    )
+
+    # Le contexte courant fournit l'historique réel
+    # et la baseline utilisés par le moteur.
+    prepared = context_builder.build(
+        athlete_profile_id=(
+            athlete_profile_id
+        ),
+        planning_date=today,
+        trajectory_start_date=(
+            current_week_start
+        ),
+    )
+
+    planning_input = (
+        prepared.planning_input
+    )
+
+    history_metrics = (
+        planning_input
+        .trajectory_history_metrics
+    )
+
+    # --------------------------------------------------------
+    # 1. Maintenance / développement général
+    # --------------------------------------------------------
+
+    maintenance_result = (
+        build_training_trajectory(
+            planning_date=(
+                current_week_start
+            ),
+            target_race_date=None,
+            history_metrics=(
+                history_metrics
+            ),
+        )
+    )
+
+    maintenance_weeks = [
+        week
+        for week
+        in maintenance_result.trajectory.weeks
+        if week.week_start
+        < preparation_start
+    ]
+
+    # --------------------------------------------------------
+    # 2. Préparation spécifique course
+    # --------------------------------------------------------
+
+    race_result = (
+        build_training_trajectory(
+            planning_date=(
+                preparation_start
+            ),
+            target_race_date=(
+                race.date
+            ),
+            target_distance_km=(
+                race.distance_km
+            ),
+            target_elevation_gain_m=(
+                race.elevation_gain_m
+                or 0.0
+            ),
+            history_metrics=(
+                history_metrics
+            ),
+        )
+    )
+
+    race_weeks = list(
+        race_result.trajectory.weeks
+    )
+
+    response_weeks: list[
+        CoachTrajectoryWeekResponse
+    ] = []
+
+    for week in maintenance_weeks:
+        response_weeks.append(
+            CoachTrajectoryWeekResponse(
+                week_start=(
+                    week.week_start
+                ),
+                week_end=(
+                    week.week_end
+                ),
+                mode="maintenance",
+                phase=(
+                    week.phase.value
+                ),
+                week_type=(
+                    week.week_type.value
+                ),
+                phase_week_index=(
+                    week.phase_week_index
+                ),
+                target_load=(
+                    week.target_load
+                ),
+                load_min=(
+                    week.load_min
+                ),
+                load_max=(
+                    week.load_max
+                ),
+            )
+        )
+
+    for week in race_weeks:
+        response_weeks.append(
+            CoachTrajectoryWeekResponse(
+                week_start=(
+                    week.week_start
+                ),
+                week_end=(
+                    week.week_end
+                ),
+                mode="race_preparation",
+                phase=(
+                    week.phase.value
+                ),
+                week_type=(
+                    week.week_type.value
+                ),
+                phase_week_index=(
+                    week.phase_week_index
+                ),
+                target_load=(
+                    week.target_load
+                ),
+                load_min=(
+                    week.load_min
+                ),
+                load_max=(
+                    week.load_max
+                ),
+            )
+        )
+
+    return CoachTrajectoryResponse(
+        target_race_name=(
+            race.name
+        ),
+        target_race_date=(
+            race.date
+        ),
+        preparation_start_date=(
+            preparation_start
+        ),
+        weeks=response_weeks,
+    )
+
+
+@router.get(
+    "/weekly-plan",
+    response_model=CoachWeeklyPlanResponse | None,
+)
+def get_weekly_plan(
+    week_start: date,
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id,
+    ),
+    db: Session = Depends(
+        get_db,
+    ),
+) -> CoachWeeklyPlanResponse | None:
+    """Retourne le plan persistant de la semaine demandée."""
+
+    plan = (
+        SqlWeeklyTrainingPlanRepository(
+            db
+        ).get_plan_for_week(
+            athlete_profile_id,
+            week_start,
+        )
+    )
+
+    if plan is None:
+        return None
+
+    return CoachWeeklyPlanResponse(
+        week_start=plan.week_start,
+        week_end=plan.week_end,
+        phase=plan.phase,
+        week_type=plan.week_type,
+        phase_week_index=(
+            plan.phase_week_index
+        ),
+    )
+
 
 @router.get(
     "/today",

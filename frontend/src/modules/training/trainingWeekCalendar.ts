@@ -15,36 +15,16 @@ const dayLabels = [
 
 
 export function getWeekSessions(
-  sessions:
-    TrainingSession[],
+  sessions: TrainingSession[],
+  weekStart: string,
 ) {
   const today =
     new Date()
 
-  const currentDay =
-    today.getDay()
-
-  const mondayOffset =
-    currentDay === 0
-      ? -6
-      : 1 - currentDay
-
   const monday =
     new Date(
-      today,
+      `${weekStart}T12:00:00`,
     )
-
-  monday.setHours(
-    12,
-    0,
-    0,
-    0,
-  )
-
-  monday.setDate(
-    today.getDate()
-    + mondayOffset,
-  )
 
   const todayString =
     formatLocalDate(

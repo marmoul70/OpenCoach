@@ -16,24 +16,12 @@ import {
 } from '../../core/training/api'
 
 import {
-  useRaces,
-} from '../races/raceStore'
-
-import {
-  getNextPrimaryRace,
-} from '../races/selectors'
-
-import {
   AddTrainingSessionModal,
 } from './AddTrainingSessionModal'
 
 import {
   TrainingDetails,
 } from './TrainingDetails'
-
-import {
-  RaceGoalCard,
-} from './RaceGoalCard'
 
 import {
   TodayTrainingCard,
@@ -50,6 +38,21 @@ import {
 import {
   TrainingWeekHeader,
 } from './TrainingWeekHeader'
+import {
+  fetchCoachTrajectory,
+} from './trajectoryApi'
+
+import type {
+  CoachTrajectory,
+  CoachTrajectoryWeek,
+} from './trajectoryApi'
+import {
+  fetchTrainingWeeklyPlan,
+} from './weeklyPlanApi'
+
+import type {
+  TrainingWeeklyPlan,
+} from './weeklyPlanApi'
 
 import {
   formatLocalDate,
@@ -58,12 +61,10 @@ import {
 
 import {
   formatWeekType,
-  weekTypeBadgeClass,
   phaseTextClass,
   formatTrainingPhase,
   formatTrainingWeekRange,
   humanizeWeeklyTrainingStatus,
-  formatRaceDate,
   formatNumber,
 } from './trainingWeekPresentation'
 
@@ -90,6 +91,14 @@ import type {
 
 
 export function TrainingWeek() {
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'auto',
+    })
+  }, [])
 
   const [
     physiologicalTestProposals,
@@ -146,13 +155,93 @@ export function TrainingWeek() {
   } = useCoachToday()
 
   const {
-    races,
-  } = useRaces()
-
-  const {
     sessions,
     validateSession,
+    weekStart,
+    weekEnd,
+    goToPreviousWeek,
+    goToNextWeek,
+    goToCurrentWeek,
   } = useTrainingSessions()
+
+  const [
+    displayedWeeklyPlan,
+    setDisplayedWeeklyPlan,
+  ] = useState<
+    TrainingWeeklyPlan | null
+  >(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadWeeklyPlan() {
+      try {
+        const plan =
+          await fetchTrainingWeeklyPlan(
+            weekStart,
+          )
+
+        if (!cancelled) {
+          setDisplayedWeeklyPlan(
+            plan,
+          )
+        }
+      } catch {
+        if (!cancelled) {
+          setDisplayedWeeklyPlan(
+            null,
+          )
+        }
+      }
+    }
+
+    void loadWeeklyPlan()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    weekStart,
+  ])
+
+
+  const [
+    trajectory,
+    setTrajectory,
+  ] = useState<CoachTrajectory | null>(
+    null,
+  )
+
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadTrajectory() {
+      try {
+        const result =
+          await fetchCoachTrajectory()
+
+        if (!cancelled) {
+          setTrajectory(
+            result,
+          )
+        }
+      } catch {
+        if (!cancelled) {
+          setTrajectory(
+            null,
+          )
+        }
+      }
+    }
+
+    void loadTrajectory()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
 
   const [
     selectedSessionId,
@@ -184,6 +273,14 @@ export function TrainingWeek() {
     statsError,
     setStatsError,
   ] = useState<string | null>(
+    null,
+  )
+
+
+  const [
+    weeklyStats,
+    setWeeklyStats,
+  ] = useState<TrainingStats | null>(
     null,
   )
 
@@ -235,9 +332,44 @@ export function TrainingWeek() {
   ])
 
 
+
+  const loadWeeklyStats =
+    useCallback(
+      async () => {
+        try {
+          const result =
+            await fetchTrainingStats(
+              weekStart,
+              weekEnd,
+            )
+
+          setWeeklyStats(
+            result,
+          )
+        } catch {
+          setWeeklyStats(
+            null,
+          )
+        }
+      },
+      [
+        weekStart,
+        weekEnd,
+      ],
+    )
+
+
+  useEffect(() => {
+    void loadWeeklyStats()
+  }, [
+    loadWeeklyStats,
+  ])
+
+
   const weekDays =
     getWeekSessions(
       sessions,
+      weekStart,
     )
 
   const todayDay =
@@ -253,11 +385,24 @@ export function TrainingWeek() {
     )
 
 
-  const weekStartDate =
-    weekDays.at(0)?.date
+  const trajectoryWeek:
+    CoachTrajectoryWeek | undefined =
+    trajectory?.weeks.find(
+      (week: CoachTrajectoryWeek) =>
+        week.weekStart === weekStart,
+    )
 
-  const weekEndDate =
-    weekDays.at(-1)?.date
+
+  const currentWeekStart =
+    getCurrentWeekStart()
+
+  const isCurrentWeek =
+    weekStart === currentWeekStart
+
+
+  const isFutureWeek =
+    weekStart > currentWeekStart
+
 
   const selectedSession =
     selectedSessionId
@@ -293,12 +438,6 @@ export function TrainingWeek() {
         session.status === 'skipped',
     ).length
 
-  const supplementaryCount =
-    sessions.filter(
-      (session) =>
-        session.type === 'supplementary',
-    ).length
-
   const restCount =
     sessions.filter(
       (session) =>
@@ -306,20 +445,32 @@ export function TrainingWeek() {
     ).length
 
 
-  const nextPrimaryRace =
-    getNextPrimaryRace(
-      races,
-    )
+
+  const strengthCount =
+    sessions.filter(
+      (session) =>
+        session.type
+        === 'strength_lower_body',
+    ).length
+
+  const workCount =
+    sessions.filter(
+      (session) =>
+        session.type !== 'rest'
+        && session.type
+          !== 'strength_lower_body'
+        && session.type
+          !== 'supplementary',
+    ).length
+
 
 
   const weeklyAssessment =
     coach?.weeklyAssessment
 
-  const weeklyPlan =
-    coach?.weeklyPlan
-
   const weeklyActualPercent = (
-    weeklyAssessment?.targetLoad
+    isCurrentWeek
+    && weeklyAssessment?.targetLoad
       ? percentageOfTarget(
           weeklyAssessment.actualLoadToDate,
           weeklyAssessment.targetLoad,
@@ -327,14 +478,13 @@ export function TrainingWeek() {
       : undefined
   )
 
-  const weeklyProjectedPercent = (
-    weeklyAssessment?.targetLoad
-      ? percentageOfTarget(
-          weeklyAssessment.projectedWeekLoad,
-          weeklyAssessment.targetLoad,
+  const displayedWeeklyLoad =
+    isFutureWeek
+      ? 0
+      : (
+          weeklyStats?.totalLoad
+          ?? 0
         )
-      : undefined
-  )
 
 
   function openSession(
@@ -374,51 +524,60 @@ export function TrainingWeek() {
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
         <TrainingWeekHeader
           weekRange={
-            weeklyPlan
-              ? formatTrainingWeekRange(
-                  weeklyPlan.weekStart,
-                  weeklyPlan.weekEnd,
-                )
-              : (
-                  weekStartDate
-                  && weekEndDate
-                    ? formatTrainingWeekRange(
-                        weekStartDate,
-                        weekEndDate,
-                      )
-                    : 'Planning hebdomadaire'
-                )
+            formatTrainingWeekRange(
+              weekStart,
+              weekEnd,
+            )
           }
           weekTypeLabel={
-            weeklyPlan?.weekType
+            displayedWeeklyPlan?.weekType
               ? formatWeekType(
-                  weeklyPlan.weekType,
+                  displayedWeeklyPlan.weekType,
                 )
               : undefined
           }
-          weekTypeClass={
-            weeklyPlan?.weekType
-              ? weekTypeBadgeClass(
-                  weeklyPlan.weekType,
-                )
-              : undefined
-          }
-          phaseLabel={
-            weeklyPlan
-              ? formatTrainingPhase(
-                  weeklyPlan.phase,
+phaseLabel={
+            trajectoryWeek
+              ? (
+                  trajectoryWeek.mode
+                  === 'maintenance'
+                    ? 'Base'
+                    : formatTrainingPhase(
+                        trajectoryWeek.phase,
+                      )
                 )
               : undefined
           }
           phaseClass={
-            weeklyPlan
+            displayedWeeklyPlan
               ? phaseTextClass(
-                  weeklyPlan.phase,
+                  displayedWeeklyPlan.phase,
                 )
               : undefined
           }
           phaseWeekIndex={
-            weeklyPlan?.phaseWeekIndex
+            displayedWeeklyPlan?.phaseWeekIndex
+          }
+          workCount={
+            workCount
+          }
+          restCount={
+            restCount
+          }
+          strengthCount={
+            strengthCount
+          }
+          isCurrentWeek={
+            isCurrentWeek
+          }
+          onPreviousWeek={
+            goToPreviousWeek
+          }
+          onNextWeek={
+            goToNextWeek
+          }
+          onCurrentWeek={
+            goToCurrentWeek
           }
         />
 
@@ -454,20 +613,27 @@ export function TrainingWeek() {
           )}
 
 
-          {weeklyAssessment && (
-            <WeeklyLoadCard
+          <WeeklyLoadCard
               actualPercent={
                 weeklyActualPercent
               }
-              projectedPercent={
-                weeklyProjectedPercent
+              actualLoad={
+                displayedWeeklyLoad
+              }
+              isCurrentWeek={
+                isCurrentWeek
+              }
+              isFutureWeek={
+                isFutureWeek
               }
               status={
-                weeklyAssessment.status
+                weeklyAssessment?.status
+                ?? 'unavailable'
               }
               statusLabel={
                 humanizeWeeklyTrainingStatus(
-                  weeklyAssessment.status,
+                  weeklyAssessment?.status
+                  ?? 'unavailable',
                 )
               }
               completedCount={
@@ -479,15 +645,14 @@ export function TrainingWeek() {
               skippedCount={
                 skippedCount
               }
-              supplementaryCount={
-                supplementaryCount
-              }
-              restCount={
-                restCount
-              }
               remainingSessionsCount={
-                weeklyAssessment
-                  .remainingSessionsCount
+                isCurrentWeek
+                  ? (
+                      weeklyAssessment
+                        ?.remainingSessionsCount
+                      ?? remainingCount
+                    )
+                  : remainingCount
               }
               statsLoading={
                 statsLoading
@@ -504,26 +669,13 @@ export function TrainingWeek() {
                 stats?.sessionsCount
                 ?? 0
               }
+              targetRaceName={
+                trajectory?.targetRaceName
+              }
+              targetRaceDate={
+                trajectory?.targetRaceDate
+              }
             />
-          )}
-
-
-          <RaceGoalCard
-            name={
-              nextPrimaryRace?.name
-            }
-            details={
-              nextPrimaryRace
-                ? (
-                  `${formatRaceDate(
-                    nextPrimaryRace.date,
-                  )} · ${
-                    nextPrimaryRace.distanceKm
-                  } km`
-                )
-                : undefined
-            }
-          />
 
 
           <TrainingWeekDays
@@ -597,6 +749,38 @@ export function TrainingWeek() {
 
 
 
+
+
+function getCurrentWeekStart(): string {
+  const today = new Date()
+
+  const currentDay =
+    today.getDay()
+
+  const mondayOffset =
+    currentDay === 0
+      ? -6
+      : 1 - currentDay
+
+  const monday =
+    new Date(today)
+
+  monday.setHours(
+    12,
+    0,
+    0,
+    0,
+  )
+
+  monday.setDate(
+    today.getDate()
+    + mondayOffset,
+  )
+
+  return formatLocalDate(
+    monday,
+  )
+}
 
 
 function percentageOfTarget(

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -84,6 +85,92 @@ export function DailyDecisionModal({
   )
 
 
+  const loadProposals =
+    useCallback(
+      async () => {
+        if (
+          !state
+          || !state.adaptation
+        ) {
+          return
+        }
+
+        try {
+          setLoading(
+            true,
+          )
+
+          await acceptDailyAdaptation(
+            state.checkin.id,
+          )
+
+          const result =
+            await fetchDailyReplanning(
+              state.checkin.id,
+            )
+
+          setReplanning(
+            result,
+          )
+
+          await onStateChanged()
+
+          if (
+            result.proposals.length === 0
+          ) {
+            toast({
+              type: 'success',
+              title: 'Adaptation appliquée',
+              message:
+                'OpenCoach a traité la séance du jour.',
+            })
+
+            onClose()
+          }
+        } catch (reason) {
+          startedRef.current =
+            false
+
+          toast({
+            type: 'error',
+            title: 'Adaptation impossible',
+            message:
+              getErrorMessage(
+                reason,
+              ),
+          })
+        } finally {
+          setLoading(
+            false,
+          )
+        }
+      },
+      [
+        state,
+        onStateChanged,
+        toast,
+        onClose,
+      ],
+    )
+
+
+  const visibleProposals =
+    replanning?.proposals.filter(
+      (proposal) => {
+        const id =
+          proposal.source_session.id
+
+        return (
+          id === null
+          || !resolvedSessionIds.has(
+            id,
+          )
+        )
+      },
+    )
+    ?? []
+
+
   useEffect(() => {
     if (!open) {
       startedRef.current =
@@ -114,6 +201,8 @@ export function DailyDecisionModal({
     void loadProposals()
   }, [
     open,
+    state,
+    loadProposals,
   ])
 
 
@@ -127,82 +216,6 @@ export function DailyDecisionModal({
 
   const currentState =
     state
-
-
-  async function loadProposals() {
-    if (
-      !state
-      || !state.adaptation
-    ) {
-      return
-    }
-
-    try {
-      setLoading(
-        true,
-      )
-
-      await acceptDailyAdaptation(
-        state.checkin.id,
-      )
-
-      const result =
-        await fetchDailyReplanning(
-          state.checkin.id,
-        )
-
-      setReplanning(
-        result,
-      )
-
-      await onStateChanged()
-
-      if (
-        result.proposals.length === 0
-      ) {
-        toast({
-          type: 'success',
-          title: 'Adaptation appliquée',
-          message:
-            'OpenCoach a traité la séance du jour.',
-        })
-
-        onClose()
-      }
-    } catch (reason) {
-      startedRef.current =
-        false
-
-      toast({
-        type: 'error',
-        title: 'Adaptation impossible',
-        message:
-          getErrorMessage(
-            reason,
-          ),
-      })
-    } finally {
-      setLoading(
-        false,
-      )
-    }
-  }
-
-
-  const visibleProposals =
-    replanning?.proposals.filter(
-      (proposal) => {
-        const id =
-          proposal.source_session.id
-
-        return (
-          id === null
-          || !resolvedSessionIds.has(
-            id,
-          )
-        )
-      },
-    ) ?? []
 
 
   async function applyOption(
@@ -293,7 +306,7 @@ export function DailyDecisionModal({
 
   return (
     <Modal
-      title="Choix OpenCoach"
+      title="Adapter l’entraînement"
       open={open}
       onClose={onClose}
     >
@@ -327,7 +340,7 @@ export function DailyDecisionModal({
                   text-base-content
                 "
               >
-                OpenCoach analyse la semaine
+                Analyse du planning
               </p>
 
               <p
@@ -369,7 +382,7 @@ export function DailyDecisionModal({
                   text-base-content
                 "
               >
-                Choisissez une option pour chaque séance
+                Choisissez l’action à appliquer
               </p>
             </div>
 
@@ -473,7 +486,7 @@ export function DailyDecisionModal({
                 text-base-content
               "
             >
-              Réorganisation terminée
+              Planning mis à jour
             </h3>
 
             <p
@@ -618,7 +631,7 @@ function SessionDecisionCard({
                   badge-sm
                 "
               >
-                ★ Conseil OpenCoach
+                ★ Recommandé
               </span>
 
               <p
@@ -774,7 +787,7 @@ function getOptionLabel(
     option.action
     === 'cancel'
   ) {
-    return 'Annuler la séance'
+    return 'Annuler'
   }
 
   if (
@@ -795,7 +808,7 @@ function getOptionDetails(
     option.action
     === 'cancel'
   ) {
-    return 'La charge de cette séance sera retirée.'
+    return ''
   }
 
   if (!option.target_date) {

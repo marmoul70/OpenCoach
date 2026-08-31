@@ -8,7 +8,10 @@ import {
 
 interface WeeklyLoadCardProps {
   actualPercent?: number
-  projectedPercent?: number
+
+  actualLoad: number
+  isCurrentWeek: boolean
+  isFutureWeek: boolean
 
   status: string
   statusLabel: string
@@ -16,32 +19,52 @@ interface WeeklyLoadCardProps {
   completedCount: number
   remainingCount: number
   skippedCount: number
-  supplementaryCount: number
-  restCount: number
 
   remainingSessionsCount: number
 
   statsLoading: boolean
   totalDistanceLabel: string
   sessionsCount: number
+
+  targetRaceName?: string
+  targetRaceDate?: string
 }
 
 
 export function WeeklyLoadCard({
   actualPercent,
-  projectedPercent,
-  status,
+  actualLoad,
+  isCurrentWeek,
+  isFutureWeek,
   statusLabel,
   completedCount,
   remainingCount,
   skippedCount,
-  supplementaryCount,
-  restCount,
-  remainingSessionsCount,
   statsLoading,
   totalDistanceLabel,
   sessionsCount,
+  targetRaceName,
+  targetRaceDate,
 }: WeeklyLoadCardProps) {
+  const mainValue =
+    isCurrentWeek
+      && actualPercent !== undefined
+      ? `${Math.round(
+          actualPercent,
+        )} %`
+      : `${Math.round(
+          actualLoad,
+        )}`
+
+  const mainLabel =
+    isCurrentWeek
+      ? 'objectif réalisé'
+      : (
+        isFutureWeek
+          ? 'charge réalisée'
+          : 'charge enregistrée'
+      )
+
   return (
     <section
       aria-label="Synthèse de la semaine"
@@ -54,14 +77,13 @@ export function WeeklyLoadCard({
         shadow-sm
       "
     >
-      <div className="px-4 py-4 sm:px-5">
+      <div className="p-4 sm:p-5">
         <div
           className="
-            flex flex-col
-            gap-3
-            sm:flex-row
-            sm:items-center
-            sm:justify-between
+            flex
+            items-start
+            justify-between
+            gap-4
           "
         >
           <div>
@@ -69,212 +91,117 @@ export function WeeklyLoadCard({
               className="
                 text-xs
                 font-medium
-                text-base-content/45
+                uppercase
+                tracking-wide
+                text-base-content/40
               "
             >
               Charge semaine
             </p>
 
-            <p
+            <div
               className="
-                mt-0.5
-                text-xl
-                font-bold
-                tabular-nums
+                mt-1
+                flex
+                items-baseline
+                gap-1.5
               "
             >
-              {actualPercent !== undefined
-                ? `${Math.round(
-                    actualPercent,
-                  )} %`
-                : '—'}
+              <span
+                className="
+                  text-2xl
+                  font-bold
+                  tabular-nums
+                  text-base-content
+                "
+              >
+                {mainValue}
+              </span>
 
               <span
                 className="
-                  ml-1
                   text-xs
-                  font-medium
-                  text-base-content/40
+                  text-base-content/45
                 "
               >
-                réalisé
+                {mainLabel}
               </span>
-            </p>
+            </div>
           </div>
 
-          <div
-            className="
-              flex
-              flex-wrap
-              gap-1.5
-              sm:justify-end
-            "
-          >
-            <span
-              className={
-                getWeeklyStatusClass(
-                  status,
-                )
-              }
+          {isCurrentWeek && (
+            <p
+              className="
+                max-w-32
+                text-right
+                text-xs
+                font-medium
+                text-base-content/45
+              "
             >
               {statusLabel}
-            </span>
-
-            {completedCount > 0 && (
-              <span
-                className="
-                  badge
-                  badge-success
-                  badge-outline
-                  gap-1
-                "
-              >
-                <Check
-                  size={12}
-                  strokeWidth={2.5}
-                />
-
-                {completedCount}{' '}
-                réalisée{
-                  completedCount > 1
-                    ? 's'
-                    : ''
-                }
-              </span>
-            )}
-
-            {remainingCount > 0 && (
-              <span
-                className="
-                  badge
-                  badge-primary
-                  badge-outline
-                  gap-1
-                "
-              >
-                <Clock3
-                  size={12}
-                  strokeWidth={2}
-                />
-
-                {remainingCount}{' '}
-                à faire
-              </span>
-            )}
-
-            {skippedCount > 0 && (
-              <span
-                className="
-                  badge
-                  badge-error
-                  badge-outline
-                  gap-1
-                "
-              >
-                <X
-                  size={12}
-                  strokeWidth={2}
-                />
-
-                {skippedCount}{' '}
-                non réalisée{
-                  skippedCount > 1
-                    ? 's'
-                    : ''
-                }
-              </span>
-            )}
-
-            {supplementaryCount > 0 && (
-              <span
-                className="
-                  badge
-                  badge-outline
-                "
-              >
-                {supplementaryCount}{' '}
-                supplémentaire{
-                  supplementaryCount > 1
-                    ? 's'
-                    : ''
-                }
-              </span>
-            )}
-
-            {restCount > 0 && (
-              <span
-                className="
-                  badge
-                  badge-ghost
-                "
-              >
-                {restCount}{' '}
-                repos
-              </span>
-            )}
-          </div>
+            </p>
+          )}
         </div>
 
-        <progress
-          className="
-            progress
-            progress-primary
-            mt-3
-            h-2
-            w-full
-          "
-          value={
-            actualPercent !== undefined
-              ? Math.min(
-                  100,
-                  Math.max(
-                    0,
-                    actualPercent,
-                  ),
-                )
-              : 0
-          }
-          max={100}
-        />
+
+        {isCurrentWeek && (
+          <progress
+            className="
+              progress
+              progress-primary
+              mt-3
+              h-2
+              w-full
+            "
+            value={
+              actualPercent !== undefined
+                ? Math.min(
+                    100,
+                    Math.max(
+                      0,
+                      actualPercent,
+                    ),
+                  )
+                : 0
+            }
+            max={100}
+          />
+        )}
+
 
         <div
           className="
-            mt-2
-            flex
-            flex-wrap
-            items-center
-            gap-x-3
-            gap-y-1
-            text-xs
-            text-base-content/50
+            mt-4
+            grid
+            grid-cols-3
+            divide-x
+            divide-base-300
           "
         >
-          <span>
-            {projectedPercent !== undefined
-              ? `${Math.round(
-                  projectedPercent,
-                )} % projeté`
-              : 'Projection indisponible'}
-          </span>
+          <WeekMetric
+            icon={Check}
+            value={completedCount}
+            label="Réalisées"
+          />
 
-          <span aria-hidden="true">
-            ·
-          </span>
+          <WeekMetric
+            icon={Clock3}
+            value={remainingCount}
+            label="À faire"
+          />
 
-          <span>
-            {remainingSessionsCount}{' '}
-            séance{
-              remainingSessionsCount > 1
-                ? 's'
-                : ''
-            } restante{
-              remainingSessionsCount > 1
-                ? 's'
-                : ''
-            }
-          </span>
+          <WeekMetric
+            icon={X}
+            value={skippedCount}
+            label="Non faites"
+          />
         </div>
+
+
+
       </div>
+
 
       <details
         className="
@@ -289,7 +216,7 @@ export function WeeklyLoadCard({
             px-4 py-3
             text-sm
             font-medium
-            text-base-content/60
+            text-base-content/55
             sm:px-5
           "
         >
@@ -299,13 +226,11 @@ export function WeeklyLoadCard({
         <div
           className="
             grid
+            grid-cols-2
             border-t
             border-base-300
-            divide-y
+            divide-x
             divide-base-300
-            sm:grid-cols-2
-            sm:divide-x
-            sm:divide-y-0
           "
         >
           <OverviewItem
@@ -325,8 +250,67 @@ export function WeeklyLoadCard({
                 ? '…'
                 : `${sessionsCount}`
             }
-            label="Séances réalisées"
+            label="Séances"
           />
+
+
+          {targetRaceName
+            && targetRaceDate && (
+              <div
+                className="
+                  col-span-2
+                  border-t
+                  border-base-300
+                  px-4 py-3
+                "
+              >
+                <p
+                  className="
+                    text-xs
+                    font-medium
+                    uppercase
+                    tracking-wide
+                    text-base-content/40
+                  "
+                >
+                  Prochaine course
+                </p>
+
+                <div
+                  className="
+                    mt-1
+                    flex
+                    items-baseline
+                    justify-between
+                    gap-3
+                  "
+                >
+                  <p
+                    className="
+                      min-w-0
+                      truncate
+                      font-semibold
+                      text-base-content
+                    "
+                  >
+                    {targetRaceName}
+                  </p>
+
+                  <span
+                    className="
+                      shrink-0
+                      text-xs
+                      font-medium
+                      text-base-content/50
+                    "
+                  >
+                    {formatRaceDate(
+                      targetRaceDate,
+                    )}
+                  </span>
+                </div>
+              </div>
+            )}
         </div>
       </details>
     </section>
@@ -334,10 +318,61 @@ export function WeeklyLoadCard({
 }
 
 
-interface OverviewItemProps {
-  icon: typeof Route
-  value: string
+function WeekMetric({
+  icon: Icon,
+  value,
+  label,
+}: {
+  icon: typeof Check
+  value: number
   label: string
+}) {
+  return (
+    <div
+      className="
+        px-2
+        text-center
+      "
+    >
+      <div
+        className="
+          mx-auto
+          flex
+          items-center
+          justify-center
+          gap-1
+        "
+      >
+        <Icon
+          size={14}
+          className="
+            text-base-content/40
+          "
+        />
+
+        <span
+          className="
+            text-lg
+            font-bold
+            tabular-nums
+            text-base-content
+          "
+        >
+          {value}
+        </span>
+      </div>
+
+      <p
+        className="
+          mt-0.5
+          text-xs
+          text-base-content/45
+        "
+      >
+        {label}
+      </p>
+    </div>
+  )
 }
 
 
@@ -345,41 +380,32 @@ function OverviewItem({
   icon: Icon,
   value,
   label,
-}: OverviewItemProps) {
+}: {
+  icon: typeof Route
+  value: string
+  label: string
+}) {
   return (
     <div
       className="
         flex
-        min-w-0
         items-center
         gap-3
         px-4 py-3
-        sm:px-5
       "
     >
-      <div
+      <Icon
+        size={16}
         className="
-          flex
-          size-8
           shrink-0
-          items-center
-          justify-center
-          rounded-lg
-          bg-primary/10
           text-primary
         "
-      >
-        <Icon
-          size={16}
-          strokeWidth={2}
-        />
-      </div>
+      />
 
       <div className="min-w-0">
         <p
           className="
             font-bold
-            text-base
             text-base-content
           "
         >
@@ -388,10 +414,9 @@ function OverviewItem({
 
         <p
           className="
-            mt-0.5
             truncate
             text-xs
-            text-base-content/45
+            text-base-content/40
           "
         >
           {label}
@@ -402,24 +427,22 @@ function OverviewItem({
 }
 
 
-function getWeeklyStatusClass(
-  status: string,
+function formatRaceDate(
+  value: string,
 ): string {
-  if (status === 'aligned') {
-    return (
-      'badge '
-      + 'badge-success '
-      + 'badge-outline'
+  const date =
+    new Date(
+      `${value}T12:00:00`,
     )
-  }
 
-  if (status === 'over_target') {
-    return (
-      'badge '
-      + 'badge-warning '
-      + 'badge-outline'
-    )
-  }
-
-  return 'badge badge-outline'
+  return new Intl.DateTimeFormat(
+    'fr-FR',
+    {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    },
+  ).format(
+    date,
+  )
 }

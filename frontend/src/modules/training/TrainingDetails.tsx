@@ -8,6 +8,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type ReactNode,
 } from 'react'
 
 import {
@@ -376,12 +377,28 @@ export function TrainingDetails({
 
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <SessionHeader
         session={session}
       />
 
-      {(loadingDebrief || debrief) && (
+      <SessionSummary
+        session={session}
+        guidance={guidance}
+      />
+
+
+      <CollapseSection
+        title="Débriefing"
+        subtitle={
+          debrief
+            ? 'Analyse du coach disponible'
+            : 'Séance non réalisée'
+        }
+        preferredOpen={
+          Boolean(debrief)
+        }
+      >
         <div
           ref={
             debriefRef
@@ -390,33 +407,77 @@ export function TrainingDetails({
             scroll-mt-4
           "
         >
-          <DebriefSection
-            loading={
-              loadingDebrief
-            }
-            debrief={
-              debrief
-            }
-          />
+          {loadingDebrief ? (
+            <div
+              className="
+                flex
+                min-h-24
+                items-center
+                justify-center
+              "
+            >
+              <span
+                className="
+                  loading
+                  loading-spinner
+                  loading-sm
+                  text-primary
+                "
+              />
+            </div>
+          ) : debrief ? (
+            <DebriefSection
+              loading={false}
+              debrief={debrief}
+            />
+          ) : (
+            <div
+              className="
+                rounded-xl
+                bg-base-200/60
+                px-4 py-3
+              "
+            >
+              <p
+                className="
+                  text-sm
+                  font-medium
+                  text-base-content/65
+                "
+              >
+                Séance non réalisée
+              </p>
+
+              <p
+                className="
+                  mt-1
+                  text-xs
+                  leading-5
+                  text-base-content/45
+                "
+              >
+                Le débriefing du coach sera
+                disponible après validation
+                de l’activité réalisée.
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </CollapseSection>
 
-      <SessionSummary
-        session={session}
-        guidance={guidance}
-      />
 
-      <div
-        className="
-          border-t
-          border-base-300
-          pt-5
-        "
+      <CollapseSection
+        title="Entraînement"
+        subtitle="Échauffement · Cœur · Retour au calme"
+        preferredOpen={
+          session.status !== 'completed'
+        }
       >
         {loadingGuidance && (
           <div
             className="
-              flex min-h-32
+              flex
+              min-h-28
               items-center
               justify-center
             "
@@ -435,9 +496,7 @@ export function TrainingDetails({
         {!loadingGuidance
           && guidance && (
             <SessionGuidancePanel
-              guidance={
-                guidance
-              }
+              guidance={guidance}
             />
           )}
 
@@ -453,40 +512,125 @@ export function TrainingDetails({
               {guidanceError}
             </div>
           )}
-      </div>
+      </CollapseSection>
 
-      {session.type
-        !== 'rest' && (
-          <ActivitySection
-            session={session}
-            activities={
-              activities
-            }
-            loading={
-              loadingActivities
-            }
-            error={
-              activityError
-            }
-            selectedActivityId={
-              selectedActivityId
-            }
-            validating={
-              validating
-            }
-            validationError={
-              validationError
-            }
-            onActivitySelect={
-              handleActivitySelect
-            }
-            onValidate={() =>
-              void handleValidateSession()
-            }
-          />
-        )}
 
+      {session.type !== 'rest' && (
+        <ActivitySection
+          session={session}
+          activities={activities}
+          loading={loadingActivities}
+          error={activityError}
+          selectedActivityId={
+            selectedActivityId
+          }
+          validating={validating}
+          validationError={
+            validationError
+          }
+          onActivitySelect={
+            handleActivitySelect
+          }
+          onValidate={() =>
+            void handleValidateSession()
+          }
+        />
+      )}
     </div>
+  )
+}
+
+
+function CollapseSection({
+  title,
+  subtitle,
+  preferredOpen,
+  children,
+}: {
+  title: string
+  subtitle?: string
+  preferredOpen: boolean
+  children: ReactNode
+}) {
+  const [
+    open,
+    setOpen,
+  ] = useState(
+    preferredOpen,
+  )
+
+  useEffect(() => {
+    setOpen(
+      preferredOpen,
+    )
+  }, [
+    preferredOpen,
+  ])
+
+  return (
+    <details
+      open={open}
+      onToggle={(event) => {
+        setOpen(
+          event.currentTarget.open,
+        )
+      }}
+      className="
+        overflow-hidden
+        rounded-xl
+        border
+        border-base-300
+        bg-base-100
+      "
+    >
+      <summary
+        className="
+          cursor-pointer
+          list-none
+          px-4 py-3
+        "
+      >
+        <div
+          className="
+            flex
+            items-center
+            justify-between
+            gap-3
+          "
+        >
+          <span
+            className="
+              font-semibold
+              text-base-content
+            "
+          >
+            {title}
+          </span>
+
+          {subtitle && (
+            <span
+              className="
+                truncate
+                text-xs
+                text-base-content/40
+              "
+            >
+              {subtitle}
+            </span>
+          )}
+        </div>
+      </summary>
+
+      <div
+        className="
+          border-t
+          border-base-300
+          p-4
+        "
+      >
+        {children}
+      </div>
+    </details>
   )
 }
 
@@ -741,6 +885,37 @@ function estimateSessionDistance(
 }
 
 
+function isFutureTrainingSession(
+  sessionDate: string,
+): boolean {
+  const today = new Date()
+
+  const year =
+    today.getFullYear()
+
+  const month =
+    String(
+      today.getMonth() + 1,
+    ).padStart(
+      2,
+      '0',
+    )
+
+  const day =
+    String(
+      today.getDate(),
+    ).padStart(
+      2,
+      '0',
+    )
+
+  const todayIso =
+    `${year}-${month}-${day}`
+
+  return sessionDate > todayIso
+}
+
+
 function formatHeartRateZone(
   value: string,
 ): string {
@@ -847,6 +1022,71 @@ function ActivitySection({
   }, [
     completed,
   ])
+
+
+  const futureSession =
+    isFutureTrainingSession(
+      session.date,
+    )
+
+  if (futureSession) {
+    return (
+      <section
+        className="
+          border-t
+          border-base-300
+          pt-5
+        "
+      >
+        <div
+          className="
+            flex
+            items-center
+            justify-between
+            gap-3
+            rounded-xl
+            border
+            border-base-300
+            bg-base-100
+            px-4 py-3
+          "
+        >
+          <div>
+            <p
+              className="
+                font-semibold
+                text-base-content
+              "
+            >
+              Activité réalisée
+            </p>
+
+            <p
+              className="
+                mt-0.5
+                text-xs
+                text-base-content/45
+              "
+            >
+              Association disponible
+              le jour de la séance.
+            </p>
+          </div>
+
+          <span
+            className="
+              badge
+              badge-ghost
+              shrink-0
+            "
+          >
+            À venir
+          </span>
+        </div>
+      </section>
+    )
+  }
+
 
   const selectedCount =
     selectedActivityId

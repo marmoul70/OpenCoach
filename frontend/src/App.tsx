@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 
 import {
+  useToast,
+} from './components/ui/ToastProvider'
+
+import {
   loadAthleteProfile,
   useAthleteProfile,
 } from './core/profile'
@@ -41,6 +45,10 @@ interface BuildInfo {
 }
 
 function App() {
+  const {
+    toast,
+  } = useToast()
+
   const [page, setPage] = useState<Page>('dashboard')
   const profile = useAthleteProfile()
   const [loading, setLoading] = useState(true)
@@ -129,6 +137,163 @@ function App() {
       cancelled = true
     }
   }, [])
+
+
+
+  /*
+   * Onboarding Web Push.
+   *
+   * Aucun prompt natif n'est déclenché
+   * automatiquement.
+   *
+   * Le toast propose simplement d'ouvrir
+   * Réglages afin que l'utilisateur active
+   * volontairement les notifications.
+   */
+  useEffect(() => {
+    let cancelled = false
+
+    const timer =
+      window.setTimeout(
+        () => {
+          void (
+            async () => {
+              if (cancelled) {
+                return
+              }
+
+
+              if (
+                !(
+                  'Notification'
+                  in window
+                )
+                || !(
+                  'PushManager'
+                  in window
+                )
+                || !(
+                  'serviceWorker'
+                  in navigator
+                )
+              ) {
+                return
+              }
+
+
+              /*
+               * Permission explicitement refusée :
+               * ne pas reproposer à chaque démarrage.
+               */
+              if (
+                Notification.permission
+                === 'denied'
+              ) {
+                return
+              }
+
+
+              try {
+                const registration =
+                  await navigator
+                    .serviceWorker
+                    .ready
+
+                const subscription =
+                  await registration
+                    .pushManager
+                    .getSubscription()
+
+
+                /*
+                 * Cet appareil est déjà configuré.
+                 */
+                if (
+                  subscription
+                ) {
+                  return
+                }
+              } catch {
+                /*
+                 * Si le contrôle échoue, ne pas
+                 * afficher un onboarding trompeur.
+                 */
+                return
+              }
+
+
+              if (cancelled) {
+                return
+              }
+
+
+              /*
+               * Marqueur de session uniquement.
+               *
+               * Le toast ne sera pas affiché
+               * plusieurs fois pendant la même
+               * utilisation d'OpenCoach.
+               *
+               * Au prochain démarrage, il pourra
+               * revenir tant que les notifications
+               * ne sont pas activées.
+               */
+              if (
+                sessionStorage.getItem(
+                  'opencoach-notification-onboarding',
+                )
+                === 'shown'
+              ) {
+                return
+              }
+
+
+              sessionStorage.setItem(
+                'opencoach-notification-onboarding',
+                'shown',
+              )
+
+
+              toast({
+                type: 'info',
+
+                title:
+                  'Activer les notifications ?',
+
+                message:
+                  'Recevez les séances, alertes '
+                  + 'et informations importantes '
+                  + 'd’OpenCoach sur cet appareil.',
+
+                duration: null,
+
+                actionLabel:
+                  'Réglages',
+
+                onAction: () => {
+                  setPage(
+                    'settings',
+                  )
+                },
+              })
+            }
+          )()
+        },
+        1500,
+      )
+
+
+    return () => {
+      cancelled = true
+
+      window.clearTimeout(
+        timer,
+      )
+    }
+  }, [
+    toast,
+  ])
+
 
 
   useEffect(() => {

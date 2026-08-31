@@ -25,7 +25,7 @@ PROJECT_ROOT="$(
     pwd
 )"
 
-# shellcheck source=../lib/log.sh
+# shellcheck disable=SC1091
 source "$PROJECT_ROOT/scripts/lib/log.sh"
 
 VENV_DIR="$PROJECT_ROOT/.venv"
@@ -215,12 +215,7 @@ configure_authentication() {
                 "^${key}=.+" \
                 "$ENV_FILE"; then
 
-                configured_count=$(
-                    (
-                        configured_count
-                        + 1
-                    )
-                )
+                configured_count=$((configured_count + 1))
             fi
         done
     fi
@@ -459,6 +454,251 @@ PYTHON
 }
 
 
+
+configure_web_push() {
+    local vapid_keys=(
+        "OPENCOACH_VAPID_PRIVATE_KEY"
+        "OPENCOACH_VAPID_PUBLIC_KEY"
+        "OPENCOACH_VAPID_SUBJECT"
+    )
+
+    local configured_count=0
+    local key
+
+    for key in "${vapid_keys[@]}"; do
+        if [[ -f "$ENV_FILE" ]] \
+            && grep -qE \
+                "^${key}=.+" \
+                "$ENV_FILE"; then
+
+            configured_count=$((configured_count + 1))
+        fi
+    done
+
+
+    if ((
+        configured_count
+        == ${#vapid_keys[@]}
+    )); then
+        log_success \
+            "Web Push VAPID déjà configuré."
+
+        return 0
+    fi
+
+
+    if (( configured_count > 0 )); then
+        log_error \
+            "Configuration Web Push VAPID incomplète dans $ENV_FILE."
+
+        log_error \
+            "Les clés existantes ne seront pas remplacées."
+
+        return 1
+    fi
+
+
+    log_info \
+        "Génération automatique des clés Web Push VAPID"
+
+
+    touch \
+        "$ENV_FILE"
+
+    chown \
+        "$OPENCOACH_USER:$OPENCOACH_GROUP" \
+        "$ENV_FILE"
+
+    chmod \
+        600 \
+        "$ENV_FILE"
+
+
+    if ! run_as_project_owner \
+        "$VENV_PYTHON" \
+        - "$ENV_FILE" <<'PYTHON'
+import base64
+import sys
+
+from pathlib import Path
+
+from cryptography.hazmat.primitives import (
+    serialization,
+)
+from cryptography.hazmat.primitives.asymmetric import (
+    ec,
+)
+
+
+env_path = Path(
+    sys.argv[1]
+)
+
+
+private_key = ec.generate_private_key(
+    ec.SECP256R1()
+)
+
+
+private_der = private_key.private_bytes(
+    encoding=serialization.Encoding.DER,
+    format=serialization.PrivateFormat.PKCS8,
+    encryption_algorithm=(
+        serialization.NoEncryption()
+    ),
+)
+
+
+private_value = (
+    base64
+    .urlsafe_b64encode(
+        private_der
+    )
+    .decode(
+        "ascii"
+    )
+    .rstrip(
+        "="
+    )
+)
+
+
+public_raw = (
+    private_key
+    .public_key()
+    .public_bytes(
+        encoding=serialization.Encoding.X962,
+        format=(
+            serialization
+            .PublicFormat
+            .UncompressedPoint
+        ),
+    )
+)
+
+
+public_value = (
+    base64
+    .urlsafe_b64encode(
+        public_raw
+    )
+    .decode(
+        "ascii"
+    )
+    .rstrip(
+        "="
+    )
+)
+
+
+if len(public_raw) != 65:
+    raise SystemExit(
+        "Clé publique VAPID invalide."
+    )
+
+
+values = {
+    "OPENCOACH_VAPID_PRIVATE_KEY":
+        private_value,
+
+    "OPENCOACH_VAPID_PUBLIC_KEY":
+        public_value,
+
+    "OPENCOACH_VAPID_SUBJECT":
+        "mailto:admin@opencoach.local",
+}
+
+
+existing_lines = []
+
+if env_path.exists():
+    existing_lines = (
+        env_path
+        .read_text(
+            encoding="utf-8",
+        )
+        .splitlines()
+    )
+
+
+managed_keys = set(
+    values
+)
+
+
+lines = [
+    line
+    for line in existing_lines
+    if not any(
+        line.startswith(
+            f"{key}="
+        )
+        for key in managed_keys
+    )
+]
+
+
+while (
+    lines
+    and not lines[-1].strip()
+):
+    lines.pop()
+
+
+if lines:
+    lines.append(
+        ""
+    )
+
+
+lines.append(
+    "# OpenCoach Web Push VAPID"
+)
+
+
+for key, value in values.items():
+    lines.append(
+        f"{key}={value}"
+    )
+
+
+env_path.write_text(
+    "\n".join(
+        lines
+    )
+    + "\n",
+    encoding="utf-8",
+)
+
+
+print(
+    "Clés VAPID générées."
+)
+PYTHON
+    then
+        log_error \
+            "Impossible de générer les clés VAPID."
+
+        return 1
+    fi
+
+
+    chmod \
+        600 \
+        "$ENV_FILE"
+
+    chown \
+        "$OPENCOACH_USER:$OPENCOACH_GROUP" \
+        "$ENV_FILE"
+
+
+    log_success \
+        "Web Push VAPID configuré automatiquement."
+
+    return 0
+}
+
+
 install_frontend_application() {
     if [[ ! -f "$FRONTEND_DIR/package-lock.json" ]]; then
         log_error \
@@ -533,6 +773,8 @@ main() {
     install_python_application
 
     configure_authentication
+
+    configure_web_push
 
     install_frontend_application
 

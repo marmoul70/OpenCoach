@@ -16,6 +16,10 @@ import {
 } from '../../components/ui/ToastProvider'
 
 import {
+  ProfileSection,
+} from '../profile/ProfileSection'
+
+import {
   deletePushSubscription,
   fetchPushPublicKey,
   savePushSubscription,
@@ -265,31 +269,28 @@ export function NotificationsSection() {
 
 
   return (
-    <section
-      className="
-        rounded-2xl
-        border
-        border-base-300
-        bg-base-100
-        shadow-sm
-      "
+    <ProfileSection
+      title="Notifications"
+      description={
+        "Recevez les rappels de séance "
+        + "et les informations importantes "
+        + "du coach sur cet appareil."
+      }
+      trailing={
+        <NotificationBadge
+          state={state}
+        />
+      }
     >
       <div
         className="
-          flex
-          flex-col
-          gap-4
-          p-5
-          sm:flex-row
-          sm:items-center
-          sm:justify-between
-          sm:p-6
+          space-y-5
         "
       >
         <div
           className="
             flex
-            min-w-0
+            items-start
             gap-4
           "
         >
@@ -311,28 +312,23 @@ export function NotificationsSection() {
             />
           </div>
 
-          <div className="min-w-0">
-            <h2
-              className="
-                font-semibold
-                text-base-content
-              "
-            >
-              Notifications
-            </h2>
-
+          <div
+            className="
+              min-w-0
+              flex-1
+            "
+          >
             <p
               className="
-                mt-1
                 text-sm
                 leading-relaxed
-                text-base-content/55
+                text-base-content/70
               "
             >
-              Recevez les rappels de séance
-              et les informations importantes
-              du coach directement sur cet
-              appareil.
+              OpenCoach peut vous prévenir
+              lorsqu'une information importante
+              concernant votre entraînement
+              est disponible.
             </p>
 
             <NotificationStatus
@@ -343,8 +339,8 @@ export function NotificationsSection() {
 
         <div
           className="
-            shrink-0
-            sm:pl-4
+            flex
+            justify-end
           "
         >
           {state === 'enabled' ? (
@@ -354,9 +350,7 @@ export function NotificationsSection() {
                 btn
                 btn-outline
                 btn-sm
-                w-full
                 gap-2
-                sm:w-auto
               "
               disabled={busy}
               onClick={() => {
@@ -386,9 +380,7 @@ export function NotificationsSection() {
                 btn
                 btn-primary
                 btn-sm
-                w-full
                 gap-2
-                sm:w-auto
               "
               disabled={
                 busy
@@ -419,7 +411,99 @@ export function NotificationsSection() {
           )}
         </div>
       </div>
-    </section>
+    </ProfileSection>
+  )
+}
+
+
+function NotificationBadge({
+  state,
+}: {
+  state: NotificationState
+}) {
+  if (
+    state === 'enabled'
+  ) {
+    return (
+      <span
+        className="
+          badge
+          badge-success
+          badge-sm
+          font-medium
+        "
+      >
+        Activées
+      </span>
+    )
+  }
+
+
+  if (
+    state === 'denied'
+  ) {
+    return (
+      <span
+        className="
+          badge
+          badge-warning
+          badge-sm
+          font-medium
+        "
+      >
+        Bloquées
+      </span>
+    )
+  }
+
+
+  if (
+    state === 'disabled'
+  ) {
+    return (
+      <span
+        className="
+          badge
+          badge-warning
+          badge-sm
+          font-medium
+        "
+      >
+        Désactivées
+      </span>
+    )
+  }
+
+
+  if (
+    state === 'unsupported'
+  ) {
+    return (
+      <span
+        className="
+          badge
+          badge-ghost
+          badge-sm
+          font-medium
+        "
+      >
+        Indisponibles
+      </span>
+    )
+  }
+
+
+  return (
+    <span
+      className="
+        badge
+        badge-ghost
+        badge-sm
+        font-medium
+      "
+    >
+      Vérification…
+    </span>
   )
 }
 

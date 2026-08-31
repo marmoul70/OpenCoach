@@ -1,4 +1,6 @@
 export interface ActivitySummary {
+  id?: string
+
   provider: string
   provider_activity_id: string
 

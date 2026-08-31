@@ -21,7 +21,7 @@ export function registerServiceWorker() {
       void navigator
         .serviceWorker
         .register(
-          '/sw.js',
+          '/sw.js?v=0.3.0-rc.11',
           {
             scope: '/',
           },

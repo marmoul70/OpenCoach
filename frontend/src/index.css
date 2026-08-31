@@ -1,2 +1,33 @@
 @import "tailwindcss";
 @plugin "daisyui";
+
+
+/* ==========================================================
+   OpenCoach PWA - iOS safe areas
+   ========================================================== */
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+.pwa-safe-screen {
+  min-height: 100dvh;
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+
+.pwa-safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.pwa-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

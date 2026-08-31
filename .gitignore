@@ -243,3 +243,6 @@ data/backups/
 
 # Temporary patch backups
 .patch-backup-*/
+
+# Sauvegardes temporaires des scripts de modification
+*.before-*

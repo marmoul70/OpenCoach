@@ -1,180 +1,107 @@
-import {
-  useState,
-} from 'react'
-
-
-type BadgeStatus =
-  | 'idle'
-  | 'success'
-  | 'unsupported'
-  | 'error'
-
-
-type BadgeNavigator = {
-  setAppBadge?: (
-    contents?: number,
-  ) => Promise<void>
-}
-
-
 export function BadgeDiagnostic() {
-  const [
-    status,
-    setStatus,
-  ] = useState<BadgeStatus>(
-    'idle',
-  )
-
-  const [
-    errorMessage,
-    setErrorMessage,
-  ] = useState<string>(
-    '',
-  )
-
-
-  const badgeNavigator =
-    navigator as Navigator
-    & BadgeNavigator
-
-
-  async function testBadge() {
-    setErrorMessage(
-      '',
-    )
-
-
-    if (
-      typeof badgeNavigator
-        .setAppBadge
-      !== 'function'
-    ) {
-      setStatus(
-        'unsupported',
-      )
-
-      return
-    }
-
-
+  async function resetPwa() {
     try {
-      await badgeNavigator
-        .setAppBadge(
-          7,
-        )
-
-      setStatus(
-        'success',
-      )
-    } catch (error) {
-      console.error(
-        '[OpenCoach Badge Diagnostic]',
-        error,
-      )
-
-      setStatus(
-        'error',
-      )
-
-
       if (
-        error
-        instanceof Error
+        'serviceWorker'
+        in navigator
       ) {
-        setErrorMessage(
-          `${error.name}: ${error.message}`,
-        )
-      } else {
-        setErrorMessage(
-          String(
-            error,
+        const registrations =
+          await navigator
+            .serviceWorker
+            .getRegistrations()
+
+        for (
+          const registration
+          of registrations
+        ) {
+          const subscription =
+            await registration
+              .pushManager
+              .getSubscription()
+
+          if (subscription) {
+            try {
+              await fetch(
+                '/api/push/subscriptions',
+                {
+                  method: 'DELETE',
+                  credentials: 'include',
+                  headers: {
+                    'Content-Type':
+                      'application/json',
+                  },
+                  body: JSON.stringify({
+                    endpoint:
+                      subscription.endpoint,
+                  }),
+                },
+              )
+            } catch {
+              // La réinitialisation locale continue.
+            }
+
+            await subscription
+              .unsubscribe()
+          }
+
+          await registration
+            .unregister()
+        }
+      }
+
+      const cacheStorage =
+        (
+          window as Window & {
+            caches?: CacheStorage
+          }
+        ).caches
+
+      if (cacheStorage) {
+        const cacheNames =
+          await cacheStorage.keys()
+
+        await Promise.all(
+          cacheNames.map(
+            (cacheName) =>
+              cacheStorage.delete(
+                cacheName,
+              ),
           ),
         )
       }
+
+      alert(
+        'OpenCoach a été réinitialisé. '
+        + 'Fermez complètement la PWA, '
+        + 'puis relancez-la.',
+      )
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? `${error.name}: ${error.message}`
+          : 'Erreur de réinitialisation PWA',
+      )
     }
   }
 
-
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: '20px',
-        left: '20px',
-        right: '20px',
-        zIndex: 99999,
-        padding: '16px',
-        background: '#111827',
-        color: '#ffffff',
-        borderRadius: '14px',
-        boxShadow:
-          '0 10px 30px rgba(0,0,0,0.35)',
-        fontSize: '14px',
+    <button
+      type="button"
+      onClick={() => {
+        void resetPwa()
       }}
+      className="
+        btn
+        btn-warning
+        btn-xs
+        fixed
+        bottom-4
+        right-4
+        z-[9999]
+        shadow-lg
+      "
     >
-      <div
-        style={{
-          fontWeight: 700,
-          marginBottom: '10px',
-        }}
-      >
-        OpenCoach Badge Diagnostic
-      </div>
-
-      <div>
-        Permission : {
-          typeof Notification
-          !== 'undefined'
-            ? Notification.permission
-            : 'indisponible'
-        }
-      </div>
-
-      <div>
-        API badge : {
-          typeof badgeNavigator
-            .setAppBadge
-          === 'function'
-            ? 'OUI'
-            : 'NON'
-        }
-      </div>
-
-      <div>
-        Résultat : {status}
-      </div>
-
-      {
-        errorMessage
-        && (
-          <div
-            style={{
-              marginTop: '8px',
-              wordBreak: 'break-word',
-            }}
-          >
-            Erreur : {errorMessage}
-          </div>
-        )
-      }
-
-      <button
-        type="button"
-        onClick={() => {
-          void testBadge()
-        }}
-        style={{
-          marginTop: '12px',
-          width: '100%',
-          padding: '12px',
-          border: '0',
-          borderRadius: '10px',
-          fontWeight: 700,
-          cursor: 'pointer',
-        }}
-      >
-        TEST BADGE 7
-      </button>
-    </div>
+      Réinitialiser PWA
+    </button>
   )
 }

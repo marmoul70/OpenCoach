@@ -352,7 +352,7 @@ self.addEventListener(
   'push',
   (event) => {
     event.waitUntil(
-      handlePushDiagnostic(
+      diagnosePushBadge(
         event,
       ),
     )
@@ -360,13 +360,10 @@ self.addEventListener(
 )
 
 
-async function handlePushDiagnostic(
+async function diagnosePushBadge(
   event,
 ) {
   let payload = {
-    title: 'OpenCoach',
-    body: 'Notification OpenCoach',
-    url: '/',
     badge: 1,
   }
 
@@ -377,8 +374,7 @@ async function handlePushDiagnostic(
         ...event.data.json(),
       }
     } catch {
-      payload.body =
-        event.data.text()
+      // Payload non JSON.
     }
   }
 
@@ -390,8 +386,8 @@ async function handlePushDiagnostic(
       ) || 1,
     )
 
-  let badgeDiagnostic =
-    'Badge API absente'
+  let result =
+    'API setAppBadge absente'
 
   if (
     'setAppBadge'
@@ -403,34 +399,31 @@ async function handlePushDiagnostic(
           badgeCount,
         )
 
-      badgeDiagnostic =
-        `Badge SW OK (${badgeCount})`
+      result =
+        `setAppBadge(${badgeCount}) OK`
     } catch (error) {
-      const errorName =
+      const name =
         error?.name
-        || 'Erreur'
+        || 'Erreur inconnue'
 
-      const errorMessage =
+      const message =
         error?.message
         || ''
 
-      badgeDiagnostic =
-        `Badge SW ERREUR: ${errorName} ${errorMessage}`
+      result =
+        `${name}: ${message}`
     }
   }
 
   await self.registration
     .showNotification(
-      payload.title,
+      'OpenCoach SW-DIAG',
       {
-        body:
-          `${payload.body}\n${badgeDiagnostic}`,
+        body: result,
         icon:
           '/icons/icon-192.png',
         data: {
-          url:
-            payload.url
-            || '/',
+          url: '/',
         },
       },
     )

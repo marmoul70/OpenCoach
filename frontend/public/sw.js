@@ -351,70 +351,68 @@ function isStaticAsset(
 self.addEventListener(
   'push',
   (event) => {
-    const data =
-      event.data
-        ? event.data.json()
-        : null
+    let data = null
+
+    if (event.data) {
+      try {
+        data = event.data.json()
+      } catch {
+        data = null
+      }
+    }
 
     /*
-     * Les navigateurs compatibles
-     * Declarative Web Push gèrent
-     * automatiquement notification
-     * et badge.
+     * Declarative Web Push.
      *
-     * Ce handler sert de fallback
-     * pour les autres navigateurs.
+     * Sur les versions récentes de WebKit,
+     * le navigateur gère lui-même :
+     *
+     * - l'affichage de la notification ;
+     * - la navigation ;
+     * - app_badge.
+     *
+     * Ne pas appeler showNotification()
+     * ici : cela remplacerait la
+     * notification déclarative proposée
+     * par WebKit.
      */
     if (
       data?.web_push === 8030
       && data?.notification
     ) {
-      const notification =
-        data.notification
-
-      const badgeCount =
-        Math.max(
-          1,
-          Number(
-            data.app_badge,
-          ) || 1,
-        )
-
-      event.waitUntil(
-        Promise.all([
-          self.registration
-            .showNotification(
-              notification.title
-                || 'OpenCoach',
-              {
-                body:
-                  notification.body
-                  || '',
-                icon:
-                  '/icons/icon-192.png',
-                data: {
-                  url:
-                    notification.navigate
-                    || '/',
-                },
-              },
-            ),
-
-          (
-            'setAppBadge'
-            in self.navigator
-          )
-            ? self.navigator
-                .setAppBadge(
-                  badgeCount,
-                )
-                .catch(
-                  () => undefined,
-                )
-            : Promise.resolve(),
-        ]),
-      )
+      return
     }
+
+    /*
+     * Fallback historique pour un éventuel
+     * Push non déclaratif.
+     */
+    const title =
+      data?.title
+      || 'OpenCoach'
+
+    const body =
+      data?.body
+      || 'Nouvelle information disponible.'
+
+    const url =
+      data?.url
+      || '/'
+
+    event.waitUntil(
+      self.registration
+        .showNotification(
+          title,
+          {
+            body,
+            icon:
+              '/icons/icon-192.png',
+            data: {
+              url,
+            },
+          },
+        ),
+    )
   },
 )
 

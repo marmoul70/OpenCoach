@@ -246,3 +246,6 @@ data/backups/
 
 # Sauvegardes temporaires des scripts de modification
 *.before-*
+
+# Sauvegardes locales de refactorisation
+.refactor-backup/

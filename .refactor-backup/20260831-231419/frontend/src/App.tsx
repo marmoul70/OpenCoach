@@ -20,6 +20,7 @@ import { RaceProvider } from './modules/races/raceStore'
 import { ActivityPage } from './modules/activities/ActivityPage'
 import { FeelingPage } from './modules/feeling/FeelingPage'
 import { Settings } from './modules/settings'
+import { Connections } from './modules/connections'
 import { logout as logoutOpenCoach } from './modules/auth'
 
 type Page =
@@ -32,6 +33,7 @@ type Page =
   | 'settings'
   | 'races'
   | 'activities'
+  | 'connections'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -569,6 +571,22 @@ function App() {
                         Réglages
                       </button>
                     </li>
+                    <li>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          setPage('connections')
+                          event.currentTarget.blur()
+                        }}
+                        className={
+                          page === 'connections'
+                            ? 'text-primary font-semibold'
+                            : ''
+                        }
+                      >
+                        Connexions
+                      </button>
+                    </li>
                     <div className="divider my-1" />
                     <li>
                       <details>
@@ -686,6 +704,7 @@ function App() {
           {page === 'profile-personal' && <PersonalProfile />}
           {page === 'profile-sport' && <Profile />}
           {page === 'settings' && <Settings />}
+          {page === 'connections' && <Connections />}
         </div>
       </TrainingProvider>
     </RaceProvider>

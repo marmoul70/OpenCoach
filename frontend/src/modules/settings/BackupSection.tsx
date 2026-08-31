@@ -382,6 +382,15 @@ export function BackupSection() {
     <>
       <ProfileSection
         title="Sauvegarde des données"
+        icon={
+          <HardDriveDownload
+            size={21}
+          />
+        }
+        iconClassName="
+          bg-secondary/10
+          text-secondary
+        "
         description={
           'Sauvegarde automatique, '
           + 'export et protection des données OpenCoach.'

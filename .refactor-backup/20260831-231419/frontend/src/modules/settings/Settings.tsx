@@ -9,12 +9,11 @@ import {
 } from './NotificationsSection'
 
 import {
+  EquipmentSection,
   LocationSection,
+  NutritionSection,
+  TrainingSection,
 } from './SettingsSections'
-
-import {
-  IntervalsSection,
-} from './IntervalsSection'
 
 
 export function Settings() {
@@ -35,11 +34,21 @@ export function Settings() {
         </header>
 
         <div className="space-y-4">
+          <TrainingSection
+            training={profile.training}
+          />
+
           <LocationSection
             location={profile.location}
           />
 
-          <IntervalsSection />
+          <EquipmentSection
+            equipment={profile.equipment}
+          />
+
+          <NutritionSection
+            nutrition={profile.nutrition}
+          />
 
           <NotificationsSection />
 

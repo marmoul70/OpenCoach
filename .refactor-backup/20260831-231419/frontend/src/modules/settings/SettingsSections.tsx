@@ -2,13 +2,6 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 
 import {
-  Backpack,
-  Dumbbell,
-  MapPin,
-  Utensils,
-} from 'lucide-react'
-
-import {
   updateAthleteProfile,
 } from '../../core/profile'
 
@@ -180,11 +173,6 @@ export function TrainingSection({
   return (
     <ProfileSection
       title="Entraînement"
-      icon={
-        <Dumbbell
-          size={21}
-        />
-      }
       description="Paramètres utilisés pour construire votre entraînement."
     >
       <div className="space-y-6">
@@ -441,15 +429,6 @@ export function LocationSection({
   return (
     <ProfileSection
       title="Localisation"
-      icon={
-        <MapPin
-          size={21}
-        />
-      }
-      iconClassName="
-        bg-secondary/10
-        text-secondary
-      "
       description="Localisation principale utilisée par les services comme la météo."
     >
       <div className="space-y-6">
@@ -699,11 +678,6 @@ export function EquipmentSection({
   return (
     <ProfileSection
       title="Matériel"
-      icon={
-        <Backpack
-          size={21}
-        />
-      }
       description="Gérez votre équipement sportif et son utilisation."
     >
       <div className="space-y-8">
@@ -1014,11 +988,6 @@ export function NutritionSection({
   return (
     <ProfileSection
       title="Nutrition"
-      icon={
-        <Utensils
-          size={21}
-        />
-      }
       description="Paramètres utilisés pour personnaliser votre stratégie nutritionnelle."
     >
       <div className="space-y-6">

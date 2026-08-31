@@ -9,12 +9,6 @@ import {
 import { ProfileSection } from './ProfileSection'
 
 import {
-  EquipmentSection,
-  NutritionSection,
-  TrainingSection,
-} from '../settings/SettingsSections'
-
-import {
   FormField,
   SectionActions,
   parseOptionalNumber,
@@ -378,18 +372,6 @@ export function Profile() {
               />
             </div>
           </ProfileSection>
-
-          <TrainingSection
-            training={profile.training}
-          />
-
-          <EquipmentSection
-            equipment={profile.equipment}
-          />
-
-          <NutritionSection
-            nutrition={profile.nutrition}
-          />
 
         </div>
       </div>

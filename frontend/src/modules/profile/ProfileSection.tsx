@@ -10,6 +10,8 @@ interface ProfileSectionProps {
   children: ReactNode
   defaultOpen?: boolean
   trailing?: ReactNode
+  icon?: ReactNode
+  iconClassName?: string
 }
 
 
@@ -19,6 +21,8 @@ export function ProfileSection({
   children,
   defaultOpen = false,
   trailing,
+  icon,
+  iconClassName,
 }: ProfileSectionProps) {
   const [
     open,
@@ -65,31 +69,59 @@ export function ProfileSection({
       >
         <div
           className="
+            flex
             min-w-0
             flex-1
+            items-center
+            gap-3
           "
         >
-          <h2
+          {icon && (
+            <div
+              className={[
+                (
+                  'flex h-11 w-11 shrink-0 '
+                  + 'items-center justify-center '
+                  + 'rounded-xl'
+                ),
+                (
+                  iconClassName
+                  ?? 'bg-primary/10 text-primary'
+                ),
+              ].join(' ')}
+            >
+              {icon}
+            </div>
+          )}
+
+          <div
             className="
-              text-lg
-              font-semibold
-              text-base-content
+              min-w-0
+              flex-1
             "
           >
-            {title}
-          </h2>
-
-          {description && (
-            <p
+            <h2
               className="
-                mt-1
-                text-sm
-                text-base-content/60
+                text-lg
+                font-semibold
+                text-base-content
               "
             >
-              {description}
-            </p>
-          )}
+              {title}
+            </h2>
+
+            {description && (
+              <p
+                className="
+                  mt-1
+                  text-sm
+                  text-base-content/60
+                "
+              >
+                {description}
+              </p>
+            )}
+          </div>
         </div>
 
         {trailing && (

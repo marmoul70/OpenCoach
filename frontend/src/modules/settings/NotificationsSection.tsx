@@ -271,6 +271,15 @@ export function NotificationsSection() {
   return (
     <ProfileSection
       title="Notifications"
+      icon={
+        <Bell
+          size={21}
+        />
+      }
+      iconClassName="
+        bg-secondary/10
+        text-secondary
+      "
       description={
         "Recevez les rappels de séance "
         + "et les informations importantes "

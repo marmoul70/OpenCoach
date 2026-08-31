@@ -351,84 +351,87 @@ function isStaticAsset(
 self.addEventListener(
   'push',
   (event) => {
-    let payload = {
-      title: 'OpenCoach',
-      body: 'Nouvelle information disponible.',
-      url: '/',
-      badge: 1,
-    }
-
-    if (event.data) {
-      try {
-        payload = {
-          ...payload,
-          ...event.data.json(),
-        }
-      } catch {
-        payload.body =
-          event.data.text()
-      }
-    }
-
-    const badgeCount =
-      Math.max(
-        1,
-        Number(
-          payload.badge,
-        ) || 1,
-      )
-
-    const tasks = []
-
-    /*
-     * Badge PWA.
-     *
-     * L'échec du badge ne doit jamais
-     * empêcher l'affichage de la
-     * notification.
-     */
-    if (
-      'setAppBadge'
-      in self.navigator
-    ) {
-      tasks.push(
-        self.navigator
-          .setAppBadge(
-            badgeCount,
-          )
-          .catch(
-            () => undefined,
-          ),
-      )
-    }
-
-    tasks.push(
-      self.registration
-        .showNotification(
-          payload.title,
-          {
-            body:
-              payload.body,
-            icon:
-              '/icons/icon-192.png',
-            badge:
-              '/icons/icon-192.png',
-            data: {
-              url:
-                payload.url
-                || '/',
-            },
-          },
-        ),
-    )
-
     event.waitUntil(
-      Promise.all(
-        tasks,
+      handlePush(
+        event,
       ),
     )
   },
 )
+
+
+async function handlePush(
+  event,
+) {
+  let payload = {
+    title: 'OpenCoach',
+    body: 'Nouvelle information disponible.',
+    url: '/',
+    badge: 1,
+  }
+
+  if (event.data) {
+    try {
+      payload = {
+        ...payload,
+        ...event.data.json(),
+      }
+    } catch {
+      payload.body =
+        event.data.text()
+    }
+  }
+
+  const badgeCount =
+    Math.max(
+      1,
+      Number(
+        payload.badge,
+      ) || 1,
+    )
+
+  /*
+   * On affiche d'abord la notification.
+   * iOS dispose alors d'une notification
+   * visible associée à la PWA.
+   */
+  await self.registration
+    .showNotification(
+      payload.title,
+      {
+        body:
+          payload.body,
+        icon:
+          '/icons/icon-192.png',
+        data: {
+          url:
+            payload.url
+            || '/',
+        },
+      },
+    )
+
+  /*
+   * Puis on applique le compteur
+   * de pastille.
+   *
+   * Une erreur de badge ne doit jamais
+   * annuler la notification.
+   */
+  if (
+    'setAppBadge'
+    in self.navigator
+  ) {
+    try {
+      await self.navigator
+        .setAppBadge(
+          badgeCount,
+        )
+    } catch {
+      // Fonction PWA optionnelle.
+    }
+  }
+}
 
 
 self.addEventListener(

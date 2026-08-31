@@ -5,3 +5,9 @@ export {
 export {
   registerServiceWorker,
 } from './registerServiceWorker'
+
+
+export {
+  AppBadgeManager,
+} from './AppBadgeManager'
+

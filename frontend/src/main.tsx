@@ -7,6 +7,7 @@ import {
 } from './components/ui/ToastProvider'
 import App from './App.tsx'
 import {
+  AppBadgeManager,
   VersionWatcher,
   registerServiceWorker,
 } from './modules/pwa'
@@ -18,6 +19,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ToastProvider>
       <VersionWatcher />
+      <AppBadgeManager />
       <AuthGate>
         <App />
       </AuthGate>

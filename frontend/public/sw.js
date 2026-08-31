@@ -369,7 +369,19 @@ self.addEventListener(
       }
     }
 
-    event.waitUntil(
+    const tasks = []
+
+    if (
+      'setAppBadge'
+      in self.navigator
+    ) {
+      tasks.push(
+        self.navigator
+          .setAppBadge(1),
+      )
+    }
+
+    tasks.push(
       self.registration
         .showNotification(
           payload.title,
@@ -387,6 +399,12 @@ self.addEventListener(
             },
           },
         ),
+    )
+
+    event.waitUntil(
+      Promise.all(
+        tasks,
+      ),
     )
   },
 )

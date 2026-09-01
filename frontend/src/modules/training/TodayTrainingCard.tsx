@@ -1,4 +1,5 @@
 import {
+  ArrowRight,
   Plus,
 } from 'lucide-react'
 
@@ -13,11 +14,9 @@ import {
 
 interface TodayTrainingCardProps {
   sessions: TrainingSession[]
-
   onOpenSession: (
     sessionId: string,
   ) => void
-
   onAddSession: () => void
 }
 
@@ -31,147 +30,119 @@ export function TodayTrainingCard({
     <section
       aria-label="Entraînement du jour"
       className="
-        rounded-2xl
+        rounded-[14px]
         border
-        border-primary/25
-        bg-primary/5
-        shadow-sm
-        ring-1
-        ring-primary/10
+        border-emerald-500/15
+        bg-[#111814]
+        p-3.5
+        text-white
+        shadow-[0_8px_28px_rgba(15,23,42,0.08)]
       "
     >
       <div
         className="
-          grid
-          gap-4
-          p-4
-          md:grid-cols-[150px_minmax(0,1fr)_auto]
-          md:items-start
+          flex
+          items-center
+          justify-between
+          gap-3
         "
       >
         <div>
+          <p
+            className="
+              text-[11px]
+              font-bold
+              uppercase
+              tracking-[0.14em]
+              text-emerald-400
+            "
+          >
+            Aujourd’hui
+          </p>
+
+          <p
+            className="
+              mt-0.5
+              text-[12px]
+              text-slate-500
+            "
+          >
+            Séance prioritaire
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onAddSession}
+          className="
+            flex
+            h-8
+            items-center
+            gap-1.5
+            rounded-[9px]
+            border
+            border-white/[0.07]
+            bg-white/[0.035]
+            px-2.5
+            text-[12px]
+            font-medium
+            text-slate-300
+            transition
+            hover:bg-white/[0.06]
+          "
+        >
+          <Plus className="h-3 w-3" />
+        </button>
+      </div>
+
+
+      <div className="mt-3 space-y-2">
+        {sessions.length === 0 && (
           <div
             className="
-              flex
-              flex-wrap
-              items-center
-              gap-2
+              rounded-[10px]
+              border
+              border-white/[0.06]
+              bg-white/[0.035]
+              px-3
+              py-2.5
             "
           >
             <p
               className="
-                text-sm
-                font-bold
-                uppercase
-                tracking-wide
-                text-base-content
+                text-[14px]
+                font-semibold
+                text-slate-200
               "
             >
-              Aujourd’hui
+              Repos
             </p>
 
-            <span
+            <p
               className="
-                badge
-                badge-primary
-                badge-sm
+                mt-0.5
+                text-[12px]
+                text-slate-500
               "
             >
-              Aujourd&apos;hui
-            </span>
+              Aucune séance prévue
+            </p>
           </div>
+        )}
 
-          <p
-            className="
-              mt-1
-              text-xs
-              text-base-content/50
-            "
-          >
-            Séance du jour
-          </p>
-        </div>
-
-        <div
-          className="
-            min-w-0
-            space-y-2
-          "
-        >
-          {sessions.length === 0 && (
-            <div
-              className="
-                rounded-xl
-                border
-                border-base-300
-                bg-base-100
-                px-4
-                py-3
-                shadow-sm
-              "
-            >
-              <p
-                className="
-                  font-medium
-                  text-base-content/70
-                "
-              >
-                Repos
-              </p>
-
-              <p
-                className="
-                  mt-1
-                  text-sm
-                  text-base-content/45
-                "
-              >
-                Aucune séance prévue
-              </p>
-            </div>
-          )}
-
-          {sessions.map(
-            (session) => (
-              <TodayTrainingSession
-                key={session.id}
-                session={session}
-                onOpen={() =>
-                  onOpenSession(
-                    session.id,
-                  )
-                }
-              />
-            ),
-          )}
-        </div>
-
-        <div
-          className="
-            flex
-            md:justify-end
-          "
-        >
-          <button
-            type="button"
-            className="
-              btn
-              btn-ghost
-              btn-sm
-              gap-1
-              text-base-content/60
-            "
-            onClick={
-              onAddSession
-            }
-          >
-            <Plus
-              size={15}
+        {sessions.map(
+          (session) => (
+            <TodayTrainingSession
+              key={session.id}
+              session={session}
+              onOpen={() =>
+                onOpenSession(
+                  session.id,
+                )
+              }
             />
-
-            Ajouter
-          </button>
-        </div>
+          ),
+        )}
       </div>
     </section>
   )
@@ -188,35 +159,33 @@ function TodayTrainingSession({
   return (
     <button
       type="button"
-      onClick={
-        onOpen
-      }
+      onClick={onOpen}
       className="
+        group
         flex
         w-full
-        flex-col
-        gap-3
-        rounded-xl
+        items-center
+        justify-between
+        gap-4
+        rounded-[10px]
         border
-        border-base-300
-        bg-base-100
-        px-4
-        py-3
-        shadow-sm
+        border-white/[0.07]
+        bg-white/[0.04]
+        px-3
+        py-2.5
         text-left
         transition
-        hover:bg-base-200/60
-        sm:flex-row
-        sm:items-center
-        sm:justify-between
+        hover:border-emerald-500/20
+        hover:bg-white/[0.055]
       "
     >
       <div className="min-w-0">
         <p
           className="
             truncate
+            text-[15px]
             font-semibold
-            text-base-content
+            text-white
           "
         >
           {session.title}
@@ -224,9 +193,9 @@ function TodayTrainingSession({
 
         <p
           className="
-            mt-1
-            text-sm
-            text-base-content/50
+            mt-0.5
+            text-[12.5px]
+            text-slate-400
           "
         >
           {session.type === 'rest'
@@ -247,16 +216,16 @@ function TodayTrainingSession({
         </p>
       </div>
 
-      <span
+      <ArrowRight
         className="
+          h-4
+          w-4
           shrink-0
-          text-sm
-          font-semibold
-          text-primary
+          text-emerald-400
+          transition-transform
+          group-hover:translate-x-0.5
         "
-      >
-        Ouvrir
-      </span>
+      />
     </button>
   )
 }

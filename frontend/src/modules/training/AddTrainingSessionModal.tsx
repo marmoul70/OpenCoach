@@ -1,10 +1,17 @@
+import type { ReactNode } from 'react'
 import {
+  Bike,
   Dumbbell,
+  Footprints,
   Link2,
   LoaderCircle,
+  Mountain,
   Plus,
+  RefreshCw,
+  Waves,
   X,
 } from 'lucide-react'
+
 import {
   useCallback,
   useEffect,
@@ -23,6 +30,7 @@ import type {
   TrainingAvailableActivity,
   TrainingSessionCreate,
 } from './types'
+
 import {
   TRAINING_INTENSITIES,
 } from './intensity'
@@ -62,6 +70,40 @@ const EMPTY_MANUAL_FORM: ManualFormState = {
   heartRateZone: '',
   description: '',
 }
+
+
+const SPORT_OPTIONS = [
+  {
+    value: 'Run',
+    label: 'Course',
+    icon: Footprints,
+  },
+  {
+    value: 'TrailRun',
+    label: 'Trail',
+    icon: Mountain,
+  },
+  {
+    value: 'Ride',
+    label: 'Vélo',
+    icon: Bike,
+  },
+  {
+    value: 'Swim',
+    label: 'Natation',
+    icon: Waves,
+  },
+  {
+    value: 'StrengthTraining',
+    label: 'Renfo',
+    icon: Dumbbell,
+  },
+  {
+    value: 'Walk',
+    label: 'Marche',
+    icon: Footprints,
+  },
+] as const
 
 
 export function AddTrainingSessionModal({
@@ -167,12 +209,52 @@ export function AddTrainingSessionModal({
   ])
 
 
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const previousOverflow =
+      document.body.style.overflow
+
+    document.body.style.overflow =
+      'hidden'
+
+    function handleEscape(
+      event: KeyboardEvent,
+    ) {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    window.addEventListener(
+      'keydown',
+      handleEscape,
+    )
+
+    return () => {
+      document.body.style.overflow =
+        previousOverflow
+
+      window.removeEventListener(
+        'keydown',
+        handleEscape,
+      )
+    }
+  }, [
+    open,
+    onClose,
+  ])
+
+
   async function addIntervalsActivity(
     activity: TrainingAvailableActivity,
   ): Promise<void> {
     setSubmittingActivityId(
       activity.id,
     )
+
     setError(null)
 
     try {
@@ -181,8 +263,7 @@ export function AddTrainingSessionModal({
           1,
           Math.round(
             (
-              activity
-                .movingTimeSeconds
+              activity.movingTimeSeconds
               ?? 60
             ) / 60,
           ),
@@ -207,14 +288,17 @@ export function AddTrainingSessionModal({
           activity.elevationGainM,
         intensity: '',
         status: 'completed',
-        activityId: activity.id,
+        activityId:
+          activity.id,
       })
 
-      setActivities((current) =>
-        current.filter(
-          (item) =>
-            item.id !== activity.id,
-        ),
+      setActivities(
+        current =>
+          current.filter(
+            item =>
+              item.id
+              !== activity.id,
+          ),
       )
 
       onClose()
@@ -238,7 +322,9 @@ export function AddTrainingSessionModal({
   async function addManualSession():
   Promise<void> {
     const durationMinutes =
-      Number(form.durationMinutes)
+      Number(
+        form.durationMinutes,
+      )
 
     if (!form.title.trim()) {
       setError(
@@ -336,23 +422,130 @@ export function AddTrainingSessionModal({
 
 
   return (
-    <div className="modal modal-open">
-      <div className="modal-box max-w-2xl">
+    <div
+      className="
+        fixed
+        inset-0
+        z-[100]
+        flex
+        items-end
+        justify-center
+        sm:items-center
+        sm:px-6
+        sm:py-6
+      "
+      role="dialog"
+      aria-modal="true"
+    >
+      <button
+        type="button"
+        aria-label="Fermer"
+        onClick={onClose}
+        className="
+          absolute
+          inset-0
+          cursor-default
+          bg-black/45
+          backdrop-blur-[4px]
+          dark:bg-black/55
+        "
+      />
+
+
+      <div
+        className="
+          relative
+          z-10
+          flex
+          max-h-[82dvh]
+          w-full
+          flex-col
+          overflow-hidden
+          rounded-t-[20px]
+          border
+          border-black/[0.07]
+          border-b-0
+          bg-white
+          shadow-[0_-18px_55px_rgba(15,23,42,0.18)]
+          dark:border-white/[0.08]
+          dark:bg-[#151b1f]
+
+          sm:max-h-[82vh]
+          sm:max-w-[700px]
+          sm:rounded-[18px]
+          sm:border-b
+          sm:shadow-[0_24px_70px_rgba(15,23,42,0.22)]
+        "
+      >
+
         <div
           className="
-            flex items-start
-            justify-between gap-4
+            flex
+            justify-center
+            pt-2
+            sm:hidden
+          "
+        >
+          <div
+            className="
+              h-1
+              w-9
+              rounded-full
+              bg-slate-300
+              dark:bg-white/[0.14]
+            "
+          />
+        </div>
+
+
+        <header
+          className="
+            flex
+            shrink-0
+            items-start
+            justify-between
+            gap-4
+            border-b
+            border-black/[0.06]
+            px-4
+            py-3.5
+            dark:border-white/[0.07]
+            sm:px-5
           "
         >
           <div>
-            <h3 className="text-lg font-semibold">
+            <p
+              className="
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.13em]
+                text-emerald-600
+                dark:text-emerald-400
+              "
+            >
+              Séance supplémentaire
+            </p>
+
+            <h2
+              className="
+                mt-0.5
+                text-[17px]
+                font-semibold
+                tracking-[-0.025em]
+                text-slate-950
+                dark:text-white
+              "
+            >
               Ajouter une séance
-            </h3>
+            </h2>
 
             <p
               className="
-                mt-1 text-sm
-                text-base-content/60
+                mt-1
+                text-[10.5px]
+                text-slate-400
+                dark:text-slate-500
               "
             >
               {formatDisplayDate(
@@ -363,122 +556,184 @@ export function AddTrainingSessionModal({
 
           <button
             type="button"
-            className="
-              btn btn-ghost
-              btn-sm btn-circle
-            "
             onClick={onClose}
             aria-label="Fermer"
+            className="
+              flex
+              h-8
+              w-8
+              items-center
+              justify-center
+              rounded-[9px]
+              text-slate-400
+              transition
+              hover:bg-slate-100
+              hover:text-slate-900
+              dark:hover:bg-white/[0.055]
+              dark:hover:text-white
+            "
           >
-            <X size={18} />
+            <X className="h-4 w-4" />
           </button>
-        </div>
+        </header>
 
 
         <div
-          role="tablist"
           className="
-            tabs tabs-box
-            mt-5
+            min-h-0
+            flex-1
+            overflow-y-auto
+            overscroll-contain
+            px-4
+            py-4
+            sm:px-5
           "
         >
-          <button
-            type="button"
-            role="tab"
-            className={
-              `tab ${
-                mode === 'intervals'
-                  ? 'tab-active'
-                  : ''
-              }`
-            }
-            onClick={() =>
-              setMode(
-                'intervals',
-              )
-            }
-          >
-            <Link2 size={16} />
 
-            Intervals.icu
-          </button>
-
-          <button
-            type="button"
-            role="tab"
-            className={
-              `tab ${
-                mode === 'manual'
-                  ? 'tab-active'
-                  : ''
-              }`
-            }
-            onClick={() =>
-              setMode(
-                'manual',
-              )
-            }
-          >
-            <Plus size={16} />
-
-            Saisie manuelle
-          </button>
-        </div>
-
-
-        {error && (
           <div
             className="
-              alert alert-error
-              mt-4 text-sm
+              grid
+              grid-cols-2
+              gap-1
+              rounded-[10px]
+              border
+              border-black/[0.055]
+              bg-slate-100
+              p-1
+              dark:border-white/[0.06]
+              dark:bg-white/[0.035]
             "
           >
-            {error}
+            <ModeButton
+              active={
+                mode === 'intervals'
+              }
+              icon={Link2}
+              label="Intervals.icu"
+              onClick={() =>
+                setMode(
+                  'intervals',
+                )
+              }
+            />
+
+            <ModeButton
+              active={
+                mode === 'manual'
+              }
+              icon={Plus}
+              label="Saisie manuelle"
+              onClick={() =>
+                setMode(
+                  'manual',
+                )
+              }
+            />
           </div>
-        )}
 
 
-        {mode === 'intervals' ? (
-          <IntervalsPanel
-            activities={
-              activities
-            }
-            loading={
-              loadingActivities
-            }
-            submittingActivityId={
-              submittingActivityId
-            }
-            onAdd={
-              addIntervalsActivity
-            }
-            onRefresh={
-              loadActivities
-            }
-          />
-        ) : (
-          <ManualPanel
-            form={form}
-            submitting={
-              submittingManual
-            }
-            onChange={
-              setForm
-            }
-            onSubmit={
-              addManualSession
-            }
-          />
-        )}
+          {error && (
+            <div
+              className="
+                mt-3
+                rounded-[10px]
+                border
+                border-red-500/15
+                bg-red-50
+                px-3
+                py-2.5
+                text-[11px]
+                font-medium
+                text-red-600
+                dark:bg-red-500/[0.06]
+                dark:text-red-400
+              "
+            >
+              {error}
+            </div>
+          )}
+
+
+          {mode === 'intervals' ? (
+            <IntervalsPanel
+              activities={
+                activities
+              }
+              loading={
+                loadingActivities
+              }
+              submittingActivityId={
+                submittingActivityId
+              }
+              onAdd={
+                addIntervalsActivity
+              }
+              onRefresh={
+                loadActivities
+              }
+            />
+          ) : (
+            <ManualPanel
+              form={form}
+              submitting={
+                submittingManual
+              }
+              onChange={
+                setForm
+              }
+              onSubmit={
+                addManualSession
+              }
+            />
+          )}
+        </div>
       </div>
-
-      <button
-        type="button"
-        className="modal-backdrop"
-        onClick={onClose}
-        aria-label="Fermer"
-      />
     </div>
+  )
+}
+
+
+function ModeButton({
+  active,
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  active: boolean
+  icon: typeof Link2
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        (
+          'flex h-9 items-center '
+          + 'justify-center gap-2 '
+          + 'rounded-[8px] '
+          + 'text-[11px] '
+          + 'font-semibold transition'
+        ),
+        active
+          ? (
+              'bg-white text-slate-900 '
+              + 'shadow-[0_1px_2px_rgba(15,23,42,0.06)] '
+              + 'dark:bg-white/[0.07] '
+              + 'dark:text-white'
+            )
+          : (
+              'text-slate-400 '
+              + 'hover:text-slate-700 '
+              + 'dark:text-slate-500 '
+              + 'dark:hover:text-slate-300'
+            ),
+      ].join(' ')}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </button>
   )
 }
 
@@ -510,14 +765,19 @@ function IntervalsPanel({
     return (
       <div
         className="
-          flex min-h-40
+          flex
+          min-h-40
           items-center
           justify-center
         "
       >
         <LoaderCircle
-          className="animate-spin"
-          size={24}
+          className="
+            h-5
+            w-5
+            animate-spin
+            text-emerald-500
+          "
         />
       </div>
     )
@@ -525,53 +785,86 @@ function IntervalsPanel({
 
 
   return (
-    <div className="mt-5">
+    <div className="mt-4">
+      <SectionHeading
+        title="Activités disponibles"
+        subtitle="Intervals.icu"
+      />
+
       {activities.length === 0 ? (
         <div
           className="
-            rounded-box
-            border border-base-300
-            bg-base-200/40
-            p-5 text-center
+            mt-2.5
+            rounded-[11px]
+            border
+            border-dashed
+            border-black/[0.08]
+            bg-slate-50
+            px-4
+            py-5
+            text-center
+            dark:border-white/[0.07]
+            dark:bg-white/[0.02]
           "
         >
-          <p className="font-medium">
+          <p
+            className="
+              text-[12px]
+              font-semibold
+              text-slate-700
+              dark:text-slate-300
+            "
+          >
             Aucune activité disponible
           </p>
 
           <p
             className="
-              mt-1 text-sm
-              text-base-content/60
+              mt-1
+              text-[10.5px]
+              leading-4
+              text-slate-400
+              dark:text-slate-500
             "
           >
-            Les activités Intervals.icu
-            déjà associées ne sont pas
-            proposées ici.
+            Les activités déjà associées
+            ne sont pas proposées ici.
           </p>
 
           <button
             type="button"
-            className="
-              btn btn-ghost
-              btn-sm mt-3
-            "
             onClick={() =>
               void onRefresh()
             }
+            className="
+              mt-3
+              inline-flex
+              h-8
+              items-center
+              gap-1.5
+              rounded-[8px]
+              px-2.5
+              text-[10.5px]
+              font-semibold
+              text-slate-500
+              transition
+              hover:bg-white
+              hover:text-slate-900
+              dark:hover:bg-white/[0.05]
+              dark:hover:text-white
+            "
           >
+            <RefreshCw className="h-3 w-3" />
             Actualiser
           </button>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="mt-2.5 space-y-2">
           {activities.map(
-            (activity) => (
+            activity => (
               <ActivityRow
                 key={activity.id}
-                activity={
-                  activity
-                }
+                activity={activity}
                 submitting={
                   submittingActivityId
                   === activity.id
@@ -607,84 +900,123 @@ function ActivityRow({
   return (
     <div
       className="
-        flex items-center
-        justify-between gap-4
-        rounded-box
-        border border-base-300
-        bg-base-100
-        px-4 py-3
+        flex
+        items-center
+        justify-between
+        gap-3
+        rounded-[10px]
+        border
+        border-black/[0.065]
+        bg-slate-50
+        px-3
+        py-2.5
+        transition
+        hover:border-emerald-500/20
+        dark:border-white/[0.065]
+        dark:bg-white/[0.025]
       "
     >
       <div className="min-w-0">
         <div
           className="
-            flex items-center
+            flex
+            items-center
             gap-2
           "
         >
-          <Dumbbell
-            size={16}
+          <div
             className="
+              flex
+              h-7
+              w-7
               shrink-0
-              text-primary
-            "
-          />
-
-          <p
-            className="
-              truncate
-              font-medium
+              items-center
+              justify-center
+              rounded-[8px]
+              bg-emerald-50
+              text-emerald-600
+              dark:bg-emerald-500/[0.08]
+              dark:text-emerald-400
             "
           >
-            {activity.name}
-          </p>
+            <Dumbbell
+              className="h-3.5 w-3.5"
+            />
+          </div>
 
-          {activity.startAtLocal && (
-            <span
+          <div className="min-w-0">
+            <p
               className="
-                text-xs
-                text-base-content/50
+                truncate
+                text-[12px]
+                font-semibold
+                text-slate-900
+                dark:text-slate-100
               "
             >
-              {formatActivityTime(
-                activity.startAtLocal,
-              )}
-            </span>
-          )}
-        </div>
+              {activity.name}
+            </p>
 
-        <p
-          className="
-            mt-1 text-sm
-            text-base-content/60
-          "
-        >
-          {formatActivitySummary(
-            activity,
-          )}
-        </p>
+            <p
+              className="
+                mt-0.5
+                text-[10px]
+                text-slate-400
+                dark:text-slate-500
+              "
+            >
+              {activity.startAtLocal
+                ? (
+                    `${
+                      formatActivityTime(
+                        activity.startAtLocal,
+                      )
+                    } · `
+                  )
+                : ''}
+              {formatActivitySummary(
+                activity,
+              )}
+            </p>
+          </div>
+        </div>
       </div>
 
       <button
         type="button"
-        className="
-          btn btn-primary
-          btn-sm shrink-0
-        "
         disabled={submitting}
         onClick={() =>
           void onAdd(
             activity,
           )
         }
+        className="
+          flex
+          h-8
+          shrink-0
+          items-center
+          gap-1.5
+          rounded-[8px]
+          bg-emerald-600
+          px-2.5
+          text-[10.5px]
+          font-semibold
+          text-white
+          transition
+          hover:bg-emerald-700
+          disabled:opacity-50
+        "
       >
         {submitting ? (
           <LoaderCircle
-            className="animate-spin"
-            size={16}
+            className="
+              h-3.5
+              w-3.5
+              animate-spin
+            "
           />
         ) : (
-          <Plus size={16} />
+          <Plus className="h-3.5 w-3.5" />
         )}
 
         Ajouter
@@ -723,286 +1055,286 @@ function ManualPanel({
   }
 
 
+  function changeDuration(
+    delta: number,
+  ) {
+    const current =
+      Number(
+        form.durationMinutes,
+      ) || 0
+
+    const next =
+      Math.max(
+        0,
+        current + delta,
+      )
+
+    update(
+      'durationMinutes',
+      next === 0
+        ? ''
+        : String(next),
+    )
+  }
+
+
   return (
-    <div
-      className="
-        mt-5 grid
-        gap-4
-        sm:grid-cols-2
-      "
-    >
-      <label className="form-control">
-        <span
-          className="
-            label-text mb-1
-            text-sm
-          "
-        >
+    <div className="mt-4">
+      <SectionHeading
+        title="Saisie manuelle"
+        subtitle="Séance déjà réalisée"
+      />
+
+
+      <div className="mt-3">
+        <FieldLabel>
           Sport
-        </span>
-
-        <select
-          className="
-            select
-            select-bordered
-            w-full
-          "
-          value={form.sportType}
-          onChange={(event) =>
-            update(
-              'sportType',
-              event.target.value,
-            )
-          }
-        >
-          <option value="Run">
-            Course à pied
-          </option>
-
-          <option value="TrailRun">
-            Trail
-          </option>
-
-          <option value="Ride">
-            Vélo
-          </option>
-
-          <option value="Swim">
-            Natation
-          </option>
-
-          <option value="StrengthTraining">
-            Renforcement
-          </option>
-
-          <option value="Walk">
-            Marche
-          </option>
-
-          <option value="Other">
-            Autre
-          </option>
-        </select>
-      </label>
-
-
-      <label className="form-control">
-        <span
-          className="
-            label-text mb-1
-            text-sm
-          "
-        >
-          Durée
-        </span>
+        </FieldLabel>
 
         <div
           className="
-            join w-full
+            grid
+            grid-cols-3
+            gap-1.5
+            sm:grid-cols-6
           "
         >
-          <input
-            type="number"
-            min="1"
-            className="
-              input
-              input-bordered
-              join-item
-              w-full
-            "
-            value={
-              form.durationMinutes
-            }
-            onChange={(event) =>
-              update(
-                'durationMinutes',
-                event.target.value,
+          {SPORT_OPTIONS.map(
+            option => {
+              const Icon =
+                option.icon
+
+              const active =
+                form.sportType
+                === option.value
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() =>
+                    update(
+                      'sportType',
+                      option.value,
+                    )
+                  }
+                  className={[
+                    (
+                      'flex min-h-14 '
+                      + 'flex-col items-center '
+                      + 'justify-center gap-1 '
+                      + 'rounded-[9px] border '
+                      + 'text-[9.5px] '
+                      + 'font-semibold transition'
+                    ),
+                    active
+                      ? (
+                          'border-emerald-500/30 '
+                          + 'bg-emerald-50 '
+                          + 'text-emerald-700 '
+                          + 'dark:bg-emerald-500/[0.08] '
+                          + 'dark:text-emerald-400'
+                        )
+                      : (
+                          'border-black/[0.06] '
+                          + 'bg-slate-50 '
+                          + 'text-slate-500 '
+                          + 'hover:border-black/[0.10] '
+                          + 'dark:border-white/[0.06] '
+                          + 'dark:bg-white/[0.02] '
+                          + 'dark:text-slate-400'
+                        ),
+                  ].join(' ')}
+                >
+                  <Icon className="h-4 w-4" />
+                  {option.label}
+                </button>
               )
-            }
-          />
-
-          <span
-            className="
-              join-item
-              flex items-center
-              border border-base-300
-              px-3 text-sm
-            "
-          >
-            min
-          </span>
+            },
+          )}
         </div>
-      </label>
+      </div>
 
 
-      <label
+      <div
         className="
-          form-control
-          sm:col-span-2
+          mt-4
+          grid
+          gap-3
+          sm:grid-cols-2
         "
       >
-        <span
-          className="
-            label-text mb-1
-            text-sm
-          "
-        >
-          Titre
-        </span>
+        <div>
+          <FieldLabel>
+            Durée
+          </FieldLabel>
 
-        <input
-          type="text"
-          className="
-            input
-            input-bordered
-            w-full
-          "
-          placeholder="Ex. Renforcement caserne"
+          <div
+            className="
+              flex
+              h-10
+              items-center
+              overflow-hidden
+              rounded-[9px]
+              border
+              border-black/[0.07]
+              bg-white
+              dark:border-white/[0.07]
+              dark:bg-white/[0.025]
+            "
+          >
+            <button
+              type="button"
+              onClick={() =>
+                changeDuration(-5)
+              }
+              className="
+                h-full
+                w-10
+                text-[16px]
+                text-slate-400
+                hover:bg-slate-50
+                dark:hover:bg-white/[0.04]
+              "
+            >
+              −
+            </button>
+
+            <input
+              type="number"
+              min="1"
+              value={
+                form.durationMinutes
+              }
+              onChange={(event) =>
+                update(
+                  'durationMinutes',
+                  event.target.value,
+                )
+              }
+              className="
+                min-w-0
+                flex-1
+                bg-transparent
+                text-center
+                text-[13px]
+                font-semibold
+                text-slate-900
+                outline-none
+                dark:text-white
+              "
+            />
+
+            <span
+              className="
+                pr-2
+                text-[10px]
+                text-slate-400
+              "
+            >
+              min
+            </span>
+
+            <button
+              type="button"
+              onClick={() =>
+                changeDuration(5)
+              }
+              className="
+                h-full
+                w-10
+                text-[16px]
+                text-slate-400
+                hover:bg-slate-50
+                dark:hover:bg-white/[0.04]
+              "
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+
+        <TextField
+          label="Titre"
           value={form.title}
-          onChange={(event) =>
+          placeholder="Ex. Footing récupération"
+          onChange={value =>
             update(
               'title',
-              event.target.value,
+              value,
             )
           }
         />
-      </label>
 
-      <label className="form-control">
-        <span className="label-text mb-1 text-sm">
-          Distance parcourue
-        </span>
 
-        <div className="join">
-          <input
-            type="number"
-            min="0"
-            step="0.1"
-            className="
-              input
-              input-bordered
-              join-item
-              w-full
-            "
-            value={form.distanceKm}
-            onChange={(event) =>
-              update(
-                'distanceKm',
-                event.target.value,
-              )
-            }
-          />
-
-          <span
-            className="
-              join-item
-              flex items-center
-              border border-base-300
-              px-3 text-sm
-            "
-          >
-            km
-          </span>
-        </div>
-      </label>
-
-      <label className="form-control">
-        <span
-          className="
-            label-text mb-1
-            text-sm
-          "
-        >
-          Dénivelé positif
-        </span>
-
-        <div className="join">
-          <input
-            type="number"
-            min="0"
-            step="1"
-            className="
-              input
-              input-bordered
-              join-item
-              w-full
-            "
-            value={
-              form.elevationGainM
-            }
-            onChange={(event) =>
-              update(
-                'elevationGainM',
-                event.target.value,
-              )
-            }
-          />
-
-          <span
-            className="
-              join-item
-              flex items-center
-              border border-base-300
-              px-3 text-sm
-            "
-          >
-            m
-          </span>
-        </div>
-      </label>
-
-      <label className="form-control">
-        <span className="label-text mb-1 text-sm">
-          Intensité
-        </span>
-
-        <select
-          value={form.intensity}
-          onChange={(event) =>
+        <UnitField
+          label="Distance"
+          unit="km"
+          value={form.distanceKm}
+          onChange={value =>
             update(
-              'intensity',
-              event.target.value,
+              'distanceKm',
+              value,
             )
           }
-          className="
-            select
-            select-bordered
-            w-full
-          "
+        />
+
+        <UnitField
+          label="Dénivelé +"
+          unit="m"
+          value={
+            form.elevationGainM
+          }
+          onChange={value =>
+            update(
+              'elevationGainM',
+              value,
+            )
+          }
+        />
+
+
+        <SelectField
+          label="Intensité"
+          value={form.intensity}
+          onChange={value =>
+            update(
+              'intensity',
+              value,
+            )
+          }
         >
           <option value="">
             Non renseignée
           </option>
 
           {TRAINING_INTENSITIES.map(
-            (intensity) => (
+            intensity => (
               <option
-                key={intensity.value}
-                value={intensity.value}
+                key={
+                  intensity.value
+                }
+                value={
+                  intensity.value
+                }
               >
                 {intensity.label}
               </option>
             ),
           )}
-        </select>
-      </label>
+        </SelectField>
 
-      <label className="form-control">
-        <span className="label-text mb-1 text-sm">
-          Zone cardiaque
-        </span>
 
-        <select
-          className="
-            select
-            select-bordered
-            w-full
-          "
-          value={form.heartRateZone}
-          onChange={(event) =>
+        <SelectField
+          label="Zone cardiaque"
+          value={
+            form.heartRateZone
+          }
+          onChange={value =>
             update(
               'heartRateZone',
-              event.target.value,
+              value,
             )
           }
         >
@@ -1010,106 +1342,361 @@ function ManualPanel({
             Aucune
           </option>
 
-          <option value="Z1">
-            Z1
-          </option>
+          {[
+            'Z1',
+            'Z2',
+            'Z3',
+            'Z4',
+            'Z5',
+            'Z1-Z2',
+            'Z2-Z3',
+            'Z3-Z4',
+            'Z4-Z5',
+          ].map(
+            zone => (
+              <option
+                key={zone}
+                value={zone}
+              >
+                {zone}
+              </option>
+            ),
+          )}
+        </SelectField>
+      </div>
 
-          <option value="Z2">
-            Z2
-          </option>
 
-          <option value="Z3">
-            Z3
-          </option>
-
-          <option value="Z4">
-            Z4
-          </option>
-
-          <option value="Z5">
-            Z5
-          </option>
-
-          <option value="Z1-Z2">
-            Z1-Z2
-          </option>
-
-          <option value="Z2-Z3">
-            Z2-Z3
-          </option>
-
-          <option value="Z3-Z4">
-            Z3-Z4
-          </option>
-
-          <option value="Z4-Z5">
-            Z4-Z5
-          </option>
-        </select>
-      </label>
-
-      <label
-        className="
-          form-control
-          sm:col-span-2
-        "
-      >
-        <span
-          className="
-            label-text mb-1
-            text-sm
-          "
-        >
+      <div className="mt-3">
+        <FieldLabel>
           Notes
-        </span>
+        </FieldLabel>
 
         <textarea
-          className="
-            textarea
-            textarea-bordered
-            min-h-20 w-full
-          "
-          placeholder="Optionnel"
           value={form.description}
+          placeholder="Optionnel"
           onChange={(event) =>
             update(
               'description',
               event.target.value,
             )
           }
+          className="
+            min-h-20
+            w-full
+            resize-y
+            rounded-[9px]
+            border
+            border-black/[0.07]
+            bg-white
+            px-3
+            py-2.5
+            text-[11.5px]
+            text-slate-800
+            outline-none
+            transition
+            placeholder:text-slate-300
+            focus:border-emerald-500/45
+            focus:ring-2
+            focus:ring-emerald-500/[0.08]
+            dark:border-white/[0.07]
+            dark:bg-white/[0.025]
+            dark:text-slate-200
+            dark:placeholder:text-slate-600
+          "
         />
-      </label>
+      </div>
 
 
       <div
         className="
-          flex justify-end
-          sm:col-span-2
+          mt-4
+          flex
+          justify-end
         "
       >
         <button
           type="button"
-          className="
-            btn btn-primary
-          "
           disabled={submitting}
           onClick={() =>
             void onSubmit()
           }
+          className="
+            flex
+            h-9
+            w-full
+            items-center
+            justify-center
+            gap-1.5
+            rounded-[9px]
+            bg-emerald-600
+            px-4
+            text-[11px]
+            font-semibold
+            text-white
+            transition
+            hover:bg-emerald-700
+            disabled:opacity-50
+            sm:w-auto
+          "
         >
           {submitting ? (
             <LoaderCircle
-              className="animate-spin"
-              size={17}
+              className="
+                h-3.5
+                w-3.5
+                animate-spin
+              "
             />
           ) : (
-            <Plus size={17} />
+            <Plus className="h-3.5 w-3.5" />
           )}
 
           Ajouter la séance
         </button>
       </div>
     </div>
+  )
+}
+
+
+function SectionHeading({
+  title,
+  subtitle,
+}: {
+  title: string
+  subtitle?: string
+}) {
+  return (
+    <div
+      className="
+        flex
+        items-end
+        justify-between
+        gap-3
+      "
+    >
+      <p
+        className="
+          text-[11.5px]
+          font-semibold
+          text-slate-900
+          dark:text-slate-100
+        "
+      >
+        {title}
+      </p>
+
+      {subtitle && (
+        <p
+          className="
+            text-[9.5px]
+            text-slate-400
+            dark:text-slate-500
+          "
+        >
+          {subtitle}
+        </p>
+      )}
+    </div>
+  )
+}
+
+
+function FieldLabel({
+  children,
+}: {
+  children: string
+}) {
+  return (
+    <p
+      className="
+        mb-1.5
+        text-[9.5px]
+        font-semibold
+        uppercase
+        tracking-[0.08em]
+        text-slate-400
+        dark:text-slate-500
+      "
+    >
+      {children}
+    </p>
+  )
+}
+
+
+function TextField({
+  label,
+  value,
+  placeholder,
+  onChange,
+}: {
+  label: string
+  value: string
+  placeholder?: string
+  onChange: (
+    value: string,
+  ) => void
+}) {
+  return (
+    <label>
+      <FieldLabel>
+        {label}
+      </FieldLabel>
+
+      <input
+        type="text"
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) =>
+          onChange(
+            event.target.value,
+          )
+        }
+        className="
+          h-10
+          w-full
+          rounded-[9px]
+          border
+          border-black/[0.07]
+          bg-white
+          px-3
+          text-[11.5px]
+          text-slate-800
+          outline-none
+          transition
+          placeholder:text-slate-300
+          focus:border-emerald-500/45
+          focus:ring-2
+          focus:ring-emerald-500/[0.08]
+          dark:border-white/[0.07]
+          dark:bg-white/[0.025]
+          dark:text-slate-200
+          dark:placeholder:text-slate-600
+        "
+      />
+    </label>
+  )
+}
+
+
+function UnitField({
+  label,
+  unit,
+  value,
+  onChange,
+}: {
+  label: string
+  unit: string
+  value: string
+  onChange: (
+    value: string,
+  ) => void
+}) {
+  return (
+    <label>
+      <FieldLabel>
+        {label}
+      </FieldLabel>
+
+      <div
+        className="
+          flex
+          h-10
+          items-center
+          rounded-[9px]
+          border
+          border-black/[0.07]
+          bg-white
+          dark:border-white/[0.07]
+          dark:bg-white/[0.025]
+        "
+      >
+        <input
+          type="number"
+          min="0"
+          step="0.1"
+          value={value}
+          onChange={(event) =>
+            onChange(
+              event.target.value,
+            )
+          }
+          className="
+            min-w-0
+            flex-1
+            bg-transparent
+            px-3
+            text-[11.5px]
+            text-slate-800
+            outline-none
+            dark:text-slate-200
+          "
+        />
+
+        <span
+          className="
+            pr-3
+            text-[10px]
+            text-slate-400
+          "
+        >
+          {unit}
+        </span>
+      </div>
+    </label>
+  )
+}
+
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string
+  value: string
+  onChange: (
+    value: string,
+  ) => void
+  children: ReactNode
+}) {
+  return (
+    <label>
+      <FieldLabel>
+        {label}
+      </FieldLabel>
+
+      <select
+        value={value}
+        onChange={(event) =>
+          onChange(
+            event.target.value,
+          )
+        }
+        className="
+          h-10
+          w-full
+          rounded-[9px]
+          border
+          border-black/[0.07]
+          bg-white
+          px-3
+          text-[11.5px]
+          text-slate-800
+          outline-none
+          focus:border-emerald-500/45
+          focus:ring-2
+          focus:ring-emerald-500/[0.08]
+          dark:border-white/[0.07]
+          dark:bg-[#151b1f]
+          dark:text-slate-200
+        "
+      >
+        {children}
+      </select>
+    </label>
   )
 }
 
@@ -1139,7 +1726,9 @@ function formatDisplayDate(
   value: string,
 ): string {
   const date =
-    new Date(`${value}T12:00:00`)
+    new Date(
+      `${value}T12:00:00`,
+    )
 
   return new Intl.DateTimeFormat(
     'fr-FR',

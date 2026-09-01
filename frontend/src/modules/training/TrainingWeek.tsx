@@ -28,10 +28,6 @@ import {
 } from './TodayTrainingCard'
 
 import {
-  WeeklyLoadCard,
-} from './WeeklyLoadCard'
-
-import {
   TrainingWeekDays,
 } from './TrainingWeekDays'
 
@@ -615,8 +611,24 @@ export function TrainingWeek() {
 
 
   return (
-    <main>
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
+    <main
+      className="
+        min-h-screen
+        bg-[#f5f7f6]
+        dark:bg-[#0b1014]
+      "
+    >
+      <div
+        className="
+          mx-auto
+          max-w-[1380px]
+          px-3
+          py-4
+          sm:px-5
+          lg:px-5
+          lg:py-[18px]
+        "
+      >
         <TrainingWeekHeader
           weekRange={
             formatTrainingWeekRange(
@@ -674,6 +686,52 @@ phaseLabel={
           onCurrentWeek={
             goToCurrentWeek
           }
+
+          isFutureWeek={
+            isFutureWeek
+          }
+          actualPercent={
+            weeklyActualPercent
+          }
+          actualLoad={
+            displayedWeeklyLoad
+          }
+          statusLabel={
+            humanizeWeeklyTrainingStatus(
+              weeklyAssessment?.status
+              ?? 'unavailable',
+            )
+          }
+          completedCount={
+            completedCount
+          }
+          remainingCount={
+            remainingCount
+          }
+          skippedCount={
+            skippedCount
+          }
+          statsLoading={
+            statsLoading
+          }
+          totalDistanceLabel={
+            `${
+              formatNumber(
+                stats?.totalDistanceKm
+                ?? 0,
+              )
+            } km`
+          }
+          sessionsCount={
+            stats?.sessionsCount
+            ?? 0
+          }
+          targetRaceName={
+            trajectory?.targetRaceName
+          }
+          targetRaceDate={
+            trajectory?.targetRaceDate
+          }
         />
 
 
@@ -694,7 +752,7 @@ phaseLabel={
         )}
 
 
-        <section className="mt-7 space-y-4">
+        <section className="mt-4 space-y-3">
 
           {todayDay && (
             <TodayTrainingCard
@@ -711,71 +769,6 @@ phaseLabel={
               }
             />
           )}
-
-
-          <WeeklyLoadCard
-              actualPercent={
-                weeklyActualPercent
-              }
-              actualLoad={
-                displayedWeeklyLoad
-              }
-              isCurrentWeek={
-                isCurrentWeek
-              }
-              isFutureWeek={
-                isFutureWeek
-              }
-              status={
-                weeklyAssessment?.status
-                ?? 'unavailable'
-              }
-              statusLabel={
-                humanizeWeeklyTrainingStatus(
-                  weeklyAssessment?.status
-                  ?? 'unavailable',
-                )
-              }
-              completedCount={
-                completedCount
-              }
-              remainingCount={
-                remainingCount
-              }
-              skippedCount={
-                skippedCount
-              }
-              remainingSessionsCount={
-                isCurrentWeek
-                  ? (
-                      weeklyAssessment
-                        ?.remainingSessionsCount
-                      ?? remainingCount
-                    )
-                  : remainingCount
-              }
-              statsLoading={
-                statsLoading
-              }
-              totalDistanceLabel={
-                `${
-                  formatNumber(
-                    stats?.totalDistanceKm
-                    ?? 0,
-                  )
-                } km`
-              }
-              sessionsCount={
-                stats?.sessionsCount
-                ?? 0
-              }
-              targetRaceName={
-                trajectory?.targetRaceName
-              }
-              targetRaceDate={
-                trajectory?.targetRaceDate
-              }
-            />
 
 
           <TrainingWeekDays

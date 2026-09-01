@@ -1,3 +1,5 @@
+import './TrainingDetailsV3.css'
+
 import {
   Check,
   Star,
@@ -377,15 +379,17 @@ export function TrainingDetails({
 
 
   return (
-    <div className="space-y-4">
-      <SessionHeader
-        session={session}
-      />
+    <div className="training-details-v3">
+      <div className="training-details-v3__hero">
+        <SessionHeader
+          session={session}
+        />
 
-      <SessionSummary
-        session={session}
-        guidance={guidance}
-      />
+        <SessionSummary
+          session={session}
+          guidance={guidance}
+        />
+      </div>
 
 
       <CollapseSection
@@ -418,10 +422,15 @@ export function TrainingDetails({
             >
               <span
                 className="
-                  loading
-                  loading-spinner
-                  loading-sm
-                  text-primary
+                  h-5
+                  w-5
+                  animate-spin
+                  rounded-full
+                  border-2
+                  border-slate-200
+                  border-t-emerald-500
+                  dark:border-white/[0.08]
+                  dark:border-t-emerald-400
                 "
               />
             </div>
@@ -433,16 +442,22 @@ export function TrainingDetails({
           ) : (
             <div
               className="
-                rounded-xl
-                bg-base-200/60
-                px-4 py-3
+                rounded-[10px]
+                border
+                border-black/[0.055]
+                bg-slate-50
+                px-3
+                py-2.5
+                dark:border-white/[0.055]
+                dark:bg-white/[0.025]
               "
             >
               <p
                 className="
-                  text-sm
-                  font-medium
-                  text-base-content/65
+                  text-[12px]
+                  font-semibold
+                  text-slate-700
+                  dark:text-slate-300
                 "
               >
                 Séance non réalisée
@@ -451,9 +466,10 @@ export function TrainingDetails({
               <p
                 className="
                   mt-1
-                  text-xs
-                  leading-5
-                  text-base-content/45
+                  text-[10.5px]
+                  leading-4
+                  text-slate-400
+                  dark:text-slate-500
                 "
               >
                 Le débriefing du coach sera
@@ -504,9 +520,17 @@ export function TrainingDetails({
           && guidanceError && (
             <div
               className="
-                alert
-                alert-warning
-                text-sm
+                rounded-[10px]
+                border
+                border-amber-500/15
+                bg-amber-50
+                px-3
+                py-2.5
+                text-[11px]
+                font-medium
+                text-amber-700
+                dark:bg-amber-500/[0.07]
+                dark:text-amber-400
               "
             >
               {guidanceError}
@@ -576,18 +600,22 @@ function CollapseSection({
         )
       }}
       className="
+        group
         overflow-hidden
-        rounded-xl
+        rounded-[12px]
         border
-        border-base-300
-        bg-base-100
+        border-black/[0.065]
+        bg-white
+        dark:border-white/[0.07]
+        dark:bg-white/[0.018]
       "
     >
       <summary
         className="
           cursor-pointer
           list-none
-          px-4 py-3
+          px-3.5
+          py-3
         "
       >
         <div
@@ -600,8 +628,10 @@ function CollapseSection({
         >
           <span
             className="
+              text-[12.5px]
               font-semibold
-              text-base-content
+              text-slate-900
+              dark:text-slate-100
             "
           >
             {title}
@@ -611,8 +641,9 @@ function CollapseSection({
             <span
               className="
                 truncate
-                text-xs
-                text-base-content/40
+                text-[10px]
+                text-slate-400
+                dark:text-slate-500
               "
             >
               {subtitle}
@@ -624,8 +655,9 @@ function CollapseSection({
       <div
         className="
           border-t
-          border-base-300
-          p-4
+          border-black/[0.06]
+          p-3.5
+          dark:border-white/[0.065]
         "
       >
         {children}
@@ -658,7 +690,14 @@ function SessionHeader({
             gap-2
           "
         >
-          <span className="text-sm font-medium text-base-content/55">
+          <span
+            className="
+              text-[10.5px]
+              font-medium
+              text-slate-400
+              dark:text-slate-500
+            "
+          >
             {formatDate(
               session.date,
             )}
@@ -666,7 +705,20 @@ function SessionHeader({
 
           {session.type
             === 'supplementary' && (
-              <span className="badge badge-outline badge-sm">
+              <span
+                className="
+                  rounded-full
+                  border
+                  border-black/[0.07]
+                  px-1.5
+                  py-0.5
+                  text-[9px]
+                  font-semibold
+                  text-slate-500
+                  dark:border-white/[0.07]
+                  dark:text-slate-400
+                "
+              >
                 Supplémentaire
               </span>
             )}
@@ -675,9 +727,11 @@ function SessionHeader({
         <h2
           className="
             mt-1
-            text-xl
+            text-[18px]
             font-bold
-            text-base-content
+            tracking-[-0.025em]
+            text-slate-950
+            dark:text-white
           "
         >
           {session.title}
@@ -685,8 +739,10 @@ function SessionHeader({
 
         <p
           className="
-            mt-1 text-sm
-            text-base-content/50
+            mt-1
+            text-[10.5px]
+            text-slate-400
+            dark:text-slate-500
           "
         >
           {formatSportType(
@@ -728,8 +784,18 @@ function SessionSummary({
     >
       <span
         className="
-          badge
-          badge-outline
+          rounded-[8px]
+          border
+          border-black/[0.065]
+          bg-slate-50
+          px-2
+          py-1
+          text-[10px]
+          font-medium
+          text-slate-600
+          dark:border-white/[0.065]
+          dark:bg-white/[0.025]
+          dark:text-slate-400
         "
       >
         {session.type === 'rest'
@@ -780,9 +846,17 @@ function SessionSummary({
 
       <span
         className="
-          badge
-          badge-primary
-          badge-outline
+          rounded-[8px]
+          border
+          border-emerald-500/15
+          bg-emerald-50
+          px-2
+          py-1
+          text-[10px]
+          font-semibold
+          text-emerald-700
+          dark:bg-emerald-500/[0.07]
+          dark:text-emerald-400
         "
       >
         {
@@ -1033,9 +1107,7 @@ function ActivitySection({
     return (
       <section
         className="
-          border-t
-          border-base-300
-          pt-5
+          training-details-v3__activity
         "
       >
         <div
@@ -1133,6 +1205,7 @@ function ActivitySection({
           )
         }}
         className="
+          workout-activity-panel
           overflow-hidden
           rounded-xl
           border
@@ -1403,7 +1476,8 @@ function ActivityRow({
       onClick={onClick}
       className={[
         (
-          'w-full rounded-xl '
+          'workout-activity-card '
+          + 'w-full rounded-xl '
           + 'border px-4 py-3 '
           + 'text-left transition'
         ),
@@ -1650,6 +1724,7 @@ function DebriefSection({
     >
       <div
         className="
+          workout-debrief-card
           rounded-xl
           border
           border-base-300

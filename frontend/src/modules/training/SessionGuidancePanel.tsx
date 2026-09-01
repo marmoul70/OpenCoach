@@ -28,7 +28,7 @@ export function SessionGuidancePanel({
   guidance,
 }: Props) {
   return (
-    <div className="space-y-5">
+    <div className="training-guidance-v3">
       <div
         className="
           divide-y
@@ -63,6 +63,7 @@ export function SessionGuidancePanel({
 
       <details
         className="
+          workout-coach-context
           overflow-hidden
           rounded-xl
           border
@@ -113,6 +114,7 @@ export function SessionGuidancePanel({
         >
           <section
             className="
+              workout-objective-card
               rounded-xl
               border
               border-primary/20
@@ -326,9 +328,7 @@ function ExecutionStage({
   return (
     <section
       className="
-        py-4
-        first:pt-0
-        last:pb-0
+        training-guidance-v3__stage
       "
     >
       <div
@@ -479,7 +479,7 @@ function GuidanceStepCard({
   return (
     <div
       className={[
-        'rounded-2xl border p-4',
+        'training-guidance-v3__step',
         emphasized
           ? (
               'border-primary/30 '

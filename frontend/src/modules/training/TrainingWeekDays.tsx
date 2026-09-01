@@ -1,6 +1,7 @@
 import {
   Check,
   Clock3,
+  FlaskConical,
   Plus,
   X,
 } from 'lucide-react'
@@ -56,20 +57,40 @@ export function TrainingWeekDays({
   onAddSession,
 }: TrainingWeekDaysProps) {
   return (
-    <section>
+    <section
+      aria-label="Planning de la semaine"
+    >
       <div
         className="
-          mb-3
+          mb-2.5
           flex
-          items-center
+          items-end
           justify-between
+          gap-3
         "
       >
         <div>
+          <p
+            className="
+              text-[11px]
+              font-bold
+              uppercase
+              tracking-[0.14em]
+              text-emerald-600
+              dark:text-emerald-400
+            "
+          >
+            Planning
+          </p>
+
           <h2
             className="
+              mt-0.5
+              text-[17px]
               font-semibold
-              text-base-content
+              tracking-[-0.02em]
+              text-slate-950
+              dark:text-white
             "
           >
             Cette semaine
@@ -78,16 +99,22 @@ export function TrainingWeekDays({
           <p
             className="
               mt-0.5
-              text-sm
-              text-base-content/45
+              text-[12px]
+              text-slate-400
+              dark:text-slate-500
             "
           >
-            Les autres séances du planning.
+            Les autres séances du planning
           </p>
         </div>
       </div>
 
-      <div className="space-y-3">
+
+      <div
+        className="
+          space-y-2.5
+        "
+      >
         {days.map(
           ({
             label,
@@ -168,23 +195,28 @@ function DayRow({
     <article
       className={[
         (
-          'rounded-2xl border '
-          + 'bg-base-100 shadow-sm'
+          'overflow-hidden rounded-[14px] '
+          + 'border bg-white '
+          + 'shadow-[0_1px_2px_rgba(15,23,42,0.025)] '
+          + 'dark:bg-[#151b1f]'
         ),
         isToday
           ? (
-            'border-primary '
-            + 'ring-1 '
-            + 'ring-primary/20'
-          )
-          : 'border-base-300',
+              'border-emerald-500/25 '
+              + 'dark:border-emerald-500/20'
+            )
+          : (
+              'border-black/[0.07] '
+              + 'dark:border-white/[0.075]'
+            ),
       ].join(' ')}
     >
       <div
         className="
-          grid gap-4
-          p-4
-          md:grid-cols-[150px_minmax(0,1fr)_auto]
+          grid
+          gap-3
+          p-3
+          md:grid-cols-[125px_minmax(0,1fr)_auto]
           md:items-start
         "
       >
@@ -194,6 +226,7 @@ function DayRow({
           isToday={isToday}
         />
 
+
         <div
           className="
             min-w-0
@@ -202,9 +235,7 @@ function DayRow({
         >
           {restSession && (
             <RestSessionRow
-              session={
-                restSession
-              }
+              session={restSession}
               onOpen={() =>
                 onOpenSession(
                   restSession.id,
@@ -213,8 +244,7 @@ function DayRow({
             />
           )}
 
-          {trainingSessions.length
-            === 0
+          {trainingSessions.length === 0
             && !restSession && (
               <EmptyDay />
             )}
@@ -222,12 +252,8 @@ function DayRow({
           {trainingSessions.map(
             (session) => (
               <SessionRow
-                key={
-                  session.id
-                }
-                session={
-                  session
-                }
+                key={session.id}
+                session={session}
                 physiologicalTestProposal={
                   physiologicalTestProposals.find(
                     (proposal) =>
@@ -246,6 +272,7 @@ function DayRow({
           )}
         </div>
 
+
         <div
           className="
             flex
@@ -254,22 +281,31 @@ function DayRow({
         >
           <button
             type="button"
+            onClick={onAddSession}
             className="
-              btn
-              btn-ghost
-              btn-sm
-              gap-1
-              text-base-content/60
+              flex
+              h-8
+              items-center
+              gap-1.5
+              rounded-[9px]
+              px-2.5
+              text-[12px]
+              font-medium
+              text-slate-400
+              transition
+              hover:bg-slate-100
+              hover:text-slate-700
+              dark:text-slate-500
+              dark:hover:bg-white/[0.05]
+              dark:hover:text-slate-300
             "
-            onClick={
-              onAddSession
-            }
           >
             <Plus
-              size={15}
+              className="
+                h-3
+                w-3
+              "
             />
-
-            Ajouter
           </button>
         </div>
       </div>
@@ -291,18 +327,20 @@ function DayHeading({
     <div>
       <div
         className="
-          flex flex-wrap
+          flex
+          flex-wrap
           items-center
-          gap-2
+          gap-1.5
         "
       >
         <p
           className="
-            text-sm
+            text-[13.5px]
             font-bold
             uppercase
-            tracking-wide
-            text-base-content
+            tracking-[0.08em]
+            text-slate-800
+            dark:text-slate-200
           "
         >
           {label}
@@ -311,12 +349,18 @@ function DayHeading({
         {isToday && (
           <span
             className="
-              badge
-              badge-primary
-              badge-sm
+              rounded-full
+              bg-emerald-50
+              px-1.5
+              py-0.5
+              text-[10px]
+              font-bold
+              text-emerald-700
+              dark:bg-emerald-500/10
+              dark:text-emerald-400
             "
           >
-            Aujourd&apos;hui
+            Aujourd’hui
           </span>
         )}
       </div>
@@ -324,8 +368,9 @@ function DayHeading({
       <p
         className="
           mt-1
-          text-xs
-          text-base-content/50
+          text-[11.5px]
+          text-slate-400
+          dark:text-slate-500
         "
       >
         {formatLongDate(
@@ -347,35 +392,44 @@ function RestSessionRow({
   return (
     <button
       type="button"
-      onClick={
-        onOpen
-      }
+      onClick={onOpen}
       className="
         flex
         w-full
         items-center
         justify-between
-        gap-4
-        rounded-xl
-        bg-base-200/70
-        px-4 py-3
+        gap-3
+        rounded-[10px]
+        border
+        border-slate-200/70
+        bg-slate-50
+        px-3
+        py-2.5
         text-left
         transition
-        hover:bg-base-200
+        hover:border-slate-300
+        hover:bg-slate-100
+        dark:border-white/[0.055]
+        dark:bg-white/[0.025]
+        dark:hover:border-white/[0.08]
+        dark:hover:bg-white/[0.04]
       "
     >
       <div className="min-w-0">
         <div
           className="
-            flex flex-wrap
+            flex
+            flex-wrap
             items-center
-            gap-2
+            gap-1.5
           "
         >
           <h3
             className="
+              text-[13.5px]
               font-semibold
-              text-base-content
+              text-slate-700
+              dark:text-slate-300
             "
           >
             Repos
@@ -383,9 +437,15 @@ function RestSessionRow({
 
           <span
             className="
-              badge
-              badge-ghost
-              badge-sm
+              rounded-full
+              bg-slate-200/70
+              px-1.5
+              py-0.5
+              text-[10px]
+              font-semibold
+              text-slate-500
+              dark:bg-white/[0.05]
+              dark:text-slate-500
             "
           >
             OpenCoach
@@ -394,9 +454,10 @@ function RestSessionRow({
 
         <p
           className="
-            mt-1
-            text-sm
-            text-base-content/50
+            mt-0.5
+            text-[11.5px]
+            text-slate-400
+            dark:text-slate-500
           "
         >
           Récupération recommandée
@@ -417,15 +478,23 @@ function EmptyDay() {
   return (
     <div
       className="
-        rounded-xl
-        bg-base-200/50
-        px-4 py-3
+        rounded-[10px]
+        border
+        border-dashed
+        border-slate-200
+        bg-slate-50/60
+        px-3
+        py-2.5
+        dark:border-white/[0.055]
+        dark:bg-white/[0.018]
       "
     >
       <p
         className="
+          text-[13px]
           font-medium
-          text-base-content/70
+          text-slate-500
+          dark:text-slate-400
         "
       >
         Repos
@@ -433,9 +502,10 @@ function EmptyDay() {
 
       <p
         className="
-          mt-1
-          text-sm
-          text-base-content/45
+          mt-0.5
+          text-[11.5px]
+          text-slate-400
+          dark:text-slate-600
         "
       >
         Aucune séance prévue
@@ -465,61 +535,75 @@ function SessionRow({
   return (
     <button
       type="button"
-      onClick={
-        onOpen
-      }
+      onClick={onOpen}
       className={[
         (
-          'flex w-full flex-col gap-3 '
-          + 'rounded-xl border px-4 py-3'
-        ),
-        'text-left transition',
-        (
-          'sm:flex-row sm:items-center '
+          'flex w-full flex-col gap-2.5 '
+          + 'rounded-[10px] border '
+          + 'px-3 py-2.5 text-left '
+          + 'transition '
+          + 'sm:flex-row sm:items-center '
           + 'sm:justify-between'
         ),
-        session.status
-        === 'completed'
+
+        session.status === 'completed'
           ? (
-            'border-success/25 '
-            + 'bg-success/5 '
-            + 'hover:bg-success/10'
-          )
+              'border-emerald-500/15 '
+              + 'bg-emerald-50/60 '
+              + 'hover:bg-emerald-50 '
+              + 'dark:bg-emerald-500/[0.045] '
+              + 'dark:hover:bg-emerald-500/[0.065]'
+            )
           : '',
-        session.status
-        === 'skipped'
+
+        session.status === 'skipped'
           ? (
-            'border-error/25 '
-            + 'bg-error/5 '
-            + 'hover:bg-error/10'
-          )
+              'border-red-500/12 '
+              + 'bg-red-50/50 '
+              + 'hover:bg-red-50 '
+              + 'dark:bg-red-500/[0.035] '
+              + 'dark:hover:bg-red-500/[0.055]'
+            )
           : '',
+
         (
-          session.status
-          !== 'completed'
-          && session.status
-          !== 'skipped'
+          session.status !== 'completed'
+          && session.status !== 'skipped'
         )
           ? (
-            'border-base-300 '
-            + 'hover:bg-base-200/60'
-          )
+              'border-black/[0.065] '
+              + 'bg-white '
+              + 'hover:border-black/[0.10] '
+              + 'hover:bg-slate-50 '
+              + 'dark:border-white/[0.065] '
+              + 'dark:bg-white/[0.02] '
+              + 'dark:hover:border-white/[0.09] '
+              + 'dark:hover:bg-white/[0.035]'
+            )
           : '',
       ].join(' ')}
     >
-      <div className="min-w-0">
+      <div
+        className="
+          min-w-0
+          flex-1
+        "
+      >
         <div
           className="
-            flex flex-wrap
+            flex
+            flex-wrap
             items-center
-            gap-2
+            gap-1.5
           "
         >
           <h3
             className="
               truncate
+              text-[13.5px]
               font-semibold
-              text-base-content
+              text-slate-900
+              dark:text-slate-100
             "
           >
             {session.title}
@@ -531,35 +615,19 @@ function SessionRow({
             }
           />
 
-          {physiologicalTestProposal && (
-            <span
-              className="
-                badge
-                badge-primary
-                badge-outline
-                badge-sm
-                gap-1
-              "
-              title={
-                physiologicalTestProposal
-                  .recommendation
-              }
-            >
-              Test proposé · {
-                formatPhysiologicalTestProtocol(
-                  physiologicalTestProposal
-                    .protocol,
-                )
-              }
-            </span>
-          )}
-
           {supplementary && (
             <span
               className="
-                badge
-                badge-outline
-                badge-sm
+                rounded-full
+                border
+                border-slate-200
+                px-1.5
+                py-0.5
+                text-[10px]
+                font-semibold
+                text-slate-500
+                dark:border-white/[0.07]
+                dark:text-slate-500
               "
             >
               Supplémentaire
@@ -569,27 +637,71 @@ function SessionRow({
 
         <p
           className="
-            mt-1
-            text-sm
-            text-base-content/50
+            mt-0.5
+            text-[11.5px]
+            text-slate-400
+            dark:text-slate-500
           "
         >
           {formatSportType(
             session.sportType,
           )}
         </p>
+
+
+        {physiologicalTestProposal && (
+          <div
+            className="
+              mt-2
+              inline-flex
+              items-center
+              gap-1.5
+              rounded-[8px]
+              border
+              border-emerald-500/15
+              bg-emerald-50
+              px-2
+              py-1
+              text-[10.5px]
+              font-semibold
+              text-emerald-700
+              dark:bg-emerald-500/[0.07]
+              dark:text-emerald-400
+            "
+            title={
+              physiologicalTestProposal
+                .recommendation
+            }
+          >
+            <FlaskConical
+              className="
+                h-3
+                w-3
+              "
+            />
+
+            Test proposé ·{' '}
+            {
+              formatPhysiologicalTestProtocol(
+                physiologicalTestProposal
+                  .protocol,
+              )
+            }
+          </div>
+        )}
       </div>
+
 
       <div
         className="
-          flex flex-wrap
+          flex
+          shrink-0
+          flex-wrap
           items-center
-          gap-x-4
-          gap-y-2
-          text-sm
+          gap-1.5
         "
       >
-        <InlineValue
+        <MetricPill
           value={
             `${session.durationMinutes} min`
           }
@@ -597,7 +709,7 @@ function SessionRow({
 
         {session.distanceKm
           !== undefined && (
-            <InlineValue
+            <MetricPill
               value={
                 `${
                   formatNumber(
@@ -609,7 +721,7 @@ function SessionRow({
           )}
 
         {session.intensity && (
-          <InlineValue
+          <MetricPill
             value={
               formatTrainingIntensity(
                 session.intensity,
@@ -619,7 +731,7 @@ function SessionRow({
         )}
 
         {session.heartRateZone && (
-          <InlineValue
+          <MetricPill
             value={
               session.heartRateZone
             }
@@ -637,19 +749,31 @@ function SessionStatusLabel({
   status:
     TrainingSession['status']
 }) {
-  if (status === 'completed') {
+  if (
+    status === 'completed'
+  ) {
     return (
       <span
         className="
-          badge
-          badge-success
-          badge-sm
+          inline-flex
+          items-center
           gap-1
+          rounded-full
+          bg-emerald-100
+          px-1.5
+          py-0.5
+          text-[10px]
+          font-bold
+          text-emerald-700
+          dark:bg-emerald-500/10
+          dark:text-emerald-400
         "
       >
         <Check
-          size={11}
-          strokeWidth={3}
+          className="
+            h-2.5
+            w-2.5
+          "
         />
 
         Réalisée
@@ -657,20 +781,32 @@ function SessionStatusLabel({
     )
   }
 
-  if (status === 'skipped') {
+
+  if (
+    status === 'skipped'
+  ) {
     return (
       <span
         className="
-          badge
-          badge-error
-          badge-outline
-          badge-sm
+          inline-flex
+          items-center
           gap-1
+          rounded-full
+          bg-red-100
+          px-1.5
+          py-0.5
+          text-[10px]
+          font-bold
+          text-red-600
+          dark:bg-red-500/10
+          dark:text-red-400
         "
       >
         <X
-          size={11}
-          strokeWidth={2.5}
+          className="
+            h-2.5
+            w-2.5
+          "
         />
 
         Non réalisée
@@ -678,22 +814,38 @@ function SessionStatusLabel({
     )
   }
 
+
   return (
     <span
       className="
-        badge
-        badge-primary
-        badge-outline
-        badge-sm
+        inline-flex
+        items-center
+        gap-1
+        rounded-full
+        bg-amber-50
+        px-1.5
+        py-0.5
+        text-[10px]
+        font-bold
+        text-amber-600
+        dark:bg-amber-500/[0.08]
+        dark:text-amber-400
       "
     >
+      <Clock3
+        className="
+          h-2.5
+          w-2.5
+        "
+      />
+
       À faire
     </span>
   )
 }
 
 
-function InlineValue({
+function MetricPill({
   value,
 }: {
   value: string
@@ -701,7 +853,15 @@ function InlineValue({
   return (
     <span
       className="
-        text-base-content/60
+        rounded-[7px]
+        bg-slate-100
+        px-2
+        py-1
+        text-[11px]
+        font-medium
+        text-slate-500
+        dark:bg-white/[0.045]
+        dark:text-slate-400
       "
     >
       {value}
@@ -716,53 +876,95 @@ function StatusBadge({
   status:
     TrainingSession['status']
 }) {
-  if (status === 'completed') {
+  if (
+    status === 'completed'
+  ) {
     return (
       <span
         className="
-          badge
-          badge-success
-          badge-sm
+          inline-flex
+          items-center
           gap-1
+          rounded-full
+          bg-emerald-100
+          px-2
+          py-1
+          text-[10px]
+          font-bold
+          text-emerald-700
+          dark:bg-emerald-500/10
+          dark:text-emerald-400
         "
-        title="Séance réalisée"
       >
-        <Check size={12} />
+        <Check
+          className="
+            h-2.5
+            w-2.5
+          "
+        />
 
         Réalisée
       </span>
     )
   }
 
-  if (status === 'skipped') {
+
+  if (
+    status === 'skipped'
+  ) {
     return (
       <span
         className="
-          badge
-          badge-error
-          badge-sm
+          inline-flex
+          items-center
           gap-1
+          rounded-full
+          bg-red-100
+          px-2
+          py-1
+          text-[10px]
+          font-bold
+          text-red-600
+          dark:bg-red-500/10
+          dark:text-red-400
         "
-        title="Séance non réalisée"
       >
-        <X size={12} />
+        <X
+          className="
+            h-2.5
+            w-2.5
+          "
+        />
 
         Non réalisée
       </span>
     )
   }
 
+
   return (
     <span
       className="
-        badge
-        badge-warning
-        badge-sm
+        inline-flex
+        items-center
         gap-1
+        rounded-full
+        bg-amber-50
+        px-2
+        py-1
+        text-[10px]
+        font-bold
+        text-amber-600
+        dark:bg-amber-500/[0.08]
+        dark:text-amber-400
       "
-      title="Séance à faire"
     >
-      <Clock3 size={12} />
+      <Clock3
+        className="
+          h-2.5
+          w-2.5
+        "
+      />
 
       À faire
     </span>

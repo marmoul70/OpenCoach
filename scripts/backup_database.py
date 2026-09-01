@@ -15,6 +15,13 @@ from opencoach.backup import (
 )
 from opencoach.database.session import (
     PROJECT_ROOT,
+    SessionLocal,
+)
+from opencoach.services.push_notification import (
+    PushNotificationService,
+)
+from opencoach.services.system_notification_state import (
+    SystemNotificationState,
 )
 
 
@@ -82,6 +89,38 @@ def main() -> None:
             error=str(exc),
         )
 
+        notification_state = (
+            SystemNotificationState()
+        )
+
+        if notification_state.should_notify(
+            "backup"
+        ):
+            try:
+                with SessionLocal() as session:
+                    PushNotificationService(
+                        session
+                    ).send_system_backup_error(
+                        title=(
+                            "Sauvegarde OpenCoach"
+                        ),
+                        body=(
+                            "La sauvegarde automatique "
+                            "a échoué."
+                        ),
+                        url="/settings",
+                    )
+
+                notification_state.mark_failed(
+                    "backup"
+                )
+
+            except Exception as notification_exc:
+                print(
+                    "AVERTISSEMENT notification Push : "
+                    f"{notification_exc}"
+                )
+
         print(
             "ERREUR sauvegarde OpenCoach : "
             f"{exc}"
@@ -93,6 +132,10 @@ def main() -> None:
         status="success",
         filename=backup.filename,
         error=None,
+    )
+
+    SystemNotificationState().mark_success(
+        "backup"
     )
 
     print(

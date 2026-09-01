@@ -137,6 +137,155 @@ class PushNotificationService:
             removed=removed,
         )
 
+    def send_system_sync_error(
+        self,
+        *,
+        title: str,
+        body: str,
+        url: str = "/settings",
+    ) -> PushDeliveryReport:
+        """Envoie une alerte d'échec de synchronisation."""
+
+        subscriptions = [
+            subscription
+            for subscription in self.repository.list_all()
+            if (
+                subscription.system_notifications_enabled
+                and subscription.system_sync_errors_enabled
+            )
+        ]
+
+        return self._send_to_subscriptions(
+            subscriptions=subscriptions,
+            title=title,
+            body=body,
+            url=url,
+        )
+
+    def send_system_backup_error(
+        self,
+        *,
+        title: str,
+        body: str,
+        url: str = "/settings",
+    ) -> PushDeliveryReport:
+        """Envoie une alerte d'échec de sauvegarde."""
+
+        subscriptions = [
+            subscription
+            for subscription
+            in self.repository.list_all()
+            if (
+                subscription.system_notifications_enabled
+                and
+                subscription.system_backup_errors_enabled
+            )
+        ]
+
+        return self._send_to_subscriptions(
+            subscriptions=subscriptions,
+            title=title,
+            body=body,
+            url=url,
+        )
+
+    def _send_to_subscriptions(
+        self,
+        *,
+        subscriptions: list[PushSubscription],
+        title: str,
+        body: str,
+        url: str,
+    ) -> PushDeliveryReport:
+        private_key = os.getenv(
+            "OPENCOACH_VAPID_PRIVATE_KEY",
+            "",
+        ).strip()
+
+        subject = os.getenv(
+            "OPENCOACH_VAPID_SUBJECT",
+            "",
+        ).strip()
+
+        if not subscriptions:
+            return PushDeliveryReport(
+                sent=0,
+                failed=0,
+                removed=0,
+            )
+
+        if not private_key:
+            raise PushConfigurationError(
+                "OPENCOACH_VAPID_PRIVATE_KEY "
+                "n'est pas configurée."
+            )
+
+        if not subject:
+            raise PushConfigurationError(
+                "OPENCOACH_VAPID_SUBJECT "
+                "n'est pas configuré."
+            )
+
+        sent = 0
+        failed = 0
+        removed = 0
+
+        for subscription in subscriptions:
+            try:
+                badge_count = (
+                    subscription.badge_count
+                    + 1
+                )
+
+                payload = json.dumps(
+                    {
+                        "title": title,
+                        "body": body,
+                        "url": url,
+                        "badge": badge_count,
+                    },
+                    ensure_ascii=False,
+                )
+
+                self._send_one(
+                    subscription=subscription,
+                    payload=payload,
+                    private_key=private_key,
+                    subject=subject,
+                )
+
+                self.repository.increment_badge(
+                    subscription.endpoint
+                )
+
+                sent += 1
+
+            except WebPushException as exc:
+                status_code = (
+                    exc.response.status_code
+                    if exc.response is not None
+                    else None
+                )
+
+                if status_code in {
+                    404,
+                    410,
+                }:
+                    self.repository.delete_by_endpoint(
+                        subscription.endpoint
+                    )
+
+                    removed += 1
+                    continue
+
+                failed += 1
+
+        return PushDeliveryReport(
+            sent=sent,
+            failed=failed,
+            removed=removed,
+        )
+
     @staticmethod
     def _send_one(
         *,

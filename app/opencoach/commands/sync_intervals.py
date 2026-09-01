@@ -32,6 +32,12 @@ from opencoach.services import (
     IntegrationConnectionService,
     IntervalsApplicationService,
 )
+from opencoach.services.push_notification import (
+    PushNotificationService,
+)
+from opencoach.services.system_notification_state import (
+    SystemNotificationState,
+)
 
 
 LOCAL_USER_EMAIL = "local@opencoach.local"
@@ -205,23 +211,66 @@ def main(
         )
 
     with SessionLocal() as session:
-        resolved_profile_id = (
-            get_local_athlete_profile_id(
+        try:
+            resolved_profile_id = (
+                get_local_athlete_profile_id(
+                    session
+                )
+            )
+
+            resolved_service = build_service(
                 session
             )
-        )
 
-        resolved_service = build_service(
-            session
-        )
-
-        result = (
-            resolved_service.sync_incremental(
-                resolved_profile_id,
-                initial_days=args.initial_days,
-                lookback_days=args.lookback_days,
+            result = (
+                resolved_service.sync_incremental(
+                    resolved_profile_id,
+                    initial_days=args.initial_days,
+                    lookback_days=args.lookback_days,
+                )
             )
-        )
+
+        except Exception:
+            notification_state = (
+                SystemNotificationState()
+            )
+
+            if notification_state.should_notify(
+                "intervals_sync"
+            ):
+                try:
+                    PushNotificationService(
+                        session
+                    ).send_system_sync_error(
+                        title=(
+                            "Synchronisation "
+                            "Intervals.icu"
+                        ),
+                        body=(
+                            "La synchronisation "
+                            "automatique a échoué."
+                        ),
+                        url="/settings",
+                    )
+
+                    notification_state.mark_failed(
+                        "intervals_sync"
+                    )
+
+                except Exception as notification_exc:
+                    print(
+                        "[AVERTISSEMENT] "
+                        "Impossible d'envoyer "
+                        "la notification Push : "
+                        f"{notification_exc}",
+                        file=sys.stderr,
+                    )
+
+            raise
+
+    SystemNotificationState().mark_success(
+        "intervals_sync"
+    )
 
     _print_result(
         result

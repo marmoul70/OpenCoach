@@ -5,6 +5,10 @@ import {
 } from './components/ui/ToastProvider'
 
 import {
+  AppNavigation,
+} from './components/navigation/AppNavigation'
+
+import {
   loadAthleteProfile,
   useAthleteProfile,
 } from './core/profile'
@@ -365,332 +369,47 @@ function App() {
   return (
     <RaceProvider>
       <TrainingProvider>
-        <div className="min-h-screen bg-base-200">
+        <div className="min-h-screen bg-base-200 pb-16 lg:pb-0 lg:pl-[14.25rem]">
 
-          <header className="sticky top-0 z-40 border-b border-base-300 bg-base-100/95 shadow-sm backdrop-blur">
-            <div className="navbar mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              {/* Gauche : menu */}
-              <div className="navbar-start">
-                <div className="dropdown">
-                  <button
-                    type="button"
-                    tabIndex={0}
-                    className="btn btn-ghost btn-circle"
-                    aria-label="Ouvrir le menu"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 6h16M4 12h16M4 18h7"
-                      />
-                    </svg>
-                  </button>
+          <AppNavigation
+            activePage={page}
+            firstName={
+              profile.identity.firstName
+            }
+            lastName={
+              profile.identity.lastName
+            }
+            avatar={
+              profile.identity.avatar
+            }
+            theme={theme}
+            version={
+              buildInfo?.version
+            }
+            commit={
+              buildInfo?.commit
+            }
+            onNavigate={(nextPage) => {
+              setPage(nextPage)
+            }}
+            onThemeChange={(nextTheme) => {
+              setTheme(nextTheme)
+            }}
+            onLogout={() => {
+              void logoutOpenCoach()
+                .finally(() => {
+                  window.location.reload()
+                })
+            }}
+          />
 
-                  <ul
-                    tabIndex={-1}
-                    className="menu menu-sm dropdown-content z-50 mt-3 w-52 rounded-box bg-base-100 p-2 shadow"
-                  >
-
-                    <div className="divider my-1" />
-
-                    <li>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          setPage('dashboard')
-                          event.currentTarget.blur()
-                        }}
-                      >
-                        Tableau de bord
-                      </button>
-                    </li>
-
-                    <li>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          setPage('coach')
-                          event.currentTarget.blur()
-                        }}
-                        className={
-                          page === 'coach'
-                            ? 'text-primary font-semibold'
-                            : ''
-                        }
-                      >
-                        Coach
-                      </button>
-                    </li>
-
-                    <li>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          setPage('training')
-                          event.currentTarget.blur()
-                        }}
-                        className={page === 'training' ? 'text-primary font-semibold' : ''}
-                      >
-                        Entraînement
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          setPage('feeling')
-                          event.currentTarget.blur()
-                        }}
-                        className={
-                          page === 'feeling'
-                            ? 'text-primary font-semibold'
-                            : ''
-                        }
-                      >
-                        Ressenti
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          setPage('activities')
-                          event.currentTarget.blur()
-                        }}
-                        className={
-                          page === 'activities'
-                            ? 'text-primary font-semibold'
-                            : ''
-                        }
-                      >
-                        Activités
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          setPage('races')
-                          event.currentTarget.blur()
-                        }}
-                        className={page === 'races' ? 'text-primary font-semibold' : ''}
-                      >
-                        Courses
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Centre : logo */}
-              <div className="navbar-center">
-                <button
-                  type="button"
-                  onClick={() => setPage('dashboard')}
-                  className="btn btn-ghost text-xl font-bold tracking-tight"
-                >
-                  OpenCoach
-                </button>
-              </div>
-
-              {/* Droite : navigation + profil */}
-              <div className="navbar-end gap-1">
-
-                {/* Avatar + menu profil */}
-                <div className="dropdown dropdown-end">
-                  <button
-                    type="button"
-                    tabIndex={0}
-                    className="btn btn-ghost btn-circle avatar"
-                    aria-label="Ouvrir le menu du profil"
-                  >
-                    <div className="w-10 rounded-full">
-                      {profile.identity.avatar ? (
-                        <img
-                          src={profile.identity.avatar}
-                          alt="Avatar du profil"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-base-200 text-sm font-semibold text-base-content">
-                          {getInitials(
-                            profile.identity.firstName,
-                            profile.identity.lastName,
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-
-                  <ul
-                    tabIndex={-1}
-                    className="menu menu-sm dropdown-content z-50 mt-3 w-56 rounded-box bg-base-100 p-2 shadow"
-                  >
-
-                    <li>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          setPage('profile-personal')
-                          event.currentTarget.blur()
-                        }}
-                        className={
-                          page === 'profile-personal'
-                            ? 'text-primary font-semibold'
-                            : ''
-                        }
-                      >
-                        Profil perso
-                      </button>
-                    </li>
-
-                    <li>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          setPage('profile-sport')
-                          event.currentTarget.blur()
-                        }}
-                        className={
-                          page === 'profile-sport'
-                            ? 'text-primary font-semibold'
-                            : ''
-                        }
-                      >
-                        Profil sportif
-                      </button>
-                    </li>
-
-                    <li>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          setPage('settings')
-                          event.currentTarget.blur()
-                        }}
-                        className={
-                          page === 'settings'
-                            ? 'text-primary font-semibold'
-                            : ''
-                        }
-                      >
-                        Réglages
-                      </button>
-                    </li>
-                    <div className="divider my-1" />
-                    <li>
-                      <details>
-                        <summary>Apparence</summary>
-
-                        <ul>
-                          <li>
-                            <button
-                              type="button"
-                              onClick={() => setTheme('light')}
-                              className={theme === 'light' ? 'text-primary font-semibold' : ''}
-                            >
-                              ☀️ Clair
-                            </button>
-                          </li>
-
-                          <li>
-                            <button
-                              type="button"
-                              onClick={() => setTheme('dark')}
-                              className={theme === 'dark' ? 'text-primary font-semibold' : ''}
-                            >
-                              🌙 Sombre
-                            </button>
-                          </li>
-
-                          <li>
-                            <button
-                              type="button"
-                              onClick={() => setTheme('system')}
-                              className={theme === 'system' ? 'text-primary font-semibold' : ''}
-                            >
-                              🖥️ Système
-                            </button>
-                          </li>
-                        </ul>
-                      </details>
-                    </li>
-
-                    <li>
-                      <button
-                        type="button"
-                        className="text-error"
-                        onClick={() => {
-                          void logoutOpenCoach()
-                            .finally(() => {
-                              window.location.reload()
-                            })
-                        }}
-                      >
-                        Se déconnecter
-                      </button>
-                    </li>
-
-                    <div className="divider my-1" />
-<li
-                      className="
-                        pointer-events-none
-                        px-3
-                        py-1
-                      "
-                    >
-                      <div
-                        className="
-                          flex
-                          flex-col
-                          gap-0
-                          p-0
-                          text-[11px]
-                          leading-4
-                          text-base-content/40
-                        "
-                      >
-                        <span>
-                          Version : {
-                            buildInfo
-                              ? `v${buildInfo.version}`
-                              : 'développement'
-                          }
-                        </span>
-
-                        {buildInfo && (
-                          <span
-                            className="
-                              font-mono
-                              text-[10px]
-                              text-base-content/30
-                            "
-                          >
-                            {buildInfo.commit}
-                          </span>
-                        )}
-                      </div>
-                    </li>
-
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </header>
 
           {page === 'dashboard' && (
             <Dashboard
               onOpenTraining={() => setPage('training')}
               onOpenCoach={() => setPage('coach')}
               onOpenFeeling={() => setPage('feeling')}
+              onOpenRaces={() => setPage('races')}
             />
           )}
 
@@ -708,16 +427,5 @@ function App() {
   )
 }
 
-function getInitials(
-  firstName: string,
-  lastName: string,
-): string {
-  const firstInitial = firstName.trim().charAt(0)
-  const lastInitial = lastName.trim().charAt(0)
-
-  const initials = `${firstInitial}${lastInitial}`.toUpperCase()
-
-  return initials || 'OC'
-}
 
 export default App

@@ -758,6 +758,73 @@ apply_database_migrations() {
         "Base de données à jour."
 }
 
+install_training_reminder_timer() {
+    local service_file
+    local timer_file
+
+    service_file="/etc/systemd/system/opencoach-training-reminder.service"
+    timer_file="/etc/systemd/system/opencoach-training-reminder.timer"
+
+    log_info \
+        "Configuration du rappel de séance du lendemain"
+
+    cat > "$service_file" <<EOF
+[Unit]
+Description=OpenCoach - rappel de la séance du lendemain
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=$OPENCOACH_USER
+Group=$OPENCOACH_GROUP
+WorkingDirectory=$PROJECT_ROOT
+EnvironmentFile=$ENV_FILE
+Environment=PYTHONPATH=$PROJECT_ROOT/app
+ExecStart=$VENV_PYTHON -m opencoach.commands.send_tomorrow_training_reminder
+EOF
+
+    cat > "$timer_file" <<'EOF'
+[Unit]
+Description=OpenCoach - rappel quotidien de la séance du lendemain
+
+[Timer]
+OnCalendar=*-*-* 20:00:00
+Persistent=true
+Unit=opencoach-training-reminder.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    chmod \
+        644 \
+        "$service_file" \
+        "$timer_file"
+
+    systemctl \
+        daemon-reload
+
+    systemctl \
+        enable \
+        --now \
+        opencoach-training-reminder.timer
+
+    if ! systemctl \
+        is-enabled \
+        --quiet \
+        opencoach-training-reminder.timer; then
+
+        log_error \
+            "Le timer de rappel de séance n'est pas activé."
+
+        return 1
+    fi
+
+    log_success \
+        "Rappel de séance activé à 20:00."
+}
+
 
 main() {
     parse_arguments "$@"
@@ -779,6 +846,8 @@ main() {
     install_frontend_application
 
     apply_database_migrations
+
+    install_training_reminder_timer
 
     log_success \
         "Installation applicative OpenCoach terminée."

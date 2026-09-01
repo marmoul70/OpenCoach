@@ -42,6 +42,9 @@ interface TrainingStoreValue {
   goToPreviousWeek: () => void
   goToNextWeek: () => void
   goToCurrentWeek: () => void
+  goToDate: (
+    date: string,
+  ) => void
 
   createSession: (
     session: TrainingSessionCreate,
@@ -253,6 +256,31 @@ export function TrainingProvider({
   }
 
 
+
+  function goToDate(
+    date: string,
+  ) {
+    const reference =
+      new Date(
+        `${date}T12:00:00`,
+      )
+
+    if (
+      Number.isNaN(
+        reference.getTime(),
+      )
+    ) {
+      return
+    }
+
+    setSelectedWeek(
+      getWeekRangeFromDate(
+        reference,
+      ),
+    )
+  }
+
+
   useEffect(() => {
     function handleTrainingSessionUpdated() {
       void refreshSessions()
@@ -434,6 +462,7 @@ export function TrainingProvider({
         goToPreviousWeek,
         goToNextWeek,
         goToCurrentWeek,
+        goToDate,
         createSession,
         updateSessionStatus,
         updateSessionActivity,

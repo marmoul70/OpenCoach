@@ -47,6 +47,7 @@ const DEFAULT_PREFERENCES: PushPreferences = {
   systemEnabled: true,
   syncErrors: true,
   backupErrors: true,
+  trainingReminder: false,
 }
 
 
@@ -547,9 +548,61 @@ export function NotificationsSection() {
               title="Coaching et adaptations"
             />
 
-            <FutureCategory
-              title="Séances et rappels"
-            />
+            <div
+              className="
+                bg-base-100
+                p-4
+              "
+            >
+              <div
+                className="
+                  flex
+                  items-center
+                  justify-between
+                  gap-4
+                "
+              >
+                <div>
+                  <p
+                    className="
+                      font-medium
+                      text-base-content
+                    "
+                  >
+                    Séances et rappels
+                  </p>
+
+                  <p
+                    className="
+                      mt-1
+                      text-xs
+                      text-base-content/50
+                    "
+                  >
+                    Rappel de la séance du lendemain à 20 h.
+                  </p>
+                </div>
+
+                <input
+                  type="checkbox"
+                  className="
+                    toggle
+                    toggle-success
+                  "
+                  disabled={!enabled}
+                  checked={
+                    preferences.trainingReminder
+                  }
+                  onChange={(event) => {
+                    void savePreferences({
+                      ...preferences,
+                      trainingReminder:
+                        event.target.checked,
+                    })
+                  }}
+                />
+              </div>
+            </div>
 
             <FutureCategory
               title="Activités synchronisées"

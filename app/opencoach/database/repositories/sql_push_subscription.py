@@ -233,6 +233,7 @@ class SqlPushSubscriptionRepository:
         system_enabled: bool,
         sync_errors: bool,
         backup_errors: bool,
+        training_reminder: bool,
     ) -> None:
         try:
             subscription = self.session.scalar(
@@ -257,6 +258,9 @@ class SqlPushSubscriptionRepository:
             )
             subscription.system_backup_errors_enabled = (
                 backup_errors
+            )
+            subscription.training_reminder_enabled = (
+                training_reminder
             )
 
             self.session.commit()

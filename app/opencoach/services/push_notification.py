@@ -189,6 +189,29 @@ class PushNotificationService:
             url=url,
         )
 
+    def send_training_reminder(
+        self,
+        *,
+        title: str,
+        body: str,
+        url: str,
+    ) -> PushDeliveryReport:
+        """Envoie le rappel de séance du lendemain."""
+
+        subscriptions = [
+            subscription
+            for subscription
+            in self.repository.list_all()
+            if subscription.training_reminder_enabled
+        ]
+
+        return self._send_to_subscriptions(
+            subscriptions=subscriptions,
+            title=title,
+            body=body,
+            url=url,
+        )
+
     def _send_to_subscriptions(
         self,
         *,

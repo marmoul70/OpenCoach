@@ -211,6 +211,7 @@ export interface PushPreferences {
   systemEnabled: boolean
   syncErrors: boolean
   backupErrors: boolean
+  trainingReminder: boolean
 }
 
 
@@ -223,6 +224,7 @@ interface PushPreferencesResponse {
   system_enabled: boolean
   sync_errors: boolean
   backup_errors: boolean
+  training_reminder: boolean
 }
 
 
@@ -292,6 +294,8 @@ export async function fetchPushPreferences(
       data.sync_errors,
     backupErrors:
       data.backup_errors,
+    trainingReminder:
+      data.training_reminder,
   }
 }
 
@@ -317,6 +321,8 @@ export async function updatePushPreferences(
           preferences.syncErrors,
         backup_errors:
           preferences.backupErrors,
+        training_reminder:
+          preferences.trainingReminder,
       }),
     },
   )

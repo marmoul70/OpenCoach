@@ -193,6 +193,7 @@ class PushPreferencesInput(
     system_enabled: bool
     sync_errors: bool
     backup_errors: bool
+    training_reminder: bool
 
 
 def _device_name(
@@ -329,6 +330,7 @@ def get_push_preferences(
             "system_enabled": True,
             "sync_errors": True,
             "backup_errors": True,
+            "training_reminder": False,
         }
 
     return {
@@ -343,6 +345,10 @@ def get_push_preferences(
         "backup_errors": (
             subscription
             .system_backup_errors_enabled
+        ),
+        "training_reminder": (
+            subscription
+            .training_reminder_enabled
         ),
     }
 
@@ -372,6 +378,9 @@ def update_push_preferences(
         ),
         backup_errors=(
             payload.backup_errors
+        ),
+        training_reminder=(
+            payload.training_reminder
         ),
     )
 

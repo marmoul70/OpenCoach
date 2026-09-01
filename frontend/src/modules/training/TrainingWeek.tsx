@@ -162,6 +162,7 @@ export function TrainingWeek() {
     goToPreviousWeek,
     goToNextWeek,
     goToCurrentWeek,
+    goToDate,
   } = useTrainingSessions()
 
   const [
@@ -249,6 +250,100 @@ export function TrainingWeek() {
   ] = useState<string | null>(
     null,
   )
+
+  const [
+    deepLinkSessionId,
+    setDeepLinkSessionId,
+  ] = useState<string | null>(
+    null,
+  )
+
+
+  useEffect(() => {
+    const url =
+      new URL(
+        window.location.href,
+      )
+
+    const sessionId =
+      url.searchParams.get(
+        'session',
+      )
+
+    const sessionDate =
+      url.searchParams.get(
+        'date',
+      )
+
+    if (!sessionId) {
+      return
+    }
+
+    setDeepLinkSessionId(
+      sessionId,
+    )
+
+    if (sessionDate) {
+      goToDate(
+        sessionDate,
+      )
+    }
+  }, [
+    goToDate,
+  ])
+
+
+  useEffect(() => {
+    if (!deepLinkSessionId) {
+      return
+    }
+
+    const exists =
+      sessions.some(
+        (session) =>
+          session.id
+          === deepLinkSessionId,
+      )
+
+    if (!exists) {
+      return
+    }
+
+    setSelectedSessionId(
+      deepLinkSessionId,
+    )
+
+    const url =
+      new URL(
+        window.location.href,
+      )
+
+    url.searchParams.delete(
+      'session',
+    )
+
+    url.searchParams.delete(
+      'date',
+    )
+
+    window.history.replaceState(
+      {},
+      '',
+      (
+        url.pathname
+        + url.search
+        + url.hash
+      ),
+    )
+
+    setDeepLinkSessionId(
+      null,
+    )
+  }, [
+    sessions,
+    deepLinkSessionId,
+  ])
+
 
   const [
     addSessionDate,

@@ -47,7 +47,23 @@ function App() {
     toast,
   } = useToast()
 
-  const [page, setPage] = useState<Page>('dashboard')
+  const [page, setPage] = useState<Page>(() => {
+    const url =
+      new URL(
+        window.location.href,
+      )
+
+    if (
+      url.pathname === '/training'
+      || url.searchParams.has(
+        'session',
+      )
+    ) {
+      return 'training'
+    }
+
+    return 'dashboard'
+  })
   const profile = useAthleteProfile()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

@@ -1,0 +1,1 @@
+"""Moteur météo OpenCoach."""

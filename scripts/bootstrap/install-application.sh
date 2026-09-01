@@ -826,6 +826,80 @@ EOF
 }
 
 
+
+install_daily_health_refresh_timer() {
+    local service_file
+    local timer_file
+
+    service_file="/etc/systemd/system/opencoach-health-refresh.service"
+    timer_file="/etc/systemd/system/opencoach-health-refresh.timer"
+
+    log_info \
+        "Configuration de la collecte automatique des données santé"
+
+    cat > "$service_file" <<EOF
+[Unit]
+Description=OpenCoach - collecte des données santé
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=$OPENCOACH_USER
+Group=$OPENCOACH_GROUP
+WorkingDirectory=$PROJECT_ROOT
+EnvironmentFile=$ENV_FILE
+Environment=PYTHONPATH=$PROJECT_ROOT/app
+ExecStart=$VENV_PYTHON -m opencoach.commands.refresh_daily_health
+EOF
+
+    cat > "$timer_file" <<'EOF'
+[Unit]
+Description=OpenCoach - collecte santé entre 08:00 et 10:00
+
+[Timer]
+OnCalendar=*-*-* 08:00:00
+OnCalendar=*-*-* 08:15:00
+OnCalendar=*-*-* 08:30:00
+OnCalendar=*-*-* 08:45:00
+OnCalendar=*-*-* 09:00:00
+OnCalendar=*-*-* 09:15:00
+OnCalendar=*-*-* 09:30:00
+OnCalendar=*-*-* 09:45:00
+OnCalendar=*-*-* 10:00:00
+Persistent=true
+Unit=opencoach-health-refresh.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    chmod \
+        644 \
+        "$service_file" \
+        "$timer_file"
+
+    systemctl daemon-reload
+
+    systemctl enable \
+        --now \
+        opencoach-health-refresh.timer
+
+    if ! systemctl \
+        is-enabled \
+        --quiet \
+        opencoach-health-refresh.timer; then
+
+        log_error \
+            "Le timer de collecte santé n'est pas activé."
+
+        return 1
+    fi
+
+    log_success \
+        "Collecte santé activée de 08:00 à 10:00."
+}
+
 main() {
     parse_arguments "$@"
 
@@ -848,6 +922,8 @@ main() {
     apply_database_migrations
 
     install_training_reminder_timer
+
+    install_daily_health_refresh_timer
 
     log_success \
         "Installation applicative OpenCoach terminée."

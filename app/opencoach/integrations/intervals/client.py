@@ -143,6 +143,63 @@ class IntervalsClient:
             },
         )
 
+    def trigger_partner_sync(
+        self,
+    ) -> None:
+        """Demande à Intervals.icu de rafraîchir ses partenaires.
+
+        Cet endpoint est utilisé par l'interface Intervals.icu
+        pour déclencher une synchronisation des fournisseurs
+        connectés, notamment Suunto.
+        """
+
+        try:
+            with httpx.Client(
+                auth=httpx.BasicAuth(
+                    "API_KEY",
+                    self.api_key,
+                ),
+                timeout=self.timeout,
+                transport=self.transport,
+            ) as client:
+                response = client.post(
+                    (
+                        f"{INTERVALS_BASE_URL}"
+                        f"/athlete/{self.athlete_id}"
+                        "/activities-sync"
+                    ),
+                )
+
+        except httpx.HTTPError as exc:
+            raise IntervalsApiError(
+                (
+                    "Impossible de déclencher "
+                    "la synchronisation partenaire "
+                    "Intervals.icu."
+                )
+            ) from exc
+
+        if response.status_code in {
+            401,
+            403,
+        }:
+            raise IntervalsAuthenticationError(
+                "Authentification Intervals.icu refusée."
+            )
+
+        try:
+            response.raise_for_status()
+
+        except httpx.HTTPStatusError as exc:
+            raise IntervalsApiError(
+                (
+                    "La synchronisation partenaire "
+                    "Intervals.icu a retourné HTTP "
+                    f"{response.status_code}."
+                )
+            ) from exc
+
+
     @staticmethod
     def _validate_activity_id(
         activity_id: str,

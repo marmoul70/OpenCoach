@@ -59,6 +59,21 @@ class PushSubscription(Base):
         nullable=False,
     )
 
+    system_notifications_enabled: Mapped[bool] = mapped_column(
+        default=True,
+        nullable=False,
+    )
+
+    system_sync_errors_enabled: Mapped[bool] = mapped_column(
+        default=True,
+        nullable=False,
+    )
+
+    system_backup_errors_enabled: Mapped[bool] = mapped_column(
+        default=True,
+        nullable=False,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),

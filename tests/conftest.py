@@ -72,3 +72,36 @@ def protect_production_database(
         "create_engine",
         guarded_create_engine,
     )
+
+
+@pytest.fixture(
+    autouse=True,
+)
+def authenticate_api_tests(
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+):
+    """Authentifie les requêtes API des tests fonctionnels.
+
+    L'application protège les routes ``/api/*`` avec
+    ``AuthenticationMiddleware``.
+
+    Les tests métier ne testent pas l'authentification elle-même :
+    ils doivent donc pouvoir atteindre directement leurs endpoints.
+
+    Les tests dédiés à l'authentification peuvent demander le
+    comportement réel avec le marqueur ``real_auth``.
+    """
+
+    if request.node.get_closest_marker(
+        "real_auth"
+    ) is not None:
+        return
+
+    monkeypatch.setattr(
+        (
+            "opencoach.authentication.middleware."
+            "verify_session_token"
+        ),
+        lambda token: True,
+    )

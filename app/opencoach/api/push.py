@@ -175,3 +175,206 @@ def reset_push_badge(
     return {
         "badge": 0,
     }
+
+
+class PushEndpointInput(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+    endpoint: str = Field(
+        min_length=1,
+    )
+
+
+class PushPreferencesInput(
+    PushEndpointInput
+):
+    system_enabled: bool
+    sync_errors: bool
+    backup_errors: bool
+
+
+def _device_name(
+    user_agent: str | None,
+) -> str:
+    value = (
+        user_agent
+        or ""
+    ).lower()
+
+    if "iphone" in value:
+        return "iPhone"
+
+    if "ipad" in value:
+        return "iPad"
+
+    if "android" in value:
+        return "Android"
+
+    if "windows" in value:
+        return "PC Windows"
+
+    if (
+        "macintosh" in value
+        or "mac os" in value
+    ):
+        return "Mac"
+
+    return "Appareil"
+
+
+def _browser_name(
+    user_agent: str | None,
+) -> str:
+    value = (
+        user_agent
+        or ""
+    ).lower()
+
+    if "edg/" in value:
+        return "Edge"
+
+    if (
+        "chrome/" in value
+        and "edg/" not in value
+    ):
+        return "Chrome"
+
+    if (
+        "safari/" in value
+        and "chrome/" not in value
+    ):
+        return "Safari"
+
+    if "firefox/" in value:
+        return "Firefox"
+
+    return "Navigateur"
+
+
+@router.post(
+    "/devices",
+)
+def list_push_devices(
+    payload: PushEndpointInput,
+    session: Session = Depends(
+        get_db
+    ),
+) -> dict[str, list[dict[str, object]]]:
+    repository = (
+        SqlPushSubscriptionRepository(
+            session
+        )
+    )
+
+    devices = []
+
+    for subscription in repository.list_all():
+        devices.append({
+            "id": str(
+                subscription.id
+            ),
+            "device_name": _device_name(
+                subscription.user_agent
+            ),
+            "browser": _browser_name(
+                subscription.user_agent
+            ),
+            "current": (
+                subscription.endpoint
+                == payload.endpoint
+            ),
+            "created_at": (
+                subscription.created_at
+                .isoformat()
+            ),
+            "updated_at": (
+                subscription.updated_at
+                .isoformat()
+            ),
+            "badge_count": (
+                subscription.badge_count
+            ),
+        })
+
+    return {
+        "devices": devices,
+    }
+
+
+@router.post(
+    "/preferences/read",
+)
+def get_push_preferences(
+    payload: PushEndpointInput,
+    session: Session = Depends(
+        get_db
+    ),
+) -> dict[str, bool]:
+    repository = (
+        SqlPushSubscriptionRepository(
+            session
+        )
+    )
+
+    subscription = (
+        repository.get_by_endpoint(
+            payload.endpoint
+        )
+    )
+
+    if subscription is None:
+        return {
+            "system_enabled": True,
+            "sync_errors": True,
+            "backup_errors": True,
+        }
+
+    return {
+        "system_enabled": (
+            subscription
+            .system_notifications_enabled
+        ),
+        "sync_errors": (
+            subscription
+            .system_sync_errors_enabled
+        ),
+        "backup_errors": (
+            subscription
+            .system_backup_errors_enabled
+        ),
+    }
+
+
+@router.post(
+    "/preferences",
+)
+def update_push_preferences(
+    payload: PushPreferencesInput,
+    session: Session = Depends(
+        get_db
+    ),
+) -> dict[str, bool]:
+    repository = (
+        SqlPushSubscriptionRepository(
+            session
+        )
+    )
+
+    repository.update_preferences(
+        endpoint=payload.endpoint,
+        system_enabled=(
+            payload.system_enabled
+        ),
+        sync_errors=(
+            payload.sync_errors
+        ),
+        backup_errors=(
+            payload.backup_errors
+        ),
+    )
+
+    return {
+        "updated": True,
+    }

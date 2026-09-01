@@ -8,6 +8,9 @@ import {
   Bell,
   BellOff,
   CheckCircle2,
+  ChevronRight,
+  CircleAlert,
+  MonitorSmartphone,
   Smartphone,
 } from 'lucide-react'
 
@@ -21,9 +24,14 @@ import {
 
 import {
   deletePushSubscription,
+  fetchPushDevices,
+  fetchPushPreferences,
   fetchPushPublicKey,
   savePushSubscription,
+  updatePushPreferences,
   urlBase64ToUint8Array,
+  type PushDevice,
+  type PushPreferences,
 } from '../pwa/pushApi'
 
 
@@ -33,6 +41,13 @@ type NotificationState =
   | 'denied'
   | 'disabled'
   | 'enabled'
+
+
+const DEFAULT_PREFERENCES: PushPreferences = {
+  systemEnabled: true,
+  syncErrors: true,
+  backupErrors: true,
+}
 
 
 export function NotificationsSection() {
@@ -52,6 +67,27 @@ export function NotificationsSection() {
     setBusy,
   ] = useState(
     false,
+  )
+
+  const [
+    endpoint,
+    setEndpoint,
+  ] = useState<string | null>(
+    null,
+  )
+
+  const [
+    devices,
+    setDevices,
+  ] = useState<PushDevice[]>(
+    [],
+  )
+
+  const [
+    preferences,
+    setPreferences,
+  ] = useState<PushPreferences>(
+    DEFAULT_PREFERENCES,
   )
 
 
@@ -101,10 +137,48 @@ export function NotificationsSection() {
               .pushManager
               .getSubscription()
 
+          if (!subscription) {
+            setEndpoint(
+              null,
+            )
+
+            setDevices(
+              [],
+            )
+
+            setState(
+              'disabled',
+            )
+
+            return
+          }
+
+          setEndpoint(
+            subscription.endpoint,
+          )
+
           setState(
-            subscription
-              ? 'enabled'
-              : 'disabled',
+            'enabled',
+          )
+
+          const [
+            loadedDevices,
+            loadedPreferences,
+          ] = await Promise.all([
+            fetchPushDevices(
+              subscription.endpoint,
+            ),
+            fetchPushPreferences(
+              subscription.endpoint,
+            ),
+          ])
+
+          setDevices(
+            loadedDevices,
+          )
+
+          setPreferences(
+            loadedPreferences,
           )
         } catch {
           setState(
@@ -176,9 +250,7 @@ export function NotificationsSection() {
         subscription,
       )
 
-      setState(
-        'enabled',
-      )
+      await refreshState()
 
       toast({
         type: 'success',
@@ -235,6 +307,14 @@ export function NotificationsSection() {
         await subscription.unsubscribe()
       }
 
+      setEndpoint(
+        null,
+      )
+
+      setDevices(
+        [],
+      )
+
       setState(
         'disabled',
       )
@@ -268,6 +348,50 @@ export function NotificationsSection() {
   }
 
 
+  async function savePreferences(
+    next: PushPreferences,
+  ) {
+    if (!endpoint) {
+      return
+    }
+
+    const previous =
+      preferences
+
+    setPreferences(
+      next,
+    )
+
+    try {
+      await updatePushPreferences(
+        endpoint,
+        next,
+      )
+    } catch (reason) {
+      setPreferences(
+        previous,
+      )
+
+      toast({
+        type: 'error',
+        title:
+          'Enregistrement impossible',
+        message:
+          reason instanceof Error
+            ? reason.message
+            : (
+              'Impossible de modifier '
+              + 'les préférences.'
+            ),
+      })
+    }
+  }
+
+
+  const enabled =
+    state === 'enabled'
+
+
   return (
     <ProfileSection
       title="Notifications"
@@ -281,9 +405,8 @@ export function NotificationsSection() {
         text-secondary
       "
       description={
-        "Recevez les rappels de séance "
-        + "et les informations importantes "
-        + "du coach sur cet appareil."
+        'Choisissez les alertes '
+        + 'envoyées par OpenCoach.'
       }
       trailing={
         <NotificationBadge
@@ -293,134 +416,538 @@ export function NotificationsSection() {
     >
       <div
         className="
-          space-y-5
+          space-y-6
         "
       >
-        <div
+        <section
           className="
-            flex
-            items-start
-            gap-4
+            rounded-xl
+            border
+            border-base-300
+            bg-base-100
+            p-4
           "
         >
           <div
             className="
               flex
-              h-11
-              w-11
-              shrink-0
               items-center
-              justify-center
-              rounded-xl
-              bg-primary/10
-              text-primary
+              justify-between
+              gap-4
             "
           >
-            <Bell
-              size={21}
-            />
+            <div
+              className="
+                flex
+                min-w-0
+                items-center
+                gap-3
+              "
+            >
+              <div
+                className="
+                  flex
+                  h-10
+                  w-10
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-xl
+                  bg-secondary/10
+                  text-secondary
+                "
+              >
+                <Smartphone
+                  size={19}
+                />
+              </div>
+
+              <div>
+                <p
+                  className="
+                    font-medium
+                    text-base-content
+                  "
+                >
+                  Cet appareil
+                </p>
+
+                <NotificationStatus
+                  state={state}
+                />
+              </div>
+            </div>
+
+            {enabled ? (
+              <button
+                type="button"
+                className="
+                  btn
+                  btn-outline
+                  btn-sm
+                  gap-2
+                "
+                disabled={busy}
+                onClick={() => {
+                  void disableNotifications()
+                }}
+              >
+                <BellOff
+                  size={15}
+                />
+
+                Désactiver
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="
+                  btn
+                  btn-primary
+                  btn-sm
+                  gap-2
+                "
+                disabled={
+                  busy
+                  || state === 'loading'
+                  || state === 'unsupported'
+                  || state === 'denied'
+                }
+                onClick={() => {
+                  void enableNotifications()
+                }}
+              >
+                <Bell
+                  size={15}
+                />
+
+                Activer
+              </button>
+            )}
           </div>
+        </section>
+
+
+        <section>
+          <SectionTitle>
+            Types de notifications
+          </SectionTitle>
 
           <div
             className="
-              min-w-0
-              flex-1
+              divide-y
+              divide-base-300
+              overflow-hidden
+              rounded-xl
+              border
+              border-base-300
             "
           >
-            <p
+            <FutureCategory
+              title="Coaching et adaptations"
+            />
+
+            <FutureCategory
+              title="Séances et rappels"
+            />
+
+            <FutureCategory
+              title="Activités synchronisées"
+            />
+
+            <FutureCategory
+              title="Check-in quotidien"
+            />
+
+            <FutureCategory
+              title="Courses et objectifs"
+            />
+
+            <div
               className="
-                text-sm
-                leading-relaxed
-                text-base-content/70
+                bg-base-100
+                p-4
               "
             >
-              OpenCoach peut vous prévenir
-              lorsqu'une information importante
-              concernant votre entraînement
-              est disponible.
-            </p>
+              <div
+                className="
+                  flex
+                  items-center
+                  justify-between
+                  gap-4
+                "
+              >
+                <div>
+                  <p
+                    className="
+                      font-medium
+                      text-base-content
+                    "
+                  >
+                    Système
+                  </p>
 
-            <NotificationStatus
-              state={state}
-            />
+                  <p
+                    className="
+                      mt-1
+                      text-xs
+                      text-base-content/50
+                    "
+                  >
+                    Alertes techniques importantes.
+                  </p>
+                </div>
+
+                <input
+                  type="checkbox"
+                  className="
+                    toggle
+                    toggle-success
+                  "
+                  disabled={!enabled}
+                  checked={
+                    preferences.systemEnabled
+                  }
+                  onChange={(event) => {
+                    void savePreferences({
+                      ...preferences,
+                      systemEnabled:
+                        event.target.checked,
+                    })
+                  }}
+                />
+              </div>
+
+              {preferences.systemEnabled && (
+                <div
+                  className="
+                    mt-4
+                    space-y-3
+                    border-t
+                    border-base-300
+                    pt-4
+                  "
+                >
+                  <PreferenceToggle
+                    title={
+                      'Erreur de synchronisation'
+                    }
+                    checked={
+                      preferences.syncErrors
+                    }
+                    disabled={!enabled}
+                    onChange={(checked) => {
+                      void savePreferences({
+                        ...preferences,
+                        syncErrors: checked,
+                      })
+                    }}
+                  />
+
+                  <PreferenceToggle
+                    title={
+                      'Erreur de sauvegarde'
+                    }
+                    checked={
+                      preferences.backupErrors
+                    }
+                    disabled={!enabled}
+                    onChange={(checked) => {
+                      void savePreferences({
+                        ...preferences,
+                        backupErrors: checked,
+                      })
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </section>
 
+
+        <section>
+          <SectionTitle>
+            Appareils connectés
+          </SectionTitle>
+
+          {devices.length === 0 ? (
+            <div
+              className="
+                rounded-xl
+                border
+                border-base-300
+                p-4
+                text-sm
+                text-base-content/50
+              "
+            >
+              Aucun appareil connecté.
+            </div>
+          ) : (
+            <div
+              className="
+                divide-y
+                divide-base-300
+                overflow-hidden
+                rounded-xl
+                border
+                border-base-300
+              "
+            >
+              {devices.map(
+                (device) => (
+                  <DeviceRow
+                    key={device.id}
+                    device={device}
+                  />
+                ),
+              )}
+            </div>
+          )}
+        </section>
+      </div>
+    </ProfileSection>
+  )
+}
+
+
+function SectionTitle({
+  children,
+}: {
+  children: string
+}) {
+  return (
+    <h3
+      className="
+        mb-3
+        text-sm
+        font-semibold
+        uppercase
+        tracking-wide
+        text-base-content/50
+      "
+    >
+      {children}
+    </h3>
+  )
+}
+
+
+function FutureCategory({
+  title,
+}: {
+  title: string
+}) {
+  return (
+    <div
+      className="
+        flex
+        items-center
+        justify-between
+        gap-3
+        bg-base-100
+        p-4
+      "
+    >
+      <div>
+        <p
+          className="
+            font-medium
+            text-base-content
+          "
+        >
+          {title}
+        </p>
+
+        <p
+          className="
+            mt-1
+            text-xs
+            text-base-content/40
+          "
+        >
+          Bientôt disponible
+        </p>
+      </div>
+
+      <ChevronRight
+        size={17}
+        className="
+          text-base-content/25
+        "
+      />
+    </div>
+  )
+}
+
+
+function PreferenceToggle({
+  title,
+  checked,
+  disabled,
+  onChange,
+}: {
+  title: string
+  checked: boolean
+  disabled: boolean
+  onChange: (
+    checked: boolean
+  ) => void
+}) {
+  return (
+    <label
+      className="
+        flex
+        cursor-pointer
+        items-center
+        justify-between
+        gap-3
+      "
+    >
+      <span
+        className="
+          text-sm
+          text-base-content/70
+        "
+      >
+        {title}
+      </span>
+
+      <input
+        type="checkbox"
+        className="
+          toggle
+          toggle-sm
+          toggle-success
+        "
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) =>
+          onChange(
+            event.target.checked,
+          )
+        }
+      />
+    </label>
+  )
+}
+
+
+function DeviceRow({
+  device,
+}: {
+  device: PushDevice
+}) {
+  return (
+    <div
+      className="
+        flex
+        items-center
+        gap-3
+        bg-base-100
+        p-4
+      "
+    >
+      <div
+        className="
+          flex
+          h-10
+          w-10
+          shrink-0
+          items-center
+          justify-center
+          rounded-xl
+          bg-base-200
+          text-base-content/60
+        "
+      >
+        <MonitorSmartphone
+          size={18}
+        />
+      </div>
+
+      <div
+        className="
+          min-w-0
+          flex-1
+        "
+      >
         <div
           className="
             flex
-            justify-end
+            flex-wrap
+            items-center
+            gap-2
           "
         >
-          {state === 'enabled' ? (
-            <button
-              type="button"
-              className="
-                btn
-                btn-outline
-                btn-sm
-                gap-2
-              "
-              disabled={busy}
-              onClick={() => {
-                void disableNotifications()
-              }}
-            >
-              {busy ? (
-                <span
-                  className="
-                    loading
-                    loading-spinner
-                    loading-xs
-                  "
-                />
-              ) : (
-                <BellOff
-                  size={16}
-                />
-              )}
+          <p
+            className="
+              font-medium
+              text-base-content
+            "
+          >
+            {device.device_name}
+          </p>
 
-              Désactiver
-            </button>
-          ) : (
-            <button
-              type="button"
+          {device.current && (
+            <span
               className="
-                btn
-                btn-primary
-                btn-sm
-                gap-2
+                badge
+                badge-success
+                badge-sm
               "
-              disabled={
-                busy
-                || state === 'loading'
-                || state === 'unsupported'
-                || state === 'denied'
-              }
-              onClick={() => {
-                void enableNotifications()
-              }}
             >
-              {busy ? (
-                <span
-                  className="
-                    loading
-                    loading-spinner
-                    loading-xs
-                  "
-                />
-              ) : (
-                <Bell
-                  size={16}
-                />
-              )}
-
-              Activer
-            </button>
+              Cet appareil
+            </span>
           )}
         </div>
+
+        <p
+          className="
+            mt-1
+            text-xs
+            text-base-content/45
+          "
+        >
+          {device.browser}
+          {' · '}
+          connecté le{' '}
+          {formatDate(
+            device.created_at,
+          )}
+        </p>
       </div>
-    </ProfileSection>
+    </div>
+  )
+}
+
+
+function formatDate(
+  value: string,
+): string {
+  const date =
+    new Date(
+      value,
+    )
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return 'date inconnue'
+  }
+
+  return new Intl.DateTimeFormat(
+    'fr-FR',
+    {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    },
+  ).format(
+    date,
   )
 }
 
@@ -430,9 +957,7 @@ function NotificationBadge({
 }: {
   state: NotificationState
 }) {
-  if (
-    state === 'enabled'
-  ) {
+  if (state === 'enabled') {
     return (
       <span
         className="
@@ -447,27 +972,9 @@ function NotificationBadge({
     )
   }
 
-
   if (
     state === 'denied'
-  ) {
-    return (
-      <span
-        className="
-          badge
-          badge-warning
-          badge-sm
-          font-medium
-        "
-      >
-        Bloquées
-      </span>
-    )
-  }
-
-
-  if (
-    state === 'disabled'
+    || state === 'disabled'
   ) {
     return (
       <span
@@ -483,32 +990,12 @@ function NotificationBadge({
     )
   }
 
-
-  if (
-    state === 'unsupported'
-  ) {
-    return (
-      <span
-        className="
-          badge
-          badge-ghost
-          badge-sm
-          font-medium
-        "
-      >
-        Indisponibles
-      </span>
-    )
-  }
-
-
   return (
     <span
       className="
         badge
         badge-ghost
         badge-sm
-        font-medium
       "
     >
       Vérification…
@@ -522,101 +1009,71 @@ function NotificationStatus({
 }: {
   state: NotificationState
 }) {
-  if (
-    state === 'loading'
-  ) {
+  if (state === 'enabled') {
     return (
-      <p
+      <span
         className="
-          mt-3
-          text-xs
-          text-base-content/45
-        "
-      >
-        Vérification…
-      </p>
-    )
-  }
-
-
-  if (
-    state === 'enabled'
-  ) {
-    return (
-      <div
-        className="
-          mt-3
+          mt-1
           flex
           items-center
-          gap-1.5
+          gap-1
           text-xs
-          font-medium
           text-success
         "
       >
         <CheckCircle2
-          size={14}
+          size={13}
         />
 
         Notifications actives
-      </div>
+      </span>
     )
   }
 
-
-  if (
-    state === 'denied'
-  ) {
+  if (state === 'denied') {
     return (
-      <p
+      <span
         className="
-          mt-3
+          mt-1
+          flex
+          items-center
+          gap-1
           text-xs
           text-warning
         "
       >
-        Les notifications sont bloquées
-        dans les réglages de l’appareil.
-      </p>
-    )
-  }
-
-
-  if (
-    state === 'unsupported'
-  ) {
-    return (
-      <div
-        className="
-          mt-3
-          flex
-          items-start
-          gap-1.5
-          text-xs
-          text-base-content/50
-        "
-      >
-        <Smartphone
-          size={14}
-          className="mt-0.5 shrink-0"
+        <CircleAlert
+          size={13}
         />
 
-        Notifications non disponibles
-        dans ce navigateur.
-      </div>
+        Bloquées par l’appareil
+      </span>
     )
   }
 
+  if (state === 'unsupported') {
+    return (
+      <span
+        className="
+          mt-1
+          text-xs
+          text-base-content/45
+        "
+      >
+        Non disponibles
+      </span>
+    )
+  }
 
   return (
-    <p
+    <span
       className="
-        mt-3
+        mt-1
         text-xs
         text-base-content/45
       "
     >
       Notifications désactivées
-    </p>
+    </span>
   )
 }

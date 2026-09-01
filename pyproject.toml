@@ -28,5 +28,9 @@ dev = [
 where = ["app"]
 
 [tool.pytest.ini_options]
+markers = [
+    "real_auth: utilise le middleware d'authentification réel",
+]
+
 testpaths = ["tests"]
 pythonpath = ["app"]

@@ -194,3 +194,137 @@ export async function resetPushBadge(
     )
   }
 }
+
+
+export interface PushDevice {
+  id: string
+  device_name: string
+  browser: string
+  current: boolean
+  created_at: string
+  updated_at: string
+  badge_count: number
+}
+
+
+export interface PushPreferences {
+  systemEnabled: boolean
+  syncErrors: boolean
+  backupErrors: boolean
+}
+
+
+interface PushDevicesResponse {
+  devices: PushDevice[]
+}
+
+
+interface PushPreferencesResponse {
+  system_enabled: boolean
+  sync_errors: boolean
+  backup_errors: boolean
+}
+
+
+export async function fetchPushDevices(
+  endpoint: string,
+): Promise<PushDevice[]> {
+  const response = await fetch(
+    '/api/push/devices',
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type':
+          'application/json',
+      },
+      body: JSON.stringify({
+        endpoint,
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      'Impossible de charger les appareils.',
+    )
+  }
+
+  const data: PushDevicesResponse =
+    await response.json()
+
+  return data.devices
+}
+
+
+export async function fetchPushPreferences(
+  endpoint: string,
+): Promise<PushPreferences> {
+  const response = await fetch(
+    '/api/push/preferences/read',
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type':
+          'application/json',
+      },
+      body: JSON.stringify({
+        endpoint,
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      'Impossible de charger '
+      + 'les préférences.',
+    )
+  }
+
+  const data: PushPreferencesResponse =
+    await response.json()
+
+  return {
+    systemEnabled:
+      data.system_enabled,
+    syncErrors:
+      data.sync_errors,
+    backupErrors:
+      data.backup_errors,
+  }
+}
+
+
+export async function updatePushPreferences(
+  endpoint: string,
+  preferences: PushPreferences,
+): Promise<void> {
+  const response = await fetch(
+    '/api/push/preferences',
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type':
+          'application/json',
+      },
+      body: JSON.stringify({
+        endpoint,
+        system_enabled:
+          preferences.systemEnabled,
+        sync_errors:
+          preferences.syncErrors,
+        backup_errors:
+          preferences.backupErrors,
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      'Impossible d’enregistrer '
+      + 'les préférences.',
+    )
+  }
+}

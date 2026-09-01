@@ -50,6 +50,28 @@ class SqlPushSubscriptionRepository:
                 "les abonnements push."
             ) from exc
 
+    def get_by_endpoint(
+        self,
+        endpoint: str,
+    ) -> PushSubscription | None:
+        try:
+            return self.session.scalar(
+                select(
+                    PushSubscription
+                ).where(
+                    PushSubscription.endpoint
+                    == endpoint
+                )
+            )
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise PushSubscriptionRepositoryError(
+                "Impossible de charger "
+                "l'abonnement Push."
+            ) from exc
+
     def save(
         self,
         *,
@@ -201,4 +223,52 @@ class SqlPushSubscriptionRepository:
             raise PushSubscriptionRepositoryError(
                 "Impossible de remettre "
                 "le badge Push à zéro."
+            ) from exc
+
+
+    def update_preferences(
+        self,
+        *,
+        endpoint: str,
+        system_enabled: bool,
+        sync_errors: bool,
+        backup_errors: bool,
+    ) -> None:
+        try:
+            subscription = self.session.scalar(
+                select(
+                    PushSubscription
+                ).where(
+                    PushSubscription.endpoint
+                    == endpoint
+                )
+            )
+
+            if subscription is None:
+                raise PushSubscriptionRepositoryError(
+                    "Abonnement Push introuvable."
+                )
+
+            subscription.system_notifications_enabled = (
+                system_enabled
+            )
+            subscription.system_sync_errors_enabled = (
+                sync_errors
+            )
+            subscription.system_backup_errors_enabled = (
+                backup_errors
+            )
+
+            self.session.commit()
+
+        except PushSubscriptionRepositoryError:
+            self.session.rollback()
+            raise
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise PushSubscriptionRepositoryError(
+                "Impossible de modifier "
+                "les préférences Push."
             ) from exc

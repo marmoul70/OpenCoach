@@ -9,6 +9,10 @@ import {
 } from './components/navigation/AppNavigation'
 
 import {
+  OpenCoachLoadingScreen,
+} from './components/feedback/OpenCoachLoadingScreen'
+
+import {
   loadAthleteProfile,
   useAthleteProfile,
 } from './core/profile'
@@ -335,16 +339,12 @@ function App() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-base-200">
-        <div className="text-center">
-          <span className="loading loading-spinner loading-lg text-primary" />
-          <p className="mt-4 text-sm text-base-content/60">
-            Chargement du profil...
-          </p>
-        </div>
-      </main>
+      <OpenCoachLoadingScreen
+        message="Chargement de votre profil…"
+      />
     )
   }
+
 
   if (error) {
     return (

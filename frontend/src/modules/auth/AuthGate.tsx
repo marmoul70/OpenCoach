@@ -11,6 +11,10 @@ import {
 } from 'lucide-react'
 
 import {
+  OpenCoachLoadingScreen,
+} from '../../components/feedback/OpenCoachLoadingScreen'
+
+import {
   checkSession,
 } from './api'
 
@@ -57,9 +61,7 @@ export function AuthGate({
           )
         } catch {
           setState(
-            navigator.onLine
-              ? 'offline'
-              : 'offline',
+            'offline',
           )
         }
       },
@@ -130,7 +132,9 @@ export function AuthGate({
     state === 'loading'
   ) {
     return (
-      <OpenCoachSplash />
+      <OpenCoachLoadingScreen
+        message="Connexion à OpenCoach…"
+      />
     )
   }
 
@@ -167,62 +171,6 @@ export function AuthGate({
 }
 
 
-function OpenCoachSplash() {
-  return (
-    <main
-      className="
-        pwa-safe-screen
-        flex
-        min-h-[100dvh]
-        items-center
-        justify-center
-        bg-base-200
-        px-6
-      "
-    >
-      <div
-        className="
-          flex
-          flex-col
-          items-center
-          text-center
-        "
-      >
-        <img
-          src="/opencoach-logo.png"
-          alt="OpenCoach"
-          className="
-            h-32
-            w-auto
-            object-contain
-          "
-        />
-
-        <span
-          className="
-            loading
-            loading-spinner
-            loading-md
-            mt-6
-            text-primary
-          "
-        />
-
-        <p
-          className="
-            mt-3
-            text-sm
-            text-base-content/45
-          "
-        >
-          Préparation de votre espace…
-        </p>
-      </div>
-    </main>
-  )
-}
-
-
 function OfflineScreen({
   onRetry,
 }: {
@@ -236,46 +184,55 @@ function OfflineScreen({
         min-h-[100dvh]
         items-center
         justify-center
-        bg-base-200
-        px-5
+        bg-[#f5f7f6]
+        px-4
+        dark:bg-[#0b1014]
       "
     >
       <div
         className="
           w-full
-          max-w-sm
-          rounded-2xl
+          max-w-[340px]
+          rounded-[16px]
           border
-          border-base-300
-          bg-base-100
-          p-6
+          border-black/[0.07]
+          bg-white
+          p-5
           text-center
-          shadow-xl
+          shadow-[0_12px_36px_rgba(15,23,42,0.06)]
+          dark:border-white/[0.075]
+          dark:bg-[#151b1f]
+          dark:shadow-[0_14px_42px_rgba(0,0,0,0.22)]
         "
       >
         <div
           className="
             mx-auto
             flex
-            h-14
-            w-14
+            h-11
+            w-11
             items-center
             justify-center
-            rounded-2xl
-            bg-base-200
-            text-base-content/60
+            rounded-[11px]
+            bg-slate-100
+            text-slate-500
+            dark:bg-white/[0.055]
+            dark:text-slate-400
           "
         >
           <WifiOff
-            size={25}
+            className="h-5 w-5"
           />
         </div>
 
         <h1
           className="
-            mt-5
-            text-xl
+            mt-4
+            text-[17px]
             font-bold
+            tracking-[-0.025em]
+            text-slate-950
+            dark:text-white
           "
         >
           OpenCoach indisponible
@@ -283,10 +240,11 @@ function OfflineScreen({
 
         <p
           className="
-            mt-2
-            text-sm
-            leading-relaxed
-            text-base-content/50
+            mt-1.5
+            text-[11.5px]
+            leading-[17px]
+            text-slate-500
+            dark:text-slate-400
           "
         >
           Impossible de joindre OpenCoach.
@@ -296,18 +254,30 @@ function OfflineScreen({
         <button
           type="button"
           className="
-            btn
-            btn-primary
-            mt-5
+            mt-4
+            flex
+            h-10
             w-full
+            items-center
+            justify-center
             gap-2
+            rounded-[10px]
+            bg-emerald-600
+            px-4
+            text-[12px]
+            font-semibold
+            text-white
+            transition
+            hover:bg-emerald-700
+            dark:bg-emerald-500
+            dark:hover:bg-emerald-400
           "
           onClick={() => {
             void onRetry()
           }}
         >
           <RefreshCcw
-            size={16}
+            className="h-3.5 w-3.5"
           />
 
           Réessayer

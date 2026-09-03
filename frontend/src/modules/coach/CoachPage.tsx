@@ -9,8 +9,8 @@ import {
 } from 'react'
 
 import {
-  Modal,
-} from '../../components/ui/Modal'
+  SidePanel,
+} from '../../components/ui/SidePanel'
 
 import {
   useCoachToday,
@@ -743,18 +743,24 @@ export function CoachPage() {
         </section>
       </div>
 
-      {selectedTrainingSession && (
-        <Modal
-          title={
-            selectedTrainingSession.title
-          }
-          open
-          onClose={() => {
-            setSelectedSessionId(
-              null,
-            )
-          }}
-        >
+      <SidePanel
+        open={
+          Boolean(
+            selectedTrainingSession,
+          )
+        }
+        eyebrow="Coach"
+        title={
+          selectedTrainingSession?.title
+          ?? 'Détail de la séance'
+        }
+        onClose={() => {
+          setSelectedSessionId(
+            null,
+          )
+        }}
+      >
+        {selectedTrainingSession && (
           <TrainingDetails
             session={
               selectedTrainingSession
@@ -768,8 +774,8 @@ export function CoachPage() {
               )
             }}
           />
-        </Modal>
-      )}
+        )}
+      </SidePanel>
 
     </PageContainer>
   )

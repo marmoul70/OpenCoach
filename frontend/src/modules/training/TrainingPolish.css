@@ -1,0 +1,422 @@
+/*
+ * OpenCoach - Training visual polish
+ *
+ * Ajustements visuels uniquement.
+ * Structure et logique métier inchangées.
+ */
+
+
+/* ==========================================================
+   VARIABLES
+   ========================================================== */
+
+.training-polish__header,
+.training-polish__today,
+.training-polish__week {
+  --training-surface: #ffffff;
+  --training-soft: #f3f5f4;
+
+  --training-border:
+    rgba(15, 23, 42, 0.075);
+
+  --training-text: #12171a;
+  --training-muted: #667085;
+
+  --training-accent: #10b981;
+}
+
+
+/* ==========================================================
+   HEADER
+   ========================================================== */
+
+.training-polish__header {
+  margin-bottom: 12px !important;
+}
+
+
+/*
+ * La grande carte d'en-tête est conservée,
+ * mais devient plus légère.
+ */
+.training-polish__header
+> div:first-child {
+  border-color:
+    var(--training-border) !important;
+
+  border-radius: 13px !important;
+
+  box-shadow:
+    0 1px 2px
+    rgba(15, 23, 42, 0.025) !important;
+}
+
+
+/*
+ * Entraînement
+ */
+.training-polish__header h1 {
+  font-size: 23px !important;
+  line-height: 28px !important;
+
+  letter-spacing: -0.035em !important;
+}
+
+
+/*
+ * Textes secondaires.
+ */
+.training-polish__header p {
+  color:
+    var(--training-muted);
+}
+
+
+/*
+ * Navigation semaine.
+ */
+.training-polish__header button {
+  border-radius: 8px !important;
+}
+
+
+/*
+ * Badges / informations de phase.
+ */
+.training-polish__header .badge {
+  min-height: 19px !important;
+
+  padding:
+    1px
+    6px !important;
+
+  border-radius: 999px !important;
+
+  font-size: 8.5px !important;
+}
+
+
+/* ==========================================================
+   AUJOURD'HUI
+   ========================================================== */
+
+.training-polish__today {
+  border-radius: 13px !important;
+
+  border-color:
+    rgba(16, 185, 129, 0.18) !important;
+
+  /*
+   * On conserve le bloc sombre existant,
+   * qui fonctionne bien comme focus du jour.
+   */
+  box-shadow:
+    0 4px 16px
+    rgba(15, 23, 42, 0.055) !important;
+}
+
+
+/*
+ * Moins de padding.
+ */
+.training-polish__today {
+  padding:
+    12px !important;
+}
+
+
+/*
+ * Carte interne séance.
+ */
+.training-polish__today button {
+  border-radius: 9px !important;
+}
+
+
+/*
+ * Bouton Ajouter : + seulement.
+ */
+.training-polish__today
+button:has(svg[data-lucide="plus"]) {
+  width: 30px !important;
+  height: 30px !important;
+
+  min-height: 30px !important;
+
+  overflow: hidden;
+
+  gap: 0 !important;
+
+  padding: 0 !important;
+
+  font-size: 0 !important;
+
+  border-radius: 8px !important;
+}
+
+.training-polish__today
+button:has(svg[data-lucide="plus"]) svg {
+  width: 14px;
+  height: 14px;
+}
+
+
+/* ==========================================================
+   SEMAINE
+   ========================================================== */
+
+.training-polish__week
+> div:first-child {
+  margin-bottom: 7px !important;
+}
+
+.training-polish__week
+> div:first-child h2 {
+  font-size: 14px !important;
+  line-height: 18px !important;
+
+  font-weight: 700 !important;
+}
+
+.training-polish__week
+> div:first-child p {
+  margin-top: 1px !important;
+
+  font-size: 10.5px !important;
+
+  color:
+    var(--training-muted);
+}
+
+
+/* ==========================================================
+   CARTE JOUR
+   ========================================================== */
+
+.training-polish__day {
+  border-color:
+    var(--training-border) !important;
+
+  border-radius: 12px !important;
+
+  box-shadow:
+    0 1px 2px
+    rgba(15, 23, 42, 0.022) !important;
+
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+
+/*
+ * Réduction générale du volume vertical.
+ */
+.training-polish__day
+> div {
+  gap: 11px !important;
+
+  padding:
+    11px
+    12px !important;
+}
+
+
+/*
+ * Titres jours.
+ */
+.training-polish__day
+p[class*="uppercase"] {
+  font-size: 10px !important;
+
+  letter-spacing: 0.065em !important;
+}
+
+
+/* ==========================================================
+   CARTES DE SEANCE
+   ========================================================== */
+
+/*
+ * Toutes les cartes séance restent fonctionnellement identiques.
+ */
+.training-polish__day button {
+  box-shadow: none !important;
+}
+
+
+/*
+ * Les gros blocs internes deviennent légèrement plus plats.
+ */
+.training-polish__day
+button[class*="rounded-xl"] {
+  border-radius: 9px !important;
+}
+
+
+/*
+ * Nom séance.
+ */
+.training-polish__day h3 {
+  font-size: 12px !important;
+  line-height: 16px !important;
+
+  font-weight: 650 !important;
+}
+
+
+/*
+ * Métadonnées : durée / km / zone...
+ */
+.training-polish__day
+button p {
+  font-size: 10px !important;
+}
+
+
+/*
+ * Badges statuts.
+ */
+.training-polish__day .badge {
+  min-height: 18px !important;
+
+  padding:
+    1px
+    6px !important;
+
+  border-radius: 999px !important;
+
+  font-size: 8px !important;
+}
+
+
+/* ==========================================================
+   BOUTONS AJOUTER
+   ========================================================== */
+
+.training-polish__day
+button:has(svg[data-lucide="plus"]) {
+  width: 29px !important;
+  height: 29px !important;
+
+  min-height: 29px !important;
+
+  overflow: hidden;
+
+  gap: 0 !important;
+
+  padding: 0 !important;
+
+  border-radius: 8px !important;
+
+  font-size: 0 !important;
+}
+
+.training-polish__day
+button:has(svg[data-lucide="plus"]) svg {
+  width: 14px;
+  height: 14px;
+}
+
+
+/* ==========================================================
+   HOVER DESKTOP
+   ========================================================== */
+
+@media (hover: hover) and (pointer: fine) {
+
+  .training-polish__day:hover {
+    transform:
+      translateY(-2px);
+
+    border-color:
+      rgba(15, 23, 42, 0.11) !important;
+
+    box-shadow:
+      0 7px 18px
+      rgba(15, 23, 42, 0.045) !important;
+  }
+
+
+  .training-polish__day button:hover {
+    border-color:
+      rgba(15, 23, 42, 0.11) !important;
+  }
+
+}
+
+
+/* ==========================================================
+   MOBILE
+   ========================================================== */
+
+@media (max-width: 767px) {
+
+  .training-polish__header {
+    margin-bottom: 9px !important;
+  }
+
+
+  .training-polish__header h1 {
+    font-size: 21px !important;
+    line-height: 25px !important;
+  }
+
+
+  .training-polish__today {
+    padding:
+      10px !important;
+  }
+
+
+  .training-polish__day
+  > div {
+    gap: 9px !important;
+
+    padding:
+      10px !important;
+  }
+
+
+  .training-polish__day {
+    border-radius: 11px !important;
+  }
+
+}
+
+
+/* ==========================================================
+   DARK
+   ========================================================== */
+
+[data-theme="dark"]
+.training-polish__header,
+[data-theme="dark"]
+.training-polish__today,
+[data-theme="dark"]
+.training-polish__week {
+  --training-surface: #151b1f;
+  --training-soft: #192126;
+
+  --training-border:
+    rgba(255, 255, 255, 0.075);
+
+  --training-text: #eef2f3;
+  --training-muted: #91a0aa;
+}
+
+
+@media (hover: hover) and (pointer: fine) {
+
+  [data-theme="dark"]
+  .training-polish__day:hover {
+    border-color:
+      rgba(255, 255, 255, 0.11) !important;
+
+    box-shadow:
+      0 7px 18px
+      rgba(0, 0, 0, 0.15) !important;
+  }
+
+}

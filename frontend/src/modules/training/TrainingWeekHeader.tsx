@@ -1,13 +1,10 @@
 import {
   Check,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Clock3,
   Dumbbell,
   Moon,
   Route,
-  X,
 } from 'lucide-react'
 
 
@@ -61,9 +58,6 @@ export function TrainingWeekHeader({
 
   trajectoryMode,
 
-  targetRaceName,
-  targetRaceDate,
-  preparationStartDate,
 
   workCount,
   restCount,
@@ -76,9 +70,6 @@ export function TrainingWeekHeader({
   actualLoad,
   statusLabel,
 
-  completedCount,
-  remainingCount,
-  skippedCount,
 
   statsLoading,
   totalDistanceLabel,
@@ -116,24 +107,30 @@ export function TrainingWeekHeader({
       : phaseLabel ?? 'Préparation'
 
   return (
-    <header className="mb-4">
-      <div
-        className="
-          overflow-hidden
-          rounded-[14px]
-          border
-          border-black/[0.07]
-          bg-white
-          shadow-[0_1px_2px_rgba(15,23,42,0.025)]
-          dark:border-white/[0.075]
-          dark:bg-[#151b1f]
-        "
-      >
+    <header className="training-polish__header mb-4">
+        <div
+          className="
+            grid
+            grid-cols-1
+            gap-3
+            lg:grid-cols-12
+          "
+        >
 
-        {/* ==========================================
-            SEMAINE
-           ========================================== */}
-
+          <section
+            aria-label="Navigation de la semaine"
+            className="
+              overflow-hidden
+              rounded-[14px]
+              border
+              border-black/[0.07]
+              bg-white
+              shadow-[0_1px_2px_rgba(15,23,42,0.025)]
+              dark:border-white/[0.075]
+              dark:bg-[#151b1f]
+              lg:col-span-7
+            "
+          >
         <div className="p-3.5 sm:p-4">
 
           <div
@@ -410,42 +407,184 @@ export function TrainingWeekHeader({
                   </div>
 
 
-          {/* MÉTRIQUES PLANNING */}
+
+
+        </div>
+
+            <div
+              className="
+                border-t
+                border-black/[0.06]
+                dark:border-white/[0.07]
+              "
+            >
+        <div
+          className="
+            border-t
+            border-black/[0.06]
+            px-3.5
+            py-3
+            dark:border-white/[0.07]
+            sm:px-4
+          "
+        >
+          <div
+            className="
+              flex
+              items-end
+              justify-between
+              gap-3
+            "
+          >
+            <div>
+              <p
+                className="
+                  text-[10px]
+                  font-bold
+                  uppercase
+                  tracking-[0.12em]
+                  text-slate-400
+                  dark:text-slate-500
+                "
+              >
+                Phase d'entraînement
+              </p>
+
+              <p
+                className="
+                  mt-1
+                  text-[14px]
+                  font-semibold
+                  text-emerald-600
+                  dark:text-emerald-400
+                "
+              >
+                {phaseLabel ?? 'Base'}
+              </p>
+            </div>
+
+            {phaseWeekIndex !== undefined && (
+              <p
+                className="
+                  text-[11px]
+                  font-semibold
+                  text-slate-500
+                  dark:text-slate-400
+                "
+              >
+                Semaine {phaseWeekIndex}
+              </p>
+            )}
+          </div>
+
 
           <div
             className="
-              mt-3
-              grid
-              grid-cols-3
-              divide-x
-              divide-black/[0.06]
-              dark:divide-white/[0.07]
+              mt-2
+              h-[3px]
+              overflow-hidden
+              rounded-full
+              bg-slate-100
+              dark:bg-white/[0.06]
             "
           >
-            <PlanningMetric
-              icon={Route}
-              value={workCount}
-              label="Séances"
-            />
-
-            <PlanningMetric
-              icon={Moon}
-              value={restCount}
-              label="Repos"
-            />
-
-            <PlanningMetric
-              icon={Dumbbell}
-              value={strengthCount}
-              label="Renfo"
+            <div
+              className="
+                h-full
+                rounded-full
+                bg-emerald-500
+              "
+              style={{
+                width: phaseProgress(
+                  phaseWeekIndex,
+                ),
+              }}
             />
           </div>
+
+          <p
+            className="
+              mt-1.5
+              text-[10.5px]
+              text-slate-400
+              dark:text-slate-500
+            "
+          >
+            {phaseName}
+          </p>
         </div>
+            </div>
+
+          </section>
 
 
-        {/* ==========================================
-            CHARGE
-           ========================================== */}
+          <section
+            aria-label="Résumé de la semaine"
+            className="
+              overflow-hidden
+              rounded-[14px]
+              border
+              border-black/[0.07]
+              bg-white
+              shadow-[0_1px_2px_rgba(15,23,42,0.025)]
+              dark:border-white/[0.075]
+              dark:bg-[#151b1f]
+              lg:col-span-5
+            "
+          >
+
+            <div
+              className="
+                border-b
+                border-black/[0.06]
+                px-3.5
+                py-3
+                dark:border-white/[0.07]
+                sm:px-4
+              "
+            >
+              <p
+                className="
+                  text-[10px]
+                  font-bold
+                  uppercase
+                  tracking-[0.12em]
+                  text-slate-400
+                  dark:text-slate-500
+                "
+              >
+                Cette semaine
+              </p>
+
+              <div
+                className="
+                  mt-3
+                  grid
+                  grid-cols-3
+                  divide-x
+                  divide-black/[0.06]
+                  dark:divide-white/[0.07]
+                "
+              >
+                <PlanningMetric
+                  icon={Route}
+                  value={workCount}
+                  label="Séances"
+                />
+
+                <PlanningMetric
+                  icon={Moon}
+                  value={restCount}
+                  label="Repos"
+                />
+
+                <PlanningMetric
+                  icon={Dumbbell}
+                  value={strengthCount}
+                  label="Renfo"
+                />
+              </div>
+            </div>
 
         <div
           className="
@@ -562,298 +701,70 @@ export function TrainingWeekHeader({
           {/* RÉALISÉ / RESTANT / RATÉ */}
 
           <div
-            className="
-              mt-3
-              grid
-              grid-cols-3
-              divide-x
-              divide-black/[0.06]
-              dark:divide-white/[0.07]
-            "
-          >
-            <StatusMetric
-              icon={Check}
-              value={completedCount}
-              label="Réalisées"
-              tone="success"
-            />
+              className="
+                mt-2
+                grid
+                grid-cols-2
+                items-center
+                justify-items-center
+                divide-x
+                divide-black/[0.06]
+                dark:divide-white/[0.07]
+              "
+            >
+              <div className="
+                  training-general-stat
+                  flex
+                  min-h-[38px]
+                  w-full
+                  items-center
+                  justify-center
+                  py-0.5
+                  text-center
+                ">
+                <OverviewItem
+                icon={Route}
+                value={
+                  statsLoading
+                    ? '…'
+                    : totalDistanceLabel
+                }
+                label="Cette année"
+              />
+              </div>
 
-            <StatusMetric
-              icon={Clock3}
-              value={remainingCount}
-              label="À faire"
-              tone="neutral"
-            />
+              <div className="
+                  training-general-stat
+                  flex
+                  min-h-[38px]
+                  w-full
+                  items-center
+                  justify-center
+                  py-0.5
+                  text-center
+                ">
+                <OverviewItem
+                icon={Check}
+                value={
+                  statsLoading
+                    ? '…'
+                    : `${sessionsCount}`
+                }
+                label="Séances"
+              />
+              </div>
 
-            <StatusMetric
-              icon={X}
-              value={skippedCount}
-              label="Non faites"
-              tone="danger"
-            />
-          </div>
-        </div>
 
-
-        {/* ==========================================
-            PHASE
-           ========================================== */}
-
-        <div
-          className="
-            border-t
-            border-black/[0.06]
-            px-3.5
-            py-3
-            dark:border-white/[0.07]
-            sm:px-4
-          "
-        >
-          <div
-            className="
-              flex
-              items-end
-              justify-between
-              gap-3
-            "
-          >
-            <div>
-              <p
-                className="
-                  text-[10px]
-                  font-bold
-                  uppercase
-                  tracking-[0.12em]
-                  text-slate-400
-                  dark:text-slate-500
-                "
-              >
-                Phase d'entraînement
-              </p>
-
-              <p
-                className="
-                  mt-1
-                  text-[14px]
-                  font-semibold
-                  text-emerald-600
-                  dark:text-emerald-400
-                "
-              >
-                {phaseLabel ?? 'Base'}
-              </p>
             </div>
+        </div>
 
-            {phaseWeekIndex !== undefined && (
-              <p
-                className="
-                  text-[11px]
-                  font-semibold
-                  text-slate-500
-                  dark:text-slate-400
-                "
-              >
-                Semaine {phaseWeekIndex}
-              </p>
-            )}
-          </div>
+          </section>
 
-
-          <div
-            className="
-              mt-2
-              h-[3px]
-              overflow-hidden
-              rounded-full
-              bg-slate-100
-              dark:bg-white/[0.06]
-            "
-          >
-            <div
-              className="
-                h-full
-                rounded-full
-                bg-emerald-500
-              "
-              style={{
-                width: phaseProgress(
-                  phaseWeekIndex,
-                ),
-              }}
-            />
-          </div>
-
-          <p
-            className="
-              mt-1.5
-              text-[10.5px]
-              text-slate-400
-              dark:text-slate-500
-            "
-          >
-            {phaseName}
-          </p>
         </div>
 
 
-        {/* ==========================================
-            STATS SECONDAIRES
-           ========================================== */}
-
-        <details
-          className="
-            group
-            border-t
-            border-black/[0.06]
-            dark:border-white/[0.07]
-          "
-        >
-          <summary
-            className="
-              flex
-              cursor-pointer
-              list-none
-              items-center
-              justify-between
-              px-3.5
-              py-2.5
-              text-[11px]
-              font-medium
-              text-slate-500
-              dark:text-slate-400
-              sm:px-4
-            "
-          >
-            Statistiques générales
-
-            <ChevronDown
-              className="
-                h-3.5
-                w-3.5
-                transition-transform
-                group-open:rotate-180
-              "
-            />
-          </summary>
 
 
-          <div
-            className="
-              grid
-              grid-cols-2
-              border-t
-              border-black/[0.06]
-              divide-x
-              divide-black/[0.06]
-              dark:border-white/[0.07]
-              dark:divide-white/[0.07]
-            "
-          >
-            <OverviewItem
-              icon={Route}
-              value={
-                statsLoading
-                  ? '…'
-                  : totalDistanceLabel
-              }
-              label="Cette année"
-            />
-
-            <OverviewItem
-              icon={Check}
-              value={
-                statsLoading
-                  ? '…'
-                  : `${sessionsCount}`
-              }
-              label="Séances"
-            />
-
-
-            {targetRaceName
-              && targetRaceDate && (
-                <div
-                  className="
-                    col-span-2
-                    border-t
-                    border-black/[0.06]
-                    px-3.5
-                    py-2.5
-                    dark:border-white/[0.07]
-                    sm:px-4
-                  "
-                >
-                  <div
-                    className="
-                      flex
-                      items-center
-                      justify-between
-                      gap-3
-                    "
-                  >
-                    <div className="min-w-0">
-                      <p
-                        className="
-                          text-[9px]
-                          font-bold
-                          uppercase
-                          tracking-[0.12em]
-                          text-slate-400
-                        "
-                      >
-                        Prochaine course
-                      </p>
-
-                      <p
-                        className="
-                          mt-0.5
-                          truncate
-                          text-[11.5px]
-                          font-semibold
-                          text-slate-900
-                          dark:text-slate-100
-                        "
-                      >
-                        {targetRaceName}
-                      </p>
-                    </div>
-
-                    <span
-                      className="
-                        shrink-0
-                        text-[10px]
-                        text-slate-400
-                      "
-                    >
-                      {formatCompactDate(
-                        targetRaceDate,
-                      )}
-                    </span>
-                  </div>
-
-
-                  {trajectoryMode
-                    === 'maintenance'
-                    && preparationStartDate && (
-                      <p
-                        className="
-                          mt-1
-                          text-[9.5px]
-                          text-slate-400
-                          dark:text-slate-500
-                        "
-                      >
-                        Préparation spécifique à partir du{' '}
-                        {formatCompactDate(
-                          preparationStartDate,
-                        )}
-                      </p>
-                    )}
-                </div>
-              )}
-          </div>
-        </details>
-      </div>
     </header>
   )
 }
@@ -909,74 +820,6 @@ function PlanningMetric({
             font-medium
             uppercase
             tracking-[0.05em]
-            text-slate-400
-            dark:text-slate-500
-          "
-        >
-          {label}
-        </p>
-      </div>
-    </div>
-  )
-}
-
-
-function StatusMetric({
-  icon: Icon,
-  value,
-  label,
-  tone,
-}: {
-  icon: typeof Check
-  value: number
-  label: string
-  tone:
-    | 'success'
-    | 'neutral'
-    | 'danger'
-}) {
-  const iconClass =
-    tone === 'success'
-      ? 'text-emerald-500'
-      : tone === 'danger'
-        ? 'text-red-400'
-        : 'text-slate-400'
-
-  return (
-    <div
-      className="
-        flex
-        items-center
-        justify-center
-        gap-1.5
-        px-2
-      "
-    >
-      <Icon
-        className={[
-          'h-3 w-3',
-          iconClass,
-        ].join(' ')}
-      />
-
-      <div>
-        <p
-          className="
-            text-[15px]
-            font-bold
-            leading-none
-            tabular-nums
-            text-slate-900
-            dark:text-white
-          "
-        >
-          {value}
-        </p>
-
-        <p
-          className="
-            mt-1
-            text-[9.5px]
             text-slate-400
             dark:text-slate-500
           "
@@ -1078,25 +921,4 @@ function phaseProgress(
     )
 
   return `${percentage}%`
-}
-
-
-function formatCompactDate(
-  value: string,
-): string {
-  const date =
-    new Date(
-      `${value}T12:00:00`,
-    )
-
-  return new Intl.DateTimeFormat(
-    'fr-FR',
-    {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    },
-  ).format(
-    date,
-  )
 }

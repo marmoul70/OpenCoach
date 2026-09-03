@@ -22,8 +22,8 @@ import {
 } from '../../core/checkin'
 
 import {
-  Modal,
-} from '../../components/ui/Modal'
+  SidePanel,
+} from '../../components/ui/SidePanel'
 
 import {
   useToast,
@@ -120,12 +120,10 @@ export function DailyDecisionModal({
           ) {
             toast({
               type: 'success',
-              title: 'Adaptation appliquée',
+              title: 'Analyse terminée',
               message:
                 'OpenCoach a traité la séance du jour.',
             })
-
-            onClose()
           }
         } catch (reason) {
           startedRef.current =
@@ -149,7 +147,6 @@ export function DailyDecisionModal({
         state,
         onStateChanged,
         toast,
-        onClose,
       ],
     )
 
@@ -305,10 +302,11 @@ export function DailyDecisionModal({
 
 
   return (
-    <Modal
-      title="Adapter l’entraînement"
+    <SidePanel
       open={open}
       onClose={onClose}
+      eyebrow="Adaptation"
+      title="Adapter l’entraînement"
     >
       <div className="space-y-4">
 
@@ -546,7 +544,7 @@ export function DailyDecisionModal({
         )}
 
       </div>
-    </Modal>
+    </SidePanel>
   )
 }
 

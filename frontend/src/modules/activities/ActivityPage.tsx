@@ -23,8 +23,8 @@ import {
 
 
 import {
-  Modal,
-} from '../../components/ui/Modal'
+  SidePanel,
+} from '../../components/ui/SidePanel'
 
 import {
   fetchTrainingSessions,
@@ -1148,18 +1148,24 @@ export function ActivityPage() {
       </div>
 
 
-      {selectedSession && (
-        <Modal
-          title={
-            selectedSession.title
-          }
-          open
-          onClose={() =>
-            setSelectedSessionId(
-              null,
-            )
-          }
-        >
+      <SidePanel
+        open={
+          Boolean(
+            selectedSession,
+          )
+        }
+        eyebrow="Activité"
+        title={
+          selectedSession?.title
+          ?? 'Détail de la séance'
+        }
+        onClose={() =>
+          setSelectedSessionId(
+            null,
+          )
+        }
+      >
+        {selectedSession && (
           <TrainingDetails
             session={
               selectedSession
@@ -1187,8 +1193,8 @@ export function ActivityPage() {
               return result.analysis
             }}
           />
-        </Modal>
-      )}
+        )}
+      </SidePanel>
     </main>
   )
 }

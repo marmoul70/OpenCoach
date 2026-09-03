@@ -14,8 +14,8 @@ import {
 } from 'react'
 
 import {
-  Modal,
-} from '../../components/ui/Modal'
+  SidePanel,
+} from '../../components/ui/SidePanel'
 
 import {
   useRaces,
@@ -191,121 +191,22 @@ export function RaceForm({
 
 
   return (
-    <Modal
-      title="Ajouter une course"
+    <SidePanel
       open={open}
       onClose={
         handleClose
       }
+      eyebrow="Course"
+      title="Ajouter une course"
     >
       <form
         onSubmit={
           handleSubmit
         }
         className="
-          space-y-3
+          space-y-4
         "
       >
-
-        {/* ================================================
-            HERO
-            ================================================ */}
-
-        <section
-          className="
-            relative
-            overflow-hidden
-            rounded-[14px]
-            border
-            border-white/[0.07]
-            bg-[#141917]
-            p-5
-            text-white
-          "
-        >
-          <div
-            className="
-              pointer-events-none
-              absolute
-              -right-20
-              -top-24
-              h-52
-              w-52
-              rounded-full
-              bg-emerald-500/[0.11]
-              blur-3xl
-            "
-          />
-
-          <div className="relative">
-            <div
-              className="
-                flex
-                items-center
-                gap-2
-              "
-            >
-              <div
-                className="
-                  flex
-                  h-8
-                  w-8
-                  items-center
-                  justify-center
-                  rounded-[9px]
-                  bg-emerald-400/[0.10]
-                  text-emerald-300
-                "
-              >
-                <Flag
-                  className="
-                    h-4
-                    w-4
-                  "
-                />
-              </div>
-
-              <span
-                className="
-                  text-[9px]
-                  font-bold
-                  uppercase
-                  tracking-[0.12em]
-                  text-emerald-400
-                "
-              >
-                Nouvel objectif
-              </span>
-            </div>
-
-            <h2
-              className="
-                mt-4
-                text-[21px]
-                font-bold
-                tracking-[-0.03em]
-                text-white
-              "
-            >
-              Ajouter une course
-            </h2>
-
-            <p
-              className="
-                mt-1.5
-                max-w-xl
-                text-[12px]
-                leading-5
-                text-white/45
-              "
-            >
-              Définis la course, son niveau
-              de priorité et les données utiles
-              à la préparation.
-            </p>
-          </div>
-        </section>
-
 
         {/* ================================================
             IDENTITÉ
@@ -701,7 +602,7 @@ export function RaceForm({
           </button>
         </div>
       </form>
-    </Modal>
+    </SidePanel>
   )
 }
 

@@ -8,8 +8,8 @@ import {
 } from 'lucide-react'
 
 import {
-  Modal,
-} from '../../components/ui/Modal'
+  SidePanel,
+} from '../../components/ui/SidePanel'
 
 import {
   fetchTrainingStats,
@@ -75,6 +75,8 @@ import {
 import type {
   TrainingStats,
 } from './types'
+
+import './TrainingPolish.css'
 
 
 import {
@@ -621,7 +623,7 @@ export function TrainingWeek() {
       <div
         className="
           mx-auto
-          max-w-[1380px]
+          max-w-[1240px]
           px-3
           py-4
           sm:px-5
@@ -790,7 +792,7 @@ phaseLabel={
 
 
       {selectedSession && (
-        <Modal
+        <SidePanel
           title={
             selectedSession.title
           }
@@ -817,7 +819,7 @@ phaseLabel={
               return analysis
             }}
           />
-        </Modal>
+        </SidePanel>
       )}
 
 

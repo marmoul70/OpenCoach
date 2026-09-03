@@ -16,8 +16,8 @@ import {
 } from 'lucide-react'
 
 import {
-  Modal,
-} from '../../components/ui/Modal'
+  SidePanel,
+} from '../../components/ui/SidePanel'
 
 import {
   RaceDetails,
@@ -490,7 +490,8 @@ export function RacePage() {
 
 
       {selectedRace && (
-        <Modal
+        <SidePanel
+          eyebrow="Course"
           title={
             selectedRace.name
           }
@@ -511,7 +512,7 @@ export function RacePage() {
               )
             }
           />
-        </Modal>
+        </SidePanel>
       )}
     </main>
   )

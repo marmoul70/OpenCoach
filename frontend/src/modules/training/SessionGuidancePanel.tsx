@@ -340,82 +340,124 @@ function ExecutionStage({
     <section
       className="
         training-guidance-v3__stage
+        relative
+        pb-4
+        last:pb-0
       "
     >
       <div
         className="
-          mb-3
           flex
           items-center
-          gap-3
+          gap-2.5
         "
       >
         <span
           className={[
             (
-              'flex size-7 '
-              + 'items-center '
-              + 'justify-center '
-              + 'rounded-full '
-              + 'text-xs font-bold'
+              'relative z-10 '
+              + 'flex size-6 shrink-0 '
+              + 'items-center justify-center '
+              + 'rounded-full border '
+              + 'text-[9.5px] font-bold'
             ),
             emphasized
               ? (
-                'bg-emerald-500 '
-                + 'text-white'
-              )
+                  'border-emerald-500 '
+                  + 'bg-emerald-500 '
+                  + 'text-white'
+                )
               : (
-                'bg-slate-100 dark:bg-white/[0.06] '
-                + 'text-slate-500 dark:text-slate-400'
-              ),
+                  'border-slate-200 '
+                  + 'bg-white '
+                  + 'text-slate-500 '
+                  + 'dark:border-white/[0.10] '
+                  + 'dark:bg-[#151b1f] '
+                  + 'dark:text-slate-400'
+                ),
           ].join(' ')}
         >
           {number}
         </span>
 
         <h3
-          className="
-            font-bold
-            text-slate-900 dark:text-slate-100
-          "
+          className={[
+            (
+              'text-[11.5px] '
+              + 'font-bold uppercase '
+              + 'tracking-[0.055em]'
+            ),
+            emphasized
+              ? (
+                  'text-emerald-700 '
+                  + 'dark:text-emerald-400'
+                )
+              : (
+                  'text-slate-800 '
+                  + 'dark:text-slate-200'
+                ),
+          ].join(' ')}
         >
           {title}
         </h3>
       </div>
 
-      {steps.length > 0 ? (
-        <div className="space-y-3">
-          {steps.map(
-            (
-              step,
-              index,
-            ) => (
-              <GuidanceStepCard
-                key={
-                  `${step.title}-${index}`
-                }
-                step={step}
-                emphasized={
-                  emphasized
-                }
-              />
-            ),
-          )}
-        </div>
-      ) : (
-        <p
-          className="
-            text-sm
-            text-slate-400 dark:text-slate-500
-          "
-        >
-          Aucune consigne spécifique.
-        </p>
-      )}
+
+      <div
+        aria-hidden="true"
+        className="
+          absolute
+          bottom-0
+          left-[11.5px]
+          top-7
+          w-px
+          bg-slate-200
+          dark:bg-white/[0.07]
+        "
+      />
+
+
+      <div
+        className="
+          ml-8
+          mt-1.5
+        "
+      >
+        {steps.length > 0 ? (
+          <div className="space-y-2.5">
+            {steps.map(
+              (
+                step,
+                index,
+              ) => (
+                <GuidanceStepCard
+                  key={
+                    `${step.title}-${index}`
+                  }
+                  step={step}
+                  stageTitle={title}
+                  emphasized={
+                    emphasized
+                  }
+                />
+              ),
+            )}
+          </div>
+        ) : (
+          <p
+            className="
+              text-[11px]
+              text-slate-400
+              dark:text-slate-500
+            "
+          >
+            Aucune consigne spécifique.
+          </p>
+        )}
+      </div>
     </section>
   )
 }
-
 
 function GuidanceSection({
   title,
@@ -472,9 +514,11 @@ function GuidanceSection({
 
 function GuidanceStepCard({
   step,
+  stageTitle,
   emphasized,
 }: {
   step: SessionGuidanceStep
+  stageTitle: string
   emphasized: boolean
 }) {
   const hasIntervalStructure = (
@@ -487,262 +531,268 @@ function GuidanceStepCard({
     && step.repetition_slow_seconds != null
   )
 
+  const showTitle =
+    !isRedundantStepTitle(
+      stageTitle,
+      step.title,
+    )
+
   return (
     <div
       className={[
-        'training-guidance-v3__step',
+        (
+          'training-guidance-v3__step '
+          + 'min-w-0'
+        ),
         emphasized
           ? (
-              'border-emerald-500/20 dark:border-emerald-400/20 '
-              + 'bg-emerald-500/[0.045] dark:bg-emerald-400/[0.055]'
+              'rounded-[10px] '
+              + 'border border-emerald-500/15 '
+              + 'bg-emerald-500/[0.025] '
+              + 'px-3 py-2.5 '
+              + 'dark:border-emerald-400/15 '
+              + 'dark:bg-emerald-400/[0.03]'
             )
           : (
-              'border-black/[0.06] dark:border-white/[0.07] '
-              + 'bg-white dark:bg-[#141a1e]'
+              'py-1'
             ),
       ].join(' ')}
     >
       <div
         className="
           flex
-          flex-wrap
           items-start
           justify-between
-          gap-2
+          gap-3
         "
       >
-        <p
-          className="
-            font-semibold
-            text-slate-900 dark:text-slate-100
-          "
-        >
-          {step.title}
-        </p>
+        <div className="min-w-0">
+          {showTitle && (
+            <p
+              className="
+                text-[12px]
+                font-semibold
+                leading-5
+                text-slate-900
+                dark:text-slate-100
+              "
+            >
+              {step.title}
+            </p>
+          )}
+
+          {step.description && (
+            <p
+              className={[
+                (
+                  'text-[10.5px] leading-[1.5] '
+                  + 'text-slate-500 '
+                  + 'dark:text-slate-400'
+                ),
+                showTitle
+                  ? 'mt-1'
+                  : '',
+              ].join(' ')}
+            >
+              {step.description}
+            </p>
+          )}
+        </div>
+
 
         {step.duration_minutes != null && (
           <span
             className="
               inline-flex
+              shrink-0
               items-center
               gap-1
-              rounded-full
-              border
-              border-black/[0.08]
-              bg-slate-50
-              px-2.5
-              py-1
-              text-[10.5px]
-              font-medium
+              rounded-[6px]
+              bg-slate-100
+              px-1.5
+              py-0.5
+              text-[9px]
+              font-semibold
               text-slate-500
-              dark:border-white/[0.09]
-              dark:bg-white/[0.035]
+              dark:bg-white/[0.055]
               dark:text-slate-400
             "
           >
             <Clock3
-              size={11}
+              size={10}
             />
 
-            {
-              step.duration_minutes
-            } min
+            {step.duration_minutes} min
           </span>
         )}
       </div>
 
 
-      <p
-        className="
-          mt-2
-          text-sm
-          leading-6
-          text-slate-500 dark:text-slate-400
-        "
-      >
-        {step.description}
-      </p>
-
-
       {hasIntervalStructure && (
         <div
           className="
-            mt-4
-            overflow-hidden
-            rounded-xl
-            border
-            border-black/[0.06] dark:border-white/[0.07]
-            bg-white dark:bg-[#141a1e]
+            mt-2.5
+            border-t
+            border-black/[0.055]
+            pt-2.5
+            dark:border-white/[0.06]
           "
         >
-          <div className="p-3">
-            <p
-              className="
-                text-xs
-                font-semibold
-                uppercase
-                tracking-wide
-                text-emerald-600 dark:text-emerald-400
-              "
-            >
-              Effort
-            </p>
-
-            <div
-              className="
-                mt-2
-                flex
-                flex-wrap
-                items-baseline
-                gap-x-3
-                gap-y-1
-              "
-            >
-              <span
+          <div
+            className="
+              flex
+              flex-wrap
+              items-baseline
+              justify-between
+              gap-x-3
+              gap-y-1
+            "
+          >
+            <div>
+              <p
                 className="
-                  text-base
+                  text-[8.5px]
                   font-bold
-                  text-slate-900 dark:text-slate-100
+                  uppercase
+                  tracking-[0.09em]
+                  text-emerald-600
+                  dark:text-emerald-400
+                "
+              >
+                Effort
+              </p>
+
+              <p
+                className="
+                  mt-0.5
+                  text-[12px]
+                  font-semibold
+                  text-slate-900
+                  dark:text-slate-100
                 "
               >
                 {step.work_distance_meters} m
                 {' '}
-                par répétition
-              </span>
-
-              {hasRepetitionDuration && (
-                <span
-                  className="
-                    text-sm
-                    font-medium
-                    text-slate-500 dark:text-slate-400
-                  "
-                >
-                  {
-                    formatDuration(
-                      step.repetition_fast_seconds!,
-                    )
-                  }
-                  {'–'}
-                  {
-                    formatDuration(
-                      step.repetition_slow_seconds!,
-                    )
-                  }
-                </span>
-              )}
+                / répétition
+              </p>
             </div>
 
-            {step.intensity_targets.length > 0 && (
-              <IntensityTargets
-                targets={
-                  step.intensity_targets
-                }
-              />
-            )}
 
-            {(
-              step.intensity_targets.length === 0
-              && (
-                step.intensity_target
-                || step.heart_rate_target
-              )
-            ) && (
-              <div
+            {hasRepetitionDuration && (
+              <p
                 className="
-                  mt-3
-                  flex
-                  flex-wrap
-                  gap-2
+                  text-[11px]
+                  font-semibold
+                  text-slate-500
+                  dark:text-slate-400
                 "
               >
-                {step.intensity_target && (
-                  <span
-                    className="
-                      inline-flex
-                      items-center
-                      rounded-full
-                      border
-                      border-emerald-500/20
-                      bg-emerald-500/[0.06]
-                      px-2.5
-                      py-1
-                      text-[10.5px]
-                      font-semibold
-                      text-emerald-700
-                      dark:border-emerald-400/20
-                      dark:bg-emerald-400/[0.07]
-                      dark:text-emerald-300
-                    "
-                  >
-                    Intensité · {
-                      formatIntensity(
-                        step.intensity_target,
-                      )
-                    }
-                  </span>
-                )}
-
-                {step.heart_rate_target && (
-                  <span
-                    className="
-                      inline-flex
-                      items-center
-                      rounded-full
-                      border
-                      border-sky-500/20
-                      bg-sky-500/[0.06]
-                      px-2.5
-                      py-1
-                      text-[10.5px]
-                      font-semibold
-                      text-sky-700
-                      dark:border-sky-400/20
-                      dark:bg-sky-400/[0.07]
-                      dark:text-sky-300
-                    "
-                  >
-                    FC · {
-                      step.heart_rate_target
-                    }
-                  </span>
-                )}
-              </div>
+                {
+                  formatDuration(
+                    step.repetition_fast_seconds!,
+                  )
+                }
+                {'–'}
+                {
+                  formatDuration(
+                    step.repetition_slow_seconds!,
+                  )
+                }
+              </p>
             )}
           </div>
+
+
+          {step.intensity_targets.length > 0 && (
+            <IntensityTargets
+              targets={
+                step.intensity_targets
+              }
+            />
+          )}
+
+
+          {(
+            step.intensity_targets.length === 0
+            && (
+              step.intensity_target
+              || step.heart_rate_target
+            )
+          ) && (
+            <div
+              className="
+                mt-2.5
+                flex
+                flex-wrap
+                gap-x-4
+                gap-y-1.5
+              "
+            >
+              {step.intensity_target && (
+                <CompactTarget
+                  label="Intensité"
+                  value={
+                    formatIntensity(
+                      step.intensity_target,
+                    )
+                  }
+                />
+              )}
+
+              {step.heart_rate_target && (
+                <CompactTarget
+                  label="FC"
+                  value={
+                    step.heart_rate_target
+                  }
+                />
+              )}
+            </div>
+          )}
+
 
           {step.recovery_description && (
             <div
               className="
+                mt-1.5
+                flex
+                flex-wrap
+                items-center
+                gap-1.5
                 border-t
-                border-black/[0.06] dark:border-white/[0.07]
-                bg-slate-50/80 dark:bg-white/[0.025]
-                px-3
-                py-3
+                border-black/[0.055]
+                pt-2
+                dark:border-white/[0.06]
               "
             >
-              <p
+              <span
                 className="
-                  text-xs
-                  font-semibold
+                  rounded-[5px]
+                  bg-emerald-500/[0.08]
+                  px-1.5
+                  py-0.5
+                  text-[8.5px]
+                  font-bold
                   uppercase
-                  tracking-wide
-                  text-slate-500 dark:text-slate-400
+                  tracking-[0.035em]
+                  text-emerald-700
+                  dark:bg-emerald-400/[0.08]
+                  dark:text-emerald-400
                 "
               >
-                Récupération entre les répétitions
-              </p>
+                Récupération
+              </span>
 
-              <p
+              <span
                 className="
-                  mt-1
-                  text-base
-                  font-bold
-                  text-slate-900 dark:text-slate-100
+                  text-[10.5px]
+                  font-semibold
+                  text-slate-700
+                  dark:text-slate-200
                 "
               >
                 {step.recovery_description}
-              </p>
+              </span>
             </div>
           )}
         </div>
@@ -755,27 +805,35 @@ function GuidanceStepCard({
       ) && (
         <div
           className="
-            mt-3
-            rounded-xl
-            bg-slate-50 dark:bg-white/[0.035]
-            px-3
-            py-2.5
+            mt-2.5
+            flex
+            items-baseline
+            justify-between
+            gap-3
+            border-t
+            border-black/[0.055]
+            pt-2
+            dark:border-white/[0.06]
           "
         >
-          <p
+          <span
             className="
-              text-xs
-              text-slate-400 dark:text-slate-500
+              text-[9px]
+              font-semibold
+              uppercase
+              tracking-[0.06em]
+              text-slate-400
             "
           >
-            Cible par répétition
-          </p>
+            Cible
+          </span>
 
-          <p
+          <span
             className="
-              mt-0.5
+              text-[11.5px]
               font-semibold
-              text-slate-900 dark:text-slate-100
+              text-slate-800
+              dark:text-slate-200
             "
           >
             {
@@ -789,7 +847,7 @@ function GuidanceStepCard({
                 step.repetition_slow_seconds!,
               )
             }
-          </p>
+          </span>
         </div>
       )}
 
@@ -808,98 +866,49 @@ function GuidanceStepCard({
 
       {(
         !hasIntervalStructure
+        && step.intensity_targets.length === 0
         && (
-          step.intensity_targets.length === 0
-          && (
-            step.intensity_target
-            || step.heart_rate_target
-            || step.recovery_description
-          )
+          step.intensity_target
+          || step.heart_rate_target
+          || step.recovery_description
         )
       ) && (
         <div
           className="
-            mt-3
+            mt-2
             flex
             flex-wrap
-            gap-2
+            gap-x-4
+            gap-y-1.5
           "
         >
           {step.intensity_target && (
-            <span
-              className="
-                inline-flex
-                items-center
-                rounded-full
-                border
-                border-emerald-500/20
-                bg-emerald-500/[0.06]
-                px-2.5
-                py-1
-                text-[10.5px]
-                font-semibold
-                text-emerald-700
-                dark:border-emerald-400/20
-                dark:bg-emerald-400/[0.07]
-                dark:text-emerald-300
-              "
-            >
-              Intensité · {
+            <CompactTarget
+              label="Intensité"
+              value={
                 formatIntensity(
                   step.intensity_target,
                 )
               }
-            </span>
+            />
           )}
 
           {step.heart_rate_target && (
-            <span
-              className="
-                inline-flex
-                items-center
-                rounded-full
-                border
-                border-sky-500/20
-                bg-sky-500/[0.06]
-                px-2.5
-                py-1
-                text-[10.5px]
-                font-semibold
-                text-sky-700
-                dark:border-sky-400/20
-                dark:bg-sky-400/[0.07]
-                dark:text-sky-300
-              "
-            >
-              FC · {
+            <CompactTarget
+              label="FC"
+              value={
                 step.heart_rate_target
               }
-            </span>
+            />
           )}
 
           {step.recovery_description && (
-            <span
-              className="
-                inline-flex
-                items-center
-                rounded-full
-                border
-                border-black/[0.08]
-                bg-slate-50
-                px-2.5
-                py-1
-                text-[10.5px]
-                font-medium
-                text-slate-500
-                dark:border-white/[0.09]
-                dark:bg-white/[0.035]
-                dark:text-slate-400
-              "
-            >
-              Récupération · {
+            <CompactTarget
+              label="Récupération"
+              value={
                 step.recovery_description
               }
-            </span>
+            />
           )}
         </div>
       )}
@@ -907,6 +916,98 @@ function GuidanceStepCard({
   )
 }
 
+
+function CompactTarget({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <span
+      className="
+        text-[10px]
+        text-slate-500
+        dark:text-slate-400
+      "
+    >
+      <span
+        className="
+          font-semibold
+          text-slate-700
+          dark:text-slate-300
+        "
+      >
+        {label}
+      </span>
+
+      {' · '}
+
+      {value}
+    </span>
+  )
+}
+
+
+function isRedundantStepTitle(
+  stageTitle: string,
+  stepTitle: string,
+): boolean {
+  const normalize = (
+    value: string,
+  ) => (
+    value
+      .normalize('NFD')
+      .replace(
+        /[\u0300-\u036f]/g,
+        '',
+      )
+      .trim()
+      .toLowerCase()
+  )
+
+  const stage =
+    normalize(
+      stageTitle,
+    )
+
+  const step =
+    normalize(
+      stepTitle,
+    )
+
+
+  if (stage === step) {
+    return true
+  }
+
+
+  if (
+    stage === 'echauffement'
+    && (
+      step === 'course facile'
+      || step === 'mise en route'
+    )
+  ) {
+    return true
+  }
+
+
+  if (
+    stage === 'retour au calme'
+    && (
+      step === 'course facile'
+      || step === 'footing facile'
+      || step === 'recuperation'
+    )
+  ) {
+    return true
+  }
+
+
+  return false
+}
 
 function IntensityTargets({
   targets,
@@ -934,88 +1035,139 @@ function IntensityTargets({
       === 'rpe',
   )
 
+  const values = [
+    heartRate
+      ? {
+          title: 'FC',
+          value: formatRange(
+            heartRate.minimum,
+            heartRate.maximum,
+            'bpm',
+          ),
+        }
+      : null,
+
+    vma
+      ? {
+          title: 'VMA',
+          value: formatRange(
+            vma.minimum,
+            vma.maximum,
+            '%',
+          ),
+        }
+      : null,
+
+    (
+      vma?.speed_min_kmh != null
+      && vma.speed_max_kmh != null
+    )
+      ? {
+          title: 'Vitesse',
+          value: (
+            `${formatDecimal(
+              vma.speed_min_kmh,
+            )}–${formatDecimal(
+              vma.speed_max_kmh,
+            )} km/h`
+          ),
+        }
+      : null,
+
+    (
+      vma?.pace_fastest_seconds_per_km != null
+      && vma.pace_slowest_seconds_per_km != null
+    )
+      ? {
+          title: 'Allure',
+          value: (
+            `${formatPace(
+              vma.pace_slowest_seconds_per_km,
+            )}–${formatPace(
+              vma.pace_fastest_seconds_per_km,
+            )}/km`
+          ),
+        }
+      : null,
+
+    rpe
+      ? {
+          title: 'Effort',
+          value: formatRange(
+            rpe.minimum,
+            rpe.maximum,
+            '/10',
+          ),
+        }
+      : null,
+  ].filter(
+    (
+      item,
+    ): item is {
+      title: string
+      value: string
+    } => item !== null,
+  )
+
   return (
     <div
       className="
-        mt-4
-        grid gap-2
-        sm:grid-cols-2
+        mt-2.5
+        flex
+        flex-wrap
+        items-center
+        gap-x-2
+        gap-y-1.5
+        border-t
+        border-black/[0.055]
+        pt-2.5
+        dark:border-white/[0.06]
       "
     >
-      {heartRate && (
-        <IntensityValue
-          title="Fréquence cardiaque"
-          value={
-            formatRange(
-              heartRate.minimum,
-              heartRate.maximum,
-              'bpm',
-            )
-          }
-        />
-      )}
-
-      {vma && (
-        <IntensityValue
-          title="VMA"
-          value={
-            formatRange(
-              vma.minimum,
-              vma.maximum,
-              '%',
-            )
-          }
-        />
-      )}
-
-      {vma?.speed_min_kmh
-        != null
-        && vma.speed_max_kmh
-        != null && (
-          <IntensityValue
-            title="Vitesse"
-            value={
-              `${formatDecimal(
-                vma.speed_min_kmh,
-              )}–${formatDecimal(
-                vma.speed_max_kmh,
-              )} km/h`
+      {values.map(
+        (
+          item,
+          index,
+        ) => (
+          <div
+            key={
+              item.title
             }
-          />
-        )}
+            className="
+              flex
+              items-center
+              gap-2
+            "
+          >
+            {index > 0 && (
+              <span
+                aria-hidden="true"
+                className="
+                  hidden
+                  text-[9px]
+                  text-slate-300
+                  sm:inline
+                  dark:text-slate-600
+                "
+              >
+                •
+              </span>
+            )}
 
-      {vma?.pace_fastest_seconds_per_km
-        != null
-        && vma.pace_slowest_seconds_per_km
-        != null && (
-          <IntensityValue
-            title="Allure"
-            value={
-              `${formatPace(
-                vma.pace_slowest_seconds_per_km,
-              )}–${formatPace(
-                vma.pace_fastest_seconds_per_km,
-              )} /km`
-            }
-          />
-        )}
-
-      {rpe && (
-        <IntensityValue
-          title="Effort perçu"
-          value={
-            formatRange(
-              rpe.minimum,
-              rpe.maximum,
-              '/10',
-            )
-          }
-        />
+            <IntensityValue
+              title={
+                item.title
+              }
+              value={
+                item.value
+              }
+            />
+          </div>
+        ),
       )}
     </div>
   )
 }
-
 
 function IntensityValue({
   title,
@@ -1027,33 +1179,43 @@ function IntensityValue({
   return (
     <div
       className="
-        rounded-xl
-        bg-slate-50 dark:bg-white/[0.035]
-        px-3 py-2.5
+        inline-flex
+        items-center
+        gap-1.5
+        whitespace-nowrap
       "
     >
-      <p
+      <span
         className="
-          text-xs
-          text-slate-400 dark:text-slate-500
+          rounded-[5px]
+          bg-slate-100
+          px-1.5
+          py-0.5
+          text-[8.5px]
+          font-bold
+          uppercase
+          tracking-[0.035em]
+          text-slate-500
+          dark:bg-white/[0.055]
+          dark:text-slate-400
         "
       >
         {title}
-      </p>
+      </span>
 
-      <p
+      <span
         className="
-          mt-0.5
+          text-[10.5px]
           font-semibold
-          text-slate-900 dark:text-slate-100
+          text-slate-700
+          dark:text-slate-200
         "
       >
         {value}
-      </p>
+      </span>
     </div>
   )
 }
-
 
 function BulletList({
   values,

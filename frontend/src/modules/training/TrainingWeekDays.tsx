@@ -59,6 +59,7 @@ export function TrainingWeekDays({
   return (
     <section
       aria-label="Planning de la semaine"
+      className="training-polish__week"
     >
       <div
         className="
@@ -195,7 +196,7 @@ function DayRow({
     <article
       className={[
         (
-          'overflow-hidden rounded-[14px] '
+          'training-polish__day relative overflow-hidden rounded-[14px] '
           + 'border bg-white '
           + 'shadow-[0_1px_2px_rgba(15,23,42,0.025)] '
           + 'dark:bg-[#151b1f]'
@@ -216,8 +217,10 @@ function DayRow({
           grid
           gap-3
           p-3
-          md:grid-cols-[125px_minmax(0,1fr)_auto]
-          md:items-start
+          pr-14
+          md:grid-cols-[125px_minmax(0,1fr)_48px]
+          md:items-stretch
+          md:pr-3
         "
       >
         <DayHeading
@@ -275,8 +278,20 @@ function DayRow({
 
         <div
           className="
-            flex
-            md:justify-end
+            absolute
+            right-3
+            top-3
+            z-10
+
+            md:static
+            md:flex
+            md:h-full
+            md:items-center
+            md:justify-center
+            md:border-l
+            md:border-black/[0.06]
+            md:pl-3
+            md:dark:border-white/[0.06]
           "
         >
           <button
@@ -291,13 +306,19 @@ function DayRow({
               px-2.5
               text-[12px]
               font-medium
-              text-slate-400
+              border
+              border-emerald-500/40
+              bg-transparent
+              text-emerald-600
               transition
-              hover:bg-slate-100
-              hover:text-slate-700
-              dark:text-slate-500
-              dark:hover:bg-white/[0.05]
-              dark:hover:text-slate-300
+              hover:border-emerald-500/60
+              hover:bg-emerald-500/[0.06]
+              hover:text-emerald-700
+              dark:border-emerald-400/35
+              dark:text-emerald-400
+              dark:hover:border-emerald-400/55
+              dark:hover:bg-emerald-400/[0.08]
+              dark:hover:text-emerald-300
             "
           >
             <Plus
@@ -537,6 +558,9 @@ function SessionRow({
       type="button"
       onClick={onOpen}
       className={[
+        sessionVisualClass(
+          session,
+        ),
         (
           'flex w-full flex-col gap-2.5 '
           + 'rounded-[10px] border '
@@ -695,10 +719,14 @@ function SessionRow({
       <div
         className="
           flex
-          shrink-0
           flex-wrap
           items-center
-          gap-1.5
+          gap-x-2
+          gap-y-1
+          text-[11px]
+          text-slate-500
+          dark:text-slate-400
+          sm:justify-end
         "
       >
         <MetricPill
@@ -742,6 +770,78 @@ function SessionRow({
   )
 }
 
+
+
+function sessionVisualClass(
+  session: TrainingSession,
+): string {
+  const signature = [
+    session.type,
+    session.sportType,
+    session.title,
+    session.intensity ?? '',
+  ]
+    .join(' ')
+    .toLowerCase()
+
+  if (
+    signature.includes('strength')
+    || signature.includes('renfo')
+    || signature.includes('muscu')
+  ) {
+    return (
+      'border-l-[3px] '
+      + 'border-l-sky-400/70 '
+      + 'dark:border-l-sky-400/60'
+    )
+  }
+
+  if (
+    signature.includes('long')
+    || signature.includes('trail')
+  ) {
+    return (
+      'border-l-[3px] '
+      + 'border-l-orange-500/65 '
+      + 'dark:border-l-orange-400/60'
+    )
+  }
+
+  if (
+    signature.includes('interval')
+    || signature.includes('fraction')
+    || signature.includes('threshold')
+    || signature.includes('seuil')
+    || signature.includes('tempo')
+    || signature.includes('vo2')
+    || signature.includes('vma')
+  ) {
+    return (
+      'border-l-[3px] '
+      + 'border-l-amber-400/75 '
+      + 'dark:border-l-amber-400/65'
+    )
+  }
+
+  if (
+    signature.includes('easy')
+    || signature.includes('endurance')
+    || signature.includes('recovery')
+    || signature.includes('récup')
+  ) {
+    return (
+      'border-l-[3px] '
+      + 'border-l-emerald-500/60 '
+      + 'dark:border-l-emerald-400/55'
+    )
+  }
+
+  return (
+    'border-l-[3px] '
+    + 'border-l-slate-300/80 '
+    + 'dark:border-l-slate-600'
+  )
+}
 
 function SessionStatusLabel({
   status,

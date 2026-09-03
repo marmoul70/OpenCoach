@@ -10,7 +10,6 @@ import {
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from 'react'
 
 import {
@@ -37,6 +36,10 @@ import type {
 } from './sessionGuidanceApi'
 
 import {
+  SidePanelSection,
+} from '../../components/ui/SidePanelSection'
+
+import {
   SessionGuidancePanel,
 } from './SessionGuidancePanel'
 import {
@@ -59,6 +62,15 @@ export function TrainingDetails({
   const {
     toast,
   } = useToast()
+
+  const [
+    openSection,
+    setOpenSection,
+  ] = useState<string | null>(
+    session.status === 'completed'
+      ? 'debrief'
+      : 'training',
+  )
 
   const debriefRef =
     useRef<HTMLDivElement | null>(
@@ -144,6 +156,18 @@ export function TrainingDetails({
     )
   }, [
     session.activityId,
+  ])
+
+
+  useEffect(() => {
+    setOpenSection(
+      session.status === 'completed'
+        ? 'debrief'
+        : 'training',
+    )
+  }, [
+    session.id,
+    session.status,
   ])
 
 
@@ -379,8 +403,20 @@ export function TrainingDetails({
 
 
   return (
-    <div className="training-details-v3">
-      <div className="training-details-v3__hero">
+    <div
+      className="
+        training-details-v3
+        space-y-3
+      "
+    >
+      <section
+        className="
+          border-b
+          border-black/[0.06]
+          pb-3
+          dark:border-white/[0.07]
+        "
+      >
         <SessionHeader
           session={session}
         />
@@ -389,286 +425,233 @@ export function TrainingDetails({
           session={session}
           guidance={guidance}
         />
-      </div>
+      </section>
 
 
-      <CollapseSection
-        title="Débriefing"
-        subtitle={
-          debrief
-            ? 'Analyse du coach disponible'
-            : 'Séance non réalisée'
-        }
-        preferredOpen={
-          Boolean(debrief)
-        }
-      >
-        <div
-          ref={
-            debriefRef
+      {session.status === 'completed' && (
+        <SidePanelSection
+          sectionId="debrief"
+          eyebrow="Analyse"
+          title="Débriefing OpenCoach"
+          open={
+            openSection === 'debrief'
           }
-          className="
-            scroll-mt-4
-          "
+          onOpenChange={
+            setOpenSection
+          }
         >
-          {loadingDebrief ? (
-            <div
-              className="
-                flex
-                min-h-24
-                items-center
-                justify-center
-              "
-            >
-              <span
-                className="
-                  h-5
-                  w-5
-                  animate-spin
-                  rounded-full
-                  border-2
-                  border-slate-200
-                  border-t-emerald-500
-                  dark:border-white/[0.08]
-                  dark:border-t-emerald-400
-                "
+          <div
+            ref={debriefRef}
+            className="
+              scroll-mt-4
+            "
+          >
+            {loadingDebrief ? (
+              <SectionLoader />
+            ) : debrief ? (
+              <DebriefSection
+                loading={false}
+                debrief={debrief}
               />
-            </div>
-          ) : debrief ? (
-            <DebriefSection
-              loading={false}
-              debrief={debrief}
-            />
-          ) : (
-            <div
-              className="
-                rounded-[10px]
-                border
-                border-black/[0.055]
-                bg-slate-50
-                px-3
-                py-2.5
-                dark:border-white/[0.055]
-                dark:bg-white/[0.025]
-              "
-            >
+            ) : (
               <p
                 className="
-                  text-[12px]
-                  font-semibold
-                  text-slate-700
-                  dark:text-slate-300
-                "
-              >
-                Séance non réalisée
-              </p>
-
-              <p
-                className="
-                  mt-1
-                  text-[10.5px]
-                  leading-4
+                  text-[11.5px]
+                  leading-5
                   text-slate-400
                   dark:text-slate-500
                 "
               >
-                Le débriefing du coach sera
-                disponible après validation
-                de l’activité réalisée.
+                Le débriefing est en cours
+                de préparation.
               </p>
-            </div>
-          )}
-        </div>
-      </CollapseSection>
-
-
-      <CollapseSection
-        title="Entraînement"
-        subtitle="Échauffement · Cœur · Retour au calme"
-        preferredOpen={
-          session.status !== 'completed'
-        }
-      >
-        {loadingGuidance && (
-          <div
-            className="
-              flex
-              min-h-28
-              items-center
-              justify-center
-            "
-          >
-            <span
-              className="
-                size-4
-                shrink-0
-                animate-spin
-                rounded-full
-                border-2
-                border-slate-200
-                border-t-emerald-500
-                dark:border-white/15
-                dark:border-t-emerald-400
-              "
-            />
+            )}
           </div>
-        )}
+        </SidePanelSection>
+      )}
 
-        {!loadingGuidance
-          && guidance && (
-            <SessionGuidancePanel
-              guidance={guidance}
-            />
-          )}
 
-        {!loadingGuidance
-          && guidanceError && (
-            <div
-              className="
-                rounded-[10px]
-                border
-                border-amber-500/15
-                bg-amber-50
-                px-3
-                py-2.5
-                text-[11px]
-                font-medium
-                text-amber-700
-                dark:bg-amber-500/[0.07]
-                dark:text-amber-400
-              "
-            >
-              {guidanceError}
-            </div>
-          )}
-      </CollapseSection>
+      {session.status !== 'completed' && (
+        <SidePanelSection
+          sectionId="training"
+          eyebrow="Plan"
+          title="Entraînement prévu"
+          badge={
+            session.type === 'rest'
+              ? null
+              : `${session.durationMinutes} min`
+          }
+          open={
+            openSection === 'training'
+          }
+          onOpenChange={
+            setOpenSection
+          }
+        >
+          <TrainingGuidanceContent
+            loading={loadingGuidance}
+            guidance={guidance}
+            error={guidanceError}
+          />
+        </SidePanelSection>
+      )}
 
 
       {session.type !== 'rest' && (
-        <ActivitySection
-          session={session}
-          activities={activities}
-          loading={loadingActivities}
-          error={activityError}
-          selectedActivityId={
-            selectedActivityId
+        <SidePanelSection
+          sectionId="activity"
+          eyebrow="Réalisation"
+          title={
+            session.status === 'completed'
+              ? 'Activité associée'
+              : 'Activité réalisée'
           }
-          validating={validating}
-          validationError={
-            validationError
+          badge={
+            session.status === 'completed'
+              ? (
+                  selectedActivityId
+                    ? '1 activité associée'
+                    : 'Aucune activité associée'
+                )
+              : (
+                  selectedActivityId
+                    ? '1 activité sélectionnée'
+                    : null
+                )
           }
-          onActivitySelect={
-            handleActivitySelect
+          open={
+            openSection === 'activity'
           }
-          onValidate={() =>
-            void handleValidateSession()
+          onOpenChange={
+            setOpenSection
           }
-        />
+        >
+          <ActivitySection
+            session={session}
+            activities={activities}
+            loading={loadingActivities}
+            error={activityError}
+            selectedActivityId={
+              selectedActivityId
+            }
+            validating={validating}
+            validationError={
+              validationError
+            }
+            onActivitySelect={
+              handleActivitySelect
+            }
+            onValidate={() =>
+              void handleValidateSession()
+            }
+          />
+        </SidePanelSection>
+      )}
+
+
+      {session.status === 'completed' && (
+        <SidePanelSection
+          sectionId="training"
+          eyebrow="Plan"
+          title="Entraînement prévu"
+          badge={
+            session.type === 'rest'
+              ? null
+              : `${session.durationMinutes} min`
+          }
+          open={
+            openSection === 'training'
+          }
+          onOpenChange={
+            setOpenSection
+          }
+        >
+          <TrainingGuidanceContent
+            loading={loadingGuidance}
+            guidance={guidance}
+            error={guidanceError}
+          />
+        </SidePanelSection>
       )}
     </div>
   )
 }
 
 
-function CollapseSection({
-  title,
-  subtitle,
-  preferredOpen,
-  children,
-}: {
-  title: string
-  subtitle?: string
-  preferredOpen: boolean
-  children: ReactNode
-}) {
-  const [
-    open,
-    setOpen,
-  ] = useState(
-    preferredOpen,
-  )
-
-  useEffect(() => {
-    setOpen(
-      preferredOpen,
-    )
-  }, [
-    preferredOpen,
-  ])
-
+function SectionLoader() {
   return (
-    <details
-      open={open}
-      onToggle={(event) => {
-        setOpen(
-          event.currentTarget.open,
-        )
-      }}
+    <div
       className="
-        group
-        overflow-hidden
-        rounded-[12px]
-        border
-        border-black/[0.065]
-        bg-white
-        dark:border-white/[0.07]
-        dark:bg-white/[0.018]
+        flex
+        min-h-20
+        items-center
+        justify-center
       "
     >
-      <summary
+      <span
         className="
-          cursor-pointer
-          list-none
-          px-3.5
-          py-3
+          size-4
+          animate-spin
+          rounded-full
+          border-2
+          border-slate-200
+          border-t-emerald-500
+          dark:border-white/15
+          dark:border-t-emerald-400
         "
-      >
-        <div
-          className="
-            flex
-            items-center
-            justify-between
-            gap-3
-          "
-        >
-          <span
-            className="
-              text-[12.5px]
-              font-semibold
-              text-slate-900
-              dark:text-slate-100
-            "
-          >
-            {title}
-          </span>
+      />
+    </div>
+  )
+}
 
-          {subtitle && (
-            <span
-              className="
-                truncate
-                text-[10px]
-                text-slate-400
-                dark:text-slate-500
-              "
-            >
-              {subtitle}
-            </span>
-          )}
-        </div>
-      </summary>
 
+function TrainingGuidanceContent({
+  loading,
+  guidance,
+  error,
+}: {
+  loading: boolean
+  guidance: SessionGuidance | null
+  error: string | null
+}) {
+  if (loading) {
+    return (
+      <SectionLoader />
+    )
+  }
+
+  if (guidance) {
+    return (
+      <SessionGuidancePanel
+        guidance={guidance}
+      />
+    )
+  }
+
+  if (error) {
+    return (
       <div
         className="
-          border-t
-          border-black/[0.06]
-          p-3.5
-          dark:border-white/[0.065]
+          rounded-[10px]
+          border
+          border-amber-500/20
+          bg-amber-500/[0.05]
+          px-3
+          py-2.5
+          text-[11px]
+          leading-5
+          text-amber-700
+          dark:border-amber-400/20
+          dark:bg-amber-400/[0.055]
+          dark:text-amber-300
         "
       >
-        {children}
+        {error}
       </div>
-    </details>
-  )
+    )
+  }
+
+  return null
 }
 
 
@@ -680,80 +663,72 @@ function SessionHeader({
   return (
     <div
       className="
-        flex flex-col
+        flex
+        items-start
+        justify-between
         gap-3
-        sm:flex-row
-        sm:items-start
-        sm:justify-between
       "
     >
-      <div className="min-w-0">
-        <div
+      <div
+        className="
+          flex
+          flex-wrap
+          items-center
+          gap-1.5
+        "
+      >
+        <span
           className="
-            flex flex-wrap
-            items-center
-            gap-2
-          "
-        >
-          <span
-            className="
-              text-[10.5px]
-              font-medium
-              text-slate-400
-              dark:text-slate-500
-            "
-          >
-            {formatDate(
-              session.date,
-            )}
-          </span>
-
-          {session.type
-            === 'supplementary' && (
-              <span
-                className="
-                  rounded-full
-                  border
-                  border-black/[0.07]
-                  px-1.5
-                  py-0.5
-                  text-[9px]
-                  font-semibold
-                  text-slate-500
-                  dark:border-white/[0.07]
-                  dark:text-slate-400
-                "
-              >
-                Supplémentaire
-              </span>
-            )}
-        </div>
-
-        <h2
-          className="
-            mt-1
-            text-[18px]
-            font-bold
-            tracking-[-0.025em]
-            text-slate-950
-            dark:text-white
-          "
-        >
-          {session.title}
-        </h2>
-
-        <p
-          className="
-            mt-1
             text-[10.5px]
+            font-medium
             text-slate-400
             dark:text-slate-500
+          "
+        >
+          {formatDate(
+            session.date,
+          )}
+        </span>
+
+        <span
+          className="
+            text-slate-300
+            dark:text-slate-600
+          "
+        >
+          ·
+        </span>
+
+        <span
+          className="
+            text-[10.5px]
+            text-slate-500
+            dark:text-slate-400
           "
         >
           {formatSportType(
             session.sportType,
           )}
-        </p>
+        </span>
+
+        {session.type === 'supplementary' && (
+          <span
+            className="
+              rounded-full
+              border
+              border-black/[0.07]
+              px-1.5
+              py-0.5
+              text-[9px]
+              font-semibold
+              text-slate-500
+              dark:border-white/[0.07]
+              dark:text-slate-400
+            "
+          >
+            Supplémentaire
+          </span>
+        )}
       </div>
 
       <StatusBadge
@@ -764,7 +739,6 @@ function SessionHeader({
     </div>
   )
 }
-
 
 function SessionSummary({
   session,
@@ -779,161 +753,162 @@ function SessionSummary({
       guidance,
     )
 
+  const distanceLabel =
+    session.distanceKm !== undefined
+      ? `${
+          formatNumber(
+            session.distanceKm,
+          )
+        } km`
+      : (
+          estimatedDistance
+            ? `≈ ${estimatedDistance}`
+            : '—'
+        )
+
   return (
     <div
       className="
-        flex
-        flex-wrap
-        gap-2
+        mt-3
+        grid
+        grid-cols-2
+        overflow-hidden
+        rounded-[12px]
+        border
+        border-black/[0.065]
+        bg-white
+        dark:border-white/[0.065]
+        dark:bg-white/[0.02]
       "
     >
-      <span
-        className="
-          rounded-[8px]
-          border
-          border-black/[0.065]
-          bg-slate-50
-          px-2
-          py-1
-          text-[10px]
-          font-medium
-          text-slate-600
-          dark:border-white/[0.065]
-          dark:bg-white/[0.025]
-          dark:text-slate-400
-        "
-      >
-        {session.type === 'rest'
-          ? 'Repos'
-          : `${session.durationMinutes} min`}
-      </span>
+      <SessionMetric
+        value={
+          session.type === 'rest'
+            ? 'Repos'
+            : `${session.durationMinutes} min`
+        }
+        label="Durée"
+      />
 
-      {estimatedDistance && (
-        <span
-          className="
-            inline-flex
-            items-center
-            rounded-full
-            border
-            px-2.5
-            py-1
-            text-[10.5px]
-            font-semibold
-          "
-        >
-          ≈ {estimatedDistance}
-        </span>
-      )}
+      <SessionMetric
+        value={
+          distanceLabel
+        }
+        label="Distance"
+        left
+      />
 
-      {session.distanceKm !== undefined && (
-        <span
-          className="
-            inline-flex
-            items-center
-            rounded-full
-            border
-            px-2.5
-            py-1
-            text-[10.5px]
-            font-semibold
-          "
-        >
-          {
-            formatNumber(
-              session.distanceKm,
-            )
-          } km
-        </span>
-      )}
+      <SessionMetric
+        value={
+          session.intensity
+            ? formatTrainingIntensity(
+                session.intensity,
+              )
+            : formatSessionType(
+                session.type,
+              )
+        }
+        label="Intensité"
+        top
+      />
+
+      <SessionMetric
+        value={
+          session.heartRateZone
+            ? formatHeartRateZone(
+                session.heartRateZone,
+              )
+            : '—'
+        }
+        label="Zone FC"
+        left
+        top
+      />
 
       {session.elevationGainM !== undefined && (
-        <span
+        <div
           className="
-            inline-flex
-            items-center
-            rounded-full
-            border
-            px-2.5
-            py-1
-            text-[10.5px]
-            font-semibold
+            col-span-2
+            border-t
+            border-black/[0.06]
+            dark:border-white/[0.06]
           "
         >
-          +{
-            Math.round(
-              session.elevationGainM,
-            )
-          } m
-        </span>
+          <SessionMetric
+            value={
+              `+${
+                Math.round(
+                  session.elevationGainM,
+                )
+              } m`
+            }
+            label="Dénivelé positif"
+          />
+        </div>
       )}
+    </div>
+  )
+}
 
-      <span
+
+function SessionMetric({
+  value,
+  label,
+  left = false,
+  top = false,
+}: {
+  value: string
+  label: string
+  left?: boolean
+  top?: boolean
+}) {
+  return (
+    <div
+      className={[
+        (
+          'flex min-h-[58px] flex-col '
+          + 'items-center justify-center '
+          + 'px-2.5 py-2 text-center'
+        ),
+        left
+          ? (
+              'border-l border-black/[0.06] '
+              + 'dark:border-white/[0.06]'
+            )
+          : '',
+        top
+          ? (
+              'border-t border-black/[0.06] '
+              + 'dark:border-white/[0.06]'
+            )
+          : '',
+      ].join(' ')}
+    >
+      <p
         className="
-          rounded-[8px]
-          border
-          border-emerald-500/15
-          bg-emerald-50
-          px-2
-          py-1
-          text-[10px]
+          text-[14px]
           font-semibold
-          text-emerald-700
-          dark:bg-emerald-500/[0.07]
-          dark:text-emerald-400
+          leading-tight
+          text-slate-900
+          dark:text-slate-100
         "
       >
-        {
-          formatSessionType(
-            session.type,
-          )
-        }
-      </span>
+        {value}
+      </p>
 
-      {session.intensity && (
-        <span
-          className="
-            inline-flex
-            items-center
-            rounded-full
-            border
-            px-2.5
-            py-1
-            text-[10.5px]
-            font-semibold
-          "
-        >
-          {
-            formatTrainingIntensity(
-              session.intensity,
-            )
-          }
-        </span>
-      )}
-
-      {session.heartRateZone && (
-        <span
-          className="
-            inline-flex
-            items-center
-            rounded-full
-            border
-            border-violet-500/20
-            bg-violet-500/[0.06]
-            px-2.5
-            py-1
-            text-[10.5px]
-            font-semibold
-            text-violet-600
-            dark:text-violet-400
-          "
-        >
-          {
-            formatHeartRateZone(
-              session.heartRateZone,
-            )
-          }
-        </span>
-      )}
+      <p
+        className="
+          mt-0.5
+          text-[9px]
+          font-semibold
+          uppercase
+          tracking-[0.08em]
+          text-slate-400
+          dark:text-slate-500
+        "
+      >
+        {label}
+      </p>
     </div>
   )
 }
@@ -1120,431 +1095,278 @@ function ActivitySection({
   const completed =
     session.status === 'completed'
 
-  const [
-    expanded,
-    setExpanded,
-  ] = useState(
-    !completed,
-  )
-
-  useEffect(() => {
-    if (completed) {
-      setExpanded(false)
-    }
-  }, [
-    completed,
-  ])
-
-
   const futureSession =
     isFutureTrainingSession(
       session.date,
     )
 
+
   if (futureSession) {
     return (
-      <section
+      <div
         className="
-          training-details-v3__activity
+          flex
+          items-center
+          justify-between
+          gap-3
+          py-1
         "
       >
-        <div
-          className="
-            flex
-            items-center
-            justify-between
-            gap-3
-            rounded-xl
-            border
-            border-black/[0.06] dark:border-white/[0.07]
-            bg-white dark:bg-[#141a1e]
-            px-4 py-3
-          "
-        >
-          <div>
-            <p
-              className="
-                font-semibold
-                text-slate-800 dark:text-slate-100
-              "
-            >
-              Activité réalisée
-            </p>
-
-            <p
-              className="
-                mt-0.5
-                text-xs
-                text-slate-400 dark:text-slate-500
-              "
-            >
-              Association disponible
-              le jour de la séance.
-            </p>
-          </div>
-
-          <span
+        <div>
+          <p
             className="
-              shrink-0
-              rounded-full
-              border
-              border-slate-200
-              bg-slate-50
-              px-2.5 py-1
-              text-[10.5px]
-              font-semibold
-              text-slate-500
-              dark:border-white/[0.08]
-              dark:bg-white/[0.04]
-              dark:text-slate-400
+              text-[11.5px]
+              font-medium
+              text-slate-600
+              dark:text-slate-300
             "
           >
-            À venir
-          </span>
+            Association disponible
+            le jour de la séance.
+          </p>
         </div>
-      </section>
+
+        <span
+          className="
+            shrink-0
+            rounded-full
+            border
+            border-slate-200
+            bg-slate-50
+            px-2
+            py-0.5
+            text-[9px]
+            font-semibold
+            text-slate-500
+            dark:border-white/[0.08]
+            dark:bg-white/[0.04]
+            dark:text-slate-400
+          "
+        >
+          À venir
+        </span>
+      </div>
     )
   }
 
 
-  const selectedCount =
-    selectedActivityId
-      ? 1
-      : 0
-
-  const selectionLabel =
-    completed
-      ? (
-        selectedCount > 0
-          ? '1 activité associée'
-          : 'Aucune activité associée'
-      )
-      : (
-        `${selectedCount} activité`
-        + (
-          selectedCount > 1
-            ? 's'
-            : ''
-        )
-        + ' sélectionnée'
-        + (
-          selectedCount > 1
-            ? 's'
-            : ''
-        )
-      )
-
   return (
-    <section
+    <div
       className="
-        border-t
-        border-black/[0.06] dark:border-white/[0.07]
-        pt-5
+        space-y-2.5
       "
     >
-      <details
-        open={
-          expanded
-        }
-        onToggle={(event) => {
-          setExpanded(
-            event.currentTarget.open,
-          )
-        }}
-        className="
-          workout-activity-panel
-          overflow-hidden
-          rounded-xl
-          border
-          border-black/[0.06] dark:border-white/[0.07]
-          bg-white dark:bg-[#141a1e]
-        "
-      >
-        <summary
+      {loading && (
+        <div
           className="
-            cursor-pointer
-            list-none
-            px-4 py-3
+            flex
+            items-center
+            gap-2
+            py-2
           "
         >
+          <span
+            className="
+              size-4
+              shrink-0
+              animate-spin
+              rounded-full
+              border-2
+              border-slate-200
+              border-t-emerald-500
+              dark:border-white/15
+              dark:border-t-emerald-400
+            "
+            aria-hidden="true"
+          />
+
+          <span
+            className="
+              text-[11px]
+              text-slate-500
+              dark:text-slate-400
+            "
+          >
+            Recherche des activités…
+          </span>
+        </div>
+      )}
+
+
+      {!loading && error && (
+        <div
+          className="
+            rounded-[10px]
+            border
+            border-rose-500/20
+            bg-rose-500/[0.05]
+            px-3
+            py-2.5
+            text-[11px]
+            text-rose-600
+            dark:border-rose-400/20
+            dark:bg-rose-400/[0.05]
+            dark:text-rose-400
+          "
+        >
+          {error}
+        </div>
+      )}
+
+
+      {!loading
+        && !error
+        && activities.length === 0 && (
+          <div
+            className="
+              py-1
+            "
+          >
+            <p
+              className="
+                text-[11.5px]
+                font-medium
+                text-slate-600
+                dark:text-slate-300
+              "
+            >
+              Aucune activité détectée
+            </p>
+
+            <p
+              className="
+                mt-1
+                text-[10.5px]
+                leading-4
+                text-slate-400
+                dark:text-slate-500
+              "
+            >
+              Une prochaine synchronisation
+              Intervals.icu peut faire
+              apparaître l&apos;activité.
+            </p>
+          </div>
+        )}
+
+
+      {!loading
+        && !error
+        && activities.length > 0 && (
+          <div className="space-y-2">
+            {activities.map(
+              (activity) => (
+                <ActivityRow
+                  key={
+                    activity.id
+                  }
+                  activity={
+                    activity
+                  }
+                  selected={
+                    selectedActivityId
+                    === activity.id
+                  }
+                  disabled={
+                    completed
+                    || validating
+                  }
+                  onClick={() =>
+                    onActivitySelect(
+                      activity.id,
+                    )
+                  }
+                />
+              ),
+            )}
+          </div>
+        )}
+
+
+      {validationError && (
+        <div
+          className="
+            rounded-[10px]
+            border
+            border-rose-500/20
+            bg-rose-500/[0.05]
+            px-3
+            py-2.5
+            text-[11px]
+            text-rose-600
+            dark:border-rose-400/20
+            dark:bg-rose-400/[0.05]
+            dark:text-rose-400
+          "
+        >
+          {validationError}
+        </div>
+      )}
+
+
+      {!completed
+        && activities.length > 0 && (
           <div
             className="
               flex
-              items-center
-              justify-between
-              gap-3
+              justify-end
+              pt-1
             "
           >
-            <div className="min-w-0">
-              <p
-                className="
-                  font-semibold
-                  text-slate-800 dark:text-slate-100
-                "
-              >
-                Activité réalisée
-              </p>
-
-              {!completed && (
-                <p
-                  className="
-                    mt-0.5
-                    text-xs
-                    text-slate-400 dark:text-slate-500
-                  "
-                >
-                  Associer l&apos;activité
-                  Intervals.icu correspondante.
-                </p>
-              )}
-            </div>
-
-            <span
-              className={[
-                (
-                  'shrink-0 rounded-full border '
-                  + 'px-2.5 py-1 text-[10.5px] '
-                  + 'font-semibold'
-                ),
-                completed
-                  ? (
-                      'border-emerald-500/20 '
-                      + 'bg-emerald-500/[0.06] '
-                      + 'text-emerald-600 '
-                      + 'dark:text-emerald-400'
-                    )
-                  : (
-                    selectedCount > 0
-                      ? (
-                          'border-emerald-500/20 '
-                          + 'bg-emerald-500/10 '
-                          + 'text-emerald-700 '
-                          + 'dark:text-emerald-300'
-                        )
-                      : (
-                          'border-slate-200 '
-                          + 'bg-slate-50 '
-                          + 'text-slate-500 '
-                          + 'dark:border-white/[0.08] '
-                          + 'dark:bg-white/[0.04] '
-                          + 'dark:text-slate-400'
-                        )
-                  ),
-              ].join(' ')}
-            >
-              {selectionLabel}
-            </span>
-          </div>
-        </summary>
-
-        <div
-          className="
-            border-t
-            border-black/[0.06] dark:border-white/[0.07]
-            px-4 py-4
-          "
-        >
-          {loading && (
-            <div
+            <button
+              type="button"
               className="
-                flex
+                workout-activity-validate-button
+                inline-flex
+                min-h-9
                 items-center
+                justify-center
                 gap-2
-                rounded-xl
-                bg-slate-50 dark:bg-white/[0.035]
-                px-4 py-3
+                rounded-[9px]
+                bg-emerald-600
+                px-3
+                py-1.5
+                text-[11px]
+                font-semibold
+                text-white
+                transition
+                hover:bg-emerald-700
+                disabled:pointer-events-none
+                disabled:opacity-45
+                dark:bg-emerald-500
+                dark:hover:bg-emerald-400
               "
+              disabled={
+                !selectedActivityId
+                || validating
+              }
+              onClick={
+                onValidate
+              }
             >
-              <span
-                className="
-                  size-4
-                  shrink-0
-                  animate-spin
-                  rounded-full
-                  border-2
-                  border-slate-200
-                  border-t-emerald-500
-                  dark:border-white/15
-                  dark:border-t-emerald-400
-                "
-                aria-hidden="true"
-              />
-
-              <span
-                className="
-                  text-sm
-                  text-slate-500 dark:text-slate-400
-                "
-              >
-                Recherche des activités…
-              </span>
-            </div>
-          )}
-
-          {!loading
-            && error && (
-              <div
-                className="
-                  rounded-xl
-                  border
-                  border-rose-500/20 dark:border-rose-400/20
-                  bg-rose-500/[0.05] dark:bg-rose-400/[0.05]
-                  px-4 py-3
-                  text-sm
-                  text-rose-600 dark:text-rose-400
-                "
-              >
-                {error}
-              </div>
-            )}
-
-          {!loading
-            && !error
-            && activities.length === 0 && (
-              <div
-                className="
-                  rounded-xl
-                  bg-slate-50 dark:bg-white/[0.035]
-                  px-4 py-3
-                "
-              >
-                <p
+              {validating && (
+                <span
                   className="
-                    text-sm
-                    font-medium
-                    text-slate-600 dark:text-slate-300
+                    size-3.5
+                    shrink-0
+                    animate-spin
+                    rounded-full
+                    border-2
+                    border-white/35
+                    border-t-white
                   "
-                >
-                  Aucune activité détectée
-                </p>
+                  aria-hidden="true"
+                />
+              )}
 
-                <p
-                  className="
-                    mt-1
-                    text-xs
-                    text-slate-400 dark:text-slate-500
-                  "
-                >
-                  Une prochaine synchronisation
-                  Intervals.icu peut faire
-                  apparaître l&apos;activité.
-                </p>
-              </div>
-            )}
-
-          {!loading
-            && !error
-            && activities.length > 0 && (
-              <div className="space-y-2">
-                {activities.map(
-                  (activity) => (
-                    <ActivityRow
-                      key={
-                        activity.id
-                      }
-                      activity={
-                        activity
-                      }
-                      selected={
-                        selectedActivityId
-                        === activity.id
-                      }
-                      disabled={
-                        completed
-                        || validating
-                      }
-                      onClick={() =>
-                        onActivitySelect(
-                          activity.id,
-                        )
-                      }
-                    />
-                  ),
-                )}
-              </div>
-            )}
-
-          {validationError && (
-            <div
-              className="
-                mt-3
-                rounded-xl
-                border
-                border-rose-500/20 dark:border-rose-400/20
-                bg-rose-500/[0.05] dark:bg-rose-400/[0.05]
-                px-4 py-3
-                text-sm
-                text-rose-600 dark:text-rose-400
-              "
-            >
-              {validationError}
-            </div>
-          )}
-
-          {!completed
-            && activities.length > 0 && (
-              <div
-                className="
-                  mt-4
-                  flex
-                  justify-end
-                "
-              >
-                <button
-                  type="button"
-                  className="
-                    workout-activity-validate-button
-                    inline-flex
-                    min-h-10
-                    items-center
-                    justify-center
-                    gap-2
-                    rounded-[10px]
-                    bg-emerald-600
-                    px-4 py-2
-                    text-sm
-                    font-semibold
-                    text-white
-                    shadow-sm
-                    transition
-                    hover:bg-emerald-700
-                    disabled:pointer-events-none
-                    disabled:opacity-45
-                    dark:bg-emerald-500
-                    dark:hover:bg-emerald-400
-                  "
-                  disabled={
-                    !selectedActivityId
-                    || validating
-                  }
-                  onClick={
-                    onValidate
-                  }
-                >
-                  {validating && (
-                    <span
-                      className="
-                        size-4
-                        shrink-0
-                        animate-spin
-                        rounded-full
-                        border-2
-                        border-white/35
-                        border-t-white
-                      "
-                      aria-hidden="true"
-                    />
-                  )}
-
-                  Valider la séance
-                </button>
-              </div>
-            )}
-        </div>
-      </details>
-    </section>
+              Valider la séance
+            </button>
+          </div>
+        )}
+    </div>
   )
 }
+
 
 
 interface ActivityRowProps {
@@ -1565,7 +1387,6 @@ function ActivityRow({
   disabled,
   onClick,
 }: ActivityRowProps) {
-
   return (
     <button
       type="button"
@@ -1574,46 +1395,55 @@ function ActivityRow({
       className={[
         (
           'workout-activity-card '
-          + 'w-full rounded-xl '
-          + 'border px-4 py-3 '
+          + 'w-full rounded-[10px] '
+          + 'border px-3 py-2.5 '
           + 'text-left transition'
         ),
         selected
           ? (
               'workout-activity-card--selected '
-              + 'border-emerald-500/35 dark:border-emerald-400/30 '
-            + 'bg-emerald-500/[0.05] dark:bg-emerald-400/[0.055] '
-            + 'ring-1 '
-            + 'ring-emerald-500/15 dark:ring-emerald-400/15'
-          )
+              + 'border-emerald-500/30 '
+              + 'bg-emerald-500/[0.035] '
+              + 'ring-1 ring-emerald-500/10 '
+              + 'dark:border-emerald-400/25 '
+              + 'dark:bg-emerald-400/[0.04] '
+              + 'dark:ring-emerald-400/10'
+            )
           : (
-            'border-black/[0.06] dark:border-white/[0.07] '
-            + 'hover:bg-slate-50/80 dark:bg-white/[0.025]'
-          ),
+              'border-black/[0.06] '
+              + 'hover:border-black/[0.09] '
+              + 'hover:bg-slate-50/70 '
+              + 'dark:border-white/[0.07] '
+              + 'dark:bg-white/[0.02] '
+              + 'dark:hover:border-white/[0.10] '
+              + 'dark:hover:bg-white/[0.035]'
+            ),
       ].join(' ')}
     >
       <div
         className="
-          flex flex-col
+          flex
+          items-start
+          justify-between
           gap-3
-          sm:flex-row
-          sm:items-center
-          sm:justify-between
         "
       >
         <div className="min-w-0">
           <div
             className="
-              flex flex-wrap
+              flex
+              flex-wrap
               items-center
-              gap-2
+              gap-1.5
             "
           >
             <p
               className="
                 truncate
+                text-[12.5px]
                 font-semibold
-                text-slate-800 dark:text-slate-100
+                text-slate-800
+                dark:text-slate-100
               "
             >
               {activity.name}
@@ -1622,14 +1452,16 @@ function ActivityRow({
             {activity.bestMatch && (
               <span
                 className="
-                  rounded-full
-                  border
-                  border-emerald-500/20
+                  rounded-[5px]
                   bg-emerald-500/[0.08]
-                  px-2 py-0.5
-                  text-[10px]
-                  font-semibold
-                  text-emerald-600
+                  px-1.5
+                  py-0.5
+                  text-[8.5px]
+                  font-bold
+                  uppercase
+                  tracking-[0.03em]
+                  text-emerald-700
+                  dark:bg-emerald-400/[0.08]
                   dark:text-emerald-400
                 "
               >
@@ -1640,8 +1472,10 @@ function ActivityRow({
 
           <p
             className="
-              mt-1 text-xs
-              text-slate-500 dark:text-slate-400
+              mt-0.5
+              text-[10.5px]
+              text-slate-400
+              dark:text-slate-500
             "
           >
             {formatSportType(
@@ -1650,129 +1484,198 @@ function ActivityRow({
 
             {activity.startAtLocal
               ? (
-                ` · ${formatActivityTime(
-                  activity.startAtLocal,
-                )}`
-              )
+                  ` · ${formatActivityTime(
+                    activity.startAtLocal,
+                  )}`
+                )
               : ''}
           </p>
         </div>
 
 
-        <div
-          className="
-            flex flex-wrap
-            items-center
-            gap-3
-            text-sm
-            text-slate-500 dark:text-slate-400
-          "
-        >
-          {activity.movingTimeSeconds
-            !== undefined && (
-              <span>
-                {formatDuration(
-                  activity
-                    .movingTimeSeconds,
-                )}
-              </span>
-            )}
-
-          {activity.distanceM
-            !== undefined && (
-              <span>
-                {formatDistance(
-                  activity.distanceM,
-                )}
-              </span>
-            )}
-
-          {activity.elevationGainM
-            !== undefined && (
-              <span>
-                {Math.round(
-                  activity
-                    .elevationGainM,
-                )}{' '}
-                m D+
-              </span>
-            )}
-
-          <span
-            className={[
-              (
-                'rounded-full border '
-                + 'px-2 py-0.5 text-[10px] '
-                + 'font-semibold'
-              ),
-              getMatchBadgeClass(
-                activity.matchScore,
-              ),
-            ].join(' ')}
-          >
-            {Math.round(
+        <span
+          className={[
+            (
+              'shrink-0 rounded-[6px] '
+              + 'border px-1.5 py-0.5 '
+              + 'text-[9px] font-bold'
+            ),
+            getMatchBadgeClass(
               activity.matchScore,
-            )}{' '}
-            %
-          </span>
-
-        </div>
+            ),
+          ].join(' ')}
+        >
+          {Math.round(
+            activity.matchScore,
+          )} %
+        </span>
       </div>
 
 
-      {selected && (
-        <div
-          className="
-            mt-3
-            border-t
-            border-emerald-500/15 dark:border-emerald-400/15
-            pt-3
-          "
-        >
-          <p
-            className="
-              text-xs
-              text-slate-500 dark:text-slate-400
-            "
-          >
-            Cliquez à nouveau pour
-            désassocier cette activité.
-          </p>
-        </div>
-      )}
-
-
-      {activity.feel
-        !== undefined && (
-          <div
-            className="
-              mt-2
-              flex items-center
-              gap-2
-            "
-          >
-            <FeelStars
-              feel={
-                activity.feel
+      <div
+        className="
+          mt-2
+          flex
+          flex-wrap
+          items-center
+          gap-x-2
+          gap-y-1.5
+        "
+      >
+        {activity.movingTimeSeconds
+          !== undefined && (
+            <ActivityMetric
+              label="Durée"
+              value={
+                formatDuration(
+                  activity
+                    .movingTimeSeconds,
+                )
               }
             />
+          )}
 
-            <span
+        {activity.distanceM
+          !== undefined && (
+            <ActivityMetric
+              label="Distance"
+              value={
+                formatDistance(
+                  activity.distanceM,
+                )
+              }
+            />
+          )}
+
+        {activity.elevationGainM
+          !== undefined && (
+            <ActivityMetric
+              label="D+"
+              value={
+                `${
+                  Math.round(
+                    activity
+                      .elevationGainM,
+                  )
+                } m`
+              }
+            />
+          )}
+
+        {activity.feel
+          !== undefined && (
+            <div
               className="
-                text-xs
-                text-slate-400 dark:text-slate-500
+                inline-flex
+                items-center
+                gap-1.5
+                whitespace-nowrap
               "
             >
-              {formatFeelLabel(
-                activity.feel,
-              )}
-            </span>
-          </div>
-        )}
+              <span
+                className="
+                  rounded-[5px]
+                  bg-slate-100
+                  px-1.5
+                  py-0.5
+                  text-[8.5px]
+                  font-bold
+                  uppercase
+                  tracking-[0.03em]
+                  text-slate-500
+                  dark:bg-white/[0.055]
+                  dark:text-slate-400
+                "
+              >
+                Ressenti
+              </span>
+
+              <FeelStars
+                feel={
+                  activity.feel
+                }
+              />
+
+              <span
+                className="
+                  text-[9.5px]
+                  text-slate-400
+                  dark:text-slate-500
+                "
+              >
+                {formatFeelLabel(
+                  activity.feel,
+                )}
+              </span>
+            </div>
+          )}
+      </div>
+
+
+      {selected && !disabled && (
+        <p
+          className="
+            mt-2
+            text-[9.5px]
+            text-emerald-600
+            dark:text-emerald-400
+          "
+        >
+          Sélectionnée · cliquer pour désélectionner
+        </p>
+      )}
     </button>
   )
 }
 
+
+function ActivityMetric({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <div
+      className="
+        inline-flex
+        items-center
+        gap-1.5
+        whitespace-nowrap
+      "
+    >
+      <span
+        className="
+          rounded-[5px]
+          bg-slate-100
+          px-1.5
+          py-0.5
+          text-[8.5px]
+          font-bold
+          uppercase
+          tracking-[0.03em]
+          text-slate-500
+          dark:bg-white/[0.055]
+          dark:text-slate-400
+        "
+      >
+        {label}
+      </span>
+
+      <span
+        className="
+          text-[10.5px]
+          font-semibold
+          text-slate-700
+          dark:text-slate-200
+        "
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
 
 interface DebriefSectionProps {
   loading: boolean
@@ -1789,231 +1692,232 @@ function DebriefSection({
 }: DebriefSectionProps) {
   if (loading) {
     return (
-      <section
+      <div
         className="
-          border-t
-          border-black/[0.06] dark:border-white/[0.07]
-          pt-5
+          flex
+          items-center
+          gap-2
+          py-2
+          text-[11px]
+          text-slate-500
+          dark:text-slate-400
         "
       >
-        <div
+        <span
           className="
-            flex items-center
-            gap-2
-            text-sm
-            text-slate-500 dark:text-slate-400
+            size-3.5
+            shrink-0
+            animate-spin
+            rounded-full
+            border-2
+            border-slate-200
+            border-t-emerald-500
+            dark:border-white/15
+            dark:border-t-emerald-400
           "
-        >
-          <span
-            className="
-              size-4
-              shrink-0
-              animate-spin
-              rounded-full
-              border-2
-              border-slate-200
-              border-t-emerald-500
-              dark:border-white/15
-              dark:border-t-emerald-400
-            "
-            aria-hidden="true"
-          />
+          aria-hidden="true"
+        />
 
-          Chargement du débriefing…
-        </div>
-      </section>
+        Chargement du débriefing…
+      </div>
     )
   }
+
 
   if (!debrief) {
     return null
   }
 
+
   return (
-    <section
+    <div
       className="
-        border-t
-        border-black/[0.06] dark:border-white/[0.07]
-        pt-5
+        space-y-3
       "
     >
       <div
         className="
-          workout-debrief-card
-          rounded-xl
-          border
-          border-black/[0.06] dark:border-white/[0.07]
-          bg-white dark:bg-[#141a1e]
-          p-4
+          flex
+          items-start
+          justify-between
+          gap-3
         "
       >
-        <div
-          className="
-            flex flex-wrap
-            items-start
-            justify-between
-            gap-3
-          "
-        >
-          <div className="min-w-0">
-            <p
-              className="
-                text-xs
-                font-semibold
-                uppercase
-                tracking-wide
-                text-slate-400 dark:text-slate-500
-              "
-            >
-              Débriefing coach
-            </p>
-
-            <h3
-              className="
-                mt-1
-                font-semibold
-                text-slate-800 dark:text-slate-100
-              "
-            >
-              {debrief.objective}
-            </h3>
-          </div>
-
-          <span
-            className={[
-              (
-                'shrink-0 rounded-full border '
-                + 'px-2.5 py-1 text-[10.5px] '
-                + 'font-semibold'
-              ),
-              getDebriefBadgeClass(
-                debrief.overallStatus,
-              ),
-            ].join(' ')}
+        <div className="min-w-0">
+          <p
+            className="
+              text-[12.5px]
+              font-semibold
+              leading-5
+              text-slate-800
+              dark:text-slate-100
+            "
           >
-            {formatDebriefStatus(
-              debrief.overallStatus,
-            )}
-          </span>
+            {debrief.objective}
+          </p>
         </div>
 
-        <p
+        <span
+          className={[
+            (
+              'shrink-0 rounded-full border '
+              + 'px-2 py-0.5 '
+              + 'text-[9px] '
+              + 'font-semibold'
+            ),
+            getDebriefBadgeClass(
+              debrief.overallStatus,
+            ),
+          ].join(' ')}
+        >
+          {formatDebriefStatus(
+            debrief.overallStatus,
+          )}
+        </span>
+      </div>
+
+
+      <p
+        className="
+          text-[11.5px]
+          leading-5
+          text-slate-600
+          dark:text-slate-300
+        "
+      >
+        {debrief.debriefing}
+      </p>
+
+
+      {debrief.strengths.length > 0 && (
+        <div
           className="
-            mt-4
-            text-sm
-            leading-6
-            text-slate-600 dark:text-slate-300
+            border-t
+            border-black/[0.055]
+            pt-2.5
+            dark:border-white/[0.06]
           "
         >
-          {debrief.debriefing}
-        </p>
+          <p
+            className="
+              text-[9px]
+              font-bold
+              uppercase
+              tracking-[0.08em]
+              text-emerald-600
+              dark:text-emerald-400
+            "
+          >
+            Points forts
+          </p>
 
-        {debrief.strengths.length > 0 && (
-          <div className="mt-5">
-            <p
-              className="
-                text-xs
-                font-semibold
-                uppercase
-                tracking-wide
-                text-emerald-600 dark:text-emerald-400
-              "
-            >
-              Points forts
-            </p>
-
-            <ul
-              className="
-                mt-2
-                space-y-2
-                text-sm
-                text-slate-600 dark:text-slate-300
-              "
-            >
-              {debrief.strengths.map(
-                (strength) => (
-                  <li
-                    key={strength}
+          <ul
+            className="
+              mt-1.5
+              space-y-1.5
+              text-[11px]
+              leading-5
+              text-slate-600
+              dark:text-slate-300
+            "
+          >
+            {debrief.strengths.map(
+              (strength) => (
+                <li
+                  key={strength}
+                  className="
+                    flex
+                    items-start
+                    gap-2
+                  "
+                >
+                  <Check
+                    size={13}
                     className="
-                      flex
-                      items-start
-                      gap-2
+                      mt-1
+                      shrink-0
+                      text-emerald-600
+                      dark:text-emerald-400
                     "
-                  >
-                    <Check
-                      size={15}
-                      className="
-                        mt-0.5
-                        shrink-0
-                        text-emerald-600 dark:text-emerald-400
-                      "
-                    />
+                  />
 
-                    <span>
-                      {strength}
-                    </span>
-                  </li>
-                ),
-              )}
-            </ul>
-          </div>
-        )}
+                  <span>
+                    {strength}
+                  </span>
+                </li>
+              ),
+            )}
+          </ul>
+        </div>
+      )}
 
-        {debrief.attentionPoints.length > 0 && (
-          <div className="mt-5">
-            <p
-              className="
-                text-xs
-                font-semibold
-                uppercase
-                tracking-wide
-                text-amber-600 dark:text-amber-400
-              "
-            >
-              Points d&apos;attention
-            </p>
 
-            <ul
-              className="
-                mt-2
-                space-y-2
-                text-sm
-                text-slate-600 dark:text-slate-300
-              "
-            >
-              {debrief.attentionPoints.map(
-                (point) => (
-                  <li
-                    key={point}
+      {debrief.attentionPoints.length > 0 && (
+        <div
+          className="
+            border-t
+            border-black/[0.055]
+            pt-2.5
+            dark:border-white/[0.06]
+          "
+        >
+          <p
+            className="
+              text-[9px]
+              font-bold
+              uppercase
+              tracking-[0.08em]
+              text-amber-600
+              dark:text-amber-400
+            "
+          >
+            Points d&apos;attention
+          </p>
+
+          <ul
+            className="
+              mt-1.5
+              space-y-1.5
+              text-[11px]
+              leading-5
+              text-slate-600
+              dark:text-slate-300
+            "
+          >
+            {debrief.attentionPoints.map(
+              (point) => (
+                <li
+                  key={point}
+                  className="
+                    flex
+                    items-start
+                    gap-2
+                  "
+                >
+                  <span
                     className="
-                      flex
-                      items-start
-                      gap-2
+                      mt-[7px]
+                      size-1.5
+                      shrink-0
+                      rounded-full
+                      bg-amber-500
+                      dark:bg-amber-400
                     "
-                  >
-                    <span
-                      className="
-                        mt-1
-                        size-1.5
-                        shrink-0
-                        rounded-full
-                        bg-amber-500 dark:bg-amber-400
-                      "
-                    />
+                  />
 
-                    <span>
-                      {point}
-                    </span>
-                  </li>
-                ),
-              )}
-            </ul>
-          </div>
-        )}
-      </div>
-    </section>
+                  <span>
+                    {point}
+                  </span>
+                </li>
+              ),
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
   )
 }
+
 
 
 function getDebriefBadgeClass(

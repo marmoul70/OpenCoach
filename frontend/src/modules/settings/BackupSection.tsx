@@ -20,8 +20,8 @@ import {
 } from 'react'
 
 import {
-  Modal,
-} from '../../components/ui/Modal'
+  SidePanel,
+} from '../../components/ui/SidePanel'
 
 import {
   useToast,
@@ -890,7 +890,8 @@ export function BackupSection() {
           RESTORE MODAL
           ============================================= */}
 
-      <Modal
+      <SidePanel
+        eyebrow="Sauvegarde"
         title="Restaurer une sauvegarde"
         open={restoreOpen}
         onClose={closeRestore}
@@ -1131,7 +1132,7 @@ export function BackupSection() {
             </button>
           </div>
         </div>
-      </Modal>
+      </SidePanel>
     </>
   )
 }

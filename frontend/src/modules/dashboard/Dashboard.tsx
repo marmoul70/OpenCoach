@@ -8,8 +8,8 @@ import {
 } from 'lucide-react'
 
 import {
-  Modal,
-} from '../../components/ui/Modal'
+  SidePanel,
+} from '../../components/ui/SidePanel'
 
 import {
   useToast,
@@ -628,22 +628,29 @@ export function Dashboard({
       </div>
 
 
-      {selectedWidget
-        && DetailsComponent && (
-          <Modal
-            title={
-              selectedWidget.title
-            }
-            open
-            onClose={() => {
-              setSelectedWidgetId(
-                null,
-              )
-            }}
-          >
+      <SidePanel
+        open={
+          Boolean(
+            selectedWidget
+            && DetailsComponent
+          )
+        }
+        eyebrow="Indicateur"
+        title={
+          selectedWidget?.title
+          ?? 'Détail'
+        }
+        onClose={() => {
+          setSelectedWidgetId(
+            null,
+          )
+        }}
+      >
+        {selectedWidget
+          && DetailsComponent && (
             <DetailsComponent />
-          </Modal>
-        )}
+          )}
+      </SidePanel>
     </main>
   )
 }

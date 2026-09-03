@@ -9,7 +9,6 @@ import {
   Plus,
   RefreshCw,
   Waves,
-  X,
 } from 'lucide-react'
 
 import {
@@ -22,6 +21,10 @@ import {
   fetchAvailableTrainingActivities,
 } from '../../core/training/api'
 
+
+import {
+  SidePanel,
+} from '../../components/ui/SidePanel'
 import {
   useTrainingSessions,
 } from './trainingStore'
@@ -209,45 +212,6 @@ export function AddTrainingSessionModal({
   ])
 
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    const previousOverflow =
-      document.body.style.overflow
-
-    document.body.style.overflow =
-      'hidden'
-
-    function handleEscape(
-      event: KeyboardEvent,
-    ) {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    window.addEventListener(
-      'keydown',
-      handleEscape,
-    )
-
-    return () => {
-      document.body.style.overflow =
-        previousOverflow
-
-      window.removeEventListener(
-        'keydown',
-        handleEscape,
-      )
-    }
-  }, [
-    open,
-    onClose,
-  ])
-
-
   async function addIntervalsActivity(
     activity: TrainingAvailableActivity,
   ): Promise<void> {
@@ -288,16 +252,14 @@ export function AddTrainingSessionModal({
           activity.elevationGainM,
         intensity: '',
         status: 'completed',
-        activityId:
-          activity.id,
+        activityId: activity.id,
       })
 
       setActivities(
-        current =>
+        (current) =>
           current.filter(
-            item =>
-              item.id
-              !== activity.id,
+            (item) =>
+              item.id !== activity.id,
           ),
       )
 
@@ -330,6 +292,7 @@ export function AddTrainingSessionModal({
       setError(
         'Le titre de la séance est obligatoire.',
       )
+
       return
     }
 
@@ -342,10 +305,14 @@ export function AddTrainingSessionModal({
       setError(
         'La durée doit être supérieure à 0 minute.',
       )
+
       return
     }
 
-    setSubmittingManual(true)
+    setSubmittingManual(
+      true,
+    )
+
     setError(null)
 
     try {
@@ -411,9 +378,50 @@ export function AddTrainingSessionModal({
             ),
       )
     } finally {
-      setSubmittingManual(false)
+      setSubmittingManual(
+        false,
+      )
     }
   }
+
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const previousOverflow =
+      document.body.style.overflow
+
+    document.body.style.overflow =
+      'hidden'
+
+    function handleEscape(
+      event: KeyboardEvent,
+    ) {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    window.addEventListener(
+      'keydown',
+      handleEscape,
+    )
+
+    return () => {
+      window.removeEventListener(
+        'keydown',
+        handleEscape,
+      )
+
+      document.body.style.overflow =
+        previousOverflow
+    }
+  }, [
+    open,
+    onClose,
+  ])
 
 
   if (!open) {
@@ -422,320 +430,212 @@ export function AddTrainingSessionModal({
 
 
   return (
-    <div
-      className="
-        fixed
-        inset-0
-        z-[100]
-        flex
-        items-end
-        justify-center
-        sm:items-center
-        sm:px-6
-        sm:py-6
-      "
-      role="dialog"
-      aria-modal="true"
+    <SidePanel
+      open={open}
+      eyebrow="Planning"
+      title="Ajouter une séance"
+      onClose={onClose}
     >
-      <button
-        type="button"
-        aria-label="Fermer"
-        onClick={onClose}
-        className="
-          absolute
-          inset-0
-          cursor-default
-          bg-black/45
-          backdrop-blur-[4px]
-          dark:bg-black/55
-        "
-      />
-
-
       <div
         className="
-          relative
-          z-10
-          flex
-          max-h-[82dvh]
-          w-full
-          flex-col
-          overflow-hidden
-          rounded-t-[20px]
-          border
-          border-black/[0.07]
-          border-b-0
-          bg-white
-          shadow-[0_-18px_55px_rgba(15,23,42,0.18)]
-          dark:border-white/[0.08]
-          dark:bg-[#151b1f]
-
-          sm:max-h-[82vh]
-          sm:max-w-[700px]
-          sm:rounded-[18px]
-          sm:border-b
-          sm:shadow-[0_24px_70px_rgba(15,23,42,0.22)]
+          space-y-4
         "
       >
-
-        <div
+        <section
           className="
-            flex
-            justify-center
-            pt-2
-            sm:hidden
-          "
-        >
-          <div
-            className="
-              h-1
-              w-9
-              rounded-full
-              bg-slate-300
-              dark:bg-white/[0.14]
-            "
-          />
-        </div>
-
-
-        <header
-          className="
-            flex
-            shrink-0
-            items-start
-            justify-between
-            gap-4
             border-b
             border-black/[0.06]
-            px-4
-            py-3.5
+            pb-3
             dark:border-white/[0.07]
-            sm:px-5
           "
         >
-          <div>
-            <p
-              className="
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-[0.13em]
-                text-emerald-600
-                dark:text-emerald-400
-              "
-            >
-              Séance supplémentaire
-            </p>
+          <p
+            className="
+              text-[8.5px]
+              font-bold
+              uppercase
+              tracking-[0.12em]
+              text-slate-400
+              dark:text-slate-500
+            "
+          >
+            Date de la séance
+          </p>
 
-            <h2
-              className="
-                mt-0.5
-                text-[17px]
-                font-semibold
-                tracking-[-0.025em]
-                text-slate-950
-                dark:text-white
-              "
-            >
-              Ajouter une séance
-            </h2>
+          <p
+            className="
+              mt-0.5
+              text-[13px]
+              font-semibold
+              text-slate-800
+              dark:text-slate-100
+            "
+          >
+            {formatDisplayDate(
+              date,
+            )}
+          </p>
+        </section>
 
-            <p
-              className="
-                mt-1
-                text-[10.5px]
-                text-slate-400
-                dark:text-slate-500
-              "
-            >
-              {formatDisplayDate(
-                date,
-              )}
-            </p>
-          </div>
+
+        <div
+          role="tablist"
+          aria-label="Mode d'ajout"
+          className="
+            grid
+            grid-cols-2
+            rounded-[10px]
+            bg-slate-100
+            p-1
+            dark:bg-white/[0.045]
+          "
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={
+              mode === 'intervals'
+            }
+            className={[
+              (
+                'flex min-h-9 items-center '
+                + 'justify-center gap-1.5 '
+                + 'rounded-[8px] '
+                + 'px-2.5 '
+                + 'text-[11px] '
+                + 'font-semibold '
+                + 'transition'
+              ),
+              mode === 'intervals'
+                ? (
+                    'bg-white '
+                    + 'text-slate-900 '
+                    + 'shadow-sm '
+                    + 'dark:bg-white/[0.09] '
+                    + 'dark:text-slate-100'
+                  )
+                : (
+                    'text-slate-500 '
+                    + 'hover:text-slate-800 '
+                    + 'dark:text-slate-400 '
+                    + 'dark:hover:text-slate-200'
+                  ),
+            ].join(' ')}
+            onClick={() =>
+              setMode(
+                'intervals',
+              )
+            }
+          >
+            <Link2 size={14} />
+
+            Intervals.icu
+          </button>
+
 
           <button
             type="button"
-            onClick={onClose}
-            aria-label="Fermer"
-            className="
-              flex
-              h-8
-              w-8
-              items-center
-              justify-center
-              rounded-[9px]
-              text-slate-400
-              transition
-              hover:bg-slate-100
-              hover:text-slate-900
-              dark:hover:bg-white/[0.055]
-              dark:hover:text-white
-            "
+            role="tab"
+            aria-selected={
+              mode === 'manual'
+            }
+            className={[
+              (
+                'flex min-h-9 items-center '
+                + 'justify-center gap-1.5 '
+                + 'rounded-[8px] '
+                + 'px-2.5 '
+                + 'text-[11px] '
+                + 'font-semibold '
+                + 'transition'
+              ),
+              mode === 'manual'
+                ? (
+                    'bg-white '
+                    + 'text-slate-900 '
+                    + 'shadow-sm '
+                    + 'dark:bg-white/[0.09] '
+                    + 'dark:text-slate-100'
+                  )
+                : (
+                    'text-slate-500 '
+                    + 'hover:text-slate-800 '
+                    + 'dark:text-slate-400 '
+                    + 'dark:hover:text-slate-200'
+                  ),
+            ].join(' ')}
+            onClick={() =>
+              setMode(
+                'manual',
+              )
+            }
           >
-            <X className="h-4 w-4" />
+            <Plus size={14} />
+
+            Saisie manuelle
           </button>
-        </header>
+        </div>
 
 
-        <div
-          className="
-            min-h-0
-            flex-1
-            overflow-y-auto
-            overscroll-contain
-            px-4
-            py-4
-            sm:px-5
-          "
-        >
-
+        {error && (
           <div
             className="
-              grid
-              grid-cols-2
-              gap-1
               rounded-[10px]
               border
-              border-black/[0.055]
-              bg-slate-100
-              p-1
-              dark:border-white/[0.06]
-              dark:bg-white/[0.035]
+              border-rose-500/20
+              bg-rose-500/[0.05]
+              px-3
+              py-2.5
+              text-[11px]
+              leading-5
+              text-rose-600
+              dark:border-rose-400/20
+              dark:bg-rose-400/[0.05]
+              dark:text-rose-400
             "
           >
-            <ModeButton
-              active={
-                mode === 'intervals'
-              }
-              icon={Link2}
-              label="Intervals.icu"
-              onClick={() =>
-                setMode(
-                  'intervals',
-                )
-              }
-            />
-
-            <ModeButton
-              active={
-                mode === 'manual'
-              }
-              icon={Plus}
-              label="Saisie manuelle"
-              onClick={() =>
-                setMode(
-                  'manual',
-                )
-              }
-            />
+            {error}
           </div>
+        )}
 
 
-          {error && (
-            <div
-              className="
-                mt-3
-                rounded-[10px]
-                border
-                border-red-500/15
-                bg-red-50
-                px-3
-                py-2.5
-                text-[11px]
-                font-medium
-                text-red-600
-                dark:bg-red-500/[0.06]
-                dark:text-red-400
-              "
-            >
-              {error}
-            </div>
-          )}
-
-
-          {mode === 'intervals' ? (
-            <IntervalsPanel
-              activities={
-                activities
-              }
-              loading={
-                loadingActivities
-              }
-              submittingActivityId={
-                submittingActivityId
-              }
-              onAdd={
-                addIntervalsActivity
-              }
-              onRefresh={
-                loadActivities
-              }
-            />
-          ) : (
-            <ManualPanel
-              form={form}
-              submitting={
-                submittingManual
-              }
-              onChange={
-                setForm
-              }
-              onSubmit={
-                addManualSession
-              }
-            />
-          )}
-        </div>
+        {mode === 'intervals' ? (
+          <IntervalsPanel
+            activities={
+              activities
+            }
+            loading={
+              loadingActivities
+            }
+            submittingActivityId={
+              submittingActivityId
+            }
+            onAdd={
+              addIntervalsActivity
+            }
+            onRefresh={
+              loadActivities
+            }
+          />
+        ) : (
+          <ManualPanel
+            form={form}
+            submitting={
+              submittingManual
+            }
+            onChange={
+              setForm
+            }
+            onSubmit={
+              addManualSession
+            }
+          />
+        )}
       </div>
-    </div>
+    </SidePanel>
   )
 }
 
-
-function ModeButton({
-  active,
-  icon: Icon,
-  label,
-  onClick,
-}: {
-  active: boolean
-  icon: typeof Link2
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        (
-          'flex h-9 items-center '
-          + 'justify-center gap-2 '
-          + 'rounded-[8px] '
-          + 'text-[11px] '
-          + 'font-semibold transition'
-        ),
-        active
-          ? (
-              'bg-white text-slate-900 '
-              + 'shadow-[0_1px_2px_rgba(15,23,42,0.06)] '
-              + 'dark:bg-white/[0.07] '
-              + 'dark:text-white'
-            )
-          : (
-              'text-slate-400 '
-              + 'hover:text-slate-700 '
-              + 'dark:text-slate-500 '
-              + 'dark:hover:text-slate-300'
-            ),
-      ].join(' ')}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      {label}
-    </button>
-  )
-}
 
 
 interface IntervalsPanelProps {
@@ -766,50 +666,175 @@ function IntervalsPanel({
       <div
         className="
           flex
-          min-h-40
+          min-h-44
+          flex-col
           items-center
           justify-center
+          gap-2.5
         "
       >
-        <LoaderCircle
+        <div
           className="
-            h-5
-            w-5
-            animate-spin
-            text-emerald-500
+            flex
+            h-10
+            w-10
+            items-center
+            justify-center
+            rounded-full
+            bg-emerald-500/[0.07]
+            dark:bg-emerald-400/[0.07]
           "
-        />
+        >
+          <LoaderCircle
+            className="
+              h-5
+              w-5
+              animate-spin
+              text-emerald-600
+              dark:text-emerald-400
+            "
+          />
+        </div>
+
+        <div className="text-center">
+          <p
+            className="
+              text-[11.5px]
+              font-semibold
+              text-slate-700
+              dark:text-slate-200
+            "
+          >
+            Recherche des activités
+          </p>
+
+          <p
+            className="
+              mt-0.5
+              text-[10px]
+              text-slate-400
+              dark:text-slate-500
+            "
+          >
+            Synchronisation avec Intervals.icu
+          </p>
+        </div>
       </div>
     )
   }
 
 
   return (
-    <div className="mt-4">
-      <SectionHeading
-        title="Activités disponibles"
-        subtitle="Intervals.icu"
-      />
+    <div className="pt-1">
+      <div
+        className="
+          flex
+          items-start
+          justify-between
+          gap-3
+        "
+      >
+        <div>
+          <p
+            className="
+              text-[9px]
+              font-bold
+              uppercase
+              tracking-[0.11em]
+              text-emerald-600
+              dark:text-emerald-400
+            "
+          >
+            Activités disponibles
+          </p>
+
+          <p
+            className="
+              mt-0.5
+              text-[11px]
+              text-slate-500
+              dark:text-slate-400
+            "
+          >
+            Importer une activité déjà réalisée
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            void onRefresh()
+          }
+          className="
+            inline-flex
+            h-8
+            shrink-0
+            items-center
+            gap-1.5
+            rounded-[8px]
+            border
+            border-black/[0.07]
+            bg-white
+            px-2.5
+            text-[10px]
+            font-semibold
+            text-slate-500
+            transition
+            hover:border-black/[0.12]
+            hover:bg-slate-50
+            hover:text-slate-800
+            dark:border-white/[0.08]
+            dark:bg-white/[0.03]
+            dark:text-slate-400
+            dark:hover:bg-white/[0.06]
+            dark:hover:text-slate-200
+          "
+        >
+          <RefreshCw className="h-3 w-3" />
+
+          Actualiser
+        </button>
+      </div>
+
 
       {activities.length === 0 ? (
         <div
           className="
-            mt-2.5
+            mt-3
             rounded-[11px]
             border
             border-dashed
             border-black/[0.08]
-            bg-slate-50
+            bg-slate-50/70
             px-4
-            py-5
+            py-7
             text-center
             dark:border-white/[0.07]
-            dark:bg-white/[0.02]
+            dark:bg-white/[0.018]
           "
         >
+          <div
+            className="
+              mx-auto
+              flex
+              h-9
+              w-9
+              items-center
+              justify-center
+              rounded-full
+              bg-slate-100
+              text-slate-400
+              dark:bg-white/[0.04]
+              dark:text-slate-500
+            "
+          >
+            <Link2 className="h-4 w-4" />
+          </div>
+
           <p
             className="
-              text-[12px]
+              mt-2
+              text-[11.5px]
               font-semibold
               text-slate-700
               dark:text-slate-300
@@ -820,46 +845,26 @@ function IntervalsPanel({
 
           <p
             className="
+              mx-auto
               mt-1
-              text-[10.5px]
+              max-w-[300px]
+              text-[10px]
               leading-4
               text-slate-400
               dark:text-slate-500
             "
           >
             Les activités déjà associées
-            ne sont pas proposées ici.
+            à une séance ne sont pas proposées.
           </p>
-
-          <button
-            type="button"
-            onClick={() =>
-              void onRefresh()
-            }
-            className="
-              mt-3
-              inline-flex
-              h-8
-              items-center
-              gap-1.5
-              rounded-[8px]
-              px-2.5
-              text-[10.5px]
-              font-semibold
-              text-slate-500
-              transition
-              hover:bg-white
-              hover:text-slate-900
-              dark:hover:bg-white/[0.05]
-              dark:hover:text-white
-            "
-          >
-            <RefreshCw className="h-3 w-3" />
-            Actualiser
-          </button>
         </div>
       ) : (
-        <div className="mt-2.5 space-y-2">
+        <div
+          className="
+            mt-3
+            space-y-2
+          "
+        >
           {activities.map(
             activity => (
               <ActivityRow
@@ -900,55 +905,58 @@ function ActivityRow({
   return (
     <div
       className="
-        flex
-        items-center
-        justify-between
-        gap-3
-        rounded-[10px]
+        rounded-[11px]
         border
         border-black/[0.065]
-        bg-slate-50
+        bg-white
         px-3
-        py-2.5
+        py-3
         transition
         hover:border-emerald-500/20
+        hover:shadow-[0_3px_12px_rgba(15,23,42,0.035)]
         dark:border-white/[0.065]
         dark:bg-white/[0.025]
       "
     >
-      <div className="min-w-0">
+      <div
+        className="
+          flex
+          items-start
+          justify-between
+          gap-3
+        "
+      >
         <div
           className="
             flex
-            items-center
-            gap-2
+            min-w-0
+            items-start
+            gap-2.5
           "
         >
           <div
             className="
               flex
-              h-7
-              w-7
+              h-8
+              w-8
               shrink-0
               items-center
               justify-center
-              rounded-[8px]
-              bg-emerald-50
+              rounded-[9px]
+              bg-emerald-500/[0.07]
               text-emerald-600
-              dark:bg-emerald-500/[0.08]
+              dark:bg-emerald-400/[0.07]
               dark:text-emerald-400
             "
           >
-            <Dumbbell
-              className="h-3.5 w-3.5"
-            />
+            <Dumbbell className="h-3.5 w-3.5" />
           </div>
 
           <div className="min-w-0">
             <p
               className="
                 truncate
-                text-[12px]
+                text-[12.5px]
                 font-semibold
                 text-slate-900
                 dark:text-slate-100
@@ -957,70 +965,97 @@ function ActivityRow({
               {activity.name}
             </p>
 
-            <p
-              className="
-                mt-0.5
-                text-[10px]
-                text-slate-400
-                dark:text-slate-500
-              "
-            >
-              {activity.startAtLocal
-                ? (
-                    `${
-                      formatActivityTime(
-                        activity.startAtLocal,
-                      )
-                    } · `
-                  )
-                : ''}
-              {formatActivitySummary(
-                activity,
-              )}
-            </p>
+            {activity.startAtLocal && (
+              <p
+                className="
+                  mt-0.5
+                  text-[9.5px]
+                  font-medium
+                  text-slate-400
+                  dark:text-slate-500
+                "
+              >
+                {formatActivityTime(
+                  activity.startAtLocal,
+                )}
+              </p>
+            )}
           </div>
         </div>
+
+
+        <button
+          type="button"
+          disabled={submitting}
+          onClick={() =>
+            void onAdd(
+              activity,
+            )
+          }
+          className="
+            inline-flex
+            h-8
+            shrink-0
+            items-center
+            justify-center
+            gap-1.5
+            rounded-[8px]
+            border
+            border-emerald-500/25
+            bg-emerald-500/[0.06]
+            px-2.5
+            text-[10px]
+            font-semibold
+            text-emerald-700
+            transition
+            hover:border-emerald-500/40
+            hover:bg-emerald-500/[0.10]
+            disabled:pointer-events-none
+            disabled:opacity-45
+            dark:border-emerald-400/20
+            dark:bg-emerald-400/[0.06]
+            dark:text-emerald-400
+          "
+        >
+          {submitting ? (
+            <LoaderCircle
+              className="
+                h-3.5
+                w-3.5
+                animate-spin
+              "
+            />
+          ) : (
+            <Plus className="h-3.5 w-3.5" />
+          )}
+
+          Ajouter
+        </button>
       </div>
 
-      <button
-        type="button"
-        disabled={submitting}
-        onClick={() =>
-          void onAdd(
-            activity,
-          )
-        }
+
+      <div
         className="
-          flex
-          h-8
-          shrink-0
-          items-center
-          gap-1.5
-          rounded-[8px]
-          bg-emerald-600
-          px-2.5
-          text-[10.5px]
-          font-semibold
-          text-white
-          transition
-          hover:bg-emerald-700
-          disabled:opacity-50
+          mt-2
+          border-t
+          border-black/[0.05]
+          pt-2
+          dark:border-white/[0.05]
         "
       >
-        {submitting ? (
-          <LoaderCircle
-            className="
-              h-3.5
-              w-3.5
-              animate-spin
-            "
-          />
-        ) : (
-          <Plus className="h-3.5 w-3.5" />
-        )}
-
-        Ajouter
-      </button>
+        <p
+          className="
+            text-[10.5px]
+            leading-4
+            text-slate-500
+            dark:text-slate-400
+          "
+        >
+          {formatActivitySummary(
+            activity,
+          )}
+        </p>
+      </div>
     </div>
   )
 }
@@ -1079,14 +1114,35 @@ function ManualPanel({
 
 
   return (
-    <div className="mt-4">
-      <SectionHeading
-        title="Saisie manuelle"
-        subtitle="Séance déjà réalisée"
-      />
+    <div className="pt-1">
+      <div>
+        <p
+          className="
+            text-[9px]
+            font-bold
+            uppercase
+            tracking-[0.11em]
+            text-emerald-600
+            dark:text-emerald-400
+          "
+        >
+          Saisie manuelle
+        </p>
+
+        <p
+          className="
+            mt-0.5
+            text-[11px]
+            text-slate-500
+            dark:text-slate-400
+          "
+        >
+          Ajouter une séance déjà réalisée
+        </p>
+      </div>
 
 
-      <div className="mt-3">
+      <section className="mt-4">
         <FieldLabel>
           Sport
         </FieldLabel>
@@ -1120,7 +1176,7 @@ function ManualPanel({
                   }
                   className={[
                     (
-                      'flex min-h-14 '
+                      'relative flex min-h-[58px] '
                       + 'flex-col items-center '
                       + 'justify-center gap-1 '
                       + 'rounded-[9px] border '
@@ -1130,250 +1186,328 @@ function ManualPanel({
                     active
                       ? (
                           'border-emerald-500/30 '
-                          + 'bg-emerald-50 '
+                          + 'bg-emerald-500/[0.065] '
                           + 'text-emerald-700 '
-                          + 'dark:bg-emerald-500/[0.08] '
+                          + 'shadow-[inset_0_0_0_1px_rgba(16,185,129,0.04)] '
+                          + 'dark:border-emerald-400/25 '
+                          + 'dark:bg-emerald-400/[0.07] '
                           + 'dark:text-emerald-400'
                         )
                       : (
                           'border-black/[0.06] '
-                          + 'bg-slate-50 '
+                          + 'bg-white '
                           + 'text-slate-500 '
-                          + 'hover:border-black/[0.10] '
-                          + 'dark:border-white/[0.06] '
-                          + 'dark:bg-white/[0.02] '
-                          + 'dark:text-slate-400'
+                          + 'hover:border-black/[0.11] '
+                          + 'hover:bg-slate-50 '
+                          + 'dark:border-white/[0.065] '
+                          + 'dark:bg-white/[0.025] '
+                          + 'dark:text-slate-400 '
+                          + 'dark:hover:bg-white/[0.045]'
                         ),
                   ].join(' ')}
                 >
                   <Icon className="h-4 w-4" />
+
                   {option.label}
+
+                  {active && (
+                    <span
+                      className="
+                        absolute
+                        right-1.5
+                        top-1.5
+                        h-1.5
+                        w-1.5
+                        rounded-full
+                        bg-emerald-500
+                      "
+                    />
+                  )}
                 </button>
               )
             },
           )}
         </div>
-      </div>
+      </section>
 
 
-      <div
+      <section
         className="
           mt-4
-          grid
-          gap-3
-          sm:grid-cols-2
+          border-t
+          border-black/[0.055]
+          pt-4
+          dark:border-white/[0.06]
         "
       >
-        <div>
-          <FieldLabel>
-            Durée
-          </FieldLabel>
+        <p
+          className="
+            mb-3
+            text-[9px]
+            font-bold
+            uppercase
+            tracking-[0.10em]
+            text-slate-400
+            dark:text-slate-500
+          "
+        >
+          Informations
+        </p>
 
-          <div
-            className="
-              flex
-              h-10
-              items-center
-              overflow-hidden
-              rounded-[9px]
-              border
-              border-black/[0.07]
-              bg-white
-              dark:border-white/[0.07]
-              dark:bg-white/[0.025]
-            "
-          >
-            <button
-              type="button"
-              onClick={() =>
-                changeDuration(-5)
-              }
-              className="
-                h-full
-                w-10
-                text-[16px]
-                text-slate-400
-                hover:bg-slate-50
-                dark:hover:bg-white/[0.04]
-              "
-            >
-              −
-            </button>
-
-            <input
-              type="number"
-              min="1"
-              value={
-                form.durationMinutes
-              }
-              onChange={(event) =>
+        <div
+          className="
+            grid
+            gap-3
+            sm:grid-cols-2
+          "
+        >
+          <div className="sm:col-span-2">
+            <TextField
+              label="Titre"
+              value={form.title}
+              placeholder="Ex. Footing récupération"
+              onChange={value =>
                 update(
-                  'durationMinutes',
-                  event.target.value,
+                  'title',
+                  value,
                 )
               }
-              className="
-                min-w-0
-                flex-1
-                bg-transparent
-                text-center
-                text-[13px]
-                font-semibold
-                text-slate-900
-                outline-none
-                dark:text-white
-              "
             />
+          </div>
 
-            <span
+
+          <div>
+            <FieldLabel>
+              Durée
+            </FieldLabel>
+
+            <div
               className="
-                pr-2
-                text-[10px]
-                text-slate-400
+                flex
+                h-10
+                items-center
+                overflow-hidden
+                rounded-[9px]
+                border
+                border-black/[0.07]
+                bg-white
+                transition
+                focus-within:border-emerald-500/40
+                focus-within:ring-2
+                focus-within:ring-emerald-500/[0.07]
+                dark:border-white/[0.07]
+                dark:bg-white/[0.025]
               "
             >
-              min
-            </span>
+              <button
+                type="button"
+                onClick={() =>
+                  changeDuration(-5)
+                }
+                aria-label="Retirer 5 minutes"
+                className="
+                  flex
+                  h-full
+                  w-10
+                  items-center
+                  justify-center
+                  border-r
+                  border-black/[0.05]
+                  text-[17px]
+                  text-slate-400
+                  transition
+                  hover:bg-slate-50
+                  hover:text-slate-700
+                  dark:border-white/[0.05]
+                  dark:hover:bg-white/[0.04]
+                  dark:hover:text-slate-200
+                "
+              >
+                −
+              </button>
 
-            <button
-              type="button"
-              onClick={() =>
-                changeDuration(5)
+              <input
+                type="number"
+                min="1"
+                value={
+                  form.durationMinutes
+                }
+                onChange={(event) =>
+                  update(
+                    'durationMinutes',
+                    event.target.value,
+                  )
+                }
+                className="
+                  min-w-0
+                  flex-1
+                  bg-transparent
+                  text-center
+                  text-[13px]
+                  font-semibold
+                  text-slate-900
+                  outline-none
+                  dark:text-white
+                "
+              />
+
+              <span
+                className="
+                  pr-2
+                  text-[9.5px]
+                  font-medium
+                  text-slate-400
+                "
+              >
+                min
+              </span>
+
+              <button
+                type="button"
+                onClick={() =>
+                  changeDuration(5)
+                }
+                aria-label="Ajouter 5 minutes"
+                className="
+                  flex
+                  h-full
+                  w-10
+                  items-center
+                  justify-center
+                  border-l
+                  border-black/[0.05]
+                  text-[17px]
+                  text-slate-400
+                  transition
+                  hover:bg-slate-50
+                  hover:text-slate-700
+                  dark:border-white/[0.05]
+                  dark:hover:bg-white/[0.04]
+                  dark:hover:text-slate-200
+                "
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+
+          <UnitField
+            label="Distance"
+            unit="km"
+            value={form.distanceKm}
+            onChange={value =>
+              update(
+                'distanceKm',
+                value,
+              )
+            }
+          />
+
+          <UnitField
+            label="Dénivelé +"
+            unit="m"
+            value={
+              form.elevationGainM
+            }
+            onChange={value =>
+              update(
+                'elevationGainM',
+                value,
+              )
+            }
+          />
+
+          <SelectField
+            label="Intensité"
+            value={form.intensity}
+            onChange={value =>
+              update(
+                'intensity',
+                value,
+              )
+            }
+          >
+            <option value="">
+              Non renseignée
+            </option>
+
+            {TRAINING_INTENSITIES.map(
+              intensity => (
+                <option
+                  key={
+                    intensity.value
+                  }
+                  value={
+                    intensity.value
+                  }
+                >
+                  {intensity.label}
+                </option>
+              ),
+            )}
+          </SelectField>
+
+
+          <div className="sm:col-span-2">
+            <SelectField
+              label="Zone cardiaque"
+              value={
+                form.heartRateZone
               }
-              className="
-                h-full
-                w-10
-                text-[16px]
-                text-slate-400
-                hover:bg-slate-50
-                dark:hover:bg-white/[0.04]
-              "
+              onChange={value =>
+                update(
+                  'heartRateZone',
+                  value,
+                )
+              }
             >
-              +
-            </button>
+              <option value="">
+                Aucune
+              </option>
+
+              {[
+                'Z1',
+                'Z2',
+                'Z3',
+                'Z4',
+                'Z5',
+                'Z1-Z2',
+                'Z2-Z3',
+                'Z3-Z4',
+                'Z4-Z5',
+              ].map(
+                zone => (
+                  <option
+                    key={zone}
+                    value={zone}
+                  >
+                    {zone}
+                  </option>
+                ),
+              )}
+            </SelectField>
           </div>
         </div>
+      </section>
 
 
-        <TextField
-          label="Titre"
-          value={form.title}
-          placeholder="Ex. Footing récupération"
-          onChange={value =>
-            update(
-              'title',
-              value,
-            )
-          }
-        />
-
-
-        <UnitField
-          label="Distance"
-          unit="km"
-          value={form.distanceKm}
-          onChange={value =>
-            update(
-              'distanceKm',
-              value,
-            )
-          }
-        />
-
-        <UnitField
-          label="Dénivelé +"
-          unit="m"
-          value={
-            form.elevationGainM
-          }
-          onChange={value =>
-            update(
-              'elevationGainM',
-              value,
-            )
-          }
-        />
-
-
-        <SelectField
-          label="Intensité"
-          value={form.intensity}
-          onChange={value =>
-            update(
-              'intensity',
-              value,
-            )
-          }
-        >
-          <option value="">
-            Non renseignée
-          </option>
-
-          {TRAINING_INTENSITIES.map(
-            intensity => (
-              <option
-                key={
-                  intensity.value
-                }
-                value={
-                  intensity.value
-                }
-              >
-                {intensity.label}
-              </option>
-            ),
-          )}
-        </SelectField>
-
-
-        <SelectField
-          label="Zone cardiaque"
-          value={
-            form.heartRateZone
-          }
-          onChange={value =>
-            update(
-              'heartRateZone',
-              value,
-            )
-          }
-        >
-          <option value="">
-            Aucune
-          </option>
-
-          {[
-            'Z1',
-            'Z2',
-            'Z3',
-            'Z4',
-            'Z5',
-            'Z1-Z2',
-            'Z2-Z3',
-            'Z3-Z4',
-            'Z4-Z5',
-          ].map(
-            zone => (
-              <option
-                key={zone}
-                value={zone}
-              >
-                {zone}
-              </option>
-            ),
-          )}
-        </SelectField>
-      </div>
-
-
-      <div className="mt-3">
+      <section
+        className="
+          mt-4
+          border-t
+          border-black/[0.055]
+          pt-4
+          dark:border-white/[0.06]
+        "
+      >
         <FieldLabel>
           Notes
         </FieldLabel>
 
         <textarea
           value={form.description}
-          placeholder="Optionnel"
+          placeholder="Ajouter une note ou une consigne…"
           onChange={(event) =>
             update(
               'description',
@@ -1381,7 +1515,7 @@ function ManualPanel({
             )
           }
           className="
-            min-h-20
+            min-h-24
             w-full
             resize-y
             rounded-[9px]
@@ -1391,6 +1525,7 @@ function ManualPanel({
             px-3
             py-2.5
             text-[11.5px]
+            leading-5
             text-slate-800
             outline-none
             transition
@@ -1404,14 +1539,24 @@ function ManualPanel({
             dark:placeholder:text-slate-600
           "
         />
-      </div>
+      </section>
 
 
       <div
         className="
+          sticky
+          bottom-0
+          -mx-1
           mt-4
-          flex
-          justify-end
+          border-t
+          border-black/[0.06]
+          bg-[#f8faf9]/95
+          px-1
+          pb-1
+          pt-3
+          backdrop-blur-lg
+          dark:border-white/[0.07]
+          dark:bg-[#0f1519]/95
         "
       >
         <button
@@ -1422,7 +1567,7 @@ function ManualPanel({
           }
           className="
             flex
-            h-9
+            h-10
             w-full
             items-center
             justify-center
@@ -1430,12 +1575,17 @@ function ManualPanel({
             rounded-[9px]
             bg-emerald-600
             px-4
-            text-[11px]
+            text-[11.5px]
             font-semibold
             text-white
+            shadow-[0_4px_12px_rgba(5,150,105,0.14)]
             transition
             hover:bg-emerald-700
-            disabled:opacity-50
+            disabled:pointer-events-none
+            disabled:opacity-45
+            dark:bg-emerald-500
+            dark:hover:bg-emerald-400
+            sm:ml-auto
             sm:w-auto
           "
         >
@@ -1454,49 +1604,6 @@ function ManualPanel({
           Ajouter la séance
         </button>
       </div>
-    </div>
-  )
-}
-
-
-function SectionHeading({
-  title,
-  subtitle,
-}: {
-  title: string
-  subtitle?: string
-}) {
-  return (
-    <div
-      className="
-        flex
-        items-end
-        justify-between
-        gap-3
-      "
-    >
-      <p
-        className="
-          text-[11.5px]
-          font-semibold
-          text-slate-900
-          dark:text-slate-100
-        "
-      >
-        {title}
-      </p>
-
-      {subtitle && (
-        <p
-          className="
-            text-[9.5px]
-            text-slate-400
-            dark:text-slate-500
-          "
-        >
-          {subtitle}
-        </p>
-      )}
     </div>
   )
 }

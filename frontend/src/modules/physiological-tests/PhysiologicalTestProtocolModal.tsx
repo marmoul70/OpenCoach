@@ -8,8 +8,11 @@ import {
   Clock3,
   MapPin,
   ShieldCheck,
-  X,
 } from 'lucide-react'
+
+import {
+  SidePanel,
+} from '../../components/ui/SidePanel'
 
 import {
   getPhysiologicalTestProtocolDetails,
@@ -88,94 +91,17 @@ export function PhysiologicalTestProtocolModal({
 
 
   return (
-    <div
-      className="
-        fixed inset-0 z-50
-        flex items-end
-        justify-center
-        bg-black/40
-        p-0
-        sm:items-center
-        sm:p-5
-      "
-      role="dialog"
-      aria-modal="true"
+    <SidePanel
+      open
+      onClose={onClose}
+      eyebrow="Protocole OpenCoach"
+      title={
+        details?.title
+        ?? 'Test physiologique'
+      }
     >
-      <div
-        className="
-          max-h-[92vh]
-          w-full
-          max-w-3xl
-          overflow-y-auto
-          rounded-t-3xl
-          bg-white dark:bg-[#151b1f]
-          shadow-2xl
-          sm:rounded-3xl
-        "
-      >
-        <div
-          className="
-            sticky top-0 z-10
-            flex items-center
-            justify-between
-            border-b
-            border-black/[0.06] dark:border-white/[0.07]
-            bg-white dark:bg-[#151b1f]/95
-            px-5 py-4
-            backdrop-blur
-          "
-        >
-          <div>
-            <p
-              className="
-                text-xs font-semibold
-                uppercase tracking-wide
-                text-emerald-600 dark:text-emerald-400
-              "
-            >
-              Protocole OpenCoach
-            </p>
-
-            <h2
-              className="
-                text-xl font-bold
-                text-slate-800 dark:text-slate-100
-              "
-            >
-              {
-                details?.title
-                ?? 'Test physiologique'
-              }
-            </h2>
-          </div>
-
-          <button
-            type="button"
-            className="
-              inline-flex
-              h-8
-              w-8
-              shrink-0
-              items-center
-              justify-center
-              rounded-[8px]
-              text-slate-400
-              transition
-              hover:bg-slate-100
-              hover:text-slate-700
-              dark:text-slate-500
-              dark:hover:bg-white/[0.05]
-              dark:hover:text-slate-200
-            "
-            onClick={onClose}
-            aria-label="Fermer"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-
-        {loading && (
+      <div className="space-y-5">
+{loading && (
           <div
             className="
               flex min-h-72
@@ -201,7 +127,7 @@ export function PhysiologicalTestProtocolModal({
 
 
         {error && (
-          <div className="p-6">
+          <div>
             <div
               className="
                 rounded-[11px]
@@ -228,9 +154,7 @@ export function PhysiologicalTestProtocolModal({
         {details && (
           <div
             className="
-              space-y-6
-              p-5
-              sm:p-6
+              space-y-5
             "
           >
             <p
@@ -385,7 +309,7 @@ export function PhysiologicalTestProtocolModal({
           </div>
         )}
       </div>
-    </div>
+    </SidePanel>
   )
 }
 

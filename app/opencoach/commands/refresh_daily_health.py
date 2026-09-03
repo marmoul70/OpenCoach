@@ -241,16 +241,29 @@ def main(
                 "Suunto / Intervals.icu."
             )
 
-            client.trigger_partner_sync()
+            try:
+                client.trigger_partner_sync()
 
-            print(
-                "[INFO] Attente de "
-                f"{WAIT_SECONDS} secondes."
-            )
+                print(
+                    "[INFO] Synchronisation partenaire "
+                    "Intervals.icu déclenchée."
+                )
 
-            time.sleep(
-                WAIT_SECONDS
-            )
+                print(
+                    "[INFO] Attente de "
+                    f"{WAIT_SECONDS} secondes."
+                )
+
+                time.sleep(
+                    WAIT_SECONDS
+                )
+
+            except Exception as exc:
+                print(
+                    "[AVERTISSEMENT] Synchronisation partenaire "
+                    "indisponible : "
+                    f"{exc}"
+                )
 
             service = build_service(
                 session

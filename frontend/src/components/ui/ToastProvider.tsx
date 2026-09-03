@@ -44,6 +44,10 @@ interface ToastItem extends ToastInput {
 interface ToastContextValue {
   toast: (
     input: ToastInput,
+  ) => number
+
+  dismissToast: (
+    id: number,
   ) => void
 }
 
@@ -127,6 +131,8 @@ export function ToastProvider({
             item.duration,
           )
         }
+
+        return id
       },
       [
         removeToast,
@@ -137,9 +143,11 @@ export function ToastProvider({
     useMemo(
       () => ({
         toast,
+        dismissToast: removeToast,
       }),
       [
         toast,
+        removeToast,
       ],
     )
 

@@ -105,6 +105,48 @@ Promise<IntervalsConnectionTestResult> {
   )
 }
 
+export interface IntervalsInitialSyncJob {
+  job_id: string
+  status:
+    | 'pending'
+    | 'running'
+    | 'success'
+    | 'error'
+}
+
+
+export interface IntervalsInitialSyncStatus
+  extends IntervalsInitialSyncJob {
+  synced_activities: number
+  synced_wellness_days: number
+  days: number
+  error: string | null
+}
+
+
+export function startInitialSync():
+Promise<IntervalsInitialSyncJob> {
+  return request<IntervalsInitialSyncJob>(
+    '/api/integrations/intervals/sync/initial/start',
+    {
+      method: 'POST',
+    },
+  )
+}
+
+
+export function fetchInitialSyncStatus(
+  jobId: string,
+): Promise<IntervalsInitialSyncStatus> {
+  return request<IntervalsInitialSyncStatus>(
+    (
+      '/api/integrations/intervals/'
+      + `sync/initial/status/${jobId}`
+    ),
+  )
+}
+
+
 export function syncIntervals(
   days = 7,
 ): Promise<IntervalsSyncResult> {

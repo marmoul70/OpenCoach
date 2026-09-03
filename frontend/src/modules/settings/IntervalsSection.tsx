@@ -20,8 +20,10 @@ import {
 } from '../../components/ui/ToastProvider'
 
 import {
+  fetchInitialSyncStatus,
   fetchIntervalsConnection,
   saveIntervalsConnection,
+  startInitialSync,
   syncIntervals,
   testIntervalsConnection,
   testSavedIntervalsConnection,
@@ -32,6 +34,7 @@ import {
 export function IntervalsSection() {
   const {
     toast,
+    dismissToast,
   } = useToast()
 
   const [
@@ -206,10 +209,68 @@ export function IntervalsSection() {
   }
 
 
+  async function waitForInitialSync(
+    jobId: string,
+  ) {
+    const startedAt =
+      Date.now()
+
+    const timeoutMs =
+      15 * 60 * 1000
+
+    while (true) {
+      const status =
+        await fetchInitialSyncStatus(
+          jobId,
+        )
+
+      if (
+        status.status === 'success'
+      ) {
+        return status
+      }
+
+      if (
+        status.status === 'error'
+      ) {
+        throw new Error(
+          status.error
+          || (
+            'La synchronisation initiale '
+            + 'a échoué.'
+          ),
+        )
+      }
+
+      if (
+        Date.now() - startedAt
+        > timeoutMs
+      ) {
+        throw new Error(
+          'La synchronisation initiale '
+          + 'dépasse 15 minutes.',
+        )
+      }
+
+      await new Promise<void>(
+        resolve => {
+          window.setTimeout(
+            resolve,
+            2000,
+          )
+        },
+      )
+    }
+  }
+
+
   async function handleSave() {
     setSaving(true)
     setError(null)
     setMessage(null)
+
+    const requiresInitialSync =
+      connection?.last_synced_at == null
 
     try {
       const result =
@@ -228,6 +289,85 @@ export function IntervalsSection() {
       setApiKey('')
       setConnectionTested(false)
       setEditing(false)
+
+      if (
+        requiresInitialSync
+        && result.enabled
+      ) {
+        const loadingToastId =
+          toast({
+            type: 'info',
+            title:
+              'Chargement des activités',
+          message:
+            'OpenCoach récupère jusqu’à '
+            + '3 mois de données Intervals.icu. '
+            + 'Cette première synchronisation '
+            + 'peut prendre plusieurs minutes.',
+          duration: null,
+        })
+
+        setSyncing(true)
+
+        try {
+          const job =
+            await startInitialSync()
+
+          const syncResult =
+            await waitForInitialSync(
+              job.job_id,
+            )
+
+          const refreshedConnection =
+            await fetchIntervalsConnection()
+
+          setConnection(
+            refreshedConnection,
+          )
+
+          dismissToast(
+            loadingToastId,
+          )
+
+          toast({
+            type: 'success',
+            title:
+              'Historique chargé',
+            message: [
+              (
+                `${syncResult.synced_activities} `
+                + 'activité(s)'
+              ),
+              (
+                `${syncResult.synced_wellness_days} `
+                + 'jour(s) Wellness'
+              ),
+              (
+                `${syncResult.days} jours importés`
+              ),
+            ].join(' · '),
+          })
+        } catch (reason) {
+          dismissToast(
+            loadingToastId,
+          )
+
+          toast({
+            type: 'error',
+            title:
+              'Import initial incomplet',
+            message:
+              getErrorMessage(
+                reason,
+              ),
+            duration: null,
+          })
+        } finally {
+          setSyncing(false)
+        }
+
+        return
+      }
 
       setMessage(
         'Configuration enregistrée.',

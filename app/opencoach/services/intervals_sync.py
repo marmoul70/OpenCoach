@@ -15,6 +15,7 @@ from opencoach.services.integration_connection import (
 
 
 DEFAULT_SYNC_DAYS = 30
+INITIAL_SYNC_DAYS = 90
 DEFAULT_INCREMENTAL_LOOKBACK_DAYS = 2
 
 
@@ -48,6 +49,12 @@ class IntervalsSyncResult:
                 "La date de début de synchronisation "
                 "ne peut pas être postérieure à la date de fin."
             )
+
+
+class IntervalsInitialSyncAlreadyCompletedError(
+    RuntimeError
+):
+    """La synchronisation initiale a déjà été réalisée."""
 
 
 class IntervalsApplicationService:
@@ -106,6 +113,59 @@ class IntervalsApplicationService:
             oldest=oldest,
             newest=newest,
         )
+
+    def sync_initial_history(
+        self,
+        athlete_profile_id: UUID,
+        *,
+        newest: date | None = None,
+        days: int = INITIAL_SYNC_DAYS,
+    ) -> IntervalsSyncResult:
+        """Importe l'historique initial Intervals.icu.
+
+        Cette opération est réservée à la toute première
+        synchronisation de l'intégration.
+
+        Une connexion possédant déjà un ``last_synced_at``
+        ne peut plus relancer ce bootstrap.
+        """
+
+        if self.connection_service is None:
+            raise RuntimeError(
+                "connection_service est requis pour "
+                "la synchronisation initiale."
+            )
+
+        if days <= 0:
+            raise ValueError(
+                "days doit être strictement positif."
+            )
+
+        connection = (
+            self.connection_service.get_connection(
+                athlete_profile_id,
+                "intervals",
+            )
+        )
+
+        if connection is None:
+            raise RuntimeError(
+                "La connexion Intervals.icu "
+                "n'est pas configurée."
+            )
+
+        if connection.last_synced_at is not None:
+            raise IntervalsInitialSyncAlreadyCompletedError(
+                "La synchronisation initiale "
+                "Intervals.icu a déjà été effectuée."
+            )
+
+        return self.sync_all(
+            athlete_profile_id,
+            newest=newest,
+            days=days,
+        )
+
 
     def sync_incremental(
         self,

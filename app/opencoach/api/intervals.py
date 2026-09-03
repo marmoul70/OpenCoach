@@ -1,7 +1,13 @@
 from uuid import UUID
 from datetime import date, datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+)
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -24,6 +30,11 @@ from opencoach.integrations.intervals import (
     IntervalsDataError,
     IntervalsSyncService,
 )
+from opencoach.services.intervals_initial_sync_job import (
+    INITIAL_SYNC_JOBS,
+    run_initial_sync_job,
+)
+
 from opencoach.services import (
     DEFAULT_SYNC_DAYS,
     IntegrationConnectionService,
@@ -322,6 +333,105 @@ def sync_intervals(
         "synced_at": result.synced_at.isoformat(),
     }
 
+
+
+@router.post("/sync/initial/start")
+def start_initial_intervals_sync(
+    background_tasks: BackgroundTasks,
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id,
+    ),
+    connection_service: IntegrationConnectionService = Depends(
+        get_integration_connection_service,
+    ),
+) -> dict[str, str]:
+    """Démarre le bootstrap Intervals.icu en arrière-plan."""
+
+    connection = connection_service.get_connection(
+        athlete_profile_id,
+        "intervals",
+    )
+
+    if connection is None:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "La connexion Intervals.icu "
+                "n'est pas configurée."
+            ),
+        )
+
+    if connection.last_synced_at is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "La synchronisation initiale "
+                "Intervals.icu a déjà été réalisée."
+            ),
+        )
+
+    active_job = INITIAL_SYNC_JOBS.find_active(
+        athlete_profile_id,
+    )
+
+    if active_job is not None:
+        return {
+            "job_id": str(active_job.id),
+            "status": active_job.status,
+        }
+
+    job = INITIAL_SYNC_JOBS.create(
+        athlete_profile_id,
+    )
+
+    background_tasks.add_task(
+        run_initial_sync_job,
+        job_id=job.id,
+        athlete_profile_id=athlete_profile_id,
+    )
+
+    return {
+        "job_id": str(job.id),
+        "status": job.status,
+    }
+
+
+@router.get("/sync/initial/status/{job_id}")
+def get_initial_intervals_sync_status(
+    job_id: UUID,
+    athlete_profile_id: UUID = Depends(
+        get_local_athlete_profile_id,
+    ),
+) -> dict[str, str | int | None]:
+    """Retourne l'état du bootstrap Intervals.icu."""
+
+    job = INITIAL_SYNC_JOBS.get(
+        job_id,
+    )
+
+    if (
+        job is None
+        or job.athlete_profile_id
+        != athlete_profile_id
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Tâche de synchronisation "
+                "initiale introuvable."
+            ),
+        )
+
+    return {
+        "job_id": str(job.id),
+        "status": job.status,
+        "synced_activities":
+            job.synced_activities,
+        "synced_wellness_days":
+            job.synced_wellness_days,
+        "days": job.days,
+        "error": job.error,
+    }
 
 
 @router.post(

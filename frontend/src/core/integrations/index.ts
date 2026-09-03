@@ -1,11 +1,15 @@
 export {
+  fetchInitialSyncStatus,
   fetchIntervalsConnection,
   saveIntervalsConnection,
+  startInitialSync,
   syncIntervals,
   testIntervalsConnection,
   testSavedIntervalsConnection,
   type IntervalsConnection,
   type IntervalsConnectionTestResult,
+  type IntervalsInitialSyncJob,
+  type IntervalsInitialSyncStatus,
   type IntervalsConnectionUpdate,
   type IntervalsSyncResult,
 } from './api'

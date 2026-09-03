@@ -2,6 +2,7 @@ from .intervals_sync import (
     DEFAULT_INCREMENTAL_LOOKBACK_DAYS,
     DEFAULT_SYNC_DAYS,
     IntervalsApplicationService,
+    IntervalsInitialSyncAlreadyCompletedError,
     IntervalsSyncResult,
 )
 from .profile import ProfileService
@@ -18,6 +19,7 @@ __all__ = [
     "DEFAULT_INCREMENTAL_LOOKBACK_DAYS",
     "DEFAULT_SYNC_DAYS",
     "IntervalsApplicationService",
+    "IntervalsInitialSyncAlreadyCompletedError",
     "IntervalsSyncResult",
     "ProfileService",
     "IntegrationConnectionService",

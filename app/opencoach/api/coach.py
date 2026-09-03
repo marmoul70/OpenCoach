@@ -21,8 +21,8 @@ from opencoach.database.repositories.sql_weekly_training_plan import (
     SqlWeeklyTrainingPlanRepository,
 )
 
-from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
 )
 from opencoach.coaching import (
     CoachDecisionAssessment,
@@ -174,7 +174,7 @@ def get_coach_decision_service(
 )
 def get_coach_trajectory(
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     context_builder: WeeklyPlanningContextBuilder = Depends(
         get_weekly_planning_context_builder,
@@ -384,7 +384,7 @@ def get_coach_trajectory(
 def get_weekly_plan(
     week_start: date,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     db: Session = Depends(
         get_db,
@@ -421,7 +421,7 @@ def get_weekly_plan(
 )
 def get_today_coach_decision(
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     service: CoachDecisionService = Depends(
         get_coach_decision_service,

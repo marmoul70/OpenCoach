@@ -9,6 +9,8 @@ aucune règle métier d'entraînement.
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from opencoach.database.repositories.sql_physiological_test_proposal import (
     SqlPhysiologicalTestProposalRepository,
 )
@@ -76,6 +78,10 @@ from opencoach.database.repositories import (
 from opencoach.database.session import (
     get_db,
 )
+
+from opencoach.authentication import (
+    get_current_user_id,
+)
 from opencoach.planning.history.service import (
     TrainingHistorySnapshotService,
 )
@@ -104,6 +110,9 @@ from opencoach.training import (
 
 
 def get_planning_context_service(
+    user_id: UUID = Depends(
+        get_current_user_id
+    ),
     db: Session = Depends(
         get_db
     ),
@@ -130,7 +139,8 @@ def get_planning_context_service(
 
     profile_repository = (
         SqlProfileRepository(
-            db
+            db,
+            user_id,
         )
     )
 
@@ -265,6 +275,9 @@ def get_weekly_training_generation_service(
 
 
 def get_athlete_weekly_training_generation_service(
+    user_id: UUID = Depends(
+        get_current_user_id
+    ),
     db: Session = Depends(
         get_db
     ),
@@ -280,7 +293,8 @@ def get_athlete_weekly_training_generation_service(
     return AthleteWeeklyTrainingGenerationService(
         profile_repository=(
             SqlProfileRepository(
-                db
+                db,
+                user_id,
             )
         ),
         physiology_service=(

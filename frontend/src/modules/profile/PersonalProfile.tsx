@@ -17,6 +17,13 @@ import {
   useAthleteProfile,
 } from '../../core/profile'
 
+import {
+  AccountIdentitySection,
+} from '../auth/AccountIdentityCard'
+
+import {
+  AccountSecurityCard,
+} from '../auth/AccountSecurityCard'
 
 const MAX_AVATAR_SIZE =
   2 * 1024 * 1024
@@ -321,6 +328,7 @@ export function PersonalProfile() {
             utilisées dans OpenCoach.
           </p>
         </header>
+
 
 
         {/* IDENTITY CARD */}
@@ -851,7 +859,13 @@ export function PersonalProfile() {
               </div>
             </div>
           )}
+
+          <AccountIdentitySection />
         </section>
+
+        <div className="mt-4">
+          <AccountSecurityCard />
+        </div>
       </div>
     </main>
   )

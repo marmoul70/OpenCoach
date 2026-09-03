@@ -11,7 +11,7 @@ from opencoach.api.app import create_app
 from opencoach.api.intervals import (
     get_integration_connection_service,
     get_intervals_application_service,
-    get_local_athlete_profile_id,
+    get_current_athlete_profile_id,
 )
 from opencoach.database.repositories import (
     ActivityRepositoryError,
@@ -175,7 +175,7 @@ def create_test_client(
     profile_id = uuid4()
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: profile_id
 
     app.dependency_overrides[
@@ -421,7 +421,7 @@ def test_get_intervals_connection_returns_configured() -> None:
     )
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: profile_id
 
     app.dependency_overrides[
@@ -450,7 +450,7 @@ def test_get_intervals_connection_returns_unconfigured() -> None:
     app = create_app()
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: uuid4()
 
     app.dependency_overrides[
@@ -482,7 +482,7 @@ def test_put_intervals_connection() -> None:
     service = FakeIntegrationConnectionService()
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: profile_id
 
     app.dependency_overrides[
@@ -529,7 +529,7 @@ def test_put_intervals_connection_handles_validation_error() -> None:
     )
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: uuid4()
 
     app.dependency_overrides[
@@ -677,7 +677,7 @@ def test_saved_intervals_connection_succeeds(
             }
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: profile_id
 
     app.dependency_overrides[
@@ -739,7 +739,7 @@ def test_saved_intervals_connection_rejects_bad_credentials(
             )
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: uuid4()
 
     app.dependency_overrides[

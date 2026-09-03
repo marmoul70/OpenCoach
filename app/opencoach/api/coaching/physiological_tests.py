@@ -29,8 +29,8 @@ from fastapi import (
 )
 from pydantic import BaseModel
 
-from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
 )
 from opencoach.database.repositories.physiological_test_proposal import (
     PhysiologicalTestProposalRepository,
@@ -427,7 +427,7 @@ def get_physiological_test_protocol(
 )
 def list_pending_physiological_tests(
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     repository: PhysiologicalTestProposalRepository = Depends(
         get_physiological_test_proposal_repository
@@ -471,7 +471,7 @@ def list_pending_physiological_tests(
 def accept_physiological_test(
     proposal_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     repository: PhysiologicalTestProposalRepository = Depends(
         get_physiological_test_proposal_repository
@@ -574,7 +574,7 @@ def accept_physiological_test(
 def decline_physiological_test(
     proposal_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     repository: PhysiologicalTestProposalRepository = Depends(
         get_physiological_test_proposal_repository

@@ -8,8 +8,8 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 
-from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
 )
 from opencoach.database.repositories import (
     DailyContextRepositoryError,
@@ -43,7 +43,7 @@ def get_daily_context_repository(
 )
 def get_today_daily_context(
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlDailyContextRepository = Depends(
         get_daily_context_repository,
@@ -85,7 +85,7 @@ def get_today_daily_context(
 def update_today_daily_context(
     payload: DailyContextUpdate,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlDailyContextRepository = Depends(
         get_daily_context_repository,

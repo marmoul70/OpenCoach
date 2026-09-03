@@ -4,8 +4,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
 )
 from opencoach.database.repositories import (
     SqlWellnessRepository,
@@ -35,7 +35,7 @@ def get_wellness_repository(
 @router.get("/latest")
 def get_latest_wellness(
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlWellnessRepository = Depends(
         get_wellness_repository,
@@ -64,7 +64,7 @@ def get_latest_wellness(
 def get_wellness_trends(
     days: int = 7,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlWellnessRepository = Depends(
         get_wellness_repository,

@@ -19,8 +19,8 @@ from pydantic import (
 )
 from sqlalchemy.orm import Session
 
-from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
 )
 from opencoach.coaching.constraint_planning import (
     AthleteConstraintPlanningService,
@@ -171,7 +171,7 @@ def _to_domain(
 def create_constraint(
     payload: AthleteConstraintPayload,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     service: AthleteConstraintPlanningService = Depends(
         get_athlete_constraint_planning_service
@@ -216,7 +216,7 @@ def update_constraint(
     constraint_id: UUID,
     payload: AthleteConstraintPayload,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     service: AthleteConstraintPlanningService = Depends(
         get_athlete_constraint_planning_service
@@ -260,7 +260,7 @@ def update_constraint(
 def delete_constraint(
     constraint_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     service: AthleteConstraintPlanningService = Depends(
         get_athlete_constraint_planning_service
@@ -301,7 +301,7 @@ def delete_constraint(
 )
 def list_current_week_constraints(
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     db: Session = Depends(
         get_db

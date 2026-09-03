@@ -1,3 +1,4 @@
+from uuid import UUID
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
@@ -12,6 +13,30 @@ from opencoach.database.repositories import (
     SqlProfileRepository,
 )
 from opencoach.models import AthleteProfile, Bike, Shoe, Watch
+
+
+TEST_USER_ID = UUID(
+    "00000000-0000-0000-0000-000000000001"
+)
+
+
+def create_test_user(
+    db,
+    *,
+    user_id: UUID = TEST_USER_ID,
+    email: str = "test@opencoach.local",
+    username: str = "test001",
+) -> User:
+    user = User(
+        id=user_id,
+        email=email,
+        username=username,
+    )
+
+    db.add(user)
+    db.commit()
+
+    return user
 
 def create_session():
     engine = create_engine("sqlite:///:memory:")
@@ -29,7 +54,9 @@ def test_sql_repository_creates_default_profile() -> None:
     db = create_session()
 
     try:
-        repository = SqlProfileRepository(db)
+        create_test_user(db)
+
+        repository = SqlProfileRepository(db, TEST_USER_ID)
 
         profile = repository.get_profile()
 
@@ -46,7 +73,9 @@ def test_sql_repository_saves_and_reads_profile() -> None:
     db = create_session()
 
     try:
-        repository = SqlProfileRepository(db)
+        create_test_user(db)
+
+        repository = SqlProfileRepository(db, TEST_USER_ID)
 
         profile = AthleteProfile()
         profile.identity.first_name = "Test"
@@ -70,7 +99,9 @@ def test_sql_repository_keeps_user_and_profile_linked() -> None:
     db = create_session()
 
     try:
-        repository = SqlProfileRepository(db)
+        create_test_user(db)
+
+        repository = SqlProfileRepository(db, TEST_USER_ID)
 
         profile = AthleteProfile()
         profile.identity.first_name = "Test"
@@ -83,7 +114,7 @@ def test_sql_repository_keeps_user_and_profile_linked() -> None:
         )
 
         assert database_profile.user is not None
-        assert database_profile.user.email == "local@opencoach.local"
+        assert database_profile.user.id == TEST_USER_ID
         assert database_profile.user.athlete_profile is database_profile
     finally:
         db.close()
@@ -92,7 +123,9 @@ def test_sql_repository_persists_complete_profile() -> None:
     db = create_session()
 
     try:
-        repository = SqlProfileRepository(db)
+        create_test_user(db)
+
+        repository = SqlProfileRepository(db, TEST_USER_ID)
 
         profile = AthleteProfile()
 
@@ -165,7 +198,9 @@ def test_sql_repository_persists_equipment() -> None:
     db = create_session()
 
     try:
-        repository = SqlProfileRepository(db)
+        create_test_user(db)
+
+        repository = SqlProfileRepository(db, TEST_USER_ID)
 
         profile = AthleteProfile()
 
@@ -230,7 +265,9 @@ def test_sql_repository_rolls_back_when_commit_fails(
     db = create_session()
 
     try:
-        repository = SqlProfileRepository(db)
+        create_test_user(db)
+
+        repository = SqlProfileRepository(db, TEST_USER_ID)
         profile = AthleteProfile()
 
         rollback_called = False
@@ -270,7 +307,7 @@ def test_sql_repository_rolls_back_when_commit_fails(
     finally:
         db.close()
 
-def test_sql_repository_uses_local_user_profile_only() -> None:
+def test_sql_repository_uses_selected_user_profile_only() -> None:
     db = create_session()
 
     try:
@@ -286,7 +323,9 @@ def test_sql_repository_uses_local_user_profile_only() -> None:
         db.add(other_profile)
         db.commit()
 
-        repository = SqlProfileRepository(db)
+        create_test_user(db)
+
+        repository = SqlProfileRepository(db, TEST_USER_ID)
 
         profile = AthleteProfile()
         profile.identity.first_name = "Local"
@@ -306,13 +345,13 @@ def test_sql_repository_uses_local_user_profile_only() -> None:
 
         assert users == {
             "other@opencoach.local",
-            "local@opencoach.local",
+            "test@opencoach.local",
         }
 
         local_profile = (
             db.query(AthleteProfileModel)
             .join(AthleteProfileModel.user)
-            .filter(User.email == "local@opencoach.local")
+            .filter(User.email == "test@opencoach.local")
             .one()
         )
 
@@ -348,8 +387,13 @@ def test_profile_repository_persists_sport_disciplines() -> None:
     )
 
     with Session(engine) as db:
+        create_test_user(
+            db,
+        )
+
         repository = SqlProfileRepository(
-            db
+            db,
+            TEST_USER_ID,
         )
 
         profile = AthleteProfile()

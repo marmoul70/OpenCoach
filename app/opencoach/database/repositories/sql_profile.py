@@ -1,4 +1,5 @@
 from datetime import date
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -30,13 +31,16 @@ from opencoach.models import (
     Watch,
 )
 
-LOCAL_USER_EMAIL = "local@opencoach.local"
-
 class SqlProfileRepository(ProfileRepository):
     """Persiste le profil sportif dans la base SQL."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(
+        self,
+        session: Session,
+        user_id: UUID,
+    ) -> None:
         self.session = session
+        self.user_id = user_id
 
     def get_profile(self) -> AthleteProfile:
         try:
@@ -59,15 +63,27 @@ class SqlProfileRepository(ProfileRepository):
             database_profile = self._get_database_profile()
 
             if database_profile is None:
-                user = User(
-                    email=LOCAL_USER_EMAIL,
+                user = self.session.scalar(
+                    select(User)
+                    .where(
+                        User.id
+                        == self.user_id
+                    )
                 )
+
+                if user is None:
+                    raise ProfileRepositoryError(
+                        "Utilisateur OpenCoach introuvable."
+                    )
 
                 database_profile = AthleteProfileModel(
                     user=user,
                 )
 
-                self.session.add(database_profile)
+                self.session.add(
+                    database_profile
+                )
+
                 self.session.flush()
 
             # Identité
@@ -193,14 +209,22 @@ class SqlProfileRepository(ProfileRepository):
         self.save_profile(profile)
         return profile
 
-    def _get_database_profile(self) -> AthleteProfileModel | None:
+    def _get_database_profile(
+        self,
+    ) -> AthleteProfileModel | None:
         statement = (
-            select(AthleteProfileModel)
-            .join(AthleteProfileModel.user)
-            .where(User.email == LOCAL_USER_EMAIL)
+            select(
+                AthleteProfileModel
+            )
+            .where(
+                AthleteProfileModel.user_id
+                == self.user_id
+            )
         )
 
-        return self.session.scalar(statement)
+        return self.session.scalar(
+            statement
+        )
 
     @staticmethod
     def _to_domain(

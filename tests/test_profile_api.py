@@ -1,3 +1,4 @@
+from uuid import UUID
 from pathlib import Path
 from copy import deepcopy
 
@@ -8,11 +9,36 @@ from sqlalchemy.orm import sessionmaker
 from opencoach.api import create_app
 from opencoach.api.profile import get_profile_service
 from opencoach.database.base import Base
+from opencoach.database.models import User
 from opencoach.database.repositories import (
     ProfileRepositoryError,
     SqlProfileRepository,
 )
 from opencoach.services import ProfileService
+
+
+TEST_USER_ID = UUID(
+    "00000000-0000-0000-0000-000000000001"
+)
+
+
+def create_test_user(
+    db,
+    *,
+    user_id: UUID = TEST_USER_ID,
+    email: str = "test@opencoach.local",
+    username: str = "test001",
+) -> User:
+    user = User(
+        id=user_id,
+        email=email,
+        username=username,
+    )
+
+    db.add(user)
+    db.commit()
+
+    return user
 
 
 def create_test_client(tmp_path: Path) -> TestClient:
@@ -34,8 +60,22 @@ def create_test_client(tmp_path: Path) -> TestClient:
         session = session_factory()
 
         try:
-            repository = SqlProfileRepository(session)
-            yield ProfileService(repository)
+            if session.get(
+                User,
+                TEST_USER_ID,
+            ) is None:
+                create_test_user(
+                    session,
+                )
+
+            repository = SqlProfileRepository(
+                session,
+                TEST_USER_ID,
+            )
+
+            yield ProfileService(
+                repository,
+            )
         finally:
             session.close()
 

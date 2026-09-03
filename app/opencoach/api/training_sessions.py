@@ -16,8 +16,8 @@ from opencoach.coaching.session_guidance import (
     build_session_guidance,
 )
 
-from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
 )
 from opencoach.database.repositories import (
     SqlTrainingSessionRepository,
@@ -266,7 +266,7 @@ def list_training_sessions(
     start: date = Query(...),
     end: date = Query(...),
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlTrainingSessionRepository = Depends(
         get_training_session_repository,
@@ -300,7 +300,7 @@ def list_training_sessions(
 def create_training_session(
     payload: TrainingSessionCreate,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlTrainingSessionRepository = Depends(
         get_training_session_repository,
@@ -351,7 +351,7 @@ def list_available_activities(
         alias="date",
     ),
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlTrainingSessionRepository = Depends(
         get_training_session_repository,
@@ -412,7 +412,7 @@ def list_available_activities(
 def get_training_session(
     session_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlTrainingSessionRepository = Depends(
         get_training_session_repository,
@@ -449,7 +449,7 @@ def update_training_session_status(
     session_id: UUID,
     payload: TrainingSessionStatusUpdate,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlTrainingSessionRepository = Depends(
         get_training_session_repository,
@@ -487,7 +487,7 @@ def update_training_session_activity(
     session_id: UUID,
     payload: TrainingSessionActivityUpdate,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlTrainingSessionRepository = Depends(
         get_training_session_repository,
@@ -529,7 +529,7 @@ def update_training_session_activity(
 def list_candidate_activities(
     session_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlTrainingSessionRepository = Depends(
         get_training_session_repository,
@@ -646,7 +646,7 @@ def list_candidate_activities(
 def get_training_session_guidance(
     session_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     db: Session = Depends(get_db),
 ) -> SessionGuidanceResponse:
@@ -788,7 +788,7 @@ def validate_training_session(
     session_id: UUID,
     payload: TrainingSessionValidateRequest,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     db: Session = Depends(
         get_db
@@ -902,7 +902,7 @@ def validate_training_session(
 def get_training_session_debrief(
     session_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     db: Session = Depends(
         get_db

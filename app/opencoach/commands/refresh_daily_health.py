@@ -14,12 +14,9 @@ from datetime import (
 from sqlalchemy import select
 
 from opencoach.commands.sync_intervals import (
+    IntervalsSyncTarget,
     build_service,
-    get_local_athlete_profile_id,
-)
-from opencoach.database.models import (
-    AthleteProfile,
-    User,
+    list_intervals_sync_targets,
 )
 from opencoach.database.repositories import (
     SqlIntegrationConnectionRepository,
@@ -41,10 +38,6 @@ from opencoach.services.push_notification import (
     PushNotificationService,
 )
 
-
-LOCAL_USER_EMAIL = (
-    "local@opencoach.local"
-)
 
 PROVIDER = "intervals"
 
@@ -141,12 +134,15 @@ def _build_intervals_client(
 
 def _send_final_failure_notification(
     session,
+    *,
+    user_id,
 ) -> None:
     report = (
         PushNotificationService(
             session
         )
         .send_system_sync_error(
+            user_id=user_id,
             title=(
                 "Données santé indisponibles"
             ),
@@ -163,6 +159,172 @@ def _send_final_failure_notification(
         "[INFO] Notification envoyée : "
         f"{report.sent}"
     )
+
+
+def _refresh_target(
+    session,
+    *,
+    target: IntervalsSyncTarget,
+    today: date,
+    now: datetime,
+) -> bool:
+    """Actualise les données santé d'un profil Intervals."""
+
+    profile_id = (
+        target.athlete_profile_id
+    )
+
+    wellness_repository = (
+        SqlWellnessRepository(
+            session
+        )
+    )
+
+    wellness = (
+        wellness_repository
+        .get_by_date(
+            profile_id,
+            today,
+            provider=PROVIDER,
+        )
+    )
+
+    if _health_data_available(
+        wellness
+    ):
+        print(
+            "[OK] Données santé du jour "
+            f"déjà disponibles pour {profile_id}."
+        )
+
+        return True
+
+    print(
+        "[INFO] Données santé absentes "
+        f"pour {profile_id}."
+    )
+
+    try:
+        client = (
+            _build_intervals_client(
+                session,
+                profile_id,
+            )
+        )
+
+        print(
+            "[INFO] Déclenchement "
+            "de la synchronisation "
+            "Suunto / Intervals.icu "
+            f"pour {profile_id}."
+        )
+
+        try:
+            client.trigger_partner_sync()
+
+            print(
+                "[INFO] Synchronisation partenaire "
+                "Intervals.icu déclenchée."
+            )
+
+            print(
+                "[INFO] Attente de "
+                f"{WAIT_SECONDS} secondes."
+            )
+
+            time.sleep(
+                WAIT_SECONDS
+            )
+
+        except Exception as exc:
+            print(
+                "[AVERTISSEMENT] Synchronisation partenaire "
+                "indisponible : "
+                f"{exc}"
+            )
+
+        service = build_service(
+            session,
+            profile_id,
+        )
+
+        result = (
+            service.sync_incremental(
+                profile_id,
+            )
+        )
+
+        print(
+            "[INFO] Synchronisation "
+            "OpenCoach terminée : "
+            f"{result.synced_wellness_days} "
+            "jour(s) Wellness."
+        )
+
+    except Exception as exc:
+        print(
+            "[ERREUR] Collecte santé "
+            f"pour {profile_id} : {exc}"
+        )
+
+        if _is_final_check(
+            now
+        ):
+            try:
+                _send_final_failure_notification(
+                    session,
+                    user_id=target.user_id,
+                )
+
+            except Exception as push_exc:
+                print(
+                    "[ERREUR] Notification : "
+                    f"{push_exc}"
+                )
+
+        return False
+
+    wellness = (
+        wellness_repository
+        .get_by_date(
+            profile_id,
+            today,
+            provider=PROVIDER,
+        )
+    )
+
+    if _health_data_available(
+        wellness
+    ):
+        print(
+            "[OK] Données santé récupérées "
+            f"pour {profile_id}."
+        )
+
+        return True
+
+    print(
+        "[INFO] Les données santé "
+        "ne sont pas encore disponibles "
+        f"pour {profile_id}."
+    )
+
+    if _is_final_check(
+        now
+    ):
+        try:
+            _send_final_failure_notification(
+                session,
+                user_id=target.user_id,
+            )
+
+        except Exception as exc:
+            print(
+                "[ERREUR] Notification : "
+                f"{exc}"
+            )
+
+    return True
 
 
 def main(
@@ -191,156 +353,53 @@ def main(
     today = date.today()
 
     with SessionLocal() as session:
-        profile_id = (
-            get_local_athlete_profile_id(
+        targets = (
+            list_intervals_sync_targets(
                 session
             )
         )
 
-        wellness_repository = (
-            SqlWellnessRepository(
-                session
-            )
-        )
-
-        wellness = (
-            wellness_repository
-            .get_by_date(
-                profile_id,
-                today,
-                provider=PROVIDER,
-            )
-        )
-
-        if _health_data_available(
-            wellness
-        ):
+        if not targets:
             print(
-                "[OK] Données santé du jour "
-                "déjà disponibles."
+                "[INFO] Aucun profil Intervals.icu "
+                "éligible à la collecte santé."
             )
 
             return 0
 
         print(
-            "[INFO] Données santé "
-            "du jour absentes."
+            "[INFO] Profils Intervals.icu "
+            f"à traiter : {len(targets)}."
         )
 
-        try:
-            client = (
-                _build_intervals_client(
-                    session,
-                    profile_id,
-                )
-            )
+        failures = 0
 
+        for target in targets:
             print(
-                "[INFO] Déclenchement "
-                "de la synchronisation "
-                "Suunto / Intervals.icu."
+                "[INFO] Traitement du profil "
+                f"{target.athlete_profile_id}."
             )
 
-            try:
-                client.trigger_partner_sync()
-
-                print(
-                    "[INFO] Synchronisation partenaire "
-                    "Intervals.icu déclenchée."
-                )
-
-                print(
-                    "[INFO] Attente de "
-                    f"{WAIT_SECONDS} secondes."
-                )
-
-                time.sleep(
-                    WAIT_SECONDS
-                )
-
-            except Exception as exc:
-                print(
-                    "[AVERTISSEMENT] Synchronisation partenaire "
-                    "indisponible : "
-                    f"{exc}"
-                )
-
-            service = build_service(
-                session
-            )
-
-            result = (
-                service.sync_incremental(
-                    profile_id,
-                )
-            )
-
-            print(
-                "[INFO] Synchronisation "
-                "OpenCoach terminée : "
-                f"{result.synced_wellness_days} "
-                "jour(s) Wellness."
-            )
-
-        except Exception as exc:
-            print(
-                "[ERREUR] Collecte santé : "
-                f"{exc}"
-            )
-
-            if _is_final_check(
-                now
+            if not _refresh_target(
+                session,
+                target=target,
+                today=today,
+                now=now,
             ):
-                try:
-                    _send_final_failure_notification(
-                        session
-                    )
+                failures += 1
 
-                except Exception as push_exc:
-                    print(
-                        "[ERREUR] Notification : "
-                        f"{push_exc}"
-                    )
+        if failures:
+            print(
+                "[ERREUR] Collecte santé terminée "
+                f"avec {failures} échec(s)."
+            )
 
             return 1
 
-        wellness = (
-            wellness_repository
-            .get_by_date(
-                profile_id,
-                today,
-                provider=PROVIDER,
-            )
-        )
-
-        if _health_data_available(
-            wellness
-        ):
-            print(
-                "[OK] Données santé "
-                "récupérées."
-            )
-
-            return 0
-
         print(
-            "[INFO] Les données santé "
-            "ne sont pas encore disponibles."
+            "[OK] Collecte santé terminée "
+            "pour tous les profils."
         )
-
-        if _is_final_check(
-            now
-        ):
-            try:
-                _send_final_failure_notification(
-                    session
-                )
-
-            except Exception as exc:
-                print(
-                    "[ERREUR] Notification : "
-                    f"{exc}"
-                )
 
         return 0
 

@@ -11,7 +11,7 @@ from opencoach.api.coaching.dependencies import (
     get_training_session_repository,
 )
 from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+    get_current_athlete_profile_id,
 )
 from opencoach.api.profile import (
     get_profile_service,
@@ -317,7 +317,7 @@ def _client():
     )
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: athlete_profile_id
 
     app.dependency_overrides[

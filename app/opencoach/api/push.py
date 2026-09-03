@@ -1,3 +1,4 @@
+from uuid import UUID
 import os
 from fastapi import (
     APIRouter,
@@ -16,6 +17,10 @@ from opencoach.database.repositories.sql_push_subscription import (
 )
 from opencoach.database.session import (
     get_db,
+)
+
+from opencoach.authentication import (
+    get_current_user_id,
 )
 
 
@@ -74,6 +79,9 @@ class PushSubscriptionDelete(
 def subscribe(
     payload: PushSubscriptionInput,
     request: Request,
+    user_id: UUID = Depends(
+        get_current_user_id,
+    ),
     session: Session = Depends(
         get_db
     ),
@@ -85,6 +93,7 @@ def subscribe(
     )
 
     repository.save(
+        user_id=user_id,
         endpoint=payload.endpoint,
         p256dh=payload.keys.p256dh,
         auth=payload.keys.auth,
@@ -103,6 +112,9 @@ def subscribe(
 )
 def unsubscribe(
     payload: PushSubscriptionDelete,
+    user_id: UUID = Depends(
+        get_current_user_id,
+    ),
     session: Session = Depends(
         get_db
     ),
@@ -113,8 +125,9 @@ def unsubscribe(
         )
     )
 
-    repository.delete_by_endpoint(
-        payload.endpoint
+    repository.delete_by_endpoint_for_user(
+        payload.endpoint,
+        user_id,
     )
 
     return {
@@ -158,6 +171,9 @@ class PushBadgeReset(
 )
 def reset_push_badge(
     payload: PushBadgeReset,
+    user_id: UUID = Depends(
+        get_current_user_id,
+    ),
     session: Session = Depends(
         get_db
     ),
@@ -168,8 +184,9 @@ def reset_push_badge(
         )
     )
 
-    repository.reset_badge(
-        payload.endpoint
+    repository.reset_badge_for_user(
+        payload.endpoint,
+        user_id,
     )
 
     return {
@@ -259,6 +276,9 @@ def _browser_name(
 )
 def list_push_devices(
     payload: PushEndpointInput,
+    user_id: UUID = Depends(
+        get_current_user_id,
+    ),
     session: Session = Depends(
         get_db
     ),
@@ -271,7 +291,7 @@ def list_push_devices(
 
     devices = []
 
-    for subscription in repository.list_all():
+    for subscription in repository.list_for_user(user_id):
         devices.append({
             "id": str(
                 subscription.id
@@ -309,6 +329,9 @@ def list_push_devices(
 )
 def get_push_preferences(
     payload: PushEndpointInput,
+    user_id: UUID = Depends(
+        get_current_user_id,
+    ),
     session: Session = Depends(
         get_db
     ),
@@ -320,8 +343,9 @@ def get_push_preferences(
     )
 
     subscription = (
-        repository.get_by_endpoint(
-            payload.endpoint
+        repository.get_by_endpoint_for_user(
+            payload.endpoint,
+            user_id,
         )
     )
 
@@ -358,6 +382,9 @@ def get_push_preferences(
 )
 def update_push_preferences(
     payload: PushPreferencesInput,
+    user_id: UUID = Depends(
+        get_current_user_id,
+    ),
     session: Session = Depends(
         get_db
     ),
@@ -369,6 +396,7 @@ def update_push_preferences(
     )
 
     repository.update_preferences(
+        user_id=user_id,
         endpoint=payload.endpoint,
         system_enabled=(
             payload.system_enabled

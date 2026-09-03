@@ -16,7 +16,7 @@ from opencoach.api.coaching.dependencies import (
     get_weekly_planning_context_builder,
 )
 from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+    get_current_athlete_profile_id,
 )
 from opencoach.coaching.generation import (
     GenerateAndPersistTrainingWeekResult,
@@ -147,7 +147,7 @@ def create_client() -> TestClient:
     app = create_app()
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: ATHLETE_ID
 
     app.dependency_overrides[

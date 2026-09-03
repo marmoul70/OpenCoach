@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -7,6 +9,10 @@ from opencoach.database.repositories import (
     SqlProfileRepository,
 )
 from opencoach.database.session import get_db
+
+from opencoach.authentication import (
+    get_current_user_id,
+)
 from opencoach.models import (
     AthleteBody,
     AthleteEquipment,
@@ -39,11 +45,21 @@ def _raise_profile_storage_unavailable(
     ) from exc
 
 def get_profile_service(
-    db: Session = Depends(get_db),
+    user_id: UUID = Depends(
+        get_current_user_id,
+    ),
+    db: Session = Depends(
+        get_db,
+    ),
 ) -> ProfileService:
-    repository = SqlProfileRepository(db)
+    repository = SqlProfileRepository(
+        db,
+        user_id,
+    )
 
-    return ProfileService(repository)
+    return ProfileService(
+        repository
+    )
 
 def schema_to_domain(
     profile: AthleteProfileSchema,

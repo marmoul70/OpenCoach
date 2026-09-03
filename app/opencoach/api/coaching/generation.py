@@ -11,8 +11,8 @@ from fastapi import (
     HTTPException,
 )
 
-from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
 )
 from opencoach.coaching.generation import (
     ExistingTrainingSessionConflictError,
@@ -62,7 +62,7 @@ def generate_training_week(
     week_start: date,
     payload: GenerateTrainingWeekRequest,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     context_builder: WeeklyPlanningContextBuilder = Depends(
         get_weekly_planning_context_builder

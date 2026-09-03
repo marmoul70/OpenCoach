@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+    get_current_athlete_profile_id,
 )
 from opencoach.database.base import Base
 from opencoach.database.models import (
@@ -76,7 +76,7 @@ def _test_context():
     ] = override_get_db
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = override_athlete_profile_id
 
     return (

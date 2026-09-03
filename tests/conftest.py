@@ -98,10 +98,19 @@ def authenticate_api_tests(
     ) is not None:
         return
 
+    from opencoach.authentication.auth import (
+        SessionIdentity,
+    )
+
     monkeypatch.setattr(
         (
             "opencoach.authentication.middleware."
-            "verify_session_token"
+            "read_session_identity"
         ),
-        lambda token: True,
+        lambda token: SessionIdentity(
+            user_id=(
+                "00000000-0000-0000-0000-000000000001"
+            ),
+            expires_at=4102444800,
+        ),
     )

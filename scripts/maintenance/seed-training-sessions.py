@@ -1,3 +1,5 @@
+import argparse
+
 from datetime import date, timedelta
 
 from sqlalchemy import select
@@ -10,7 +12,26 @@ from opencoach.database.session import SessionLocal
 from opencoach.models import TrainingSession
 
 
-LOCAL_USER_EMAIL = "local@opencoach.local"
+def build_parser() -> argparse.ArgumentParser:
+    """Construit les arguments du script de maintenance."""
+
+    parser = argparse.ArgumentParser(
+        description=(
+            "Crée des séances de démonstration "
+            "pour un utilisateur OpenCoach."
+        ),
+    )
+
+    parser.add_argument(
+        "--username",
+        required=True,
+        help=(
+            "Identifiant OpenCoach de l'utilisateur "
+            "à cibler, par exemple ys001."
+        ),
+    )
+
+    return parser
 
 
 def date_at_offset(offset: int) -> date:
@@ -133,42 +154,75 @@ SESSIONS = [
 ]
 
 
-def main() -> None:
+def main(
+    argv: list[str] | None = None,
+) -> None:
+    """Crée les séances pour l'utilisateur explicitement demandé."""
+
+    args = (
+        build_parser()
+        .parse_args(
+            argv
+        )
+    )
+
+    username = (
+        args.username
+        .strip()
+        .lower()
+    )
+
     with SessionLocal() as db:
         profile = db.scalar(
-            select(AthleteProfile)
-            .join(AthleteProfile.user)
+            select(
+                AthleteProfile
+            )
+            .join(
+                AthleteProfile.user
+            )
             .where(
-                User.email == LOCAL_USER_EMAIL,
+                User.username
+                == username,
+                User.active.is_(True),
             )
         )
 
         if profile is None:
             raise SystemExit(
-                "Profil local OpenCoach introuvable."
+                "Utilisateur actif ou profil athlète "
+                f"introuvable pour '{username}'."
             )
 
-        repository = SqlTrainingSessionRepository(db)
+        repository = (
+            SqlTrainingSessionRepository(
+                db
+            )
+        )
 
-        existing = repository.list_sessions_between(
-            profile.id,
-            date_at_offset(-3),
-            date_at_offset(3),
+        existing = (
+            repository
+            .list_sessions_between(
+                profile.id,
+                date_at_offset(-3),
+                date_at_offset(3),
+            )
         )
 
         if existing:
             raise SystemExit(
-                "Des séances existent déjà pour cette période."
+                "Des séances existent déjà "
+                "pour cette période."
             )
 
-        for session in SESSIONS:
+        for training_session in SESSIONS:
             repository.save_session(
                 profile.id,
-                session,
+                training_session,
             )
 
         print(
-            f"{len(SESSIONS)} séances créées."
+            f"{len(SESSIONS)} séances créées "
+            f"pour {username}."
         )
 
 

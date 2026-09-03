@@ -79,6 +79,15 @@ def _setting(
     frozen=True,
     slots=True,
 )
+class SessionIdentity:
+    user_id: str | None
+    expires_at: int
+
+
+@dataclass(
+    frozen=True,
+    slots=True,
+)
 class AuthSettings:
     pin_salt: bytes
     pin_hash: bytes
@@ -150,41 +159,19 @@ def get_auth_settings() -> AuthSettings:
     )
 
 
-def verify_pin(
-    pin: str,
-) -> bool:
-    if (
-        len(pin) != 6
-        or not pin.isdigit()
-    ):
-        return False
 
-    settings = (
-        get_auth_settings()
-    )
-
-    candidate = hashlib.scrypt(
-        pin.encode(
-            "utf-8"
-        ),
-        salt=settings.pin_salt,
-        n=2**15,
-        r=8,
-        p=1,
-        dklen=32,
-    maxmem=64 * 1024 * 1024,
-    )
-
-    return hmac.compare_digest(
-        candidate,
-        settings.pin_hash,
-    )
-
-
-def create_session_token() -> tuple[
+def create_session_token(
+    user_id: str,
+) -> tuple[
     str,
     int,
 ]:
+    """Crée un token de session signé.
+
+    ``user_id`` reste optionnel pendant la migration
+    depuis l'ancienne authentification locale.
+    """
+
     settings = (
         get_auth_settings()
     )
@@ -207,8 +194,15 @@ def create_session_token() -> tuple[
         24
     )
 
+    if not user_id:
+        raise ValueError(
+            "user_id est requis pour créer une session."
+        )
+
     payload = (
-        f"{expires_at}.{nonce}"
+        f"{expires_at}."
+        f"{user_id}."
+        f"{nonce}"
     )
 
     signature = hmac.new(
@@ -225,19 +219,32 @@ def create_session_token() -> tuple[
     )
 
 
-def verify_session_token(
+def read_session_identity(
     token: str | None,
-) -> bool:
+) -> SessionIdentity | None:
+    """Valide et décode une session utilisateur Auth V2."""
+
     if not token:
-        return False
+        return None
+
+    settings = (
+        get_auth_settings()
+    )
+
+    parts = token.split(
+        "."
+    )
+
+    if len(parts) != 4:
+        return None
 
     try:
-        expires_raw, nonce, signature = (
-            token.split(
-                ".",
-                2,
-            )
-        )
+        (
+            expires_raw,
+            user_id,
+            nonce,
+            signature,
+        ) = parts
 
         expires_at = int(
             expires_raw
@@ -247,7 +254,13 @@ def verify_session_token(
         TypeError,
         ValueError,
     ):
-        return False
+        return None
+
+    if (
+        not user_id
+        or user_id == "-"
+    ):
+        return None
 
     if (
         expires_at
@@ -255,14 +268,12 @@ def verify_session_token(
             time.time()
         )
     ):
-        return False
+        return None
 
     payload = (
-        f"{expires_at}.{nonce}"
-    )
-
-    settings = (
-        get_auth_settings()
+        f"{expires_at}."
+        f"{user_id}."
+        f"{nonce}"
     )
 
     expected = hmac.new(
@@ -273,7 +284,24 @@ def verify_session_token(
         hashlib.sha256,
     ).hexdigest()
 
-    return hmac.compare_digest(
+    if not hmac.compare_digest(
         signature,
         expected,
+    ):
+        return None
+
+    return SessionIdentity(
+        user_id=user_id,
+        expires_at=expires_at,
+    )
+
+
+def verify_session_token(
+    token: str | None,
+) -> bool:
+    return (
+        read_session_identity(
+            token
+        )
+        is not None
     )

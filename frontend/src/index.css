@@ -122,3 +122,17 @@ select {
     transform: translateY(0) scale(1);
   }
 }
+
+
+.auth-create-input {
+  min-width: 0;
+  flex: 1;
+  background: transparent;
+  font-size: 12px;
+  color: rgb(15 23 42);
+  outline: none;
+}
+
+[data-theme="dark"] .auth-create-input {
+  color: white;
+}

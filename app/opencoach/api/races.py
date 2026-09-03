@@ -10,8 +10,8 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 
-from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
 )
 from opencoach.api.coaching.dependencies import (
     get_current_week_planning_service,
@@ -253,7 +253,7 @@ def list_races(
         default=None,
     ),
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlRaceRepository = Depends(
         get_race_repository,
@@ -346,7 +346,7 @@ def list_races(
 def create_race(
     payload: RaceCreate,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlRaceRepository = Depends(
         get_race_repository,
@@ -409,7 +409,7 @@ def create_race(
 def get_race(
     race_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlRaceRepository = Depends(
         get_race_repository,
@@ -459,7 +459,7 @@ def update_race_activity(
     race_id: UUID,
     payload: RaceActivityUpdate,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlRaceRepository = Depends(
         get_race_repository,
@@ -519,7 +519,7 @@ def update_race_activity(
 def list_race_candidate_activities(
     race_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlRaceRepository = Depends(
         get_race_repository,
@@ -602,7 +602,7 @@ def update_race(
     race_id: UUID,
     payload: RaceUpdate,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlRaceRepository = Depends(
         get_race_repository,
@@ -688,7 +688,7 @@ def update_race(
 def delete_race(
     race_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlRaceRepository = Depends(
         get_race_repository,

@@ -9,6 +9,7 @@ from opencoach.database.base import Base
 
 if TYPE_CHECKING:
     from opencoach.database.models.athlete_profile import AthleteProfile
+    from opencoach.database.models.push_subscription import PushSubscription
 
 
 class User(Base):
@@ -26,6 +27,23 @@ class User(Base):
         unique=True,
         nullable=False,
         index=True,
+    )
+
+    username: Mapped[str | None] = mapped_column(
+        String(32),
+        unique=True,
+        nullable=True,
+        index=True,
+    )
+
+    pin_hash: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    pin_salt: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
     )
 
     password_hash: Mapped[str | None] = mapped_column(
@@ -60,5 +78,9 @@ class User(Base):
     athlete_profile: Mapped["AthleteProfile | None"] = relationship(
         back_populates="user",
         uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+    push_subscriptions: Mapped[list["PushSubscription"]] = relationship(
         cascade="all, delete-orphan",
     )

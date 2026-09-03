@@ -15,7 +15,7 @@ from opencoach.api.coaching.physiological_tests import (
     router,
 )
 from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+    get_current_athlete_profile_id,
 )
 from opencoach.database.repositories.physiological_test_proposal import (
     PhysiologicalTestProposalRepository,
@@ -372,7 +372,7 @@ def create_client(
     )
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: ATHLETE_ID
 
     app.dependency_overrides[

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 import json
 import os
 from dataclasses import dataclass
@@ -140,6 +142,7 @@ class PushNotificationService:
     def send_system_sync_error(
         self,
         *,
+        user_id: UUID,
         title: str,
         body: str,
         url: str = "/settings",
@@ -148,7 +151,7 @@ class PushNotificationService:
 
         subscriptions = [
             subscription
-            for subscription in self.repository.list_all()
+            for subscription in self.repository.list_for_user(user_id)
             if (
                 subscription.system_notifications_enabled
                 and subscription.system_sync_errors_enabled
@@ -192,6 +195,7 @@ class PushNotificationService:
     def send_training_reminder(
         self,
         *,
+        user_id: UUID,
         title: str,
         body: str,
         url: str,
@@ -201,7 +205,7 @@ class PushNotificationService:
         subscriptions = [
             subscription
             for subscription
-            in self.repository.list_all()
+            in self.repository.list_for_user(user_id)
             if subscription.training_reminder_enabled
         ]
 

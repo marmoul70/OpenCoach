@@ -30,6 +30,12 @@ class FakeRepository:
     ):
         return self.subscriptions
 
+    def list_for_user(
+        self,
+        user_id,
+    ):
+        return self.subscriptions
+
     def increment_badge(
         self,
         endpoint,
@@ -121,6 +127,7 @@ def test_sync_error_sends_only_to_enabled_devices(
 
     report = (
         service.send_system_sync_error(
+            user_id="test-user-id",
             title="Test",
             body="Erreur sync",
         )
@@ -220,6 +227,7 @@ def test_sync_error_with_no_eligible_device(
 
     report = (
         service.send_system_sync_error(
+            user_id="test-user-id",
             title="Test",
             body="Erreur",
         )

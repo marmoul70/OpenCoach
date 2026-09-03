@@ -157,8 +157,13 @@ def test_partner_sync_failure_does_not_block_incremental_sync(
 
     monkeypatch.setattr(
         "opencoach.commands.refresh_daily_health."
-        "get_local_athlete_profile_id",
-        lambda session: 123,
+        "list_intervals_sync_targets",
+        lambda session: [
+            SimpleNamespace(
+                user_id=456,
+                athlete_profile_id=123,
+            )
+        ],
     )
 
     monkeypatch.setattr(
@@ -176,7 +181,7 @@ def test_partner_sync_failure_does_not_block_incremental_sync(
     monkeypatch.setattr(
         "opencoach.commands.refresh_daily_health."
         "build_service",
-        lambda session: FakeService(),
+        lambda session, profile_id: FakeService(),
     )
 
     monkeypatch.setattr(
@@ -210,4 +215,3 @@ def test_partner_sync_failure_does_not_block_incremental_sync(
     assert result == 0
     assert calls["partner"] == 1
     assert calls["incremental"] == 1
-

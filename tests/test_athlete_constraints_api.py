@@ -8,7 +8,7 @@ from opencoach.api.coaching.constraints import (
     get_athlete_constraint_planning_service,
 )
 from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+    get_current_athlete_profile_id,
 )
 from opencoach.models import AthleteConstraint
 
@@ -66,7 +66,7 @@ def _client():
     )
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: athlete_profile_id
 
     app.dependency_overrides[

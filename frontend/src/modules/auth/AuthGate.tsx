@@ -19,6 +19,10 @@ import {
 } from './api'
 
 import {
+  CreateAccountPage,
+} from './CreateAccountPage'
+
+import {
   LoginPage,
 } from './LoginPage'
 
@@ -40,6 +44,16 @@ export function AuthGate({
     setState,
   ] = useState<AuthState>(
     'loading',
+  )
+
+  const [
+    authView,
+    setAuthView,
+  ] = useState<
+    'login'
+    | 'create-account'
+  >(
+    'login',
   )
 
 
@@ -155,11 +169,31 @@ export function AuthGate({
   if (
     state === 'unauthenticated'
   ) {
+    if (
+      authView
+      === 'create-account'
+    ) {
+      return (
+        <CreateAccountPage
+          onBackToLogin={() => {
+            setAuthView(
+              'login',
+            )
+          }}
+        />
+      )
+    }
+
     return (
       <LoginPage
         onAuthenticated={() => {
           setState(
             'authenticated',
+          )
+        }}
+        onCreateAccount={() => {
+          setAuthView(
+            'create-account',
           )
         }}
       />

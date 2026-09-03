@@ -3,8 +3,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
 )
 from opencoach.database.repositories import (
     ActivityRepositoryError,
@@ -29,7 +29,7 @@ def get_activity_repository(
 @router.get("")
 def list_activities(
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     repository: SqlActivityRepository = Depends(
         get_activity_repository,

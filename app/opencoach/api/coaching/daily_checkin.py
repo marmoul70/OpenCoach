@@ -24,8 +24,8 @@ from pydantic import (
     Field,
 )
 
-from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
 )
 from opencoach.api.profile import (
     get_profile_service,
@@ -305,7 +305,7 @@ def _state_response(
 def save_daily_checkin(
     payload: DailyCheckInPayload,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     checkin_repository: DailyCheckInRepository = Depends(
         get_daily_checkin_repository
@@ -435,7 +435,7 @@ def save_daily_checkin(
 )
 def get_today_daily_checkin(
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     checkin_repository: DailyCheckInRepository = Depends(
         get_daily_checkin_repository
@@ -524,7 +524,7 @@ def _change_adaptation_decision(
 def accept_daily_adaptation(
     checkin_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     checkin_repository: DailyCheckInRepository = Depends(
         get_daily_checkin_repository
@@ -975,7 +975,7 @@ def accept_daily_rescheduling(
         ...
     ),
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     checkin_repository: DailyCheckInRepository = Depends(
         get_daily_checkin_repository
@@ -1120,7 +1120,7 @@ def accept_daily_rescheduling(
 def get_daily_replanning_options(
     checkin_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     checkin_repository: DailyCheckInRepository = Depends(
         get_daily_checkin_repository
@@ -1319,7 +1319,7 @@ def apply_daily_replanning_option(
         ...
     ),
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     checkin_repository: DailyCheckInRepository = Depends(
         get_daily_checkin_repository
@@ -1447,7 +1447,7 @@ def apply_daily_replanning_option(
 def decline_daily_adaptation(
     checkin_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ),
     adaptation_repository: DailyAdaptationRepository = Depends(
         get_daily_adaptation_repository

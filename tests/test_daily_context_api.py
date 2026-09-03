@@ -8,7 +8,7 @@ from opencoach.api.daily_context import (
     get_daily_context_repository,
 )
 from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+    get_current_athlete_profile_id,
 )
 from opencoach.models import DailyContext
 
@@ -57,7 +57,7 @@ def create_client(
     app = create_app()
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: PROFILE_ID
 
     app.dependency_overrides[

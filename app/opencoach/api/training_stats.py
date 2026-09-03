@@ -9,8 +9,8 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 
-from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
 )
 from opencoach.database.repositories import (
     ActivityRepositoryError,
@@ -56,7 +56,7 @@ def get_training_stats(
     start: date = Query(...),
     end: date = Query(...),
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     service: TrainingStatsService = Depends(
         get_training_stats_service,

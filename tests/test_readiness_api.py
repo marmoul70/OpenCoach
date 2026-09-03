@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from opencoach.api.app import create_app
 from opencoach.api.intervals import (
-    get_local_athlete_profile_id,
+    get_current_athlete_profile_id,
 )
 from opencoach.api.readiness import (
     get_readiness_service,
@@ -180,7 +180,7 @@ def create_client(
     profile_id = uuid4()
 
     app.dependency_overrides[
-        get_local_athlete_profile_id
+        get_current_athlete_profile_id
     ] = lambda: profile_id
 
     app.dependency_overrides[

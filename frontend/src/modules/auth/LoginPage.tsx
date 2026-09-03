@@ -1,7 +1,9 @@
 import {
+  KeyRound,
   LockKeyhole,
   LogIn,
   ShieldCheck,
+  UserRound,
 } from 'lucide-react'
 
 import {
@@ -11,18 +13,40 @@ import {
 } from 'react'
 
 import {
-  loginWithPin,
+  loginWithCredentials,
 } from './api'
 
 
 interface LoginPageProps {
   onAuthenticated: () => void
+  onCreateAccount: () => void
+}
+
+
+function sanitizePin(
+  value: string,
+): string {
+  return value
+    .replace(
+      /\D/g,
+      '',
+    )
+    .slice(
+      0,
+      6,
+    )
 }
 
 
 export function LoginPage({
   onAuthenticated,
+  onCreateAccount,
 }: LoginPageProps) {
+  const [
+    username,
+    setUsername,
+  ] = useState('')
+
   const [
     pin,
     setPin,
@@ -40,7 +64,7 @@ export function LoginPage({
     setLoading,
   ] = useState(false)
 
-  const inputRef =
+  const pinRef =
     useRef<HTMLInputElement | null>(
       null,
     )
@@ -51,6 +75,20 @@ export function LoginPage({
   ) {
     event.preventDefault()
 
+    const normalizedUsername =
+      username
+        .trim()
+        .toLowerCase()
+
+    if (
+      normalizedUsername.length < 3
+    ) {
+      setError(
+        'Saisissez votre identifiant OpenCoach.',
+      )
+      return
+    }
+
     if (
       !/^\d{6}$/.test(
         pin,
@@ -59,7 +97,6 @@ export function LoginPage({
       setError(
         'Saisissez les 6 chiffres du code PIN.',
       )
-
       return
     }
 
@@ -67,7 +104,8 @@ export function LoginPage({
     setError(null)
 
     try {
-      await loginWithPin(
+      await loginWithCredentials(
+        normalizedUsername,
         pin,
       )
 
@@ -76,14 +114,16 @@ export function LoginPage({
       setError(
         reason instanceof Error
           ? reason.message
-          : 'Code PIN incorrect.',
+          : (
+              'Identifiant ou code PIN incorrect.'
+            ),
       )
 
       setPin('')
 
       window.requestAnimationFrame(
         () => {
-          inputRef.current
+          pinRef.current
             ?.focus()
         },
       )
@@ -128,11 +168,9 @@ export function LoginPage({
         className="
           relative
           w-full
-          max-w-[350px]
+          max-w-[360px]
         "
       >
-        {/* Identité */}
-
         <div
           className="
             mb-5
@@ -178,8 +216,6 @@ export function LoginPage({
         </div>
 
 
-        {/* Carte connexion */}
-
         <form
           onSubmit={
             (event) =>
@@ -196,7 +232,6 @@ export function LoginPage({
             shadow-[0_12px_36px_rgba(15,23,42,0.06)]
             dark:border-white/[0.075]
             dark:bg-[#151b1f]
-            dark:shadow-[0_14px_42px_rgba(0,0,0,0.22)]
           "
         >
           <div
@@ -227,8 +262,7 @@ export function LoginPage({
             </div>
 
             <div>
-              <label
-                htmlFor="opencoach-pin"
+              <p
                 className="
                   text-[13px]
                   font-semibold
@@ -236,81 +270,166 @@ export function LoginPage({
                   dark:text-slate-100
                 "
               >
-                Code PIN
-              </label>
+                Connexion
+              </p>
 
               <p
                 className="
                   mt-0.5
                   text-[10.5px]
-                  leading-4
                   text-slate-400
                   dark:text-slate-500
                 "
               >
-                Votre code personnel à 6 chiffres.
+                Identifiant OpenCoach
+                et code PIN personnel.
               </p>
             </div>
           </div>
 
 
-          <input
-            ref={inputRef}
-            id="opencoach-pin"
-            type="password"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            autoComplete="current-password"
-            maxLength={6}
-            autoFocus
-            value={pin}
-            onChange={(event) => {
-              setPin(
-                event.target.value
-                  .replace(
-                    /\D/g,
-                    '',
-                  )
-                  .slice(
-                    0,
-                    6,
-                  ),
-              )
+          <label className="mt-4 block">
+            <span
+              className="
+                mb-1.5
+                block
+                text-[10.5px]
+                font-semibold
+                text-slate-500
+                dark:text-slate-400
+              "
+            >
+              Identifiant OpenCoach
+            </span>
 
-              setError(null)
-            }}
-            className="
-              mt-4
-              h-12
-              w-full
-              rounded-[11px]
-              border
-              border-slate-200
-              bg-slate-50
-              px-4
-              text-center
-              font-mono
-              text-[20px]
-              font-semibold
-              tracking-[0.48em]
-              text-slate-900
-              outline-none
-              transition
-              placeholder:text-slate-300
-              focus:border-emerald-500/50
-              focus:bg-white
-              focus:ring-4
-              focus:ring-emerald-500/[0.07]
-              disabled:cursor-not-allowed
-              disabled:opacity-60
-              dark:border-white/[0.08]
-              dark:bg-white/[0.04]
-              dark:text-white
-              dark:focus:border-emerald-500/35
-              dark:focus:bg-white/[0.055]
-            "
-            aria-label="Code PIN OpenCoach"
-          />
+            <div
+              className="
+                flex
+                h-11
+                items-center
+                gap-2
+                rounded-[10px]
+                border
+                border-slate-200
+                bg-slate-50
+                px-3
+                focus-within:border-emerald-500/40
+                dark:border-white/[0.08]
+                dark:bg-white/[0.04]
+              "
+            >
+              <UserRound
+                className="
+                  h-4
+                  w-4
+                  text-slate-400
+                "
+              />
+
+              <input
+                type="text"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={username}
+                onChange={(event) => {
+                  setUsername(
+                    event.target.value
+                      .replace(
+                        /[^a-zA-Z0-9]/g,
+                        '',
+                      )
+                      .toLowerCase(),
+                  )
+                  setError(null)
+                }}
+                placeholder="ex. ys001"
+                className="
+                  min-w-0
+                  flex-1
+                  bg-transparent
+                  text-[13px]
+                  font-semibold
+                  text-slate-900
+                  outline-none
+                  placeholder:font-normal
+                  placeholder:text-slate-300
+                  dark:text-white
+                "
+              />
+            </div>
+          </label>
+
+
+          <label className="mt-3 block">
+            <span
+              className="
+                mb-1.5
+                block
+                text-[10.5px]
+                font-semibold
+                text-slate-500
+                dark:text-slate-400
+              "
+            >
+              Code PIN
+            </span>
+
+            <div
+              className="
+                flex
+                h-11
+                items-center
+                gap-2
+                rounded-[10px]
+                border
+                border-slate-200
+                bg-slate-50
+                px-3
+                focus-within:border-emerald-500/40
+                dark:border-white/[0.08]
+                dark:bg-white/[0.04]
+              "
+            >
+              <KeyRound
+                className="
+                  h-4
+                  w-4
+                  text-slate-400
+                "
+              />
+
+              <input
+                ref={pinRef}
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="current-password"
+                maxLength={6}
+                value={pin}
+                onChange={(event) => {
+                  setPin(
+                    sanitizePin(
+                      event.target.value,
+                    ),
+                  )
+                  setError(null)
+                }}
+                className="
+                  min-w-0
+                  flex-1
+                  bg-transparent
+                  font-mono
+                  text-[16px]
+                  font-semibold
+                  tracking-[0.32em]
+                  text-slate-900
+                  outline-none
+                  dark:text-white
+                "
+              />
+            </div>
+          </label>
 
 
           {error && (
@@ -323,7 +442,7 @@ export function LoginPage({
                 bg-red-50
                 px-3
                 py-2
-                text-[11px]
+                text-[10.5px]
                 font-medium
                 text-red-600
                 dark:bg-red-500/10
@@ -339,6 +458,7 @@ export function LoginPage({
             type="submit"
             disabled={
               loading
+              || username.trim().length < 3
               || pin.length !== 6
             }
             className="
@@ -355,16 +475,11 @@ export function LoginPage({
               text-[12.5px]
               font-semibold
               text-white
-              shadow-sm
               transition
               hover:bg-emerald-700
-              focus-visible:outline-none
-              focus-visible:ring-4
-              focus-visible:ring-emerald-500/20
               disabled:cursor-not-allowed
               disabled:bg-slate-200
               disabled:text-slate-400
-              disabled:shadow-none
               dark:bg-emerald-500
               dark:hover:bg-emerald-400
               dark:disabled:bg-white/[0.07]
@@ -400,7 +515,39 @@ export function LoginPage({
         </form>
 
 
-        {/* Pied */}
+        <div
+          className="
+            mt-3
+            text-center
+          "
+        >
+          <span
+            className="
+              text-[10.5px]
+              text-slate-400
+            "
+          >
+            Pas encore de compte ?
+          </span>
+
+          <button
+            type="button"
+            onClick={
+              onCreateAccount
+            }
+            className="
+              ml-1.5
+              text-[10.5px]
+              font-semibold
+              text-emerald-600
+              hover:text-emerald-700
+              dark:text-emerald-400
+            "
+          >
+            Créer un compte
+          </button>
+        </div>
+
 
         <div
           className="
@@ -410,7 +557,6 @@ export function LoginPage({
             justify-center
             gap-1.5
             text-[9.5px]
-            font-medium
             text-slate-400
             dark:text-slate-600
           "

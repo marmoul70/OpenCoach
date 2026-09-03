@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import (
     delete,
     select,
@@ -50,6 +52,39 @@ class SqlPushSubscriptionRepository:
                 "les abonnements push."
             ) from exc
 
+    def list_for_user(
+        self,
+        user_id: UUID,
+    ) -> list[PushSubscription]:
+        try:
+            statement = (
+                select(
+                    PushSubscription
+                )
+                .where(
+                    PushSubscription.user_id
+                    == user_id
+                )
+                .order_by(
+                    PushSubscription.created_at
+                )
+            )
+
+            return list(
+                self.session.scalars(
+                    statement
+                )
+            )
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise PushSubscriptionRepositoryError(
+                "Impossible de charger "
+                "les abonnements push."
+            ) from exc
+
+
     def get_by_endpoint(
         self,
         endpoint: str,
@@ -72,9 +107,36 @@ class SqlPushSubscriptionRepository:
                 "l'abonnement Push."
             ) from exc
 
+    def get_by_endpoint_for_user(
+        self,
+        endpoint: str,
+        user_id: UUID,
+    ) -> PushSubscription | None:
+        try:
+            return self.session.scalar(
+                select(
+                    PushSubscription
+                ).where(
+                    PushSubscription.endpoint
+                    == endpoint,
+                    PushSubscription.user_id
+                    == user_id,
+                )
+            )
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise PushSubscriptionRepositoryError(
+                "Impossible de charger "
+                "l'abonnement Push."
+            ) from exc
+
+
     def save(
         self,
         *,
+        user_id: UUID,
         endpoint: str,
         p256dh: str,
         auth: str,
@@ -95,6 +157,7 @@ class SqlPushSubscriptionRepository:
             if subscription is None:
                 subscription = (
                     PushSubscription(
+                        user_id=user_id,
                         endpoint=endpoint,
                         p256dh=p256dh,
                         auth=auth,
@@ -152,6 +215,34 @@ class SqlPushSubscriptionRepository:
                 "Impossible de supprimer "
                 "l'abonnement push."
             ) from exc
+
+    def delete_by_endpoint_for_user(
+        self,
+        endpoint: str,
+        user_id: UUID,
+    ) -> None:
+        try:
+            self.session.execute(
+                delete(
+                    PushSubscription
+                ).where(
+                    PushSubscription.endpoint
+                    == endpoint,
+                    PushSubscription.user_id
+                    == user_id,
+                )
+            )
+
+            self.session.commit()
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise PushSubscriptionRepositoryError(
+                "Impossible de supprimer "
+                "l'abonnement push."
+            ) from exc
+
 
     def increment_badge(
         self,
@@ -226,9 +317,40 @@ class SqlPushSubscriptionRepository:
             ) from exc
 
 
+    def reset_badge_for_user(
+        self,
+        endpoint: str,
+        user_id: UUID,
+    ) -> None:
+        try:
+            subscription = self.get_by_endpoint_for_user(
+                endpoint,
+                user_id,
+            )
+
+            if subscription is None:
+                return
+
+            subscription.badge_count = 0
+
+            self.session.commit()
+            self.session.refresh(
+                subscription
+            )
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise PushSubscriptionRepositoryError(
+                "Impossible de remettre "
+                "le badge Push à zéro."
+            ) from exc
+
+
     def update_preferences(
         self,
         *,
+        user_id: UUID,
         endpoint: str,
         system_enabled: bool,
         sync_errors: bool,
@@ -236,12 +358,10 @@ class SqlPushSubscriptionRepository:
         training_reminder: bool,
     ) -> None:
         try:
-            subscription = self.session.scalar(
-                select(
-                    PushSubscription
-                ).where(
-                    PushSubscription.endpoint
-                    == endpoint
+            subscription = (
+                self.get_by_endpoint_for_user(
+                    endpoint,
+                    user_id,
                 )
             )
 

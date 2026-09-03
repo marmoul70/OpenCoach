@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    ForeignKey,
     DateTime,
     Integer,
     String,
@@ -31,6 +32,15 @@ class PushSubscription(Base):
     id: Mapped[UUID] = mapped_column(
         primary_key=True,
         default=uuid4,
+    )
+
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "users.id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+        index=True,
     )
 
     endpoint: Mapped[str] = mapped_column(

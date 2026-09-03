@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 from collections.abc import Sequence
+from dataclasses import dataclass
 from uuid import UUID
 
 from sqlalchemy import select
@@ -12,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from opencoach.database.models import (
     AthleteProfile,
+    IntegrationConnection,
     User,
 )
 from opencoach.database.repositories import (
@@ -20,12 +22,16 @@ from opencoach.database.repositories import (
     SqlIntegrationConnectionRepository,
     SqlWellnessRepository,
 )
-from opencoach.database.session import SessionLocal
+from opencoach.database.session import (
+    SessionLocal,
+)
 from opencoach.integrations.intervals import (
     IntervalsClient,
     IntervalsSyncService,
 )
-from opencoach.security import SecretCipher
+from opencoach.security import (
+    SecretCipher,
+)
 from opencoach.services import (
     DEFAULT_INCREMENTAL_LOOKBACK_DAYS,
     DEFAULT_SYNC_DAYS,
@@ -40,7 +46,18 @@ from opencoach.services.system_notification_state import (
 )
 
 
-LOCAL_USER_EMAIL = "local@opencoach.local"
+PROVIDER = "intervals"
+
+
+@dataclass(
+    frozen=True,
+    slots=True,
+)
+class IntervalsSyncTarget:
+    """Profil éligible à la synchronisation automatique."""
+
+    user_id: UUID
+    athlete_profile_id: UUID
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -70,7 +87,9 @@ def build_parser() -> argparse.ArgumentParser:
 def _positive_integer(
     raw_value: str,
 ) -> int:
-    value = int(raw_value)
+    value = int(
+        raw_value
+    )
 
     if value <= 0:
         raise argparse.ArgumentTypeError(
@@ -83,7 +102,9 @@ def _positive_integer(
 def _non_negative_integer(
     raw_value: str,
 ) -> int:
-    value = int(raw_value)
+    value = int(
+        raw_value
+    )
 
     if value < 0:
         raise argparse.ArgumentTypeError(
@@ -93,35 +114,66 @@ def _non_negative_integer(
     return value
 
 
-def get_local_athlete_profile_id(
+def list_intervals_sync_targets(
     session: Session,
-) -> UUID:
-    """Retourne le profil sportif de l'utilisateur local."""
+) -> list[IntervalsSyncTarget]:
+    """Liste les profils ayant une intégration Intervals active.
+
+    Seuls les utilisateurs actifs disposant :
+    - d'un profil athlète ;
+    - d'une connexion Intervals activée ;
+    - d'un secret configuré ;
+
+    sont sélectionnés.
+    """
 
     statement = (
-        select(AthleteProfile.id)
-        .join(AthleteProfile.user)
+        select(
+            User.id,
+            AthleteProfile.id,
+        )
+        .join(
+            AthleteProfile,
+            AthleteProfile.user_id
+            == User.id,
+        )
+        .join(
+            IntegrationConnection,
+            IntegrationConnection.athlete_profile_id
+            == AthleteProfile.id,
+        )
         .where(
-            User.email == LOCAL_USER_EMAIL
+            User.active.is_(True),
+            IntegrationConnection.provider
+            == PROVIDER,
+            IntegrationConnection.enabled.is_(True),
+            IntegrationConnection.encrypted_secret
+            .is_not(None),
+        )
+        .order_by(
+            User.created_at,
         )
     )
 
-    profile_id = session.scalar(
+    rows = session.execute(
         statement
-    )
+    ).all()
 
-    if profile_id is None:
-        raise RuntimeError(
-            "Le profil sportif local est introuvable."
+    return [
+        IntervalsSyncTarget(
+            user_id=user_id,
+            athlete_profile_id=profile_id,
         )
-
-    return profile_id
+        for user_id, profile_id
+        in rows
+    ]
 
 
 def build_service(
     session: Session,
+    athlete_profile_id: UUID,
 ) -> IntervalsApplicationService:
-    """Construit le service réel de synchronisation."""
+    """Construit le service de synchronisation pour un profil."""
 
     connection_repository = (
         SqlIntegrationConnectionRepository(
@@ -136,14 +188,10 @@ def build_service(
         )
     )
 
-    profile_id = get_local_athlete_profile_id(
-        session
-    )
-
     credentials = (
         connection_service.get_credentials(
-            profile_id,
-            "intervals",
+            athlete_profile_id,
+            PROVIDER,
         )
     )
 
@@ -162,8 +210,10 @@ def build_service(
                 session
             )
         ),
-        wellness_repository=SqlWellnessRepository(
-            session
+        wellness_repository=(
+            SqlWellnessRepository(
+                session
+            )
         ),
     )
 
@@ -173,21 +223,155 @@ def build_service(
     )
 
 
+def _notification_key(
+    user_id: UUID,
+) -> str:
+    """Clé anti-spam spécifique à un utilisateur."""
+
+    return (
+        f"intervals_sync:{user_id}"
+    )
+
+
+def _notify_sync_failure(
+    session: Session,
+    *,
+    user_id: UUID,
+) -> None:
+    """Notifie uniquement l'utilisateur concerné."""
+
+    notification_state = (
+        SystemNotificationState()
+    )
+
+    key = _notification_key(
+        user_id
+    )
+
+    if not notification_state.should_notify(
+        key
+    ):
+        return
+
+    try:
+        PushNotificationService(
+            session
+        ).send_system_sync_error(
+            user_id=user_id,
+            title=(
+                "Synchronisation "
+                "Intervals.icu"
+            ),
+            body=(
+                "La synchronisation "
+                "automatique a échoué."
+            ),
+            url="/settings",
+        )
+
+        notification_state.mark_failed(
+            key
+        )
+
+    except Exception as exc:
+        print(
+            "[AVERTISSEMENT] "
+            "Impossible d'envoyer "
+            "la notification Push : "
+            f"{exc}",
+            file=sys.stderr,
+        )
+
+
+def _sync_target(
+    session: Session,
+    *,
+    target: IntervalsSyncTarget,
+    initial_days: int,
+    lookback_days: int,
+) -> bool:
+    """Synchronise un profil sans interrompre les autres."""
+
+    try:
+        service = build_service(
+            session,
+            target.athlete_profile_id,
+        )
+
+        result = (
+            service.sync_incremental(
+                target.athlete_profile_id,
+                initial_days=initial_days,
+                lookback_days=lookback_days,
+            )
+        )
+
+    except Exception as exc:
+        session.rollback()
+
+        print(
+            "[ERREUR] Intervals.icu "
+            f"profil={target.athlete_profile_id} : "
+            f"{exc}",
+            file=sys.stderr,
+        )
+
+        _notify_sync_failure(
+            session,
+            user_id=target.user_id,
+        )
+
+        return False
+
+    SystemNotificationState().mark_success(
+        _notification_key(
+            target.user_id
+        )
+    )
+
+    print()
+    print(
+        "Profil : "
+        f"{target.athlete_profile_id}"
+    )
+
+    _print_result(
+        result
+    )
+
+    return True
+
+
 def main(
     argv: Sequence[str] | None = None,
     *,
     service: IntervalsApplicationService | None = None,
     athlete_profile_id: UUID | None = None,
 ) -> int:
-    """Exécute une synchronisation incrémentale."""
+    """Exécute une synchronisation incrémentale.
 
-    args = build_parser().parse_args(
-        argv
+    Le mode injecté ``service + athlete_profile_id`` est conservé
+    pour les tests et les usages applicatifs explicites.
+
+    Sans injection, tous les profils Intervals éligibles sont
+    synchronisés indépendamment.
+    """
+
+    args = (
+        build_parser()
+        .parse_args(
+            argv
+        )
     )
+
+    # --------------------------------------------------------
+    # Mode injecté : contrat historique conservé.
+    # --------------------------------------------------------
 
     if (
         service is not None
-        and athlete_profile_id is not None
+        and athlete_profile_id
+        is not None
     ):
         result = service.sync_incremental(
             athlete_profile_id,
@@ -203,78 +387,66 @@ def main(
 
     if (
         service is not None
-        or athlete_profile_id is not None
+        or athlete_profile_id
+        is not None
     ):
         raise RuntimeError(
             "service et athlete_profile_id doivent "
             "être fournis ensemble."
         )
 
-    with SessionLocal() as session:
-        try:
-            resolved_profile_id = (
-                get_local_athlete_profile_id(
-                    session
-                )
-            )
+    # --------------------------------------------------------
+    # Mode automatique multi-utilisateur.
+    # --------------------------------------------------------
 
-            resolved_service = build_service(
+    with SessionLocal() as session:
+        targets = (
+            list_intervals_sync_targets(
                 session
             )
+        )
 
-            result = (
-                resolved_service.sync_incremental(
-                    resolved_profile_id,
-                    initial_days=args.initial_days,
-                    lookback_days=args.lookback_days,
-                )
+        if not targets:
+            print(
+                "[INFO] Aucun profil actif "
+                "avec Intervals.icu configuré."
             )
 
-        except Exception:
-            notification_state = (
-                SystemNotificationState()
-            )
+            return 0
 
-            if notification_state.should_notify(
-                "intervals_sync"
+        print(
+            "[INFO] "
+            f"{len(targets)} profil(s) "
+            "Intervals.icu à synchroniser."
+        )
+
+        success_count = 0
+        failure_count = 0
+
+        for target in targets:
+            if _sync_target(
+                session,
+                target=target,
+                initial_days=args.initial_days,
+                lookback_days=args.lookback_days,
             ):
-                try:
-                    PushNotificationService(
-                        session
-                    ).send_system_sync_error(
-                        title=(
-                            "Synchronisation "
-                            "Intervals.icu"
-                        ),
-                        body=(
-                            "La synchronisation "
-                            "automatique a échoué."
-                        ),
-                        url="/settings",
-                    )
+                success_count += 1
+            else:
+                failure_count += 1
 
-                    notification_state.mark_failed(
-                        "intervals_sync"
-                    )
-
-                except Exception as notification_exc:
-                    print(
-                        "[AVERTISSEMENT] "
-                        "Impossible d'envoyer "
-                        "la notification Push : "
-                        f"{notification_exc}",
-                        file=sys.stderr,
-                    )
-
-            raise
-
-    SystemNotificationState().mark_success(
-        "intervals_sync"
+    print()
+    print(
+        "Synchronisations réussies :",
+        success_count,
     )
 
-    _print_result(
-        result
+    print(
+        "Synchronisations échouées :",
+        failure_count,
     )
+
+    if failure_count:
+        return 1
 
     return 0
 
@@ -297,13 +469,14 @@ def _print_result(
     )
 
     print(
-        f"Période : "
+        "Période : "
         f"{result.oldest.isoformat()} "
-        f"→ {result.newest.isoformat()}"
+        "→ "
+        f"{result.newest.isoformat()}"
     )
 
     print(
-        f"Synchronisé à : "
+        "Synchronisé à : "
         f"{result.synced_at.isoformat()}"
     )
 

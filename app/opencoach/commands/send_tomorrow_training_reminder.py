@@ -1,4 +1,4 @@
-"""Envoie le rappel de la séance prévue le lendemain."""
+"""Envoie les rappels des séances prévues le lendemain."""
 
 from __future__ import annotations
 
@@ -30,22 +30,27 @@ from opencoach.weather.training_advisory import (
 )
 
 
-LOCAL_USER_EMAIL = "local@opencoach.local"
-
-
-def _load_local_profile(
+def _load_active_profiles(
     database,
-) -> AthleteProfile | None:
-    return database.scalar(
-        select(
-            AthleteProfile
-        )
+) -> list[AthleteProfile]:
+    """Charge les profils appartenant aux utilisateurs actifs."""
+
+    statement = (
+        select(AthleteProfile)
         .join(
             AthleteProfile.user
         )
         .where(
-            User.email
-            == LOCAL_USER_EMAIL
+            User.active.is_(True)
+        )
+        .order_by(
+            AthleteProfile.id.asc()
+        )
+    )
+
+    return list(
+        database.scalars(
+            statement
         )
     )
 
@@ -104,53 +109,35 @@ def main() -> int:
         )
     )
 
+    total_sent = 0
+    total_failed = 0
+    total_removed = 0
+    profile_failures = 0
+
     with SessionLocal() as database:
-        profile = _load_local_profile(
-            database
+        profiles = (
+            _load_active_profiles(
+                database
+            )
         )
 
-        if profile is None:
+        if not profiles:
             print(
                 "[INFO] Aucun profil "
-                "athlète local."
+                "athlète actif."
             )
 
             return 0
+
+        print(
+            "[INFO] Profils à traiter : "
+            f"{len(profiles)}."
+        )
 
         repository = (
             SqlTrainingSessionRepository(
                 database
             )
-        )
-
-        sessions = (
-            repository
-            .list_sessions_between(
-                profile.id,
-                tomorrow,
-                tomorrow,
-            )
-        )
-
-        planned_sessions = [
-            session
-            for session in sessions
-            if session.status
-            == "planned"
-        ]
-
-        if not planned_sessions:
-            print(
-                "[INFO] Aucune séance "
-                "planifiée le "
-                f"{tomorrow.isoformat()}."
-            )
-
-            return 0
-
-        advice = _weather_advice(
-            profile,
-            target_date=tomorrow,
         )
 
         push_service = (
@@ -159,60 +146,136 @@ def main() -> int:
             )
         )
 
-        sent = 0
-        failed = 0
-        removed = 0
-
-        for training_session in (
-            planned_sessions
-        ):
-            reminder = (
-                build_tomorrow_session_reminder(
-                    training_session,
-                    weather_advice=advice,
-                )
+        for profile in profiles:
+            user_id = (
+                profile.user_id
             )
 
-            report = (
-                push_service
-                .send_training_reminder(
-                    title=reminder.title,
-                    body=reminder.body,
-                    url=reminder.url,
-                )
-            )
-
-            sent += report.sent
-            failed += report.failed
-            removed += report.removed
-
+            print()
             print(
-                "[OK] Rappel :",
-                training_session.title,
+                "[INFO] Traitement du profil "
+                f"{profile.id}."
             )
 
-            if (
-                advice is not None
-                and advice.message
-            ):
-                print(
-                    "[INFO] Conseil météo :",
-                    advice.message,
+            try:
+                sessions = (
+                    repository
+                    .list_sessions_between(
+                        profile.id,
+                        tomorrow,
+                        tomorrow,
+                    )
                 )
+
+                planned_sessions = [
+                    training_session
+                    for training_session
+                    in sessions
+                    if (
+                        training_session.status
+                        == "planned"
+                    )
+                ]
+
+                if not planned_sessions:
+                    print(
+                        "[INFO] Aucune séance "
+                        "planifiée le "
+                        f"{tomorrow.isoformat()}."
+                    )
+
+                    continue
+
+                advice = (
+                    _weather_advice(
+                        profile,
+                        target_date=tomorrow,
+                    )
+                )
+
+                for training_session in (
+                    planned_sessions
+                ):
+                    reminder = (
+                        build_tomorrow_session_reminder(
+                            training_session,
+                            weather_advice=advice,
+                        )
+                    )
+
+                    report = (
+                        push_service
+                        .send_training_reminder(
+                            user_id=user_id,
+                            title=reminder.title,
+                            body=reminder.body,
+                            url=reminder.url,
+                        )
+                    )
+
+                    total_sent += (
+                        report.sent
+                    )
+
+                    total_failed += (
+                        report.failed
+                    )
+
+                    total_removed += (
+                        report.removed
+                    )
+
+                    print(
+                        "[OK] Rappel :",
+                        training_session.title,
+                    )
+
+                    if (
+                        advice is not None
+                        and advice.message
+                    ):
+                        print(
+                            "[INFO] Conseil météo :",
+                            advice.message,
+                        )
+
+            except Exception as exc:
+                profile_failures += 1
+
+                print(
+                    "[ERREUR] Profil "
+                    f"{profile.id} : {exc}"
+                )
+
+                continue
 
         print()
+        print("=" * 72)
+        print(" BILAN RAPPELS")
+        print("=" * 72)
+
         print(
             "Envoyées   :",
-            sent,
+            total_sent,
         )
+
         print(
             "Échecs     :",
-            failed,
+            total_failed,
         )
+
         print(
             "Supprimées :",
-            removed,
+            total_removed,
         )
+
+        print(
+            "Profils KO  :",
+            profile_failures,
+        )
+
+    if profile_failures:
+        return 1
 
     return 0
 

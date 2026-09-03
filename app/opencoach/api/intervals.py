@@ -1,7 +1,11 @@
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
+)
 from uuid import UUID
 from datetime import date, datetime, timezone
 
 from fastapi import (
+    Request,
     APIRouter,
     BackgroundTasks,
     Depends,
@@ -23,6 +27,10 @@ from opencoach.database.repositories import (
     WellnessRepositoryError,
 )
 from opencoach.database.session import get_db
+
+from opencoach.authentication import (
+    get_current_user_id,
+)
 from opencoach.integrations.intervals import (
     IntervalsApiError,
     IntervalsAuthenticationError,
@@ -53,7 +61,6 @@ from opencoach.security import (
 )
 
 
-LOCAL_USER_EMAIL = "local@opencoach.local"
 
 
 router = APIRouter(
@@ -61,36 +68,6 @@ router = APIRouter(
     tags=["integrations"],
 )
 
-
-def get_local_athlete_profile_id(
-    db: Session = Depends(get_db),
-) -> UUID:
-    """Retourne l'identifiant du profil sportif local."""
-
-    try:
-        statement = (
-            select(AthleteProfile.id)
-            .join(AthleteProfile.user)
-            .where(User.email == LOCAL_USER_EMAIL)
-        )
-
-        profile_id = db.scalar(statement)
-
-    except SQLAlchemyError as exc:
-        db.rollback()
-
-        raise HTTPException(
-            status_code=503,
-            detail="Le stockage OpenCoach est temporairement indisponible.",
-        ) from exc
-
-    if profile_id is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Le profil sportif local est introuvable.",
-        )
-
-    return profile_id
 
 def get_integration_connection_service(
     db: Session = Depends(get_db),
@@ -120,7 +97,7 @@ def get_integration_connection_service(
 
 def get_intervals_application_service(
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     db: Session = Depends(get_db),
     connection_service: IntegrationConnectionService = Depends(
@@ -193,7 +170,7 @@ def get_intervals_application_service(
 )
 def get_intervals_connection(
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     service: IntegrationConnectionService = Depends(
         get_integration_connection_service,
@@ -237,7 +214,7 @@ def get_intervals_connection(
 def save_intervals_connection(
     payload: IntervalsConnectionUpdate,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     service: IntegrationConnectionService = Depends(
         get_integration_connection_service,
@@ -281,7 +258,7 @@ def sync_intervals(
         le=3650,
     ),
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     service: IntervalsApplicationService = Depends(
         get_intervals_application_service,
@@ -339,7 +316,7 @@ def sync_intervals(
 def start_initial_intervals_sync(
     background_tasks: BackgroundTasks,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     connection_service: IntegrationConnectionService = Depends(
         get_integration_connection_service,
@@ -400,7 +377,7 @@ def start_initial_intervals_sync(
 def get_initial_intervals_sync_status(
     job_id: UUID,
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
 ) -> dict[str, str | int | None]:
     """Retourne l'état du bootstrap Intervals.icu."""
@@ -474,7 +451,7 @@ def test_intervals_connection(
 )
 def test_saved_intervals_connection(
     athlete_profile_id: UUID = Depends(
-        get_local_athlete_profile_id,
+        get_current_athlete_profile_id,
     ),
     service: IntegrationConnectionService = Depends(
         get_integration_connection_service,

@@ -154,20 +154,40 @@ class IntervalsClient:
         """
 
         try:
+            import os
+
+            web_cookie = os.environ.get(
+                "OPENCOACH_INTERVALS_WEB_COOKIE"
+            )
+
+            if not web_cookie:
+                raise IntervalsAuthenticationError(
+                    "OPENCOACH_INTERVALS_WEB_COOKIE "
+                    "n'est pas configurée."
+                )
+
             with httpx.Client(
-                auth=httpx.BasicAuth(
-                    "API_KEY",
-                    self.api_key,
-                ),
                 timeout=self.timeout,
                 transport=self.transport,
             ) as client:
                 response = client.post(
                     (
-                        f"{INTERVALS_BASE_URL}"
-                        f"/athlete/{self.athlete_id}"
+                        "https://intervals.icu/api/"
+                        f"athlete/{self.athlete_id}"
                         "/activities-sync"
                     ),
+                    headers={
+                        "Accept":
+                            "application/json, text/plain, */*",
+                        "Origin":
+                            "https://intervals.icu",
+                        "Referer":
+                            "https://intervals.icu/",
+                    },
+                    cookies={
+                        "athlete_id": web_cookie,
+                        "locale": "fr",
+                    },
                 )
 
         except httpx.HTTPError as exc:

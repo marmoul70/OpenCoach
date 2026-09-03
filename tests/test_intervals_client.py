@@ -225,3 +225,72 @@ def test_athlete_id_is_required() -> None:
             api_key="test-api-key",
             athlete_id="",
         )
+
+def test_trigger_partner_sync_uses_web_session_cookie(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(
+        "OPENCOACH_INTERVALS_WEB_COOKIE",
+        "test-web-cookie",
+    )
+
+    def handler(
+        request: httpx.Request,
+    ) -> httpx.Response:
+        assert request.method == "POST"
+
+        assert request.url.path == (
+            "/api/athlete/i123456/activities-sync"
+        )
+
+        assert request.headers["origin"] == (
+            "https://intervals.icu"
+        )
+
+        assert request.headers["referer"] == (
+            "https://intervals.icu/"
+        )
+
+        cookie = request.headers.get(
+            "cookie",
+            "",
+        )
+
+        assert "athlete_id=test-web-cookie" in cookie
+        assert "locale=fr" in cookie
+
+        return httpx.Response(
+            200,
+            json={},
+            request=request,
+        )
+
+    client = create_client(handler)
+
+    client.trigger_partner_sync()
+
+
+def test_trigger_partner_sync_requires_web_cookie(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv(
+        "OPENCOACH_INTERVALS_WEB_COOKIE",
+        raising=False,
+    )
+
+    def handler(
+        request: httpx.Request,
+    ) -> httpx.Response:
+        raise AssertionError(
+            "Aucune requête HTTP ne doit être envoyée "
+            "sans cookie Intervals.icu."
+        )
+
+    client = create_client(handler)
+
+    with pytest.raises(
+        IntervalsAuthenticationError,
+        match="OPENCOACH_INTERVALS_WEB_COOKIE",
+    ):
+        client.trigger_partner_sync()
+

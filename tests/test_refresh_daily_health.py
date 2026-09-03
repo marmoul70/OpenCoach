@@ -95,3 +95,119 @@ def test_final_check_from_10():
             0,
         )
     )
+
+def test_partner_sync_failure_does_not_block_incremental_sync(
+    monkeypatch,
+) -> None:
+    calls = {
+        "partner": 0,
+        "incremental": 0,
+    }
+
+    class FakeClient:
+        def trigger_partner_sync(self) -> None:
+            calls["partner"] += 1
+            raise RuntimeError(
+                "partner sync unavailable"
+            )
+
+    class FakeResult:
+        synced_wellness_days = 1
+
+    class FakeService:
+        def sync_incremental(
+            self,
+            profile_id,
+        ):
+            calls["incremental"] += 1
+            return FakeResult()
+
+    class FakeWellnessRepository:
+        def __init__(
+            self,
+            session,
+        ) -> None:
+            self.session = session
+
+        def get_by_date(
+            self,
+            profile_id,
+            wellness_date,
+            *,
+            provider,
+        ):
+            return None
+
+    class FakeSession:
+        def __enter__(self):
+            return self
+
+        def __exit__(
+            self,
+            exc_type,
+            exc,
+            tb,
+        ):
+            return False
+
+    monkeypatch.setattr(
+        "opencoach.commands.refresh_daily_health.SessionLocal",
+        lambda: FakeSession(),
+    )
+
+    monkeypatch.setattr(
+        "opencoach.commands.refresh_daily_health."
+        "get_local_athlete_profile_id",
+        lambda session: 123,
+    )
+
+    monkeypatch.setattr(
+        "opencoach.commands.refresh_daily_health."
+        "SqlWellnessRepository",
+        FakeWellnessRepository,
+    )
+
+    monkeypatch.setattr(
+        "opencoach.commands.refresh_daily_health."
+        "_build_intervals_client",
+        lambda session, profile_id: FakeClient(),
+    )
+
+    monkeypatch.setattr(
+        "opencoach.commands.refresh_daily_health."
+        "build_service",
+        lambda session: FakeService(),
+    )
+
+    monkeypatch.setattr(
+        "opencoach.commands.refresh_daily_health.time.sleep",
+        lambda seconds: None,
+    )
+
+    monkeypatch.setattr(
+        "opencoach.commands.refresh_daily_health.datetime",
+        type(
+            "FakeDateTime",
+            (),
+            {
+                "now": staticmethod(
+                    lambda: datetime(
+                        2026,
+                        9,
+                        2,
+                        8,
+                        15,
+                    )
+                )
+            },
+        ),
+    )
+
+    from opencoach.commands.refresh_daily_health import main
+
+    result = main([])
+
+    assert result == 0
+    assert calls["partner"] == 1
+    assert calls["incremental"] == 1
+

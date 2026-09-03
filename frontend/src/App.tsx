@@ -40,6 +40,7 @@ type Page =
   | 'settings'
   | 'races'
   | 'activities'
+  | 'weather'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -49,6 +50,8 @@ interface BuildInfo {
   commit: string
   built_at: string
 }
+
+import { WeatherPage } from './modules/weather/WeatherPage'
 
 function App() {
   const {
@@ -62,6 +65,12 @@ function App() {
       )
 
     if (
+      url.pathname === '/weather'
+    ) {
+      return 'weather'
+    }
+
+    if (
       url.pathname === '/training'
       || url.searchParams.has(
         'session',
@@ -72,6 +81,41 @@ function App() {
 
     return 'dashboard'
   })
+
+
+  useEffect(() => {
+    const url =
+      new URL(
+        window.location.href,
+      )
+
+    if (
+      page === 'weather'
+      && url.pathname !== '/weather'
+    ) {
+      window.history.replaceState(
+        null,
+        '',
+        '/weather',
+      )
+
+      return
+    }
+
+    if (
+      page !== 'weather'
+      && url.pathname === '/weather'
+    ) {
+      window.history.replaceState(
+        null,
+        '',
+        '/',
+      )
+    }
+  }, [
+    page,
+  ])
+
   const profile = useAthleteProfile()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -348,8 +392,21 @@ function App() {
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-base-200 px-4">
-        <div className="alert alert-error max-w-xl">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-[#0b1014] px-4">
+        <div
+          className="
+            max-w-xl
+            rounded-[14px]
+            border
+            border-rose-500/20
+            bg-rose-500/[0.05]
+            p-4
+            text-rose-700
+            dark:border-rose-400/20
+            dark:bg-rose-400/[0.05]
+            dark:text-rose-300
+          "
+        >
           <div>
             <h1 className="font-semibold">
               Impossible de charger OpenCoach
@@ -369,7 +426,7 @@ function App() {
   return (
     <RaceProvider>
       <TrainingProvider>
-        <div className="min-h-screen bg-base-200 pb-16 lg:pb-0 lg:pl-[14.25rem]">
+        <div className="min-h-screen bg-slate-50 dark:bg-[#0b1014] pb-16 lg:pb-0 lg:pl-64">
 
           <AppNavigation
             activePage={page}
@@ -410,6 +467,7 @@ function App() {
               onOpenCoach={() => setPage('coach')}
               onOpenFeeling={() => setPage('feeling')}
               onOpenRaces={() => setPage('races')}
+              onOpenWeather={() => setPage('weather')}
             />
           )}
 
@@ -418,6 +476,7 @@ function App() {
           {page === 'feeling' && <FeelingPage />}
           {page === 'activities' && <ActivityPage />}
           {page === 'races' && <RacePage />}
+          {page === 'weather' && <WeatherPage />}
           {page === 'profile-personal' && <PersonalProfile />}
           {page === 'profile-sport' && <Profile />}
           {page === 'settings' && <Settings />}

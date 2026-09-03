@@ -6,7 +6,7 @@ import {
 import {
   AlertTriangle,
   CloudSun,
-  MapPin,
+  Droplets,
   Wind,
 } from 'lucide-react'
 
@@ -39,6 +39,10 @@ import type {
   WeatherData,
 } from './types'
 
+import {
+  WeatherIcon,
+} from './components/WeatherIcon'
+
 
 interface WeatherWidgetProps {
   onClick: () => void
@@ -61,8 +65,10 @@ export function WeatherWidget({
     name:
       profile.location.name
       ?? '',
+
     latitude:
       profile.location.latitude,
+
     longitude:
       profile.location.longitude,
   }
@@ -83,6 +89,7 @@ export function WeatherWidget({
     error,
     setError,
   ] = useState(false)
+
 
   useEffect(() => {
     let cancelled = false
@@ -106,8 +113,10 @@ export function WeatherWidget({
             name:
               weatherLocation.name
               || 'Ma position',
+
             latitude:
               weatherLocation.latitude,
+
             longitude:
               weatherLocation.longitude,
           })
@@ -143,6 +152,7 @@ export function WeatherWidget({
     weatherLocation.longitude,
   ])
 
+
   useEffect(() => {
     if (!weather) {
       return
@@ -167,52 +177,52 @@ export function WeatherWidget({
       )
 
     for (const alert of alerts) {
-        const key = [
-          'opencoach',
-          'weather-alert',
-          today,
-          alert.type,
-          alert.severity,
-          alert.time ?? 'no-time',
-          alert.endTime ?? 'no-end',
-        ].join(
-          ':',
-        )
+      const key = [
+        'opencoach',
+        'weather-alert',
+        today,
+        alert.type,
+        alert.severity,
+        alert.time ?? 'no-time',
+        alert.endTime ?? 'no-end',
+      ].join(':')
 
-        let alreadyNotified =
-          false
+      let alreadyNotified =
+        false
 
-        try {
-          alreadyNotified =
-            window.localStorage.getItem(
-              key,
-            ) !== null
-        } catch {
-          alreadyNotified =
-            false
-        }
-
-        if (alreadyNotified) {
-          continue
-        }
-
-        try {
-          window.localStorage.setItem(
+      try {
+        alreadyNotified =
+          window.localStorage.getItem(
             key,
-            new Date().toISOString(),
-          )
-        } catch {
-          // Notification toujours possible
-          // si localStorage est indisponible.
-        }
+          ) !== null
+      } catch {
+        alreadyNotified =
+          false
+      }
+
+      if (alreadyNotified) {
+        continue
+      }
+
+      try {
+        window.localStorage.setItem(
+          key,
+          new Date().toISOString(),
+        )
+      } catch {
+        // Notification toujours possible
+        // si localStorage est indisponible.
+      }
 
       toast({
         type:
           mapAlertSeverityToToastType(
             alert.severity,
           ),
+
         title:
           alert.title,
+
         message:
           alert.time
             ? (
@@ -222,6 +232,7 @@ export function WeatherWidget({
                 )} · ${alert.message}`
               )
             : alert.message,
+
         duration:
           alert.severity === 'info'
             ? 5000
@@ -233,23 +244,69 @@ export function WeatherWidget({
     toast,
   ])
 
+
   if (loading) {
     if (compact) {
       return (
-        <div className="flex h-14 items-center justify-end px-3">
-          <span className="loading loading-spinner loading-xs text-info" />
+        <div
+          className="
+            flex
+            h-14
+            items-center
+            justify-end
+            px-3
+          "
+        >
+          <span
+            className="
+              h-4
+              w-4
+              animate-spin
+              rounded-full
+              border-2
+              border-slate-200
+              border-t-emerald-500
+              dark:border-white/[0.10]
+              dark:border-t-emerald-400
+            "
+          />
         </div>
       )
     }
 
     return (
-      <div className="card w-full border border-base-300 bg-base-100 shadow-sm">
-        <div className="card-body flex min-h-28 items-center justify-center p-4">
-          <span className="loading loading-spinner loading-sm text-info" />
-        </div>
+      <div
+        className="
+          flex
+          min-h-36
+          w-full
+          items-center
+          justify-center
+          rounded-[14px]
+          border
+          border-black/[0.06]
+          bg-white
+          dark:border-white/[0.07]
+          dark:bg-[#141a1e]
+        "
+      >
+        <span
+          className="
+            h-6
+            w-6
+            animate-spin
+            rounded-full
+            border-[2.5px]
+            border-slate-200
+            border-t-emerald-500
+            dark:border-white/[0.10]
+            dark:border-t-emerald-400
+          "
+        />
       </div>
     )
   }
+
 
   if (
     error
@@ -260,13 +317,25 @@ export function WeatherWidget({
         <button
           type="button"
           onClick={onClick}
-          className="btn btn-ghost btn-sm gap-2 text-error"
+          className="
+            inline-flex
+            items-center
+            gap-2
+            rounded-[9px]
+            px-2.5
+            py-2
+            text-[10.5px]
+            text-rose-500
+            transition
+            hover:bg-rose-500/[0.05]
+            dark:text-rose-400
+          "
         >
-          <CloudSun className="h-5 w-5" />
+          <CloudSun
+            className="h-4 w-4"
+          />
 
-          <span className="text-xs">
-            Météo indisponible
-          </span>
+          Météo indisponible
         </button>
       )
     }
@@ -275,26 +344,48 @@ export function WeatherWidget({
       <button
         type="button"
         onClick={onClick}
-        className="card w-full border border-error/30 bg-base-100 text-left shadow-sm"
+        className="
+          w-full
+          rounded-[14px]
+          border
+          border-rose-500/15
+          bg-white
+          p-4
+          text-left
+          transition
+          hover:border-rose-500/25
+          dark:border-rose-400/15
+          dark:bg-[#141a1e]
+        "
       >
-        <div className="card-body p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-error">
-                Météo
-              </p>
+        <p
+          className="
+            text-[9px]
+            font-bold
+            uppercase
+            tracking-[0.08em]
+            text-rose-500
+            dark:text-rose-400
+          "
+        >
+          Météo
+        </p>
 
-              <p className="mt-1 font-semibold text-error">
-                Données indisponibles
-              </p>
-            </div>
-
-            <CloudSun className="h-4 w-4 text-error" />
-          </div>
-        </div>
+        <p
+          className="
+            mt-1
+            text-[12px]
+            font-semibold
+            text-slate-800
+            dark:text-slate-100
+          "
+        >
+          Données indisponibles
+        </p>
       </button>
     )
   }
+
 
   const description =
     getWeatherDescription(
@@ -317,6 +408,10 @@ export function WeatherWidget({
       ),
     )
 
+  const today =
+    weather.daily[0]
+
+
   if (compact) {
     return (
       <button
@@ -324,209 +419,266 @@ export function WeatherWidget({
         onClick={onClick}
         className="
           group
-          flex items-center
-          justify-end
-          gap-2
-          sm:gap-3
-          rounded-xl
-          px-2 py-1
-          sm:px-3 sm:py-1.5
-          text-right
-          transition-colors
-          hover:bg-base-300/60
+          inline-flex
+          items-center
+          gap-2.5
+          rounded-[10px]
+          px-2.5
+          py-1.5
+          transition
         "
-        aria-label="Ouvrir les détails météo"
       >
-        <div className="flex flex-col items-end leading-tight">
-          <div className="flex items-center gap-2">
-            {alertSeverity && (
-              <span
-                className={
-                  getAlertIndicatorClass(
-                    alertSeverity,
-                  )
-                }
-                title={
-                  getAlertIndicatorTitle(
-                    alertSeverity,
-                  )
-                }
-                aria-label={
-                  getAlertIndicatorTitle(
-                    alertSeverity,
-                  )
-                }
-              >
-                <AlertTriangle className="h-5 w-5" />
-              </span>
+        <div className="text-right">
+          <p
+            className="
+              text-[15px]
+              font-semibold
+              text-slate-800
+              dark:text-slate-100
+            "
+          >
+            {Math.round(
+              weather.current.temperature,
             )}
+            °
+          </p>
 
-            <span className="text-xl font-bold text-base-content">
-              {Math.round(
-                weather.current.temperature,
-              )}
-              °C
-            </span>
-          </div>
-
-          <span
+          <p
             className="
               mt-0.5
-              text-sm
-              font-medium
-              text-base-content/60
+              text-[9px]
+              text-slate-400
+              dark:text-slate-500
             "
           >
             {description.label}
-          </span>
+          </p>
         </div>
 
-        <span
-          className="
-            flex
-            h-9 w-9
-            shrink-0
-            items-center
-            justify-center
-            text-3xl
-            leading-none
-            transition-transform
-            sm:h-14 sm:w-14
-            sm:text-5xl
-            group-hover:scale-105
-          "
-          aria-hidden="true"
-        >
-          {description.icon}
-        </span>
+        <WeatherIcon
+          weatherCode={
+            weather.current.weatherCode
+          }
+          size={29}
+        />
       </button>
     )
   }
+
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="card w-full border border-base-300 bg-base-100 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      className="
+        group
+        min-h-[82px]
+        w-full
+        flex-1
+        rounded-[13px]
+        border
+        border-black/[0.06]
+        bg-white
+        px-4
+        py-3.5
+        text-left
+        shadow-[0_1px_2px_rgba(15,23,42,0.02)]
+        transition
+        hover:border-black/[0.10]
+        
+        dark:border-white/[0.07]
+        dark:bg-[#141a1e]
+        dark:shadow-none
+        dark:hover:border-white/[0.11]
+        
+      "
+      aria-label="Ouvrir la météo"
     >
-      <div className="card-body gap-3 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-base-content/50">
-              Météo
-            </p>
+      <div
+        className="
+          flex
+          h-full
+          items-center
+          gap-3.5
+        "
+      >
+        <div
+          className="
+            flex
+            h-11
+            w-11
+            shrink-0
+            items-center
+            justify-center
+            rounded-[10px]
+            bg-slate-50
+            dark:bg-white/[0.035]
+          "
+        >
+          <WeatherIcon
+            weatherCode={
+              weather.current.weatherCode
+            }
+            size={33}
+            className="
+              transition-transform
+              group-hover:scale-105
+            "
+          />
+        </div>
 
-            <div className="mt-1 flex items-center gap-1.5 text-sm text-base-content/50">
-              <MapPin className="h-3.5 w-3.5 shrink-0" />
 
-              <span className="truncate">
-                {weather.location.name}
-              </span>
-            </div>
-          </div>
+        <div className="min-w-0 flex-1">
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+            "
+          >
+            <span
+              className="
+                text-[22px]
+                font-semibold
+                leading-none
+                tracking-[-0.035em]
+                text-slate-900
+                dark:text-white
+              "
+            >
+              {Math.round(
+                weather.current.temperature,
+              )}
+              °
+            </span>
 
-          <div className="flex items-center gap-2">
+            <span
+              className="
+                min-w-0
+                truncate
+                text-[10.5px]
+                font-medium
+                text-slate-500
+                dark:text-slate-400
+              "
+            >
+              {description.label}
+            </span>
+
             {alertSeverity && (
-              <span
-                className={
+              <AlertTriangle
+                className={[
+                  'ml-auto h-3.5 w-3.5 shrink-0',
                   getAlertIndicatorClass(
                     alertSeverity,
-                  )
-                }
-                title={
-                  getAlertIndicatorTitle(
-                    alertSeverity,
-                  )
-                }
-                aria-label={
-                  getAlertIndicatorTitle(
-                    alertSeverity,
-                  )
-                }
+                  ),
+                ].join(' ')}
+              />
+            )}
+          </div>
+
+
+          <div
+            className="
+              mt-1.5
+              flex
+              flex-wrap
+              items-center
+              gap-x-3
+              gap-y-1
+              text-[9px]
+              text-slate-500
+              dark:text-slate-400
+            "
+          >
+            <span
+              className="
+                inline-flex
+                items-center
+                gap-1
+              "
+            >
+              <Droplets
+                className="
+                  h-3
+                  w-3
+                  text-sky-500
+                "
+                strokeWidth={1.8}
+              />
+
+              {
+                today
+                  ? `${Math.round(
+                      today.precipitationProbabilityMax,
+                    )}%`
+                  : '—'
+              }
+            </span>
+
+            <span
+              className="
+                inline-flex
+                items-center
+                gap-1
+              "
+            >
+              <Wind
+                className="
+                  h-3
+                  w-3
+                  text-slate-400
+                "
+                strokeWidth={1.8}
+              />
+
+              {Math.round(
+                weather.current.windSpeed,
+              )}
+              {' '}km/h
+            </span>
+
+            {today && (
+              <span
+                className="
+                  text-slate-400
+                  dark:text-slate-500
+                "
               >
-                <AlertTriangle className="h-4 w-4" />
+                {Math.round(
+                  today.temperatureMin,
+                )}
+                ° /{' '}
+                {Math.round(
+                  today.temperatureMax,
+                )}
+                °
               </span>
             )}
-
-            <span className="text-2xl">
-              {description.icon}
-            </span>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <InlineMetric
-            label="Temp."
-            value={
-              `${Math.round(
-                weather.current.temperature,
-              )}°C`
-            }
-          />
 
-          <InlineMetric
-            label="Ressenti"
-            value={
-              `${Math.round(
-                weather.current.apparentTemperature,
-              )}°C`
-            }
-          />
-
-          <InlineMetric
-            icon={
-              <Wind className="h-3.5 w-3.5" />
-            }
-            label="Vent"
-            value={
-              `${Math.round(
-                weather.current.windSpeed,
-              )} km/h`
-            }
-          />
-
-          <InlineMetric
-            label=""
-            value={
-              description.label
-            }
-          />
-        </div>
+        <span
+          className="
+            shrink-0
+            text-[16px]
+            text-slate-300
+            transition
+            group-hover:translate-x-0.5
+            group-hover:text-slate-500
+            dark:text-slate-600
+            dark:group-hover:text-slate-400
+          "
+          aria-hidden="true"
+        >
+          →
+        </span>
       </div>
     </button>
   )
 }
 
-
-function InlineMetric({
-  icon,
-  label,
-  value,
-}: {
-  icon?: React.ReactNode
-  label: string
-  value: string
-}) {
-  return (
-    <div className="flex items-center gap-1.5 text-sm">
-      {icon && (
-        <span className="text-base-content/40">
-          {icon}
-        </span>
-      )}
-
-      {label && (
-        <span className="text-xs text-base-content/45">
-          {label}
-        </span>
-      )}
-
-      <span className="font-semibold text-base-content">
-        {value}
-      </span>
-    </div>
-  )
-}
 
 
 function getHighestAlertSeverity(
@@ -563,36 +715,15 @@ function getHighestAlertSeverity(
 function getAlertIndicatorClass(
   severity: WeatherAlertSeverity,
 ): string {
-  const classes = {
-    danger:
-      'text-error',
-    warning:
-      'text-warning',
-    info:
-      'text-info',
+  if (severity === 'danger') {
+    return 'text-rose-500 dark:text-rose-400'
   }
 
-  return classes[
-    severity
-  ]
-}
-
-
-function getAlertIndicatorTitle(
-  severity: WeatherAlertSeverity,
-): string {
-  const labels = {
-    danger:
-      'Alerte météo importante',
-    warning:
-      'Vigilance météo',
-    info:
-      'Information météo',
+  if (severity === 'warning') {
+    return 'text-amber-500 dark:text-amber-400'
   }
 
-  return labels[
-    severity
-  ]
+  return 'text-sky-500 dark:text-sky-400'
 }
 
 
@@ -618,42 +749,33 @@ function formatAlertPeriod(
       startTime,
     )
 
-  if (
-    !endTime
-    || endTime === startTime
-  ) {
+  if (!endTime) {
     return start
   }
 
   return (
-    `${start} → ${
-      formatAlertTime(
-        endTime,
-      )
-    }`
+    `${start}–`
+    + formatAlertTime(
+      endTime,
+    )
   )
 }
 
 
 function formatAlertTime(
-  time: string,
+  value: string,
 ): string {
+  const date =
+    new Date(
+      value,
+    )
+
   if (
-    !time.includes(
-      'T',
+    Number.isNaN(
+      date.getTime(),
     )
   ) {
-    return new Intl.DateTimeFormat(
-      'fr-FR',
-      {
-        day: 'numeric',
-        month: 'short',
-      },
-    ).format(
-      new Date(
-        `${time}T12:00:00`,
-      ),
-    )
+    return value
   }
 
   return new Intl.DateTimeFormat(
@@ -663,8 +785,6 @@ function formatAlertTime(
       minute: '2-digit',
     },
   ).format(
-    new Date(
-      time,
-    ),
+    date,
   )
 }

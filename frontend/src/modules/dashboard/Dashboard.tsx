@@ -5,7 +5,6 @@ import {
 
 import {
   CalendarDays,
-  Sparkles,
 } from 'lucide-react'
 
 import {
@@ -60,7 +59,12 @@ import {
   DashboardWeekStrip,
 } from './DashboardWeekStrip'
 
-import './DashboardV2.css'
+import {
+  DashboardHeader,
+  DashboardSection,
+} from './dashboard'
+
+import './Dashboard.css'
 
 
 interface DashboardProps {
@@ -68,6 +72,7 @@ interface DashboardProps {
   onOpenCoach: () => void
   onOpenFeeling: () => void
   onOpenRaces: () => void
+  onOpenWeather: () => void
 }
 
 
@@ -76,6 +81,7 @@ export function Dashboard({
   onOpenCoach,
   onOpenFeeling,
   onOpenRaces,
+  onOpenWeather,
 }: DashboardProps) {
   const profile =
     useAthleteProfile()
@@ -309,293 +315,238 @@ export function Dashboard({
 
 
   return (
-    <main className="dashboard-v2">
+    <main className="dashboard">
       <div
         className="
-          mx-auto
-          max-w-7xl
-          px-4
-          py-5
-          sm:px-6
-          sm:py-7
-          lg:px-8
-          lg:py-8
-        "
+          dashboard__container
+          "
       >
 
         {/* ==================================================
             En-tête
            ================================================== */}
 
-        <header
-          className="
-            mb-6
-            flex
-            items-start
-            justify-between
-            gap-4
-          "
-        >
-          <div className="min-w-0">
+        <DashboardHeader
+          title={
+            firstName
+              ? `Bonjour ${firstName}`
+              : 'Bonjour'
+          }
+          subtitle={
+            'Voici l’essentiel '
+            + 'pour ta journée.'
+          }
+          actions={
             <div
               className="
-                mb-2
-                flex
-                items-center
-                gap-2
-                text-xs
-                font-semibold
-                uppercase
-                tracking-[0.16em]
-                text-emerald-600
-                dark:text-emerald-400
-              "
-            >
-              <Sparkles
-                className="h-3.5 w-3.5"
-              />
-
-              Aujourd’hui
-            </div>
-
-            <h1
-              className="
-                text-2xl
-                font-bold
-                tracking-[-0.035em]
-                text-slate-950
-                sm:text-3xl
-                dark:text-white
-              "
-            >
-              Bonjour
-              {firstName
-                ? ` ${firstName}`
-                : ''}
-              {' '}👋
-            </h1>
-
-            <p
-              className="
-                mt-1.5
-                max-w-xl
-                text-sm
-                leading-6
-                text-slate-500
-                dark:text-slate-400
-              "
-            >
-              Voici ce que ton coach
-              recommande aujourd’hui.
-            </p>
-          </div>
-
-
-          <div
-            className="
-              flex
-              shrink-0
-              flex-col
-              items-end
-              gap-2
-            "
-          >
-            <div
-              className="
-                hidden
-                items-center
-                gap-2
-                rounded-xl
-                border
-                border-black/[0.07]
-                bg-white
-                px-3
-                py-2
-                text-xs
-                font-medium
-                text-slate-600
-                shadow-sm
-                sm:flex
-                dark:border-white/[0.08]
-                dark:bg-[#14181d]
-                dark:text-slate-300
+                dashboard__date
               "
             >
               <CalendarDays
-                className="h-4 w-4"
+                size={16}
               />
 
-              {formatTodayShort()}
+              <span>
+                {formatTodayShort()}
+              </span>
             </div>
-
-            {weatherWidget && (
-              <WeatherWidget
-                compact
-                onClick={() => {
-                  openWidget(
-                    'weather',
-                  )
-                }}
-              />
-            )}
-          </div>
-        </header>
+          }
+        />
 
 
         <PhysiologicalTestProposalCard />
 
 
         {/* ==================================================
-            Vue principale
+            Dashboard V3 — vue principale
            ================================================== */}
 
         <div
           className="
-            mt-5
-            grid
-            gap-5
-            lg:grid-cols-12
+            dashboard__grid
+            dashboard__main-grid
           "
         >
 
-          {/* Coach */}
+          {/* =================================================
+              Coach
+             ================================================= */}
 
-          <section
-            aria-label="Coach"
+          <DashboardSection
+            title="Analyse du coach"
+            description={
+              'La recommandation prioritaire '
+              + 'pour ta journée.'
+            }
+            ariaLabel="Coach"
+            desktopSpan={7}
             className="
-              lg:col-span-7
+              dashboard__coach
             "
           >
-            <SectionHeader
-              title="Analyse du coach"
-              description={
-                'La recommandation prioritaire '
-                + 'pour ta journée.'
-              }
-            />
-
             <CoachTodayWidget
               onOpenCoach={
                 onOpenCoach
               }
             />
-          </section>
+          </DashboardSection>
 
 
-          {/* Objectif principal */}
+          {/* =================================================
+              Colonne droite :
+              prochain objectif + météo
+             ================================================= */}
 
-                  <section
-                    aria-label="Objectif principal"
-                    className="lg:col-span-4"
-                  >
-                    <SectionHeader
-                      title="Prochain objectif"
-                      description={
-                        'La course qui guide '
-                        + 'ta préparation.'
-                      }
-                    />
-
-                    <DashboardRaceGoal
-                      onOpenRaces={onOpenRaces}
-                    />
-                  </section>
-
-
-                  {/* Séance du jour */}
-
-          {trainingWidget && (
-            <section
-              aria-label="Entraînement du jour"
+          <div
+            className="
+              dashboard__hero-side
+            "
+          >
+            <DashboardSection
+              title="Prochain objectif"
+              description={
+                'La course qui guide '
+                + 'ta préparation.'
+              }
+              ariaLabel="Objectif principal"
               className="
-                dashboard-v2-training-focus
-                lg:col-span-8
+                dashboard__race
               "
             >
-              <SectionHeader
-                title="Séance du jour"
-                description={
-                  'Ta priorité '
-                  + 'd’entraînement.'
+              <DashboardRaceGoal
+                onOpenRaces={
+                  onOpenRaces
                 }
-                action="Programme"
               />
+            </DashboardSection>
 
+
+            {weatherWidget && (
+              <DashboardSection
+                ariaLabel="Météo"
+                className="
+                  dashboard__weather
+                "
+              >
+                <WeatherWidget
+                  onClick={
+                    onOpenWeather
+                  }
+                />
+              </DashboardSection>
+            )}
+          </div>
+
+
+          {/* =================================================
+              Séance du jour
+             ================================================= */}
+
+          {trainingWidget && (
+            <DashboardSection
+              title="Séance du jour"
+              description={
+                'Ta priorité '
+                + 'd’entraînement.'
+              }
+              ariaLabel="Entraînement du jour"
+              desktopSpan={8}
+              className="
+                dashboard__training
+              "
+              action={
+                <button
+                  type="button"
+                  onClick={
+                    onOpenTraining
+                  }
+                  className="
+                    dashboard__section-link
+                  "
+                >
+                  Programme
+                </button>
+              }
+            >
               {renderWidget(
                 trainingWidget.widget,
                 trainingWidget.Component,
               )}
-            </section>
+            </DashboardSection>
           )}
 
 
-          {/* État de l’athlète */}
+          {/* =================================================
+              État de l'athlète
+             ================================================= */}
 
-                  {fitnessWidget && (
-                    <section
-                      aria-label="État de forme"
-                      className="lg:col-span-4"
-                    >
-                      <SectionHeader
-                        title="État de l’athlète"
-                        description={
-                          'Récupération, forme '
-                          + 'et charge récente.'
-                        }
-                      />
-
-                      {renderWidget(
-                        fitnessWidget.widget,
-                        fitnessWidget.Component,
-                      )}
-                    </section>
-                  )}
-
-
-                  {/* Semaine */}
-
-                  <section
-                    aria-label="Semaine d'entraînement"
-                    className="lg:col-span-8"
-                  >
-                    <SectionHeader
-                      title="Cette semaine"
-                      description={
-                        'Une vue rapide '
-                        + 'de ton programme.'
-                      }
-                    />
-
-                    <DashboardWeekStrip
-                      onOpenTraining={
-                        onOpenTraining
-                      }
-                    />
-                  </section>
-
-
-                  {/* Ressenti */}
-
-          {feelingWidget && (
-            <section
-              aria-label="Ressenti"
+          {fitnessWidget && (
+            <DashboardSection
+              title="État de l’athlète"
+              description={
+                'Récupération, forme '
+                + 'et charge récente.'
+              }
+              ariaLabel="État de forme"
+              desktopSpan={4}
               className="
-                lg:col-span-4
+                dashboard__fitness
               "
             >
-              <SectionHeader
-                title="Ressenti"
-                description={
-                  'Ton retour complète '
-                  + 'les données objectives.'
-                }
-              />
+              {renderWidget(
+                fitnessWidget.widget,
+                fitnessWidget.Component,
+              )}
+            </DashboardSection>
+          )}
 
+
+          {/* =================================================
+              Cette semaine
+             ================================================= */}
+
+          <DashboardSection
+            title="Cette semaine"
+            description={
+              'Une vue rapide '
+              + 'de ton programme.'
+            }
+            ariaLabel="Semaine d'entraînement"
+            desktopSpan={8}
+            className="
+              dashboard__week
+            "
+          >
+            <DashboardWeekStrip
+              onOpenTraining={
+                onOpenTraining
+              }
+            />
+          </DashboardSection>
+
+
+          {/* =================================================
+              Ressenti
+             ================================================= */}
+
+          {feelingWidget && (
+            <DashboardSection
+              title="Ressenti"
+              description={
+                'Ton retour complète '
+                + 'les données objectives.'
+              }
+              ariaLabel="Ressenti"
+              desktopSpan={4}
+              className="
+                dashboard__feeling
+              "
+            >
               {renderWidget(
                 feelingWidget.widget,
                 feelingWidget.Component,
               )}
-            </section>
+            </DashboardSection>
           )}
 
         </div>
@@ -608,7 +559,9 @@ export function Dashboard({
         {mainWidgets.length > 0 && (
           <section
             aria-label="Autres indicateurs"
-            className="mt-8"
+            className="
+              dashboard__secondary
+            "
           >
             <div
               className="
@@ -692,63 +645,6 @@ export function Dashboard({
           </Modal>
         )}
     </main>
-  )
-}
-
-
-function SectionHeader({
-  title,
-  description,
-  action,
-}: {
-  title: string
-  description: string
-  action?: string
-}) {
-  return (
-    <div
-      className="
-        mb-3
-        flex
-        min-h-10
-        items-end
-        justify-between
-        gap-3
-      "
-    >
-      <div>
-        <h2
-          className="
-            dashboard-v2-section-title
-          "
-        >
-          {title}
-        </h2>
-
-        <p
-          className="
-            dashboard-v2-section-description
-          "
-        >
-          {description}
-        </p>
-      </div>
-
-      {action && (
-        <span
-          className="
-            hidden
-            text-xs
-            font-semibold
-            text-emerald-600
-            sm:inline
-            dark:text-emerald-400
-          "
-        >
-          {action}
-        </span>
-      )}
-    </div>
   )
 }
 

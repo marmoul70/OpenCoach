@@ -1,0 +1,601 @@
+/*
+ * OpenCoach Dashboard
+ *
+ * Dashboard principal OpenCoach.
+ *
+ * Principes :
+ * - aucun héritage DaisyUI ;
+ * - styles explicitement scopés sous .dashboard ;
+ * - desktop-first ;
+ * - responsive limité aux breakpoints utiles ;
+ * - thèmes clair / sombre centralisés ;
+ * - composants responsables de leur contenu,
+ *   Dashboard responsable du layout.
+ */
+
+
+/* ==========================================================
+   1. DESIGN TOKENS
+   ========================================================== */
+
+.dashboard {
+  --dashboard-bg: #f5f7f6;
+
+  --dashboard-surface: #ffffff;
+  --dashboard-surface-soft: #f1f4f3;
+
+  --dashboard-border:
+    rgba(15, 23, 42, 0.07);
+
+  --dashboard-text: #12171a;
+  --dashboard-text-secondary: #344054;
+
+  --dashboard-muted: #667085;
+  --dashboard-muted-soft: #98a2b3;
+
+  --dashboard-accent: #059669;
+  --dashboard-accent-hover: #047857;
+
+  --dashboard-accent-soft:
+    rgba(16, 185, 129, 0.08);
+
+  --dashboard-radius: 14px;
+  --dashboard-radius-mobile: 12px;
+
+  --dashboard-gap-x: 12px;
+  --dashboard-gap-y: 10px;
+
+  min-height: 100vh;
+
+  color:
+    var(--dashboard-text);
+
+  background:
+    radial-gradient(
+      circle at 45% -18%,
+      rgba(16, 185, 129, 0.03),
+      transparent 28rem
+    ),
+    var(--dashboard-bg);
+}
+
+
+/* ==========================================================
+   2. PAGE CONTAINER
+   ========================================================== */
+
+.dashboard__container {
+  width: 100%;
+  max-width: 1240px;
+
+  margin-inline: auto;
+
+  padding:
+    18px
+    24px
+    24px;
+}
+
+
+/* ==========================================================
+   3. MAIN GRID
+   ========================================================== */
+
+.dashboard__grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(12, minmax(0, 1fr));
+
+  column-gap:
+    var(--dashboard-gap-x);
+
+  row-gap:
+    var(--dashboard-gap-y);
+}
+
+
+/* ==========================================================
+   4. SECTIONS
+   ========================================================== */
+
+.dashboard__section {
+  min-width: 0;
+  margin: 0;
+
+  align-self: start;
+}
+
+.dashboard__section-header {
+  min-height: 0;
+
+  margin-bottom: 6px;
+}
+
+.dashboard__section-title {
+  margin: 0;
+
+  font-size: 14px;
+  line-height: 18px;
+
+  font-weight: 700;
+
+  color:
+    var(--dashboard-text);
+}
+
+.dashboard__section-description {
+  margin:
+    1px
+    0
+    0;
+
+  font-size: 11px;
+  line-height: 15px;
+
+  color:
+    var(--dashboard-muted);
+}
+
+
+.dashboard__section-header {
+  display: flex;
+
+  min-height: 34px;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 12px;
+}
+
+.dashboard__section-action {
+  display: flex;
+
+  min-width: 0;
+
+  align-items: flex-start;
+  justify-content: flex-end;
+
+  padding-top: 0;
+}
+
+
+/* ==========================================================
+   DASHBOARD - HERO LAYOUT
+   Coach principal + colonne objectif / météo
+   ========================================================== */
+
+.dashboard__hero-side {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  align-self: start;
+}
+
+.dashboard__coach,
+.dashboard__race,
+.dashboard__weather {
+  min-width: 0;
+}
+
+.dashboard__coach {
+  align-self: start;
+}
+
+.dashboard__race {
+  width: 100%;
+}
+
+.dashboard__weather {
+  width: 100%;
+}
+
+/*
+ * La météo appartient visuellement au bloc objectif.
+ * Aucun header intermédiaire : le widget reste compact.
+ */
+.dashboard__weather .dashboard__section-header:empty {
+  display: none;
+}
+
+/* ==========================================================
+   6. HEADER
+   ========================================================== */
+
+.dashboard__header {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 16px;
+}
+
+.dashboard__eyebrow {
+  margin: 0 0 4px;
+
+  font-size: 10px;
+  line-height: 14px;
+
+  color:
+    var(--dashboard-muted);
+}
+
+.dashboard__title {
+  margin: 0;
+
+  font-size: 24px;
+  line-height: 29px;
+
+  font-weight: 700;
+
+  letter-spacing:
+    -0.035em;
+
+  color:
+    var(--dashboard-text);
+}
+
+.dashboard__subtitle {
+  margin: 3px 0 0;
+
+  font-size: 13px;
+  line-height: 18px;
+
+  color:
+    var(--dashboard-muted);
+}
+
+
+.dashboard__header-actions {
+  display: flex;
+
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 8px;
+}
+
+
+/* ==========================================================
+   9. MOBILE ERGONOMICS
+   Typographie,
+.dashboard__hero-side,
+.dashboard__race,
+.dashboard__weather,
+.dashboard__training,
+.dashboard__fitness,
+.dashboard__week,
+.dashboard__feeling {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard__feeling {
+    margin-bottom: 4px;
+  }
+
+}
+
+
+@media (max-width: 390px) {
+
+  .dashboard__container {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .dashboard__title {
+    font-size: 20px;
+  }
+
+}
+
+
+/* ==========================================================
+   12. LIGHT THEME
+   ========================================================== */
+
+[data-theme="light"]
+.dashboard {
+  --dashboard-bg: #f5f7f6;
+
+  --dashboard-surface: #ffffff;
+  --dashboard-surface-soft: #f1f4f3;
+
+  --dashboard-border:
+    rgba(15, 23, 42, 0.07);
+
+  --dashboard-text: #12171a;
+  --dashboard-text-secondary: #344054;
+
+  --dashboard-muted: #667085;
+  --dashboard-muted-soft: #98a2b3;
+}
+
+
+/* ==========================================================
+   13. DARK THEME
+   ========================================================== */
+
+[data-theme="dark"]
+.dashboard {
+  --dashboard-bg: #0b1014;
+
+  --dashboard-surface: #141a1e;
+  --dashboard-surface-soft: #192126;
+
+  --dashboard-border:
+    rgba(255, 255, 255, 0.075);
+
+  --dashboard-text: #eef2f3;
+  --dashboard-text-secondary: #cbd5e1;
+
+  --dashboard-muted: #91a0aa;
+  --dashboard-muted-soft: #74818a;
+
+  --dashboard-accent: #10b981;
+
+  background:
+    radial-gradient(
+      circle at 45% -18%,
+      rgba(16, 185, 129, 0.04),
+      transparent 28rem
+    ),
+    var(--dashboard-bg);
+}
+
+
+/* ==========================================================
+   DASHBOARD - SECOND ROW
+   Séance du jour + état de l'athlète
+   ========================================================== */
+
+.dashboard__training,
+.dashboard__fitness {
+  min-width: 0;
+}
+
+.dashboard__training
+.dashboard__section-header,
+.dashboard__fitness
+.dashboard__section-header {
+  min-height: 34px;
+}
+
+.dashboard__training
+.dashboard__section-action {
+  align-self: flex-start;
+}
+
+.dashboard__section-link {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  margin: -1px 0 0;
+
+  padding:
+    2px
+    0;
+
+  border: 0;
+
+  background: transparent;
+
+  color:
+    var(--dashboard-accent);
+
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+}
+
+.dashboard__section-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+
+/* ==========================================================
+   DASHBOARD - THIRD ROW
+   Cette semaine + ressenti
+   ========================================================== */
+
+.dashboard__week,
+.dashboard__feeling {
+  min-width: 0;
+}
+
+.dashboard__week
+.dashboard__section-header,
+.dashboard__feeling
+.dashboard__section-header {
+  min-height: 34px;
+}
+
+
+/*
+ * Le widget semaine occupe naturellement sa colonne 8/12.
+ */
+.dashboard__week > *:last-child {
+  width: 100%;
+}
+
+
+/*
+ * Ressenti reste compact à droite.
+ */
+.dashboard__feeling > *:last-child {
+  width: 100%;
+}
+
+
+/* ==========================================================
+   DASHBOARD - RESPONSIVE CONTAINER
+   Layout basé sur la largeur réellement disponible
+   ========================================================== */
+
+.dashboard__container {
+  container-type: inline-size;
+  container-name: dashboard;
+}
+
+
+/*
+ * Base :
+ * une seule colonne.
+ */
+.dashboard__grid {
+  grid-template-columns:
+    minmax(0, 1fr);
+}
+
+.dashboard__span-3,
+.dashboard__span-4,
+.dashboard__span-5,
+.dashboard__span-6,
+.dashboard__span-7,
+.dashboard__span-8,
+.dashboard__span-9,
+.dashboard__span-12,
+.dashboard__hero-side {
+  grid-column: 1 / -1;
+}
+
+
+/* ==========================================================
+   DESKTOP LARGE
+   >= 1000 px disponibles DANS le Dashboard
+   ========================================================== */
+
+@container dashboard (min-width: 1000px) {
+
+  .dashboard__grid {
+    grid-template-columns:
+      repeat(12, minmax(0, 1fr));
+  }
+
+  .dashboard__span-3 {
+    grid-column:
+      span 3 / span 3;
+  }
+
+  .dashboard__span-4 {
+    grid-column:
+      span 4 / span 4;
+  }
+
+  .dashboard__span-5 {
+    grid-column:
+      span 5 / span 5;
+  }
+
+  .dashboard__span-6 {
+    grid-column:
+      span 6 / span 6;
+  }
+
+  .dashboard__span-7 {
+    grid-column:
+      span 7 / span 7;
+  }
+
+  .dashboard__span-8 {
+    grid-column:
+      span 8 / span 8;
+  }
+
+  .dashboard__span-9 {
+    grid-column:
+      span 9 / span 9;
+  }
+
+  .dashboard__span-12 {
+    grid-column:
+      span 12 / span 12;
+  }
+
+  .dashboard__hero-side {
+    grid-column:
+      span 5 / span 5;
+  }
+
+}
+
+
+/* ==========================================================
+   TABLETTE / DESKTOP ÉTROIT
+   760 à 999 px disponibles
+   ========================================================== */
+
+@container dashboard
+  (min-width: 760px)
+  and (max-width: 999px) {
+
+  .dashboard__grid {
+    grid-template-columns:
+      repeat(12, minmax(0, 1fr));
+  }
+
+  /*
+   * Sur cette largeur, on privilégie la lisibilité :
+   * chaque grand bloc repasse pleine largeur.
+   */
+  .dashboard__coach,
+  .dashboard__hero-side,
+  .dashboard__training,
+  .dashboard__fitness,
+  .dashboard__week,
+  .dashboard__feeling {
+    grid-column:
+      span 12 / span 12;
+  }
+
+}
+
+
+/* ==========================================================
+   MOBILE / TRÈS ÉTROIT
+   < 760 px
+   ========================================================== */
+
+@container dashboard (max-width: 759px) {
+
+  .dashboard__grid {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+}
+
+
+/* ==========================================================
+   DASHBOARD - WEATHER HOVER
+   Même feedback de survol que les autres widgets
+   ========================================================== */
+
+.dashboard__weather > * {
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+
+  .dashboard__weather > *:hover {
+    transform: translateY(-2px);
+  }
+
+}
+
+

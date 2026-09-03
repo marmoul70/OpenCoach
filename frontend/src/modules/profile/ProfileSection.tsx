@@ -1,4 +1,8 @@
 import {
+  ChevronDown,
+} from 'lucide-react'
+
+import {
   useState,
   type ReactNode,
 } from 'react'
@@ -34,16 +38,17 @@ export function ProfileSection({
 
   return (
     <section
-      className={[
-        (
-          'collapse-arrow collapse '
-          + 'border border-base-300 '
-          + 'bg-base-100 shadow-sm'
-        ),
-        open
-          ? 'collapse-open'
-          : '',
-      ].join(' ')}
+      className="
+        overflow-hidden
+        rounded-[14px]
+        border
+        border-black/[0.06]
+        bg-white
+        shadow-[0_1px_2px_rgba(15,23,42,0.02)]
+        dark:border-white/[0.07]
+        dark:bg-[#171d21]
+        dark:shadow-none
+      "
     >
       <button
         type="button"
@@ -54,16 +59,17 @@ export function ProfileSection({
           )
         }
         className="
-          collapse-title
           flex
-          min-h-0
+          w-full
           items-center
           justify-between
           gap-4
-          px-6
-          py-5
-          pr-12
+          px-5
+          py-4
           text-left
+          transition
+          hover:bg-slate-50/60
+          dark:hover:bg-white/[0.02]
         "
         aria-expanded={open}
       >
@@ -80,13 +86,18 @@ export function ProfileSection({
             <div
               className={[
                 (
-                  'flex h-11 w-11 shrink-0 '
+                  'flex h-10 w-10 shrink-0 '
                   + 'items-center justify-center '
-                  + 'rounded-xl'
+                  + 'rounded-[10px]'
                 ),
                 (
                   iconClassName
-                  ?? 'bg-primary/10 text-primary'
+                  ?? (
+                    'bg-emerald-500/[0.08] '
+                    + 'text-emerald-600 '
+                    + 'dark:bg-emerald-400/[0.08] '
+                    + 'dark:text-emerald-300'
+                  )
                 ),
               ].join(' ')}
             >
@@ -102,9 +113,11 @@ export function ProfileSection({
           >
             <h2
               className="
-                text-lg
+                text-[14px]
                 font-semibold
-                text-base-content
+                tracking-[-0.01em]
+                text-slate-800
+                dark:text-slate-100
               "
             >
               {title}
@@ -114,8 +127,10 @@ export function ProfileSection({
               <p
                 className="
                   mt-1
-                  text-sm
-                  text-base-content/60
+                  text-[10.5px]
+                  leading-relaxed
+                  text-slate-500
+                  dark:text-slate-400
                 "
               >
                 {description}
@@ -124,27 +139,47 @@ export function ProfileSection({
           </div>
         </div>
 
-        {trailing && (
-          <div
-            className="
-              mr-2
-              shrink-0
-            "
-          >
-            {trailing}
-          </div>
-        )}
+        <div
+          className="
+            flex
+            shrink-0
+            items-center
+            gap-2
+          "
+        >
+          {trailing && (
+            <div>
+              {trailing}
+            </div>
+          )}
+
+          <ChevronDown
+            className={[
+              (
+                'h-4 w-4 '
+                + 'text-slate-400 '
+                + 'transition-transform '
+                + 'duration-200 '
+                + 'dark:text-slate-500'
+              ),
+              open
+                ? 'rotate-180'
+                : '',
+            ].join(' ')}
+            strokeWidth={1.8}
+          />
+        </div>
       </button>
 
       {open && (
         <div
           className="
-            collapse-content
             border-t
-            border-base-300
-            px-6
-            pb-6
-            pt-5
+            border-black/[0.06]
+            px-5
+            pb-5
+            pt-4
+            dark:border-white/[0.07]
           "
         >
           {children}

@@ -32,7 +32,7 @@ export function SessionGuidancePanel({
       <div
         className="
           divide-y
-          divide-base-300
+          divide-black/[0.06] dark:divide-white/[0.07]
         "
       >
         <ExecutionStage
@@ -67,8 +67,8 @@ export function SessionGuidancePanel({
           overflow-hidden
           rounded-xl
           border
-          border-base-300
-          bg-base-100
+          border-black/[0.06] dark:border-white/[0.07]
+          bg-white dark:bg-[#141a1e]
         "
       >
         <summary
@@ -77,7 +77,7 @@ export function SessionGuidancePanel({
             list-none
             px-4 py-3
             font-semibold
-            text-base-content
+            text-slate-900 dark:text-slate-100
           "
         >
           <div
@@ -96,7 +96,7 @@ export function SessionGuidancePanel({
               className="
                 text-xs
                 font-normal
-                text-base-content/45
+                text-slate-400 dark:text-slate-500
               "
             >
               Objectif, terrain, conseils
@@ -108,7 +108,7 @@ export function SessionGuidancePanel({
           className="
             space-y-5
             border-t
-            border-base-300
+            border-black/[0.06] dark:border-white/[0.07]
             p-4
           "
         >
@@ -117,8 +117,8 @@ export function SessionGuidancePanel({
               workout-objective-card
               rounded-xl
               border
-              border-primary/20
-              bg-primary/5
+              border-emerald-500/20 dark:border-emerald-400/20
+              bg-emerald-500/[0.045] dark:bg-emerald-400/[0.055]
               p-4
             "
           >
@@ -134,7 +134,7 @@ export function SessionGuidancePanel({
                 className="
                   mt-0.5
                   shrink-0
-                  text-primary
+                  text-emerald-600 dark:text-emerald-400
                 "
               />
 
@@ -145,7 +145,7 @@ export function SessionGuidancePanel({
                     font-semibold
                     uppercase
                     tracking-wide
-                    text-primary
+                    text-emerald-600 dark:text-emerald-400
                   "
                 >
                   Objectif
@@ -157,7 +157,7 @@ export function SessionGuidancePanel({
                     text-sm
                     font-semibold
                     leading-6
-                    text-base-content
+                    text-slate-900 dark:text-slate-100
                   "
                 >
                   {guidance.objective}
@@ -229,8 +229,8 @@ export function SessionGuidancePanel({
               className="
                 rounded-xl
                 border
-                border-warning/30
-                bg-warning/5
+                border-amber-500/20 dark:border-amber-400/20
+                bg-amber-500/[0.05] dark:bg-amber-400/[0.055]
                 p-4
               "
             >
@@ -244,14 +244,14 @@ export function SessionGuidancePanel({
                 <AlertTriangle
                   size={18}
                   className="
-                    text-warning
+                    text-amber-600 dark:text-amber-400
                   "
                 />
 
                 <h3
                   className="
                     font-bold
-                    text-base-content
+                    text-slate-900 dark:text-slate-100
                   "
                 >
                   À éviter
@@ -263,7 +263,7 @@ export function SessionGuidancePanel({
                   mt-3
                   text-sm
                   leading-6
-                  text-base-content/65
+                  text-slate-600 dark:text-slate-300
                 "
               >
                 <BulletList
@@ -291,9 +291,20 @@ export function SessionGuidancePanel({
                       <span
                         key={target}
                         className="
-                          badge
-                          badge-outline
-                          badge-sm
+                          inline-flex
+                          items-center
+                          rounded-full
+                          border
+                          border-black/[0.08]
+                          bg-white
+                          px-2.5
+                          py-1
+                          text-[10.5px]
+                          font-medium
+                          text-slate-500
+                          dark:border-white/[0.09]
+                          dark:bg-white/[0.025]
+                          dark:text-slate-400
                         "
                       >
                         {
@@ -350,12 +361,12 @@ function ExecutionStage({
             ),
             emphasized
               ? (
-                'bg-primary '
-                + 'text-primary-content'
+                'bg-emerald-500 '
+                + 'text-white'
               )
               : (
-                'bg-base-200 '
-                + 'text-base-content/60'
+                'bg-slate-100 dark:bg-white/[0.06] '
+                + 'text-slate-500 dark:text-slate-400'
               ),
           ].join(' ')}
         >
@@ -365,7 +376,7 @@ function ExecutionStage({
         <h3
           className="
             font-bold
-            text-base-content
+            text-slate-900 dark:text-slate-100
           "
         >
           {title}
@@ -395,7 +406,7 @@ function ExecutionStage({
         <p
           className="
             text-sm
-            text-base-content/45
+            text-slate-400 dark:text-slate-500
           "
         >
           Aucune consigne spécifique.
@@ -427,7 +438,7 @@ function GuidanceSection({
         {icon && (
           <span
             className="
-              text-primary
+              text-emerald-600 dark:text-emerald-400
             "
           >
             {icon}
@@ -437,7 +448,7 @@ function GuidanceSection({
         <h3
           className="
             font-bold
-            text-base-content
+            text-slate-900 dark:text-slate-100
           "
         >
           {title}
@@ -448,7 +459,7 @@ function GuidanceSection({
         className="
           text-sm
           leading-6
-          text-base-content/65
+          text-slate-600 dark:text-slate-300
         "
       >
         {children}
@@ -482,12 +493,12 @@ function GuidanceStepCard({
         'training-guidance-v3__step',
         emphasized
           ? (
-              'border-primary/30 '
-              + 'bg-primary/5'
+              'border-emerald-500/20 dark:border-emerald-400/20 '
+              + 'bg-emerald-500/[0.045] dark:bg-emerald-400/[0.055]'
             )
           : (
-              'border-base-300 '
-              + 'bg-base-100'
+              'border-black/[0.06] dark:border-white/[0.07] '
+              + 'bg-white dark:bg-[#141a1e]'
             ),
       ].join(' ')}
     >
@@ -503,7 +514,7 @@ function GuidanceStepCard({
         <p
           className="
             font-semibold
-            text-base-content
+            text-slate-900 dark:text-slate-100
           "
         >
           {step.title}
@@ -512,10 +523,21 @@ function GuidanceStepCard({
         {step.duration_minutes != null && (
           <span
             className="
-              badge
-              badge-outline
-              badge-sm
+              inline-flex
+              items-center
               gap-1
+              rounded-full
+              border
+              border-black/[0.08]
+              bg-slate-50
+              px-2.5
+              py-1
+              text-[10.5px]
+              font-medium
+              text-slate-500
+              dark:border-white/[0.09]
+              dark:bg-white/[0.035]
+              dark:text-slate-400
             "
           >
             <Clock3
@@ -535,7 +557,7 @@ function GuidanceStepCard({
           mt-2
           text-sm
           leading-6
-          text-base-content/60
+          text-slate-500 dark:text-slate-400
         "
       >
         {step.description}
@@ -549,8 +571,8 @@ function GuidanceStepCard({
             overflow-hidden
             rounded-xl
             border
-            border-base-300
-            bg-base-100
+            border-black/[0.06] dark:border-white/[0.07]
+            bg-white dark:bg-[#141a1e]
           "
         >
           <div className="p-3">
@@ -560,7 +582,7 @@ function GuidanceStepCard({
                 font-semibold
                 uppercase
                 tracking-wide
-                text-primary
+                text-emerald-600 dark:text-emerald-400
               "
             >
               Effort
@@ -580,7 +602,7 @@ function GuidanceStepCard({
                 className="
                   text-base
                   font-bold
-                  text-base-content
+                  text-slate-900 dark:text-slate-100
                 "
               >
                 {step.work_distance_meters} m
@@ -593,7 +615,7 @@ function GuidanceStepCard({
                   className="
                     text-sm
                     font-medium
-                    text-base-content/60
+                    text-slate-500 dark:text-slate-400
                   "
                 >
                   {
@@ -637,10 +659,20 @@ function GuidanceStepCard({
                 {step.intensity_target && (
                   <span
                     className="
-                      badge
-                      badge-primary
-                      badge-outline
-                      badge-sm
+                      inline-flex
+                      items-center
+                      rounded-full
+                      border
+                      border-emerald-500/20
+                      bg-emerald-500/[0.06]
+                      px-2.5
+                      py-1
+                      text-[10.5px]
+                      font-semibold
+                      text-emerald-700
+                      dark:border-emerald-400/20
+                      dark:bg-emerald-400/[0.07]
+                      dark:text-emerald-300
                     "
                   >
                     Intensité · {
@@ -654,10 +686,20 @@ function GuidanceStepCard({
                 {step.heart_rate_target && (
                   <span
                     className="
-                      badge
-                      badge-secondary
-                      badge-outline
-                      badge-sm
+                      inline-flex
+                      items-center
+                      rounded-full
+                      border
+                      border-sky-500/20
+                      bg-sky-500/[0.06]
+                      px-2.5
+                      py-1
+                      text-[10.5px]
+                      font-semibold
+                      text-sky-700
+                      dark:border-sky-400/20
+                      dark:bg-sky-400/[0.07]
+                      dark:text-sky-300
                     "
                   >
                     FC · {
@@ -673,8 +715,8 @@ function GuidanceStepCard({
             <div
               className="
                 border-t
-                border-base-300
-                bg-base-200/50
+                border-black/[0.06] dark:border-white/[0.07]
+                bg-slate-50/80 dark:bg-white/[0.025]
                 px-3
                 py-3
               "
@@ -685,7 +727,7 @@ function GuidanceStepCard({
                   font-semibold
                   uppercase
                   tracking-wide
-                  text-base-content/50
+                  text-slate-500 dark:text-slate-400
                 "
               >
                 Récupération entre les répétitions
@@ -696,7 +738,7 @@ function GuidanceStepCard({
                   mt-1
                   text-base
                   font-bold
-                  text-base-content
+                  text-slate-900 dark:text-slate-100
                 "
               >
                 {step.recovery_description}
@@ -715,7 +757,7 @@ function GuidanceStepCard({
           className="
             mt-3
             rounded-xl
-            bg-base-200/60
+            bg-slate-50 dark:bg-white/[0.035]
             px-3
             py-2.5
           "
@@ -723,7 +765,7 @@ function GuidanceStepCard({
           <p
             className="
               text-xs
-              text-base-content/45
+              text-slate-400 dark:text-slate-500
             "
           >
             Cible par répétition
@@ -733,7 +775,7 @@ function GuidanceStepCard({
             className="
               mt-0.5
               font-semibold
-              text-base-content
+              text-slate-900 dark:text-slate-100
             "
           >
             {
@@ -786,10 +828,20 @@ function GuidanceStepCard({
           {step.intensity_target && (
             <span
               className="
-                badge
-                badge-primary
-                badge-outline
-                badge-sm
+                inline-flex
+                items-center
+                rounded-full
+                border
+                border-emerald-500/20
+                bg-emerald-500/[0.06]
+                px-2.5
+                py-1
+                text-[10.5px]
+                font-semibold
+                text-emerald-700
+                dark:border-emerald-400/20
+                dark:bg-emerald-400/[0.07]
+                dark:text-emerald-300
               "
             >
               Intensité · {
@@ -803,10 +855,20 @@ function GuidanceStepCard({
           {step.heart_rate_target && (
             <span
               className="
-                badge
-                badge-secondary
-                badge-outline
-                badge-sm
+                inline-flex
+                items-center
+                rounded-full
+                border
+                border-sky-500/20
+                bg-sky-500/[0.06]
+                px-2.5
+                py-1
+                text-[10.5px]
+                font-semibold
+                text-sky-700
+                dark:border-sky-400/20
+                dark:bg-sky-400/[0.07]
+                dark:text-sky-300
               "
             >
               FC · {
@@ -818,9 +880,20 @@ function GuidanceStepCard({
           {step.recovery_description && (
             <span
               className="
-                badge
-                badge-outline
-                badge-sm
+                inline-flex
+                items-center
+                rounded-full
+                border
+                border-black/[0.08]
+                bg-slate-50
+                px-2.5
+                py-1
+                text-[10.5px]
+                font-medium
+                text-slate-500
+                dark:border-white/[0.09]
+                dark:bg-white/[0.035]
+                dark:text-slate-400
               "
             >
               Récupération · {
@@ -955,14 +1028,14 @@ function IntensityValue({
     <div
       className="
         rounded-xl
-        bg-base-200/60
+        bg-slate-50 dark:bg-white/[0.035]
         px-3 py-2.5
       "
     >
       <p
         className="
           text-xs
-          text-base-content/45
+          text-slate-400 dark:text-slate-500
         "
       >
         {title}
@@ -972,7 +1045,7 @@ function IntensityValue({
         className="
           mt-0.5
           font-semibold
-          text-base-content
+          text-slate-900 dark:text-slate-100
         "
       >
         {value}

@@ -500,10 +500,15 @@ export function TrainingDetails({
           >
             <span
               className="
-                loading
-                loading-spinner
-                loading-sm
-                text-primary
+                size-4
+                shrink-0
+                animate-spin
+                rounded-full
+                border-2
+                border-slate-200
+                border-t-emerald-500
+                dark:border-white/15
+                dark:border-t-emerald-400
               "
             />
           </div>
@@ -806,8 +811,14 @@ function SessionSummary({
       {estimatedDistance && (
         <span
           className="
-            badge
-            badge-outline
+            inline-flex
+            items-center
+            rounded-full
+            border
+            px-2.5
+            py-1
+            text-[10.5px]
+            font-semibold
           "
         >
           ≈ {estimatedDistance}
@@ -817,8 +828,14 @@ function SessionSummary({
       {session.distanceKm !== undefined && (
         <span
           className="
-            badge
-            badge-outline
+            inline-flex
+            items-center
+            rounded-full
+            border
+            px-2.5
+            py-1
+            text-[10.5px]
+            font-semibold
           "
         >
           {
@@ -832,8 +849,14 @@ function SessionSummary({
       {session.elevationGainM !== undefined && (
         <span
           className="
-            badge
-            badge-outline
+            inline-flex
+            items-center
+            rounded-full
+            border
+            px-2.5
+            py-1
+            text-[10.5px]
+            font-semibold
           "
         >
           +{
@@ -869,8 +892,14 @@ function SessionSummary({
       {session.intensity && (
         <span
           className="
-            badge
-            badge-outline
+            inline-flex
+            items-center
+            rounded-full
+            border
+            px-2.5
+            py-1
+            text-[10.5px]
+            font-semibold
           "
         >
           {
@@ -884,9 +913,18 @@ function SessionSummary({
       {session.heartRateZone && (
         <span
           className="
-            badge
-            badge-secondary
-            badge-outline
+            inline-flex
+            items-center
+            rounded-full
+            border
+            border-violet-500/20
+            bg-violet-500/[0.06]
+            px-2.5
+            py-1
+            text-[10.5px]
+            font-semibold
+            text-violet-600
+            dark:text-violet-400
           "
         >
           {
@@ -1118,8 +1156,8 @@ function ActivitySection({
             gap-3
             rounded-xl
             border
-            border-base-300
-            bg-base-100
+            border-black/[0.06] dark:border-white/[0.07]
+            bg-white dark:bg-[#141a1e]
             px-4 py-3
           "
         >
@@ -1127,7 +1165,7 @@ function ActivitySection({
             <p
               className="
                 font-semibold
-                text-base-content
+                text-slate-800 dark:text-slate-100
               "
             >
               Activité réalisée
@@ -1137,7 +1175,7 @@ function ActivitySection({
               className="
                 mt-0.5
                 text-xs
-                text-base-content/45
+                text-slate-400 dark:text-slate-500
               "
             >
               Association disponible
@@ -1147,9 +1185,18 @@ function ActivitySection({
 
           <span
             className="
-              badge
-              badge-ghost
               shrink-0
+              rounded-full
+              border
+              border-slate-200
+              bg-slate-50
+              px-2.5 py-1
+              text-[10.5px]
+              font-semibold
+              text-slate-500
+              dark:border-white/[0.08]
+              dark:bg-white/[0.04]
+              dark:text-slate-400
             "
           >
             À venir
@@ -1191,7 +1238,7 @@ function ActivitySection({
     <section
       className="
         border-t
-        border-base-300
+        border-black/[0.06] dark:border-white/[0.07]
         pt-5
       "
     >
@@ -1209,8 +1256,8 @@ function ActivitySection({
           overflow-hidden
           rounded-xl
           border
-          border-base-300
-          bg-base-100
+          border-black/[0.06] dark:border-white/[0.07]
+          bg-white dark:bg-[#141a1e]
         "
       >
         <summary
@@ -1232,7 +1279,7 @@ function ActivitySection({
               <p
                 className="
                   font-semibold
-                  text-base-content
+                  text-slate-800 dark:text-slate-100
                 "
               >
                 Activité réalisée
@@ -1243,7 +1290,7 @@ function ActivitySection({
                   className="
                     mt-0.5
                     text-xs
-                    text-base-content/45
+                    text-slate-400 dark:text-slate-500
                   "
                 >
                   Associer l&apos;activité
@@ -1254,13 +1301,34 @@ function ActivitySection({
 
             <span
               className={[
-                'badge shrink-0',
+                (
+                  'shrink-0 rounded-full border '
+                  + 'px-2.5 py-1 text-[10.5px] '
+                  + 'font-semibold'
+                ),
                 completed
-                  ? 'badge-success badge-outline'
+                  ? (
+                      'border-emerald-500/20 '
+                      + 'bg-emerald-500/[0.06] '
+                      + 'text-emerald-600 '
+                      + 'dark:text-emerald-400'
+                    )
                   : (
                     selectedCount > 0
-                      ? 'badge-primary'
-                      : 'badge-ghost'
+                      ? (
+                          'border-emerald-500/20 '
+                          + 'bg-emerald-500/10 '
+                          + 'text-emerald-700 '
+                          + 'dark:text-emerald-300'
+                        )
+                      : (
+                          'border-slate-200 '
+                          + 'bg-slate-50 '
+                          + 'text-slate-500 '
+                          + 'dark:border-white/[0.08] '
+                          + 'dark:bg-white/[0.04] '
+                          + 'dark:text-slate-400'
+                        )
                   ),
               ].join(' ')}
             >
@@ -1272,7 +1340,7 @@ function ActivitySection({
         <div
           className="
             border-t
-            border-base-300
+            border-black/[0.06] dark:border-white/[0.07]
             px-4 py-4
           "
         >
@@ -1283,22 +1351,29 @@ function ActivitySection({
                 items-center
                 gap-2
                 rounded-xl
-                bg-base-200/60
+                bg-slate-50 dark:bg-white/[0.035]
                 px-4 py-3
               "
             >
               <span
                 className="
-                  loading
-                  loading-spinner
-                  loading-sm
+                  size-4
+                  shrink-0
+                  animate-spin
+                  rounded-full
+                  border-2
+                  border-slate-200
+                  border-t-emerald-500
+                  dark:border-white/15
+                  dark:border-t-emerald-400
                 "
+                aria-hidden="true"
               />
 
               <span
                 className="
                   text-sm
-                  text-base-content/55
+                  text-slate-500 dark:text-slate-400
                 "
               >
                 Recherche des activités…
@@ -1312,11 +1387,11 @@ function ActivitySection({
                 className="
                   rounded-xl
                   border
-                  border-error/30
-                  bg-error/5
+                  border-rose-500/20 dark:border-rose-400/20
+                  bg-rose-500/[0.05] dark:bg-rose-400/[0.05]
                   px-4 py-3
                   text-sm
-                  text-error
+                  text-rose-600 dark:text-rose-400
                 "
               >
                 {error}
@@ -1329,7 +1404,7 @@ function ActivitySection({
               <div
                 className="
                   rounded-xl
-                  bg-base-200/60
+                  bg-slate-50 dark:bg-white/[0.035]
                   px-4 py-3
                 "
               >
@@ -1337,7 +1412,7 @@ function ActivitySection({
                   className="
                     text-sm
                     font-medium
-                    text-base-content/70
+                    text-slate-600 dark:text-slate-300
                   "
                 >
                   Aucune activité détectée
@@ -1347,7 +1422,7 @@ function ActivitySection({
                   className="
                     mt-1
                     text-xs
-                    text-base-content/45
+                    text-slate-400 dark:text-slate-500
                   "
                 >
                   Une prochaine synchronisation
@@ -1395,11 +1470,11 @@ function ActivitySection({
                 mt-3
                 rounded-xl
                 border
-                border-error/30
-                bg-error/5
+                border-rose-500/20 dark:border-rose-400/20
+                bg-rose-500/[0.05] dark:bg-rose-400/[0.05]
                 px-4 py-3
                 text-sm
-                text-error
+                text-rose-600 dark:text-rose-400
               "
             >
               {validationError}
@@ -1418,8 +1493,25 @@ function ActivitySection({
                 <button
                   type="button"
                   className="
-                    btn
-                    btn-primary
+                    workout-activity-validate-button
+                    inline-flex
+                    min-h-10
+                    items-center
+                    justify-center
+                    gap-2
+                    rounded-[10px]
+                    bg-emerald-600
+                    px-4 py-2
+                    text-sm
+                    font-semibold
+                    text-white
+                    shadow-sm
+                    transition
+                    hover:bg-emerald-700
+                    disabled:pointer-events-none
+                    disabled:opacity-45
+                    dark:bg-emerald-500
+                    dark:hover:bg-emerald-400
                   "
                   disabled={
                     !selectedActivityId
@@ -1432,10 +1524,15 @@ function ActivitySection({
                   {validating && (
                     <span
                       className="
-                        loading
-                        loading-spinner
-                        loading-sm
+                        size-4
+                        shrink-0
+                        animate-spin
+                        rounded-full
+                        border-2
+                        border-white/35
+                        border-t-white
                       "
+                      aria-hidden="true"
                     />
                   )}
 
@@ -1483,14 +1580,15 @@ function ActivityRow({
         ),
         selected
           ? (
-            'border-primary '
-            + 'bg-primary/5 '
+              'workout-activity-card--selected '
+              + 'border-emerald-500/35 dark:border-emerald-400/30 '
+            + 'bg-emerald-500/[0.05] dark:bg-emerald-400/[0.055] '
             + 'ring-1 '
-            + 'ring-primary/15'
+            + 'ring-emerald-500/15 dark:ring-emerald-400/15'
           )
           : (
-            'border-base-300 '
-            + 'hover:bg-base-200/50'
+            'border-black/[0.06] dark:border-white/[0.07] '
+            + 'hover:bg-slate-50/80 dark:bg-white/[0.025]'
           ),
       ].join(' ')}
     >
@@ -1515,7 +1613,7 @@ function ActivityRow({
               className="
                 truncate
                 font-semibold
-                text-base-content
+                text-slate-800 dark:text-slate-100
               "
             >
               {activity.name}
@@ -1524,9 +1622,15 @@ function ActivityRow({
             {activity.bestMatch && (
               <span
                 className="
-                  badge
-                  badge-success
-                  badge-sm
+                  rounded-full
+                  border
+                  border-emerald-500/20
+                  bg-emerald-500/[0.08]
+                  px-2 py-0.5
+                  text-[10px]
+                  font-semibold
+                  text-emerald-600
+                  dark:text-emerald-400
                 "
               >
                 Meilleur choix
@@ -1537,7 +1641,7 @@ function ActivityRow({
           <p
             className="
               mt-1 text-xs
-              text-base-content/50
+              text-slate-500 dark:text-slate-400
             "
           >
             {formatSportType(
@@ -1561,7 +1665,7 @@ function ActivityRow({
             items-center
             gap-3
             text-sm
-            text-base-content/60
+            text-slate-500 dark:text-slate-400
           "
         >
           {activity.movingTimeSeconds
@@ -1596,7 +1700,11 @@ function ActivityRow({
 
           <span
             className={[
-              'badge badge-sm',
+              (
+                'rounded-full border '
+                + 'px-2 py-0.5 text-[10px] '
+                + 'font-semibold'
+              ),
               getMatchBadgeClass(
                 activity.matchScore,
               ),
@@ -1617,14 +1725,14 @@ function ActivityRow({
           className="
             mt-3
             border-t
-            border-primary/15
+            border-emerald-500/15 dark:border-emerald-400/15
             pt-3
           "
         >
           <p
             className="
               text-xs
-              text-base-content/50
+              text-slate-500 dark:text-slate-400
             "
           >
             Cliquez à nouveau pour
@@ -1652,7 +1760,7 @@ function ActivityRow({
             <span
               className="
                 text-xs
-                text-base-content/45
+                text-slate-400 dark:text-slate-500
               "
             >
               {formatFeelLabel(
@@ -1684,7 +1792,7 @@ function DebriefSection({
       <section
         className="
           border-t
-          border-base-300
+          border-black/[0.06] dark:border-white/[0.07]
           pt-5
         "
       >
@@ -1693,15 +1801,22 @@ function DebriefSection({
             flex items-center
             gap-2
             text-sm
-            text-base-content/55
+            text-slate-500 dark:text-slate-400
           "
         >
           <span
             className="
-              loading
-              loading-spinner
-              loading-sm
+              size-4
+              shrink-0
+              animate-spin
+              rounded-full
+              border-2
+              border-slate-200
+              border-t-emerald-500
+              dark:border-white/15
+              dark:border-t-emerald-400
             "
+            aria-hidden="true"
           />
 
           Chargement du débriefing…
@@ -1718,7 +1833,7 @@ function DebriefSection({
     <section
       className="
         border-t
-        border-base-300
+        border-black/[0.06] dark:border-white/[0.07]
         pt-5
       "
     >
@@ -1727,8 +1842,8 @@ function DebriefSection({
           workout-debrief-card
           rounded-xl
           border
-          border-base-300
-          bg-base-100
+          border-black/[0.06] dark:border-white/[0.07]
+          bg-white dark:bg-[#141a1e]
           p-4
         "
       >
@@ -1747,7 +1862,7 @@ function DebriefSection({
                 font-semibold
                 uppercase
                 tracking-wide
-                text-base-content/40
+                text-slate-400 dark:text-slate-500
               "
             >
               Débriefing coach
@@ -1757,7 +1872,7 @@ function DebriefSection({
               className="
                 mt-1
                 font-semibold
-                text-base-content
+                text-slate-800 dark:text-slate-100
               "
             >
               {debrief.objective}
@@ -1766,7 +1881,11 @@ function DebriefSection({
 
           <span
             className={[
-              'badge',
+              (
+                'shrink-0 rounded-full border '
+                + 'px-2.5 py-1 text-[10.5px] '
+                + 'font-semibold'
+              ),
               getDebriefBadgeClass(
                 debrief.overallStatus,
               ),
@@ -1783,7 +1902,7 @@ function DebriefSection({
             mt-4
             text-sm
             leading-6
-            text-base-content/75
+            text-slate-600 dark:text-slate-300
           "
         >
           {debrief.debriefing}
@@ -1797,7 +1916,7 @@ function DebriefSection({
                 font-semibold
                 uppercase
                 tracking-wide
-                text-success
+                text-emerald-600 dark:text-emerald-400
               "
             >
               Points forts
@@ -1808,7 +1927,7 @@ function DebriefSection({
                 mt-2
                 space-y-2
                 text-sm
-                text-base-content/70
+                text-slate-600 dark:text-slate-300
               "
             >
               {debrief.strengths.map(
@@ -1826,7 +1945,7 @@ function DebriefSection({
                       className="
                         mt-0.5
                         shrink-0
-                        text-success
+                        text-emerald-600 dark:text-emerald-400
                       "
                     />
 
@@ -1848,7 +1967,7 @@ function DebriefSection({
                 font-semibold
                 uppercase
                 tracking-wide
-                text-warning
+                text-amber-600 dark:text-amber-400
               "
             >
               Points d&apos;attention
@@ -1859,7 +1978,7 @@ function DebriefSection({
                 mt-2
                 space-y-2
                 text-sm
-                text-base-content/70
+                text-slate-600 dark:text-slate-300
               "
             >
               {debrief.attentionPoints.map(
@@ -1878,7 +1997,7 @@ function DebriefSection({
                         size-1.5
                         shrink-0
                         rounded-full
-                        bg-warning
+                        bg-amber-500 dark:bg-amber-400
                       "
                     />
 
@@ -1902,16 +2021,16 @@ function getDebriefBadgeClass(
 ): string {
   switch (status) {
     case 'compliant':
-      return 'badge-success'
+      return 'border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-600 dark:text-emerald-400'
 
     case 'partial':
-      return 'badge-warning'
+      return 'border-amber-500/20 bg-amber-500/[0.08] text-amber-600 dark:text-amber-400'
 
     case 'non_compliant':
-      return 'badge-error'
+      return 'border-rose-500/20 bg-rose-500/[0.08] text-rose-600 dark:text-rose-400'
 
     default:
-      return 'badge-ghost'
+      return 'border-slate-200 bg-slate-50 text-slate-500 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-slate-400'
   }
 }
 
@@ -1947,10 +2066,19 @@ function StatusBadge({
     return (
       <span
         className="
-          badge
-          badge-success
-          badge-sm
+          inline-flex
+          items-center
           gap-1
+          rounded-full
+          border
+          border-emerald-500/20
+          bg-emerald-500/[0.08]
+          px-2
+          py-0.5
+          text-[10.5px]
+          font-semibold
+          text-emerald-600
+          dark:text-emerald-400
         "
       >
         <Check
@@ -1968,10 +2096,19 @@ function StatusBadge({
     return (
       <span
         className="
-          badge
-          badge-error
-          badge-sm
+          inline-flex
+          items-center
           gap-1
+          rounded-full
+          border
+          border-rose-500/20
+          bg-rose-500/[0.08]
+          px-2
+          py-0.5
+          text-[10.5px]
+          font-semibold
+          text-rose-600
+          dark:text-rose-400
         "
       >
         <X
@@ -1986,9 +2123,18 @@ function StatusBadge({
   return (
     <span
       className="
-        badge
-        badge-warning
-        badge-sm
+        inline-flex
+        items-center
+        rounded-full
+        border
+        border-amber-500/20
+        bg-amber-500/[0.08]
+        px-2
+        py-0.5
+        text-[10.5px]
+        font-semibold
+        text-amber-600
+        dark:text-amber-400
       "
     >
       À faire
@@ -2041,10 +2187,10 @@ function FeelStars({
               index < stars
                 ? (
                   'fill-current '
-                  + 'text-warning'
+                  + 'text-amber-600 dark:text-amber-400'
                 )
                 : (
-                  'text-base-content/20'
+                  'text-slate-300 dark:text-slate-700'
                 ),
             ].join(' ')}
           />
@@ -2059,14 +2205,14 @@ function getMatchBadgeClass(
   score: number,
 ): string {
   if (score >= 85) {
-    return 'badge-success'
+    return 'border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-600 dark:text-emerald-400'
   }
 
   if (score >= 65) {
-    return 'badge-warning'
+    return 'border-amber-500/20 bg-amber-500/[0.08] text-amber-600 dark:text-amber-400'
   }
 
-  return 'badge-error'
+  return 'border-rose-500/20 bg-rose-500/[0.08] text-rose-600 dark:text-rose-400'
 }
 
 

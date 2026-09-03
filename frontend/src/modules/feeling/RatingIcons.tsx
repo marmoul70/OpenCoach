@@ -34,8 +34,8 @@ export function RatingIcons({
 
   const colorClass =
     kind === 'energy'
-      ? 'text-error'
-      : 'text-success'
+      ? 'text-rose-500 dark:text-rose-400'
+      : 'text-emerald-500 dark:text-emerald-400'
 
   const iconClass =
     size === 'md'
@@ -63,7 +63,7 @@ export function RatingIcons({
                 ${
                   active
                     ? colorClass
-                    : 'text-base-content/15'
+                    : 'text-slate-200 dark:text-slate-700'
                 }
               `}
               strokeWidth={1.8}
@@ -96,7 +96,7 @@ export function RatingIcons({
                 justify-center
                 rounded-lg
                 transition-colors
-                hover:bg-base-200
+                hover:bg-slate-100 dark:hover:bg-white/[0.04]
               "
               aria-label={`${rating} sur 5`}
               onClick={() => {

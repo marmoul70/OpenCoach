@@ -1,8 +1,6 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-@plugin "daisyui";
-
 
 /* ==========================================================
    OpenCoach PWA - iOS safe areas
@@ -68,7 +66,6 @@ select {
   font: inherit;
 }
 
-
 /* ==========================================================
    OPENCOACH DESKTOP PROFILE DROPDOWN FONT
    Même taille que le menu principal de la sidebar.
@@ -98,7 +95,6 @@ select {
 
 }
 
-
 /* ==========================================================
    OpenCoach - Bottom sheet modal
    ========================================================== */
@@ -114,7 +110,6 @@ select {
     transform: translateY(0);
   }
 }
-
 
 @keyframes opencoach-modal-in {
   from {

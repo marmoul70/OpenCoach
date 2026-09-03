@@ -546,7 +546,20 @@ export function FeelingDetails() {
   if (loading) {
     return (
       <div className="flex min-h-48 items-center justify-center">
-        <span className="loading loading-spinner loading-md text-info" />
+        <span
+          className="
+            h-6
+            w-6
+            animate-spin
+            rounded-full
+            border-2
+            border-slate-200
+            border-t-emerald-500
+            dark:border-white/[0.10]
+            dark:border-t-emerald-400
+          "
+          aria-hidden="true"
+        />
       </div>
     )
   }
@@ -554,11 +567,27 @@ export function FeelingDetails() {
   return (
     <div className="space-y-4">
       <section>
-        <h3 className="font-semibold text-base-content">
+        <h3
+          className="
+            text-[14px]
+            font-semibold
+            tracking-[-0.01em]
+            text-slate-800
+            dark:text-slate-100
+          "
+        >
           Comment vous sentez-vous ?
         </h3>
 
-        <p className="mt-1 text-sm text-base-content/50">
+        <p
+          className="
+            mt-1
+            text-[11px]
+            leading-relaxed
+            text-slate-500
+            dark:text-slate-400
+          "
+        >
           5 représente le meilleur état,
           1 le niveau le plus difficile.
         </p>
@@ -583,19 +612,68 @@ export function FeelingDetails() {
       </div>
 
       {comfort < 5 && (
-        <section className="rounded-xl border border-base-300 bg-base-200/30 p-4">
-          <h3 className="text-sm font-semibold text-base-content">
+        <section
+          className="
+            rounded-[13px]
+            border
+            border-black/[0.06]
+            bg-slate-50/70
+            p-4
+            dark:border-white/[0.07]
+            dark:bg-white/[0.025]
+          "
+        >
+          <h3
+            className="
+              text-[12.5px]
+              font-semibold
+              text-slate-800
+              dark:text-slate-100
+            "
+          >
             Où ressentez-vous une gêne ?
           </h3>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="form-control">
-              <span className="label-text mb-1 text-xs text-base-content/50">
+            <label className="block">
+              <span className="
+                  mb-1.5
+                  block
+                  text-[10px]
+                  font-medium
+                  text-slate-500
+                  dark:text-slate-400
+                ">
                 Zone
               </span>
 
               <select
-                className="select select-bordered w-full"
+                className="
+                  h-10
+                  w-full
+                  appearance-none
+                  rounded-[9px]
+                  border
+                  border-black/[0.07]
+                  bg-white
+                  px-3
+                  pr-9
+                  text-[11px]
+                  font-medium
+                  text-slate-700
+                  outline-none
+                  transition
+                  hover:border-black/[0.12]
+                  focus:border-emerald-500/35
+                  focus:ring-2
+                  focus:ring-emerald-500/[0.08]
+                  dark:border-white/[0.07]
+                  dark:bg-[#171d21]
+                  dark:text-slate-200
+                  dark:hover:border-white/[0.12]
+                  dark:focus:border-emerald-400/30
+                  dark:focus:ring-emerald-400/[0.08]
+                "
                 value={painArea}
                 onChange={(event) => {
                   setPainArea(
@@ -616,13 +694,45 @@ export function FeelingDetails() {
               </select>
             </label>
 
-            <label className="form-control">
-              <span className="label-text mb-1 text-xs text-base-content/50">
+            <label className="block">
+              <span className="
+                  mb-1.5
+                  block
+                  text-[10px]
+                  font-medium
+                  text-slate-500
+                  dark:text-slate-400
+                ">
                 Côté
               </span>
 
               <select
-                className="select select-bordered w-full"
+                className="
+                  h-10
+                  w-full
+                  appearance-none
+                  rounded-[9px]
+                  border
+                  border-black/[0.07]
+                  bg-white
+                  px-3
+                  pr-9
+                  text-[11px]
+                  font-medium
+                  text-slate-700
+                  outline-none
+                  transition
+                  hover:border-black/[0.12]
+                  focus:border-emerald-500/35
+                  focus:ring-2
+                  focus:ring-emerald-500/[0.08]
+                  dark:border-white/[0.07]
+                  dark:bg-[#171d21]
+                  dark:text-slate-200
+                  dark:hover:border-white/[0.12]
+                  dark:focus:border-emerald-400/30
+                  dark:focus:ring-emerald-400/[0.08]
+                "
                 value={bodySide}
                 onChange={(event) => {
                   setBodySide(
@@ -647,20 +757,68 @@ export function FeelingDetails() {
       )}
 
       <section className="grid gap-3 sm:grid-cols-2">
-        <label className="flex cursor-pointer items-center justify-between rounded-xl border border-base-300 px-4 py-3">
+        <label className="
+          flex
+          cursor-pointer
+          items-center
+          justify-between
+          gap-4
+          rounded-[13px]
+          border
+          border-black/[0.06]
+          bg-white
+          px-4
+          py-3.5
+          transition
+          hover:border-black/[0.10]
+          dark:border-white/[0.07]
+          dark:bg-[#171d21]
+          dark:hover:border-white/[0.11]
+        ">
           <div>
             <p className="text-sm font-semibold">
               Je suis malade
             </p>
 
-            <p className="text-xs text-base-content/45">
+            <p className="
+              mt-0.5
+              text-[10.5px]
+              text-slate-500
+              dark:text-slate-400
+            ">
               Symptômes ou état infectieux
             </p>
           </div>
 
           <input
             type="checkbox"
-            className="toggle toggle-warning"
+            className="
+              relative
+              h-5
+              w-9
+              shrink-0
+              cursor-pointer
+              appearance-none
+              rounded-full
+              bg-slate-200
+              outline-none
+              transition
+              before:absolute
+              before:left-0.5
+              before:top-0.5
+              before:h-4
+              before:w-4
+              before:rounded-full
+              before:bg-white
+              before:shadow-sm
+              before:transition
+              checked:bg-amber-500
+              checked:before:translate-x-4
+              focus-visible:ring-2
+              focus-visible:ring-amber-500/20
+              dark:bg-white/[0.10]
+              dark:checked:bg-amber-500
+            "
             checked={illness}
             onChange={(event) => {
               setIllness(
@@ -670,20 +828,68 @@ export function FeelingDetails() {
           />
         </label>
 
-        <label className="flex cursor-pointer items-center justify-between rounded-xl border border-base-300 px-4 py-3">
+        <label className="
+          flex
+          cursor-pointer
+          items-center
+          justify-between
+          gap-4
+          rounded-[13px]
+          border
+          border-black/[0.06]
+          bg-white
+          px-4
+          py-3.5
+          transition
+          hover:border-black/[0.10]
+          dark:border-white/[0.07]
+          dark:bg-[#171d21]
+          dark:hover:border-white/[0.11]
+        ">
           <div>
             <p className="text-sm font-semibold">
               Je suis indisponible
             </p>
 
-            <p className="text-xs text-base-content/45">
+            <p className="
+              mt-0.5
+              text-[10.5px]
+              text-slate-500
+              dark:text-slate-400
+            ">
               Impossible de m’entraîner aujourd’hui
             </p>
           </div>
 
           <input
             type="checkbox"
-            className="toggle toggle-error"
+            className="
+              relative
+              h-5
+              w-9
+              shrink-0
+              cursor-pointer
+              appearance-none
+              rounded-full
+              bg-slate-200
+              outline-none
+              transition
+              before:absolute
+              before:left-0.5
+              before:top-0.5
+              before:h-4
+              before:w-4
+              before:rounded-full
+              before:bg-white
+              before:shadow-sm
+              before:transition
+              checked:bg-rose-500
+              checked:before:translate-x-4
+              focus-visible:ring-2
+              focus-visible:ring-rose-500/20
+              dark:bg-white/[0.10]
+              dark:checked:bg-rose-500
+            "
             checked={unavailable}
             onChange={(event) => {
               setUnavailable(
@@ -699,12 +905,29 @@ export function FeelingDetails() {
         || unavailable
         || comfort < 5
       ) && (
-        <section className="rounded-xl border border-base-300 bg-base-200/25 p-4">
+        <section
+          className="
+            rounded-[13px]
+            border
+            border-black/[0.06]
+            bg-slate-50/60
+            p-4
+            dark:border-white/[0.07]
+            dark:bg-white/[0.025]
+          "
+        >
           <label
             htmlFor="daily-feeling-note"
             className="block"
           >
-            <span className="text-sm font-semibold text-base-content">
+            <span
+              className="
+                text-[12.5px]
+                font-semibold
+                text-slate-800
+                dark:text-slate-100
+              "
+            >
               {getDetailsTitle({
                 illness,
                 unavailable,
@@ -712,7 +935,16 @@ export function FeelingDetails() {
               })}
             </span>
 
-            <span className="mt-1 block text-xs text-base-content/45">
+            <span
+              className="
+                mt-1
+                block
+                text-[10.5px]
+                leading-relaxed
+                text-slate-500
+                dark:text-slate-400
+              "
+            >
               {getDetailsHelp({
                 illness,
                 unavailable,
@@ -724,14 +956,34 @@ export function FeelingDetails() {
           <textarea
             id="daily-feeling-note"
             className="
-              textarea
-              textarea-bordered
               mt-3
               block
               min-h-24
               w-full
               resize-y
-              bg-base-100
+              rounded-[10px]
+              border
+              border-black/[0.07]
+              bg-white
+              px-3
+              py-2.5
+              text-[11px]
+              leading-relaxed
+              text-slate-700
+              outline-none
+              transition
+              placeholder:text-slate-400
+              hover:border-black/[0.11]
+              focus:border-emerald-500/35
+              focus:ring-2
+              focus:ring-emerald-500/[0.08]
+              dark:border-white/[0.07]
+              dark:bg-[#171d21]
+              dark:text-slate-200
+              dark:placeholder:text-slate-500
+              dark:hover:border-white/[0.11]
+              dark:focus:border-emerald-400/30
+              dark:focus:ring-emerald-400/[0.08]
             "
             placeholder={
               getDetailsPlaceholder({
@@ -753,14 +1005,50 @@ export function FeelingDetails() {
 
       <button
         type="button"
-        className="btn btn-primary w-full"
+        className="
+          inline-flex
+          h-10
+          w-full
+          items-center
+          justify-center
+          gap-2
+          rounded-[9px]
+          border
+          border-emerald-500/15
+          bg-emerald-500/[0.10]
+          px-4
+          text-[11.5px]
+          font-semibold
+          text-emerald-700
+          transition
+          hover:border-emerald-500/25
+          hover:bg-emerald-500/[0.15]
+          disabled:cursor-not-allowed
+          disabled:opacity-50
+          dark:border-emerald-400/15
+          dark:bg-emerald-400/[0.09]
+          dark:text-emerald-300
+        "
         disabled={saving}
         onClick={() => {
           void save()
         }}
       >
         {saving && (
-          <span className="loading loading-spinner loading-xs" />
+          <span
+            className="
+              h-3.5
+              w-3.5
+              animate-spin
+              rounded-full
+              border-2
+              border-emerald-700/20
+              border-t-emerald-700
+              dark:border-emerald-300/20
+              dark:border-t-emerald-300
+            "
+            aria-hidden="true"
+          />
         )}
 
         Enregistrer mon ressenti
@@ -771,20 +1059,48 @@ export function FeelingDetails() {
           className={
             state.checkin.unavailable
               ? (
-                  'rounded-xl border border-error/40 '
-                  + 'bg-error/5 p-4'
+                  'rounded-[13px] border '
+                  + 'border-rose-500/15 '
+                  + 'bg-rose-500/[0.04] p-4 '
+                  + 'dark:border-rose-400/15 '
+                  + 'dark:bg-rose-400/[0.04]'
                 )
               : (
-                  'rounded-xl border border-warning/40 '
-                  + 'bg-warning/5 p-4'
+                  'rounded-[13px] border '
+                  + 'border-amber-500/15 '
+                  + 'bg-amber-500/[0.04] p-4 '
+                  + 'dark:border-amber-400/15 '
+                  + 'dark:bg-amber-400/[0.04]'
                 )
           }
         >
           <div
             className={
               state.checkin.unavailable
-                ? 'badge badge-error badge-sm'
-                : 'badge badge-warning badge-sm'
+                ? (
+                    'inline-flex rounded-full border '
+                    + 'border-rose-500/15 '
+                    + 'bg-rose-500/[0.08] '
+                    + 'px-2 py-1 '
+                    + 'text-[9px] font-bold '
+                    + 'uppercase tracking-[0.06em] '
+                    + 'text-rose-700 '
+                    + 'dark:border-rose-400/15 '
+                    + 'dark:bg-rose-400/[0.08] '
+                    + 'dark:text-rose-300'
+                  )
+                : (
+                    'inline-flex rounded-full border '
+                    + 'border-amber-500/15 '
+                    + 'bg-amber-500/[0.08] '
+                    + 'px-2 py-1 '
+                    + 'text-[9px] font-bold '
+                    + 'uppercase tracking-[0.06em] '
+                    + 'text-amber-700 '
+                    + 'dark:border-amber-400/15 '
+                    + 'dark:bg-amber-400/[0.08] '
+                    + 'dark:text-amber-300'
+                  )
             }
           >
             {state.checkin.unavailable
@@ -792,7 +1108,16 @@ export function FeelingDetails() {
               : 'Proposition du coach'}
           </div>
 
-          <p className="mt-3 font-semibold text-base-content">
+          <p
+            className="
+              mt-3
+              text-[13px]
+              font-semibold
+              leading-relaxed
+              text-slate-800
+              dark:text-slate-100
+            "
+          >
             {state.checkin.unavailable
               ? (
                   'Vous avez indiqué être indisponible aujourd’hui. '
@@ -801,11 +1126,27 @@ export function FeelingDetails() {
               : state.adaptation.recommendation}
           </p>
 
-          <p className="mt-2 text-sm leading-relaxed text-base-content/60">
+          <p
+            className="
+              mt-2
+              text-[11px]
+              leading-[1.6]
+              text-slate-500
+              dark:text-slate-400
+            "
+          >
             {state.adaptation.reason}
           </p>
 
-          <p className="mt-3 text-sm text-base-content/60">
+          <p
+            className="
+              mt-3
+              text-[10.5px]
+              leading-[1.55]
+              text-slate-500
+              dark:text-slate-400
+            "
+          >
             {state.checkin.unavailable
               ? (
                   'La séance restera dans votre planning '
@@ -822,8 +1163,38 @@ export function FeelingDetails() {
               type="button"
               className={
                 state.checkin.unavailable
-                  ? 'btn btn-error sm:flex-1'
-                  : 'btn btn-warning sm:flex-1'
+                  ? (
+                      'inline-flex h-9 items-center '
+                      + 'justify-center rounded-[9px] '
+                      + 'border border-rose-500/15 '
+                      + 'bg-rose-500/[0.08] px-3 '
+                      + 'text-[10.5px] font-semibold '
+                      + 'text-rose-700 transition '
+                      + 'hover:border-rose-500/25 '
+                      + 'hover:bg-rose-500/[0.13] '
+                      + 'disabled:cursor-not-allowed '
+                      + 'disabled:opacity-50 '
+                      + 'sm:flex-1 '
+                      + 'dark:border-rose-400/15 '
+                      + 'dark:bg-rose-400/[0.08] '
+                      + 'dark:text-rose-300'
+                    )
+                  : (
+                      'inline-flex h-9 items-center '
+                      + 'justify-center rounded-[9px] '
+                      + 'border border-amber-500/15 '
+                      + 'bg-amber-500/[0.08] px-3 '
+                      + 'text-[10.5px] font-semibold '
+                      + 'text-amber-700 transition '
+                      + 'hover:border-amber-500/25 '
+                      + 'hover:bg-amber-500/[0.13] '
+                      + 'disabled:cursor-not-allowed '
+                      + 'disabled:opacity-50 '
+                      + 'sm:flex-1 '
+                      + 'dark:border-amber-400/15 '
+                      + 'dark:bg-amber-400/[0.08] '
+                      + 'dark:text-amber-300'
+                    )
               }
               disabled={saving}
               onClick={() => {
@@ -837,7 +1208,31 @@ export function FeelingDetails() {
 
             <button
               type="button"
-              className="btn btn-ghost sm:flex-1"
+              className="
+                inline-flex
+                h-9
+                items-center
+                justify-center
+                rounded-[9px]
+                border
+                border-black/[0.06]
+                bg-white/70
+                px-3
+                text-[10.5px]
+                font-semibold
+                text-slate-600
+                transition
+                hover:border-black/[0.10]
+                hover:bg-slate-100
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+                sm:flex-1
+                dark:border-white/[0.07]
+                dark:bg-white/[0.025]
+                dark:text-slate-300
+                dark:hover:border-white/[0.11]
+                dark:hover:bg-white/[0.05]
+              "
               disabled={saving}
               onClick={() => {
                 void declineAdaptation()
@@ -853,8 +1248,28 @@ export function FeelingDetails() {
         <div
           className={
             state.checkin.unavailable
-              ? 'alert alert-error'
-              : 'alert alert-success'
+              ? (
+                  'rounded-[10px] border '
+                  + 'border-rose-500/15 '
+                  + 'bg-rose-500/[0.06] '
+                  + 'px-3.5 py-3 '
+                  + 'text-[11px] font-medium '
+                  + 'text-rose-700 '
+                  + 'dark:border-rose-400/15 '
+                  + 'dark:bg-rose-400/[0.06] '
+                  + 'dark:text-rose-300'
+                )
+              : (
+                  'rounded-[10px] border '
+                  + 'border-emerald-500/15 '
+                  + 'bg-emerald-500/[0.06] '
+                  + 'px-3.5 py-3 '
+                  + 'text-[11px] font-medium '
+                  + 'text-emerald-700 '
+                  + 'dark:border-emerald-400/15 '
+                  + 'dark:bg-emerald-400/[0.06] '
+                  + 'dark:text-emerald-300'
+                )
           }
         >
           <span>
@@ -873,11 +1288,13 @@ export function FeelingDetails() {
       ) && (
         <section
           className="
-            rounded-2xl
+            rounded-[14px]
             border
-            border-info/30
-            bg-info/5
+            border-emerald-500/15
+            bg-emerald-500/[0.035]
             p-4
+            dark:border-emerald-400/15
+            dark:bg-emerald-400/[0.035]
           "
         >
           <div className="flex items-start gap-3">
@@ -888,9 +1305,14 @@ export function FeelingDetails() {
                 shrink-0
                 items-center
                 justify-center
-                rounded-xl
-                bg-info/10
-                text-info
+                rounded-[10px]
+                border
+                border-emerald-500/10
+                bg-emerald-500/[0.08]
+                text-emerald-600
+                dark:border-emerald-400/10
+                dark:bg-emerald-400/[0.08]
+                dark:text-emerald-300
               "
             >
               <CalendarDays
@@ -899,11 +1321,27 @@ export function FeelingDetails() {
             </div>
 
             <div className="min-w-0">
-              <h3 className="font-semibold text-base-content">
+              <h3
+                className="
+                  text-[13px]
+                  font-semibold
+                  tracking-[-0.01em]
+                  text-slate-800
+                  dark:text-slate-100
+                "
+              >
                 Réorganiser le reste de la semaine
               </h3>
 
-              <p className="mt-1 text-sm text-base-content/55">
+              <p
+                className="
+                  mt-1
+                  text-[10.5px]
+                  leading-relaxed
+                  text-slate-500
+                  dark:text-slate-400
+                "
+              >
                 OpenCoach a analysé les séances restantes
                 et vous propose plusieurs choix.
               </p>
@@ -914,19 +1352,38 @@ export function FeelingDetails() {
             <div
               className="
                 mt-4
-                rounded-xl
+                rounded-[10px]
                 border
-                border-info/20
-                bg-base-100/70
+                border-black/[0.05]
+                bg-white/70
                 px-3
                 py-2.5
+                dark:border-white/[0.06]
+                dark:bg-white/[0.025]
               "
             >
-              <p className="text-xs font-semibold text-info">
+              <p
+                className="
+                  text-[9.5px]
+                  font-bold
+                  uppercase
+                  tracking-[0.07em]
+                  text-emerald-600
+                  dark:text-emerald-400
+                "
+              >
                 Conseil OpenCoach
               </p>
 
-              <p className="mt-1 text-sm leading-relaxed text-base-content/60">
+              <p
+                className="
+                  mt-1.5
+                  text-[10.5px]
+                  leading-[1.6]
+                  text-slate-600
+                  dark:text-slate-400
+                "
+              >
                 {replanning.coordination_reasons[0]}
               </p>
             </div>
@@ -958,7 +1415,36 @@ export function FeelingDetails() {
       )}
 
       {state?.adaptation?.decision === 'declined' && (
-        <div className="alert">
+        <div
+          className="
+            flex
+            items-center
+            gap-2.5
+            rounded-[10px]
+            border
+            border-slate-200/80
+            bg-slate-50/80
+            px-3.5
+            py-3
+            text-[10.5px]
+            font-medium
+            text-slate-600
+            dark:border-white/[0.07]
+            dark:bg-white/[0.025]
+            dark:text-slate-300
+          "
+        >
+          <span
+            className="
+              size-1.5
+              shrink-0
+              rounded-full
+              bg-emerald-500
+              dark:bg-emerald-400
+            "
+            aria-hidden="true"
+          />
+
           <span>
             Vous avez choisi de conserver la séance prévue.
           </span>
@@ -983,19 +1469,38 @@ function ReplanningProposalCard({
   return (
     <article
       className="
-        rounded-xl
+        rounded-[12px]
         border
-        border-base-300
-        bg-base-100
+        border-black/[0.06]
+        bg-white/80
         p-3.5
+        shadow-[0_1px_2px_rgba(15,23,42,0.02)]
+        dark:border-white/[0.07]
+        dark:bg-[#171d21]
+        dark:shadow-none
       "
     >
       <div>
-        <p className="font-semibold text-base-content">
+        <p
+          className="
+            text-[12px]
+            font-semibold
+            text-slate-800
+            dark:text-slate-100
+          "
+        >
           {proposal.source_session.title}
         </p>
 
-        <p className="mt-0.5 text-xs text-base-content/45">
+        <p
+          className="
+            mt-1
+            text-[9.5px]
+            font-medium
+            text-slate-400
+            dark:text-slate-500
+          "
+        >
           {proposal.source_session.duration_minutes} min
           {' · '}
           {formatReplanningIntensity(
@@ -1054,46 +1559,55 @@ function ReplanningOptionButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`
-        relative
-        flex
-        w-full
-        items-center
-        gap-3
-        rounded-xl
-        border
-        px-3
-        py-3
-        text-left
-        transition
-        ${
-          recommended
-            ? (
-                'border-primary/50 '
-                + 'bg-primary/5 '
-                + 'hover:bg-primary/10'
-              )
-            : (
-                'border-base-300 '
-                + 'hover:bg-base-200/50'
-              )
-        }
-      `}
+      className={[
+        (
+          'relative flex w-full items-center gap-3 '
+          + 'rounded-[10px] border px-3 py-3 '
+          + 'text-left outline-none transition '
+          + 'disabled:cursor-not-allowed '
+          + 'disabled:opacity-50'
+        ),
+        recommended
+          ? (
+              'border-emerald-500/20 '
+              + 'bg-emerald-500/[0.055] '
+              + 'hover:border-emerald-500/30 '
+              + 'hover:bg-emerald-500/[0.09] '
+              + 'dark:border-emerald-400/20 '
+              + 'dark:bg-emerald-400/[0.045] '
+              + 'dark:hover:bg-emerald-400/[0.08]'
+            )
+          : (
+              'border-black/[0.06] '
+              + 'bg-white/70 '
+              + 'hover:border-black/[0.10] '
+              + 'hover:bg-slate-50 '
+              + 'dark:border-white/[0.07] '
+              + 'dark:bg-white/[0.02] '
+              + 'dark:hover:border-white/[0.11] '
+              + 'dark:hover:bg-white/[0.045]'
+            ),
+      ].join(' ')}
     >
       <div
-        className={`
-          flex
-          size-8
-          shrink-0
-          items-center
-          justify-center
-          rounded-lg
-          ${
-            recommended
-              ? 'bg-primary/10 text-primary'
-              : 'bg-base-200 text-base-content/55'
-          }
-        `}
+        className={[
+          (
+            'flex size-8 shrink-0 items-center '
+            + 'justify-center rounded-[8px]'
+          ),
+          recommended
+            ? (
+                'bg-emerald-500/[0.10] '
+                + 'text-emerald-600 '
+                + 'dark:bg-emerald-400/[0.10] '
+                + 'dark:text-emerald-300'
+              )
+            : (
+                'bg-slate-100 text-slate-400 '
+                + 'dark:bg-white/[0.04] '
+                + 'dark:text-slate-500'
+              ),
+        ].join(' ')}
       >
         {getReplanningIcon(
           option.action,
@@ -1102,26 +1616,55 @@ function ReplanningOptionButton({
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold text-base-content">
+          <span
+            className="
+              text-[11.5px]
+              font-semibold
+              text-slate-800
+              dark:text-slate-100
+            "
+          >
             {getReplanningActionLabel(
               option.action,
             )}
           </span>
 
           {recommended && (
-            <span className="badge badge-primary badge-sm">
+            <span
+              className="
+                inline-flex
+                items-center
+                rounded-full
+                border
+                border-emerald-500/15
+                bg-emerald-500/[0.08]
+                px-2
+                py-0.5
+                text-[8.5px]
+                font-bold
+                uppercase
+                tracking-[0.055em]
+                text-emerald-700
+                dark:border-emerald-400/15
+                dark:bg-emerald-400/[0.08]
+                dark:text-emerald-300
+              "
+            >
               Conseil OpenCoach
             </span>
           )}
 
           <span
-            className={`
-              badge
-              badge-sm
-              ${getRiskBadgeClass(
+            className={[
+              (
+                'inline-flex items-center rounded-full '
+                + 'border px-2 py-0.5 '
+                + 'text-[8.5px] font-semibold'
+              ),
+              getRiskBadgeClass(
                 option.risk,
-              )}
-            `}
+              ),
+            ].join(' ')}
           >
             {getRiskLabel(
               option.risk,
@@ -1129,7 +1672,14 @@ function ReplanningOptionButton({
           </span>
         </div>
 
-        <p className="mt-1 text-xs text-base-content/50">
+        <p
+          className="
+            mt-1
+            text-[9.5px]
+            text-slate-400
+            dark:text-slate-500
+          "
+        >
           {option.target_date
             ? formatReschedulingDate(
                 option.target_date,
@@ -1147,14 +1697,30 @@ function ReplanningOptionButton({
           === 'move_adapted'
           && session
         ) && (
-          <p className="mt-1 text-xs text-base-content/60">
+          <p
+            className="
+              mt-1
+              text-[9.5px]
+              leading-relaxed
+              text-slate-500
+              dark:text-slate-400
+            "
+          >
             {session.title}
           </p>
         )}
       </div>
 
       <MoveRight
-        className="h-4 w-4 shrink-0 text-base-content/30"
+        className="
+          h-4
+          w-4
+          shrink-0
+          text-slate-300
+          transition
+          dark:text-slate-600
+        "
+        strokeWidth={1.8}
       />
     </button>
   )
@@ -1231,14 +1797,35 @@ function getRiskBadgeClass(
   risk: ReplanningOption['risk'],
 ): string {
   if (risk === 'high') {
-    return 'badge-error'
+    return (
+      'border-rose-500/15 '
+      + 'bg-rose-500/[0.07] '
+      + 'text-rose-700 '
+      + 'dark:border-rose-400/15 '
+      + 'dark:bg-rose-400/[0.07] '
+      + 'dark:text-rose-300'
+    )
   }
 
   if (risk === 'moderate') {
-    return 'badge-warning'
+    return (
+      'border-amber-500/15 '
+      + 'bg-amber-500/[0.07] '
+      + 'text-amber-700 '
+      + 'dark:border-amber-400/15 '
+      + 'dark:bg-amber-400/[0.07] '
+      + 'dark:text-amber-300'
+    )
   }
 
-  return 'badge-success'
+  return (
+    'border-emerald-500/15 '
+    + 'bg-emerald-500/[0.07] '
+    + 'text-emerald-700 '
+    + 'dark:border-emerald-400/15 '
+    + 'dark:bg-emerald-400/[0.07] '
+    + 'dark:text-emerald-300'
+  )
 }
 
 
@@ -1415,13 +2002,29 @@ function RatingPicker({
   ) => void
 }) {
   return (
-    <section className="rounded-xl border border-base-300 p-3">
+    <section
+      className="
+        rounded-[11px]
+        border
+        border-black/[0.06]
+        p-3
+        dark:border-white/[0.07]
+      "
+    >
       <div className="flex items-center gap-2">
         <Icon
           className={
             label === 'Énergie'
-              ? 'h-4 w-4 text-success'
-              : 'h-4 w-4 text-error'
+              ? (
+                  'h-4 w-4 '
+                  + 'text-emerald-500 '
+                  + 'dark:text-emerald-400'
+                )
+              : (
+                  'h-4 w-4 '
+                  + 'text-rose-500 '
+                  + 'dark:text-rose-400'
+                )
           }
           strokeWidth={1.8}
         />
@@ -1431,7 +2034,14 @@ function RatingPicker({
             {label}
           </h3>
 
-          <p className="text-xs text-base-content/45">
+          <p
+            className="
+              text-[10px]
+              leading-relaxed
+              text-slate-400
+              dark:text-slate-500
+            "
+          >
             {description}
           </p>
         </div>

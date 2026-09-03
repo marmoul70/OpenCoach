@@ -14,9 +14,19 @@ export function TrainingSummaryCard({
   description,
 }: TrainingSummaryCardProps) {
   return (
-    <article className="card border border-base-300 bg-base-100 shadow-sm">
-      <div className="card-body p-4">
-        <div className="flex items-center gap-2 text-base-content/50">
+    <article
+      className="
+        rounded-[14px]
+        border
+        border-slate-200
+        bg-white
+        p-4
+        shadow-sm
+        dark:border-white/[0.08]
+        dark:bg-[#141a1e]
+      "
+    >
+        <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
           <Icon className="h-4 w-4" />
 
           <span className="text-xs font-medium uppercase tracking-wide">
@@ -24,16 +34,15 @@ export function TrainingSummaryCard({
           </span>
         </div>
 
-        <p className="mt-2 text-2xl font-bold text-base-content">
+        <p className="mt-2 text-2xl font-bold text-slate-800 dark:text-slate-100">
           {value}
         </p>
 
         {description && (
-          <p className="text-xs text-base-content/50">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             {description}
           </p>
         )}
-      </div>
     </article>
   )
 }

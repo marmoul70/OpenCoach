@@ -8,6 +8,7 @@ import {
   Activity,
   ArrowDownUp,
   Clock3,
+  Eye,
   FilterX,
   Gauge,
   Mountain,
@@ -440,24 +441,49 @@ export function ActivityPage() {
 
 
   return (
-    <main className="min-h-screen bg-base-200">
+    <main
+      className="
+        min-h-screen
+        bg-[#f5f7f6]
+        dark:bg-[#0b1014]
+      "
+    >
       <div
         className="
           mx-auto
-          max-w-7xl
-          px-4
-          py-6
-          sm:px-6
-          lg:py-8
+          max-w-[1240px]
+          px-3
+          py-4
+          sm:px-5
+          lg:py-5
         "
       >
-        <header className="mb-5">
+        <header
+          className="
+            mb-4
+          "
+        >
+          <p
+            className="
+              text-[10px]
+              font-bold
+              uppercase
+              tracking-[0.13em]
+              text-emerald-600
+              dark:text-emerald-400
+            "
+          >
+            Historique
+          </p>
+
           <h1
             className="
-              text-3xl
+              mt-1
+              text-[30px]
               font-bold
-              tracking-tight
-              text-base-content
+              tracking-[-0.04em]
+              text-slate-950
+              dark:text-white
             "
           >
             Activités
@@ -466,325 +492,411 @@ export function ActivityPage() {
           <p
             className="
               mt-1
-              text-sm
-              text-base-content/60
+              text-[13px]
+              text-slate-400
+              dark:text-slate-500
             "
           >
-            Historique des activités synchronisées.
+            Historique des activités synchronisées
+            et séances associées.
           </p>
         </header>
 
 
         {!loading && !error && (
-          <>
-            <ActivitySummaryCard
-              count={
-                summary.count
-              }
-              distanceM={
-                summary.distanceM
-              }
-              durationSeconds={
-                summary.durationSeconds
-              }
-              elevationM={
-                summary.elevationM
-              }
-            />
+          <ActivitySummaryCard
+            count={
+              summary.count
+            }
+            distanceM={
+              summary.distanceM
+            }
+            durationSeconds={
+              summary.durationSeconds
+            }
+            elevationM={
+              summary.elevationM
+            }
+          />
+        )}
+
+
+        {/* =================================================
+            FILTER BAR
+            ================================================= */}
+
+        {!loading && !error && (
+          <section
+            className="
+              mt-3
+              rounded-[13px]
+              border
+              border-black/[0.065]
+              bg-white
+              p-3
+              dark:border-white/[0.065]
+              dark:bg-[#151b1f]
+            "
+          >
+            <div
+              className="
+                flex
+                flex-col
+                gap-2.5
+                xl:flex-row
+                xl:items-center
+              "
+            >
+              <label
+                className="
+                  flex
+                  h-10
+                  min-w-0
+                  flex-1
+                  items-center
+                  gap-2.5
+                  rounded-[9px]
+                  border
+                  border-black/[0.07]
+                  bg-slate-50
+                  px-3
+                  transition
+                  focus-within:border-emerald-500/35
+                  focus-within:bg-white
+                  dark:border-white/[0.07]
+                  dark:bg-white/[0.025]
+                  dark:focus-within:bg-white/[0.035]
+                "
+              >
+                <Search
+                  className="
+                    h-4
+                    w-4
+                    shrink-0
+                    text-slate-400
+                  "
+                />
+
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(event) =>
+                    setSearch(
+                      event.target.value,
+                    )
+                  }
+                  placeholder="Rechercher une activité…"
+                  className="
+                    min-w-0
+                    flex-1
+                    bg-transparent
+                    text-[12px]
+                    text-slate-700
+                    outline-none
+                    placeholder:text-slate-400
+                    dark:text-slate-200
+                  "
+                />
+              </label>
+
+
+              <div
+                className="
+                  grid
+                  grid-cols-2
+                  gap-2
+                  sm:grid-cols-3
+                  xl:flex
+                "
+              >
+                <select
+                  value={period}
+                  onChange={(event) => {
+                    setPeriod(
+                      event.target
+                        .value as PeriodFilter,
+                    )
+                  }}
+                  className="
+                    h-10
+                    rounded-[9px]
+                    border
+                    border-black/[0.07]
+                    bg-slate-50
+                    px-3
+                    text-[11px]
+                    font-medium
+                    text-slate-600
+                    outline-none
+                    transition
+                    focus:border-emerald-500/35
+                    dark:border-white/[0.07]
+                    dark:bg-white/[0.025]
+                    dark:text-slate-300
+                  "
+                  aria-label="Période"
+                >
+                  <option value="30d">
+                    30 jours
+                  </option>
+
+                  <option value="3m">
+                    3 mois
+                  </option>
+
+                  <option value="6m">
+                    6 mois
+                  </option>
+
+                  <option value="1y">
+                    1 an
+                  </option>
+
+                  <option value="all">
+                    Toutes les dates
+                  </option>
+                </select>
+
+
+                <select
+                  value={sport}
+                  onChange={(event) =>
+                    setSport(
+                      event.target.value,
+                    )
+                  }
+                  className="
+                    h-10
+                    min-w-0
+                    rounded-[9px]
+                    border
+                    border-black/[0.07]
+                    bg-slate-50
+                    px-3
+                    text-[11px]
+                    font-medium
+                    text-slate-600
+                    outline-none
+                    transition
+                    focus:border-emerald-500/35
+                    dark:border-white/[0.07]
+                    dark:bg-white/[0.025]
+                    dark:text-slate-300
+                  "
+                  aria-label="Sport"
+                >
+                  <option value="all">
+                    Tous les sports
+                  </option>
+
+                  {sportOptions.map(
+                    sportType => (
+                      <option
+                        key={sportType}
+                        value={sportType}
+                      >
+                        {
+                          formatSportType(
+                            sportType,
+                          )
+                        }
+                      </option>
+                    ),
+                  )}
+                </select>
+
+
+                <select
+                  value={sort}
+                  onChange={(event) => {
+                    setSort(
+                      event.target
+                        .value as SortOption,
+                    )
+                  }}
+                  className="
+                    col-span-2
+                    h-10
+                    rounded-[9px]
+                    border
+                    border-black/[0.07]
+                    bg-slate-50
+                    px-3
+                    text-[11px]
+                    font-medium
+                    text-slate-600
+                    outline-none
+                    transition
+                    focus:border-emerald-500/35
+                    sm:col-span-1
+                    dark:border-white/[0.07]
+                    dark:bg-white/[0.025]
+                    dark:text-slate-300
+                  "
+                  aria-label="Tri"
+                >
+                  <option value="recent">
+                    Plus récentes
+                  </option>
+
+                  <option value="oldest">
+                    Plus anciennes
+                  </option>
+
+                  <option value="distance">
+                    Plus longues
+                  </option>
+
+                  <option value="duration">
+                    Durée
+                  </option>
+
+                  <option value="elevation">
+                    Dénivelé
+                  </option>
+                </select>
+              </div>
+
+
+              {filtersAreActive && (
+                <button
+                  type="button"
+                  onClick={
+                    resetFilters
+                  }
+                  className="
+                    flex
+                    h-10
+                    shrink-0
+                    items-center
+                    justify-center
+                    gap-1.5
+                    rounded-[9px]
+                    border
+                    border-black/[0.06]
+                    px-3
+                    text-[10px]
+                    font-semibold
+                    text-slate-400
+                    transition
+                    hover:bg-slate-50
+                    hover:text-slate-700
+                    dark:border-white/[0.06]
+                    dark:hover:bg-white/[0.035]
+                    dark:hover:text-slate-200
+                  "
+                >
+                  <FilterX
+                    className="
+                      h-3.5
+                      w-3.5
+                    "
+                  />
+
+                  Réinitialiser
+                </button>
+              )}
+            </div>
 
 
             <div
               className="
-                mt-4
-                rounded-2xl
-                border
-                border-base-300
-                bg-base-100
-                p-4
-                shadow-sm
+                mt-3
+                flex
+                flex-wrap
+                items-center
+                justify-between
+                gap-2
+                border-t
+                border-black/[0.055]
+                pt-2.5
+                text-[10px]
+                text-slate-400
+                dark:border-white/[0.055]
+                dark:text-slate-500
               "
             >
-              <div
+              <span>
+                {
+                  filteredActivities.length
+                }
+                {' activité'}
+                {
+                  filteredActivities.length
+                  > 1
+                    ? 's'
+                    : ''
+                }
+                {' affichée'}
+                {
+                  filteredActivities.length
+                  > 1
+                    ? 's'
+                    : ''
+                }
+                {' sur '}
+                {activities.length}
+              </span>
+
+              <span
                 className="
                   flex
-                  flex-col
-                  gap-3
-                  xl:flex-row
-                  xl:items-center
-                "
-              >
-                <label
-                  className="
-                    input
-                    input-bordered
-                    flex
-                    min-w-0
-                    flex-1
-                    items-center
-                    gap-2
-                  "
-                >
-                  <Search
-                    size={16}
-                    className="
-                      shrink-0
-                      text-base-content/40
-                    "
-                  />
-
-                  <input
-                    type="search"
-                    value={search}
-                    onChange={(event) =>
-                      setSearch(
-                        event.target.value,
-                      )
-                    }
-                    placeholder="Rechercher une activité..."
-                    className="
-                      min-w-0
-                      grow
-                    "
-                  />
-                </label>
-
-
-                <div
-                  className="
-                    grid
-                    grid-cols-2
-                    gap-2
-                    sm:grid-cols-3
-                    xl:flex
-                  "
-                >
-                  <select
-                    value={period}
-                    onChange={(event) => {
-                      setPeriod(
-                        event.target.value as PeriodFilter,
-                      )
-                    }}
-                    className="
-                      select
-                      select-bordered
-                      w-full
-                      xl:w-auto
-                    "
-                    aria-label="Période"
-                  >
-                    <option value="30d">
-                      30 derniers jours
-                    </option>
-
-                    <option value="3m">
-                      3 derniers mois
-                    </option>
-
-                    <option value="6m">
-                      6 derniers mois
-                    </option>
-
-                    <option value="1y">
-                      1 an
-                    </option>
-
-                    <option value="all">
-                      Toutes les dates
-                    </option>
-                  </select>
-
-
-                  <select
-                    value={sport}
-                    onChange={(event) =>
-                      setSport(
-                        event.target.value,
-                      )
-                    }
-                    className="
-                      select
-                      select-bordered
-                      w-full
-                      xl:w-auto
-                    "
-                    aria-label="Sport"
-                  >
-                    <option value="all">
-                      Tous les sports
-                    </option>
-
-                    {sportOptions.map(
-                      (sportType) => (
-                        <option
-                          key={
-                            sportType
-                          }
-                          value={
-                            sportType
-                          }
-                        >
-                          {
-                            formatSportType(
-                              sportType,
-                            )
-                          }
-                        </option>
-                      ),
-                    )}
-                  </select>
-
-
-                  <select
-                    value={sort}
-                    onChange={(event) => {
-                      setSort(
-                        event.target.value as SortOption,
-                      )
-                    }}
-                    className="
-                      select
-                      select-bordered
-                      col-span-2
-                      w-full
-                      sm:col-span-1
-                      xl:w-auto
-                    "
-                    aria-label="Tri"
-                  >
-                    <option value="recent">
-                      Plus récentes
-                    </option>
-
-                    <option value="oldest">
-                      Plus anciennes
-                    </option>
-
-                    <option value="distance">
-                      Plus longues
-                    </option>
-
-                    <option value="duration">
-                      Durée
-                    </option>
-
-                    <option value="elevation">
-                      Dénivelé
-                    </option>
-                  </select>
-                </div>
-
-
-                {filtersAreActive && (
-                  <button
-                    type="button"
-                    onClick={
-                      resetFilters
-                    }
-                    className="
-                      btn
-                      btn-ghost
-                      btn-sm
-                      gap-2
-                      xl:shrink-0
-                    "
-                  >
-                    <FilterX
-                      size={15}
-                    />
-
-                    Réinitialiser
-                  </button>
-                )}
-              </div>
-
-
-              <div
-                className="
-                  mt-3
-                  flex
-                  flex-wrap
                   items-center
-                  justify-between
-                  gap-2
-                  border-t
-                  border-base-300
-                  pt-3
-                  text-xs
-                  text-base-content/45
+                  gap-1.5
                 "
               >
-                <span>
-                  {
-                    filteredActivities.length
-                  }
-                  {' activité'}
-                  {
-                    filteredActivities.length
-                    > 1
-                      ? 's'
-                      : ''
-                  }
-                  {' affichée'}
-                  {
-                    filteredActivities.length
-                    > 1
-                      ? 's'
-                      : ''
-                  }
-                  {' sur '}
-                  {
-                    activities.length
-                  }
-                </span>
-
-                <span
+                <ArrowDownUp
                   className="
-                    flex
-                    items-center
-                    gap-1
+                    h-3
+                    w-3
                   "
-                >
-                  <ArrowDownUp
-                    size={13}
-                  />
+                />
 
-                  {
-                    formatSortLabel(
-                      sort,
-                    )
-                  }
-                </span>
-              </div>
+                {
+                  formatSortLabel(
+                    sort,
+                  )
+                }
+              </span>
             </div>
-          </>
+          </section>
         )}
 
 
-        <div
+        {/* =================================================
+            ACTIVITIES
+            ================================================= */}
+
+        <section
           className="
-            mt-4
+            mt-3
             overflow-hidden
-            rounded-2xl
+            rounded-[13px]
             border
-            border-base-300
-            bg-base-100
-            shadow-sm
+            border-black/[0.065]
+            bg-white
+            dark:border-white/[0.065]
+            dark:bg-[#151b1f]
           "
         >
           {loading && (
             <div
               className="
                 flex
+                min-h-[240px]
+                items-center
                 justify-center
-                py-12
               "
             >
               <span
                 className="
-                  loading
-                  loading-spinner
-                  loading-md
+                  h-5
+                  w-5
+                  animate-spin
+                  rounded-full
+                  border-2
+                  border-emerald-500/20
+                  border-t-emerald-500
                 "
               />
             </div>
@@ -794,9 +906,17 @@ export function ActivityPage() {
           {!loading && error && (
             <div
               className="
-                alert
-                alert-error
-                m-4
+                m-3
+                rounded-[10px]
+                border
+                border-red-500/15
+                bg-red-50
+                px-3
+                py-3
+                text-[11px]
+                text-red-600
+                dark:bg-red-500/[0.06]
+                dark:text-red-400
               "
             >
               {error}
@@ -808,16 +928,13 @@ export function ActivityPage() {
             && !error
             && activities.length === 0
             && (
-              <div
-                className="
-                  py-12
-                  text-center
-                  text-sm
-                  text-base-content/60
+              <EmptyActivityState
+                title="Aucune activité disponible"
+                description="
+                  Les activités synchronisées
+                  apparaîtront ici.
                 "
-              >
-                Aucune activité disponible.
-              </div>
+              />
             )}
 
 
@@ -828,19 +945,31 @@ export function ActivityPage() {
             && (
               <div
                 className="
-                  py-12
+                  px-4
+                  py-10
                   text-center
                 "
               >
                 <p
                   className="
-                    text-sm
-                    font-medium
-                    text-base-content
+                    text-[12px]
+                    font-semibold
+                    text-slate-700
+                    dark:text-slate-300
+                  "
+                >
+                  Aucun résultat
+                </p>
+
+                <p
+                  className="
+                    mt-1
+                    text-[10px]
+                    text-slate-400
                   "
                 >
                   Aucune activité ne correspond
-                  aux filtres.
+                  aux filtres sélectionnés.
                 </p>
 
                 <button
@@ -849,13 +978,22 @@ export function ActivityPage() {
                     resetFilters
                   }
                   className="
-                    btn
-                    btn-ghost
-                    btn-sm
                     mt-3
+                    rounded-[8px]
+                    border
+                    border-emerald-500/25
+                    bg-emerald-500/[0.06]
+                    px-3
+                    py-1.5
+                    text-[10px]
+                    font-semibold
+                    text-emerald-700
+                    transition
+                    hover:bg-emerald-500/[0.10]
+                    dark:text-emerald-400
                   "
                 >
-                  Réinitialiser les filtres
+                  Réinitialiser
                 </button>
               </div>
             )}
@@ -865,75 +1003,148 @@ export function ActivityPage() {
             && !error
             && filteredActivities.length > 0
             && (
-              <div className="overflow-x-auto">
-                <table className="table table-xs sm:table-sm">
-                  <thead
+              <>
+                {/* TABLE DESKTOP */}
+
+                <div
+                  className="
+                    hidden
+                    md:block
+                  "
+                >
+                  <table
                     className="
-                      bg-base-200/60
+                      w-full
+                      border-collapse
                     "
                   >
-                    <tr>
-                      <th>Date</th>
+                    <thead
+                      className="
+                        bg-slate-50/70
+                        dark:bg-white/[0.018]
+                      "
+                    >
+                      <tr
+                        className="
+                          border-b
+                          border-black/[0.055]
+                          dark:border-white/[0.055]
+                        "
+                      >
+                        <ActivityTableHeader>
+                          Date
+                        </ActivityTableHeader>
 
-                      <th>
-                        Activité
-                      </th>
+                        <ActivityTableHeader>
+                          Activité
+                        </ActivityTableHeader>
 
-                      <th className="hidden sm:table-cell">
-                        Sport
-                      </th>
+                        <ActivityTableHeader>
+                          Sport
+                        </ActivityTableHeader>
 
-                      <th className="text-right">
-                        Distance
-                      </th>
+                        <ActivityTableHeader
+                          align="right"
+                        >
+                          Distance
+                        </ActivityTableHeader>
 
-                      <th className="hidden sm:table-cell text-right">
-                        Durée
-                      </th>
+                        <ActivityTableHeader
+                          align="right"
+                        >
+                          Durée
+                        </ActivityTableHeader>
 
-                      <th className="hidden lg:table-cell text-right">
-                        Allure
-                      </th>
+                        <ActivityTableHeader
+                          align="right"
+                          hiddenOnTablet
+                        >
+                          Allure
+                        </ActivityTableHeader>
 
-                      <th className="hidden lg:table-cell text-right">
-                        D+
-                      </th>
+                        <ActivityTableHeader
+                          align="right"
+                          hiddenOnTablet
+                        >
+                          D+
+                        </ActivityTableHeader>
 
-                      <th className="text-right">
-                        Séance
-                      </th>
-                    </tr>
-                  </thead>
+                        <ActivityTableHeader
+                          align="right"
+                        >
+                          Action
+                        </ActivityTableHeader>
+                      </tr>
+                    </thead>
 
-                  <tbody>
-                    {filteredActivities.map(
-                      (activity) => (
-                        <ActivityRow
-                          key={
-                            `${activity.provider}-`
-                            + activity.provider_activity_id
-                          }
-                          activity={
-                            activity
-                          }
-                          session={
-                            activity.id
-                              ? sessionsByActivityId.get(
-                                  activity.id,
-                                )
-                              : undefined
-                          }
-                          onOpenSession={
-                            setSelectedSessionId
-                          }
-                        />
-                      ),
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    <tbody>
+                      {filteredActivities.map(
+                        activity => (
+                          <ActivityDesktopRow
+                            key={
+                              `${activity.provider}-`
+                              + activity
+                                .provider_activity_id
+                            }
+                            activity={
+                              activity
+                            }
+                            session={
+                              activity.id
+                                ? sessionsByActivityId.get(
+                                    activity.id,
+                                  )
+                                : undefined
+                            }
+                            onOpenSession={
+                              setSelectedSessionId
+                            }
+                          />
+                        ),
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+
+                {/* MOBILE */}
+
+                <div
+                  className="
+                    divide-y
+                    divide-black/[0.055]
+                    dark:divide-white/[0.055]
+                    md:hidden
+                  "
+                >
+                  {filteredActivities.map(
+                    activity => (
+                      <ActivityMobileCard
+                        key={
+                          `${activity.provider}-`
+                          + activity
+                            .provider_activity_id
+                        }
+                        activity={
+                          activity
+                        }
+                        session={
+                          activity.id
+                            ? sessionsByActivityId.get(
+                                activity.id,
+                              )
+                            : undefined
+                        }
+                        onOpenSession={
+                          setSelectedSessionId
+                        }
+                      />
+                    ),
+                  )}
+                </div>
+              </>
             )}
-        </div>
+        </section>
       </div>
 
 
@@ -963,9 +1174,9 @@ export function ActivityPage() {
                 )
 
               setTrainingSessions(
-                (current) =>
+                current =>
                   current.map(
-                    (session) =>
+                    session =>
                       session.id
                       === result.session.id
                         ? result.session
@@ -981,6 +1192,7 @@ export function ActivityPage() {
     </main>
   )
 }
+
 
 
 function ActivitySummaryCard({
@@ -1004,64 +1216,28 @@ function ActivitySummaryCard({
     <section
       className="
         overflow-hidden
-        rounded-2xl
+        rounded-[13px]
         border
-        border-base-300
-        bg-base-100
-        shadow-sm
+        border-black/[0.065]
+        bg-white
+        dark:border-white/[0.065]
+        dark:bg-[#151b1f]
       "
     >
       <div
         className="
-          flex
-          items-center
-          gap-2
-          border-b
-          border-base-300
-          px-4
-          py-2.5
-        "
-      >
-        <Activity
-          size={16}
-          className="text-primary"
-        />
-
-        <h2
-          className="
-            text-sm
-            font-semibold
-            text-base-content
-          "
-        >
-          Synthèse
-        </h2>
-
-        <span
-          className="
-            text-xs
-            text-base-content/40
-          "
-        >
-          des activités affichées
-        </span>
-      </div>
-
-      <div
-        className="
           grid
           grid-cols-2
-          divide-x
-          divide-y
-          divide-base-300
           sm:grid-cols-5
-          sm:divide-y-0
         "
       >
         <SummaryMetric
           icon={
             <Activity
-              size={15}
+              className="
+                h-4
+                w-4
+              "
             />
           }
           value={
@@ -1069,13 +1245,16 @@ function ActivitySummaryCard({
               'fr-FR',
             )
           }
-          label="activités"
+          label="Activités"
         />
 
         <SummaryMetric
           icon={
             <Route
-              size={15}
+              className="
+                h-4
+                w-4
+              "
             />
           }
           value={
@@ -1083,13 +1262,16 @@ function ActivitySummaryCard({
               distanceM,
             )
           }
-          label="distance"
+          label="Distance"
         />
 
         <SummaryMetric
           icon={
             <Clock3
-              size={15}
+              className="
+                h-4
+                w-4
+              "
             />
           }
           value={
@@ -1097,13 +1279,16 @@ function ActivitySummaryCard({
               durationSeconds,
             )
           }
-          label="durée"
+          label="Temps"
         />
 
         <SummaryMetric
           icon={
             <Mountain
-              size={15}
+              className="
+                h-4
+                w-4
+              "
             />
           }
           value={
@@ -1111,13 +1296,16 @@ function ActivitySummaryCard({
               elevationM,
             )
           }
-          label="dénivelé"
+          label="Dénivelé"
         />
 
         <SummaryMetric
           icon={
             <Gauge
-              size={15}
+              className="
+                h-4
+                w-4
+              "
             />
           }
           value={
@@ -1130,7 +1318,8 @@ function ActivitySummaryCard({
                   + '/km'
                 )
           }
-          label="allure moy."
+          label="Allure moy."
+          wideOnMobile
         />
       </div>
     </section>
@@ -1142,26 +1331,52 @@ function SummaryMetric({
   icon,
   value,
   label,
+  wideOnMobile = false,
 }: {
   icon: React.ReactNode
   value: string
   label: string
+  wideOnMobile?: boolean
 }) {
   return (
     <div
-      className="
-        flex
-        min-w-0
-        items-center
-        gap-3
-        px-4
-        py-3
-      "
+      className={[
+        (
+          'flex min-w-0 '
+          + 'items-center gap-2.5 '
+          + 'border-black/[0.055] '
+          + 'px-3 py-3 '
+          + 'dark:border-white/[0.055] '
+          + 'sm:border-r '
+          + 'sm:last:border-r-0'
+        ),
+        wideOnMobile
+          ? (
+              'col-span-2 '
+              + 'border-t '
+              + 'sm:col-span-1 '
+              + 'sm:border-t-0'
+            )
+          : (
+              'border-b '
+              + 'odd:border-r '
+              + 'sm:border-b-0'
+            ),
+      ].join(' ')}
     >
       <div
         className="
+          flex
+          h-8
+          w-8
           shrink-0
-          text-base-content/35
+          items-center
+          justify-center
+          rounded-[9px]
+          bg-emerald-50
+          text-emerald-600
+          dark:bg-emerald-500/[0.07]
+          dark:text-emerald-400
         "
       >
         {icon}
@@ -1171,9 +1386,12 @@ function SummaryMetric({
         <p
           className="
             truncate
-            text-base
+            text-[16px]
             font-bold
-            text-base-content
+            tracking-[-0.02em]
+            tabular-nums
+            text-slate-850
+            dark:text-slate-200
           "
         >
           {value}
@@ -1181,10 +1399,13 @@ function SummaryMetric({
 
         <p
           className="
-            text-[11px]
+            mt-0.5
+            text-[8px]
+            font-semibold
             uppercase
-            tracking-wide
-            text-base-content/40
+            tracking-[0.07em]
+            text-slate-400
+            dark:text-slate-500
           "
         >
           {label}
@@ -1195,7 +1416,42 @@ function SummaryMetric({
 }
 
 
-function ActivityRow({
+function ActivityTableHeader({
+  children,
+  align = 'left',
+  hiddenOnTablet = false,
+}: {
+  children: React.ReactNode
+  align?: 'left' | 'right'
+  hiddenOnTablet?: boolean
+}) {
+  return (
+    <th
+      className={[
+        (
+          'px-3 py-2.5 '
+          + 'text-[8.5px] '
+          + 'font-bold '
+          + 'uppercase '
+          + 'tracking-[0.08em] '
+          + 'text-slate-400 '
+          + 'dark:text-slate-500'
+        ),
+        align === 'right'
+          ? 'text-right'
+          : 'text-left',
+        hiddenOnTablet
+          ? 'hidden lg:table-cell'
+          : '',
+      ].join(' ')}
+    >
+      {children}
+    </th>
+  )
+}
+
+
+function ActivityDesktopRow({
   activity,
   session,
   onOpenSession,
@@ -1209,15 +1465,29 @@ function ActivityRow({
   return (
     <tr
       className="
+        group
+        border-b
+        border-black/[0.045]
         transition-colors
-        hover:bg-base-200/40
+        last:border-b-0
+        hover:bg-slate-50/80
+        dark:border-white/[0.045]
+        dark:hover:bg-white/[0.018]
       "
     >
-      <td className="whitespace-nowrap">
-        <div
+      <td
+        className="
+          whitespace-nowrap
+          px-3
+          py-3
+        "
+      >
+        <p
           className="
-            font-medium
-            text-base-content
+            text-[11px]
+            font-semibold
+            text-slate-700
+            dark:text-slate-300
           "
         >
           {
@@ -1226,12 +1496,14 @@ function ActivityRow({
               ?? activity.start_at,
             )
           }
-        </div>
+        </p>
 
-        <div
+        <p
           className="
-            text-[11px]
-            text-base-content/40
+            mt-0.5
+            text-[9px]
+            text-slate-400
+            dark:text-slate-500
           "
         >
           {
@@ -1240,101 +1512,76 @@ function ActivityRow({
               ?? activity.start_at,
             )
           }
-        </div>
+        </p>
       </td>
 
 
       <td
         className="
-          min-w-[150px]
-          max-w-[220px]
-          sm:min-w-[200px]
-          sm:max-w-[320px]
-          lg:max-w-[360px]
+          max-w-[310px]
+          px-3
+          py-3
         "
       >
-        <div
+        <p
           className="
             truncate
-            font-medium
-            text-base-content
+            text-[12px]
+            font-semibold
+            text-slate-800
+            dark:text-slate-200
           "
-          title={
-            activity.name
-          }
+          title={activity.name}
         >
           {activity.name}
-        </div>
+        </p>
 
-        <div
+        <p
           className="
             mt-0.5
-            text-[11px]
-            text-base-content/40
+            text-[9px]
+            text-slate-400
+            dark:text-slate-500
           "
         >
           {activity.provider}
-        </div>
-      </td>
-
-
-      <td className="hidden sm:table-cell">
-        <span
-          className="
-            badge
-            badge-ghost
-            badge-sm
-            whitespace-nowrap
-          "
-        >
-          {
-            formatSportType(
-              activity.sport_type,
-            )
-          }
-        </span>
+        </p>
       </td>
 
 
       <td
         className="
-          whitespace-nowrap
-          text-right
-          font-medium
+          px-3
+          py-3
         "
       >
+        <SportPill
+          sport={
+            activity.sport_type
+          }
+        />
+      </td>
+
+
+      <ActivityNumberCell>
         {
           formatDistance(
             activity.distance_m,
           )
         }
-      </td>
+      </ActivityNumberCell>
 
-
-      <td
-        className="
-          hidden
-          whitespace-nowrap
-          text-right
-          sm:table-cell
-        "
-      >
+      <ActivityNumberCell>
         {
           formatDuration(
             activity.moving_time_seconds
             ?? activity.elapsed_time_seconds,
           )
         }
-      </td>
+      </ActivityNumberCell>
 
-
-      <td
-        className="
-          hidden
-          whitespace-nowrap
-          text-right
-          lg:table-cell
-        "
+      <ActivityNumberCell
+        hiddenOnTablet
       >
         {
           formatPace(
@@ -1342,68 +1589,462 @@ function ActivityRow({
             activity.moving_time_seconds,
           )
         }
-      </td>
+      </ActivityNumberCell>
 
-
-      <td
-        className="
-          hidden
-          whitespace-nowrap
-          text-right
-          lg:table-cell
-        "
+      <ActivityNumberCell
+        hiddenOnTablet
       >
         {
           formatElevation(
             activity.elevation_gain_m,
           )
         }
-      </td>
+      </ActivityNumberCell>
 
 
       <td
         className="
-          whitespace-nowrap
+          px-3
+          py-3
           text-right
         "
       >
-        <button
-          type="button"
-          disabled={
-            !session
-          }
-          onClick={() => {
-            if (session) {
+        {session ? (
+          <button
+            type="button"
+            onClick={() =>
               onOpenSession(
                 session.id,
               )
             }
-          }}
-          className={[
-            'btn btn-sm',
-            session
-              ? 'btn-ghost'
-              : (
-                  'btn-ghost '
-                  + 'opacity-35'
-                ),
-          ].join(' ')}
-          title={
-            session
-              ? (
-                  'Afficher la séance '
-                  + 'et le débriefing'
-                )
-              : (
-                  'Aucune séance coach '
-                  + 'associée'
-                )
-          }
-        >
-          Séance
-        </button>
+            aria-label="Voir la séance"
+            title="Voir la séance"
+            className="
+              inline-flex
+              h-8
+              items-center
+              justify-center
+              rounded-[8px]
+              border
+              border-emerald-500/25
+              bg-emerald-500/[0.06]
+              w-8
+              px-0
+              font-semibold
+              text-emerald-700
+              transition
+              hover:border-emerald-500/40
+              hover:bg-emerald-500/[0.10]
+              dark:text-emerald-400
+            "
+          >
+            <Eye
+              className="
+                h-4
+                w-4
+              "
+            />
+          </button>
+        ) : (
+          <span
+            className="
+              text-[9px]
+              font-medium
+              text-slate-300
+              dark:text-slate-600
+            "
+          >
+            Non associée
+          </span>
+        )}
       </td>
     </tr>
+  )
+}
+
+
+function ActivityNumberCell({
+  children,
+  hiddenOnTablet = false,
+}: {
+  children: React.ReactNode
+  hiddenOnTablet?: boolean
+}) {
+  return (
+    <td
+      className={[
+        (
+          'whitespace-nowrap '
+          + 'px-3 py-3 '
+          + 'text-right '
+          + 'text-[11px] '
+          + 'font-medium '
+          + 'tabular-nums '
+          + 'text-slate-600 '
+          + 'dark:text-slate-400'
+        ),
+        hiddenOnTablet
+          ? 'hidden lg:table-cell'
+          : '',
+      ].join(' ')}
+    >
+      {children}
+    </td>
+  )
+}
+
+
+function ActivityMobileCard({
+  activity,
+  session,
+  onOpenSession,
+}: {
+  activity: ActivitySummary
+  session?: TrainingSession
+  onOpenSession: (
+    sessionId: string,
+  ) => void
+}) {
+  return (
+    <article
+      className="
+        px-4
+        py-4
+      "
+    >
+      <div
+        className="
+          flex
+          items-start
+          justify-between
+          gap-3
+        "
+      >
+        <div className="min-w-0">
+          <div
+            className="
+              flex
+              flex-wrap
+              items-center
+              gap-2
+            "
+          >
+            <p
+              className="
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.08em]
+                text-slate-400
+                dark:text-slate-500
+              "
+            >
+              {
+                formatDate(
+                  activity.start_at_local
+                  ?? activity.start_at,
+                )
+              }
+              {' · '}
+              {
+                formatTime(
+                  activity.start_at_local
+                  ?? activity.start_at,
+                )
+              }
+            </p>
+
+            <SportPill
+              sport={
+                activity.sport_type
+              }
+            />
+          </div>
+
+          <h2
+            className="
+              mt-2
+              truncate
+              text-[15px]
+              font-semibold
+              tracking-[-0.02em]
+              text-slate-850
+              dark:text-slate-200
+            "
+          >
+            {activity.name}
+          </h2>
+
+          <p
+            className="
+              mt-0.5
+              text-[9.5px]
+              text-slate-400
+            "
+          >
+            {activity.provider}
+          </p>
+        </div>
+      </div>
+
+
+      <div
+        className="
+          mt-3
+          grid
+          grid-cols-2
+          gap-x-5
+          gap-y-3
+          rounded-[10px]
+          bg-slate-50
+          px-3
+          py-3
+          dark:bg-white/[0.022]
+        "
+      >
+        <MobileMetric
+          label="Distance"
+          value={
+            formatDistance(
+              activity.distance_m,
+            )
+          }
+        />
+
+        <MobileMetric
+          label="Durée"
+          value={
+            formatDuration(
+              activity.moving_time_seconds
+              ?? activity.elapsed_time_seconds,
+            )
+          }
+        />
+
+        <MobileMetric
+          label="Allure"
+          value={
+            formatPace(
+              activity.distance_m,
+              activity.moving_time_seconds,
+            )
+          }
+        />
+
+        <MobileMetric
+          label="Dénivelé"
+          value={
+            formatElevation(
+              activity.elevation_gain_m,
+            )
+          }
+        />
+      </div>
+
+
+      <div
+        className="
+          mt-3
+          flex
+          items-center
+          justify-between
+          gap-3
+        "
+      >
+        <div>
+          <p
+            className="
+              text-[8px]
+              font-semibold
+              uppercase
+              tracking-[0.07em]
+              text-slate-400
+            "
+          >
+            Séance Coach
+          </p>
+
+          <p
+            className={[
+              (
+                'mt-0.5 text-[10px] '
+                + 'font-medium'
+              ),
+              session
+                ? (
+                    'text-emerald-600 '
+                    + 'dark:text-emerald-400'
+                  )
+                : (
+                    'text-slate-400 '
+                    + 'dark:text-slate-500'
+                  ),
+            ].join(' ')}
+          >
+            {
+              session
+                ? 'Associée'
+                : 'Non associée'
+            }
+          </p>
+        </div>
+
+
+        {session && (
+          <button
+            type="button"
+            onClick={() =>
+              onOpenSession(
+                session.id,
+              )
+            }
+            className="
+              inline-flex
+              h-8
+              items-center
+              justify-center
+              rounded-[8px]
+              border
+              border-emerald-500/25
+              bg-emerald-500/[0.07]
+              px-3
+              text-[10px]
+              font-semibold
+              text-emerald-700
+              transition
+              active:scale-[0.98]
+              dark:text-emerald-400
+            "
+          >
+            Voir la séance
+            <span className="ml-1.5">
+              →
+            </span>
+          </button>
+        )}
+      </div>
+    </article>
+  )
+}
+
+
+function MobileMetric({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <div>
+      <p
+        className="
+          text-[8px]
+          font-semibold
+          uppercase
+          tracking-[0.07em]
+          text-slate-400
+          dark:text-slate-500
+        "
+      >
+        {label}
+      </p>
+
+      <p
+        className="
+          mt-0.5
+          text-[12px]
+          font-semibold
+          tabular-nums
+          text-slate-700
+          dark:text-slate-300
+        "
+      >
+        {value}
+      </p>
+    </div>
+  )
+}
+
+
+function SportPill({
+  sport,
+}: {
+  sport: string
+}) {
+  return (
+    <span
+      className="
+        inline-flex
+        whitespace-nowrap
+        rounded-full
+        bg-slate-100
+        px-2
+        py-0.5
+        text-[8px]
+        font-semibold
+        text-slate-500
+        dark:bg-white/[0.045]
+        dark:text-slate-400
+      "
+    >
+      {
+        formatSportType(
+          sport,
+        )
+      }
+    </span>
+  )
+}
+
+
+function EmptyActivityState({
+  title,
+  description,
+}: {
+  title: string
+  description: string
+}) {
+  return (
+    <div
+      className="
+        px-4
+        py-10
+        text-center
+      "
+    >
+      <Activity
+        className="
+          mx-auto
+          h-5
+          w-5
+          text-slate-200
+          dark:text-slate-700
+        "
+      />
+
+      <p
+        className="
+          mt-2
+          text-[12px]
+          font-semibold
+          text-slate-600
+          dark:text-slate-300
+        "
+      >
+        {title}
+      </p>
+
+      <p
+        className="
+          mt-1
+          text-[10px]
+          text-slate-400
+        "
+      >
+        {description}
+      </p>
+    </div>
   )
 }
 

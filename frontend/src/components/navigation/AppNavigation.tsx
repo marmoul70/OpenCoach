@@ -3,6 +3,7 @@ import {
   Bot,
   CalendarDays,
   ChevronRight,
+  CloudSun,
   CircleUserRound,
   Flag,
   Gauge,
@@ -33,6 +34,7 @@ export type NavigationPage =
   | 'settings'
   | 'races'
   | 'activities'
+  | 'weather'
 
 
 export type NavigationTheme =
@@ -90,6 +92,11 @@ const mainNavigation = [
     page: 'races',
     label: 'Courses',
     icon: Flag,
+  },
+  {
+    page: 'weather',
+    label: 'Météo',
+    icon: CloudSun,
   },
 ] as const
 

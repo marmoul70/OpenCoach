@@ -108,7 +108,7 @@ export function PhysiologicalTestProtocolModal({
           max-w-3xl
           overflow-y-auto
           rounded-t-3xl
-          bg-base-100
+          bg-white dark:bg-[#151b1f]
           shadow-2xl
           sm:rounded-3xl
         "
@@ -119,8 +119,8 @@ export function PhysiologicalTestProtocolModal({
             flex items-center
             justify-between
             border-b
-            border-base-300
-            bg-base-100/95
+            border-black/[0.06] dark:border-white/[0.07]
+            bg-white dark:bg-[#151b1f]/95
             px-5 py-4
             backdrop-blur
           "
@@ -130,7 +130,7 @@ export function PhysiologicalTestProtocolModal({
               className="
                 text-xs font-semibold
                 uppercase tracking-wide
-                text-primary
+                text-emerald-600 dark:text-emerald-400
               "
             >
               Protocole OpenCoach
@@ -139,7 +139,7 @@ export function PhysiologicalTestProtocolModal({
             <h2
               className="
                 text-xl font-bold
-                text-base-content
+                text-slate-800 dark:text-slate-100
               "
             >
               {
@@ -152,7 +152,20 @@ export function PhysiologicalTestProtocolModal({
           <button
             type="button"
             className="
-              btn btn-circle btn-ghost btn-sm
+              inline-flex
+              h-8
+              w-8
+              shrink-0
+              items-center
+              justify-center
+              rounded-[8px]
+              text-slate-400
+              transition
+              hover:bg-slate-100
+              hover:text-slate-700
+              dark:text-slate-500
+              dark:hover:bg-white/[0.05]
+              dark:hover:text-slate-200
             "
             onClick={onClose}
             aria-label="Fermer"
@@ -171,9 +184,17 @@ export function PhysiologicalTestProtocolModal({
           >
             <span
               className="
-                loading loading-spinner
-                loading-md text-primary
+                h-7
+                w-7
+                animate-spin
+                rounded-full
+                border-[2.5px]
+                border-slate-200
+                border-t-emerald-500
+                dark:border-white/[0.10]
+                dark:border-t-emerald-400
               "
+              aria-hidden="true"
             />
           </div>
         )}
@@ -183,7 +204,18 @@ export function PhysiologicalTestProtocolModal({
           <div className="p-6">
             <div
               className="
-                alert alert-error
+                rounded-[11px]
+                border
+                border-rose-500/15
+                bg-rose-500/[0.05]
+                px-4
+                py-3
+                text-[11px]
+                font-medium
+                text-rose-700
+                dark:border-rose-400/15
+                dark:bg-rose-400/[0.05]
+                dark:text-rose-300
               "
             >
               Impossible de charger
@@ -204,7 +236,7 @@ export function PhysiologicalTestProtocolModal({
             <p
               className="
                 text-sm leading-6
-                text-base-content/65
+                text-slate-500 dark:text-slate-400
               "
             >
               {
@@ -323,14 +355,14 @@ export function PhysiologicalTestProtocolModal({
             <div
               className="
                 rounded-2xl
-                bg-primary/5
+                bg-emerald-500/[0.04] dark:bg-emerald-400/[0.04]
                 p-4
               "
             >
               <p
                 className="
                   font-semibold
-                  text-base-content
+                  text-slate-800 dark:text-slate-100
                 "
               >
                 Ce qu’OpenCoach analysera
@@ -340,7 +372,7 @@ export function PhysiologicalTestProtocolModal({
                 className="
                   mt-2 text-sm
                   leading-6
-                  text-base-content/60
+                  text-slate-500 dark:text-slate-400
                 "
               >
                 Distance, allure ou vitesse,
@@ -370,21 +402,35 @@ function InfoCard({
   return (
     <div
       className="
-        flex items-center gap-3
-        rounded-xl
-        bg-base-200/60
+        flex
+        items-center
+        gap-3
+        rounded-[11px]
+        border
+        border-black/[0.05]
+        bg-slate-50/70
         p-4
+        dark:border-white/[0.06]
+        dark:bg-white/[0.025]
       "
     >
-      <span className="text-primary">
+      <span
+        className="
+          text-emerald-600
+          dark:text-emerald-400
+        "
+      >
         {icon}
       </span>
 
       <span>
         <span
           className="
-            block text-xs
-            text-base-content/45
+            block
+            text-[9.5px]
+            font-medium
+            text-slate-400
+            dark:text-slate-500
           "
         >
           {title}
@@ -392,8 +438,10 @@ function InfoCard({
 
         <span
           className="
+            text-[12px]
             font-semibold
-            text-base-content
+            text-slate-800
+            dark:text-slate-100
           "
         >
           {value}
@@ -422,15 +470,22 @@ function Section({
         "
       >
         {icon && (
-          <span className="text-primary">
+          <span
+            className="
+              text-emerald-600
+              dark:text-emerald-400
+            "
+          >
             {icon}
           </span>
         )}
 
         <h3
           className="
-            font-bold
-            text-base-content
+            text-[12.5px]
+            font-semibold
+            text-slate-800
+            dark:text-slate-100
           "
         >
           {title}
@@ -439,8 +494,10 @@ function Section({
 
       <div
         className="
-          text-sm leading-6
-          text-base-content/65
+          text-[10.5px]
+          leading-[1.65]
+          text-slate-500
+          dark:text-slate-400
         "
       >
         {children}
@@ -489,8 +546,11 @@ function StepsSection({
     <section>
       <h3
         className="
-          mb-3 font-bold
-          text-base-content
+          mb-3
+          text-[12.5px]
+          font-semibold
+          text-slate-800
+          dark:text-slate-100
         "
       >
         {title}
@@ -510,12 +570,16 @@ function StepsSection({
                 'rounded-xl border p-4',
                 emphasized
                   ? (
-                      'border-primary/30 '
-                      + 'bg-primary/5'
+                      'border-emerald-500/18 '
+                      + 'bg-emerald-500/[0.045] '
+                      + 'dark:border-emerald-400/18 '
+                      + 'dark:bg-emerald-400/[0.04]'
                     )
                   : (
-                      'border-base-300 '
-                      + 'bg-base-100'
+                      'border-black/[0.06] '
+                      + 'bg-white '
+                      + 'dark:border-white/[0.07] '
+                      + 'dark:bg-[#171d21]'
                     ),
               ].join(' ')}
             >
@@ -528,8 +592,10 @@ function StepsSection({
               >
                 <p
                   className="
+                    text-[11.5px]
                     font-semibold
-                    text-base-content
+                    text-slate-800
+                    dark:text-slate-100
                   "
                 >
                   {step.title}
@@ -539,9 +605,20 @@ function StepsSection({
                   != null && (
                     <span
                       className="
-                        badge
-                        badge-outline
-                        badge-sm
+                        inline-flex
+                        items-center
+                        rounded-full
+                        border
+                        border-black/[0.07]
+                        bg-white/70
+                        px-2
+                        py-0.5
+                        text-[8.5px]
+                        font-semibold
+                        text-slate-500
+                        dark:border-white/[0.08]
+                        dark:bg-white/[0.025]
+                        dark:text-slate-400
                       "
                     >
                       {
@@ -553,9 +630,11 @@ function StepsSection({
 
               <p
                 className="
-                  mt-2 text-sm
-                  leading-6
-                  text-base-content/60
+                  mt-2
+                  text-[10.5px]
+                  leading-[1.6]
+                  text-slate-500
+                  dark:text-slate-400
                 "
               >
                 {step.description}

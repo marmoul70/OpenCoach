@@ -57,11 +57,15 @@ export function TrainingWidget({
       >
         <span
           className="
-            loading
-            loading-spinner
-            loading-sm
-            text-emerald-400
+            h-5
+            w-5
+            animate-spin
+            rounded-full
+            border-2
+            border-white/[0.10]
+            border-t-emerald-400
           "
+          aria-hidden="true"
         />
       </div>
     )

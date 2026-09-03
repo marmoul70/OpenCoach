@@ -3,28 +3,21 @@ import {
   CircleAlert,
   Gauge,
 } from 'lucide-react'
-
 import {
   useCallback,
   useEffect,
   useState,
 } from 'react'
-
 import {
   fetchTodayCheckIn,
   type DailyCheckInState,
 } from '../../core/checkin'
-
 import {
   RatingIcons,
 } from './RatingIcons'
-
-
 interface FeelingWidgetProps {
   onClick: () => void
 }
-
-
 export function FeelingWidget({
   onClick,
 }: FeelingWidgetProps) {
@@ -34,27 +27,21 @@ export function FeelingWidget({
   ] = useState<DailyCheckInState | null>(
     null,
   )
-
   const [
     loading,
     setLoading,
   ] = useState(true)
-
   const [
     error,
     setError,
   ] = useState(false)
-
-
   const load =
     useCallback(
       async () => {
         try {
           setError(false)
-
           const result =
             await fetchTodayCheckIn()
-
           setState(result)
         } catch {
           setError(true)
@@ -64,16 +51,12 @@ export function FeelingWidget({
       },
       [],
     )
-
-
   useEffect(() => {
     void load()
-
     window.addEventListener(
       'opencoach:daily-checkin-updated',
       load,
     )
-
     return () => {
       window.removeEventListener(
         'opencoach:daily-checkin-updated',
@@ -83,8 +66,6 @@ export function FeelingWidget({
   }, [
     load,
   ])
-
-
   if (loading) {
     return (
       <div
@@ -102,21 +83,16 @@ export function FeelingWidget({
       >
         <span
           className="
-            loading
-            loading-spinner
-            loading-sm
+            animate-spin rounded-full border-2 border-slate-200 border-t-emerald-500 dark:border-white/[0.10] dark:border-t-emerald-400
+            h-5 w-5
             text-emerald-500
           "
         />
       </div>
     )
   }
-
-
   const status =
     getStatus(state)
-
-
   return (
     <button
       type="button"
@@ -166,7 +142,6 @@ export function FeelingWidget({
             className="h-5 w-5"
           />
         </div>
-
         {status.warning && (
           <CircleAlert
             className="
@@ -176,8 +151,6 @@ export function FeelingWidget({
           />
         )}
       </div>
-
-
       <div className="mt-4 flex-1">
         {error ? (
           <>
@@ -190,7 +163,6 @@ export function FeelingWidget({
             >
               Données indisponibles
             </p>
-
             <p
               className="
                 mt-1
@@ -216,7 +188,6 @@ export function FeelingWidget({
             >
               Comment te sens-tu ?
             </p>
-
             <p
               className="
                 mt-1
@@ -251,7 +222,6 @@ export function FeelingWidget({
               >
                 {status.label}
               </p>
-
               <span
                 className={
                   `text-xs font-semibold ${status.className}`
@@ -260,7 +230,6 @@ export function FeelingWidget({
                 Aujourd’hui
               </span>
             </div>
-
             <div
               className="
                 mt-4
@@ -278,7 +247,6 @@ export function FeelingWidget({
                   }
                 />
               </RatingRow>
-
               <RatingRow
                 label="Confort"
               >
@@ -294,8 +262,6 @@ export function FeelingWidget({
           </>
         )}
       </div>
-
-
       <div
         className="
           mt-4
@@ -320,7 +286,6 @@ export function FeelingWidget({
             ? 'Renseigner mon état'
             : 'Voir mon ressenti'}
         </span>
-
         <ArrowRight
           className="
             h-4 w-4
@@ -334,8 +299,6 @@ export function FeelingWidget({
     </button>
   )
 }
-
-
 function RatingRow({
   label,
   children,
@@ -362,13 +325,10 @@ function RatingRow({
       >
         {label}
       </span>
-
       {children}
     </div>
   )
 }
-
-
 function getStatus(
   state: DailyCheckInState | null,
 ): {
@@ -384,7 +344,6 @@ function getStatus(
       warning: false,
     }
   }
-
   if (
     state.adaptation
       ?.awaiting_athlete_decision
@@ -396,7 +355,6 @@ function getStatus(
       warning: true,
     }
   }
-
   if (
     state.checkin.illness
     || state.checkin.unavailable
@@ -410,7 +368,6 @@ function getStatus(
       warning: true,
     }
   }
-
   if (
     state.adaptation?.decision
     === 'accepted'
@@ -422,7 +379,6 @@ function getStatus(
       warning: false,
     }
   }
-
   return {
     label: 'Bon ressenti',
     className:

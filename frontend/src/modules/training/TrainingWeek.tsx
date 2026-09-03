@@ -740,11 +740,11 @@ phaseLabel={
             className="
               mt-3
               rounded-xl
-              border border-warning/30
-              bg-warning/5
+              border border-amber-500/20 dark:border-amber-400/20
+              bg-amber-500/[0.05] dark:bg-amber-400/[0.055]
               px-4 py-3
               text-sm
-              text-warning
+              text-amber-600 dark:text-amber-400
             "
           >
             {statsError}

@@ -1,13 +1,19 @@
 import {
+  Activity,
+  Check,
+  CircleAlert,
+  KeyRound,
+  Link2,
+  LoaderCircle,
+  Pencil,
+  RefreshCw,
+  UserRound,
+} from 'lucide-react'
+
+import {
   useEffect,
   useState,
 } from 'react'
-
-import {
-  Activity,
-  CheckCircle2,
-  RefreshCw,
-} from 'lucide-react'
 
 import {
   useToast,
@@ -31,10 +37,9 @@ export function IntervalsSection() {
   const [
     connection,
     setConnection,
-  ] =
-    useState<IntervalsConnection | null>(
-      null,
-    )
+  ] = useState<
+    IntervalsConnection | null
+  >(null)
 
   const [
     athleteId,
@@ -50,6 +55,11 @@ export function IntervalsSection() {
     enabled,
     setEnabled,
   ] = useState(true)
+
+  const [
+    editing,
+    setEditing,
+  ] = useState(false)
 
   const [
     loading,
@@ -79,46 +89,51 @@ export function IntervalsSection() {
   const [
     error,
     setError,
-  ] = useState<string | null>(
-    null,
-  )
+  ] = useState<
+    string | null
+  >(null)
 
   const [
     message,
     setMessage,
-  ] = useState<string | null>(
-    null,
-  )
+  ] = useState<
+    string | null
+  >(null)
+
 
   useEffect(() => {
     let mounted = true
 
     fetchIntervalsConnection()
-      .then((result) => {
+      .then(result => {
         if (!mounted) {
           return
         }
 
         setConnection(result)
+
         setAthleteId(
           result.athlete_id
           ?? '',
         )
+
         setEnabled(
           result.enabled,
         )
       })
-      .catch((reason: unknown) => {
-        if (!mounted) {
-          return
-        }
+      .catch(
+        (reason: unknown) => {
+          if (!mounted) {
+            return
+          }
 
-        setError(
-          getErrorMessage(
-            reason,
-          ),
-        )
-      })
+          setError(
+            getErrorMessage(
+              reason,
+            ),
+          )
+        },
+      )
       .finally(() => {
         if (mounted) {
           setLoading(false)
@@ -129,6 +144,7 @@ export function IntervalsSection() {
       mounted = false
     }
   }, [])
+
 
   async function handleTest() {
     setTesting(true)
@@ -143,9 +159,12 @@ export function IntervalsSection() {
       const normalizedApiKey =
         apiKey.trim()
 
-      if (!normalizedAthleteId) {
+      if (
+        !normalizedAthleteId
+      ) {
         throw new Error(
-          "L'identifiant athlète est obligatoire.",
+          "L'identifiant athlète "
+          + 'est obligatoire.',
         )
       }
 
@@ -160,7 +179,8 @@ export function IntervalsSection() {
             ?.api_key_configured
         ) {
           throw new Error(
-            'Saisissez une clé API pour tester la connexion.',
+            'Saisissez une clé API '
+            + 'pour tester la connexion.',
           )
         }
 
@@ -170,7 +190,7 @@ export function IntervalsSection() {
       setConnectionTested(true)
 
       setMessage(
-        'Connexion à Intervals.icu réussie. Vous pouvez maintenant enregistrer.',
+        'Connexion testée avec succès.',
       )
     } catch (reason) {
       setConnectionTested(false)
@@ -184,6 +204,7 @@ export function IntervalsSection() {
       setTesting(false)
     }
   }
+
 
   async function handleSave() {
     setSaving(true)
@@ -206,9 +227,15 @@ export function IntervalsSection() {
       setConnection(result)
       setApiKey('')
       setConnectionTested(false)
+      setEditing(false)
 
       setMessage(
-        'Connexion Intervals.icu enregistrée.',
+        'Configuration enregistrée.',
+      )
+
+      window.setTimeout(
+        () => setMessage(null),
+        2000,
       )
     } catch (reason) {
       setError(
@@ -220,6 +247,7 @@ export function IntervalsSection() {
       setSaving(false)
     }
   }
+
 
   async function handleSync() {
     if (
@@ -233,18 +261,17 @@ export function IntervalsSection() {
 
     try {
       const result =
-        await syncIntervals(
-          7,
-        )
+        await syncIntervals(7)
 
       setConnection(
-        (current) => {
+        current => {
           if (!current) {
             return current
           }
 
           return {
             ...current,
+
             last_synced_at:
               result.synced_at,
           }
@@ -255,20 +282,30 @@ export function IntervalsSection() {
         type: 'info',
         title:
           'Synchronisation terminée',
+
         message: [
-          `${result.synced_activities} activité(s)`,
-          `${result.synced_wellness_days} jour(s) Wellness`,
+          (
+            `${result.synced_activities} `
+            + 'activité(s)'
+          ),
+          (
+            `${result.synced_wellness_days} `
+            + 'jour(s) Wellness'
+          ),
         ].join(' · '),
       })
     } catch (reason) {
       toast({
         type: 'error',
+
         title:
           'Échec de la synchronisation',
+
         message:
           getErrorMessage(
             reason,
           ),
+
         duration: null,
       })
     } finally {
@@ -276,330 +313,1050 @@ export function IntervalsSection() {
     }
   }
 
+
+  function handleCancel() {
+    setAthleteId(
+      connection?.athlete_id
+      ?? '',
+    )
+
+    setEnabled(
+      connection?.enabled
+      ?? true,
+    )
+
+    setApiKey('')
+    setError(null)
+    setMessage(null)
+    setConnectionTested(false)
+    setEditing(false)
+  }
+
+
   if (loading) {
     return (
-      <section
+      <div
         className="
-          collapse
+          flex
+          min-h-[180px]
+          items-center
+          justify-center
+          rounded-[12px]
           border
-          border-base-300
-          bg-base-100
-          shadow-sm
+          border-black/[0.065]
+          bg-white
+          dark:border-white/[0.065]
+          dark:bg-[#151b1f]
         "
       >
         <div
           className="
             flex
             items-center
-            gap-3
-            px-6
-            py-5
+            gap-2
+            text-[10.5px]
+            text-slate-400
           "
         >
-          <span
+          <LoaderCircle
             className="
-              loading
-              loading-spinner
-              loading-sm
-              text-secondary
+              h-4
+              w-4
+              animate-spin
+              text-emerald-500
             "
           />
 
-          <span
-            className="
-              text-sm
-              text-base-content/60
-            "
-          >
-            Chargement d’Intervals.icu…
-          </span>
+          Chargement d’Intervals.icu…
         </div>
-      </section>
+      </div>
     )
   }
 
+
+  const connected =
+    connection?.configured
+    === true
+    && connection.enabled
+
+
   return (
-    <section className="collapse collapse-arrow border border-base-300 bg-base-100 shadow-sm">
-                <input
-                  type="checkbox"
+    <div
+      className="
+        overflow-hidden
+        rounded-[12px]
+        border
+        border-black/[0.065]
+        bg-white
+        dark:border-white/[0.065]
+        dark:bg-[#151b1f]
+      "
+    >
+
+      {/* SERVICE HERO */}
+
+      <div
+        className="
+          relative
+          overflow-hidden
+          px-4
+          py-4
+        "
+      >
+        <div
+          className="
+            pointer-events-none
+            absolute
+            -right-16
+            -top-20
+            h-44
+            w-44
+            rounded-full
+            bg-emerald-500/[0.05]
+            blur-3xl
+          "
+        />
+
+        <div
+          className="
+            relative
+            flex
+            items-start
+            justify-between
+            gap-3
+          "
+        >
+          <div
+            className="
+              flex
+              min-w-0
+              items-start
+              gap-3
+            "
+          >
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-[11px]
+                bg-emerald-50
+                text-emerald-600
+                dark:bg-emerald-500/[0.08]
+                dark:text-emerald-400
+              "
+            >
+              <Activity
+                className="
+                  h-[18px]
+                  w-[18px]
+                "
+              />
+            </div>
+
+            <div className="min-w-0">
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-2
+                "
+              >
+                <h3
+                  className="
+                    text-[15px]
+                    font-bold
+                    tracking-[-0.02em]
+                    text-slate-950
+                    dark:text-white
+                  "
+                >
+                  Intervals.icu
+                </h3>
+
+                <ConnectionStatus
+                  connected={
+                    connected
+                  }
                 />
+              </div>
 
-                <div className="collapse-title">
-                  <div className="flex flex-wrap items-center justify-between gap-4 pr-6">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary/10">
-                        <Activity className="h-5 w-5 text-secondary" />
-                      </div>
+              <p
+                className="
+                  mt-1
+                  text-[10px]
+                  text-slate-400
+                  dark:text-slate-500
+                "
+              >
+                Activités, récupération
+                et charge d'entraînement.
+              </p>
+            </div>
+          </div>
 
-                      <div>
-                        <h2 className="font-semibold text-base-content">
-                          Intervals.icu
-                        </h2>
 
-                        <p className="text-sm text-base-content/60">
-                          Activités, charge d&apos;entraînement et récupération.
-                        </p>
-                      </div>
-                    </div>
+          {!editing && (
+            <button
+              type="button"
+              onClick={() =>
+                setEditing(true)
+              }
+              className="
+                flex
+                h-8
+                shrink-0
+                items-center
+                gap-1.5
+                rounded-[8px]
+                border
+                border-black/[0.06]
+                px-2.5
+                text-[10px]
+                font-semibold
+                text-slate-500
+                transition
+                hover:bg-slate-50
+                hover:text-slate-900
+                dark:border-white/[0.065]
+                dark:text-slate-400
+                dark:hover:bg-white/[0.04]
+                dark:hover:text-white
+              "
+            >
+              <Pencil
+                className="
+                  h-3
+                  w-3
+                "
+              />
 
-                    <ConnectionBadge
-                      connected={
-                        connection
-                          ?.configured
-                        === true
-                        && connection.enabled
-                      }
-                    />
-                  </div>
-                </div>
+              Configuration
+            </button>
+          )}
+        </div>
+      </div>
 
-                <div className="collapse-content">
-                  <div className="border-t border-base-300 pt-5">
-                    <div className="grid gap-5 sm:grid-cols-2">
-                      <fieldset className="fieldset">
-                        <label className="fieldset-legend">
-                          Athlete ID
-                        </label>
 
-                        <input
-                          value={
-                            athleteId
-                          }
-                          onChange={(event) => {
-                            setAthleteId(
-                              event
-                                .target
-                                .value,
-                            )
+      {editing ? (
 
-                            setConnectionTested(
-                              false,
-                            )
+        /* CONFIGURATION */
 
-                            setMessage(
-                              null,
-                            )
-                          }}
-                          placeholder="i123456"
-                          className="input input-bordered w-full"
-                        />
-                      </fieldset>
+        <div
+          className="
+            border-t
+            border-black/[0.055]
+            px-4
+            py-4
+            dark:border-white/[0.06]
+          "
+        >
+          <div
+            className="
+              grid
+              gap-3
+              sm:grid-cols-2
+            "
+          >
+            <ConnectionField
+              icon={UserRound}
+              label="Athlete ID"
+              value={athleteId}
+              placeholder="i123456"
+              onChange={value => {
+                setAthleteId(value)
+                setConnectionTested(false)
+                setMessage(null)
+              }}
+            />
 
-                      <fieldset className="fieldset">
-                        <label className="fieldset-legend">
-                          API Key
-                        </label>
+            <ConnectionField
+              icon={KeyRound}
+              label="API Key"
+              value={apiKey}
+              type="password"
+              placeholder={
+                connection
+                  ?.api_key_configured
+                  ? 'Clé déjà configurée'
+                  : 'Votre clé API'
+              }
+              onChange={value => {
+                setApiKey(value)
+                setConnectionTested(false)
+                setMessage(null)
+              }}
+            />
+          </div>
 
-                        <input
-                          type="password"
-                          value={
-                            apiKey
-                          }
-                          onChange={(event) => {
-                            setApiKey(
-                              event
-                                .target
-                                .value,
-                            )
 
-                            setConnectionTested(
-                              false,
-                            )
+          {connection
+            ?.api_key_configured
+            && (
+              <p
+                className="
+                  mt-2
+                  text-[9px]
+                  text-slate-400
+                  dark:text-slate-500
+                "
+              >
+                Laisse la clé vide pour
+                conserver la clé actuelle.
+              </p>
+            )}
 
-                            setMessage(
-                              null,
-                            )
-                          }}
-                          placeholder={
-                            connection
-                              ?.api_key_configured
-                              ? 'Clé déjà configurée'
-                              : 'Votre clé API Intervals.icu'
-                          }
-                          autoComplete="off"
-                          className="input input-bordered w-full"
-                        />
 
-                        {connection
-                          ?.api_key_configured
-                          && (
-                            <p className="mt-1 text-xs text-base-content/50">
-                              Laissez vide pour conserver la clé actuelle.
-                            </p>
-                          )}
-                      </fieldset>
-                    </div>
+          <div
+            className="
+              mt-3
+              flex
+              items-center
+              justify-between
+              gap-4
+              rounded-[10px]
+              bg-slate-50
+              px-3
+              py-2.5
+              dark:bg-white/[0.025]
+            "
+          >
+            <div>
+              <p
+                className="
+                  text-[10.5px]
+                  font-semibold
+                  text-slate-700
+                  dark:text-slate-300
+                "
+              >
+                Intégration active
+              </p>
 
-                    <div className="mt-5 flex items-center justify-between gap-4 rounded-xl bg-base-200 p-4">
-                      <div>
-                        <p className="font-medium text-base-content">
-                          Connexion activée
-                        </p>
+              <p
+                className="
+                  mt-0.5
+                  text-[9px]
+                  text-slate-400
+                "
+              >
+                Autorise OpenCoach à
+                utiliser cette connexion.
+              </p>
+            </div>
 
-                        <p className="mt-1 text-xs text-base-content/50">
-                          Autorise OpenCoach à utiliser cette intégration.
-                        </p>
-                      </div>
+            <ModernToggle
+              checked={enabled}
+              onChange={setEnabled}
+            />
+          </div>
 
-                      <input
-                        type="checkbox"
-                        checked={
-                          enabled
-                        }
-                        onChange={(event) => {
-                          setEnabled(
-                            event
-                              .target
-                              .checked,
-                          )
-                        }}
-                        className="toggle toggle-primary"
+
+          {error && (
+            <StatusMessage
+              error
+              message={error}
+            />
+          )}
+
+          {message && (
+            <StatusMessage
+              message={message}
+            />
+          )}
+
+
+          <div
+            className="
+              mt-4
+              flex
+              flex-wrap
+              items-center
+              justify-end
+              gap-2
+              border-t
+              border-black/[0.055]
+              pt-3
+              dark:border-white/[0.06]
+            "
+          >
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="
+                h-8
+                rounded-[8px]
+                px-3
+                text-[10px]
+                font-semibold
+                text-slate-400
+                hover:bg-slate-50
+                hover:text-slate-700
+                dark:hover:bg-white/[0.04]
+              "
+            >
+              Annuler
+            </button>
+
+            <button
+              type="button"
+              disabled={
+                testing
+                || saving
+                || syncing
+              }
+              onClick={() =>
+                void handleTest()
+              }
+              className="
+                flex
+                h-8
+                items-center
+                gap-1.5
+                rounded-[8px]
+                border
+                border-black/[0.07]
+                px-3
+                text-[10px]
+                font-semibold
+                text-slate-600
+                transition
+                hover:bg-slate-50
+                disabled:opacity-40
+                dark:border-white/[0.07]
+                dark:text-slate-300
+                dark:hover:bg-white/[0.04]
+              "
+            >
+              {testing && (
+                <LoaderCircle
+                  className="
+                    h-3
+                    w-3
+                    animate-spin
+                  "
+                />
+              )}
+
+              Tester
+            </button>
+
+            <button
+              type="button"
+              disabled={
+                saving
+                || testing
+                || syncing
+                || !connectionTested
+              }
+              onClick={() =>
+                void handleSave()
+              }
+              className="
+                flex
+                h-8
+                items-center
+                gap-1.5
+                rounded-[8px]
+                bg-emerald-600
+                px-3
+                text-[10px]
+                font-semibold
+                text-white
+                transition
+                hover:bg-emerald-700
+                disabled:cursor-not-allowed
+                disabled:bg-slate-200
+                disabled:text-slate-400
+                dark:disabled:bg-white/[0.05]
+                dark:disabled:text-slate-600
+              "
+            >
+              {saving && (
+                <LoaderCircle
+                  className="
+                    h-3
+                    w-3
+                    animate-spin
+                  "
+                />
+              )}
+
+              Enregistrer
+            </button>
+          </div>
+
+
+          {!connectionTested
+            && apiKey.trim()
+            && (
+              <p
+                className="
+                  mt-2
+                  text-right
+                  text-[9px]
+                  text-slate-400
+                "
+              >
+                Teste la connexion avant
+                l'enregistrement.
+              </p>
+            )}
+        </div>
+
+      ) : (
+
+        /* SERVICE DASHBOARD */
+
+        <>
+          <div
+            className="
+              grid
+              grid-cols-2
+              border-t
+              border-black/[0.055]
+              dark:border-white/[0.06]
+              sm:grid-cols-3
+            "
+          >
+            <ServiceMetric
+              label="Athlete ID"
+              value={
+                connection
+                  ?.athlete_id
+                || '—'
+              }
+              icon={UserRound}
+            />
+
+            <ServiceMetric
+              label="Clé API"
+              value={
+                connection
+                  ?.api_key_configured
+                  ? 'Configurée'
+                  : 'Absente'
+              }
+              icon={KeyRound}
+            />
+
+            <ServiceMetric
+              label="État"
+              value={
+                connected
+                  ? 'Actif'
+                  : (
+                      connection
+                        ?.configured
+                        ? 'Désactivé'
+                        : 'Non configuré'
+                    )
+              }
+              icon={Link2}
+              className="
+                col-span-2
+                border-t
+                border-black/[0.055]
+                dark:border-white/[0.06]
+                sm:col-span-1
+                sm:border-t-0
+              "
+            />
+          </div>
+
+
+          <div
+            className="
+              flex
+              flex-col
+              gap-3
+              border-t
+              border-black/[0.055]
+              bg-slate-50/55
+              px-4
+              py-3
+              dark:border-white/[0.06]
+              dark:bg-white/[0.018]
+              sm:flex-row
+              sm:items-center
+              sm:justify-between
+            "
+          >
+            <div>
+              <p
+                className="
+                  text-[9px]
+                  font-semibold
+                  uppercase
+                  tracking-[0.08em]
+                  text-slate-400
+                  dark:text-slate-500
+                "
+              >
+                Dernière synchronisation
+              </p>
+
+              <p
+                className="
+                  mt-1
+                  text-[11px]
+                  font-semibold
+                  text-slate-700
+                  dark:text-slate-300
+                "
+              >
+                {
+                  connection
+                    ?.last_synced_at
+                    ? (
+                        formatRelativeSyncTime(
+                          connection
+                            .last_synced_at,
+                        )
+                      )
+                    : (
+                        'Aucune synchronisation'
+                      )
+                }
+              </p>
+            </div>
+
+
+            <button
+              type="button"
+              onClick={() =>
+                void handleSync()
+              }
+              disabled={
+                syncing
+                || saving
+                || testing
+                || !connected
+              }
+              className="
+                flex
+                h-8
+                items-center
+                justify-center
+                gap-1.5
+                rounded-[8px]
+                border
+                border-black/[0.07]
+                bg-white
+                px-3
+                text-[10px]
+                font-semibold
+                text-slate-600
+                transition
+                hover:border-emerald-500/20
+                hover:text-emerald-700
+                disabled:cursor-not-allowed
+                disabled:opacity-40
+                dark:border-white/[0.07]
+                dark:bg-white/[0.025]
+                dark:text-slate-300
+              "
+            >
+              {
+                syncing
+                  ? (
+                      <LoaderCircle
+                        className="
+                          h-3
+                          w-3
+                          animate-spin
+                        "
                       />
-                    </div>
+                    )
+                  : (
+                      <RefreshCw
+                        className="
+                          h-3
+                          w-3
+                        "
+                      />
+                    )
+              }
 
-                    {connection
-                      ?.configured
-                      && (
-                        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-base-300 bg-base-100 p-4">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-base-content">
-                              Synchronisation
-                            </p>
+              {
+                syncing
+                  ? 'Synchronisation…'
+                  : 'Synchroniser'
+              }
+            </button>
+          </div>
 
-                            <p className="mt-1 text-xs text-base-content/50">
-                              {connection
-                                .last_synced_at
-                                ? (
-                                  `Dernière synchronisation : ${formatRelativeSyncTime(
-                                    connection
-                                      .last_synced_at,
-                                  )}`
-                                )
-                                : (
-                                  'Aucune synchronisation effectuée'
-                                )}
-                            </p>
-                          </div>
 
-                          <button
-                            type="button"
-                            onClick={
-                              handleSync
-                            }
-                            disabled={
-                              syncing
-                              || saving
-                              || testing
-                              || !connection
-                                .enabled
-                            }
-                            className="btn btn-sm btn-outline"
-                          >
-                            {syncing
-                              ? (
-                                <span className="loading loading-spinner loading-sm" />
-                              )
-                              : (
-                                <RefreshCw className="h-4 w-4" />
-                              )}
-
-                            {syncing
-                              ? 'Synchronisation...'
-                              : 'Synchroniser maintenant'}
-                          </button>
-                        </div>
-                      )}
-
-                    {error && (
-                      <div className="alert alert-error mt-4">
-                        <span>
-                          {error}
-                        </span>
-                      </div>
-                    )}
-
-                    {message && (
-                      <div className="alert alert-success mt-4">
-                        <CheckCircle2 className="h-5 w-5" />
-
-                        <span>
-                          {message}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-base-300 pt-5">
-                      <button
-                        type="button"
-                        onClick={
-                          handleTest
-                        }
-                        disabled={
-                          testing
-                          || saving
-                          || syncing
-                        }
-                        className="btn btn-outline"
-                      >
-                        {testing && (
-                          <span className="loading loading-spinner loading-sm" />
-                        )}
-
-                        Tester
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={
-                          handleSave
-                        }
-                        disabled={
-                          saving
-                          || testing
-                          || syncing
-                          || !connectionTested
-                        }
-                        className="btn btn-primary"
-                      >
-                        {saving && (
-                          <span className="loading loading-spinner loading-sm" />
-                        )}
-
-                        Enregistrer
-                      </button>
-                    </div>
-
-                    {!connectionTested
-                      && apiKey.trim()
-                      && (
-                        <p className="mt-3 text-right text-xs text-base-content/50">
-                          Testez la connexion avant de pouvoir enregistrer.
-                        </p>
-                      )}
-                  </div>
-                </div>
-              </section>
+          {message && (
+            <div className="px-4 pb-3">
+              <StatusMessage
+                message={message}
+              />
+            </div>
+          )}
+        </>
+      )}
+    </div>
   )
 }
 
 
-function ConnectionBadge({
+function ConnectionStatus({
   connected,
 }: {
   connected: boolean
 }) {
   return (
-    <div
+    <span
       className={[
-        'badge gap-2',
+        (
+          'inline-flex items-center '
+          + 'gap-1 rounded-full '
+          + 'px-1.5 py-0.5 '
+          + 'text-[8.5px] '
+          + 'font-semibold'
+        ),
         connected
-          ? 'badge-success'
-          : 'badge-ghost',
+          ? (
+              'bg-emerald-50 '
+              + 'text-emerald-700 '
+              + 'dark:bg-emerald-500/[0.08] '
+              + 'dark:text-emerald-400'
+            )
+          : (
+              'bg-slate-100 '
+              + 'text-slate-400 '
+              + 'dark:bg-white/[0.04] '
+              + 'dark:text-slate-500'
+            ),
       ].join(' ')}
     >
-      {connected
-        ? 'Connecté'
-        : 'Non connecté'}
+      <span
+        className={[
+          (
+            'h-1.5 w-1.5 '
+            + 'rounded-full'
+          ),
+          connected
+            ? 'bg-emerald-500'
+            : 'bg-slate-300',
+        ].join(' ')}
+      />
+
+      {
+        connected
+          ? 'Connecté'
+          : 'Non connecté'
+      }
+    </span>
+  )
+}
+
+
+function ServiceMetric({
+  label,
+  value,
+  icon: Icon,
+  className = '',
+}: {
+  label: string
+  value: string
+  icon: typeof Activity
+  className?: string
+}) {
+  return (
+    <div
+      className={[
+        (
+          'px-4 py-3 '
+          + 'sm:not-last:border-r '
+          + 'sm:not-last:border-black/[0.055] '
+          + 'dark:sm:not-last:border-white/[0.06]'
+        ),
+        className,
+      ].join(' ')}
+    >
+      <div
+        className="
+          flex
+          items-center
+          gap-1.5
+          text-slate-400
+        "
+      >
+        <Icon
+          className="
+            h-3
+            w-3
+          "
+        />
+
+        <span
+          className="
+            text-[8.5px]
+            font-semibold
+            uppercase
+            tracking-[0.07em]
+          "
+        >
+          {label}
+        </span>
+      </div>
+
+      <p
+        className="
+          mt-1.5
+          truncate
+          text-[11px]
+          font-semibold
+          text-slate-700
+          dark:text-slate-300
+        "
+      >
+        {value}
+      </p>
+    </div>
+  )
+}
+
+
+function ConnectionField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  icon: Icon,
+  type = 'text',
+}: {
+  label: string
+  value: string
+  onChange:
+    (value: string) => void
+  placeholder?: string
+  icon: typeof Activity
+  type?: string
+}) {
+  return (
+    <label>
+      <span
+        className="
+          mb-1.5
+          block
+          text-[9px]
+          font-semibold
+          uppercase
+          tracking-[0.07em]
+          text-slate-400
+          dark:text-slate-500
+        "
+      >
+        {label}
+      </span>
+
+      <div
+        className="
+          flex
+          h-10
+          items-center
+          rounded-[9px]
+          border
+          border-black/[0.07]
+          bg-slate-50/60
+          px-3
+          focus-within:border-emerald-500/40
+          focus-within:ring-2
+          focus-within:ring-emerald-500/[0.08]
+          dark:border-white/[0.07]
+          dark:bg-white/[0.025]
+        "
+      >
+        <Icon
+          className="
+            mr-2
+            h-3.5
+            w-3.5
+            shrink-0
+            text-slate-300
+            dark:text-slate-600
+          "
+        />
+
+        <input
+          type={type}
+          value={value}
+          placeholder={placeholder}
+          autoComplete="off"
+          onChange={
+            event =>
+              onChange(
+                event.target.value,
+              )
+          }
+          className="
+            min-w-0
+            flex-1
+            bg-transparent
+            text-[11px]
+            font-medium
+            text-slate-900
+            outline-none
+            placeholder:text-slate-300
+            dark:text-slate-100
+            dark:placeholder:text-slate-600
+          "
+        />
+      </div>
+    </label>
+  )
+}
+
+
+function ModernToggle({
+  checked,
+  onChange,
+}: {
+  checked: boolean
+  onChange:
+    (value: boolean) => void
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={
+        checked
+          ? 'Désactiver l’intégration'
+          : 'Activer l’intégration'
+      }
+      onClick={() =>
+        onChange(!checked)
+      }
+      className={[
+        (
+          'relative inline-flex '
+          + 'h-[24px] w-[42px] '
+          + 'shrink-0 items-center '
+          + 'rounded-full border '
+          + 'transition-all duration-200 '
+          + 'focus-visible:outline-none '
+          + 'focus-visible:ring-2 '
+          + 'focus-visible:ring-emerald-500/20'
+        ),
+        checked
+          ? (
+              'border-emerald-600 '
+              + 'bg-emerald-600 '
+              + 'shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]'
+            )
+          : (
+              'border-slate-200 '
+              + 'bg-slate-100 '
+              + 'dark:border-white/[0.08] '
+              + 'dark:bg-white/[0.055]'
+            ),
+      ].join(' ')}
+    >
+      <span
+        className={[
+          (
+            'absolute left-[3px] '
+            + 'h-[16px] w-[16px] '
+            + 'rounded-full bg-white '
+            + 'shadow-[0_1px_3px_rgba(15,23,42,0.20)] '
+            + 'transition-transform duration-200'
+          ),
+          checked
+            ? 'translate-x-[18px]'
+            : 'translate-x-0',
+        ].join(' ')}
+      />
+
+      <span
+        aria-hidden="true"
+        className={[
+          (
+            'absolute h-[4px] w-[4px] '
+            + 'rounded-full transition-opacity'
+          ),
+          checked
+            ? (
+                'left-[8px] '
+                + 'bg-white/80 '
+                + 'opacity-100'
+              )
+            : (
+                'right-[8px] '
+                + 'bg-slate-400/50 '
+                + 'opacity-70 '
+                + 'dark:bg-white/25'
+              ),
+        ].join(' ')}
+      />
+    </button>
+  )
+}
+
+
+function StatusMessage({
+  message,
+  error = false,
+}: {
+  message: string
+  error?: boolean
+}) {
+  return (
+    <div
+      className={[
+        (
+          'mt-3 flex items-start '
+          + 'gap-2 rounded-[8px] '
+          + 'px-2.5 py-2 '
+          + 'text-[9.5px]'
+        ),
+        error
+          ? (
+              'bg-red-50 '
+              + 'text-red-600 '
+              + 'dark:bg-red-500/[0.06] '
+              + 'dark:text-red-400'
+            )
+          : (
+              'bg-emerald-50 '
+              + 'text-emerald-700 '
+              + 'dark:bg-emerald-500/[0.07] '
+              + 'dark:text-emerald-400'
+            ),
+      ].join(' ')}
+    >
+      {
+        error
+          ? (
+              <CircleAlert
+                className="
+                  mt-px
+                  h-3
+                  w-3
+                  shrink-0
+                "
+              />
+            )
+          : (
+              <Check
+                className="
+                  mt-px
+                  h-3
+                  w-3
+                  shrink-0
+                "
+              />
+            )
+      }
+
+      {message}
     </div>
   )
 }
@@ -609,7 +1366,9 @@ function formatRelativeSyncTime(
   value: string,
 ): string {
   const normalizedValue =
-    hasTimezoneInformation(value)
+    hasTimezoneInformation(
+      value,
+    )
       ? value
       : `${value}Z`
 
@@ -623,7 +1382,7 @@ function formatRelativeSyncTime(
       date.getTime(),
     )
   ) {
-    return 'date inconnue'
+    return 'Date inconnue'
   }
 
   const elapsedMilliseconds =
@@ -640,11 +1399,15 @@ function formatRelativeSyncTime(
     )
 
   if (elapsedMinutes < 1) {
-    return "à l'instant"
+    return "À l'instant"
   }
 
   if (elapsedMinutes < 60) {
-    return `il y a ${elapsedMinutes} min`
+    return (
+      `Il y a ${
+        elapsedMinutes
+      } min`
+    )
   }
 
   const elapsedHours =
@@ -653,9 +1416,15 @@ function formatRelativeSyncTime(
     )
 
   if (elapsedHours < 24) {
-    return elapsedHours === 1
-      ? 'il y a 1 h'
-      : `il y a ${elapsedHours} h`
+    return (
+      elapsedHours === 1
+        ? 'Il y a 1 h'
+        : (
+            `Il y a ${
+              elapsedHours
+            } h`
+          )
+    )
   }
 
   const elapsedDays =
@@ -663,9 +1432,15 @@ function formatRelativeSyncTime(
       elapsedHours / 24,
     )
 
-  return elapsedDays === 1
-    ? 'il y a 1 jour'
-    : `il y a ${elapsedDays} jours`
+  return (
+    elapsedDays === 1
+      ? 'Il y a 1 jour'
+      : (
+          `Il y a ${
+            elapsedDays
+          } jours`
+        )
+  )
 }
 
 
@@ -684,7 +1459,12 @@ function hasTimezoneInformation(
 function getErrorMessage(
   reason: unknown,
 ): string {
-  return reason instanceof Error
-    ? reason.message
-    : 'Une erreur inattendue est survenue.'
+  return (
+    reason instanceof Error
+      ? reason.message
+      : (
+          'Une erreur inattendue '
+          + 'est survenue.'
+        )
+  )
 }

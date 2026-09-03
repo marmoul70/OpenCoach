@@ -19,8 +19,8 @@ export function RaceGoalCard({
       className="
         rounded-2xl
         border
-        border-base-300
-        bg-base-100
+        border-slate-200 dark:border-white/[0.08]
+        bg-white dark:bg-[#141a1e]
         px-4 py-4
         sm:px-5
       "
@@ -40,8 +40,8 @@ export function RaceGoalCard({
             items-center
             justify-center
             rounded-xl
-            bg-primary/10
-            text-primary
+            bg-emerald-500/10 dark:bg-emerald-400/10
+            text-emerald-600 dark:text-emerald-400
           "
         >
           <Trophy
@@ -57,7 +57,7 @@ export function RaceGoalCard({
               font-semibold
               uppercase
               tracking-wide
-              text-base-content/40
+              text-slate-400 dark:text-slate-500
             "
           >
             Objectif
@@ -68,7 +68,7 @@ export function RaceGoalCard({
               mt-0.5
               truncate
               font-semibold
-              text-base-content
+              text-slate-800 dark:text-slate-100
             "
           >
             {
@@ -82,7 +82,7 @@ export function RaceGoalCard({
               className="
                 mt-0.5
                 text-sm
-                text-base-content/50
+                text-slate-500 dark:text-slate-400
               "
             >
               {details}

@@ -1,21 +1,20 @@
 import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
-
-import {
+  Activity,
+  CalendarClock,
   CheckCircle2,
   CircleAlert,
   Clock3,
+  LoaderCircle,
   RefreshCw,
   TimerOff,
 } from 'lucide-react'
 
 import {
-  ProfileSection,
-} from '../profile/ProfileSection'
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 
 import {
   fetchAutomatedTasks,
@@ -28,30 +27,26 @@ export function TasksSection() {
   const [
     tasks,
     setTasks,
-  ] = useState<AutomatedTask[]>(
-    [],
-  )
+  ] = useState<
+    AutomatedTask[]
+  >([])
 
   const [
     loading,
     setLoading,
-  ] = useState(
-    true,
-  )
+  ] = useState(true)
 
   const [
     refreshing,
     setRefreshing,
-  ] = useState(
-    false,
-  )
+  ] = useState(false)
 
   const [
     error,
     setError,
-  ] = useState<string | null>(
-    null,
-  )
+  ] = useState<
+    string | null
+  >(null)
 
 
   const loadTasks =
@@ -60,39 +55,27 @@ export function TasksSection() {
         refresh = false,
       ) => {
         if (refresh) {
-          setRefreshing(
-            true,
-          )
+          setRefreshing(true)
         }
 
         try {
           const result =
             await fetchAutomatedTasks()
 
-          setTasks(
-            result,
-          )
-
-          setError(
-            null,
-          )
+          setTasks(result)
+          setError(null)
         } catch (reason) {
           setError(
             reason instanceof Error
               ? reason.message
               : (
-                'Impossible de charger '
-                + 'les tâches.'
-              ),
+                  'Impossible de charger '
+                  + 'les tâches.'
+                ),
           )
         } finally {
-          setLoading(
-            false,
-          )
-
-          setRefreshing(
-            false,
-          )
+          setLoading(false)
+          setRefreshing(false)
         }
       },
       [],
@@ -120,198 +103,468 @@ export function TasksSection() {
     )
 
 
-  return (
-    <ProfileSection
-      title="Tâches"
-      description={
-        'Automatisations OpenCoach.'
-      }
-      icon={
-        <Clock3
-          size={21}
-        />
-      }
-      iconClassName="
-        bg-secondary/10
-        text-secondary
-      "
-      trailing={
-        <SummaryBadge
-          status={
-            summary.status
-          }
-          label={
-            summary.label
-          }
-        />
-      }
-    >
+  const okCount =
+    tasks.filter(
+      task =>
+        task.status === 'ok',
+    ).length
+
+  const problemCount =
+    tasks.filter(
+      task =>
+        (
+          task.status === 'error'
+          || task.status === 'inactive'
+        ),
+    ).length
+
+
+  if (loading) {
+    return (
       <div
         className="
-          space-y-4
+          flex
+          min-h-[190px]
+          items-center
+          justify-center
+          rounded-[12px]
+          border
+          border-black/[0.065]
+          bg-white
+          dark:border-white/[0.065]
+          dark:bg-[#151b1f]
         "
       >
         <div
           className="
             flex
             items-center
-            justify-between
-            gap-3
+            gap-2
+            text-[10.5px]
+            text-slate-400
           "
         >
-          <p
+          <LoaderCircle
             className="
-              text-sm
-              text-base-content/60
+              h-4
+              w-4
+              animate-spin
+              text-emerald-500
             "
-          >
-            {tasks.length > 0
-              ? (
-                `${tasks.length} tâche`
-                + (
-                  tasks.length > 1
-                    ? 's'
-                    : ''
-                )
-                + ' automatisée'
-                + (
-                  tasks.length > 1
-                    ? 's'
-                    : ''
-                )
-              )
-              : 'Tâches automatisées'}
-          </p>
+          />
 
-          <button
-            type="button"
+          Chargement des automatisations…
+        </div>
+      </div>
+    )
+  }
+
+
+  return (
+    <div className="space-y-3">
+
+      {/* =============================================
+          OVERVIEW
+          ============================================= */}
+
+      <section
+        className="
+          overflow-hidden
+          rounded-[12px]
+          border
+          border-black/[0.065]
+          bg-white
+          dark:border-white/[0.065]
+          dark:bg-[#151b1f]
+        "
+      >
+        <div
+          className="
+            relative
+            overflow-hidden
+            px-4
+            py-4
+          "
+        >
+          <div
             className="
-              btn
-              btn-ghost
-              btn-sm
-              gap-2
+              pointer-events-none
+              absolute
+              -right-16
+              -top-20
+              h-44
+              w-44
+              rounded-full
+              bg-emerald-500/[0.05]
+              blur-3xl
             "
-            disabled={
-              refreshing
-            }
-            onClick={() => {
-              void loadTasks(
-                true,
-              )
-            }}
+          />
+
+          <div
+            className="
+              relative
+              flex
+              items-start
+              justify-between
+              gap-3
+            "
           >
-            {refreshing ? (
-              <span
+            <div
+              className="
+                flex
+                min-w-0
+                items-start
+                gap-3
+              "
+            >
+              <div
                 className="
-                  loading
-                  loading-spinner
-                  loading-xs
+                  flex
+                  h-10
+                  w-10
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-[11px]
+                  bg-emerald-50
+                  text-emerald-600
+                  dark:bg-emerald-500/[0.08]
+                  dark:text-emerald-400
                 "
-              />
-            ) : (
-              <RefreshCw
-                size={15}
-              />
-            )}
+              >
+                <Clock3
+                  className="
+                    h-[18px]
+                    w-[18px]
+                  "
+                />
+              </div>
 
-            Actualiser
-          </button>
+              <div>
+                <div
+                  className="
+                    flex
+                    flex-wrap
+                    items-center
+                    gap-2
+                  "
+                >
+                  <h3
+                    className="
+                      text-[14px]
+                      font-bold
+                      tracking-[-0.02em]
+                      text-slate-950
+                      dark:text-white
+                    "
+                  >
+                    Automatisations
+                  </h3>
+
+                  <SummaryStatus
+                    status={
+                      summary.status
+                    }
+                    label={
+                      summary.label
+                    }
+                  />
+                </div>
+
+                <p
+                  className="
+                    mt-1
+                    text-[10px]
+                    text-slate-400
+                    dark:text-slate-500
+                  "
+                >
+                  Tâches système exécutées
+                  automatiquement par OpenCoach.
+                </p>
+              </div>
+            </div>
+
+
+            <button
+              type="button"
+              disabled={refreshing}
+              onClick={() =>
+                void loadTasks(true)
+              }
+              className="
+                flex
+                h-8
+                shrink-0
+                items-center
+                gap-1.5
+                rounded-[8px]
+                border
+                border-emerald-500/35
+                px-2.5
+                text-[9.5px]
+                font-semibold
+                text-emerald-700
+                transition
+                hover:border-emerald-500/55
+                hover:bg-emerald-50
+                disabled:opacity-40
+                dark:border-emerald-400/30
+                dark:text-emerald-400
+                dark:hover:bg-emerald-500/[0.07]
+              "
+            >
+              {
+                refreshing
+                  ? (
+                      <LoaderCircle
+                        className="
+                          h-3
+                          w-3
+                          animate-spin
+                        "
+                      />
+                    )
+                  : (
+                      <RefreshCw
+                        className="
+                          h-3
+                          w-3
+                        "
+                      />
+                    )
+              }
+
+              Actualiser
+            </button>
+          </div>
         </div>
 
 
-        {loading ? (
+        <div
+          className="
+            grid
+            grid-cols-3
+            border-t
+            border-black/[0.055]
+            dark:border-white/[0.06]
+          "
+        >
+          <SummaryMetric
+            label="Tâches"
+            value={
+              String(tasks.length)
+            }
+          />
+
+          <SummaryMetric
+            label="Opérationnelles"
+            value={
+              String(okCount)
+            }
+          />
+
+          <SummaryMetric
+            label="À surveiller"
+            value={
+              String(problemCount)
+            }
+          />
+        </div>
+      </section>
+
+
+      {/* =============================================
+          ERROR
+          ============================================= */}
+
+      {error && (
+        <div
+          className="
+            flex
+            items-start
+            gap-2
+            rounded-[10px]
+            border
+            border-red-500/15
+            bg-red-50
+            px-3
+            py-2.5
+            text-[10px]
+            text-red-600
+            dark:bg-red-500/[0.06]
+            dark:text-red-400
+          "
+        >
+          <CircleAlert
+            className="
+              mt-px
+              h-3.5
+              w-3.5
+              shrink-0
+            "
+          />
+
+          {error}
+        </div>
+      )}
+
+
+      {/* =============================================
+          TASK LIST
+          ============================================= */}
+
+      {!error && (
+        <section
+          className="
+            overflow-hidden
+            rounded-[12px]
+            border
+            border-black/[0.065]
+            bg-white
+            dark:border-white/[0.065]
+            dark:bg-[#151b1f]
+          "
+        >
           <div
             className="
               flex
-              justify-center
-              py-6
+              items-center
+              justify-between
+              gap-3
+              border-b
+              border-black/[0.055]
+              px-4
+              py-3
+              dark:border-white/[0.06]
             "
           >
+            <div>
+              <p
+                className="
+                  text-[9px]
+                  font-bold
+                  uppercase
+                  tracking-[0.1em]
+                  text-slate-400
+                  dark:text-slate-500
+                "
+              >
+                Planification
+              </p>
+
+              <p
+                className="
+                  mt-1
+                  text-[11.5px]
+                  font-semibold
+                  text-slate-800
+                  dark:text-slate-200
+                "
+              >
+                Tâches programmées
+              </p>
+            </div>
+
             <span
               className="
-                loading
-                loading-spinner
-                loading-md
-                text-secondary
+                text-[9px]
+                text-slate-400
+                dark:text-slate-500
               "
-            />
-          </div>
-        ) : error ? (
-          <div
-            className="
-              alert
-              alert-error
-            "
-          >
-            <CircleAlert
-              size={18}
-            />
-
-            <span>
-              {error}
+            >
+              {tasks.length}
             </span>
           </div>
-        ) : tasks.length === 0 ? (
-          <div
-            className="
-              rounded-xl
-              bg-base-200
-              p-4
-              text-sm
-              text-base-content/60
-            "
-          >
-            Aucune tâche OpenCoach détectée.
-          </div>
-        ) : (
-          <div
-            className="
-              divide-y
-              divide-base-300
-              overflow-hidden
-              rounded-xl
-              border
-              border-base-300
-              bg-base-100
-            "
-          >
-            {tasks.map(
-              (task) => (
-                <TaskRow
-                  key={
-                    task.unit
-                  }
-                  task={
-                    task
-                  }
-                />
-              ),
-            )}
-          </div>
-        )}
-      </div>
-    </ProfileSection>
+
+
+          {tasks.length === 0 ? (
+            <div
+              className="
+                px-4
+                py-6
+                text-center
+              "
+            >
+              <TimerOff
+                className="
+                  mx-auto
+                  h-5
+                  w-5
+                  text-slate-200
+                  dark:text-slate-700
+                "
+              />
+
+              <p
+                className="
+                  mt-2
+                  text-[10px]
+                  text-slate-400
+                  dark:text-slate-500
+                "
+              >
+                Aucune tâche OpenCoach détectée.
+              </p>
+            </div>
+          ) : (
+            <div>
+              {tasks.map(
+                (
+                  task,
+                  index,
+                ) => (
+                  <TaskRow
+                    key={
+                      task.unit
+                    }
+                    task={task}
+                    divided={
+                      index > 0
+                    }
+                  />
+                ),
+              )}
+            </div>
+          )}
+        </section>
+      )}
+    </div>
   )
 }
 
 
 function TaskRow({
   task,
+  divided,
 }: {
   task: AutomatedTask
+  divided: boolean
 }) {
+  const config =
+    getStatusConfig(
+      task.status,
+    )
+
+  const Icon =
+    config.icon
+
   return (
     <div
-      className="
-        flex
-        flex-col
-        gap-3
-        px-4
-        py-4
-        sm:flex-row
-        sm:items-center
-        sm:justify-between
-      "
+      className={[
+        (
+          'grid gap-3 px-4 py-3.5 '
+          + 'sm:grid-cols-[minmax(0,1fr)_180px] '
+          + 'sm:items-center'
+        ),
+        divided
+          ? (
+              'border-t '
+              + 'border-black/[0.055] '
+              + 'dark:border-white/[0.06]'
+            )
+          : '',
+      ].join(' ')}
     >
       <div
         className="
@@ -321,15 +574,30 @@ function TaskRow({
           gap-3
         "
       >
-        <TaskStatusIcon
-          status={
-            task.status
-          }
-        />
+        <div
+          className={[
+            (
+              'flex h-9 w-9 '
+              + 'shrink-0 '
+              + 'items-center '
+              + 'justify-center '
+              + 'rounded-[10px]'
+            ),
+            config.iconClassName,
+          ].join(' ')}
+        >
+          <Icon
+            className="
+              h-4
+              w-4
+            "
+          />
+        </div>
 
         <div
           className="
             min-w-0
+            flex-1
           "
         >
           <div
@@ -340,66 +608,116 @@ function TaskRow({
               gap-2
             "
           >
-            <h3
+            <p
               className="
+                truncate
+                text-[11px]
                 font-semibold
-                text-base-content
+                text-slate-800
+                dark:text-slate-200
               "
             >
               {task.label}
-            </h3>
+            </p>
 
-            <TaskStatusBadge
+            <TaskStatus
               status={
                 task.status
               }
             />
           </div>
 
-          <p
+          <div
             className="
-              mt-1
-              text-xs
-              text-base-content/50
+              mt-1.5
+              flex
+              items-center
+              gap-1.5
+              text-[9px]
+              text-slate-400
+              dark:text-slate-500
             "
           >
-            Dernière exécution :{' '}
-            {formatSystemdDate(
-              task.last_run,
-            )}
-          </p>
+            <Activity
+              className="
+                h-3
+                w-3
+              "
+            />
+
+            Dernière exécution :
+
+            <span
+              className="
+                font-medium
+                text-slate-500
+                dark:text-slate-400
+              "
+            >
+              {
+                formatSystemdDate(
+                  task.last_run,
+                )
+              }
+            </span>
+          </div>
         </div>
       </div>
 
+
       <div
         className="
-          shrink-0
-          sm:text-right
+          rounded-[9px]
+          bg-slate-50
+          px-3
+          py-2
+          dark:bg-white/[0.025]
         "
       >
-        <p
+        <div
           className="
-            text-xs
-            font-medium
-            uppercase
-            tracking-wide
-            text-base-content/40
+            flex
+            items-center
+            gap-1.5
           "
         >
-          Prochaine exécution
-        </p>
+          <CalendarClock
+            className="
+              h-3
+              w-3
+              text-emerald-500
+            "
+          />
+
+          <p
+            className="
+              text-[8px]
+              font-bold
+              uppercase
+              tracking-[0.08em]
+              text-slate-400
+              dark:text-slate-500
+            "
+          >
+            Prochaine exécution
+          </p>
+        </div>
 
         <p
           className="
             mt-1
-            text-sm
+            text-[10.5px]
             font-semibold
-            text-base-content
+            tabular-nums
+            text-slate-700
+            dark:text-slate-300
           "
         >
-          {formatSystemdDate(
-            task.next_run,
-          )}
+          {
+            formatSystemdDate(
+              task.next_run,
+            )
+          }
         </p>
       </div>
     </div>
@@ -407,62 +725,93 @@ function TaskRow({
 }
 
 
-function TaskStatusIcon({
-  status,
+function SummaryMetric({
+  label,
+  value,
 }: {
-  status: AutomatedTaskStatus
+  label: string
+  value: string
 }) {
-  const config =
-    getStatusConfig(
-      status,
-    )
-
-  const Icon =
-    config.icon
-
   return (
     <div
-      className={[
-        (
-          'flex h-10 w-10 shrink-0 '
-          + 'items-center justify-center '
-          + 'rounded-xl'
-        ),
-        config.iconClassName,
-      ].join(' ')}
+      className="
+        px-3
+        py-3
+        text-center
+        not-last:border-r
+        not-last:border-black/[0.055]
+        dark:not-last:border-white/[0.06]
+      "
     >
-      <Icon
-        size={19}
-      />
+      <p
+        className="
+          text-[14px]
+          font-bold
+          tabular-nums
+          text-slate-800
+          dark:text-slate-200
+        "
+      >
+        {value}
+      </p>
+
+      <p
+        className="
+          mt-1
+          text-[8px]
+          font-semibold
+          uppercase
+          tracking-[0.07em]
+          text-slate-400
+          dark:text-slate-500
+        "
+      >
+        {label}
+      </p>
     </div>
   )
 }
 
 
-function TaskStatusBadge({
+function TaskStatus({
   status,
 }: {
-  status: AutomatedTaskStatus
+  status:
+    AutomatedTaskStatus
 }) {
   const config =
-    getStatusConfig(
-      status,
-    )
+    getStatusConfig(status)
 
   return (
     <span
       className={[
-        'badge badge-sm',
+        (
+          'inline-flex items-center '
+          + 'gap-1 rounded-full '
+          + 'px-1.5 py-0.5 '
+          + 'text-[8px] '
+          + 'font-semibold'
+        ),
         config.badgeClassName,
       ].join(' ')}
     >
+      <span
+        className={[
+          (
+            'h-1.5 w-1.5 '
+            + 'rounded-full'
+          ),
+          config.dotClassName,
+        ].join(' ')}
+      />
+
       {config.label}
     </span>
   )
 }
 
 
-function SummaryBadge({
+function SummaryStatus({
   status,
   label,
 }: {
@@ -473,17 +822,42 @@ function SummaryBadge({
 }) {
   const className =
     status === 'ok'
-      ? 'badge-success'
+      ? (
+          'bg-emerald-50 '
+          + 'text-emerald-700 '
+          + 'dark:bg-emerald-500/[0.08] '
+          + 'dark:text-emerald-400'
+        )
       : status === 'error'
-        ? 'badge-error'
+        ? (
+            'bg-red-50 '
+            + 'text-red-600 '
+            + 'dark:bg-red-500/[0.07] '
+            + 'dark:text-red-400'
+          )
         : status === 'inactive'
-          ? 'badge-warning'
-          : 'badge-ghost'
+          ? (
+              'bg-amber-50 '
+              + 'text-amber-700 '
+              + 'dark:bg-amber-500/[0.07] '
+              + 'dark:text-amber-400'
+            )
+          : (
+              'bg-slate-100 '
+              + 'text-slate-400 '
+              + 'dark:bg-white/[0.04] '
+              + 'dark:text-slate-500'
+            )
 
   return (
     <span
       className={[
-        'badge badge-sm font-medium',
+        (
+          'rounded-full '
+          + 'px-1.5 py-0.5 '
+          + 'text-[8px] '
+          + 'font-semibold'
+        ),
         className,
       ].join(' ')}
     >
@@ -518,7 +892,7 @@ function buildSummary(
 
   const errors =
     tasks.filter(
-      (task) =>
+      task =>
         task.status
         === 'error',
     ).length
@@ -526,6 +900,7 @@ function buildSummary(
   if (errors > 0) {
     return {
       status: 'error',
+
       label:
         `${errors} erreur`
         + (
@@ -538,7 +913,7 @@ function buildSummary(
 
   const inactive =
     tasks.filter(
-      (task) =>
+      task =>
         task.status
         === 'inactive',
     ).length
@@ -546,6 +921,7 @@ function buildSummary(
   if (inactive > 0) {
     return {
       status: 'inactive',
+
       label:
         `${inactive} inactive`
         + (
@@ -558,7 +934,7 @@ function buildSummary(
 
   const pending =
     tasks.filter(
-      (task) =>
+      task =>
         task.status
         === 'pending',
     ).length
@@ -584,16 +960,33 @@ function getStatusConfig(
   label: string
   badgeClassName: string
   iconClassName: string
+  dotClassName: string
   icon:
     typeof CheckCircle2
 } {
   if (status === 'ok') {
     return {
       label: 'OK',
+
       badgeClassName:
-        'badge-success',
+        (
+          'bg-emerald-50 '
+          + 'text-emerald-700 '
+          + 'dark:bg-emerald-500/[0.08] '
+          + 'dark:text-emerald-400'
+        ),
+
       iconClassName:
-        'bg-success/10 text-success',
+        (
+          'bg-emerald-50 '
+          + 'text-emerald-600 '
+          + 'dark:bg-emerald-500/[0.07] '
+          + 'dark:text-emerald-400'
+        ),
+
+      dotClassName:
+        'bg-emerald-500',
+
       icon:
         CheckCircle2,
     }
@@ -602,10 +995,26 @@ function getStatusConfig(
   if (status === 'error') {
     return {
       label: 'Erreur',
+
       badgeClassName:
-        'badge-error',
+        (
+          'bg-red-50 '
+          + 'text-red-600 '
+          + 'dark:bg-red-500/[0.07] '
+          + 'dark:text-red-400'
+        ),
+
       iconClassName:
-        'bg-error/10 text-error',
+        (
+          'bg-red-50 '
+          + 'text-red-500 '
+          + 'dark:bg-red-500/[0.07] '
+          + 'dark:text-red-400'
+        ),
+
+      dotClassName:
+        'bg-red-500',
+
       icon:
         CircleAlert,
     }
@@ -614,10 +1023,26 @@ function getStatusConfig(
   if (status === 'inactive') {
     return {
       label: 'Inactive',
+
       badgeClassName:
-        'badge-warning',
+        (
+          'bg-amber-50 '
+          + 'text-amber-700 '
+          + 'dark:bg-amber-500/[0.07] '
+          + 'dark:text-amber-400'
+        ),
+
       iconClassName:
-        'bg-warning/10 text-warning',
+        (
+          'bg-amber-50 '
+          + 'text-amber-600 '
+          + 'dark:bg-amber-500/[0.07] '
+          + 'dark:text-amber-400'
+        ),
+
+      dotClassName:
+        'bg-amber-500',
+
       icon:
         TimerOff,
     }
@@ -625,13 +1050,26 @@ function getStatusConfig(
 
   return {
     label: 'En attente',
+
     badgeClassName:
-      'badge-ghost',
+      (
+        'bg-slate-100 '
+        + 'text-slate-400 '
+        + 'dark:bg-white/[0.04] '
+        + 'dark:text-slate-500'
+      ),
+
     iconClassName:
       (
-        'bg-base-200 '
-        + 'text-base-content/50'
+        'bg-slate-50 '
+        + 'text-slate-400 '
+        + 'dark:bg-white/[0.025] '
+        + 'dark:text-slate-500'
       ),
+
+    dotClassName:
+      'bg-slate-300',
+
     icon:
       Clock3,
   }
@@ -645,8 +1083,116 @@ function formatSystemdDate(
     return '—'
   }
 
-  return value.replace(
-    /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+/,
-    '',
+  const match =
+    value.match(
+      /(?:[A-Za-z]{3}\s+)?(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::\d{2})?/,
+    )
+
+  if (!match) {
+    return value
+  }
+
+  const [
+    ,
+    yearText,
+    monthText,
+    dayText,
+    hourText,
+    minuteText,
+  ] = match
+
+  const year =
+    Number(yearText)
+
+  const month =
+    Number(monthText)
+
+  const day =
+    Number(dayText)
+
+  const target =
+    new Date(
+      year,
+      month - 1,
+      day,
+    )
+
+  const today =
+    new Date()
+
+  const todayStart =
+    new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    )
+
+  const differenceDays =
+    Math.round(
+      (
+        target.getTime()
+        - todayStart.getTime()
+      )
+      / 86_400_000,
+    )
+
+  const time =
+    `${hourText}:${minuteText}`
+
+  if (differenceDays === 0) {
+    return `Aujourd’hui à ${time}`
+  }
+
+  if (differenceDays === 1) {
+    return `Demain à ${time}`
+  }
+
+  if (differenceDays === -1) {
+    return `Hier à ${time}`
+  }
+
+  if (
+    differenceDays > 1
+    && differenceDays <= 6
+  ) {
+    const weekday =
+      new Intl.DateTimeFormat(
+        'fr-FR',
+        {
+          weekday: 'long',
+        },
+      ).format(target)
+
+    return (
+      `${capitalizeFirst(weekday)} `
+      + `à ${time}`
+    )
+  }
+
+  const formattedDate =
+    new Intl.DateTimeFormat(
+      'fr-FR',
+      {
+        day: 'numeric',
+        month: 'long',
+        year:
+          year !== today.getFullYear()
+            ? 'numeric'
+            : undefined,
+      },
+    ).format(target)
+
+  return (
+    `${formattedDate} à ${time}`
+  )
+}
+
+
+function capitalizeFirst(
+  value: string,
+): string {
+  return (
+    value.charAt(0).toUpperCase()
+    + value.slice(1)
   )
 }

@@ -233,10 +233,17 @@ export function TrainingSection({
             step="1"
           />
 
-          <fieldset className="fieldset">
+          <div>
             <label
               htmlFor="profile-experience"
-              className="fieldset-legend"
+              className="
+                mb-1.5
+                block
+                text-[12px]
+                font-medium
+                text-slate-600
+                dark:text-slate-300
+              "
             >
               Niveau d'expérience
             </label>
@@ -253,23 +260,43 @@ export function TrainingSection({
                     | 'expert',
                 )
               }
-              className="select select-bordered w-full"
+              className="
+                h-10
+                w-full
+                rounded-[10px]
+                border
+                border-slate-200
+                bg-white
+                px-3
+                text-sm
+                text-slate-800
+                outline-none
+                transition
+                hover:border-slate-300
+                focus:border-emerald-500
+                focus:ring-2
+                focus:ring-emerald-500/10
+                dark:border-white/[0.08]
+                dark:bg-[#141a1e]
+                dark:text-slate-100
+                dark:hover:border-white/[0.13]
+              "
             >
               <option value="beginner">Débutant</option>
               <option value="intermediate">Intermédiaire</option>
               <option value="advanced">Avancé</option>
               <option value="expert">Expert</option>
             </select>
-          </fieldset>
+          </div>
 
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-base-content">
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
             Disciplines pratiquées
           </p>
 
-          <p className="mt-1 text-sm text-base-content/50">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Sélectionnez toutes les disciplines que vous pratiquez.
             OpenCoach pourra adapter les séances et les tests proposés.
           </p>
@@ -302,13 +329,18 @@ export function TrainingSection({
                       'text-left transition',
                       selected
                         ? (
-                            'border-primary '
-                            + 'bg-primary/10'
+                            'border-emerald-500/35 '
+                            + 'bg-emerald-500/[0.07] '
+                            + 'dark:border-emerald-400/30 '
+                            + 'dark:bg-emerald-400/[0.06]'
                           )
                         : (
-                            'border-base-300 '
-                            + 'bg-base-100 '
-                            + 'hover:bg-base-200/60'
+                            'border-slate-200 '
+                            + 'bg-white '
+                            + 'hover:bg-slate-50 '
+                            + 'dark:border-white/[0.08] '
+                            + 'dark:bg-[#141a1e] '
+                            + 'dark:hover:bg-white/[0.03]'
                           ),
                     ].join(' ')}
                   >
@@ -318,22 +350,23 @@ export function TrainingSection({
                       readOnly
                       tabIndex={-1}
                       className="
-                        checkbox
-                        checkbox-primary
                         mt-0.5
+                        h-4
+                        w-4
                         shrink-0
+                        accent-emerald-500
                       "
                       aria-hidden="true"
                     />
 
                     <span>
-                      <span className="block font-semibold text-base-content">
+                      <span className="block font-semibold text-slate-800 dark:text-slate-100">
                         {
                           discipline.label
                         }
                       </span>
 
-                      <span className="mt-1 block text-sm text-base-content/50">
+                      <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">
                         {
                           discipline.description
                         }
@@ -348,7 +381,7 @@ export function TrainingSection({
 
 
         <div>
-          <p className="text-sm font-semibold text-base-content">
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
             Jours disponibles
           </p>
 
@@ -365,10 +398,32 @@ export function TrainingSection({
                   aria-label={day.name}
                   title={day.name}
                   className={[
-                    'btn h-11 min-h-11 flex-1',
+                    (
+                      'h-11 flex-1 '
+                      + 'rounded-[10px] border '
+                      + 'text-sm font-semibold '
+                      + 'transition '
+                      + 'focus-visible:outline-none '
+                      + 'focus-visible:ring-2 '
+                      + 'focus-visible:ring-emerald-500/30'
+                    ),
                     selected
-                      ? 'btn-primary'
-                      : 'btn-ghost border border-base-300 bg-base-100',
+                      ? (
+                          'border-emerald-500 '
+                          + 'bg-emerald-500 '
+                          + 'text-white '
+                          + 'hover:bg-emerald-600'
+                        )
+                      : (
+                          'border-slate-200 '
+                          + 'bg-white '
+                          + 'text-slate-600 '
+                          + 'hover:bg-slate-50 '
+                          + 'dark:border-white/[0.08] '
+                          + 'dark:bg-[#141a1e] '
+                          + 'dark:text-slate-300 '
+                          + 'dark:hover:bg-white/[0.03]'
+                        ),
                   ].join(' ')}
                 >
                   {day.label}
@@ -447,8 +502,10 @@ export function LocationSection({
         />
       }
       iconClassName="
-        bg-secondary/10
-        text-secondary
+        bg-violet-500/10
+        text-violet-500
+        dark:bg-violet-400/10
+        dark:text-violet-400
       "
       description="Localisation principale utilisée par les services comme la météo."
     >
@@ -486,8 +543,18 @@ export function LocationSection({
           />
         </div>
 
-        <div className="alert bg-base-200">
-          <p className="text-sm font-semibold text-base-content">
+        <div
+          className="
+            rounded-[12px]
+            border
+            border-slate-200
+            bg-slate-50
+            p-4
+            dark:border-white/[0.07]
+            dark:bg-white/[0.025]
+          "
+        >
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
             Utilisation
           </p>
 
@@ -765,7 +832,24 @@ export function EquipmentSection({
             <button
               type="button"
               onClick={addShoe}
-              className="btn btn-outline sm:col-span-2"
+              className="
+                h-10
+                rounded-[10px]
+                border
+                border-slate-200
+                bg-white
+                px-4
+                text-sm
+                font-semibold
+                text-slate-700
+                transition
+                hover:bg-slate-50
+                sm:col-span-2
+                dark:border-white/[0.08]
+                dark:bg-[#141a1e]
+                dark:text-slate-200
+                dark:hover:bg-white/[0.03]
+              "
             >
               + Ajouter une chaussure
             </button>
@@ -807,7 +891,24 @@ export function EquipmentSection({
             <button
               type="button"
               onClick={addBike}
-              className="btn btn-outline sm:col-span-2"
+              className="
+                h-10
+                rounded-[10px]
+                border
+                border-slate-200
+                bg-white
+                px-4
+                text-sm
+                font-semibold
+                text-slate-700
+                transition
+                hover:bg-slate-50
+                sm:col-span-2
+                dark:border-white/[0.08]
+                dark:bg-[#141a1e]
+                dark:text-slate-200
+                dark:hover:bg-white/[0.03]
+              "
             >
               + Ajouter un vélo
             </button>
@@ -849,7 +950,24 @@ export function EquipmentSection({
             <button
               type="button"
               onClick={addWatch}
-              className="btn btn-outline sm:col-span-2"
+              className="
+                h-10
+                rounded-[10px]
+                border
+                border-slate-200
+                bg-white
+                px-4
+                text-sm
+                font-semibold
+                text-slate-700
+                transition
+                hover:bg-slate-50
+                sm:col-span-2
+                dark:border-white/[0.08]
+                dark:bg-[#141a1e]
+                dark:text-slate-200
+                dark:hover:bg-white/[0.03]
+              "
             >
               + Ajouter une montre
             </button>
@@ -890,7 +1008,21 @@ function EquipmentItemCard({
   children: ReactNode
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-box border border-base-300 bg-base-100 p-4">
+    <div
+      className="
+        flex
+        items-center
+        justify-between
+        gap-4
+        rounded-[12px]
+        border
+        border-slate-200
+        bg-white
+        p-4
+        dark:border-white/[0.08]
+        dark:bg-[#141a1e]
+      "
+    >
       {children}
     </div>
   )
@@ -907,18 +1039,37 @@ function EquipmentInfo({
 }) {
   return (
     <div className="min-w-0">
-      <p className="truncate font-medium text-base-content">
+      <p className="truncate font-medium text-slate-800 dark:text-slate-100">
         {title}
       </p>
 
-      <p className="mt-1 text-sm text-base-content/60">
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
         {details}
       </p>
 
       <span
         className={[
-          'badge mt-2',
-          active ? 'badge-success' : 'badge-ghost',
+          (
+            'mt-2 inline-flex '
+            + 'items-center rounded-full '
+            + 'border px-2 py-0.5 '
+            + 'text-[10px] font-semibold'
+          ),
+          active
+            ? (
+                'border-emerald-500/20 '
+                + 'bg-emerald-500/10 '
+                + 'text-emerald-600 '
+                + 'dark:text-emerald-400'
+              )
+            : (
+                'border-slate-200 '
+                + 'bg-slate-100 '
+                + 'text-slate-500 '
+                + 'dark:border-white/[0.08] '
+                + 'dark:bg-white/[0.04] '
+                + 'dark:text-slate-400'
+              ),
         ].join(' ')}
       >
         {active ? 'Actif' : 'Inactif'}
@@ -941,7 +1092,18 @@ function EquipmentActions({
       <button
         type="button"
         onClick={onToggle}
-        className="btn btn-sm btn-ghost"
+        className="
+          rounded-[8px]
+          px-3
+          py-1.5
+          text-[12px]
+          font-medium
+          text-slate-600
+          transition
+          hover:bg-slate-100
+          dark:text-slate-300
+          dark:hover:bg-white/[0.05]
+        "
       >
         {active ? 'Désactiver' : 'Activer'}
       </button>
@@ -949,7 +1111,20 @@ function EquipmentActions({
       <button
         type="button"
         onClick={onRemove}
-        className="btn btn-sm btn-error btn-outline"
+        className="
+          rounded-[8px]
+          border
+          border-rose-500/20
+          px-3
+          py-1.5
+          text-[12px]
+          font-medium
+          text-rose-600
+          transition
+          hover:bg-rose-500/[0.06]
+          dark:border-rose-400/20
+          dark:text-rose-400
+        "
       >
         Supprimer
       </button>
@@ -1077,13 +1252,23 @@ export function NutritionSection({
           />
         </div>
 
-        <div className="alert bg-base-200">
+        <div
+          className="
+            rounded-[12px]
+            border
+            border-slate-200
+            bg-slate-50
+            p-4
+            dark:border-white/[0.07]
+            dark:bg-white/[0.025]
+          "
+        >
           <div>
             <p className="font-semibold">
               Utilisation par OpenCoach
             </p>
 
-            <p className="mt-1 text-sm text-base-content/60">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Ces valeurs pourront être utilisées pour générer
               automatiquement les recommandations nutritionnelles
               pendant les sorties longues et les compétitions.
@@ -1111,17 +1296,24 @@ function NutritionInfo({
   description: string
 }) {
   return (
-    <div className="card border border-base-300 bg-base-200">
-      <div className="card-body p-4">
-        <p className="text-sm font-medium text-base-content/70">
+    <div className="
+      rounded-[12px]
+      border
+      border-slate-200
+      bg-slate-50
+      dark:border-white/[0.07]
+      dark:bg-white/[0.025]
+    ">
+      <div className="p-4">
+        <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
           {label}
         </p>
 
-        <p className="text-lg font-semibold text-base-content">
+        <p className="text-lg font-semibold text-slate-800 dark:text-slate-100">
           {unit}
         </p>
 
-        <p className="text-xs text-base-content/50">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           {description}
         </p>
       </div>

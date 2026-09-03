@@ -275,60 +275,7 @@
    GENERIC DAISYUI CLEANUP INSIDE WORKOUT ONLY
    --------------------------------------------------------- */
 
-.training-details-v3 .badge {
-  min-height: auto !important;
-  height: auto !important;
-
-  padding: 4px 7px !important;
-
-  border-radius: 999px !important;
-
-  font-size: 9.5px !important;
-  line-height: 1.1 !important;
-
-  box-shadow: none !important;
-}
-
-.training-details-v3 .btn {
-  min-height: 38px !important;
-  height: 38px !important;
-
-  padding: 0 14px !important;
-
-  border-radius: 10px !important;
-
-  font-size: 12px !important;
-  font-weight: 650 !important;
-
-  text-transform: none !important;
-
-  box-shadow: none !important;
-}
-
-.training-details-v3 .btn-primary {
-  border-color: #059669 !important;
-  background: #059669 !important;
-  color: white !important;
-}
-
-.training-details-v3 .alert {
-  border-radius: 10px !important;
-
-  padding: 10px 12px !important;
-
-  font-size: 11px !important;
-}
-
-
 /* Spinner */
-
-.training-details-v3 .loading-spinner {
-  width: 18px !important;
-  height: 18px !important;
-
-  color: #10b981 !important;
-}
-
 
 /* ---------------------------------------------------------
    GUIDANCE = TIMELINE
@@ -513,7 +460,7 @@
   border-radius: 10px !important;
 }
 
-.training-guidance-v3 section[class*="border-primary"] {
+.training-guidance-v3 section[class*="border-emerald-500"] {
   border-color: rgb(16 185 129 / 0.16) !important;
   background: rgb(16 185 129 / 0.055) !important;
 }
@@ -545,7 +492,7 @@
 
 /* Selected activity */
 .training-details-v3
-button[class*="border-primary"] {
+button.workout-activity-card--selected {
   border-color: rgb(16 185 129 / 0.45) !important;
 
   background: rgb(16 185 129 / 0.055) !important;
@@ -773,30 +720,7 @@ h3 {
 /*
  * Badge durée transformé en méta-information.
  */
-.training-guidance-v3__step
-.badge {
-  border: 0 !important;
-
-  background:
-    rgb(15 23 42 / 0.045) !important;
-
-  color:
-    rgb(71 85 105) !important;
-
-  font-size: 9.5px !important;
-}
-
 [data-theme="dark"]
-.training-guidance-v3__step
-.badge {
-  background:
-    rgb(255 255 255 / 0.05) !important;
-
-  color:
-    rgb(148 163 184) !important;
-}
-
-
 /* ---------------------------------------------------------
    CONSEILS DU COACH
    --------------------------------------------------------- */
@@ -986,7 +910,7 @@ h3 {
 /*
  * Activité sélectionnée.
  */
-.workout-activity-card[class*="border-primary"] {
+.workout-activity-card--selected {
   border-color:
     rgb(16 185 129 / 0.45) !important;
 
@@ -1031,67 +955,17 @@ p.font-semibold {
 /*
  * Best match = petit signal vert.
  */
-.workout-activity-card
-.badge-success {
-  border:
-    0 !important;
-
-  background:
-    rgb(16 185 129 / 0.11) !important;
-
-  color:
-    #047857 !important;
-
-  font-size:
-    9px !important;
-}
-
 [data-theme="dark"]
-.workout-activity-card
-.badge-success {
-  color:
-    #34d399 !important;
-}
-
-
 /*
  * Score de correspondance.
  */
-.workout-activity-card
-.badge:last-child {
-  min-width:
-    42px;
-
-  justify-content:
-    center;
-
-  border:
-    1px solid rgb(15 23 42 / 0.06) !important;
-
-  background:
-    #ffffff !important;
-
-  font-weight:
-    700 !important;
-}
-
 [data-theme="dark"]
-.workout-activity-card
-.badge:last-child {
-  border-color:
-    rgb(255 255 255 / 0.07) !important;
-
-  background:
-    rgb(0 0 0 / 0.14) !important;
-}
-
-
 /* ---------------------------------------------------------
    BOUTON VALIDATION
    --------------------------------------------------------- */
 
 .workout-activity-panel
-.btn-primary {
+.workout-activity-validate-button {
   min-width:
     150px;
 
@@ -1112,13 +986,13 @@ p.font-semibold {
 }
 
 .workout-activity-panel
-.btn-primary:hover:not(:disabled) {
+.workout-activity-validate-button:hover:not(:disabled) {
   background:
     #047857 !important;
 }
 
 .workout-activity-panel
-.btn-primary:disabled {
+.workout-activity-validate-button:disabled {
   background:
     rgb(148 163 184 / 0.2) !important;
 
@@ -1250,45 +1124,9 @@ ul {
 /*
  * Badge statut debrief.
  */
-.workout-debrief-card
-.badge {
-  padding:
-    4px 7px !important;
-
-  border-radius:
-    999px !important;
-
-  font-size:
-    9px !important;
-
-  font-weight:
-    650 !important;
-}
-
-
 /* ---------------------------------------------------------
    ERROR / EMPTY STATES
    --------------------------------------------------------- */
-
-.training-details-v3
-[class*="border-error"] {
-  border-color:
-    rgb(239 68 68 / 0.15) !important;
-
-  background:
-    rgb(239 68 68 / 0.045) !important;
-
-  color:
-    #dc2626 !important;
-}
-
-[data-theme="dark"]
-.training-details-v3
-[class*="border-error"] {
-  color:
-    #f87171 !important;
-}
-
 
 /* ---------------------------------------------------------
    MOBILE
@@ -1307,7 +1145,7 @@ ul {
   }
 
   .workout-activity-panel
-  .btn-primary {
+  .workout-activity-validate-button {
     width:
       100%;
 
@@ -1361,23 +1199,6 @@ ul {
 
 
 /* Statut séance */
-
-.training-details-v3__hero
-.badge-success,
-.training-details-v3__hero
-.badge-warning,
-.training-details-v3__hero
-.badge-error {
-  padding:
-    4px 8px !important;
-
-  font-size:
-    9.5px !important;
-
-  font-weight:
-    700 !important;
-}
-
 
 /* ---------------------------------------------------------
    BARRE MÉTRIQUES
@@ -1563,37 +1384,7 @@ h3 {
    CIBLES D'INTENSITÉ
    --------------------------------------------------------- */
 
-.training-guidance-v3__step
-.flex.flex-wrap.gap-2
-> .badge {
-  padding:
-    4px 7px !important;
-
-  border:
-    1px solid rgb(15 23 42 / 0.06) !important;
-
-  background:
-    #ffffff !important;
-
-  color:
-    #475569 !important;
-}
-
 [data-theme="dark"]
-.training-guidance-v3__step
-.flex.flex-wrap.gap-2
-> .badge {
-  border-color:
-    rgb(255 255 255 / 0.06) !important;
-
-  background:
-    rgb(0 0 0 / 0.12) !important;
-
-  color:
-    #cbd5e1 !important;
-}
-
-
 /* ---------------------------------------------------------
    CONSEILS / CONTEXTE
    --------------------------------------------------------- */
@@ -1685,7 +1476,7 @@ section li {
    --------------------------------------------------------- */
 
 .workout-coach-context
-section[class*="border-warning"] {
+section[class*="border-amber-500"] {
   border:
     1px solid rgb(245 158 11 / 0.16) !important;
 
@@ -1720,7 +1511,7 @@ section[class*="border-warning"] {
 /*
  * Activité sélectionnée : vrai signal visuel.
  */
-.workout-activity-card[class*="border-primary"]::before {
+.workout-activity-card--selected::before {
   content:
     "";
 
@@ -1748,7 +1539,7 @@ section[class*="border-warning"] {
  * Informations secondaires.
  */
 .workout-activity-card
-.text-base-content\/50 {
+.text-slate-500 {
   color:
     #94a3b8 !important;
 }
@@ -1757,19 +1548,6 @@ section[class*="border-warning"] {
 /*
  * Score matching.
  */
-.workout-activity-card
-.badge:last-child {
-  padding:
-    4px 7px !important;
-
-  border-radius:
-    7px !important;
-
-  font-variant-numeric:
-    tabular-nums;
-}
-
-
 /* ---------------------------------------------------------
    FEEL STARS
    --------------------------------------------------------- */
@@ -1786,20 +1564,20 @@ svg {
    --------------------------------------------------------- */
 
 .workout-activity-panel
-.btn-primary {
+.workout-activity-validate-button {
   transition:
     background-color 140ms ease,
     transform 120ms ease;
 }
 
 .workout-activity-panel
-.btn-primary:hover:not(:disabled) {
+.workout-activity-validate-button:hover:not(:disabled) {
   transform:
     translateY(-1px);
 }
 
 .workout-activity-panel
-.btn-primary:active:not(:disabled) {
+.workout-activity-validate-button:active:not(:disabled) {
   transform:
     translateY(0);
 }
@@ -1828,23 +1606,6 @@ svg {
 /*
  * Titres secondaires.
  */
-.workout-debrief-card
-.text-success,
-.workout-debrief-card
-.text-warning,
-.workout-debrief-card
-.text-error {
-  font-size:
-    9px !important;
-
-  font-weight:
-    700 !important;
-
-  letter-spacing:
-    0.1em !important;
-}
-
-
 /*
  * Listes débrief.
  */
@@ -1868,7 +1629,7 @@ svg {
    --------------------------------------------------------- */
 
 .training-details-v3
-.bg-base-200\/60 {
+.workout-empty-state {
   border:
     1px dashed rgb(15 23 42 / 0.09) !important;
 
@@ -1878,7 +1639,7 @@ svg {
 
 [data-theme="dark"]
 .training-details-v3
-.bg-base-200\/60 {
+.workout-empty-state {
   border-color:
     rgb(255 255 255 / 0.07) !important;
 

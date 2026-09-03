@@ -3,14 +3,16 @@ import {
 } from 'react'
 
 import {
+  CalendarDays,
   Check,
+  ChevronRight,
+  Eye,
   Flag,
   MapPin,
   Plus,
   RefreshCw,
   Route,
   Trophy,
-  X,
 } from 'lucide-react'
 
 import {
@@ -31,6 +33,9 @@ import {
 
 import type {
   Race,
+  RacePriority,
+  RaceStatus,
+  RaceType,
 } from './types'
 
 import {
@@ -63,7 +68,7 @@ export function RacePage() {
   const selectedRace =
     selectedRaceId
       ? races.find(
-          (race) =>
+          race =>
             race.id
             === selectedRaceId,
         )
@@ -73,9 +78,8 @@ export function RacePage() {
   const upcomingRaces =
     races
       .filter(
-        (race) =>
-          race.status
-          === 'planned',
+        race =>
+          race.status === 'planned',
       )
       .sort(
         (first, second) =>
@@ -83,17 +87,16 @@ export function RacePage() {
             first.date,
           ).getTime()
           - new Date(
-            second.date,
-          ).getTime(),
+              second.date,
+            ).getTime(),
       )
 
 
   const pastRaces =
     races
       .filter(
-        (race) =>
-          race.status
-          !== 'planned',
+        race =>
+          race.status !== 'planned',
       )
       .sort(
         (first, second) =>
@@ -101,17 +104,9 @@ export function RacePage() {
             second.date,
           ).getTime()
           - new Date(
-            first.date,
-          ).getTime(),
+              first.date,
+            ).getTime(),
       )
-
-
-  const completedCount =
-    pastRaces.filter(
-      (race) =>
-        race.status
-        === 'completed',
-    ).length
 
 
   const nextPrimaryRace =
@@ -125,87 +120,126 @@ export function RacePage() {
     )
 
 
+  const otherUpcomingRaces =
+    upcomingRaces.filter(
+      race =>
+        race.id
+        !== nextPrimaryRace?.id
+        && !preparationRaces.some(
+          preparation =>
+            preparation.id
+            === race.id,
+        ),
+    )
+
+
+  const completedCount =
+    pastRaces.filter(
+      race =>
+        race.status === 'completed',
+    ).length
+
+
   return (
-    <main>
+    <main
+      className="
+        min-h-screen
+        bg-[#f5f7f6]
+        dark:bg-[#0b1014]
+      "
+    >
       <div
         className="
           mx-auto
-          max-w-6xl
-          px-4 py-6
-          sm:px-6
-          lg:py-8
+          max-w-[1180px]
+          px-3
+          py-4
+          sm:px-5
+          lg:py-5
         "
       >
         <header
           className="
-            mb-6
-            flex flex-col
+            mb-4
+            flex
+            items-end
+            justify-between
             gap-4
-            sm:flex-row
-            sm:items-start
-            sm:justify-between
           "
         >
-          <div
-            className="
-              flex items-start
-              gap-4
-            "
-          >
-            <div
+          <div>
+            <p
               className="
-                flex size-11
-                shrink-0
-                items-center
-                justify-center
-                rounded-2xl
-                bg-primary/10
-                text-primary
+                text-[10px]
+                font-bold
+                uppercase
+                tracking-[0.13em]
+                text-emerald-600
+                dark:text-emerald-400
               "
             >
-              <Route
-                size={24}
-              />
-            </div>
+              Objectifs
+            </p>
 
-            <div>
-              <h1
-                className="
-                  text-3xl
-                  font-bold
-                  tracking-tight
-                  text-base-content
-                "
-              >
-                Courses
-              </h1>
+            <h1
+              className="
+                mt-1
+                text-[30px]
+                font-bold
+                tracking-[-0.04em]
+                text-slate-950
+                dark:text-white
+              "
+            >
+              Courses
+            </h1>
 
-              <p
-                className="
-                  mt-1 text-sm
-                  text-base-content/60
-                "
-              >
-                Vos objectifs à venir et
-                votre historique de courses.
-              </p>
-            </div>
+            <p
+              className="
+                mt-1
+                text-[13px]
+                text-slate-400
+                dark:text-slate-500
+              "
+            >
+              Tes objectifs, courses de préparation
+              et résultats.
+            </p>
           </div>
+
 
           <button
             type="button"
-            className="btn btn-primary"
+            aria-label="Ajouter une course"
+            title="Ajouter une course"
             onClick={() =>
               setIsAddModalOpen(
                 true,
               )
             }
+            className="
+              flex
+              h-9
+              w-9
+              shrink-0
+              items-center
+              justify-center
+              rounded-[9px]
+              border
+              border-emerald-500/25
+              bg-emerald-500/[0.07]
+              text-emerald-700
+              transition
+              hover:bg-emerald-500/[0.12]
+              dark:text-emerald-400
+            "
           >
             <Plus
-              size={16}
+              className="
+                h-4
+                w-4
+              "
             />
-
-            Ajouter une course
           </button>
         </header>
 
@@ -215,7 +249,7 @@ export function RacePage() {
         )}
 
 
-        {error && !loading && (
+        {!loading && error && (
           <ErrorState
             error={error}
             onRetry={() =>
@@ -226,7 +260,41 @@ export function RacePage() {
 
 
         {!loading && !error && (
-          <>
+          <div className="space-y-4">
+
+            {/* ==========================================
+                PRIMARY RACE HERO
+                ========================================== */}
+
+            {nextPrimaryRace ? (
+              <PrimaryRaceHero
+                race={
+                  nextPrimaryRace
+                }
+                preparationCount={
+                  preparationRaces.length
+                }
+                onOpen={() =>
+                  setSelectedRaceId(
+                    nextPrimaryRace.id,
+                  )
+                }
+              />
+            ) : (
+              <NoPrimaryRace
+                onAdd={() =>
+                  setIsAddModalOpen(
+                    true,
+                  )
+                }
+              />
+            )}
+
+
+            {/* ==========================================
+                OVERVIEW
+                ========================================== */}
+
             <RaceOverview
               upcomingCount={
                 upcomingRaces.length
@@ -234,59 +302,55 @@ export function RacePage() {
               completedCount={
                 completedCount
               }
-              nextPrimaryRace={
-                nextPrimaryRace
-              }
-              preparationRacesCount={
+              preparationCount={
                 preparationRaces.length
               }
             />
 
 
-            <section
-              className="
-                mt-7
-                space-y-4
-              "
-            >
-              <div>
-                <h2
+            {/* ==========================================
+                PREPARATION TIMELINE
+                ========================================== */}
+
+            {nextPrimaryRace
+              && preparationRaces.length > 0
+              && (
+                <section
                   className="
-                    text-xl
-                    font-bold
-                    text-base-content
+                    overflow-hidden
+                    rounded-[14px]
+                    border
+                    border-black/[0.065]
+                    bg-white
+                    dark:border-white/[0.065]
+                    dark:bg-[#151b1f]
                   "
                 >
-                  Prochaines courses
-                </h2>
+                  <SectionHeader
+                    eyebrow="Préparation"
+                    title="Chemin vers l’objectif"
+                  />
 
-                <p
-                  className="
-                    mt-1 text-sm
-                    text-base-content/60
-                  "
-                >
-                  Vos prochains objectifs.
-                </p>
-              </div>
-
-
-              {upcomingRaces.length
-                > 0 ? (
-                  <div className="space-y-3">
-                    {upcomingRaces.map(
+                  <div
+                    className="
+                      px-4
+                      py-3
+                      sm:px-5
+                    "
+                  >
+                    {preparationRaces.map(
                       (
                         race,
                         index,
                       ) => (
-                        <UpcomingRaceRow
+                        <PreparationRace
                           key={
                             race.id
                           }
                           race={
                             race
                           }
-                          next={
+                          first={
                             index === 0
                           }
                           onOpen={() =>
@@ -297,83 +361,118 @@ export function RacePage() {
                         />
                       ),
                     )}
-                  </div>
-                ) : (
-                  <EmptyState
-                    title="Aucune course prévue"
-                    description={
-                      'Ajoutez votre prochain '
-                      + 'objectif pour préparer '
-                      + 'votre entraînement.'
-                    }
-                  />
-                )}
-            </section>
 
+                    <PreparationRace
+                      race={
+                        nextPrimaryRace
+                      }
+                      primary
+                      first={
+                        preparationRaces
+                          .length === 0
+                      }
+                      onOpen={() =>
+                        setSelectedRaceId(
+                          nextPrimaryRace.id,
+                        )
+                      }
+                    />
+                  </div>
+                </section>
+              )}
+
+
+            {/* ==========================================
+                OTHER UPCOMING
+                ========================================== */}
+
+            {otherUpcomingRaces.length > 0 && (
+              <section
+                className="
+                  overflow-hidden
+                  rounded-[14px]
+                  border
+                  border-black/[0.065]
+                  bg-white
+                  dark:border-white/[0.065]
+                  dark:bg-[#151b1f]
+                "
+              >
+                <SectionHeader
+                  eyebrow="À venir"
+                  title="Autres courses"
+                />
+
+                <RaceResponsiveList
+                  races={
+                    otherUpcomingRaces
+                  }
+                  onOpen={
+                    setSelectedRaceId
+                  }
+                />
+              </section>
+            )}
+
+
+            {/* ==========================================
+                HISTORY
+                ========================================== */}
 
             <section
               className="
-                mt-8
-                space-y-4
+                overflow-hidden
+                rounded-[14px]
+                border
+                border-black/[0.065]
+                bg-white
+                dark:border-white/[0.065]
+                dark:bg-[#151b1f]
               "
             >
-              <div>
-                <h2
-                  className="
-                    text-xl
-                    font-bold
-                    text-base-content
-                  "
-                >
-                  Historique
-                </h2>
-
-                <p
-                  className="
-                    mt-1 text-sm
-                    text-base-content/60
-                  "
-                >
-                  Vos courses terminées,
-                  abandons et non-participations.
-                </p>
-              </div>
-
+              <SectionHeader
+                eyebrow="Historique"
+                title="Courses passées"
+                trailing={
+                  <span
+                    className="
+                      text-[9px]
+                      font-semibold
+                      text-slate-400
+                    "
+                  >
+                    {
+                      pastRaces.length
+                    } course{
+                      pastRaces.length > 1
+                        ? 's'
+                        : ''
+                    }
+                  </span>
+                }
+              />
 
               {pastRaces.length > 0 ? (
-                <div className="space-y-3">
-                  {pastRaces.map(
-                    (race) => (
-                      <PastRaceRow
-                        key={
-                          race.id
-                        }
-                        race={
-                          race
-                        }
-                        onOpen={() =>
-                          setSelectedRaceId(
-                            race.id,
-                          )
-                        }
-                      />
-                    ),
-                  )}
-                </div>
+                <RaceResponsiveList
+                  races={
+                    pastRaces
+                  }
+                  onOpen={
+                    setSelectedRaceId
+                  }
+                  history
+                />
               ) : (
                 <EmptyState
-                  title={
-                    'Aucune course '
-                    + 'dans l’historique'
-                  }
-                  description={
-                    'Vos performances apparaîtront '
-                    + 'ici après vos courses.'
-                  }
+                  title="Aucune course terminée"
+                  description="
+                    Tes résultats apparaîtront
+                    ici après tes courses.
+                  "
                 />
               )}
             </section>
-          </>
+          </div>
         )}
       </div>
 
@@ -419,503 +518,527 @@ export function RacePage() {
 }
 
 
-function LoadingState() {
-  return (
-    <div
-      className="
-        flex min-h-48
-        items-center
-        justify-center
-        rounded-2xl
-        border border-base-300
-        bg-base-100
-        px-5 py-8
-        shadow-sm
-      "
-    >
-      <div
-        className="
-          flex flex-col
-          items-center
-          gap-3
-          text-center
-        "
-      >
-        <span
-          className="
-            loading
-            loading-spinner
-            loading-md
-            text-primary
-          "
-        />
+/* ============================================================
+   PRIMARY HERO
+   ============================================================ */
 
-        <div>
-          <p
-            className="
-              font-semibold
-              text-base-content
-            "
-          >
-            Chargement des courses…
-          </p>
+function PrimaryRaceHero({
+  race,
+  preparationCount,
+  onOpen,
+}: {
+  race: Race
+  preparationCount: number
+  onOpen: () => void
+}) {
+  const days =
+    daysUntil(
+      race.date,
+    )
 
-          <p
-            className="
-              mt-1
-              text-sm
-              text-base-content/45
-            "
-          >
-            Synchronisation avec OpenCoach.
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-
-interface ErrorStateProps {
-  error: string
-  onRetry: () => void
-}
-
-
-function ErrorState({
-  error,
-  onRetry,
-}: ErrorStateProps) {
-  return (
-    <div
-      className="
-        rounded-2xl
-        border border-error/30
-        bg-error/5
-        px-5 py-5
-      "
-    >
-      <div
-        className="
-          flex flex-col
-          gap-4
-          sm:flex-row
-          sm:items-center
-          sm:justify-between
-        "
-      >
-        <div>
-          <p
-            className="
-              font-semibold
-              text-error
-            "
-          >
-            Impossible de charger les courses
-          </p>
-
-          <p
-            className="
-              mt-1
-              text-sm
-              text-base-content/60
-            "
-          >
-            {error}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          className="
-            btn
-            btn-outline
-            btn-sm
-          "
-          onClick={
-            onRetry
-          }
-        >
-          <RefreshCw
-            size={14}
-          />
-
-          Réessayer
-        </button>
-      </div>
-    </div>
-  )
-}
-
-
-interface RaceOverviewProps {
-  upcomingCount: number
-  completedCount: number
-
-  nextPrimaryRace:
-    Race | undefined
-
-  preparationRacesCount: number
-}
-
-
-function RaceOverview({
-  upcomingCount,
-  completedCount,
-  nextPrimaryRace,
-  preparationRacesCount,
-}: RaceOverviewProps) {
   return (
     <section
       className="
+        relative
         overflow-hidden
-        rounded-2xl
-        border border-base-300
-        bg-base-100
-        shadow-sm
+        rounded-[16px]
+        border
+        border-white/[0.07]
+        bg-[#141917]
+        text-white
+        shadow-[0_12px_38px_rgba(4,12,8,0.10)]
       "
     >
       <div
         className="
-          grid
-          divide-y divide-base-300
-          sm:grid-cols-[1fr_1fr_1.5fr]
-          sm:divide-x
-          sm:divide-y-0
+          pointer-events-none
+          absolute
+          -right-24
+          -top-28
+          h-72
+          w-72
+          rounded-full
+          bg-emerald-500/[0.11]
+          blur-3xl
         "
-      >
-        <OverviewItem
-          icon={Flag}
-          value={`${upcomingCount}`}
-          label="À venir"
-          description="Courses programmées"
-        />
+      />
 
-        <OverviewItem
-          icon={Check}
-          value={`${completedCount}`}
-          label="Terminées"
-          description="Courses réalisées"
-        />
-
-        <OverviewItem
-          icon={Trophy}
-          value={
-            nextPrimaryRace?.name
-            ?? 'Aucun objectif'
-          }
-          label="Objectif principal"
-          description={
-            nextPrimaryRace
-              ? (
-                  `${formatDate(
-                    nextPrimaryRace.date,
-                  )} · ${
-                    formatNumber(
-                      nextPrimaryRace.distanceKm,
-                    )
-                  } km · ${
-                    preparationRacesCount
-                  } course${
-                    preparationRacesCount > 1
-                      ? 's'
-                      : ''
-                  } d’entraînement avant`
-                )
-              : (
-                  'Aucune course prioritaire programmée'
-                )
-          }
-          wide
-        />
-      </div>
-    </section>
-  )
-}
-
-
-interface OverviewItemProps {
-  icon: typeof Flag
-  value: string
-  label: string
-  description: string
-  wide?: boolean
-}
-
-
-function OverviewItem({
-  icon: Icon,
-  value,
-  label,
-  description,
-  wide = false,
-}: OverviewItemProps) {
-  return (
-    <div
-      className="
-        flex min-w-0
-        items-center
-        gap-3
-        px-4 py-3.5
-        sm:px-5
-      "
-    >
       <div
         className="
-          flex size-9
-          shrink-0
-          items-center
-          justify-center
-          rounded-xl
-          bg-primary/10
-          text-primary
+          relative
+          p-5
+          sm:p-6
         "
       >
-        <Icon
-          size={18}
-        />
-      </div>
-
-      <div className="min-w-0">
-        <p
-          className={[
-            (
-              'font-bold '
-              + 'text-base-content'
-            ),
-            wide
-              ? (
-                  'truncate '
-                  + 'text-base'
-                )
-              : 'text-lg',
-          ].join(' ')}
-          title={
-            wide
-              ? value
-              : undefined
-          }
-        >
-          {value}
-        </p>
-
         <div
           className="
-            mt-0.5
-            flex flex-wrap
-            items-baseline
-            gap-x-2
+            flex
+            flex-wrap
+            items-center
+            justify-between
+            gap-3
           "
         >
-          <span
-            className="
-              text-xs
-              font-medium
-              text-base-content/60
-            "
-          >
-            {label}
-          </span>
-
-          <span
-            className="
-              text-xs
-              text-base-content/40
-            "
-          >
-            {description}
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-
-interface UpcomingRaceRowProps {
-  race: Race
-  next: boolean
-  onOpen: () => void
-}
-
-
-function UpcomingRaceRow({
-  race,
-  next,
-  onOpen,
-}: UpcomingRaceRowProps) {
-  return (
-    <button
-      type="button"
-      onClick={
-        onOpen
-      }
-      className={[
-        (
-          'w-full rounded-2xl '
-          + 'border bg-base-100 '
-          + 'p-4 text-left '
-          + 'shadow-sm transition '
-          + 'hover:bg-base-200/40'
-        ),
-        next
-          ? (
-              'border-primary '
-              + 'ring-1 '
-              + 'ring-primary/20'
-            )
-          : 'border-base-300',
-      ].join(' ')}
-    >
-      <div
-        className="
-          grid gap-4
-          md:grid-cols-[170px_minmax(0,1fr)_auto]
-          md:items-center
-        "
-      >
-        <div>
           <div
             className="
-              flex flex-wrap
+              flex
               items-center
               gap-2
             "
           >
             <span
               className="
-                text-sm
-                font-semibold
-                text-base-content
+                h-2
+                w-2
+                rounded-full
+                bg-emerald-400
+              "
+            />
+
+            <span
+              className="
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.13em]
+                text-emerald-400
               "
             >
-              {formatDate(
-                race.date,
-              )}
+              Objectif principal
             </span>
-
-            {next && (
-              <span
-                className="
-                  badge
-                  badge-primary
-                  badge-sm
-                "
-              >
-                Prochaine
-              </span>
-            )}
-
-            <PriorityBadge
-              priority={
-                race.priority
-              }
-            />
           </div>
 
-          <p
+          <div
             className="
-              mt-1
-              text-xs
-              text-base-content/45
+              rounded-full
+              border
+              border-white/[0.08]
+              bg-white/[0.04]
+              px-3
+              py-1
             "
           >
-            {formatRaceType(
-              race.type,
-            )}
-          </p>
-        </div>
-
-
-        <div className="min-w-0">
-          <h3
-            className="
-              truncate
-              text-lg
-              font-bold
-              text-base-content
-            "
-          >
-            {race.name}
-          </h3>
-
-          <p
-            className="
-              mt-1
-              flex items-center
-              gap-1.5
-              text-sm
-              text-base-content/50
-            "
-          >
-            <MapPin
-              size={14}
-            />
-
-            {race.location}
-          </p>
+            <span
+              className="
+                text-[9px]
+                font-semibold
+                text-white/45
+              "
+            >
+              {
+                days >= 0
+                  ? `J-${days}`
+                  : 'Terminée'
+              }
+            </span>
+          </div>
         </div>
 
 
         <div
           className="
-            flex flex-wrap
-            items-center
-            gap-x-5
-            gap-y-2
-            text-sm
-            text-base-content/60
-            md:justify-end
+            mt-5
+            grid
+            gap-5
+            lg:grid-cols-[minmax(0,1fr)_auto]
+            lg:items-end
           "
         >
-          <span>
-            {formatNumber(
-              race.distanceKm,
-            )}
-            {' '}
-            km
-          </span>
+          <div>
+            <h2
+              className="
+                max-w-3xl
+                text-[27px]
+                font-bold
+                leading-[1.1]
+                tracking-[-0.04em]
+                sm:text-[31px]
+              "
+            >
+              {race.name}
+            </h2>
 
-          {race.elevationGainM
-            !== undefined && (
-              <span>
-                {Math.round(
-                  race.elevationGainM,
-                )}
-                {' '}
-                m D+
-              </span>
-            )}
+            <div
+              className="
+                mt-3
+                flex
+                flex-wrap
+                items-center
+                gap-x-4
+                gap-y-2
+                text-[11px]
+                font-medium
+                text-white/50
+              "
+            >
+              <span
+                className="
+                  flex
+                  items-center
+                  gap-1.5
+                "
+              >
+                <CalendarDays
+                  className="
+                    h-3.5
+                    w-3.5
+                    text-emerald-400
+                  "
+                />
 
-          {race.targetTimeMinutes
-            !== undefined && (
-              <span>
-                Objectif{' '}
-                {formatDuration(
-                  race.targetTimeMinutes,
-                )}
+                {
+                  formatDateLong(
+                    race.date,
+                  )
+                }
               </span>
-            )}
+
+              <span
+                className="
+                  flex
+                  items-center
+                  gap-1.5
+                "
+              >
+                <MapPin
+                  className="
+                    h-3.5
+                    w-3.5
+                    text-emerald-400
+                  "
+                />
+
+                {race.location}
+              </span>
+
+              <span>
+                {
+                  formatRaceType(
+                    race.type,
+                  )
+                }
+              </span>
+            </div>
+
+
+            <div
+              className="
+                mt-5
+                flex
+                flex-wrap
+                gap-x-7
+                gap-y-3
+              "
+            >
+              <HeroMetric
+                label="Distance"
+                value={
+                  `${formatNumber(
+                    race.distanceKm,
+                  )} km`
+                }
+              />
+
+              <HeroMetric
+                label="Dénivelé"
+                value={
+                  race.elevationGainM
+                    ? (
+                        `${Math.round(
+                          race.elevationGainM,
+                        )} m`
+                      )
+                    : '—'
+                }
+              />
+
+              <HeroMetric
+                label="Objectif"
+                value={
+                  race.targetTimeMinutes
+                    ? formatDuration(
+                        race.targetTimeMinutes,
+                      )
+                    : 'À définir'
+                }
+              />
+            </div>
+
+
+            <div
+              className="
+                mt-5
+                flex
+                items-center
+                gap-2
+                border-t
+                border-white/[0.07]
+                pt-3
+                text-[10px]
+                text-white/40
+              "
+            >
+              <Flag
+                className="
+                  h-3.5
+                  w-3.5
+                  text-emerald-400
+                "
+              />
+
+              {preparationCount > 0
+                ? (
+                    `${preparationCount} course${
+                      preparationCount > 1
+                        ? 's'
+                        : ''
+                    } de préparation avant l’objectif`
+                  )
+                : (
+                    'Aucune course de préparation programmée'
+                  )}
+            </div>
+          </div>
+
+
+          <button
+            type="button"
+            onClick={
+              onOpen
+            }
+            className="
+              inline-flex
+              h-9
+              shrink-0
+              items-center
+              justify-center
+              gap-1.5
+              rounded-[8px]
+              border
+              border-emerald-400/25
+              bg-emerald-400/[0.09]
+              px-3
+              text-[10px]
+              font-semibold
+              text-emerald-300
+              transition
+              hover:bg-emerald-400/[0.14]
+            "
+          >
+            Voir la course
+
+            <ChevronRight
+              className="
+                h-3.5
+                w-3.5
+              "
+            />
+          </button>
         </div>
       </div>
-    </button>
+    </section>
   )
 }
 
 
-interface PastRaceRowProps {
-  race: Race
-  onOpen: () => void
+function HeroMetric({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <div>
+      <p
+        className="
+          text-[8px]
+          font-bold
+          uppercase
+          tracking-[0.08em]
+          text-white/30
+        "
+      >
+        {label}
+      </p>
+
+      <p
+        className="
+          mt-1
+          text-[16px]
+          font-bold
+          tabular-nums
+          text-white
+        "
+      >
+        {value}
+      </p>
+    </div>
+  )
 }
 
 
-function PastRaceRow({
-  race,
-  onOpen,
-}: PastRaceRowProps) {
-  const result =
-    race.actualResult
+/* ============================================================
+   OVERVIEW
+   ============================================================ */
 
+function RaceOverview({
+  upcomingCount,
+  completedCount,
+  preparationCount,
+}: {
+  upcomingCount: number
+  completedCount: number
+  preparationCount: number
+}) {
+  return (
+    <section
+      className="
+        grid
+        grid-cols-3
+        overflow-hidden
+        rounded-[13px]
+        border
+        border-black/[0.065]
+        bg-white
+        dark:border-white/[0.065]
+        dark:bg-[#151b1f]
+      "
+    >
+      <OverviewMetric
+        icon={
+          <Flag
+            className="
+              h-4
+              w-4
+            "
+          />
+        }
+        value={
+          String(
+            upcomingCount,
+          )
+        }
+        label="À venir"
+      />
+
+      <OverviewMetric
+        icon={
+          <Route
+            className="
+              h-4
+              w-4
+            "
+          />
+        }
+        value={
+          String(
+            preparationCount,
+          )
+        }
+        label="Préparation"
+      />
+
+      <OverviewMetric
+        icon={
+          <Check
+            className="
+              h-4
+              w-4
+            "
+          />
+        }
+        value={
+          String(
+            completedCount,
+          )
+        }
+        label="Terminées"
+      />
+    </section>
+  )
+}
+
+
+function OverviewMetric({
+  icon,
+  value,
+  label,
+}: {
+  icon: React.ReactNode
+  value: string
+  label: string
+}) {
+  return (
+    <div
+      className="
+        flex
+        items-center
+        justify-center
+        gap-2.5
+        border-r
+        border-black/[0.055]
+        px-3
+        py-3
+        last:border-r-0
+        dark:border-white/[0.055]
+      "
+    >
+      <div
+        className="
+          text-emerald-500
+        "
+      >
+        {icon}
+      </div>
+
+      <div>
+        <p
+          className="
+            text-[15px]
+            font-bold
+            leading-none
+            tabular-nums
+            text-slate-800
+            dark:text-slate-200
+          "
+        >
+          {value}
+        </p>
+
+        <p
+          className="
+            mt-1
+            text-[8px]
+            font-semibold
+            uppercase
+            tracking-[0.07em]
+            text-slate-400
+          "
+        >
+          {label}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+
+/* ============================================================
+   PREPARATION TIMELINE
+   ============================================================ */
+
+function PreparationRace({
+  race,
+  primary = false,
+  first = false,
+  onOpen,
+}: {
+  race: Race
+  primary?: boolean
+  first?: boolean
+  onOpen: () => void
+}) {
   return (
     <button
       type="button"
@@ -923,59 +1046,588 @@ function PastRaceRow({
         onOpen
       }
       className="
+        group
+        relative
+        flex
         w-full
-        rounded-2xl
-        border border-base-300
-        bg-base-100
-        p-4
+        items-stretch
+        gap-3
         text-left
-        shadow-sm
-        transition
-        hover:bg-base-200/40
       "
     >
       <div
         className="
-          grid gap-4
-          md:grid-cols-[170px_minmax(0,1fr)_auto]
-          md:items-center
+          relative
+          flex
+          w-5
+          shrink-0
+          justify-center
         "
       >
-        <div>
-          <p
+        {!first && (
+          <span
             className="
-              text-sm
-              font-semibold
-              text-base-content
+              absolute
+              bottom-1/2
+              top-0
+              w-px
+              bg-slate-200
+              dark:bg-white/[0.08]
+            "
+          />
+        )}
+
+        <span
+          className={[
+            (
+              'relative z-10 mt-4 '
+              + 'h-2.5 w-2.5 '
+              + 'rounded-full '
+              + 'ring-4 '
+              + 'ring-white '
+              + 'dark:ring-[#151b1f]'
+            ),
+            primary
+              ? 'bg-emerald-500'
+              : 'bg-slate-300 dark:bg-slate-600',
+          ].join(' ')}
+        />
+
+        <span
+          className="
+            absolute
+            bottom-0
+            top-1/2
+            w-px
+            bg-slate-200
+            dark:bg-white/[0.08]
+          "
+        />
+      </div>
+
+
+      <div
+        className="
+          flex
+          min-w-0
+          flex-1
+          items-center
+          justify-between
+          gap-3
+          border-b
+          border-black/[0.045]
+          py-3
+          last:border-b-0
+          dark:border-white/[0.045]
+        "
+      >
+        <div className="min-w-0">
+          <div
+            className="
+              flex
+              flex-wrap
+              items-center
+              gap-2
             "
           >
-            {formatDate(
-              race.date,
-            )}
-          </p>
+            <span
+              className="
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.07em]
+                text-slate-400
+              "
+            >
+              {
+                formatDateShort(
+                  race.date,
+                )
+              }
+            </span>
 
-          <StatusBadge
-            status={
-              race.status
-            }
-          />
-
-          <div className="mt-2">
-            <PriorityBadge
+            <PriorityPill
               priority={
                 race.priority
               }
             />
           </div>
+
+          <p
+            className="
+              mt-1
+              truncate
+              text-[12px]
+              font-semibold
+              text-slate-800
+              dark:text-slate-200
+            "
+          >
+            {race.name}
+          </p>
+
+          <p
+            className="
+              mt-0.5
+              text-[9.5px]
+              text-slate-400
+            "
+          >
+            {
+              formatNumber(
+                race.distanceKm,
+              )
+            } km
+
+            {race.elevationGainM
+              ? (
+                  ` · ${Math.round(
+                    race.elevationGainM,
+                  )} m D+`
+                )
+              : ''}
+          </p>
         </div>
 
+        <ChevronRight
+          className="
+            h-4
+            w-4
+            shrink-0
+            text-slate-300
+            transition
+            group-hover:translate-x-0.5
+            group-hover:text-emerald-500
+          "
+        />
+      </div>
+    </button>
+  )
+}
 
+
+/* ============================================================
+   RESPONSIVE LIST
+   ============================================================ */
+
+function RaceResponsiveList({
+  races,
+  onOpen,
+  history = false,
+}: {
+  races: Race[]
+  onOpen: (
+    raceId: string,
+  ) => void
+  history?: boolean
+}) {
+  return (
+    <>
+      <div
+        className="
+          hidden
+          md:block
+        "
+      >
+        <table
+          className="
+            w-full
+            border-collapse
+          "
+        >
+          <thead
+            className="
+              bg-slate-50/70
+              dark:bg-white/[0.018]
+            "
+          >
+            <tr
+              className="
+                border-b
+                border-black/[0.055]
+                dark:border-white/[0.055]
+              "
+            >
+              <TableHeader>
+                Date
+              </TableHeader>
+
+              <TableHeader>
+                Course
+              </TableHeader>
+
+              <TableHeader>
+                Type
+              </TableHeader>
+
+              <TableHeader
+                align="right"
+              >
+                Distance
+              </TableHeader>
+
+              <TableHeader
+                align="right"
+              >
+                D+
+              </TableHeader>
+
+              {history && (
+                <TableHeader
+                  align="right"
+                >
+                  Résultat
+                </TableHeader>
+              )}
+
+              <TableHeader
+                align="right"
+              >
+                Action
+              </TableHeader>
+            </tr>
+          </thead>
+
+          <tbody>
+            {races.map(
+              race => (
+                <RaceTableRow
+                  key={
+                    race.id
+                  }
+                  race={
+                    race
+                  }
+                  history={
+                    history
+                  }
+                  onOpen={() =>
+                    onOpen(
+                      race.id,
+                    )
+                  }
+                />
+              ),
+            )}
+          </tbody>
+        </table>
+      </div>
+
+
+      <div
+        className="
+          divide-y
+          divide-black/[0.05]
+          dark:divide-white/[0.05]
+          md:hidden
+        "
+      >
+        {races.map(
+          race => (
+            <RaceMobileCard
+              key={
+                race.id
+              }
+              race={
+                race
+              }
+              history={
+                history
+              }
+              onOpen={() =>
+                onOpen(
+                  race.id,
+                )
+              }
+            />
+          ),
+        )}
+      </div>
+    </>
+  )
+}
+
+
+function TableHeader({
+  children,
+  align = 'left',
+}: {
+  children: React.ReactNode
+  align?: 'left' | 'right'
+}) {
+  return (
+    <th
+      className={[
+        (
+          'px-4 py-2.5 '
+          + 'text-[8.5px] '
+          + 'font-bold '
+          + 'uppercase '
+          + 'tracking-[0.08em] '
+          + 'text-slate-400'
+        ),
+        align === 'right'
+          ? 'text-right'
+          : 'text-left',
+      ].join(' ')}
+    >
+      {children}
+    </th>
+  )
+}
+
+
+function RaceTableRow({
+  race,
+  history,
+  onOpen,
+}: {
+  race: Race
+  history: boolean
+  onOpen: () => void
+}) {
+  return (
+    <tr
+      className="
+        border-b
+        border-black/[0.045]
+        transition
+        last:border-b-0
+        hover:bg-slate-50/70
+        dark:border-white/[0.045]
+        dark:hover:bg-white/[0.018]
+      "
+    >
+      <td
+        className="
+          whitespace-nowrap
+          px-4
+          py-3
+          text-[10.5px]
+          font-semibold
+          text-slate-600
+          dark:text-slate-400
+        "
+      >
+        {
+          formatDateShort(
+            race.date,
+          )
+        }
+      </td>
+
+      <td
+        className="
+          max-w-[300px]
+          px-4
+          py-3
+        "
+      >
+        <p
+          className="
+            truncate
+            text-[12px]
+            font-semibold
+            text-slate-800
+            dark:text-slate-200
+          "
+        >
+          {race.name}
+        </p>
+
+        <p
+          className="
+            mt-0.5
+            truncate
+            text-[9px]
+            text-slate-400
+          "
+        >
+          {race.location}
+        </p>
+      </td>
+
+      <td
+        className="
+          px-4
+          py-3
+        "
+      >
+        <RaceTypePill
+          type={
+            race.type
+          }
+        />
+      </td>
+
+      <NumberCell>
+        {
+          formatNumber(
+            race.distanceKm,
+          )
+        } km
+      </NumberCell>
+
+      <NumberCell>
+        {
+          race.elevationGainM
+            ? (
+                `${Math.round(
+                  race.elevationGainM,
+                )} m`
+              )
+            : '—'
+        }
+      </NumberCell>
+
+      {history && (
+        <NumberCell>
+          <RaceResult
+            race={
+              race
+            }
+          />
+        </NumberCell>
+      )}
+
+      <td
+        className="
+          px-4
+          py-3
+          text-right
+        "
+      >
+        <button
+          type="button"
+          aria-label="Voir la course"
+          title="Voir la course"
+          onClick={
+            onOpen
+          }
+          className="
+            inline-flex
+            h-8
+            w-8
+            items-center
+            justify-center
+            rounded-[8px]
+            border
+            border-emerald-500/20
+            bg-emerald-500/[0.06]
+            text-emerald-600
+            transition
+            hover:bg-emerald-500/[0.11]
+            dark:text-emerald-400
+          "
+        >
+          <Eye
+            className="
+              h-4
+              w-4
+            "
+          />
+        </button>
+      </td>
+    </tr>
+  )
+}
+
+
+function NumberCell({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <td
+      className="
+        whitespace-nowrap
+        px-4
+        py-3
+        text-right
+        text-[10.5px]
+        font-medium
+        tabular-nums
+        text-slate-600
+        dark:text-slate-400
+      "
+    >
+      {children}
+    </td>
+  )
+}
+
+
+function RaceMobileCard({
+  race,
+  history,
+  onOpen,
+}: {
+  race: Race
+  history: boolean
+  onOpen: () => void
+}) {
+  return (
+    <article
+      className="
+        px-4
+        py-4
+      "
+    >
+      <div
+        className="
+          flex
+          items-start
+          justify-between
+          gap-3
+        "
+      >
         <div className="min-w-0">
+          <div
+            className="
+              flex
+              flex-wrap
+              items-center
+              gap-2
+            "
+          >
+            <span
+              className="
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.07em]
+                text-slate-400
+              "
+            >
+              {
+                formatDateShort(
+                  race.date,
+                )
+              }
+            </span>
+
+            <RaceTypePill
+              type={
+                race.type
+              }
+            />
+
+            <PriorityPill
+              priority={
+                race.priority
+              }
+            />
+          </div>
+
           <h3
             className="
-              truncate
-              font-bold
-              text-base-content
+              mt-2
+              text-[15px]
+              font-semibold
+              tracking-[-0.02em]
+              text-slate-800
+              dark:text-slate-200
             "
           >
             {race.name}
@@ -984,175 +1636,409 @@ function PastRaceRow({
           <p
             className="
               mt-1
-              flex items-center
-              gap-1.5
-              text-sm
-              text-base-content/50
+              flex
+              items-center
+              gap-1
+              text-[10px]
+              text-slate-400
             "
           >
             <MapPin
-              size={14}
+              className="
+                h-3
+                w-3
+              "
             />
 
             {race.location}
           </p>
-
-          {result.source === 'activity' && (
-            <p
-              className="
-                mt-1
-                text-xs
-                font-medium
-                text-success
-              "
-            >
-              Données Intervals.icu
-            </p>
-          )}
-
-          {result.source === 'manual' && (
-            <p
-              className="
-                mt-1
-                text-xs
-                text-base-content/40
-              "
-            >
-              Résultat saisi manuellement
-            </p>
-          )}
         </div>
 
 
-        <div
+        <button
+          type="button"
+          aria-label="Voir la course"
+          onClick={
+            onOpen
+          }
           className="
-            flex flex-wrap
+            flex
+            h-8
+            w-8
+            shrink-0
             items-center
-            gap-x-5
-            gap-y-2
-            text-sm
-            text-base-content/60
-            md:justify-end
+            justify-center
+            rounded-[8px]
+            border
+            border-emerald-500/20
+            bg-emerald-500/[0.06]
+            text-emerald-600
+            dark:text-emerald-400
           "
         >
-          <span>
-            {formatNumber(
-              result.distanceKm
-              ?? 0,
-            )}
-            {' '}
-            km
-          </span>
-
-          {result.elevationGainM
-            !== undefined && (
-              <span>
-                {Math.round(
-                  result.elevationGainM,
-                )}
-                {' '}
-                m D+
-              </span>
-            )}
-
-          {result.durationMinutes
-            !== undefined && (
-              <span
-                className="
-                  font-semibold
-                  text-base-content
-                "
-              >
-                {formatDuration(
-                  result.durationMinutes,
-                )}
-              </span>
-            )}
-
-          {result.trainingLoad
-            !== undefined && (
-              <span>
-                Charge{' '}
-                {formatNumber(
-                  result.trainingLoad,
-                )}
-              </span>
-            )}
-
-          {race.ranking
-            !== undefined && (
-              <span>
-                {race.ranking}
-                e
-              </span>
-            )}
-        </div>
+          <Eye
+            className="
+              h-4
+              w-4
+            "
+          />
+        </button>
       </div>
-    </button>
+
+
+      <div
+        className="
+          mt-3
+          grid
+          grid-cols-2
+          gap-x-6
+          gap-y-3
+          rounded-[10px]
+          bg-slate-50
+          px-3
+          py-3
+          dark:bg-white/[0.022]
+        "
+      >
+        <MobileMetric
+          label="Distance"
+          value={
+            `${formatNumber(
+              race.distanceKm,
+            )} km`
+          }
+        />
+
+        <MobileMetric
+          label="Dénivelé"
+          value={
+            race.elevationGainM
+              ? (
+                  `${Math.round(
+                    race.elevationGainM,
+                  )} m`
+                )
+              : '—'
+          }
+        />
+
+        {history ? (
+          <MobileMetric
+            label="Résultat"
+            value={
+              resultText(
+                race,
+              )
+            }
+          />
+        ) : (
+          <MobileMetric
+            label="Objectif"
+            value={
+              race.targetTimeMinutes
+                ? formatDuration(
+                    race.targetTimeMinutes,
+                  )
+                : '—'
+            }
+          />
+        )}
+
+        <MobileMetric
+          label="Statut"
+          value={
+            formatStatus(
+              race.status,
+            )
+          }
+        />
+      </div>
+    </article>
   )
 }
 
 
-function StatusBadge({
-  status,
+function MobileMetric({
+  label,
+  value,
 }: {
-  status: Race['status']
+  label: string
+  value: string
 }) {
-  if (
-    status === 'completed'
-  ) {
-    return (
-      <span
+  return (
+    <div>
+      <p
         className="
-          badge
-          badge-success
-          badge-sm
-          mt-1
-          gap-1
+          text-[8px]
+          font-semibold
+          uppercase
+          tracking-[0.07em]
+          text-slate-400
         "
       >
-        <Check
-          size={11}
-        />
+        {label}
+      </p>
 
-        Terminée
-      </span>
-    )
-  }
-
-  if (
-    status === 'abandoned'
-  ) {
-    return (
-      <span
+      <p
         className="
-          badge
-          badge-error
-          badge-sm
-          mt-1
-          gap-1
+          mt-0.5
+          text-[11px]
+          font-semibold
+          tabular-nums
+          text-slate-700
+          dark:text-slate-300
         "
       >
-        <X
-          size={11}
-        />
+        {value}
+      </p>
+    </div>
+  )
+}
 
-        Abandon
-      </span>
-    )
-  }
+
+/* ============================================================
+   PILLS / STATES
+   ============================================================ */
+
+function PriorityPill({
+  priority,
+}: {
+  priority: RacePriority
+}) {
+  const primary =
+    priority === 'primary'
 
   return (
     <span
+      className={[
+        (
+          'inline-flex rounded-full '
+          + 'px-2 py-0.5 '
+          + 'text-[7.5px] '
+          + 'font-bold '
+          + 'uppercase '
+          + 'tracking-[0.06em]'
+        ),
+        primary
+          ? (
+              'bg-emerald-500/[0.08] '
+              + 'text-emerald-700 '
+              + 'dark:text-emerald-400'
+            )
+          : (
+              'bg-slate-500/[0.07] '
+              + 'text-slate-500 '
+              + 'dark:text-slate-400'
+            ),
+      ].join(' ')}
+    >
+      {
+        primary
+          ? 'A-Race'
+          : 'B-Race'
+      }
+    </span>
+  )
+}
+
+
+function RaceTypePill({
+  type,
+}: {
+  type: RaceType
+}) {
+  return (
+    <span
       className="
-        badge
-        badge-ghost
-        badge-sm
-        mt-1
+        inline-flex
+        whitespace-nowrap
+        rounded-full
+        bg-slate-100
+        px-2
+        py-0.5
+        text-[8px]
+        font-semibold
+        text-slate-500
+        dark:bg-white/[0.045]
+        dark:text-slate-400
       "
     >
-      Non participant
+      {
+        formatRaceType(
+          type,
+        )
+      }
     </span>
+  )
+}
+
+
+function RaceResult({
+  race,
+}: {
+  race: Race
+}) {
+  return (
+    <span>
+      {
+        resultText(
+          race,
+        )
+      }
+    </span>
+  )
+}
+
+
+/* ============================================================
+   SECTION / STATES
+   ============================================================ */
+
+function SectionHeader({
+  eyebrow,
+  title,
+  trailing,
+}: {
+  eyebrow: string
+  title: string
+  trailing?: React.ReactNode
+}) {
+  return (
+    <div
+      className="
+        flex
+        items-center
+        justify-between
+        gap-3
+        border-b
+        border-black/[0.055]
+        px-4
+        py-3
+        dark:border-white/[0.055]
+        sm:px-5
+      "
+    >
+      <div>
+        <p
+          className="
+            text-[8px]
+            font-bold
+            uppercase
+            tracking-[0.1em]
+            text-slate-400
+          "
+        >
+          {eyebrow}
+        </p>
+
+        <h2
+          className="
+            mt-0.5
+            text-[13px]
+            font-semibold
+            text-slate-800
+            dark:text-slate-200
+          "
+        >
+          {title}
+        </h2>
+      </div>
+
+      {trailing}
+    </div>
+  )
+}
+
+
+function NoPrimaryRace({
+  onAdd,
+}: {
+  onAdd: () => void
+}) {
+  return (
+    <section
+      className="
+        flex
+        flex-col
+        items-center
+        justify-center
+        rounded-[15px]
+        border
+        border-dashed
+        border-black/[0.09]
+        bg-white
+        px-5
+        py-8
+        text-center
+        dark:border-white/[0.09]
+        dark:bg-[#151b1f]
+      "
+    >
+      <Trophy
+        className="
+          h-6
+          w-6
+          text-emerald-500
+        "
+      />
+
+      <h2
+        className="
+          mt-3
+          text-[15px]
+          font-semibold
+          text-slate-800
+          dark:text-slate-200
+        "
+      >
+        Aucun objectif principal
+      </h2>
+
+      <p
+        className="
+          mt-1
+          max-w-md
+          text-[10.5px]
+          leading-5
+          text-slate-400
+        "
+      >
+        Ajoute ta prochaine course cible pour que
+        OpenCoach puisse structurer la préparation.
+      </p>
+
+      <button
+        type="button"
+        onClick={
+          onAdd
+        }
+        className="
+          mt-4
+          inline-flex
+          h-9
+          items-center
+          gap-1.5
+          rounded-[8px]
+          border
+          border-emerald-500/25
+          bg-emerald-500/[0.07]
+          px-3
+          text-[10px]
+          font-semibold
+          text-emerald-700
+          dark:text-emerald-400
+        "
+      >
+        <Plus
+          className="
+            h-3.5
+            w-3.5
+          "
+        />
+
+        Ajouter une course
+      </button>
+    </section>
   )
 }
 
@@ -1167,27 +2053,28 @@ function EmptyState({
   return (
     <div
       className="
-        rounded-2xl
-        border border-dashed
-        border-base-300
-        bg-base-100
-        px-5 py-8
+        px-4
+        py-9
         text-center
       "
     >
       <Flag
-        size={22}
         className="
           mx-auto
-          text-base-content/30
+          h-5
+          w-5
+          text-slate-200
+          dark:text-slate-700
         "
       />
 
       <p
         className="
-          mt-3
+          mt-2
+          text-[11px]
           font-semibold
-          text-base-content
+          text-slate-600
+          dark:text-slate-300
         "
       >
         {title}
@@ -1196,8 +2083,8 @@ function EmptyState({
       <p
         className="
           mt-1
-          text-sm
-          text-base-content/45
+          text-[9.5px]
+          text-slate-400
         "
       >
         {description}
@@ -1207,117 +2094,280 @@ function EmptyState({
 }
 
 
-function formatDate(
-  dateString: string,
+function LoadingState() {
+  return (
+    <div
+      className="
+        flex
+        min-h-[260px]
+        items-center
+        justify-center
+        rounded-[14px]
+        border
+        border-black/[0.065]
+        bg-white
+        dark:border-white/[0.065]
+        dark:bg-[#151b1f]
+      "
+    >
+      <span
+        className="
+          h-5
+          w-5
+          animate-spin
+          rounded-full
+          border-2
+          border-emerald-500/20
+          border-t-emerald-500
+        "
+      />
+    </div>
+  )
+}
+
+
+function ErrorState({
+  error,
+  onRetry,
+}: {
+  error: string
+  onRetry: () => void
+}) {
+  return (
+    <div
+      className="
+        rounded-[12px]
+        border
+        border-red-500/15
+        bg-red-50
+        p-4
+        dark:bg-red-500/[0.055]
+      "
+    >
+      <p
+        className="
+          text-[11px]
+          font-semibold
+          text-red-600
+          dark:text-red-400
+        "
+      >
+        Impossible de charger les courses
+      </p>
+
+      <p
+        className="
+          mt-1
+          text-[10px]
+          text-red-500/70
+        "
+      >
+        {error}
+      </p>
+
+      <button
+        type="button"
+        onClick={
+          onRetry
+        }
+        className="
+          mt-3
+          inline-flex
+          h-8
+          items-center
+          gap-1.5
+          rounded-[8px]
+          border
+          border-red-500/20
+          px-2.5
+          text-[9px]
+          font-semibold
+          text-red-600
+          dark:text-red-400
+        "
+      >
+        <RefreshCw
+          className="
+            h-3
+            w-3
+          "
+        />
+
+        Réessayer
+      </button>
+    </div>
+  )
+}
+
+
+/* ============================================================
+   FORMATTERS
+   ============================================================ */
+
+function daysUntil(
+  value: string,
+): number {
+  const target =
+    new Date(
+      `${value}T12:00:00`,
+    )
+
+  const today =
+    new Date()
+
+  const todayStart =
+    new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      12,
+    )
+
+  return Math.ceil(
+    (
+      target.getTime()
+      - todayStart.getTime()
+    )
+    / 86_400_000,
+  )
+}
+
+
+function formatDateLong(
+  value: string,
 ): string {
   return new Intl.DateTimeFormat(
     'fr-FR',
     {
       day: 'numeric',
-      month: 'short',
+      month: 'long',
       year: 'numeric',
     },
   ).format(
     new Date(
-      `${dateString}T12:00:00`,
+      `${value}T12:00:00`,
     ),
   )
 }
 
 
-function formatDuration(
-  totalMinutes: number,
+function formatDateShort(
+  value: string,
 ): string {
-  const roundedMinutes =
-    Math.round(
-      totalMinutes,
-    )
-
-  const hours =
-    Math.floor(
-      roundedMinutes / 60,
-    )
-
-  const minutes =
-    roundedMinutes % 60
-
-  return (
-    `${hours}h${
-      minutes
-        .toString()
-        .padStart(
-          2,
-          '0',
-        )
-    }`
+  return new Intl.DateTimeFormat(
+    'fr-FR',
+    {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    },
+  ).format(
+    new Date(
+      `${value}T12:00:00`,
+    ),
   )
+}
+
+
+function formatRaceType(
+  value: RaceType,
+): string {
+  const labels: Record<
+    RaceType,
+    string
+  > = {
+    trail: 'Trail',
+    road: 'Route',
+    ultra: 'Ultra',
+    other: 'Autre',
+  }
+
+  return labels[value]
 }
 
 
 function formatNumber(
   value: number,
 ): string {
-  return new Intl.NumberFormat(
+  return value.toLocaleString(
     'fr-FR',
     {
       maximumFractionDigits: 1,
     },
-  ).format(
-    value,
   )
 }
 
 
-function formatRaceType(
-  type: Race['type'],
+function formatDuration(
+  minutes: number,
 ): string {
-  switch (type) {
-    case 'trail':
-      return 'Trail'
-
-    case 'road':
-      return 'Route'
-
-    case 'ultra':
-      return 'Ultra'
-
-    default:
-      return 'Autre'
-  }
-}
-
-
-function PriorityBadge({
-  priority,
-}: {
-  priority: Race['priority']
-}) {
-  if (
-    priority === 'primary'
-  ) {
-    return (
-      <span
-        className="
-          badge
-          badge-primary
-          badge-sm
-          gap-1
-        "
-      >
-        ★ Objectif prioritaire
-      </span>
+  const total =
+    Math.round(
+      minutes,
     )
+
+  const hours =
+    Math.floor(
+      total / 60,
+    )
+
+  const remaining =
+    total % 60
+
+  if (hours === 0) {
+    return `${remaining} min`
   }
 
   return (
-    <span
-      className="
-        badge
-        badge-outline
-        badge-sm
-      "
-    >
-      Course d&apos;entraînement
-    </span>
+    `${hours} h `
+    + remaining
+      .toString()
+      .padStart(
+        2,
+        '0',
+      )
+  )
+}
+
+
+function formatStatus(
+  status: RaceStatus,
+): string {
+  const labels: Record<
+    RaceStatus,
+    string
+  > = {
+    planned: 'Prévue',
+    completed: 'Terminée',
+    abandoned: 'Abandon',
+    not_participated:
+      'Non-participation',
+  }
+
+  return labels[status]
+}
+
+
+function resultText(
+  race: Race,
+): string {
+  if (
+    race.status
+    === 'completed'
+  ) {
+    if (
+      race.actualTimeMinutes
+      != null
+    ) {
+      return formatDuration(
+        race.actualTimeMinutes,
+      )
+    }
+
+    return 'Terminée'
+  }
+
+  return formatStatus(
+    race.status,
   )
 }

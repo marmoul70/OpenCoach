@@ -39,12 +39,21 @@ export function MetricTooltip({
       <button
         type="button"
         className="
-          inline-flex h-4 w-4 shrink-0 items-center justify-center
-          rounded-full text-base-content/35
+          inline-flex
+          h-4
+          w-4
+          shrink-0
+          items-center
+          justify-center
+          rounded-full
+          text-slate-400
           transition-colors
-          hover:text-info
-          focus:text-info
+          hover:text-emerald-600
+          focus:text-emerald-600
           focus:outline-none
+          dark:text-slate-500
+          dark:hover:text-emerald-400
+          dark:focus:text-emerald-400
         "
         onClick={(
           event,

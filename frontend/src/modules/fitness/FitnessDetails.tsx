@@ -121,7 +121,20 @@ export function FitnessDetails() {
   if (loading) {
     return (
       <div className="flex min-h-56 items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-success" />
+        <span
+          className="
+            h-8
+            w-8
+            animate-spin
+            rounded-full
+            border-[2.5px]
+            border-slate-200
+            border-t-emerald-500
+            dark:border-white/[0.10]
+            dark:border-t-emerald-400
+          "
+          aria-hidden="true"
+        />
       </div>
     )
   }
@@ -133,7 +146,25 @@ export function FitnessDetails() {
     || !trends
   ) {
     return (
-      <div className="alert alert-error">
+      <div
+        className="
+          flex
+          items-center
+          gap-3
+          rounded-[11px]
+          border
+          border-rose-500/15
+          bg-rose-500/[0.05]
+          px-4
+          py-3
+          text-[11px]
+          font-medium
+          text-rose-700
+          dark:border-rose-400/15
+          dark:bg-rose-400/[0.05]
+          dark:text-rose-300
+        "
+      >
         <TriangleAlert className="h-5 w-5" />
 
         <span>
@@ -154,8 +185,8 @@ export function FitnessDetails() {
         date={readiness.date}
       />
 
-      <section className="rounded-xl border border-base-300">
-        <div className="grid divide-y divide-base-300 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <section className="rounded-xl border border-black/[0.06] dark:border-white/[0.07]">
+        <div className="grid divide-y divide-black/[0.06] dark:divide-white/[0.07] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <OverviewItem
             icon={Activity}
             label={
@@ -202,11 +233,11 @@ export function FitnessDetails() {
 
       <section>
         <div className="mb-2">
-          <h3 className="font-semibold text-base-content">
+          <h3 className="font-semibold text-slate-800 dark:text-slate-100">
             Données physiologiques
           </h3>
 
-          <p className="mt-0.5 text-xs text-base-content/45">
+          <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
             Valeurs du jour comparées à vos références personnelles.
           </p>
         </div>
@@ -269,20 +300,20 @@ export function FitnessDetails() {
         </div>
       </section>
 
-      <section className="border-t border-base-300 pt-5">
+      <section className="border-t border-black/[0.06] dark:border-white/[0.07] pt-5">
         <div className="mb-2">
-          <h3 className="font-semibold text-base-content">
+          <h3 className="font-semibold text-slate-800 dark:text-slate-100">
             Moyennes sur 7 jours
           </h3>
 
-          <p className="mt-0.5 text-xs text-base-content/45">
+          <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
             Comparaison de la dernière valeur disponible
             avec votre moyenne récente.
           </p>
         </div>
 
 
-        <div className="rounded-xl border border-base-300">
+        <div className="rounded-xl border border-black/[0.06] dark:border-white/[0.07]">
           <TrendRow
             label="Sommeil"
             trend={trends.metrics.sleep_score}
@@ -375,30 +406,30 @@ function TrendRow({
     )
 
   return (
-    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-base-300 px-2 py-2 last:border-b-0">
+    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-black/[0.06] dark:border-white/[0.07] px-2 py-2 last:border-b-0">
       <div>
-        <p className="text-sm font-semibold text-base-content">
+        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
           {label}
         </p>
 
       </div>
 
       <div className="text-right">
-        <p className="text-xs text-base-content/40">
+        <p className="text-xs text-slate-400 dark:text-slate-500">
           Aujourd’hui
         </p>
 
-        <p className="font-semibold text-base-content">
+        <p className="font-semibold text-slate-800 dark:text-slate-100">
           {current}
         </p>
       </div>
 
       <div className="min-w-20 text-right">
-        <p className="text-xs text-base-content/40">
+        <p className="text-xs text-slate-400 dark:text-slate-500">
           Moyenne 7 j
         </p>
 
-        <p className="font-semibold text-base-content">
+        <p className="font-semibold text-slate-800 dark:text-slate-100">
           {average}
         </p>
 
@@ -425,7 +456,7 @@ function getTrendDisplay(
   ) {
     return {
       label: '—',
-      className: 'text-base-content/40',
+      className: 'text-slate-400 dark:text-slate-500',
     }
   }
 
@@ -434,7 +465,7 @@ function getTrendDisplay(
   ) {
     return {
       label: '→ stable',
-      className: 'text-base-content/50',
+      className: 'text-slate-500 dark:text-slate-400',
     }
   }
 
@@ -456,7 +487,7 @@ function getTrendDisplay(
   if (neutral) {
     return {
       label,
-      className: 'text-info',
+      className: 'text-sky-600 dark:text-sky-400',
     }
   }
 
@@ -471,8 +502,8 @@ function getTrendDisplay(
   return {
     label,
     className: favorable
-      ? 'text-success'
-      : 'text-warning',
+      ? 'text-emerald-600 dark:text-emerald-400'
+      : 'text-amber-600 dark:text-amber-400',
   }
 }
 
@@ -490,22 +521,36 @@ function FitnessHeader({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success">
+        <div className="
+          flex
+          size-10
+          shrink-0
+          items-center
+          justify-center
+          rounded-[11px]
+          border
+          border-emerald-500/10
+          bg-emerald-500/[0.07]
+          text-emerald-600
+          dark:border-emerald-400/10
+          dark:bg-emerald-400/[0.07]
+          dark:text-emerald-400
+        ">
           <HeartPulse size={20} />
         </div>
 
         <div>
-          <p className="text-sm text-base-content/50">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             État de forme
           </p>
 
-          <p className="text-lg font-semibold text-base-content">
+          <p className="text-lg font-semibold text-slate-800 dark:text-slate-100">
             {formatReadinessLevel(
               level,
             )}
           </p>
 
-          <p className="text-xs text-base-content/40">
+          <p className="text-xs text-slate-400 dark:text-slate-500">
             {formatDate(
               date,
             )}
@@ -514,13 +559,13 @@ function FitnessHeader({
       </div>
 
       <div className="flex items-baseline gap-1">
-        <span className="text-3xl font-bold text-success">
+        <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
           {Math.round(
             score,
           )}
         </span>
 
-        <span className="text-sm text-base-content/40">
+        <span className="text-sm text-slate-400 dark:text-slate-500">
           /100
         </span>
       </div>
@@ -544,21 +589,21 @@ function OverviewItem({
     <div className="flex items-center gap-3 px-4 py-3">
       <Icon
         size={17}
-        className="shrink-0 text-base-content/40"
+        className="shrink-0 text-slate-400 dark:text-slate-500"
       />
 
       <div>
         <div className="flex items-baseline gap-2">
-          <span className="text-lg font-bold text-base-content">
+          <span className="text-lg font-bold text-slate-800 dark:text-slate-100">
             {value}
           </span>
 
-          <span className="text-xs font-medium text-base-content/55">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
             {label}
           </span>
         </div>
 
-        <p className="text-xs text-base-content/40">
+        <p className="text-xs text-slate-400 dark:text-slate-500">
           {description}
         </p>
       </div>
@@ -579,8 +624,17 @@ function MetricCard({
   detail: string
 }) {
   return (
-    <div className="rounded-xl border border-base-300 px-3 py-2.5">
-      <div className="flex items-center gap-2 text-base-content/45">
+    <div className="
+      rounded-[11px]
+      border
+      border-black/[0.06]
+      bg-white
+      px-3
+      py-2.5
+      dark:border-white/[0.07]
+      dark:bg-[#171d21]
+    ">
+      <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
         <Icon size={15} />
 
         <span className="text-xs font-medium">
@@ -588,11 +642,11 @@ function MetricCard({
         </span>
       </div>
 
-      <p className="mt-1 text-lg font-bold text-base-content">
+      <p className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">
         {value}
       </p>
 
-      <p className="mt-1 text-xs text-base-content/45">
+      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
         {detail}
       </p>
     </div>

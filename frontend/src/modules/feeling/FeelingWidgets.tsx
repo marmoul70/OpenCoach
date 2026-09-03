@@ -2,6 +2,7 @@ import {
   Activity,
   Bed,
   Check,
+  ChevronDown,
   Heart,
   Star,
 } from 'lucide-react'
@@ -261,10 +262,13 @@ export function FeelingWidgets() {
       >
         <span
           className="
-            loading
-            loading-spinner
-            loading-md
-            text-primary
+            h-5
+            w-5
+            animate-spin
+            rounded-full
+            border-2
+            border-emerald-500/20
+            border-t-emerald-500
           "
         />
       </div>
@@ -274,111 +278,174 @@ export function FeelingWidgets() {
 
   return (
     <div className="space-y-4">
-      <div
-        className="
-          grid
-          gap-3
-          sm:grid-cols-2
-        "
-      >
-        <EnergyWidget
-          value={
-            state?.checkin.energy_rating
-            ?? 5
-          }
-          onSave={async (value) => {
-            await persist({
-              energy:
-                value,
-            })
-          }}
-        />
+      <section>
+        <div
+          className="
+            mb-3
+            flex
+            items-end
+            justify-between
+            gap-3
+          "
+        >
+          <div>
+            <p
+              className="
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.10em]
+                text-slate-400
+                dark:text-slate-500
+              "
+            >
+              Check-in
+            </p>
 
-        <PainWidget
-          value={
-            state
-              ?.checkin
+            <h2
+              className="
+                mt-0.5
+                text-[15px]
+                font-semibold
+                tracking-[-0.02em]
+                text-slate-800
+                dark:text-slate-200
+              "
+            >
+              Ton état aujourd’hui
+            </h2>
+          </div>
+
+          <span
+            className="
+              text-[9px]
+              font-medium
+              text-emerald-600
+              dark:text-emerald-400
+            "
+          >
+            Sauvegarde auto
+          </span>
+        </div>
+
+
+        <div
+          className="
+            grid
+            gap-3
+            md:grid-cols-2
+          "
+        >
+          <EnergyWidget
+            value={
+              state?.checkin.energy_rating
+              ?? 5
+            }
+            onSave={async (value) => {
+              await persist({
+                energy:
+                  value,
+              })
+            }}
+          />
+
+          <PainWidget
+            value={
+              state
+                ?.checkin
+                .pain_wellness_rating
+              ?? 5
+            }
+            locations={
+              state
+                ?.checkin
+                .pain_locations
+              ?? []
+            }
+            onSave={async (
+              value,
+              locations,
+            ) => {
+              await persist({
+                comfort:
+                  value,
+                painLocations:
+                  locations,
+              })
+            }}
+          />
+
+          <IllnessWidget
+            value={
+              state?.checkin.illness
+              ?? false
+            }
+            onSave={async (value) => {
+              await persist({
+                illness:
+                  value,
+              })
+            }}
+          />
+
+          <AvailabilityWidget
+            value={
+              state?.checkin.unavailable
+              ?? false
+            }
+            reason={
+              state?.checkin.note
+              ?? ''
+            }
+            onSave={async (
+              value,
+              reason,
+            ) => {
+              await persist({
+                unavailable:
+                  value,
+                note:
+                  reason.trim()
+                    ? reason.trim()
+                    : null,
+              })
+            }}
+          />
+        </div>
+      </section>
+
+      {state
+        && (
+          state.adaptation
+            ?.awaiting_athlete_decision
+          || (
+            state.checkin
               .pain_wellness_rating
-            ?? 5
-          }
-          locations={
-            state
-              ?.checkin
-              .pain_locations
-            ?? []
-          }
-          onSave={async (
-            value,
-            locations,
-          ) => {
-            await persist({
-              comfort:
-                value,
-              painLocations:
-                locations,
-            })
-          }}
-        />
-      </div>
-
-      <div
-        className="
-          grid
-          gap-3
-          sm:grid-cols-2
-        "
-      >
-        <IllnessWidget
-          value={
-            state?.checkin.illness
-            ?? false
-          }
-          onSave={async (value) => {
-            await persist({
-              illness:
-                value,
-            })
-          }}
-        />
-
-        <AvailabilityWidget
-          value={
-            state?.checkin.unavailable
-            ?? false
-          }
-          reason={
-            state?.checkin.note
-            ?? ''
-          }
-          onSave={async (
-            value,
-            reason,
-          ) => {
-            await persist({
-              unavailable:
-                value,
-              note:
-                reason.trim()
-                  ? reason.trim()
-                  : null,
-            })
-          }}
-        />
-      </div>
-
-      {state?.adaptation?.awaiting_athlete_decision && (
-        <CoachActionCard
-          state={state}
-          onOpen={() => {
-            setDecisionModalOpen(
-              true,
-            )
-          }}
-          onCancel={() => {
-            void declineCoachAction()
-          }}
-        />
-      )}
+            <= 3
+          )
+        )
+        && (
+          <CoachActionCard
+            state={state}
+            forcePainAdaptation={
+              !state.adaptation
+                ?.awaiting_athlete_decision
+              && (
+                state.checkin
+                  .pain_wellness_rating
+                <= 3
+              )
+            }
+            onOpen={() => {
+              setDecisionModalOpen(
+                true,
+              )
+            }}
+            onCancel={() => {
+              void declineCoachAction()
+            }}
+          />
+        )}
 
 
       <DailyDecisionModal
@@ -503,8 +570,9 @@ function EnergyWidget({
       <p
         className="
           mt-3
-          text-xs
-          text-base-content/45
+          text-[10px]
+          text-slate-400
+          dark:text-slate-500
         "
       >
         1 = épuisé · 5 = très frais
@@ -590,33 +658,51 @@ function PainWidget({
   async function selectRating(
     nextValue: number,
   ) {
+    const previous =
+      current
+
     setCurrent(
       nextValue,
     )
-
-    if (nextValue < 5) {
-      return
-    }
 
     setSaving(
       true,
     )
 
     try {
+      /*
+       * Même fonctionnement qu'Énergie :
+       *
+       * la note est envoyée immédiatement
+       * au backend afin que le moteur Coach
+       * puisse recalculer l'adaptation.
+       *
+       * Pour une gêne < 5, la localisation
+       * sera ajoutée dans un second temps
+       * via validatePain().
+       */
       await onSave(
         nextValue,
-        [],
+        nextValue >= 5
+          ? []
+          : locations,
       )
 
       toast({
         type: 'success',
         title: 'Douleur enregistrée',
         message:
-          'Aucune douleur signalée.',
+          nextValue >= 5
+            ? 'Aucune douleur signalée.'
+            : (
+                `Niveau de confort : `
+                + `${nextValue}/5. `
+                + 'Précisez maintenant la zone.'
+              ),
       })
     } catch (reason) {
       setCurrent(
-        value,
+        previous,
       )
 
       toast({
@@ -713,8 +799,9 @@ function PainWidget({
       <p
         className="
           mt-3
-          text-xs
-          text-base-content/45
+          text-[10px]
+          text-slate-400
+          dark:text-slate-500
         "
       >
         1 = douleur importante · 5 = aucune douleur
@@ -726,7 +813,7 @@ function PainWidget({
             mt-4
             space-y-3
             border-t
-            border-base-300
+            border-black/[0.065] dark:border-white/[0.065]
             pt-4
           "
         >
@@ -737,23 +824,47 @@ function PainWidget({
               sm:grid-cols-2
             "
           >
-            <label className="form-control">
+            <label className="block">
               <span
                 className="
                   mb-1
                   text-xs
                   font-medium
-                  text-base-content/55
+                  text-slate-500 dark:text-slate-400
                 "
               >
                 Zone
               </span>
 
-              <select
-                className="
-                  select
-                  select-bordered
+              <div className="relative">
+                <select
+                  className="
+                  h-10
                   w-full
+                  appearance-none
+                  rounded-[9px]
+                  border
+                  border-black/[0.07]
+                  bg-slate-50
+                  px-3
+                  pr-9
+                  text-[11px]
+                  font-medium
+                  text-slate-700
+                  outline-none
+                  transition
+                  hover:border-black/[0.11]
+                  hover:bg-white
+                  focus:border-emerald-500/35
+                  focus:ring-2
+                  focus:ring-emerald-500/[0.08]
+                  dark:border-white/[0.07]
+                  dark:bg-[#1a2024]
+                  dark:text-slate-200
+                  dark:hover:border-white/[0.12]
+                  dark:hover:bg-[#1d2428]
+                  dark:focus:border-emerald-400/30
+                  dark:focus:ring-emerald-400/[0.08]
                 "
                 value={area}
                 disabled={saving}
@@ -773,26 +884,66 @@ function PainWidget({
                     </option>
                   ),
                 )}
-              </select>
+                </select>
+
+                <ChevronDown
+                  className="
+                    pointer-events-none
+                    absolute
+                    right-3
+                    top-1/2
+                    h-3.5
+                    w-3.5
+                    -translate-y-1/2
+                    text-slate-400
+                    dark:text-slate-500
+                  "
+                  strokeWidth={1.8}
+                />
+              </div>
             </label>
 
-            <label className="form-control">
+            <label className="block">
               <span
                 className="
                   mb-1
                   text-xs
                   font-medium
-                  text-base-content/55
+                  text-slate-500 dark:text-slate-400
                 "
               >
                 Côté
               </span>
 
-              <select
-                className="
-                  select
-                  select-bordered
+              <div className="relative">
+                <select
+                  className="
+                  h-10
                   w-full
+                  appearance-none
+                  rounded-[9px]
+                  border
+                  border-black/[0.07]
+                  bg-slate-50
+                  px-3
+                  pr-9
+                  text-[11px]
+                  font-medium
+                  text-slate-700
+                  outline-none
+                  transition
+                  hover:border-black/[0.11]
+                  hover:bg-white
+                  focus:border-emerald-500/35
+                  focus:ring-2
+                  focus:ring-emerald-500/[0.08]
+                  dark:border-white/[0.07]
+                  dark:bg-[#1a2024]
+                  dark:text-slate-200
+                  dark:hover:border-white/[0.12]
+                  dark:hover:bg-[#1d2428]
+                  dark:focus:border-emerald-400/30
+                  dark:focus:ring-emerald-400/[0.08]
                 "
                 value={side}
                 disabled={saving}
@@ -812,16 +963,54 @@ function PainWidget({
                     </option>
                   ),
                 )}
-              </select>
+                </select>
+
+                <ChevronDown
+                  className="
+                    pointer-events-none
+                    absolute
+                    right-3
+                    top-1/2
+                    h-3.5
+                    w-3.5
+                    -translate-y-1/2
+                    text-slate-400
+                    dark:text-slate-500
+                  "
+                  strokeWidth={1.8}
+                />
+              </div>
             </label>
           </div>
 
           <button
             type="button"
             className="
-              btn
-              btn-primary
-              btn-sm
+              inline-flex
+              h-9
+              items-center
+              justify-center
+              gap-2
+              rounded-[9px]
+              border
+              border-emerald-500/15
+              bg-emerald-500/[0.09]
+              px-3.5
+              text-[11px]
+              font-semibold
+              text-emerald-700
+              outline-none
+              transition
+              hover:border-emerald-500/25
+              hover:bg-emerald-500/[0.14]
+              active:scale-[0.98]
+              disabled:cursor-not-allowed
+              disabled:opacity-50
+              dark:border-emerald-400/15
+              dark:bg-emerald-400/[0.08]
+              dark:text-emerald-300
+              dark:hover:border-emerald-400/25
+              dark:hover:bg-emerald-400/[0.13]
             "
             disabled={saving}
             onClick={() => {
@@ -831,9 +1020,13 @@ function PainWidget({
             {saving && (
               <span
                 className="
-                  loading
-                  loading-spinner
-                  loading-xs
+                  h-3.5
+                  w-3.5
+                  animate-spin
+                  rounded-full
+                  border-2
+                  border-emerald-500/20
+                  border-t-emerald-500
                 "
               />
             )}
@@ -909,10 +1102,12 @@ function IllnessWidget({
           nextValue
             ? 'warning'
             : 'success',
+
         title:
           nextValue
             ? 'État malade activé'
             : 'État malade retiré',
+
         message:
           nextValue
             ? (
@@ -953,31 +1148,33 @@ function IllnessWidget({
       onClick={() => {
         void change()
       }}
-      className={`
-        w-full
-        rounded-2xl
-        border
-        p-3
-        text-left
-        shadow-sm
-        transition-all
-        disabled:cursor-wait
-        ${
-          current
-            ? (
-                'border-warning/60 '
-                + 'bg-warning/10 '
-                + 'ring-1 '
-                + 'ring-warning/20'
-              )
-            : (
-                'border-base-300 '
-                + 'bg-base-100 '
-                + 'hover:border-warning/30 '
-                + 'hover:bg-warning/5'
-              )
-        }
-      `}
+      className={[
+        (
+          'group w-full '
+          + 'rounded-[13px] '
+          + 'border p-4 '
+          + 'text-left '
+          + 'transition '
+          + 'disabled:cursor-wait'
+        ),
+        current
+          ? (
+              'border-amber-400/30 '
+              + 'bg-amber-400/[0.07] '
+              + 'shadow-[inset_0_0_0_1px_rgba(251,191,36,0.03)] '
+              + 'dark:bg-amber-400/[0.055]'
+            )
+          : (
+              'border-black/[0.065] '
+              + 'bg-white '
+              + 'hover:border-black/[0.11] '
+              + 'hover:bg-slate-50/70 '
+              + 'dark:border-white/[0.065] '
+              + 'dark:bg-[#151b1f] '
+              + 'dark:hover:border-white/[0.11] '
+              + 'dark:hover:bg-white/[0.025]'
+            ),
+      ].join(' ')}
     >
       <div
         className="
@@ -987,30 +1184,36 @@ function IllnessWidget({
         "
       >
         <div
-          className={`
-            flex
-            size-8
-            shrink-0
-            items-center
-            justify-center
-            rounded-lg
-            ${
-              current
-                ? (
-                    'bg-warning '
-                    + 'text-warning-content'
-                  )
-                : (
-                    'bg-warning/10 '
-                    + 'text-warning'
-                  )
-            }
-          `}
+          className={[
+            (
+              'flex h-9 w-9 '
+              + 'shrink-0 '
+              + 'items-center '
+              + 'justify-center '
+              + 'rounded-[9px]'
+            ),
+            current
+              ? (
+                  'bg-amber-400/[0.12] '
+                  + 'text-amber-600 '
+                  + 'dark:text-amber-400'
+                )
+              : (
+                  'bg-slate-100 '
+                  + 'text-slate-400 '
+                  + 'dark:bg-white/[0.04] '
+                  + 'dark:text-slate-500'
+                ),
+          ].join(' ')}
         >
           <Bed
-            className="h-4 w-4"
+            className="
+              h-4
+              w-4
+            "
           />
         </div>
+
 
         <div
           className="
@@ -1021,38 +1224,52 @@ function IllnessWidget({
           <div
             className="
               flex
+              flex-wrap
               items-center
               gap-2
             "
           >
             <h2
               className="
+                text-[13px]
                 font-semibold
-                text-base-content
+                text-slate-800
+                dark:text-slate-200
               "
             >
-              Malade
+              Santé
             </h2>
 
             {current && (
               <span
                 className="
-                  badge
-                  badge-warning
-                  badge-sm
+                  inline-flex
+                  rounded-full
+                  bg-amber-400/[0.10]
+                  px-2
+                  py-0.5
+                  text-[8px]
+                  font-bold
+                  uppercase
+                  tracking-[0.06em]
+                  text-amber-700
+                  dark:text-amber-400
                 "
               >
-                Actif
+                Malade
               </span>
             )}
 
             {saving && (
               <span
                 className="
-                  loading
-                  loading-spinner
-                  loading-xs
-                  text-warning
+                  h-3.5
+                  w-3.5
+                  animate-spin
+                  rounded-full
+                  border-2
+                  border-amber-500/20
+                  border-t-amber-500
                 "
               />
             )}
@@ -1060,48 +1277,55 @@ function IllnessWidget({
 
           <p
             className="
-              mt-0.5
-              text-xs
-              text-base-content/45
+              mt-1
+              text-[10px]
+              leading-4
+              text-slate-400
+              dark:text-slate-500
             "
           >
             {current
               ? (
-                  'Votre état de santé est '
-                  + 'pris en compte par OpenCoach.'
+                  'Ton état de santé est pris '
+                  + 'en compte par OpenCoach.'
                 )
               : (
-                  'Signaler des symptômes '
-                  + 'ou un état infectieux.'
+                  'Aucun symptôme signalé aujourd’hui.'
                 )}
           </p>
         </div>
 
+
         <div
-          className={`
-            flex
-            size-6
-            shrink-0
-            items-center
-            justify-center
-            rounded-full
-            border
-            ${
-              current
-                ? (
-                    'border-warning '
-                    + 'bg-warning '
-                    + 'text-warning-content'
-                  )
-                : (
-                    'border-base-content/15 '
-                    + 'text-transparent'
-                  )
-            }
-          `}
+          className={[
+            (
+              'flex h-6 w-6 '
+              + 'shrink-0 '
+              + 'items-center '
+              + 'justify-center '
+              + 'rounded-full '
+              + 'border transition'
+            ),
+            current
+              ? (
+                  'border-amber-500/35 '
+                  + 'bg-amber-500 '
+                  + 'text-white'
+                )
+              : (
+                  'border-black/[0.10] '
+                  + 'text-transparent '
+                  + 'group-hover:border-black/[0.18] '
+                  + 'dark:border-white/[0.12] '
+                  + 'dark:group-hover:border-white/[0.20]'
+                ),
+          ].join(' ')}
         >
           <Check
-            className="h-3.5 w-3.5"
+            className="
+              h-3.5
+              w-3.5
+            "
             strokeWidth={3}
           />
         </div>
@@ -1109,7 +1333,6 @@ function IllnessWidget({
     </button>
   )
 }
-
 
 
 function AvailabilityWidget({
@@ -1192,10 +1415,12 @@ function AvailabilityWidget({
           nextValue
             ? 'warning'
             : 'success',
+
         title:
           nextValue
             ? 'Indisponibilité enregistrée'
             : 'Disponibilité restaurée',
+
         message:
           nextValue
             ? (
@@ -1295,67 +1520,74 @@ function AvailabilityWidget({
 
   return (
     <section
-      className={`
-        rounded-2xl
-        border
-        p-3
-        shadow-sm
-        transition-all
-        ${
-          current
-            ? (
-                'border-error/60 '
-                + 'bg-error/10 '
-                + 'ring-1 '
-                + 'ring-error/20'
-              )
-            : (
-                'border-base-300 '
-                + 'bg-base-100'
-              )
-        }
-      `}
+      className={[
+        (
+          'rounded-[13px] '
+          + 'border p-4 '
+          + 'transition'
+        ),
+        current
+          ? (
+              'border-rose-400/25 '
+              + 'bg-rose-400/[0.06] '
+              + 'dark:bg-rose-400/[0.045]'
+            )
+          : (
+              'border-black/[0.065] '
+              + 'bg-white '
+              + 'dark:border-white/[0.065] '
+              + 'dark:bg-[#151b1f]'
+            ),
+      ].join(' ')}
     >
       <button
         type="button"
         disabled={saving}
         aria-pressed={current}
+        onClick={() => {
+          void toggleAvailability()
+        }}
         className="
+          group
           flex
           w-full
           items-center
           gap-3
           text-left
+          disabled:cursor-wait
         "
-        onClick={() => {
-          void toggleAvailability()
-        }}
       >
         <div
-          className={`
-            flex
-            size-8
-            shrink-0
-            items-center
-            justify-center
-            rounded-lg
-            ${
-              current
-                ? (
-                    'bg-error '
-                    + 'text-error-content'
-                  )
-                : (
-                    'bg-error/10 '
-                    + 'text-error'
-                  )
-            }
-          `}
+          className={[
+            (
+              'flex h-9 w-9 '
+              + 'shrink-0 '
+              + 'items-center '
+              + 'justify-center '
+              + 'rounded-[9px]'
+            ),
+            current
+              ? (
+                  'bg-rose-400/[0.11] '
+                  + 'text-rose-600 '
+                  + 'dark:text-rose-400'
+                )
+              : (
+                  'bg-slate-100 '
+                  + 'text-slate-400 '
+                  + 'dark:bg-white/[0.04] '
+                  + 'dark:text-slate-500'
+                ),
+          ].join(' ')}
         >
           <Activity
-            className="h-4 w-4"
+            className="
+              h-4
+              w-4
+            "
           />
         </div>
+
 
         <div
           className="
@@ -1366,37 +1598,52 @@ function AvailabilityWidget({
           <div
             className="
               flex
+              flex-wrap
               items-center
               gap-2
             "
           >
             <h2
               className="
+                text-[13px]
                 font-semibold
-                text-base-content
+                text-slate-800
+                dark:text-slate-200
               "
             >
-              Indisponible
+              Disponibilité
             </h2>
 
             {current && (
               <span
                 className="
-                  badge
-                  badge-error
-                  badge-sm
+                  inline-flex
+                  rounded-full
+                  bg-rose-400/[0.10]
+                  px-2
+                  py-0.5
+                  text-[8px]
+                  font-bold
+                  uppercase
+                  tracking-[0.06em]
+                  text-rose-700
+                  dark:text-rose-400
                 "
               >
-                Actif
+                Indisponible
               </span>
             )}
 
             {saving && (
               <span
                 className="
-                  loading
-                  loading-spinner
-                  loading-xs
+                  h-3.5
+                  w-3.5
+                  animate-spin
+                  rounded-full
+                  border-2
+                  border-rose-500/20
+                  border-t-rose-500
                 "
               />
             )}
@@ -1404,87 +1651,125 @@ function AvailabilityWidget({
 
           <p
             className="
-              mt-0.5
-              text-xs
-              text-base-content/45
+              mt-1
+              text-[10px]
+              leading-4
+              text-slate-400
+              dark:text-slate-500
             "
           >
-            Impossible de vous entraîner aujourd’hui.
+            {current
+              ? (
+                  'Tu as signalé que tu ne peux '
+                  + 'pas t’entraîner aujourd’hui.'
+                )
+              : (
+                  'Disponible pour suivre '
+                  + 'l’entraînement prévu.'
+                )}
           </p>
         </div>
 
+
         <div
-          className={`
-            flex
-            size-6
-            shrink-0
-            items-center
-            justify-center
-            rounded-full
-            border
-            ${
-              current
-                ? (
-                    'border-error '
-                    + 'bg-error '
-                    + 'text-error-content'
-                  )
-                : (
-                    'border-base-content/15 '
-                    + 'text-transparent'
-                  )
-            }
-          `}
+          className={[
+            (
+              'flex h-6 w-6 '
+              + 'shrink-0 '
+              + 'items-center '
+              + 'justify-center '
+              + 'rounded-full '
+              + 'border transition'
+            ),
+            current
+              ? (
+                  'border-rose-500/35 '
+                  + 'bg-rose-500 '
+                  + 'text-white'
+                )
+              : (
+                  'border-black/[0.10] '
+                  + 'text-transparent '
+                  + 'group-hover:border-black/[0.18] '
+                  + 'dark:border-white/[0.12] '
+                  + 'dark:group-hover:border-white/[0.20]'
+                ),
+          ].join(' ')}
         >
           <Check
-            className="h-3.5 w-3.5"
+            className="
+              h-3.5
+              w-3.5
+            "
             strokeWidth={3}
           />
         </div>
       </button>
 
+
       {current && (
         <div
           className="
-            mt-3
+            mt-4
             border-t
-            border-error/20
-            pt-3
+            border-rose-400/15
+            pt-4
           "
         >
-          <label>
+          <label className="block">
             <span
               className="
-                mb-1
+                mb-1.5
                 block
-                text-xs
-                font-medium
-                text-base-content/55
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.07em]
+                text-slate-400
+                dark:text-slate-500
               "
             >
-              Pourquoi êtes-vous indisponible ?
+              Motif
             </span>
 
             <textarea
+              value={currentReason}
+              disabled={saving}
+              maxLength={500}
+              onChange={
+                event =>
+                  setCurrentReason(
+                    event.target.value,
+                  )
+              }
+              placeholder="
+                Travail, déplacement, fatigue,
+                contrainte personnelle…
+              "
               className="
-                textarea
-                textarea-bordered
-                textarea-sm
-                min-h-20
+                min-h-[86px]
                 w-full
                 resize-y
+                rounded-[9px]
+                border
+                border-black/[0.08]
+                bg-white/70
+                px-3
+                py-2.5
+                text-[11px]
+                leading-5
+                text-slate-700
+                outline-none
+                transition
+                placeholder:text-slate-300
+                focus:border-rose-400/35
+                dark:border-white/[0.08]
+                dark:bg-white/[0.025]
+                dark:text-slate-200
               "
-              value={currentReason}
-              maxLength={500}
-              disabled={saving}
-              placeholder="Travail, déplacement, rendez-vous, fatigue, contrainte familiale..."
-              onChange={(event) => {
-                setCurrentReason(
-                  event.target.value,
-                )
-              }}
             />
           </label>
+
 
           <div
             className="
@@ -1497,8 +1782,10 @@ function AvailabilityWidget({
           >
             <span
               className="
-                text-xs
-                text-base-content/40
+                text-[9px]
+                tabular-nums
+                text-slate-400
+                dark:text-slate-500
               "
             >
               {currentReason.length}/500
@@ -1506,15 +1793,28 @@ function AvailabilityWidget({
 
             <button
               type="button"
-              className="
-                btn
-                btn-error
-                btn-sm
-              "
               disabled={saving}
               onClick={() => {
                 void validateReason()
               }}
+              className="
+                inline-flex
+                h-8
+                items-center
+                justify-center
+                rounded-[8px]
+                border
+                border-rose-400/25
+                bg-rose-400/[0.07]
+                px-3
+                text-[9.5px]
+                font-semibold
+                text-rose-700
+                transition
+                hover:bg-rose-400/[0.12]
+                disabled:opacity-40
+                dark:text-rose-400
+              "
             >
               Enregistrer le motif
             </button>
@@ -1526,14 +1826,14 @@ function AvailabilityWidget({
 }
 
 
-
-
 function CoachActionCard({
   state,
+  forcePainAdaptation = false,
   onOpen,
   onCancel,
 }: {
   state: DailyCheckInState
+  forcePainAdaptation?: boolean
   onOpen: () => void
   onCancel: () => void
 }) {
@@ -1541,8 +1841,12 @@ function CoachActionCard({
     state.adaptation
 
   if (
-    !adaptation
-    || !adaptation.awaiting_athlete_decision
+    (
+      !adaptation
+      || !adaptation
+        .awaiting_athlete_decision
+    )
+    && !forcePainAdaptation
   ) {
     return null
   }
@@ -1550,103 +1854,173 @@ function CoachActionCard({
   return (
     <section
       className="
-        rounded-2xl
+        relative
+        overflow-hidden
+        rounded-[14px]
         border
-        border-emerald-200
-        bg-emerald-50/70
+        border-white/[0.07]
+        bg-[#141917]
         p-4
+        text-white
+        shadow-[0_10px_30px_rgba(4,12,8,0.08)]
       "
     >
       <div
         className="
+          pointer-events-none
+          absolute
+          -right-20
+          -top-24
+          h-48
+          w-48
+          rounded-full
+          bg-emerald-500/[0.10]
+          blur-3xl
+        "
+      />
+
+      <div
+        className="
+          relative
           flex
           flex-col
-          gap-3
+          gap-4
           sm:flex-row
           sm:items-center
           sm:justify-between
         "
       >
-        <div>
+        <div className="min-w-0">
           <div
             className="
-              badge
-              badge-sm
-              border-emerald-200
-              bg-emerald-100
-              text-emerald-800
+              flex
+              items-center
+              gap-2
             "
           >
-            Action requise
+            <span
+              className="
+                inline-flex
+                rounded-full
+                bg-emerald-400/[0.10]
+                px-2
+                py-0.5
+                text-[8px]
+                font-bold
+                uppercase
+                tracking-[0.08em]
+                text-emerald-300
+              "
+            >
+              Action requise
+            </span>
           </div>
 
-          <p
+          <h2
             className="
-              mt-2
+              mt-3
+              text-[15px]
               font-semibold
-              text-base-content
+              tracking-[-0.02em]
+              text-white
             "
           >
-            OpenCoach propose une adaptation.
-          </p>
+            OpenCoach propose une adaptation
+          </h2>
 
           <p
             className="
-              mt-1
-              text-sm
-              text-base-content/55
+              mt-1.5
+              max-w-2xl
+              text-[11px]
+              leading-5
+              text-white/50
             "
           >
-            {adaptation.reason}
+            {
+              forcePainAdaptation
+                ? (
+                    'Une douleur évaluée à '
+                    + `${state.checkin.pain_wellness_rating}/5 `
+                    + 'peut justifier une adaptation '
+                    + 'de la séance du jour.'
+                  )
+                : adaptation?.reason
+            }
           </p>
 
           <p
             className="
               mt-2
-              text-xs
-              leading-relaxed
-              text-base-content/45
+              max-w-2xl
+              text-[9.5px]
+              leading-4
+              text-white/30
             "
           >
-            Après validation, OpenCoach peut adapter,
-            déplacer ou supprimer la séance selon
-            l’option que vous choisissez.
+            Tu peux examiner la proposition avant
+            de modifier le planning du jour.
           </p>
         </div>
+
 
         <div
           className="
             flex
             shrink-0
+            flex-wrap
             gap-2
           "
         >
           <button
             type="button"
-            className="
-              btn
-              btn-sm
-              border-emerald-300
-              bg-emerald-200
-              text-emerald-950
-              hover:border-emerald-400
-              hover:bg-emerald-300
-            "
             onClick={onOpen}
+            className="
+              inline-flex
+              h-9
+              items-center
+              justify-center
+              rounded-[8px]
+              border
+              border-emerald-400/25
+              bg-emerald-400/[0.09]
+              px-3
+              text-[10px]
+              font-semibold
+              text-emerald-300
+              transition
+              hover:border-emerald-400/40
+              hover:bg-emerald-400/[0.14]
+              hover:text-emerald-200
+            "
           >
-            Adapter la séance
+            Examiner
+            <span className="ml-1.5">
+              →
+            </span>
           </button>
 
           <button
             type="button"
-            className="
-              btn
-              btn-ghost
-              btn-sm
-            "
             onClick={onCancel}
+            className="
+              inline-flex
+              h-9
+              items-center
+              justify-center
+              rounded-[8px]
+              border
+              border-white/[0.07]
+              px-3
+              text-[10px]
+              font-semibold
+              text-white/40
+              transition
+              hover:bg-white/[0.04]
+              hover:text-white/70
+            "
           >
-            Annuler
+            Conserver
           </button>
         </div>
       </div>
@@ -1671,16 +2045,35 @@ function FeelingCard({
   return (
     <section
       className="
-        rounded-2xl
+        relative
+        overflow-hidden
+        rounded-[13px]
         border
-        border-base-300
-        bg-base-100
-        p-3
-        shadow-sm
+        border-black/[0.065]
+        bg-white
+        p-4
+        transition
+        dark:border-white/[0.065]
+        dark:bg-[#151b1f]
       "
     >
       <div
         className="
+          pointer-events-none
+          absolute
+          -right-12
+          -top-16
+          h-28
+          w-28
+          rounded-full
+          bg-emerald-500/[0.05]
+          blur-3xl
+        "
+      />
+
+      <div
+        className="
+          relative
           flex
           items-start
           gap-3
@@ -1689,21 +2082,31 @@ function FeelingCard({
         <div
           className="
             flex
-            size-8
+            h-9
+            w-9
             shrink-0
             items-center
             justify-center
-            rounded-lg
-            bg-primary/10
-            text-primary
+            rounded-[9px]
+            bg-emerald-500/[0.08]
+            text-emerald-600
+            dark:text-emerald-400
           "
         >
           <Icon
-            className="h-4 w-4"
+            className="
+              h-4
+              w-4
+            "
           />
         </div>
 
-        <div className="min-w-0 flex-1">
+        <div
+          className="
+            min-w-0
+            flex-1
+          "
+        >
           <div
             className="
               flex
@@ -1713,8 +2116,10 @@ function FeelingCard({
           >
             <h2
               className="
+                text-[13px]
                 font-semibold
-                text-base-content
+                text-slate-800
+                dark:text-slate-200
               "
             >
               {title}
@@ -1723,10 +2128,13 @@ function FeelingCard({
             {saving && (
               <span
                 className="
-                  loading
-                  loading-spinner
-                  loading-xs
-                  text-primary
+                  h-3.5
+                  w-3.5
+                  animate-spin
+                  rounded-full
+                  border-2
+                  border-emerald-500/20
+                  border-t-emerald-500
                 "
               />
             )}
@@ -1735,8 +2143,10 @@ function FeelingCard({
           <p
             className="
               mt-0.5
-              text-xs
-              text-base-content/45
+              text-[10px]
+              leading-4
+              text-slate-400
+              dark:text-slate-500
             "
           >
             {description}
@@ -1744,7 +2154,12 @@ function FeelingCard({
         </div>
       </div>
 
-      <div className="mt-3">
+      <div
+        className="
+          relative
+          mt-4
+        "
+      >
         {children}
       </div>
     </section>
@@ -1770,85 +2185,170 @@ function RatingButtons({
       ? Heart
       : Star
 
-  return (
-    <div
-      className="
-        flex
-        items-center
-        gap-1
-      "
-    >
-      {[
-        1,
-        2,
-        3,
-        4,
-        5,
-      ].map(
-        (rating) => {
-          const active =
-            rating <= value
+  const labels =
+    variant === 'energy'
+      ? [
+          'Épuisé',
+          'Fatigué',
+          'Correct',
+          'Bien',
+          'Très frais',
+        ]
+      : [
+          'Très gêné',
+          'Gêné',
+          'Moyen',
+          'Bien',
+          'Aucune gêne',
+        ]
 
-          return (
-            <button
-              key={rating}
-              type="button"
-              disabled={disabled}
-              aria-label={
-                `${rating} sur 5`
-              }
-              className="
-                flex
-                size-9
-                items-center
-                justify-center
-                rounded-lg
-                transition
-                hover:bg-base-200
-                disabled:opacity-50
-              "
-              onClick={() => {
-                onChange(
-                  rating,
-                )
-              }}
-            >
-              <Icon
-                className={`
-                  size-6
-                  transition-all
-                  ${
+  const currentLabel =
+    labels[
+      Math.max(
+        0,
+        Math.min(
+          4,
+          value - 1,
+        ),
+      )
+    ]
+
+  return (
+    <div>
+      <div
+        className="
+          grid
+          grid-cols-5
+          gap-1.5
+        "
+      >
+        {[
+          1,
+          2,
+          3,
+          4,
+          5,
+        ].map(
+          rating => {
+            const active =
+              rating <= value
+
+            return (
+              <button
+                key={rating}
+                type="button"
+                disabled={disabled}
+                aria-label={
+                  `${rating} sur 5`
+                }
+                onClick={() => {
+                  onChange(rating)
+                }}
+                className={[
+                  (
+                    'flex h-10 '
+                    + 'items-center '
+                    + 'justify-center '
+                    + 'rounded-[9px] '
+                    + 'border '
+                    + 'transition '
+                    + 'disabled:opacity-40'
+                  ),
+                  active
+                    ? (
+                        variant === 'energy'
+                          ? (
+                              'border-rose-300/25 '
+                              + 'bg-rose-300/[0.08]'
+                            )
+                          : (
+                              'border-emerald-500/25 '
+                              + 'bg-emerald-500/[0.08]'
+                            )
+                      )
+                    : (
+                        'border-black/[0.055] '
+                        + 'bg-slate-50 '
+                        + 'hover:border-black/[0.10] '
+                        + 'hover:bg-slate-100/70 '
+                        + 'dark:border-white/[0.055] '
+                        + 'dark:bg-white/[0.015] '
+                        + 'dark:hover:border-white/[0.10] '
+                        + 'dark:hover:bg-white/[0.035]'
+                      ),
+                ].join(' ')}
+              >
+                <Icon
+                  className={[
+                    (
+                      'h-5 w-5 '
+                      + 'transition-all'
+                    ),
                     active
                       ? (
                           variant === 'energy'
-                            ? 'fill-error text-error'
+                            ? (
+                                'fill-rose-300 '
+                                + 'text-rose-300 '
+                                + 'dark:fill-rose-400/80 '
+                                + 'dark:text-rose-400/80'
+                              )
                             : (
                                 'fill-emerald-500 '
-                                + 'text-emerald-500'
+                                + 'text-emerald-500 '
+                                + 'dark:fill-emerald-400 '
+                                + 'dark:text-emerald-400'
                               )
                         )
                       : (
                           'fill-transparent '
-                          + 'text-base-content/20'
-                        )
-                  }
-                `}
-                strokeWidth={2}
-              />
-            </button>
-          )
-        },
-      )}
+                          + 'text-slate-300 '
+                          + 'dark:text-slate-600'
+                        ),
+                  ].join(' ')}
+                  strokeWidth={2}
+                />
+              </button>
+            )
+          },
+        )}
+      </div>
+
+      <div
+        className="
+          mt-2.5
+          flex
+          items-center
+          justify-between
+          gap-3
+        "
+      >
+        <span
+          className="
+            text-[10px]
+            font-semibold
+            text-slate-700
+            dark:text-slate-300
+          "
+        >
+          {currentLabel}
+        </span>
+
+        <span
+          className="
+            text-[9px]
+            font-medium
+            tabular-nums
+            text-slate-400
+            dark:text-slate-500
+          "
+        >
+          {value}/5
+        </span>
+      </div>
     </div>
   )
 }
-
-
-
-
-
-
-
 
 
 function getErrorMessage(

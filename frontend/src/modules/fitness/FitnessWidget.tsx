@@ -86,11 +86,17 @@ export function FitnessWidget({
       >
         <span
           className="
-            loading
-            loading-spinner
-            loading-sm
-            text-emerald-500
+            h-5
+            w-5
+            animate-spin
+            rounded-full
+            border-2
+            border-slate-200
+            border-t-emerald-500
+            dark:border-white/[0.10]
+            dark:border-t-emerald-400
           "
+          aria-hidden="true"
         />
       </div>
     )

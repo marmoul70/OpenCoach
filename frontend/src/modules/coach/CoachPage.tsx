@@ -1,21 +1,56 @@
-import { MetricTooltip } from '../../components/metrics/MetricTooltip'
 import {
-  Activity,
   Brain,
-  CircleCheck,
   Clock,
-  HeartPulse,
   Info,
-  Sparkles,
-  TriangleAlert,
 } from 'lucide-react'
+
+import {
+  useState,
+} from 'react'
+
+import {
+  Modal,
+} from '../../components/ui/Modal'
 
 import {
   useCoachToday,
 } from './useCoachToday'
 
+import {
+  TrainingDetails,
+} from '../training/TrainingDetails'
+
+import {
+  useTrainingSessions,
+} from '../training/trainingStore'
+
+
 
 export function CoachPage() {
+  const {
+    sessions: trainingSessions,
+    validateSession,
+  } = useTrainingSessions()
+
+  const [
+    selectedSessionId,
+    setSelectedSessionId,
+  ] = useState<string | null>(
+    null,
+  )
+
+  const selectedTrainingSession =
+    selectedSessionId
+      ? (
+          trainingSessions.find(
+            item =>
+              item.id
+              === selectedSessionId,
+          )
+          ?? null
+        )
+      : null
+
   const {
     coach,
     loading,
@@ -26,50 +61,27 @@ export function CoachPage() {
   if (loading) {
     return (
       <PageContainer>
-        <div className="flex min-h-80 items-center justify-center">
-          <span className="loading loading-spinner loading-lg text-primary" />
-        </div>
-      </PageContainer>
-    )
-  }
-
-  if (error) {
-    return (
-      <PageContainer>
-        <div className="alert alert-error">
-          <TriangleAlert className="h-5 w-5" />
-
-          <div>
-            <p className="font-semibold">
-              Coach indisponible
-            </p>
-
-            <p className="text-sm">
-              {error}
-            </p>
+        <div className="flex min-h-[420px] items-center justify-center">
+          <div className="flex items-center gap-2 text-[13px] text-slate-400">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-500" />
+            Analyse de ta situation…
           </div>
         </div>
       </PageContainer>
     )
   }
 
-  if (
-    unavailable
-    || !coach
-  ) {
+  if (error || unavailable || !coach) {
     return (
       <PageContainer>
-        <div className="card border border-base-300 bg-base-100 shadow-sm">
-          <div className="card-body items-center py-16 text-center">
-            <Brain className="h-9 w-9 text-base-content/25" />
-
-            <h2 className="mt-2 text-lg font-semibold">
-              Analyse en préparation
+        <div className="flex min-h-[420px] items-center justify-center">
+          <div className="max-w-md text-center">
+            <Brain className="mx-auto h-6 w-6 text-slate-300" />
+            <h2 className="mt-3 text-[15px] font-semibold text-slate-900 dark:text-white">
+              Analyse indisponible
             </h2>
-
-            <p className="max-w-md text-sm text-base-content/50">
-              OpenCoach n’a pas encore assez de données pour
-              construire une analyse complète.
+            <p className="mt-1 text-[10.5px] leading-5 text-slate-400">
+              {error ?? 'OpenCoach prépare encore ton analyse.'}
             </p>
           </div>
         </div>
@@ -79,714 +91,1096 @@ export function CoachPage() {
 
   const {
     readiness,
+    recentLoad,
     recentLoadAssessment,
     sessionDecisions,
     weeklyAssessment,
+    weeklyPlan,
     dataWarning,
   } = coach
 
+  const todayItem =
+    sessionDecisions.find(item => item.session !== null)
+
+  const session = todayItem?.session ?? null
+
   const attentionSignals = [
-    ...readiness.signals.filter(
-      (signal) =>
-        signal.level !== 'normal',
-    ),
-    ...(
-      recentLoadAssessment?.signals
-      ?? []
-    ),
+    ...readiness.signals.filter(signal => signal.level !== 'normal'),
+    ...(recentLoadAssessment?.signals ?? []),
   ]
 
-  const todaySessions = (
-    sessionDecisions.filter(
-      (item) =>
-        item.session !== null,
-    )
+  const tone = resolveReadinessTone(
+    readiness.score,
+    readiness.criticalCount,
+    readiness.warningCount,
   )
 
-  const progressPercent = (
-    weeklyAssessment.targetLoad
-      ? Math.min(
-          100,
-          Math.max(
-            0,
-            (
-              weeklyAssessment.actualLoadToDate
-              / weeklyAssessment.targetLoad
-            ) * 100,
-          ),
-        )
-      : 0
-  )
-
-  const actualPercent = (
+  const actualPercent =
     weeklyAssessment.targetLoad
       ? percentageOfTarget(
           weeklyAssessment.actualLoadToDate,
           weeklyAssessment.targetLoad,
         )
-      : undefined
-  )
+      : 0
 
-  const projectedPercent = (
+  const projectedPercent =
     weeklyAssessment.targetLoad
       ? percentageOfTarget(
           weeklyAssessment.projectedWeekLoad,
           weeklyAssessment.targetLoad,
         )
-      : undefined
-  )
+      : 0
 
   return (
     <PageContainer>
+      <header className="mb-4 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400">
+            OpenCoach
+          </p>
 
-      <PageHeader />
+          <h1 className="mt-0.5 text-[30px] font-bold tracking-[-0.04em] text-slate-950 dark:text-white">
+            Coach
+          </h1>
+
+          <p className="mt-1 text-[13px] text-slate-400 dark:text-slate-500">
+            Ton briefing d'entraînement du jour.
+          </p>
+        </div>
+
+        <div className="hidden text-right sm:block">
+          <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-300 dark:text-slate-600">
+            Aujourd'hui
+          </p>
+
+          <p className="mt-0.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+            {new Intl.DateTimeFormat('fr-FR', {
+              weekday: 'short',
+              day: '2-digit',
+              month: 'short',
+            }).format(new Date())}
+          </p>
+        </div>
+      </header>
 
       {dataWarning && (
-        <div className="alert alert-warning mb-5">
-          <Info className="h-5 w-5" />
-          <span>{dataWarning}</span>
+        <div className="mb-3 flex items-center gap-2 rounded-[10px] border border-amber-500/15 bg-amber-50/70 px-3 py-2 text-[9px] text-amber-700 dark:bg-amber-500/[0.05] dark:text-amber-400">
+          <Info className="h-3.5 w-3.5 shrink-0" />
+          {dataWarning}
         </div>
       )}
 
-      <div className="space-y-5">
+      <div className="overflow-hidden rounded-[16px] border border-black/[0.07] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.03)] dark:border-white/[0.07] dark:bg-[#151b1f]">
 
         {/* ==================================================
-            SYNTHÈSE
-        ================================================== */}
+            HERO / DECISION
+            ================================================== */}
 
-        <section className="card border border-base-300 bg-base-100 shadow-sm">
-          <div className="card-body gap-5 p-5 sm:p-6">
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_270px]">
 
-            <div className="flex items-start gap-3">
+          <section className="relative min-w-0 p-5 sm:p-6 lg:p-7">
 
-              <StatusIcon
-                status={weeklyAssessment.status}
-              />
+            <div className="pointer-events-none absolute -left-24 -top-32 h-72 w-72 rounded-full bg-emerald-500/[0.045] blur-3xl" />
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-base-content/40">
-                  Cette semaine
-                </p>
+            <div className="relative">
+              <div className="flex items-center gap-2">
+                <span
+                  className={[
+                    'h-2 w-2 rounded-full',
+                    tone === 'critical'
+                      ? 'bg-red-500'
+                      : tone === 'warning'
+                        ? 'bg-amber-500'
+                        : 'bg-emerald-500',
+                  ].join(' ')}
+                />
 
-                <h2 className="mt-1 text-xl font-bold sm:text-2xl">
-                  {humanizeHeadline(
-                    weeklyAssessment.status,
-                  )}
-                </h2>
-
-                <p className="mt-2 max-w-3xl text-sm leading-relaxed text-base-content/65">
-                  {humanizeWeeklySituation(
-                    weeklyAssessment,
-                    actualPercent,
-                    projectedPercent,
-                  )}
-                </p>
+                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                  Recommandation du jour
+                </span>
               </div>
 
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-
-              <HumanMetric
-                icon={
-                  <HeartPulse className="h-4 w-4" />
-                }
-                label={
-                  <MetricTooltip
-                    metric="readiness"
-                    label={`Forme ${Math.round(readiness.score)}/100`}
-                  />
-                }
-              />
-
-              <HumanMetric
-                icon={
-                  <Activity className="h-4 w-4" />
-                }
-                label={
-                  actualPercent !== undefined
-                    ? `Charge réalisée ${Math.round(actualPercent)} %`
-                    : 'Charge en cours'
-                }
-              />
-
-              <HumanMetric
-                icon={
-                  attentionSignals.length > 0
-                    ? (
-                        <TriangleAlert className="h-4 w-4" />
-                      )
-                    : (
-                        <CircleCheck className="h-4 w-4" />
-                      )
-                }
-                label={
-                  attentionSignals.length === 0
-                    ? 'Aucun signal préoccupant'
-                    : (
-                        `${attentionSignals.length} point${
-                          attentionSignals.length > 1
-                            ? 's'
-                            : ''
-                        } à surveiller`
-                      )
-                }
-              />
-
-            </div>
-
-          </div>
-        </section>
-
-
-        {/* ==================================================
-            CONSEIL DU COACH
-        ================================================== */}
-
-        <section className="card border border-primary/20 bg-primary/5 shadow-sm">
-          <div className="card-body gap-4 p-5 sm:p-6">
-
-            <div className="flex items-start gap-3">
-
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Brain className="h-5 w-5" />
-              </div>
-
-              <div className="min-w-0">
-
-                <p className="text-xs font-bold uppercase tracking-wide text-primary/70">
-                  Conseil du Coach
-                </p>
-
-                <h2 className="mt-1 text-lg font-bold text-base-content">
-                  {coachAdviceHeadline(
-                    weeklyAssessment.status,
-                    weeklyAssessment.adaptationOpportunity,
-                  )}
-                </h2>
-
-              </div>
-
-            </div>
-
-            <p className="max-w-3xl text-sm leading-relaxed text-base-content/70">
-              {weeklyAssessment.instruction}
-            </p>
-
-            <p className="max-w-3xl text-sm leading-relaxed text-base-content/55">
-              {coachAdviceContext(
-                weeklyAssessment.status,
-                weeklyAssessment.adaptationOpportunity,
-                weeklyAssessment.projectedGapPercent,
-              )}
-            </p>
-
-          </div>
-        </section>
-
-
-        {/* ==================================================
-            PROGRESSION HEBDOMADAIRE
-        ================================================== */}
-
-        <section className="card border border-base-300 bg-base-100 shadow-sm">
-          <div className="card-body gap-5 p-5 sm:p-6">
-
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-base-content/40">
-                Où tu en es
-              </p>
-
-              <h2 className="mt-1 text-lg font-bold">
-                Ta progression cette semaine
+              <h2 className="mt-4 max-w-[720px] text-[27px] font-bold leading-[1.1] tracking-[-0.045em] text-slate-950 dark:text-white sm:text-[30px]">
+                {buildDailyDecisionHeadline(
+                  readiness.score,
+                  readiness.criticalCount,
+                  readiness.warningCount,
+                  recentLoadAssessment?.hasCritical ?? false,
+                  recentLoadAssessment?.hasOverload ?? false,
+                )}
               </h2>
-            </div>
 
-            <div className="space-y-3">
-
-              <div className="flex items-end justify-between gap-4">
-
-                <div>
-                  <p className="text-xs text-base-content/45">
-                    Déjà réalisé
-                  </p>
-
-                  <p className="text-xl font-bold tabular-nums">
-                    {actualPercent !== undefined
-                      ? `${Math.round(actualPercent)} %`
-                      : '—'}
-                  </p>
-                </div>
-
-                <div className="text-right">
-                  <p className="text-xs text-base-content/45">
-                    Fin de semaine estimée
-                  </p>
-
-                  <p className="text-xl font-bold tabular-nums">
-                    {projectedPercent !== undefined
-                      ? `${Math.round(projectedPercent)} %`
-                      : '—'}
-
-                    {weeklyAssessment.targetLoad && (
-                      <span className="ml-1 text-sm font-medium text-base-content/40">
-                        / cible 100 %
-                      </span>
-                    )}
-                  </p>
-                </div>
-
-              </div>
-
-              <progress
-                className="progress progress-primary h-3 w-full"
-                value={progressPercent}
-                max={100}
-              />
-
-              <p className="text-sm leading-relaxed text-base-content/60">
-                {buildProgressSentence(
-                  weeklyAssessment,
+              <p className="mt-3 max-w-[680px] text-[14px] leading-[1.7] text-slate-500 dark:text-slate-400">
+                {readinessSummary(
+                  readiness.score,
+                  attentionSignals.length,
                 )}
               </p>
 
-            </div>
+              {session ? (
+                <div
+                  className="
+                    mt-6
+                    overflow-hidden
+                    rounded-[13px]
+                    border
+                    border-white/[0.07]
+                    bg-[#141917]
+                    shadow-[0_12px_35px_rgba(4,12,8,0.10)]
+                  "
+                >
+                  <div
+                    className="
+                      relative
+                      overflow-hidden
+                      px-4
+                      py-4
+                      sm:px-5
+                    "
+                  >
+                    <div
+                      className="
+                        pointer-events-none
+                        absolute
+                        -right-20
+                        -top-24
+                        h-44
+                        w-44
+                        rounded-full
+                        bg-emerald-500/[0.08]
+                        blur-3xl
+                      "
+                    />
 
-          </div>
-        </section>
+                    <div
+                      className="
+                        relative
+                        flex
+                        flex-col
+                        gap-4
+                        sm:flex-row
+                        sm:items-end
+                        sm:justify-between
+                      "
+                    >
+                      <div className="min-w-0">
+                        <div
+                          className="
+                            flex
+                            flex-wrap
+                            items-center
+                            gap-2
+                          "
+                        >
+                          <span
+                            className="
+                              text-[10px]
+                              font-bold
+                              uppercase
+                              tracking-[0.11em]
+                              text-emerald-400
+                            "
+                          >
+                            Séance du jour
+                          </span>
 
-
-        {/* ==================================================
-            AUJOURD'HUI
-        ================================================== */}
-
-        <section className="card border border-base-300 bg-base-100 shadow-sm">
-          <div className="card-body gap-4 p-5 sm:p-6">
-
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-base-content/40">
-                Aujourd’hui
-              </p>
-
-              <h2 className="mt-1 text-lg font-bold">
-                Ce que tu as à faire
-              </h2>
-            </div>
-
-            {todaySessions.length > 0 ? (
-              <div className="space-y-3">
-
-                {todaySessions.map(
-                  (
-                    item,
-                    index,
-                  ) => {
-                    const session =
-                      item.session
-
-                    if (!session) {
-                      return null
-                    }
-
-                    return (
-                      <div
-                        key={
-                          session.id
-                          ?? `${session.date}-${index}`
-                        }
-                        className="rounded-box border border-base-300 bg-base-200/30 p-4"
-                      >
-
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-
-                          <div className="min-w-0">
-
-                            <p className="font-semibold text-base-content">
-                              {session.title}
-                            </p>
-
-                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-base-content/50">
-
-                              <span>
-                                {humanizeSessionType(
-                                  session.type,
-                                )}
-                              </span>
-
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3.5 w-3.5" />
-                                {session.durationMinutes} min
-                              </span>
-
-                              <span>
-                                {humanizeIntensity(
-                                  session.intensity,
-                                )}
-                              </span>
-
-                            </div>
-
-                          </div>
-
-                          <DecisionBadge
-                            action={
-                              item.decision.action
-                            }
-                          />
-
+                          {todayItem && (
+                            <CockpitDecisionPill
+                              action={
+                                todayItem
+                                  .decision
+                                  .action
+                              }
+                            />
+                          )}
                         </div>
 
-                        <p className="mt-3 text-sm leading-relaxed text-base-content/65">
-                          {humanizeSessionDecision(
-                            item.decision.action,
-                            item.decision.reason,
-                          )}
-                        </p>
+                        <h3
+                          className="
+                            mt-2
+                            text-[19px]
+                            font-bold
+                            tracking-[-0.025em]
+                            text-white
+                          "
+                        >
+                          {session.title}
+                        </h3>
 
-                        {(
-                          item.decision.action === 'reduce'
-                          && item.decision.recommendedDurationMinutes
-                        ) && (
-                          <div className="mt-3 flex flex-wrap gap-2">
+                        <div
+                          className="
+                            mt-2.5
+                            flex
+                            flex-wrap
+                            items-center
+                            gap-x-4
+                            gap-y-2
+                            text-[12px]
+                            font-medium
+                            text-white/55
+                          "
+                        >
+                          <span
+                            className="
+                              flex
+                              items-center
+                              gap-1.5
+                            "
+                          >
+                            <Clock
+                              className="
+                                h-3.5
+                                w-3.5
+                                text-emerald-400
+                              "
+                            />
 
-                            <span className="badge badge-warning badge-outline">
-                              Durée conseillée :
-                              {' '}
-                              {Math.round(
-                                item.decision.recommendedDurationMinutes,
-                              )}
-                              {' min'}
-                            </span>
+                            {
+                              session
+                                .durationMinutes
+                            } min
+                          </span>
 
-                            {item.decision.recommendedIntensity && (
-                              <span className="badge badge-warning badge-outline">
-                                Intensité :
-                                {' '}
-                                {humanizeIntensity(
-                                  item.decision.recommendedIntensity,
-                                )}
+                          <span>
+                            {
+                              humanizeIntensity(
+                                session.intensity,
+                              )
+                            }
+                          </span>
+
+                          {
+                            session
+                              .heartRateZone
+                            && (
+                              <span>
+                                {
+                                  session
+                                    .heartRateZone
+                                }
                               </span>
-                            )}
+                            )
+                          }
 
-                          </div>
-                        )}
-
+                          <span>
+                            {
+                              humanizeSessionType(
+                                session.type,
+                              )
+                            }
+                          </span>
+                        </div>
                       </div>
-                    )
-                  },
-                )}
 
-              </div>
-            ) : (
-              <div className="flex items-start gap-3 rounded-box bg-success/5 p-4">
 
-                <CircleCheck className="mt-0.5 h-5 w-5 shrink-0 text-success" />
+                      <button
+                        type="button"
+                        disabled={!session.id}
+                        onClick={() => {
+                          if (!session.id) {
+                            return
+                          }
 
-                <div>
-                  <p className="font-medium">
+                          setSelectedSessionId(
+                            session.id,
+                          )
+                        }}
+                        className="
+                          inline-flex
+                          h-8
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-[8px]
+                          border
+                          border-emerald-400/25
+                          bg-emerald-400/[0.09]
+                          px-3
+                          text-[10px]
+                          font-semibold
+                          text-emerald-300
+                          transition
+                          hover:border-emerald-400/40
+                          hover:bg-emerald-400/[0.14]
+                          hover:text-emerald-200
+                          disabled:cursor-not-allowed
+                          disabled:opacity-40
+                        "
+                      >
+                        Voir la séance
+
+                        <span
+                          className="
+                            ml-1.5
+                            text-emerald-400
+                          "
+                        >
+                          →
+                        </span>
+                      </button>
+                    </div>
+
+
+                    {todayItem && (
+                      <div
+                        className="
+                          relative
+                          mt-4
+                          border-t
+                          border-white/[0.065]
+                          pt-3
+                        "
+                      >
+                        <p
+                          className="
+                            max-w-[680px]
+                            text-[12px]
+                            leading-[1.65]
+                            text-white/45
+                          "
+                        >
+                          {
+                            humanizeSessionDecision(
+                              todayItem
+                                .decision
+                                .action,
+                              todayItem
+                                .decision
+                                .reason,
+                            )
+                          }
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-6 border-t border-black/[0.06] pt-4 dark:border-white/[0.06]">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-600 dark:text-emerald-400">
+                    Aujourd'hui
+                  </p>
+
+                  <p className="mt-1.5 text-[15px] font-semibold text-slate-800 dark:text-slate-200">
                     Journée de récupération
                   </p>
 
-                  <p className="mt-1 text-sm text-base-content/55">
-                    Aucune séance n’est prévue aujourd’hui.
-                    Profite de cette journée pour récupérer
-                    et préparer la suite de la semaine.
+                  <p className="mt-1 text-[9.5px] text-slate-400">
+                    Aucune séance prévue. La récupération fait partie du plan.
                   </p>
                 </div>
-
-              </div>
-            )}
-
-          </div>
-        </section>
+              )}
+            </div>
+          </section>
 
 
-        {/* ==================================================
-            FORME & RÉCUPÉRATION
-        ================================================== */}
+          {/* ================================================
+              RIGHT RAIL
+              ================================================ */}
 
-        <section className="card border border-base-300 bg-base-100 shadow-sm">
-          <div className="card-body gap-5 p-5 sm:p-6">
+          <aside className="border-t border-black/[0.06] bg-[#fafbfa] p-5 dark:border-white/[0.06] dark:bg-white/[0.018] lg:border-l lg:border-t-0">
 
-            <div className="flex items-start justify-between gap-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+              État du jour
+            </p>
 
-              <div className="min-w-0">
+            <div className="mt-5 flex items-end gap-2">
+              <span className="text-[54px] font-bold leading-none tracking-[-0.07em] text-slate-950 dark:text-white">
+                {Math.round(readiness.score)}
+              </span>
 
-                <p className="text-xs font-semibold uppercase tracking-wide text-base-content/40">
-                  Forme & récupération
-                </p>
-
-                <h2 className="mt-1 text-lg font-bold">
-                  {readinessHeadline(
-                    readiness.score,
-                  )}
-                </h2>
-
-                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-base-content/55">
-                  {readinessSummary(
-                    readiness.score,
-                    attentionSignals.length,
-                  )}
-                </p>
-
-              </div>
-
-              <div className="shrink-0 text-right">
-
-                <div className="flex items-center justify-end gap-1">
-                  <span className="text-xs text-base-content/40">
-                    Forme
-                  </span>
-
-                  <MetricTooltip
-                    metric="readiness"
-                  />
-                </div>
-
-                <p className="mt-0.5 text-2xl font-bold tabular-nums">
-                  {Math.round(readiness.score)}
-
-                  <span className="text-sm font-medium text-base-content/35">
-                    /100
-                  </span>
-                </p>
-
-              </div>
-
+              <span className="mb-1 text-[11px] font-semibold text-slate-300 dark:text-slate-600">
+                /100
+              </span>
             </div>
 
+            <p
+              className={[
+                'mt-2 text-[12px] font-bold uppercase tracking-[0.08em]',
+                tone === 'critical'
+                  ? 'text-red-500'
+                  : tone === 'warning'
+                    ? 'text-amber-500'
+                    : 'text-emerald-600 dark:text-emerald-400',
+              ].join(' ')}
+            >
+              {readinessStateLabel(
+                readiness.score,
+                readiness.criticalCount,
+                readiness.warningCount,
+              )}
+            </p>
 
+            <div className="mt-5 space-y-3">
+              <RailMetric
+                label="Récupération"
+                value={
+                  readiness.criticalCount > 0
+                    ? 'Faible'
+                    : readiness.warningCount > 0
+                      ? 'À surveiller'
+                      : 'Bonne'
+                }
+                tone={
+                  readiness.criticalCount > 0
+                    ? 'critical'
+                    : readiness.warningCount > 0
+                      ? 'warning'
+                      : 'good'
+                }
+              />
 
-            {attentionSignals.length > 0 ? (
-              <div className="space-y-3">
+              <RailMetric
+                label="Charge"
+                value={
+                  recentLoadAssessment?.hasCritical
+                    ? 'Critique'
+                    : recentLoadAssessment?.hasOverload
+                      ? 'Élevée'
+                      : 'Maîtrisée'
+                }
+                tone={
+                  recentLoadAssessment?.hasCritical
+                    ? 'critical'
+                    : recentLoadAssessment?.hasOverload
+                      ? 'warning'
+                      : 'good'
+                }
+              />
 
-                <p className="text-xs font-semibold uppercase tracking-wide text-base-content/40">
-                  À surveiller
-                </p>
+              <RailMetric
+                label="Alertes"
+                value={
+                  attentionSignals.length === 0
+                    ? 'Aucune'
+                    : String(attentionSignals.length)
+                }
+                tone={
+                  attentionSignals.length === 0
+                    ? 'good'
+                    : 'warning'
+                }
+              />
+            </div>
 
-                <div className="space-y-2">
-
-                  {attentionSignals.map(
-                    (
-                      signal,
-                      index,
-                    ) => (
-                      <div
-                        key={index}
-                        className="flex items-start gap-3 rounded-box bg-warning/5 p-3.5"
-                      >
-
-                        <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-
-                        <div className="min-w-0">
-
-                          {'metric' in signal && signal.metric && (
-                            <p className="mb-0.5 text-sm font-semibold">
-                              {humanizeReadinessMetric(
-                                signal.metric,
-                              )}
-                            </p>
-                          )}
-
-                          <p className="text-sm leading-relaxed text-base-content/65">
-                            {signal.reason}
-                          </p>
-
-                        </div>
-
-                      </div>
-                    ),
-                  )}
-
-                </div>
-
-                <div className="flex items-start gap-3 rounded-box bg-success/5 p-3.5">
-
-                  <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-
-                  <p className="text-sm leading-relaxed text-base-content/60">
-                    {buildAttentionConclusion(
-                      readiness.score,
-                      attentionSignals.length,
-                    )}
-                  </p>
-
-                </div>
-
+            <div className="mt-5 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+              <div className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className="text-[8.5px] font-medium text-slate-400">
+                  Données disponibles
+                </span>
               </div>
-            ) : (
-              <div className="flex items-start gap-3 rounded-box bg-success/5 p-4">
+            </div>
+          </aside>
+        </div>
 
-                <CircleCheck className="mt-0.5 h-5 w-5 shrink-0 text-success" />
 
-                <div>
+        {/* ==================================================
+            WEEK TRAJECTORY
+            ================================================== */}
 
-                  <p className="font-medium">
-                    Rien de particulier à surveiller
-                  </p>
+        <section className="border-t border-black/[0.06] px-5 py-5 dark:border-white/[0.06] sm:px-6 lg:px-7">
 
-                  <p className="mt-1 text-sm leading-relaxed text-base-content/55">
-                    Les indicateurs disponibles sont cohérents
-                    avec la poursuite normale du programme.
-                  </p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                Cette semaine
+              </p>
 
-                </div>
+              <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.02em] text-slate-800 dark:text-slate-200">
+                Trajectoire d'entraînement
+              </h3>
+            </div>
 
-              </div>
-            )}
+            <WeeklyStatusPill status={weeklyAssessment.status} />
+          </div>
 
+          <div className="mt-5 grid grid-cols-3 gap-5">
+            <TrajectoryMetric
+              value={formatNumber(weeklyAssessment.actualLoadToDate)}
+              label="réalisé"
+            />
+
+            <TrajectoryMetric
+              value={
+                weeklyAssessment.targetLoad
+                  ? formatNumber(weeklyAssessment.targetLoad)
+                  : '—'
+              }
+              label="cible"
+            />
+
+            <TrajectoryMetric
+              value={formatNumber(weeklyAssessment.projectedWeekLoad)}
+              label="projeté"
+              align="right"
+            />
+          </div>
+
+          <CockpitTrajectory
+            actual={actualPercent}
+            projected={projectedPercent}
+          />
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[8.5px] font-medium text-slate-400 dark:text-slate-500">
+            <span>
+              {weeklyPlan
+                ? `${humanizeTrainingPhaseV2(weeklyPlan.phase)} · semaine ${weeklyPlan.phaseWeekIndex}`
+                : 'Plan en cours'}
+            </span>
+
+            <span>
+              {weeklyAssessment.remainingSessionsCount} séance
+              {weeklyAssessment.remainingSessionsCount > 1 ? 's' : ''} restante
+              {weeklyAssessment.remainingSessionsCount > 1 ? 's' : ''}
+            </span>
           </div>
         </section>
 
 
         {/* ==================================================
-            APPRENTISSAGE OPENCOACH
-        ================================================== */}
+            DECISION FACTORS
+            ================================================== */}
 
-        {weeklyAssessment.historyConfidence < 1 && (
-          <section className="rounded-box border border-base-300 bg-base-100 p-4 sm:p-5">
+        <section className="border-t border-black/[0.06] px-5 py-5 dark:border-white/[0.06] sm:px-6 lg:px-7">
 
-            <div className="flex items-start gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                Analyse
+              </p>
 
-              <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-info" />
+              <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.02em] text-slate-800 dark:text-slate-200">
+                Pourquoi cette décision ?
+              </h3>
+            </div>
 
-              <div className="min-w-0 flex-1">
+            <Brain className="h-4 w-4 text-emerald-500" />
+          </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2">
-
-                  <div>
-                    <p className="font-semibold">
-                      OpenCoach affine encore ta référence
-                    </p>
-
-                    <p className="mt-0.5 text-xs text-base-content/45">
-                      Historique utilisé :
-                      {' '}
-                      {formatHistoryPeriod(
-                        weeklyAssessment.historyWindowDays,
-                      )}
-                    </p>
-                  </div>
-
-                  <MetricTooltip
-                    metric="reference_confidence"
-                  />
-
-                </div>
-
-                <progress
-                  className="progress progress-info mt-3 h-2 w-full"
-                  value={
-                    Math.min(
-                      weeklyAssessment.historyWindowDays,
-                      28,
-                    )
-                  }
-                  max={28}
+          <div className="mt-4 grid gap-x-8 gap-y-1 md:grid-cols-2">
+            {readiness.signals.length > 0 ? (
+              readiness.signals.slice(0, 4).map((signal, index) => (
+                <DecisionFactor
+                  key={`${signal.metric}-${index}`}
+                  label={humanizeReadinessMetric(signal.metric)}
+                  detail={signal.reason}
+                  level={signal.level}
+                />
+              ))
+            ) : (
+              <>
+                <DecisionFactor
+                  label="Récupération"
+                  detail="Aucun signal défavorable détecté"
+                  level="normal"
                 />
 
-                <p className="mt-3 text-sm leading-relaxed text-base-content/60">
-                  {buildLearningSentence(
-                    weeklyAssessment.historyWindowDays,
-                    weeklyAssessment.historyConfidenceLevel,
-                  )}
-                </p>
+                <DecisionFactor
+                  label="Charge récente"
+                  detail={
+                    recentLoad
+                      ? `${formatNumber(recentLoad.actualLoadTotal)} sur les 7 derniers jours`
+                      : 'Charge compatible avec le programme'
+                  }
+                  level={
+                    recentLoadAssessment?.hasOverload
+                      ? 'warning'
+                      : 'normal'
+                  }
+                />
+              </>
+            )}
 
-
-              </div>
-
-            </div>
-
-          </section>
-        )}
-
-
-        {/* ==================================================
-            DÉTAILS TECHNIQUES
-        ================================================== */}
-
-        <details className="collapse collapse-arrow border border-base-300 bg-base-100">
-
-          <summary className="collapse-title font-medium">
-            Voir les données détaillées
-          </summary>
-
-          <div className="collapse-content">
-
-            <div className="grid gap-3 pt-2 sm:grid-cols-2 lg:grid-cols-4">
-
-              <DetailMetric
-                label="Charge réalisée"
-                value={formatNumber(
-                  weeklyAssessment.actualLoadToDate,
-                )}
-              />
-
-              <DetailMetric
-                label="Charge restante prévue"
-                value={formatNumber(
-                  weeklyAssessment.remainingPlannedLoad,
-                )}
-              />
-
-              <DetailMetric
-                label="Projection fin de semaine"
-                value={formatNumber(
-                  weeklyAssessment.projectedWeekLoad,
-                )}
-              />
-
-              <DetailMetric
-                label="Écart projeté"
-                value={
-                  weeklyAssessment.projectedGapPercent !== undefined
-                    ? `${formatSigned(
-                        weeklyAssessment.projectedGapPercent,
-                      )} %`
-                    : '—'
-                }
-              />
-
-              <DetailMetric
-                label="Jours restants"
-                value={`${weeklyAssessment.remainingDays}`}
-              />
-
-              <DetailMetric
-                label="Séances restantes"
-                value={`${weeklyAssessment.remainingSessionsCount}`}
-              />
-
-              <DetailMetric
-                label="Historique utilisé"
-                value={
-                  `${weeklyAssessment.historyWindowDays} jours`
-                }
-              />
-
-              <DetailMetric
-                label={
-                  <MetricTooltip
-                    metric="reference_confidence"
-                    label="Confiance référence"
-                  />
-                }
-                value={
-                  formatConfidence(
-                    weeklyAssessment.historyConfidenceLevel,
-                  )
-                }
-              />
-
-            </div>
-
-
+            {(recentLoadAssessment?.signals ?? []).slice(0, 2).map(
+              (signal, index) => (
+                <DecisionFactor
+                  key={`load-${index}`}
+                  label="Charge"
+                  detail={signal.reason}
+                  level={signal.level}
+                />
+              ),
+            )}
           </div>
-        </details>
 
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.055] pt-3 dark:border-white/[0.06]">
+            <p className="max-w-2xl text-[11px] leading-5 text-slate-400 dark:text-slate-500">
+              {weeklyAssessment.instruction}
+            </p>
+
+            <details className="group relative">
+              <summary className="cursor-pointer list-none text-[8.5px] font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 [&::-webkit-details-marker]:hidden">
+                Détails de l'analyse
+              </summary>
+
+              <div className="mt-3 grid min-w-[260px] gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                <CockpitDetail
+                  label="Charge restante"
+                  value={formatNumber(weeklyAssessment.remainingPlannedLoad)}
+                />
+
+                <CockpitDetail
+                  label="Écart projeté"
+                  value={
+                    weeklyAssessment.projectedGapPercent !== undefined
+                      ? `${formatSigned(weeklyAssessment.projectedGapPercent)} %`
+                      : '—'
+                  }
+                />
+
+                <CockpitDetail
+                  label="Historique"
+                  value={`${weeklyAssessment.historyWindowDays} jours`}
+                />
+
+                <CockpitDetail
+                  label="Confiance"
+                  value={formatConfidence(weeklyAssessment.historyConfidenceLevel)}
+                />
+              </div>
+            </details>
+          </div>
+        </section>
       </div>
 
+      {selectedTrainingSession && (
+        <Modal
+          title={
+            selectedTrainingSession.title
+          }
+          open
+          onClose={() => {
+            setSelectedSessionId(
+              null,
+            )
+          }}
+        >
+          <TrainingDetails
+            session={
+              selectedTrainingSession
+            }
+            onValidateSession={async (
+              activityId,
+            ) => {
+              return validateSession(
+                selectedTrainingSession.id,
+                activityId,
+              )
+            }}
+          />
+        </Modal>
+      )}
+
     </PageContainer>
+  )
+}
+
+
+/* ============================================================
+   COACH COCKPIT V3 UI
+   ============================================================ */
+
+function CockpitDecisionPill({
+  action,
+}: {
+  action: string
+}) {
+  const config =
+    action === 'keep'
+      ? ['Maintenir', 'text-emerald-600 bg-emerald-500/[0.07] dark:text-emerald-400']
+      : action === 'reduce'
+        ? ['Alléger', 'text-amber-600 bg-amber-500/[0.08] dark:text-amber-400']
+        : action === 'rest'
+          ? ['Récupération', 'text-sky-600 bg-sky-500/[0.08] dark:text-sky-400']
+          : ['Adapter', 'text-slate-500 bg-slate-500/[0.07]']
+
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[7.5px] font-bold uppercase tracking-[0.06em] ${config[1]}`}>
+      {config[0]}
+    </span>
+  )
+}
+
+
+function RailMetric({
+  label,
+  value,
+  tone,
+}: {
+  label: string
+  value: string
+  tone: 'good' | 'warning' | 'critical'
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-[11px] text-slate-400 dark:text-slate-500">
+        {label}
+      </span>
+
+      <div className="flex items-center gap-1.5">
+        <span
+          className={[
+            'h-1.5 w-1.5 rounded-full',
+            tone === 'critical'
+              ? 'bg-red-500'
+              : tone === 'warning'
+                ? 'bg-amber-500'
+                : 'bg-emerald-500',
+          ].join(' ')}
+        />
+
+        <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+          {value}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+
+function TrajectoryMetric({
+  value,
+  label,
+  align = 'left',
+}: {
+  value: string
+  label: string
+  align?: 'left' | 'right'
+}) {
+  return (
+    <div className={align === 'right' ? 'text-right' : ''}>
+      <p className="text-[22px] font-bold tracking-[-0.035em] tabular-nums text-slate-850 dark:text-slate-200">
+        {value}
+      </p>
+
+      <p className="mt-0.5 text-[8px] font-medium uppercase tracking-[0.07em] text-slate-400">
+        {label}
+      </p>
+    </div>
+  )
+}
+
+
+function CockpitTrajectory({
+  actual,
+  projected,
+}: {
+  actual: number
+  projected: number
+}) {
+  const a = Math.max(0, Math.min(100, actual))
+  const p = Math.max(0, Math.min(100, projected))
+
+  return (
+    <div className="mt-4">
+      <div className="relative h-[6px] rounded-full bg-slate-100 dark:bg-white/[0.055]">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-emerald-500"
+          style={{ width: `${a}%` }}
+        />
+
+        <span
+          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-emerald-500 shadow-sm dark:border-[#151b1f]"
+          style={{ left: `${a}%` }}
+        />
+
+        <span
+          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-slate-500 bg-white dark:border-slate-300 dark:bg-[#151b1f]"
+          style={{ left: `${p}%` }}
+        />
+
+        <span className="absolute right-0 top-1/2 h-3.5 w-[2px] -translate-y-1/2 bg-slate-300 dark:bg-slate-600" />
+      </div>
+
+      <div className="relative mt-2 h-3 text-[7px] font-medium text-slate-300 dark:text-slate-600">
+        <span
+          className="absolute -translate-x-1/2"
+          style={{ left: `${a}%` }}
+        >
+          maintenant
+        </span>
+
+        <span className="absolute right-0">
+          cible
+        </span>
+      </div>
+    </div>
+  )
+}
+
+
+function DecisionFactor({
+  label,
+  detail,
+  level,
+}: {
+  label: string
+  detail: string
+  level: string
+}) {
+  const warning = level === 'warning'
+  const critical = level === 'critical'
+
+  return (
+    <div className="grid grid-cols-[18px_105px_minmax(0,1fr)] items-start gap-2 border-b border-black/[0.045] py-2.5 last:border-b-0 dark:border-white/[0.045]">
+      <div
+        className={[
+          'mt-[2px] flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold',
+          critical
+            ? 'bg-red-500/[0.08] text-red-500'
+            : warning
+              ? 'bg-amber-500/[0.08] text-amber-500'
+              : 'bg-emerald-500/[0.08] text-emerald-600 dark:text-emerald-400',
+        ].join(' ')}
+      >
+        {critical || warning ? '!' : '✓'}
+      </div>
+
+      <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+        {label}
+      </span>
+
+      <span className="text-[11px] leading-5 text-slate-400 dark:text-slate-500">
+        {detail}
+      </span>
+    </div>
+  )
+}
+
+
+function CockpitDetail({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <div className="rounded-[8px] bg-slate-50 px-3 py-2 dark:bg-white/[0.025]">
+      <p className="text-[7.5px] font-medium uppercase tracking-[0.06em] text-slate-400">
+        {label}
+      </p>
+
+      <p className="mt-1 text-[10px] font-semibold tabular-nums text-slate-700 dark:text-slate-300">
+        {value}
+      </p>
+    </div>
+  )
+}
+
+
+function readinessStateLabel(
+  score: number,
+  criticalCount: number,
+  warningCount: number,
+): string {
+  if (criticalCount > 0 || score < 50) {
+    return 'Faible'
+  }
+
+  if (warningCount > 0 || score < 70) {
+    return 'À surveiller'
+  }
+
+  if (score >= 85) {
+    return 'Excellente'
+  }
+
+  return 'Très bonne'
+}
+
+
+
+/* ============================================================
+   COACH COCKPIT V3 - PRESENTATION HELPERS
+   ============================================================ */
+
+function resolveReadinessTone(
+  score: number,
+  criticalCount: number,
+  warningCount: number,
+):
+  | 'good'
+  | 'warning'
+  | 'critical' {
+  if (
+    criticalCount > 0
+    || score < 50
+  ) {
+    return 'critical'
+  }
+
+  if (
+    warningCount > 0
+    || score < 70
+  ) {
+    return 'warning'
+  }
+
+  return 'good'
+}
+
+
+function buildDailyDecisionHeadline(
+  score: number,
+  criticalCount: number,
+  warningCount: number,
+  loadCritical: boolean,
+  loadOverload: boolean,
+): string {
+  if (
+    criticalCount > 0
+    || loadCritical
+    || score < 50
+  ) {
+    return (
+      'Aujourd’hui, la récupération '
+      + 'passe avant la charge'
+    )
+  }
+
+  if (
+    loadOverload
+    && score < 80
+  ) {
+    return (
+      'Reste strictement sur '
+      + 'le programme prévu'
+    )
+  }
+
+  if (
+    score >= 80
+    && warningCount === 0
+  ) {
+    return (
+      'Garde la séance prévue'
+    )
+  }
+
+  if (score >= 70) {
+    return (
+      'Le programme reste adapté '
+      + 'à ton état du jour'
+    )
+  }
+
+  return (
+    'Adapte l’effort à tes '
+    + 'sensations aujourd’hui'
+  )
+}
+
+
+function WeeklyStatusPill({
+  status,
+}: {
+  status: string
+}) {
+  const config =
+    status === 'aligned'
+      ? {
+          label:
+            'Sous contrôle',
+
+          className:
+            (
+              'bg-emerald-500/[0.07] '
+              + 'text-emerald-700 '
+              + 'dark:text-emerald-400'
+            ),
+        }
+      : status === 'over_target'
+        ? {
+            label:
+              'Charge élevée',
+
+            className:
+              (
+                'bg-amber-500/[0.08] '
+                + 'text-amber-700 '
+                + 'dark:text-amber-400'
+              ),
+          }
+        : status === 'under_target'
+          ? {
+              label:
+                'Sous la cible',
+
+              className:
+                (
+                  'bg-sky-500/[0.08] '
+                  + 'text-sky-700 '
+                  + 'dark:text-sky-400'
+                ),
+            }
+          : {
+              label:
+                'Analyse en cours',
+
+              className:
+                (
+                  'bg-slate-500/[0.07] '
+                  + 'text-slate-500 '
+                  + 'dark:text-slate-400'
+                ),
+            }
+
+  return (
+    <span
+      className={[
+        (
+          'rounded-full '
+          + 'px-2 py-1 '
+          + 'text-[7.5px] '
+          + 'font-bold '
+          + 'uppercase '
+          + 'tracking-[0.06em]'
+        ),
+        config.className,
+      ].join(' ')}
+    >
+      {config.label}
+    </span>
+  )
+}
+
+
+function humanizeTrainingPhaseV2(
+  phase: string,
+): string {
+  const labels: Record<
+    string,
+    string
+  > = {
+    foundation:
+      'Fondation',
+
+    base:
+      'Base',
+
+    build:
+      'Développement',
+
+    specific:
+      'Spécifique',
+
+    taper:
+      'Affûtage',
+
+    recovery:
+      'Récupération',
+
+    return_to_training:
+      'Retour entraînement',
+  }
+
+  return (
+    labels[phase]
+    ?? phase.replaceAll(
+      '_',
+      ' ',
+    )
   )
 }
 
@@ -797,8 +1191,24 @@ function PageContainer({
   children: React.ReactNode
 }) {
   return (
-    <main className="min-h-screen bg-base-200">
-      <div className="mx-auto max-w-5xl px-4 py-5 sm:px-6 lg:py-6">
+    <main
+      className="
+        min-h-screen
+        bg-[#f5f7f6]
+        dark:bg-[#0b1014]
+      "
+    >
+      <div
+        className="
+          mx-auto
+          max-w-[1180px]
+          px-3
+          py-4
+          sm:px-5
+          lg:px-5
+          lg:py-[18px]
+        "
+      >
         {children}
       </div>
     </main>
@@ -806,231 +1216,53 @@ function PageContainer({
 }
 
 
-function PageHeader() {
+export function PageHeader() {
   return (
-    <header className="mb-6">
+    <header className="mb-4">
+      <p
+        className="
+          text-[10px]
+          font-bold
+          uppercase
+          tracking-[0.13em]
+          text-emerald-600
+          dark:text-emerald-400
+        "
+      >
+        Analyse
+      </p>
 
-      <div className="flex items-center gap-3">
+      <h1
+        className="
+          mt-1
+          text-[24px]
+          font-bold
+          tracking-[-0.035em]
+          text-slate-950
+          dark:text-white
+        "
+      >
+        Coach
+      </h1>
 
-        <div className="flex h-11 w-11 items-center justify-center rounded-box bg-primary/10 text-primary">
-          <Brain className="h-6 w-6" />
-        </div>
-
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Coach
-          </h1>
-
-          <p className="mt-0.5 text-sm text-base-content/50">
-            L’essentiel pour savoir où tu en es et quoi faire.
-          </p>
-        </div>
-
-      </div>
-
+      <p
+        className="
+          mt-1
+          max-w-2xl
+          text-[11.5px]
+          text-slate-400
+          dark:text-slate-500
+        "
+      >
+        Décision quotidienne basée sur ta
+        récupération, ta charge et ton plan.
+      </p>
     </header>
   )
 }
 
 
-function StatusIcon({
-  status,
-}: {
-  status: string
-}) {
-  if (status === 'aligned') {
-    return (
-      <CircleCheck className="mt-1 h-6 w-6 shrink-0 text-success" />
-    )
-  }
-
-  return (
-    <TriangleAlert className="mt-1 h-6 w-6 shrink-0 text-warning" />
-  )
-}
-
-
-function HumanMetric({
-  icon,
-  label,
-}: {
-  icon: React.ReactNode
-  label: React.ReactNode
-}) {
-  return (
-    <div className="flex items-center gap-2 rounded-full bg-base-200 px-3 py-1.5 text-sm">
-
-      <span className="text-base-content/45">
-        {icon}
-      </span>
-
-      <span className="font-medium">
-        {label}
-      </span>
-
-    </div>
-  )
-}
-
-
-function DetailMetric({
-  label,
-  value,
-}: {
-  label: React.ReactNode
-  value: string
-}) {
-  return (
-    <div className="rounded-box bg-base-200/50 p-3">
-
-      <p className="text-xs text-base-content/45">
-        {label}
-      </p>
-
-      <p className="mt-1 font-semibold tabular-nums">
-        {value}
-      </p>
-
-    </div>
-  )
-}
-
-
-function DecisionBadge({
-  action,
-}: {
-  action: string
-}) {
-  if (action === 'keep') {
-    return (
-      <span className="badge badge-success gap-1">
-        <CircleCheck className="h-3.5 w-3.5" />
-        À conserver
-      </span>
-    )
-  }
-
-  if (action === 'reduce') {
-    return (
-      <span className="badge badge-warning gap-1">
-        ↘ À alléger
-      </span>
-    )
-  }
-
-  if (action === 'rest') {
-    return (
-      <span className="badge badge-info gap-1">
-        Récupération
-      </span>
-    )
-  }
-
-  if (action === 'skip') {
-    return (
-      <span className="badge badge-error gap-1">
-        À supprimer
-      </span>
-    )
-  }
-
-  return (
-    <span className="badge badge-warning badge-outline">
-      À adapter
-    </span>
-  )
-}
-
-
-function humanizeHeadline(
-  status: string,
-): string {
-  if (status === 'aligned') {
-    return 'Ta semaine est sur les rails'
-  }
-
-  if (status === 'under_target') {
-    return 'Ta semaine est un peu plus légère que prévu'
-  }
-
-  if (status === 'over_target') {
-    return 'Ta semaine est plus chargée que prévu'
-  }
-
-  return 'OpenCoach apprend encore ton rythme'
-}
-
-
-function humanizeWeeklySituation(
-  weekly: {
-    status: string
-    projectedGapPercent?: number
-  },
-  actualPercent?: number,
-  projectedPercent?: number,
-): string {
-  if (
-    weekly.status === 'aligned'
-    && actualPercent !== undefined
-    && projectedPercent !== undefined
-  ) {
-    return (
-      `Tu as réalisé ${Math.round(actualPercent)} % `
-      + `de la charge prévue pour cette semaine. `
-      + `En suivant le programme restant, tu devrais terminer `
-      + `autour de ${Math.round(projectedPercent)} % de ta cible. `
-      + `La trajectoire est bonne, rien à modifier pour le moment.`
-    )
-  }
-
-  if (
-    weekly.status === 'under_target'
-    && actualPercent !== undefined
-    && projectedPercent !== undefined
-  ) {
-    return (
-      `Tu as réalisé ${Math.round(actualPercent)} % `
-      + `de ta charge cible. `
-      + `Avec les séances encore prévues, la semaine devrait `
-      + `terminer autour de ${Math.round(projectedPercent)} %.`
-    )
-  }
-
-  if (
-    weekly.status === 'over_target'
-    && actualPercent !== undefined
-    && projectedPercent !== undefined
-  ) {
-    return (
-      `Tu as déjà réalisé ${Math.round(actualPercent)} % `
-      + `de ta charge cible. `
-      + `La projection atteint actuellement environ `
-      + `${Math.round(projectedPercent)} %, `
-      + `donc la fin de semaine mérite d’être surveillée.`
-    )
-  }
-
-  if (
-    weekly.status === 'aligned'
-    && weekly.projectedGapPercent !== undefined
-  ) {
-    return (
-      `Ta semaine devrait terminer très proche de la cible prévue. `
-      + `L’écart estimé est seulement de `
-      + `${Math.abs(
-        weekly.projectedGapPercent,
-      ).toFixed(1)} %.`
-    )
-  }
-
-  return (
-    'OpenCoach consolide encore les données nécessaires '
-    + 'pour situer précisément ta semaine.'
-  )
-}
-
-
-function buildProgressSentence(
+export function buildProgressSentence(
   weekly: {
     projectedGapPercent?: number
     remainingDays: number
@@ -1069,7 +1301,7 @@ function buildProgressSentence(
 }
 
 
-function coachAdviceHeadline(
+export function coachAdviceHeadline(
   status: string,
   adaptationOpportunity: boolean,
 ): string {
@@ -1106,7 +1338,7 @@ function coachAdviceHeadline(
 }
 
 
-function coachAdviceContext(
+export function coachAdviceContext(
   status: string,
   adaptationOpportunity: boolean,
   projectedGapPercent?: number,
@@ -1174,34 +1406,36 @@ function humanizeReadinessMetric(
     string
   > = {
     hrv: 'HRV',
-    resting_hr: 'Fréquence cardiaque au repos',
-    sleep_duration: 'Durée de sommeil',
-    sleep_score: 'Qualité du sommeil',
-    training_load: 'Charge récente',
-    fitness_ctl: 'Charge chronique',
-    fatigue_atl: 'Fatigue récente',
-    training_balance: 'Équilibre de charge',
+
+    resting_hr:
+      'Fréquence cardiaque au repos',
+
+    sleep_duration:
+      'Durée de sommeil',
+
+    sleep_score:
+      'Qualité du sommeil',
+
+    training_load:
+      'Charge récente',
+
+    fitness_ctl:
+      'Charge chronique',
+
+    fatigue_atl:
+      'Fatigue récente',
+
+    training_balance:
+      'Équilibre de charge',
   }
 
   return (
     labels[metric]
-    ?? metric.replaceAll('_', ' ')
+    ?? metric.replaceAll(
+      '_',
+      ' ',
+    )
   )
-}
-
-
-function readinessHeadline(
-  score: number,
-): string {
-  if (score >= 80) {
-    return 'Bonne forme aujourd’hui'
-  }
-
-  if (score >= 60) {
-    return 'Forme correcte aujourd’hui'
-  }
-
-  return 'Récupération à privilégier'
 }
 
 
@@ -1240,7 +1474,7 @@ function readinessSummary(
 }
 
 
-function buildAttentionConclusion(
+export function buildAttentionConclusion(
   readinessScore: number,
   signalCount: number,
 ): string {
@@ -1268,7 +1502,7 @@ function buildAttentionConclusion(
 }
 
 
-function formatHistoryPeriod(
+export function formatHistoryPeriod(
   historyWindowDays: number,
 ): string {
   const weeks = Math.max(
@@ -1286,7 +1520,7 @@ function formatHistoryPeriod(
 }
 
 
-function buildLearningSentence(
+export function buildLearningSentence(
   historyWindowDays: number,
   confidenceLevel: string,
 ): string {

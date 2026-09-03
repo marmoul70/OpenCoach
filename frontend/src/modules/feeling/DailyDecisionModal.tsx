@@ -326,18 +326,24 @@ export function DailyDecisionModal({
           >
             <span
               className="
-                loading
-                loading-spinner
-                loading-lg
-                text-emerald-700
+                h-7
+                w-7
+                animate-spin
+                rounded-full
+                border-[2.5px]
+                border-slate-200
+                border-t-emerald-500
+                dark:border-white/[0.10]
+                dark:border-t-emerald-400
               "
+              aria-hidden="true"
             />
 
             <div>
               <p
                 className="
                   font-semibold
-                  text-base-content
+                  text-slate-800 dark:text-slate-100
                 "
               >
                 Analyse du planning
@@ -347,7 +353,7 @@ export function DailyDecisionModal({
                 className="
                   mt-1
                   text-sm
-                  text-base-content/50
+                  text-slate-500 dark:text-slate-400
                 "
               >
                 Recherche des meilleures options
@@ -371,7 +377,7 @@ export function DailyDecisionModal({
                 className="
                   h-4
                   w-4
-                  text-emerald-700
+                  text-emerald-600 dark:text-emerald-400
                 "
               />
 
@@ -379,7 +385,7 @@ export function DailyDecisionModal({
                 className="
                   text-sm
                   font-semibold
-                  text-base-content
+                  text-slate-800 dark:text-slate-100
                 "
               >
                 Choisissez l’action à appliquer
@@ -391,8 +397,10 @@ export function DailyDecisionModal({
                 className="
                   rounded-xl
                   border
-                  border-emerald-200
-                  bg-emerald-50/60
+                  border-emerald-500/15
+                  bg-emerald-500/[0.05]
+                  dark:border-emerald-400/15
+                  dark:bg-emerald-400/[0.05]
                   p-3
                 "
               >
@@ -402,7 +410,7 @@ export function DailyDecisionModal({
                     font-semibold
                     uppercase
                     tracking-wide
-                    text-emerald-700
+                    text-emerald-600 dark:text-emerald-400
                   "
                 >
                   Analyse OpenCoach
@@ -413,7 +421,7 @@ export function DailyDecisionModal({
                     mt-1
                     text-sm
                     leading-relaxed
-                    text-base-content/60
+                    text-slate-500 dark:text-slate-400
                   "
                 >
                   {
@@ -456,8 +464,10 @@ export function DailyDecisionModal({
             className="
               rounded-2xl
               border
-              border-emerald-300/70
-              bg-emerald-50/70
+              border-emerald-500/15
+              bg-emerald-500/[0.05]
+              dark:border-emerald-400/15
+              dark:bg-emerald-400/[0.05]
               p-5
               text-center
             "
@@ -470,8 +480,10 @@ export function DailyDecisionModal({
                 items-center
                 justify-center
                 rounded-full
-                bg-emerald-100
-                text-emerald-700
+                bg-emerald-500/[0.10]
+                text-emerald-600
+                dark:bg-emerald-400/[0.10]
+                dark:text-emerald-400
               "
             >
               <Check
@@ -483,7 +495,7 @@ export function DailyDecisionModal({
               className="
                 mt-3
                 font-semibold
-                text-base-content
+                text-slate-800 dark:text-slate-100
               "
             >
               Planning mis à jour
@@ -493,7 +505,7 @@ export function DailyDecisionModal({
               className="
                 mt-1
                 text-sm
-                text-base-content/55
+                text-slate-500 dark:text-slate-400
               "
             >
               Le planning de la semaine
@@ -503,10 +515,28 @@ export function DailyDecisionModal({
             <button
               type="button"
               className="
-                btn
-                border-emerald-300 bg-emerald-200 text-emerald-950 hover:bg-emerald-300
-                btn-sm
                 mt-4
+                inline-flex
+                h-8
+                items-center
+                justify-center
+                rounded-[8px]
+                border
+                border-emerald-500/15
+                bg-emerald-500/[0.10]
+                px-3.5
+                text-[10.5px]
+                font-semibold
+                text-emerald-600 dark:text-emerald-400
+                outline-none
+                transition
+                hover:border-emerald-500/25
+                hover:bg-emerald-500/[0.15]
+                active:scale-[0.98]
+                dark:border-emerald-400/15
+                dark:bg-emerald-400/[0.09]
+                dark:text-emerald-300
+                dark:hover:bg-emerald-400/[0.14]
               "
               onClick={onClose}
             >
@@ -547,11 +577,14 @@ function SessionDecisionCard({
   return (
     <section
       className="
-        rounded-2xl
+        rounded-[13px]
         border
-        border-base-300
-        bg-base-100
-        p-3
+        border-black/[0.06]
+        bg-white
+        p-3.5
+        shadow-[0_1px_2px_rgba(15,23,42,0.02)]
+        dark:border-white/[0.07]
+        dark:bg-[#171d21]
       "
     >
       <div
@@ -569,8 +602,10 @@ function SessionDecisionCard({
             items-center
             justify-center
             rounded-lg
-            bg-emerald-100
-            text-emerald-700
+            bg-emerald-500/[0.10]
+            text-emerald-600
+            dark:bg-emerald-400/[0.10]
+            dark:text-emerald-400
           "
         >
           <CalendarDays
@@ -582,7 +617,7 @@ function SessionDecisionCard({
           <p
             className="
               font-semibold
-              text-base-content
+              text-slate-800 dark:text-slate-100
             "
           >
             {proposal.source_session.title}
@@ -591,7 +626,7 @@ function SessionDecisionCard({
           <p
             className="
               text-xs
-              text-base-content/45
+              text-slate-400 dark:text-slate-500
             "
           >
             {
@@ -610,8 +645,10 @@ function SessionDecisionCard({
             mt-3
             rounded-xl
             border
-            border-emerald-300/70
-            bg-emerald-50/70
+            border-emerald-500/15
+            bg-emerald-500/[0.05]
+            dark:border-emerald-400/15
+            dark:bg-emerald-400/[0.05]
             p-3
           "
         >
@@ -626,9 +663,22 @@ function SessionDecisionCard({
             <div>
               <span
                 className="
-                  badge
-                  border-emerald-200 bg-emerald-100 text-emerald-800
-                  badge-sm
+                  inline-flex
+                  h-5
+                  items-center
+                  rounded-full
+                  border
+                  border-emerald-500/15
+                  bg-emerald-500/[0.08]
+                  px-2
+                  text-[9.5px]
+                  font-bold
+                  uppercase
+                  tracking-[0.06em]
+                  text-emerald-600 dark:text-emerald-400
+                  dark:border-emerald-400/15
+                  dark:bg-emerald-400/[0.08]
+                  dark:text-emerald-300
                 "
               >
                 ★ Recommandé
@@ -639,7 +689,7 @@ function SessionDecisionCard({
                   mt-2
                   text-sm
                   font-semibold
-                  text-base-content
+                  text-slate-800 dark:text-slate-100
                 "
               >
                 {
@@ -653,7 +703,7 @@ function SessionDecisionCard({
                 className="
                   mt-0.5
                   text-xs
-                  text-base-content/50
+                  text-slate-500 dark:text-slate-400
                 "
               >
                 {
@@ -667,13 +717,30 @@ function SessionDecisionCard({
             <button
               type="button"
               className="
-                btn
-                btn-sm
-                border-emerald-300
-                bg-emerald-200
-                text-emerald-950
-                hover:border-emerald-400
-                hover:bg-emerald-300
+                inline-flex
+                h-8
+                shrink-0
+                items-center
+                justify-center
+                rounded-[8px]
+                border
+                border-emerald-500/15
+                bg-emerald-500/[0.10]
+                px-3
+                text-[10.5px]
+                font-semibold
+                text-emerald-600 dark:text-emerald-400
+                outline-none
+                transition
+                hover:border-emerald-500/25
+                hover:bg-emerald-500/[0.15]
+                active:scale-[0.98]
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+                dark:border-emerald-400/15
+                dark:bg-emerald-400/[0.09]
+                dark:text-emerald-300
+                dark:hover:bg-emerald-400/[0.14]
               "
               disabled={loading}
               onClick={() => {
@@ -686,10 +753,17 @@ function SessionDecisionCard({
                 ? (
                     <span
                       className="
-                        loading
-                        loading-spinner
-                        loading-xs
+                        h-3.5
+                        w-3.5
+                        animate-spin
+                        rounded-full
+                        border-2
+                        border-emerald-700/20
+                        border-t-emerald-700
+                        dark:border-emerald-300/20
+                        dark:border-t-emerald-300
                       "
+                      aria-hidden="true"
                     />
                   )
                 : 'Appliquer'}
@@ -721,16 +795,28 @@ function SessionDecisionCard({
                 }
                 type="button"
                 className="
-                  btn
-                  btn-ghost
-                  h-auto
                   min-h-11
-                  justify-start
+                  w-full
+                  rounded-[9px]
                   border
-                  border-base-300
+                  border-black/[0.06]
+                  bg-slate-50/70
                   px-3
-                  py-2
+                  py-2.5
                   text-left
+                  text-slate-700
+                  outline-none
+                  transition
+                  hover:border-black/[0.10]
+                  hover:bg-slate-100
+                  active:scale-[0.99]
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                  dark:border-white/[0.07]
+                  dark:bg-white/[0.025]
+                  dark:text-slate-200
+                  dark:hover:border-white/[0.11]
+                  dark:hover:bg-white/[0.05]
                 "
                 disabled={loading}
                 onClick={() => {

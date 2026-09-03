@@ -210,16 +210,8 @@ export function RaceDetails({
 
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <RaceHeader
-        race={race}
-      />
-
-      <RaceSummary
-        race={race}
-      />
-
-      <RacePriorityInfo
         race={race}
       />
 
@@ -237,17 +229,23 @@ export function RaceDetails({
             handleSubmit
           }
           className="
-            space-y-5
-            border-t
-            border-base-300
-            pt-5
+            space-y-4
+            rounded-[12px]
+            border
+            border-black/[0.065]
+            bg-white
+            p-4
+            dark:border-white/[0.065]
+            dark:bg-[#151b1f]
           "
         >
           <section>
             <h3
               className="
+                text-[13px]
                 font-semibold
-                text-base-content
+                text-slate-800
+                dark:text-slate-200
               "
             >
               Résultat de la course
@@ -256,8 +254,9 @@ export function RaceDetails({
             <p
               className="
                 mt-1
-                text-sm
-                text-base-content/50
+                text-[10px]
+                text-slate-400
+                dark:text-slate-500
               "
             >
               À compléter une fois
@@ -269,10 +268,16 @@ export function RaceDetails({
           {saveError && (
             <div
               className="
-                alert
-                alert-error
+                rounded-[9px]
+                border
+                border-red-500/15
+                bg-red-50
+                px-3
                 py-2
-                text-sm
+                text-[10px]
+                text-red-600
+                dark:bg-red-500/[0.06]
+                dark:text-red-400
               "
             >
               {saveError}
@@ -283,9 +288,12 @@ export function RaceDetails({
           <section className="space-y-3">
             <p
               className="
-                text-sm
-                font-medium
-                text-base-content/70
+                text-[10px]
+                font-semibold
+                uppercase
+                tracking-[0.07em]
+                text-slate-400
+                dark:text-slate-500
               "
             >
               Statut
@@ -415,13 +423,17 @@ export function RaceDetails({
 
 
           <section>
-            <label className="form-control">
+            <label className="block">
               <span
                 className="
                   mb-1.5
-                  text-sm
-                  font-medium
-                  text-base-content/70
+                  block
+                  text-[10px]
+                  font-semibold
+                  uppercase
+                  tracking-[0.07em]
+                  text-slate-400
+                  dark:text-slate-500
                 "
               >
                 Notes
@@ -436,10 +448,25 @@ export function RaceDetails({
                     )
                 }
                 className="
-                  textarea
-                  textarea-bordered
                   min-h-24
                   w-full
+                  resize-y
+                  rounded-[9px]
+                  border
+                  border-black/[0.08]
+                  bg-slate-50
+                  px-3
+                  py-2.5
+                  text-[11px]
+                  text-slate-700
+                  outline-none
+                  transition
+                  placeholder:text-slate-400
+                  focus:border-emerald-500/35
+                  focus:bg-white
+                  dark:border-white/[0.08]
+                  dark:bg-white/[0.025]
+                  dark:text-slate-200
                 "
                 placeholder={
                   'Sensations, difficultés, '
@@ -455,13 +482,26 @@ export function RaceDetails({
               flex justify-end
               gap-2
               border-t
-              border-base-300
-              pt-4
+              border-black/[0.055]
+              pt-3
+              dark:border-white/[0.055]
             "
           >
             <button
               type="button"
-              className="btn btn-ghost"
+              className="
+                h-9
+                rounded-[8px]
+                px-3
+                text-[10px]
+                font-semibold
+                text-slate-400
+                transition
+                hover:bg-slate-50
+                hover:text-slate-700
+                dark:hover:bg-white/[0.035]
+                dark:hover:text-slate-200
+              "
               onClick={
                 onClose
               }
@@ -474,7 +514,24 @@ export function RaceDetails({
 
             <button
               type="submit"
-              className="btn btn-primary"
+              className="
+                inline-flex
+                h-9
+                items-center
+                gap-1.5
+                rounded-[8px]
+                border
+                border-emerald-500/25
+                bg-emerald-500/[0.08]
+                px-3
+                text-[10px]
+                font-semibold
+                text-emerald-700
+                transition
+                hover:bg-emerald-500/[0.13]
+                disabled:opacity-40
+                dark:text-emerald-400
+              "
               disabled={
                 saving
               }
@@ -512,221 +569,225 @@ function RaceHeader({
   return (
     <section
       className="
-        flex flex-col
-        gap-3
-        sm:flex-row
-        sm:items-start
-        sm:justify-between
+        relative
+        overflow-hidden
+        rounded-[15px]
+        border
+        border-white/[0.07]
+        bg-[#141917]
+        p-5
+        text-white
+        shadow-[0_14px_38px_rgba(4,12,8,0.12)]
+        sm:p-6
       "
     >
-      <div className="min-w-0">
+      <div
+        className="
+          pointer-events-none
+          absolute
+          -right-20
+          -top-24
+          h-56
+          w-56
+          rounded-full
+          bg-emerald-500/[0.11]
+          blur-3xl
+        "
+      />
+
+      <div className="relative">
         <div
           className="
-            flex flex-wrap
+            flex
+            flex-wrap
+            items-center
+            justify-between
+            gap-3
+          "
+        >
+          <div
+            className="
+              flex
+              flex-wrap
+              items-center
+              gap-2
+            "
+          >
+            <RacePriorityBadge
+              priority={race.priority}
+            />
+
+            <RaceStatusBadge
+              status={race.status}
+            />
+          </div>
+
+          <span
+            className="
+              text-[10px]
+              font-bold
+              uppercase
+              tracking-[0.12em]
+              text-white/30
+            "
+          >
+            {formatRaceType(race.type)}
+          </span>
+        </div>
+
+
+        <h2
+          className="
+            mt-5
+            text-[22px]
+            font-bold
+            leading-tight
+            tracking-[-0.03em]
+            text-white
+            sm:text-[24px]
+          "
+        >
+          {race.name}
+        </h2>
+
+        <div
+          className="
+            mt-2.5
+            flex
+            flex-wrap
             items-center
             gap-x-4
             gap-y-2
-            text-sm
-            text-base-content/55
+            text-[12px]
+            font-medium
+            text-white/45
           "
         >
           <span
             className="
-              flex items-center
+              flex
+              items-center
               gap-1.5
             "
           >
             <CalendarDays
-              size={14}
+              className="
+                h-3.5
+                w-3.5
+                text-emerald-400
+              "
             />
 
-            {formatDate(
-              race.date,
-            )}
+            {formatDate(race.date)}
           </span>
 
           <span
             className="
-              flex items-center
+              flex
+              items-center
               gap-1.5
             "
           >
             <MapPin
-              size={14}
+              className="
+                h-3.5
+                w-3.5
+                text-emerald-400
+              "
             />
 
             {race.location}
           </span>
         </div>
 
-        <p
+
+        <div
           className="
-            mt-2
-            text-sm
-            font-medium
-            text-base-content/70
+            mt-5
+            grid
+            grid-cols-2
+            gap-x-5
+            gap-y-4
+            border-t
+            border-white/[0.07]
+            pt-4
+            sm:grid-cols-4
           "
         >
-          {formatRaceType(
-            race.type,
-          )}
-        </p>
-      </div>
+          <HeroMetric
+            label="Distance"
+            value={`${formatNumber(race.distanceKm)} km`}
+          />
 
-      <div
-        className="
-          flex flex-wrap
-          items-center
-          justify-end
-          gap-2
-        "
-      >
-        <RacePriorityBadge
-          priority={
-            race.priority
-          }
-        />
+          <HeroMetric
+            label="Dénivelé"
+            value={
+              race.elevationGainM !== undefined
+                ? `${Math.round(race.elevationGainM)} m`
+                : '—'
+            }
+          />
 
-        <RaceStatusBadge
-          status={
-            race.status
-          }
-        />
-      </div>
-    </section>
-  )
-}
+          <HeroMetric
+            label="Objectif"
+            value={
+              race.targetTimeMinutes !== undefined
+                ? formatDuration(race.targetTimeMinutes)
+                : '—'
+            }
+          />
 
-
-function RaceSummary({
-  race,
-}: {
-  race: Race
-}) {
-  return (
-    <section
-      className="
-        overflow-hidden
-        rounded-xl
-        border
-        border-base-300
-      "
-    >
-      <div
-        className="
-          grid
-          grid-cols-2
-          divide-x
-          divide-y
-          divide-base-300
-          sm:grid-cols-4
-          sm:divide-y-0
-        "
-      >
-        <SummaryItem
-          icon={Route}
-          label="Distance prévue"
-          value={
-            `${formatNumber(
-              race.distanceKm,
-            )} km`
-          }
-        />
-
-        <SummaryItem
-          icon={Mountain}
-          label="Dénivelé prévu"
-          value={
-            race.elevationGainM
-            !== undefined
-              ? (
-                  `${Math.round(
-                    race.elevationGainM,
-                  )} m`
-                )
-              : '—'
-          }
-        />
-
-        <SummaryItem
-          icon={Clock3}
-          label="Objectif"
-          value={
-            race.targetTimeMinutes
-            !== undefined
-              ? formatDuration(
-                  race.targetTimeMinutes,
-                )
-              : '—'
-          }
-        />
-
-        <SummaryItem
-          icon={Flag}
-          label="Type"
-          value={
-            formatRaceType(
-              race.type,
-            )
-          }
-        />
+          <HeroMetric
+            label="Rôle"
+            value={
+              race.priority === 'primary'
+                ? 'Objectif A'
+                : 'Préparation'
+            }
+          />
+        </div>
       </div>
     </section>
   )
 }
 
 
-function SummaryItem({
-  icon: Icon,
+function HeroMetric({
   label,
   value,
 }: {
-  icon: typeof Route
   label: string
   value: string
 }) {
   return (
-    <div
-      className="
-        flex items-center
-        gap-3
-        px-3 py-3
-      "
-    >
-      <Icon
-        size={16}
+    <div>
+      <p
         className="
-          shrink-0
-          text-base-content/35
+          text-[9px]
+          font-bold
+          uppercase
+          tracking-[0.08em]
+          text-white/30
         "
-      />
+      >
+        {label}
+      </p>
 
-      <div className="min-w-0">
-        <p
-          className="
-            text-[11px]
-            uppercase
-            tracking-wide
-            text-base-content/40
-          "
-        >
-          {label}
-        </p>
-
-        <p
-          className="
-            truncate
-            text-sm
-            font-semibold
-            text-base-content
-          "
-        >
-          {value}
-        </p>
-      </div>
+      <p
+        className="
+          mt-1
+          text-[17px]
+          font-bold
+          tabular-nums
+          text-white
+        "
+      >
+        {value}
+      </p>
     </div>
   )
 }
+
 
 
 function RaceActivitySection({
@@ -876,7 +937,7 @@ function RaceActivitySection({
         space-y-4
         rounded-xl
         border
-        border-base-300
+        border-black/[0.065] dark:border-white/[0.065]
         p-4
       "
     >
@@ -900,8 +961,8 @@ function RaceActivitySection({
               items-center
               justify-center
               rounded-xl
-              bg-base-200
-              text-base-content/60
+              bg-slate-50 dark:bg-white/[0.025]
+              text-slate-400 dark:text-slate-500
             "
           >
             <Activity
@@ -913,7 +974,7 @@ function RaceActivitySection({
             <h3
               className="
                 font-semibold
-                text-base-content
+                text-slate-800 dark:text-slate-200
               "
             >
               Activité réelle
@@ -923,7 +984,7 @@ function RaceActivitySection({
               className="
                 mt-1
                 text-sm
-                text-base-content/50
+                text-slate-400 dark:text-slate-500
               "
             >
               Une activité Intervals.icu
@@ -936,9 +997,14 @@ function RaceActivitySection({
         {race.activityId && (
           <span
             className="
-              badge
-              badge-success
-              badge-sm
+              rounded-full
+              bg-emerald-500/[0.08]
+              px-2
+              py-0.5
+              text-[8px]
+              font-semibold
+              text-emerald-700
+              dark:text-emerald-400
             "
           >
             Intervals.icu
@@ -950,8 +1016,16 @@ function RaceActivitySection({
       {error && (
         <div
           className="
-            alert
-            alert-error
+            rounded-[9px]
+            border
+            border-red-500/15
+            bg-red-50
+            px-3
+            py-2
+            text-[10px]
+            text-red-600
+            dark:bg-red-500/[0.06]
+            dark:text-red-400
             py-2
             text-sm
           "
@@ -964,11 +1038,13 @@ function RaceActivitySection({
       {race.activityId ? (
         <div
           className="
-            rounded-xl
+            rounded-[11px]
             border
-            border-success/25
-            bg-success/5
+            border-emerald-500/15
+            bg-emerald-500/[0.045]
             p-3
+            dark:border-emerald-400/15
+            dark:bg-emerald-400/[0.04]
           "
         >
           <div
@@ -984,7 +1060,7 @@ function RaceActivitySection({
               <p
                 className="
                   font-medium
-                  text-base-content
+                  text-slate-800 dark:text-slate-200
                 "
               >
                 {linkedActivity?.name
@@ -996,7 +1072,7 @@ function RaceActivitySection({
                   className="
                     mt-1
                     text-sm
-                    text-base-content/55
+                    text-slate-400 dark:text-slate-500
                   "
                 >
                   {formatActivityCandidate(
@@ -1008,7 +1084,7 @@ function RaceActivitySection({
                   className="
                     mt-1
                     text-sm
-                    text-base-content/55
+                    text-slate-400 dark:text-slate-500
                   "
                 >
                   Les données de cette activité
@@ -1021,9 +1097,22 @@ function RaceActivitySection({
             <button
               type="button"
               className="
-                btn
-                btn-outline
-                btn-sm
+                inline-flex
+                h-8
+                items-center
+                gap-1.5
+                rounded-[8px]
+                border
+                border-black/[0.08]
+                px-2.5
+                text-[9.5px]
+                font-semibold
+                text-slate-500
+                transition
+                hover:bg-slate-50
+                dark:border-white/[0.08]
+                dark:text-slate-400
+                dark:hover:bg-white/[0.035]
               "
               disabled={saving}
               onClick={() =>
@@ -1055,7 +1144,7 @@ function RaceActivitySection({
                 gap-2
                 py-5
                 text-sm
-                text-base-content/50
+                text-slate-400 dark:text-slate-500
               "
             >
               <LoaderCircle
@@ -1071,11 +1160,11 @@ function RaceActivitySection({
                 rounded-xl
                 border
                 border-dashed
-                border-base-300
+                border-black/[0.065] dark:border-white/[0.065]
                 px-4 py-5
                 text-center
                 text-sm
-                text-base-content/50
+                text-slate-400 dark:text-slate-500
               "
             >
               Aucune activité enregistrée
@@ -1094,7 +1183,7 @@ function RaceActivitySection({
                       gap-3
                       rounded-xl
                       border
-                      border-base-300
+                      border-black/[0.065] dark:border-white/[0.065]
                       p-3
                       sm:flex-row
                       sm:items-center
@@ -1106,7 +1195,7 @@ function RaceActivitySection({
                         className="
                           truncate
                           font-medium
-                          text-base-content
+                          text-slate-800 dark:text-slate-200
                         "
                       >
                         {activity.name}
@@ -1116,7 +1205,7 @@ function RaceActivitySection({
                         className="
                           mt-1
                           text-sm
-                          text-base-content/55
+                          text-slate-400 dark:text-slate-500
                         "
                       >
                         {formatActivityCandidate(
@@ -1128,9 +1217,21 @@ function RaceActivitySection({
                     <button
                       type="button"
                       className="
-                        btn
-                        btn-primary
-                        btn-sm
+                        inline-flex
+                        h-8
+                        items-center
+                        gap-1.5
+                        rounded-[8px]
+                        border
+                        border-emerald-500/25
+                        bg-emerald-500/[0.07]
+                        px-2.5
+                        text-[9.5px]
+                        font-semibold
+                        text-emerald-700
+                        transition
+                        hover:bg-emerald-500/[0.12]
+                        dark:text-emerald-400
                       "
                       disabled={saving}
                       onClick={() =>
@@ -1200,7 +1301,7 @@ function RaceActualResultPanel({
         overflow-hidden
         rounded-xl
         border
-        border-base-300
+        border-black/[0.065] dark:border-white/[0.065]
       "
     >
       <div
@@ -1209,7 +1310,7 @@ function RaceActualResultPanel({
           justify-between
           gap-3
           border-b
-          border-base-300
+          border-black/[0.065] dark:border-white/[0.065]
           px-4 py-3
         "
       >
@@ -1217,7 +1318,7 @@ function RaceActualResultPanel({
           <h3
             className="
               font-semibold
-              text-base-content
+              text-slate-800 dark:text-slate-200
             "
           >
             Résultat utilisé par OpenCoach
@@ -1227,7 +1328,7 @@ function RaceActualResultPanel({
             className="
               mt-0.5
               text-xs
-              text-base-content/45
+              text-slate-400 dark:text-slate-500
             "
           >
             Source : {sourceLabel}
@@ -1237,9 +1338,14 @@ function RaceActualResultPanel({
         {result.source === 'activity' && (
           <span
             className="
-              badge
-              badge-success
-              badge-sm
+              rounded-full
+              bg-emerald-500/[0.08]
+              px-2
+              py-0.5
+              text-[8px]
+              font-semibold
+              text-emerald-700
+              dark:text-emerald-400
             "
           >
             Données réelles
@@ -1253,13 +1359,12 @@ function RaceActualResultPanel({
           grid-cols-2
           divide-x
           divide-y
-          divide-base-300
+          divide-slate-200 dark:divide-white/[0.08]
           sm:grid-cols-4
           sm:divide-y-0
         "
       >
-        <SummaryItem
-          icon={Route}
+        <ResultItem
           label="Distance réelle"
           value={
             result.distanceKm !== undefined
@@ -1272,8 +1377,7 @@ function RaceActualResultPanel({
           }
         />
 
-        <SummaryItem
-          icon={Mountain}
+        <ResultItem
           label="D+ réel"
           value={
             result.elevationGainM !== undefined
@@ -1286,8 +1390,7 @@ function RaceActualResultPanel({
           }
         />
 
-        <SummaryItem
-          icon={Clock3}
+        <ResultItem
           label="Durée réelle"
           value={
             result.durationMinutes !== undefined
@@ -1298,8 +1401,7 @@ function RaceActualResultPanel({
           }
         />
 
-        <SummaryItem
-          icon={Activity}
+        <ResultItem
           label="Charge"
           value={
             result.trainingLoad !== undefined
@@ -1333,36 +1435,70 @@ function StatusButton({
 }) {
   const activeClass =
     variant === 'success'
-      ? 'btn-success'
+      ? (
+          'border-emerald-500/30 '
+          + 'bg-emerald-500/[0.10] '
+          + 'text-emerald-700 '
+          + 'dark:text-emerald-400'
+        )
       : variant === 'error'
-        ? 'btn-error'
-        : 'btn-neutral'
+        ? (
+            'border-red-500/30 '
+            + 'bg-red-500/[0.08] '
+            + 'text-red-600 '
+            + 'dark:text-red-400'
+          )
+        : (
+            'border-slate-400/20 '
+            + 'bg-slate-500/[0.07] '
+            + 'text-slate-600 '
+            + 'dark:text-slate-300'
+          )
+
+  const inactiveClass =
+    (
+      'border-black/[0.07] '
+      + 'bg-slate-50 '
+      + 'text-slate-400 '
+      + 'hover:border-black/[0.12] '
+      + 'hover:text-slate-600 '
+      + 'dark:border-white/[0.07] '
+      + 'dark:bg-white/[0.025] '
+      + 'dark:text-slate-500 '
+      + 'dark:hover:text-slate-300'
+    )
 
   return (
     <button
       type="button"
-      onClick={
-        onClick
-      }
+      onClick={onClick}
       className={[
-        'btn btn-sm',
+        (
+          'inline-flex h-9 '
+          + 'items-center justify-center '
+          + 'gap-1.5 rounded-[9px] '
+          + 'border px-3 '
+          + 'text-[10.5px] '
+          + 'font-semibold '
+          + 'transition'
+        ),
         active
           ? activeClass
-          : (
-              'btn-ghost '
-              + 'border '
-              + 'border-base-300'
-            ),
+          : inactiveClass,
       ].join(' ')}
     >
       <Icon
-        size={14}
+        className="
+          h-3.5
+          w-3.5
+        "
       />
 
       {label}
     </button>
   )
 }
+
 
 
 function NumberField({
@@ -1384,61 +1520,87 @@ function NumberField({
   step: string
 }) {
   return (
-    <label className="form-control">
+    <label className="block">
       <span
         className="
           mb-1.5
-          flex items-center
+          flex
+          items-center
           gap-1.5
-          text-sm
-          font-medium
-          text-base-content/70
+          text-[10px]
+          font-semibold
+          uppercase
+          tracking-[0.06em]
+          text-slate-400
+          dark:text-slate-500
         "
       >
         <Icon
-          size={14}
           className="
-            text-base-content/40
+            h-3.5
+            w-3.5
+            text-emerald-500
           "
         />
 
         {label}
       </span>
 
-      <div className="join w-full">
+      <div
+        className="
+          flex
+          h-10
+          overflow-hidden
+          rounded-[9px]
+          border
+          border-black/[0.08]
+          bg-slate-50
+          transition
+          focus-within:border-emerald-500/35
+          focus-within:bg-white
+          dark:border-white/[0.08]
+          dark:bg-white/[0.025]
+        "
+      >
         <input
           type="number"
           min="0"
           step={step}
           value={value}
           onChange={
-            (event) =>
+            event =>
               onChange(
                 event.target.value,
               )
           }
-          placeholder={
-            placeholder
-          }
+          placeholder={placeholder}
           className="
-            input
-            input-bordered
-            join-item
-            w-full
+            min-w-0
+            flex-1
+            bg-transparent
+            px-3
+            text-[12px]
+            font-medium
+            text-slate-700
+            outline-none
+            placeholder:text-slate-300
+            dark:text-slate-200
           "
         />
 
         {unit && (
           <span
             className="
-              join-item
-              flex items-center
-              border
-              border-base-300
-              bg-base-200/40
+              flex
+              items-center
+              border-l
+              border-black/[0.06]
               px-3
-              text-sm
-              text-base-content/50
+              text-[10px]
+              font-semibold
+              text-slate-400
+              dark:border-white/[0.06]
+              dark:text-slate-500
             "
           >
             {unit}
@@ -1448,6 +1610,7 @@ function NumberField({
     </label>
   )
 }
+
 
 
 function CompletedRace({
@@ -1461,120 +1624,113 @@ function CompletedRace({
   const sourceDescription =
     result.source === 'activity'
       ? (
-          'Résultat réel issu de '
-          + 'l’activité Intervals.icu associée.'
+          'Résultat issu de l’activité '
+          + 'Intervals.icu associée.'
         )
       : result.source === 'manual'
-        ? (
-            'Résultat issu de '
-            + 'la saisie manuelle.'
-          )
+        ? 'Résultat saisi manuellement.'
         : race.status === 'not_participated'
           ? 'Course non disputée.'
-          : 'Aucun résultat réel disponible.'
+          : 'Aucune donnée réelle disponible.'
 
   return (
     <section
       className="
-        space-y-4
-        border-t
-        border-base-300
-        pt-5
+        overflow-hidden
+        rounded-[12px]
+        border
+        border-black/[0.065]
+        bg-white
+        dark:border-white/[0.065]
+        dark:bg-[#151b1f]
       "
     >
-      <div>
-        <h3
-          className="
-            font-semibold
-            text-base-content
-          "
-        >
-          Résultat
-        </h3>
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+          gap-3
+          border-b
+          border-black/[0.055]
+          px-4
+          py-3
+          dark:border-white/[0.055]
+        "
+      >
+        <div>
+          <p
+            className="
+              text-[9px]
+              font-bold
+              uppercase
+              tracking-[0.08em]
+              text-slate-400
+            "
+          >
+            Résultat
+          </p>
 
-        <p
-          className="
-            mt-1
-            text-sm
-            text-base-content/50
-          "
-        >
-          {sourceDescription}
-        </p>
+          <p
+            className="
+              mt-1
+              text-[11px]
+              text-slate-500
+              dark:text-slate-400
+            "
+          >
+            {sourceDescription}
+          </p>
+        </div>
+
+        <RaceStatusBadge
+          status={race.status}
+        />
       </div>
 
 
       <div
         className="
-          overflow-hidden
-          rounded-xl
-          border
-          border-base-300
+          grid
+          grid-cols-2
+          sm:grid-cols-4
         "
       >
-        <div
-          className="
-            grid
-            grid-cols-2
-            divide-x
-            divide-y
-            divide-base-300
-            sm:grid-cols-4
-            sm:divide-y-0
-          "
-        >
-          <ResultItem
-            label="Distance"
-            value={
-              result.distanceKm
-              !== undefined
-                ? (
-                    `${formatNumber(
-                      result.distanceKm,
-                    )} km`
-                  )
-                : '—'
-            }
-          />
+        <ResultItem
+          label="Distance"
+          value={
+            result.distanceKm !== undefined
+              ? `${formatNumber(result.distanceKm)} km`
+              : '—'
+          }
+        />
 
-          <ResultItem
-            label="Dénivelé"
-            value={
-              result.elevationGainM
-              !== undefined
-                ? (
-                    `${Math.round(
-                      result.elevationGainM,
-                    )} m`
-                  )
-                : '—'
-            }
-          />
+        <ResultItem
+          label="Dénivelé"
+          value={
+            result.elevationGainM !== undefined
+              ? `${Math.round(result.elevationGainM)} m`
+              : '—'
+          }
+        />
 
-          <ResultItem
-            label="Chrono"
-            value={
-              result.durationMinutes
-              !== undefined
-                ? formatDuration(
-                    result.durationMinutes,
-                  )
-                : '—'
-            }
-          />
+        <ResultItem
+          label="Chrono"
+          value={
+            result.durationMinutes !== undefined
+              ? formatDuration(result.durationMinutes)
+              : '—'
+          }
+        />
 
-          <ResultItem
-            label="Charge"
-            value={
-              result.trainingLoad
-              !== undefined
-                ? formatNumber(
-                    result.trainingLoad,
-                  )
-                : '—'
-            }
-          />
-        </div>
+        <ResultItem
+          label="Charge"
+          value={
+            result.trainingLoad !== undefined
+              ? formatNumber(result.trainingLoad)
+              : '—'
+          }
+        />
       </div>
 
 
@@ -1583,18 +1739,20 @@ function CompletedRace({
         && (
           <div
             className="
-              rounded-xl
-              border
-              border-base-300
-              px-4 py-3
+              border-t
+              border-black/[0.055]
+              px-4
+              py-3
+              dark:border-white/[0.055]
             "
           >
             <p
               className="
-                text-[11px]
+                text-[9px]
+                font-bold
                 uppercase
-                tracking-wide
-                text-base-content/40
+                tracking-[0.07em]
+                text-slate-400
               "
             >
               Classement
@@ -1602,10 +1760,11 @@ function CompletedRace({
 
             <p
               className="
-                mt-0.5
-                text-sm
-                font-semibold
-                text-base-content
+                mt-1
+                text-[15px]
+                font-bold
+                text-slate-800
+                dark:text-slate-200
               "
             >
               {race.ranking}e
@@ -1614,42 +1773,25 @@ function CompletedRace({
         )}
 
 
-      {race.status
-        === 'not_participated' && (
-          <div
-            className="
-              rounded-xl
-              border
-              border-base-300
-              bg-base-200/30
-              px-4 py-4
-              text-sm
-              text-base-content/60
-            "
-          >
-            Aucune participation
-            enregistrée pour cette course.
-            La distance et la charge réelles
-            sont comptabilisées à zéro.
-          </div>
-        )}
-
-
       {race.notes && (
         <div
           className="
-            rounded-xl
-            bg-base-200/50
-            px-4 py-3
+            border-t
+            border-black/[0.055]
+            bg-slate-50/60
+            px-4
+            py-3
+            dark:border-white/[0.055]
+            dark:bg-white/[0.018]
           "
         >
           <p
             className="
-              text-[11px]
-              font-medium
+              text-[9px]
+              font-bold
               uppercase
-              tracking-wide
-              text-base-content/40
+              tracking-[0.07em]
+              text-slate-400
             "
           >
             Notes
@@ -1659,9 +1801,10 @@ function CompletedRace({
             className="
               mt-1.5
               whitespace-pre-wrap
-              text-sm
-              leading-relaxed
-              text-base-content/70
+              text-[12px]
+              leading-5
+              text-slate-600
+              dark:text-slate-400
             "
           >
             {race.notes}
@@ -1671,6 +1814,7 @@ function CompletedRace({
     </section>
   )
 }
+
 
 
 function ResultItem({
@@ -1683,15 +1827,25 @@ function ResultItem({
   return (
     <div
       className="
-        px-4 py-3
+        border-r
+        border-b
+        border-black/[0.055]
+        px-4
+        py-3
+        even:border-r-0
+        dark:border-white/[0.055]
+        sm:border-b-0
+        sm:even:border-r
+        sm:last:border-r-0
       "
     >
       <p
         className="
-          text-[11px]
+          text-[9px]
+          font-bold
           uppercase
-          tracking-wide
-          text-base-content/40
+          tracking-[0.07em]
+          text-slate-400
         "
       >
         {label}
@@ -1699,10 +1853,12 @@ function ResultItem({
 
       <p
         className="
-          mt-0.5
-          text-sm
+          mt-1
+          text-[14px]
           font-semibold
-          text-base-content
+          tabular-nums
+          text-slate-800
+          dark:text-slate-200
         "
       >
         {value}
@@ -1712,38 +1868,42 @@ function ResultItem({
 }
 
 
+
 function RacePriorityBadge({
   priority,
 }: {
   priority: Race['priority']
 }) {
-  if (
+  const primary =
     priority === 'primary'
-  ) {
-    return (
-      <span
-        className="
-          badge
-          badge-primary
-          gap-1
-        "
-      >
-        ★ Objectif prioritaire
-      </span>
-    )
-  }
 
   return (
     <span
-      className="
-        badge
-        badge-outline
-      "
+      className={[
+        (
+          'inline-flex items-center '
+          + 'rounded-full px-2 py-1 '
+          + 'text-[8px] font-bold '
+          + 'uppercase tracking-[0.07em]'
+        ),
+        primary
+          ? (
+              'bg-emerald-400/[0.12] '
+              + 'text-emerald-300'
+            )
+          : (
+              'bg-white/[0.06] '
+              + 'text-white/45'
+            ),
+      ].join(' ')}
     >
-      Course d&apos;entraînement
+      {primary
+        ? 'A-Race'
+        : 'B-Race'}
     </span>
   )
 }
+
 
 
 function RaceStatusBadge({
@@ -1751,164 +1911,60 @@ function RaceStatusBadge({
 }: {
   status: Race['status']
 }) {
-  if (
+  const config =
     status === 'planned'
-  ) {
-    return (
-      <span
-        className="
-          badge
-          badge-primary
-          badge-sm
-        "
-      >
-        À venir
-      </span>
-    )
-  }
-
-  if (
-    status === 'completed'
-  ) {
-    return (
-      <span
-        className="
-          badge
-          badge-success
-          badge-sm
-          gap-1
-        "
-      >
-        <Check
-          size={11}
-        />
-
-        Terminée
-      </span>
-    )
-  }
-
-  if (
-    status === 'abandoned'
-  ) {
-    return (
-      <span
-        className="
-          badge
-          badge-error
-          badge-sm
-          gap-1
-        "
-      >
-        <X
-          size={11}
-        />
-
-        Abandon
-      </span>
-    )
-  }
+      ? {
+          label: 'À venir',
+          className:
+            (
+              'bg-sky-400/[0.10] '
+              + 'text-sky-300'
+            ),
+        }
+      : status === 'completed'
+        ? {
+            label: 'Terminée',
+            className:
+              (
+                'bg-emerald-400/[0.12] '
+                + 'text-emerald-300'
+              ),
+          }
+        : status === 'abandoned'
+          ? {
+              label: 'Abandon',
+              className:
+                (
+                  'bg-red-400/[0.10] '
+                  + 'text-red-300'
+                ),
+            }
+          : {
+              label: 'Non participé',
+              className:
+                (
+                  'bg-white/[0.06] '
+                  + 'text-white/45'
+                ),
+            }
 
   return (
     <span
-      className="
-        badge
-        badge-ghost
-        badge-sm
-      "
+      className={[
+        (
+          'inline-flex items-center '
+          + 'rounded-full px-2 py-1 '
+          + 'text-[8px] font-bold '
+          + 'uppercase tracking-[0.07em]'
+        ),
+        config.className,
+      ].join(' ')}
     >
-      Non participant
+      {config.label}
     </span>
   )
 }
 
-
-function RacePriorityInfo({
-  race,
-}: {
-  race: Race
-}) {
-  const primary =
-    race.priority === 'primary'
-
-  return (
-    <section
-      className={[
-        (
-          'rounded-xl border '
-          + 'px-4 py-3'
-        ),
-        primary
-          ? (
-              'border-primary/30 '
-              + 'bg-primary/5'
-            )
-          : (
-              'border-base-300 '
-              + 'bg-base-200/40'
-            ),
-      ].join(' ')}
-    >
-      <div
-        className="
-          flex items-start
-          gap-3
-        "
-      >
-        <Flag
-          size={18}
-          className={
-            primary
-              ? (
-                  'mt-0.5 shrink-0 '
-                  + 'text-primary'
-                )
-              : (
-                  'mt-0.5 shrink-0 '
-                  + 'text-base-content/45'
-                )
-          }
-        />
-
-        <div>
-          <p
-            className="
-              font-semibold
-              text-base-content
-            "
-          >
-            {primary
-              ? 'Objectif prioritaire'
-              : 'Course d’entraînement'}
-          </p>
-
-          <p
-            className="
-              mt-1
-              text-sm
-              leading-relaxed
-              text-base-content/55
-            "
-          >
-            {primary
-              ? (
-                  'Cette course constitue un objectif '
-                  + 'principal. Le plan d’entraînement '
-                  + 'sera construit pour favoriser un '
-                  + 'pic de forme à cette date.'
-                )
-              : (
-                  'Cette course fait partie de la '
-                  + 'préparation. Elle sera intégrée '
-                  + 'comme séance spécifique sans '
-                  + 'remplacer l’objectif principal.'
-                )}
-          </p>
-        </div>
-      </div>
-    </section>
-  )
-}
 
 
 function toRaceWritePayload(

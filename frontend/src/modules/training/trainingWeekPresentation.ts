@@ -46,44 +46,44 @@ export function weekTypeBadgeClass(
   if (weekType === 'recovery') {
     return (
       base
-      + ' border-success/25'
-      + ' bg-success/10'
-      + ' text-success'
+      + ' border-emerald-500/20'
+      + ' bg-emerald-500/[0.08]'
+      + ' text-emerald-600 dark:text-emerald-400'
     )
   }
 
   if (weekType === 'taper') {
     return (
       base
-      + ' border-secondary/25'
-      + ' bg-secondary/10'
-      + ' text-secondary'
+      + ' border-violet-500/20'
+      + ' bg-violet-500/[0.08]'
+      + ' text-violet-600 dark:text-violet-400'
     )
   }
 
   if (weekType === 'return_to_training') {
     return (
       base
-      + ' border-info/25'
-      + ' bg-info/10'
-      + ' text-info'
+      + ' border-sky-500/20'
+      + ' bg-sky-500/[0.08]'
+      + ' text-sky-600 dark:text-sky-400'
     )
   }
 
   if (weekType === 'suspended') {
     return (
       base
-      + ' border-warning/25'
-      + ' bg-warning/10'
-      + ' text-warning'
+      + ' border-amber-500/20'
+      + ' bg-amber-500/[0.08]'
+      + ' text-amber-600 dark:text-amber-400'
     )
   }
 
   return (
     base
-    + ' border-primary/25'
-    + ' bg-primary/10'
-    + ' text-primary'
+    + ' border-emerald-500/20'
+    + ' bg-emerald-500/[0.08]'
+    + ' text-emerald-600 dark:text-emerald-400'
   )
 }
 
@@ -101,48 +101,48 @@ export function phaseTextClass(
   if (phase === 'foundation') {
     return (
       base
-      + ' text-info'
+      + ' text-sky-600 dark:text-sky-400'
     )
   }
 
   if (phase === 'base') {
     return (
       base
-      + ' text-primary'
+      + ' text-emerald-600 dark:text-emerald-400'
     )
   }
 
   if (phase === 'build') {
     return (
       base
-      + ' text-warning'
+      + ' text-amber-600 dark:text-amber-400'
     )
   }
 
   if (phase === 'specific') {
     return (
       base
-      + ' text-secondary'
+      + ' text-violet-600 dark:text-violet-400'
     )
   }
 
   if (phase === 'taper') {
     return (
       base
-      + ' text-accent'
+      + ' text-cyan-600 dark:text-cyan-400'
     )
   }
 
   if (phase === 'recovery') {
     return (
       base
-      + ' text-success'
+      + ' text-emerald-600 dark:text-emerald-400'
     )
   }
 
   return (
     base
-    + ' text-info'
+    + ' text-sky-600 dark:text-sky-400'
   )
 }
 

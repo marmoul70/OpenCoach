@@ -108,6 +108,12 @@ def _assess_average_heart_rate(
     )
 
     if target is None:
+        target = _find_target(
+            session,
+            reference="heart_rate_reserve",
+        )
+
+    if target is None:
         return _not_applicable(
             key="average_heart_rate",
             label="Fréquence cardiaque moyenne",
@@ -415,6 +421,12 @@ def _assess_time_in_heart_rate_target(
         session,
         reference="heart_rate",
     )
+
+    if target is None:
+        target = _find_target(
+            session,
+            reference="heart_rate_reserve",
+        )
 
     if target is None:
         return _not_applicable(

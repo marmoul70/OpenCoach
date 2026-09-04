@@ -34,7 +34,7 @@ def build_endurance_goal_plan(
             GoalMetricDefinition(
                 key="time_in_pace_target",
                 label="Temps dans l'allure cible",
-                importance=MetricImportance.PRIMARY,
+                importance=MetricImportance.INFORMATIONAL,
                 reason=(
                     "L'allure complète l'analyse de "
                     "l'intensité lorsqu'une cible est prescrite."

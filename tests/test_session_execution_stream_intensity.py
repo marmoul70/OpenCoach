@@ -369,3 +369,36 @@ def test_heart_rate_adherence_excludes_stopped_time() -> None:
         metric.status
         is AssessmentStatus.COMPLIANT
     )
+
+def test_hr_adherence_supports_heart_rate_reserve_target() -> None:
+    """Une cible issue de la réserve cardiaque reste exploitable en bpm."""
+    session_value = session()
+
+    session_value.prescription = {
+        "version": 1,
+        "intensity": {
+            "targets": [
+                {
+                    "reference": "heart_rate_reserve",
+                    "minimum": 129,
+                    "maximum": 152,
+                    "unit": "bpm",
+                    "label": "Fréquence cardiaque individualisée",
+                },
+            ],
+        },
+    }
+
+    result = assess_session_intensity(
+        session_value,
+        activity(),
+        detail(
+            hr=(140, 140, 140, 140, 140, 140),
+        ),
+    )
+
+    metric = result.time_in_heart_rate_target
+
+    assert metric is not None
+    assert metric.actual_value == 100.0
+    assert metric.status is AssessmentStatus.COMPLIANT

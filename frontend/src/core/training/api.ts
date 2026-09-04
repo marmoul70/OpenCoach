@@ -690,3 +690,204 @@ export async function fetchTrainingStats(
       data.total_load,
   }
 }
+
+
+export type TrainingSessionMoveLevel =
+  | 'current'
+  | 'excellent'
+  | 'good'
+  | 'possible'
+  | 'discouraged'
+  | 'impossible'
+
+
+export interface TrainingSessionMoveDay {
+  date: string
+
+  score: number
+
+  selectable: boolean
+  current: boolean
+
+  level: TrainingSessionMoveLevel
+
+  recommended: boolean
+
+  reasons: string[]
+
+  blockingReasons: string[]
+}
+
+
+export interface TrainingSessionMoveOptions {
+  sourceDate: string
+
+  weekStart: string
+  weekEnd: string
+
+  bestDate?: string
+
+  days: TrainingSessionMoveDay[]
+}
+
+
+interface TrainingSessionMoveDayApiResponse {
+  date: string
+
+  score: number
+
+  selectable: boolean
+  current: boolean
+
+  level: TrainingSessionMoveLevel
+
+  recommended: boolean
+
+  reasons: string[]
+
+  blocking_reasons: string[]
+}
+
+
+interface TrainingSessionMoveOptionsApiResponse {
+  source_date: string
+
+  week_start: string
+  week_end: string
+
+  best_date: string | null
+
+  days: TrainingSessionMoveDayApiResponse[]
+}
+
+
+async function readApiError(
+  response: Response,
+  fallback: string,
+): Promise<Error> {
+  try {
+    const payload = (
+      await response.json()
+    ) as {
+      detail?: unknown
+    }
+
+    if (
+      typeof payload.detail
+      === 'string'
+    ) {
+      return new Error(
+        payload.detail,
+      )
+    }
+  } catch {
+    // Réponse non JSON : on utilise le fallback.
+  }
+
+  return new Error(
+    fallback,
+  )
+}
+
+
+export async function fetchTrainingSessionMoveOptions(
+  sessionId: string,
+): Promise<TrainingSessionMoveOptions> {
+  const response = await fetch(
+    `/api/training-sessions/${sessionId}/move-options`,
+  )
+
+  if (!response.ok) {
+    throw await readApiError(
+      response,
+      (
+        'Impossible de calculer les '
+        + `possibilités de déplacement (${response.status}).`
+      ),
+    )
+  }
+
+  const data = (
+    await response.json()
+  ) as TrainingSessionMoveOptionsApiResponse
+
+  return {
+    sourceDate:
+      data.source_date,
+
+    weekStart:
+      data.week_start,
+
+    weekEnd:
+      data.week_end,
+
+    bestDate:
+      data.best_date ?? undefined,
+
+    days:
+      data.days.map(
+        day => ({
+          date: day.date,
+
+          score: day.score,
+
+          selectable:
+            day.selectable,
+
+          current:
+            day.current,
+
+          level:
+            day.level,
+
+          recommended:
+            day.recommended,
+
+          reasons:
+            day.reasons,
+
+          blockingReasons:
+            day.blocking_reasons,
+        }),
+      ),
+  }
+}
+
+
+export async function moveTrainingSession(
+  sessionId: string,
+  targetDate: string,
+): Promise<TrainingSession> {
+  const response = await fetch(
+    `/api/training-sessions/${sessionId}/move`,
+    {
+      method: 'PATCH',
+
+      headers: {
+        'Content-Type': 'application/json',
+      },
+
+      body: JSON.stringify({
+        target_date: targetDate,
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    throw await readApiError(
+      response,
+      (
+        'Impossible de déplacer '
+        + `la séance (${response.status}).`
+      ),
+    )
+  }
+
+  const data = (
+    await response.json()
+  ) as TrainingSessionApiResponse
+
+  return mapTrainingSession(
+    data,
+  )
+}

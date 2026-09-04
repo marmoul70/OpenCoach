@@ -43,6 +43,9 @@ import {
   SessionGuidancePanel,
 } from './SessionGuidancePanel'
 import {
+  TrainingSessionActions,
+} from './TrainingSessionActions'
+import {
   formatTrainingIntensity,
 } from './intensity'
 
@@ -52,12 +55,20 @@ interface TrainingDetailsProps {
   onValidateSession: (
     activityId: string,
   ) => Promise<SessionExecutionDebrief>
+
+  onSkipSession?: () => Promise<void>
+
+  onMoveSession?: (
+    targetDate: string,
+  ) => Promise<void>
 }
 
 
 export function TrainingDetails({
   session,
   onValidateSession,
+  onSkipSession,
+  onMoveSession,
 }: TrainingDetailsProps) {
   const {
     toast,
@@ -426,6 +437,27 @@ export function TrainingDetails({
           guidance={guidance}
         />
       </section>
+
+
+      {(
+        onSkipSession
+        && onMoveSession
+      ) && (
+        <TrainingSessionActions
+          session={session}
+          onRealized={() => {
+            setOpenSection(
+              'activity',
+            )
+          }}
+          onSkipped={
+            onSkipSession
+          }
+          onMoved={
+            onMoveSession
+          }
+        />
+      )}
 
 
       {session.status === 'completed' && (

@@ -65,6 +65,24 @@ from opencoach.training.session_execution.validation_service import (
     ValidateTrainingSessionService,
 )
 
+from opencoach.api.profile import (
+    get_profile_service,
+)
+from opencoach.coaching.manual_session_move import (
+    ManualSessionMoveError,
+)
+from opencoach.coaching.manual_session_move_service import (
+    ManualSessionMoveService,
+    ManualSessionMoveSessionNotFoundError,
+    ManualSessionMoveTargetUnavailableError,
+)
+from opencoach.database.repositories.sql_athlete_constraint import (
+    SqlAthleteConstraintRepository,
+)
+from opencoach.services import (
+    ProfileService,
+)
+
 router = APIRouter(
     prefix="/api/training-sessions",
     tags=["training"],
@@ -948,4 +966,233 @@ def get_training_session_debrief(
 
     return _debrief_response(
         analysis
+    )
+
+class TrainingSessionMoveDayResponse(
+    BaseModel
+):
+    """Évaluation d'un jour possible de déplacement."""
+
+    date: date
+
+    score: int
+
+    selectable: bool
+    current: bool
+
+    level: str
+
+    recommended: bool
+
+    reasons: list[str]
+
+    blocking_reasons: list[str]
+
+
+class TrainingSessionMoveOptionsResponse(
+    BaseModel
+):
+    """Options proposées pour déplacer une séance."""
+
+    source_date: date
+
+    week_start: date
+    week_end: date
+
+    best_date: date | None
+
+    days: list[
+        TrainingSessionMoveDayResponse
+    ]
+
+
+@router.get(
+    "/{session_id}/move-options",
+    response_model=(
+        TrainingSessionMoveOptionsResponse
+    ),
+)
+def get_training_session_move_options(
+    session_id: UUID,
+    athlete_profile_id: UUID = Depends(
+        get_current_athlete_profile_id,
+    ),
+    repository: SqlTrainingSessionRepository = Depends(
+        get_training_session_repository,
+    ),
+    profile_service: ProfileService = Depends(
+        get_profile_service,
+    ),
+    db: Session = Depends(
+        get_db,
+    ),
+) -> TrainingSessionMoveOptionsResponse:
+    """Prévisualise les jours possibles de déplacement.
+
+    Cette route est strictement en lecture seule.
+
+    Elle ne déplace aucune séance et ne modifie aucun statut.
+    """
+
+    service = ManualSessionMoveService(
+        training_session_repository=(
+            repository
+        ),
+        athlete_constraint_repository=(
+            SqlAthleteConstraintRepository(
+                db
+            )
+        ),
+    )
+
+    athlete = (
+        profile_service
+        .get_profile()
+    )
+
+    try:
+        plan = service.preview(
+            athlete_profile_id=(
+                athlete_profile_id
+            ),
+            athlete=athlete,
+            session_id=session_id,
+            reference_date=date.today(),
+        )
+
+    except (
+        ManualSessionMoveSessionNotFoundError
+    ) as exc:
+        raise HTTPException(
+            status_code=404,
+            detail="Séance introuvable.",
+        ) from exc
+
+    except ManualSessionMoveError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    return (
+        TrainingSessionMoveOptionsResponse(
+            source_date=(
+                plan.source_date
+            ),
+            week_start=(
+                plan.week_start
+            ),
+            week_end=(
+                plan.week_end
+            ),
+            best_date=(
+                plan.best_date
+            ),
+            days=[
+                TrainingSessionMoveDayResponse(
+                    date=day.date,
+                    score=day.score,
+                    selectable=(
+                        day.selectable
+                    ),
+                    current=day.current,
+                    level=day.level,
+                    recommended=(
+                        day.recommended
+                    ),
+                    reasons=list(
+                        day.reasons
+                    ),
+                    blocking_reasons=list(
+                        day.blocking_reasons
+                    ),
+                )
+                for day
+                in plan.days
+            ],
+        )
+    )
+
+class TrainingSessionMovePayload(
+    BaseModel
+):
+    """Choix explicite d'une nouvelle date."""
+
+    target_date: date
+
+
+@router.patch(
+    "/{session_id}/move",
+    response_model=TrainingSessionResponse,
+)
+def move_training_session(
+    session_id: UUID,
+    payload: TrainingSessionMovePayload,
+    athlete_profile_id: UUID = Depends(
+        get_current_athlete_profile_id,
+    ),
+    repository: SqlTrainingSessionRepository = Depends(
+        get_training_session_repository,
+    ),
+    profile_service: ProfileService = Depends(
+        get_profile_service,
+    ),
+    db: Session = Depends(
+        get_db,
+    ),
+) -> TrainingSessionResponse:
+    """Déplace volontairement une séance planifiée.
+
+    Les règles de placement sont recalculées au moment de
+    l'écriture afin d'empêcher tout contournement frontend.
+    """
+
+    service = ManualSessionMoveService(
+        training_session_repository=(
+            repository
+        ),
+        athlete_constraint_repository=(
+            SqlAthleteConstraintRepository(
+                db
+            )
+        ),
+    )
+
+    athlete = (
+        profile_service
+        .get_profile()
+    )
+
+    try:
+        moved = service.move(
+            athlete_profile_id=(
+                athlete_profile_id
+            ),
+            athlete=athlete,
+            session_id=session_id,
+            target_date=(
+                payload.target_date
+            ),
+            reference_date=date.today(),
+        )
+
+    except (
+        ManualSessionMoveSessionNotFoundError
+    ) as exc:
+        raise HTTPException(
+            status_code=404,
+            detail="Séance introuvable.",
+        ) from exc
+
+    except (
+        ManualSessionMoveTargetUnavailableError,
+        ManualSessionMoveError,
+    ) as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
+    return training_session_to_response(
+        moved
     )

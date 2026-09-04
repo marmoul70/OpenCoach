@@ -12,6 +12,7 @@ import {
   createTrainingSession as createTrainingSessionApi,
   fetchTrainingSessions,
   updateTrainingSessionActivity as updateTrainingSessionActivityApi,
+  moveTrainingSession as moveTrainingSessionApi,
   updateTrainingSessionStatus as updateTrainingSessionStatusApi,
   validateTrainingSession as validateTrainingSessionApi,
 } from '../../core/training/api'
@@ -59,6 +60,11 @@ interface TrainingStoreValue {
     sessionId: string,
     activityId: string | null,
   ) => Promise<void>
+
+  moveSession: (
+    sessionId: string,
+    targetDate: string,
+  ) => Promise<TrainingSession>
 
   validateSession: (
     sessionId: string,
@@ -414,6 +420,62 @@ export function TrainingProvider({
   }
 
 
+  async function moveSession(
+    sessionId: string,
+    targetDate: string,
+  ): Promise<TrainingSession> {
+    setError(null)
+
+    try {
+      const updatedSession =
+        await moveTrainingSessionApi(
+          sessionId,
+          targetDate,
+        )
+
+      setSessions(current =>
+        current
+          .map(session =>
+            session.id === updatedSession.id
+              ? updatedSession
+              : session,
+          )
+          .sort(
+            (first, second) => {
+              const dateComparison =
+                first.date.localeCompare(
+                  second.date,
+                )
+
+              if (
+                dateComparison !== 0
+              ) {
+                return dateComparison
+              }
+
+              return first.title.localeCompare(
+                second.title,
+              )
+            },
+          ),
+      )
+
+      return updatedSession
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : (
+              'Impossible de déplacer '
+              + 'la séance.'
+            ),
+      )
+
+      throw caughtError
+    }
+  }
+
+
   async function validateSession(
     sessionId: string,
     activityId: string,
@@ -466,6 +528,7 @@ export function TrainingProvider({
         createSession,
         updateSessionStatus,
         updateSessionActivity,
+        moveSession,
         validateSession,
         refreshSessions,
       }}

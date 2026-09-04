@@ -154,6 +154,8 @@ export function TrainingWeek() {
 
   const {
     sessions,
+    updateSessionStatus,
+    moveSession,
     validateSession,
     weekStart,
     weekEnd,
@@ -817,6 +819,24 @@ phaseLabel={
               await loadStats()
 
               return analysis
+            }}
+
+            onSkipSession={async () => {
+              await updateSessionStatus(
+                selectedSession.id,
+                'skipped',
+              )
+
+              await loadWeeklyStats()
+            }}
+
+            onMoveSession={async (
+              targetDate,
+            ) => {
+              await moveSession(
+                selectedSession.id,
+                targetDate,
+              )
             }}
           />
         </SidePanel>

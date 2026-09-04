@@ -1193,6 +1193,6 @@ def move_training_session(
             detail=str(exc),
         ) from exc
 
-    return training_session_to_response(
+    return to_response(
         moved
     )

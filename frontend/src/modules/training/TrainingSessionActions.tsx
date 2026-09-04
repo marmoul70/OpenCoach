@@ -424,14 +424,17 @@ export function TrainingSessionActions({
               />
             </div>
           ) : options ? (
-            <>
-              <div
-                className="
-                  grid
-                  grid-cols-7
-                  gap-1
-                "
-              >
+            options.days.some(
+              day => day.selectable,
+            ) ? (
+              <>
+                <div
+                  className="
+                    grid
+                    grid-cols-7
+                    gap-1
+                  "
+                >
                 {options.days.map(
                   day => (
                     <MoveDayButton
@@ -531,8 +534,75 @@ export function TrainingSessionActions({
                     className="h-3 w-3"
                   />
                 </button>
+                </div>
+              </>
+            ) : (
+              <div
+                className="
+                  rounded-[10px]
+                  border
+                  border-amber-500/15
+                  bg-amber-500/[0.045]
+                  px-3
+                  py-3
+                  dark:border-amber-400/15
+                  dark:bg-amber-400/[0.04]
+                "
+              >
+                <p
+                  className="
+                    text-[12px]
+                    font-semibold
+                    text-slate-800
+                    dark:text-slate-200
+                  "
+                >
+                  Déplacement impossible
+                </p>
+
+                <p
+                  className="
+                    mt-1
+                    text-[10.5px]
+                    leading-4
+                    text-slate-500
+                    dark:text-slate-400
+                  "
+                >
+                  Cette séance ne peut plus être
+                  déplacée cette semaine.
+                </p>
+
+                <div
+                  className="
+                    mt-3
+                    flex
+                    justify-end
+                  "
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMoveOpen(false)
+                    }}
+                    className="
+                      rounded-[9px]
+                      px-3
+                      py-2
+                      text-[11.5px]
+                      font-medium
+                      text-slate-500
+                      transition
+                      hover:bg-slate-100
+                      dark:text-slate-400
+                      dark:hover:bg-white/[0.05]
+                    "
+                  >
+                    Fermer
+                  </button>
+                </div>
               </div>
-            </>
+            )
           ) : null}
         </div>
       )}

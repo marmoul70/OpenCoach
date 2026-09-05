@@ -76,7 +76,7 @@ const mainNavigation = [
   },
   {
     page: 'training',
-    label: 'Entraînement',
+    label: 'Planning',
     icon: CalendarDays,
   },
   {
@@ -110,7 +110,7 @@ const mobileNavigation = [
   },
   {
     page: 'training',
-    label: 'Entraînement',
+    label: 'Planning',
     icon: CalendarDays,
   },
   {
@@ -282,7 +282,7 @@ export function AppNavigation({
               dark:text-slate-600
             "
           >
-            Entraînement
+            Planning
           </p>
 
           <div className="space-y-1">
@@ -720,9 +720,10 @@ export function AppNavigation({
           top-0
           z-40
           flex
-          h-16
+          h-[calc(4rem+env(safe-area-inset-top))]
           items-center
           justify-between
+          pt-[env(safe-area-inset-top)]
           border-b
           border-black/[0.06]
           bg-white/90

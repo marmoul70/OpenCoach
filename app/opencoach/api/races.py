@@ -693,14 +693,37 @@ def delete_race(
     repository: SqlRaceRepository = Depends(
         get_race_repository,
     ),
+    planning_service: CurrentWeekPlanningService = Depends(
+        get_current_week_planning_service,
+    ),
 ) -> Response:
-    """Supprime une course."""
+    """Supprime une course et recalcule le planning si nécessaire."""
 
     try:
+        existing = repository.get_race(
+            athlete_profile_id,
+            race_id,
+        )
+
+        if existing is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Course introuvable.",
+            )
+
+        affects_trajectory = (
+            race_affects_current_trajectory(
+                existing
+            )
+        )
+
         repository.delete_race(
             athlete_profile_id,
             race_id,
         )
+
+    except HTTPException:
+        raise
 
     except RaceRepositoryError as exc:
         if (
@@ -718,6 +741,17 @@ def delete_race(
                 "Impossible de supprimer la course."
             ),
         ) from exc
+
+    if affects_trajectory:
+        planning_service.refresh(
+            athlete_profile_id=(
+                athlete_profile_id
+            ),
+            reference_date=date.today(),
+            additional_context=(
+                "course principale supprimée",
+            ),
+        )
 
     return Response(
         status_code=204,

@@ -702,3 +702,88 @@ def test_training_race_creation_does_not_refresh_current_week(
         planning_service.calls
         == []
     )
+
+def test_primary_race_deletion_refreshes_current_week() -> None:
+    repository = FakeRaceRepository()
+    planning_service = (
+        FakeCurrentWeekPlanningService()
+    )
+
+    race = create_race(
+        priority="primary",
+    )
+
+    repository.races = [
+        race
+    ]
+
+    client, profile_id = create_client(
+        repository,
+        planning_service=(
+            planning_service
+        ),
+    )
+
+    response = client.delete(
+        f"/api/races/{race.id}"
+    )
+
+    assert response.status_code == 204
+
+    assert repository.races == []
+
+    assert len(
+        planning_service.calls
+    ) == 1
+
+    assert (
+        planning_service.calls[0][
+            "athlete_profile_id"
+        ]
+        == profile_id
+    )
+
+    assert (
+        planning_service.calls[0][
+            "additional_context"
+        ]
+        == (
+            "course principale supprimée",
+        )
+    )
+
+
+def test_training_race_deletion_does_not_refresh_current_week(
+) -> None:
+    repository = FakeRaceRepository()
+    planning_service = (
+        FakeCurrentWeekPlanningService()
+    )
+
+    race = create_race(
+        priority="training",
+    )
+
+    repository.races = [
+        race
+    ]
+
+    client, _ = create_client(
+        repository,
+        planning_service=(
+            planning_service
+        ),
+    )
+
+    response = client.delete(
+        f"/api/races/{race.id}"
+    )
+
+    assert response.status_code == 204
+
+    assert repository.races == []
+
+    assert (
+        planning_service.calls
+        == []
+    )

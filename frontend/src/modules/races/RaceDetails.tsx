@@ -10,6 +10,7 @@ import {
   Mountain,
   Route,
   Trophy,
+  Trash2,
   Unlink,
   X,
 } from 'lucide-react'
@@ -52,6 +53,7 @@ export function RaceDetails({
 }: RaceDetailsProps) {
   const {
     updateRace,
+    removeRace,
   } = useRaces()
 
   const [
@@ -117,6 +119,23 @@ export function RaceDetails({
   const [
     saveError,
     setSaveError,
+  ] = useState<
+    string | null
+  >(null)
+
+  const [
+    deleteOpen,
+    setDeleteOpen,
+  ] = useState(false)
+
+  const [
+    deleting,
+    setDeleting,
+  ] = useState(false)
+
+  const [
+    deleteError,
+    setDeleteError,
   ] = useState<
     string | null
   >(null)
@@ -205,6 +224,32 @@ export function RaceDetails({
       )
     } finally {
       setSaving(false)
+    }
+  }
+
+
+  async function handleDelete() {
+    setDeleting(true)
+    setDeleteError(null)
+
+    try {
+      await removeRace(
+        race.id,
+      )
+
+      setDeleteOpen(false)
+      onClose()
+    } catch (caughtError) {
+      setDeleteError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : (
+              'Impossible de supprimer '
+              + 'la course.'
+            ),
+      )
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -479,8 +524,10 @@ export function RaceDetails({
 
           <div
             className="
-              flex justify-end
-              gap-2
+              flex
+              items-center
+              justify-between
+              gap-3
               border-t
               border-black/[0.055]
               pt-3
@@ -490,71 +537,287 @@ export function RaceDetails({
             <button
               type="button"
               className="
-                h-9
-                rounded-[8px]
-                px-3
-                text-[10px]
-                font-semibold
-                text-slate-400
-                transition
-                hover:bg-slate-50
-                hover:text-slate-700
-                dark:hover:bg-white/[0.035]
-                dark:hover:text-slate-200
-              "
-              onClick={
-                onClose
-              }
-              disabled={
-                saving
-              }
-            >
-              Annuler
-            </button>
-
-            <button
-              type="submit"
-              className="
                 inline-flex
                 h-9
                 items-center
                 gap-1.5
                 rounded-[8px]
-                border
-                border-emerald-500/25
-                bg-emerald-500/[0.08]
                 px-3
                 text-[10px]
                 font-semibold
-                text-emerald-700
+                text-red-500
                 transition
-                hover:bg-emerald-500/[0.13]
+                hover:bg-red-500/[0.07]
+                hover:text-red-600
                 disabled:opacity-40
-                dark:text-emerald-400
+                dark:text-red-400
+                dark:hover:bg-red-500/[0.08]
               "
+              onClick={() => {
+                setDeleteError(null)
+                setDeleteOpen(true)
+              }}
               disabled={
                 saving
+                || deleting
               }
             >
-              {saving ? (
-                <LoaderCircle
-                  size={15}
-                  className="animate-spin"
-                />
-              ) : (
-                <Check
-                  size={15}
-                />
-              )}
-
-              Enregistrer
+              <Trash2 size={14} />
+              Supprimer
             </button>
+
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+              "
+            >
+              <button
+                type="button"
+                className="
+                  h-9
+                  rounded-[8px]
+                  px-3
+                  text-[10px]
+                  font-semibold
+                  text-slate-400
+                  transition
+                  hover:bg-slate-50
+                  hover:text-slate-700
+                  dark:hover:bg-white/[0.035]
+                  dark:hover:text-slate-200
+                "
+                onClick={
+                  onClose
+                }
+                disabled={
+                  saving
+                  || deleting
+                }
+              >
+                Annuler
+              </button>
+
+              <button
+                type="submit"
+                className="
+                  inline-flex
+                  h-9
+                  items-center
+                  gap-1.5
+                  rounded-[8px]
+                  border
+                  border-emerald-500/25
+                  bg-emerald-500/[0.08]
+                  px-3
+                  text-[10px]
+                  font-semibold
+                  text-emerald-700
+                  transition
+                  hover:bg-emerald-500/[0.13]
+                  disabled:opacity-40
+                  dark:text-emerald-400
+                "
+                disabled={
+                  saving
+                  || deleting
+                }
+              >
+                {saving ? (
+                  <LoaderCircle
+                    size={15}
+                    className="animate-spin"
+                  />
+                ) : (
+                  <Check
+                    size={15}
+                  />
+                )}
+
+                Enregistrer
+              </button>
+            </div>
           </div>
         </form>
       ) : (
         <CompletedRace
           race={race}
         />
+      )}
+
+      {deleteOpen && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[100]
+            flex
+            items-center
+            justify-center
+            bg-slate-950/45
+            p-4
+            backdrop-blur-[2px]
+          "
+          role="presentation"
+          onMouseDown={(event) => {
+            if (
+              event.target
+              === event.currentTarget
+              && !deleting
+            ) {
+              setDeleteOpen(false)
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-race-title"
+            className="
+              w-full
+              max-w-[400px]
+              rounded-[14px]
+              border
+              border-black/[0.08]
+              bg-white
+              p-5
+              shadow-2xl
+              dark:border-white/[0.08]
+              dark:bg-[#151b1f]
+            "
+          >
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-full
+                bg-red-500/[0.08]
+                text-red-500
+                dark:bg-red-500/[0.10]
+                dark:text-red-400
+              "
+            >
+              <Trash2 size={18} />
+            </div>
+
+            <h3
+              id="delete-race-title"
+              className="
+                mt-4
+                text-[15px]
+                font-semibold
+                text-slate-900
+                dark:text-slate-100
+              "
+            >
+              Supprimer cette course ?
+            </h3>
+
+            <p
+              className="
+                mt-2
+                text-[11px]
+                leading-5
+                text-slate-500
+                dark:text-slate-400
+              "
+            >
+              La course « {race.name} » sera
+              définitivement supprimée.
+              Le plan d'entraînement sera recalculé
+              si cette course influence la trajectoire.
+            </p>
+
+            {deleteError && (
+              <div
+                className="
+                  mt-3
+                  rounded-[9px]
+                  border
+                  border-red-500/15
+                  bg-red-50
+                  px-3
+                  py-2
+                  text-[10px]
+                  text-red-600
+                  dark:bg-red-500/[0.06]
+                  dark:text-red-400
+                "
+              >
+                {deleteError}
+              </div>
+            )}
+
+            <div
+              className="
+                mt-5
+                flex
+                justify-end
+                gap-2
+              "
+            >
+              <button
+                type="button"
+                className="
+                  h-9
+                  rounded-[8px]
+                  px-3
+                  text-[10px]
+                  font-semibold
+                  text-slate-500
+                  transition
+                  hover:bg-slate-100
+                  dark:text-slate-400
+                  dark:hover:bg-white/[0.04]
+                "
+                onClick={() =>
+                  setDeleteOpen(false)
+                }
+                disabled={deleting}
+              >
+                Annuler
+              </button>
+
+              <button
+                type="button"
+                className="
+                  inline-flex
+                  h-9
+                  items-center
+                  gap-1.5
+                  rounded-[8px]
+                  bg-red-600
+                  px-3
+                  text-[10px]
+                  font-semibold
+                  text-white
+                  transition
+                  hover:bg-red-700
+                  disabled:opacity-40
+                "
+                onClick={() => {
+                  void handleDelete()
+                }}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <LoaderCircle
+                    size={14}
+                    className="animate-spin"
+                  />
+                ) : (
+                  <Trash2 size={14} />
+                )}
+
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -59,3 +59,6 @@ from .session_execution_analysis import (
     SessionExecutionAnalysis,
 )
 from .push_subscription import PushSubscription
+
+# T6.2 — débrief hebdomadaire
+from .weekly_debrief import WeeklyDebriefRecord

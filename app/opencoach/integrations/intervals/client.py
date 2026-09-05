@@ -5,6 +5,7 @@ import httpx
 from opencoach.integrations.intervals.errors import (
     IntervalsApiError,
     IntervalsAuthenticationError,
+    IntervalsDataError,
 )
 
 
@@ -219,6 +220,147 @@ class IntervalsClient:
                 )
             ) from exc
 
+
+    def upsert_workouts(
+        self,
+        workouts: list[dict],
+    ) -> list[dict]:
+        """Crée ou met à jour des workouts planifiés.
+
+        Intervals.icu rapproche les événements à partir de
+        ``external_id`` lorsque ``upsert=true``.
+
+        La méthode retourne la représentation complète des événements
+        telle que renvoyée par Intervals.icu.
+        """
+
+        if not workouts:
+            return []
+
+        payload = self._write_json(
+            "POST",
+            f"/athlete/{self.athlete_id}/events/bulk",
+            params={
+                "upsert": "true",
+            },
+            json_body=workouts,
+        )
+
+        if not isinstance(payload, list):
+            raise IntervalsDataError(
+                "La réponse bulk workout Intervals.icu "
+                "n'est pas une liste."
+            )
+
+        if not all(
+            isinstance(item, dict)
+            for item in payload
+        ):
+            raise IntervalsDataError(
+                "La réponse bulk workout Intervals.icu "
+                "contient un événement invalide."
+            )
+
+        return payload
+
+    def delete_workouts(
+        self,
+        external_ids: list[str],
+    ) -> int:
+        """Supprime des workouts OpenCoach par ``external_id``.
+
+        Les identifiants inexistants sont ignorés par Intervals.icu.
+        """
+
+        cleaned_ids = [
+            value.strip()
+            for value in external_ids
+            if value
+            and value.strip()
+        ]
+
+        if not cleaned_ids:
+            return 0
+
+        payload = self._write_json(
+            "PUT",
+            f"/athlete/{self.athlete_id}/events/bulk-delete",
+            json_body=[
+                {
+                    "external_id": external_id,
+                }
+                for external_id in cleaned_ids
+            ],
+        )
+
+        if (
+            not isinstance(payload, int)
+            or isinstance(payload, bool)
+        ):
+            raise IntervalsDataError(
+                "La réponse bulk-delete Intervals.icu "
+                "n'est pas un nombre."
+            )
+
+        return payload
+
+    def _write_json(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, str] | None = None,
+        json_body: object,
+    ) -> object:
+        """Exécute une écriture JSON authentifiée vers Intervals.icu."""
+
+        try:
+            with httpx.Client(
+                auth=httpx.BasicAuth(
+                    "API_KEY",
+                    self.api_key,
+                ),
+                timeout=self.timeout,
+                transport=self.transport,
+            ) as client:
+                response = client.request(
+                    method=method,
+                    url=f"{INTERVALS_BASE_URL}{path}",
+                    params=params,
+                    json=json_body,
+                )
+
+        except httpx.HTTPError as exc:
+            raise IntervalsApiError(
+                "Impossible de communiquer avec "
+                "l'API Intervals.icu."
+            ) from exc
+
+        if response.status_code in {
+            401,
+            403,
+        }:
+            raise IntervalsAuthenticationError(
+                "Authentification Intervals.icu refusée."
+            )
+
+        try:
+            response.raise_for_status()
+
+        except httpx.HTTPStatusError as exc:
+            raise IntervalsApiError(
+                "L'API Intervals.icu a retourné HTTP "
+                f"{response.status_code}."
+            ) from exc
+
+        try:
+            return response.json()
+
+        except ValueError as exc:
+            raise IntervalsDataError(
+                "La réponse Intervals.icu n'est pas "
+                "un JSON valide."
+            ) from exc
 
     @staticmethod
     def _validate_activity_id(

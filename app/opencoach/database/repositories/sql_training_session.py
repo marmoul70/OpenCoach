@@ -62,6 +62,9 @@ class SqlTrainingSessionRepository(
             database_session.planning_key = (
                 session.planning_key
             )
+            database_session.planning_importance = (
+                session.planning_importance
+            )
 
             database_session.type = session.type
             database_session.title = session.title
@@ -84,6 +87,24 @@ class SqlTrainingSessionRepository(
             database_session.status = session.status
             database_session.activity_id = session.activity_id
 
+            database_session.intervals_external_id = (
+                session.intervals_external_id
+            )
+            database_session.intervals_event_id = (
+                session.intervals_event_id
+            )
+            database_session.intervals_sync_status = (
+                session.intervals_sync_status
+            )
+            database_session.intervals_last_synced_at = (
+                session.intervals_last_synced_at
+            )
+            database_session.intervals_payload_hash = (
+                session.intervals_payload_hash
+            )
+            database_session.intervals_sync_error = (
+                session.intervals_sync_error
+            )
             self.session.commit()
             self.session.refresh(database_session)
 
@@ -430,6 +451,9 @@ class SqlTrainingSessionRepository(
             description=session.description,
             duration_minutes=session.duration_minutes,
             planning_key=session.planning_key,
+            planning_importance=(
+                session.planning_importance
+            ),
             distance_km=session.distance_km,
             elevation_gain_m=session.elevation_gain_m,
             intensity=session.intensity,
@@ -437,6 +461,12 @@ class SqlTrainingSessionRepository(
             prescription=session.prescription,
             status=session.status,
             activity_id=session.activity_id,
+            intervals_external_id=session.intervals_external_id,
+            intervals_event_id=session.intervals_event_id,
+            intervals_sync_status=session.intervals_sync_status,
+            intervals_last_synced_at=session.intervals_last_synced_at,
+            intervals_payload_hash=session.intervals_payload_hash,
+            intervals_sync_error=session.intervals_sync_error,
         )
 
     @staticmethod

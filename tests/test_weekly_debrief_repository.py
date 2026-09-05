@@ -486,3 +486,128 @@ def test_repository_rejects_inconsistent_dates(
             facts,
             inconsistent,
         )
+
+
+def test_repository_sql_failure_rolls_back_session_for_next_profile(
+    session: Session,
+    monkeypatch,
+) -> None:
+    """Une vraie erreur SQL de B ne doit pas empoisonner C."""
+
+    from opencoach.database.repositories.weekly_debrief import (
+        WeeklyDebriefRepositoryError,
+    )
+
+    athlete_a = uuid4()
+    athlete_b = uuid4()
+    athlete_c = uuid4()
+
+    repository = SqlWeeklyDebriefRepository(
+        session
+    )
+
+    facts = create_facts()
+    debrief = build_weekly_debrief(
+        facts
+    )
+
+    # A est persisté normalement.
+    repository.save_closed(
+        athlete_a,
+        facts,
+        debrief,
+    )
+
+    # Une ligne B existe déjà en base.
+    repository.save_closed(
+        athlete_b,
+        facts,
+        debrief,
+    )
+
+    original_find = repository._find
+    duplicate_forced = False
+
+    def force_duplicate_insert(
+        athlete_profile_id,
+        week_start,
+    ):
+        """Force uniquement le prochain save de B à faire un INSERT."""
+
+        nonlocal duplicate_forced
+
+        if (
+            athlete_profile_id == athlete_b
+            and week_start == facts.week_start
+            and not duplicate_forced
+        ):
+            duplicate_forced = True
+
+            # Le repository croit que B n'existe pas.
+            # Il tentera donc un INSERT qui violera
+            # la contrainte unique réelle SQLite.
+            return None
+
+        return original_find(
+            athlete_profile_id,
+            week_start,
+        )
+
+    monkeypatch.setattr(
+        repository,
+        "_find",
+        force_duplicate_insert,
+    )
+
+    # Le commit doit provoquer une vraie IntegrityError
+    # SQLAlchemy, transformée par le repository après rollback.
+    with pytest.raises(
+        WeeklyDebriefRepositoryError
+    ):
+        repository.save_closed(
+            athlete_b,
+            facts,
+            debrief,
+        )
+
+    assert duplicate_forced is True
+
+    # Restaure la lecture normale du repository.
+    monkeypatch.setattr(
+        repository,
+        "_find",
+        original_find,
+    )
+
+    # Si le rollback n'a pas correctement restauré la session,
+    # cette écriture provoquera typiquement un
+    # PendingRollbackError ou une autre erreur SQLAlchemy.
+    stored_c = repository.save_closed(
+        athlete_c,
+        facts,
+        debrief,
+    )
+
+    assert (
+        stored_c.athlete_profile_id
+        == athlete_c
+    )
+
+    # A et B initiaux doivent toujours être présents :
+    # le rollback de l'INSERT conflictuel ne doit pas
+    # annuler leurs commits précédents.
+    assert repository.get_for_week(
+        athlete_a,
+        facts.week_start,
+    ) is not None
+
+    assert repository.get_for_week(
+        athlete_b,
+        facts.week_start,
+    ) is not None
+
+    # C doit avoir pu être persisté avec LA MÊME Session.
+    assert repository.get_for_week(
+        athlete_c,
+        facts.week_start,
+    ) is not None

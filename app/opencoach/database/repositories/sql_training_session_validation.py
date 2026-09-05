@@ -274,6 +274,9 @@ def _session_to_domain(
             model.duration_minutes
         ),
         planning_key=model.planning_key,
+        planning_importance=(
+            model.planning_importance
+        ),
         distance_km=model.distance_km,
         elevation_gain_m=(
             model.elevation_gain_m

@@ -32,6 +32,8 @@ class GeneratedTrainingSession:
 
     vma_kmh: float | None = None
 
+    planning_importance: str | None = None
+
     def __post_init__(
         self,
     ) -> None:

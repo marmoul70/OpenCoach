@@ -445,3 +445,82 @@ def test_planned_source_is_rejected() -> None:
         )
 
     assert repository.saved == []
+
+
+class FakeWorkoutSyncService:
+    def __init__(
+        self,
+        *,
+        error=None,
+    ) -> None:
+        self.error = error
+        self.calls = []
+
+    def sync_period(
+        self,
+        *,
+        athlete_profile_id,
+        start_date,
+        end_date,
+    ):
+        self.calls.append(
+            (
+                athlete_profile_id,
+                start_date,
+                end_date,
+            )
+        )
+
+        if self.error is not None:
+            raise self.error
+
+        return object()
+
+
+def test_move_syncs_source_and_new_occurrence_period() -> None:
+    source, repository, _ = _scenario()
+
+    replanning_service = (
+        DailySessionReplanningService(
+            training_session_repository=repository,
+            athlete_constraint_repository=(
+                FakeConstraintRepository()
+            ),
+        )
+    )
+
+    workout_sync = FakeWorkoutSyncService()
+
+    application = (
+        DailySessionReplanningApplicationService(
+            training_session_repository=repository,
+            replanning_service=replanning_service,
+            workout_sync_service=workout_sync,
+        )
+    )
+
+    athlete_profile_id = uuid4()
+
+    result = application.apply(
+        athlete_profile_id=athlete_profile_id,
+        athlete=_athlete(),
+        source_session_id=source.id,
+        action=(
+            DailyReplanningAction
+            .MOVE_UNCHANGED
+        ),
+        target_date=SATURDAY,
+    )
+
+    assert result.created is True
+    assert result.applied_session is not None
+
+    assert len(repository.saved) == 1
+
+    assert workout_sync.calls == [
+        (
+            athlete_profile_id,
+            THURSDAY,
+            SATURDAY,
+        )
+    ]

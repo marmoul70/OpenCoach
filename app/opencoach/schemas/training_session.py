@@ -59,6 +59,13 @@ class TrainingSessionCreate(BaseModel):
     )
 
     activity_id: UUID | None = None
+    intervals_external_id: str | None = None
+    intervals_event_id: str | None = None
+    intervals_sync_status: str | None = None
+    intervals_last_synced_at: datetime | None = None
+    intervals_payload_hash: str | None = None
+    intervals_sync_error: str | None = None
+
 
 class TrainingSessionResponse(BaseModel):
     id: UUID
@@ -74,6 +81,13 @@ class TrainingSessionResponse(BaseModel):
     heart_rate_zone: str | None
     status: str
     activity_id: UUID | None
+
+    intervals_external_id: str | None = None
+    intervals_event_id: str | None = None
+    intervals_sync_status: str | None = None
+    intervals_last_synced_at: datetime | None = None
+    intervals_payload_hash: str | None = None
+    intervals_sync_error: str | None = None
 
 
 class TrainingSessionStatusUpdate(BaseModel):

@@ -20,6 +20,14 @@ interface TrainingSessionApiResponse {
   heart_rate_zone: string | null
   status: TrainingSessionStatus
   activity_id: string | null
+
+  intervals_external_id: string | null
+  intervals_event_id: string | null
+  intervals_sync_status:
+    TrainingSession['intervalsSyncStatus'] | null
+  intervals_last_synced_at: string | null
+  intervals_payload_hash: string | null
+  intervals_sync_error: string | null
 }
 
 interface TrainingAvailableActivityApiResponse {
@@ -53,6 +61,24 @@ function mapTrainingSession(
     heartRateZone: data.heart_rate_zone ?? undefined,
     status: data.status,
     activityId: data.activity_id ?? undefined,
+
+    intervalsExternalId:
+      data.intervals_external_id ?? undefined,
+
+    intervalsEventId:
+      data.intervals_event_id ?? undefined,
+
+    intervalsSyncStatus:
+      data.intervals_sync_status ?? undefined,
+
+    intervalsLastSyncedAt:
+      data.intervals_last_synced_at ?? undefined,
+
+    intervalsPayloadHash:
+      data.intervals_payload_hash ?? undefined,
+
+    intervalsSyncError:
+      data.intervals_sync_error ?? undefined,
   }
 }
 

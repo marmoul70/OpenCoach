@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import timedelta
 from uuid import UUID
+from typing import Protocol
 
 from opencoach.coaching.daily_session_rescheduling_service import (
     DailySessionReschedulingService,
@@ -60,6 +61,22 @@ class DailySessionReschedulingApplicationResult:
     created: bool
 
 
+
+
+class DailyWorkoutSyncService(Protocol):
+    """Port de synchronisation externe du planning."""
+
+    def sync_period(
+        self,
+        *,
+        athlete_profile_id: UUID,
+        start_date: date,
+        end_date: date,
+    ) -> object:
+        """Synchronise une période de planning."""
+        ...
+
+
 @dataclass(slots=True)
 class DailySessionReschedulingApplicationService:
     """Applique explicitement une proposition de report."""
@@ -67,6 +84,10 @@ class DailySessionReschedulingApplicationService:
     training_session_repository: TrainingSessionRepository
 
     rescheduling_service: DailySessionReschedulingService
+
+    workout_sync_service: (
+        DailyWorkoutSyncService | None
+    ) = None
 
     def apply(
         self,
@@ -186,6 +207,9 @@ class DailySessionReschedulingApplicationService:
             date=target_date,
             type=source.type,
             sport_type=source.sport_type,
+            planning_importance=(
+                source.planning_importance
+            ),
             title=source.title,
             description=source.description,
             duration_minutes=(
@@ -212,6 +236,12 @@ class DailySessionReschedulingApplicationService:
             )
         )
 
+        self._sync_replanning_best_effort(
+            athlete_profile_id=athlete_profile_id,
+            source=source,
+            applied=saved,
+        )
+
         return (
             DailySessionReschedulingApplicationResult(
                 source_session=source,
@@ -219,3 +249,35 @@ class DailySessionReschedulingApplicationService:
                 created=True,
             )
         )
+
+    def _sync_replanning_best_effort(
+        self,
+        *,
+        athlete_profile_id: UUID,
+        source: TrainingSession,
+        applied: TrainingSession,
+    ) -> None:
+        """Synchronise le delta sans invalider OpenCoach."""
+
+        if self.workout_sync_service is None:
+            return
+
+        start_date = min(
+            source.date,
+            applied.date,
+        )
+        end_date = max(
+            source.date,
+            applied.date,
+        )
+
+        try:
+            self.workout_sync_service.sync_period(
+                athlete_profile_id=athlete_profile_id,
+                start_date=start_date,
+                end_date=end_date,
+            )
+        except Exception:
+            # La décision locale est déjà persistée.
+            # Une panne Intervals reste best-effort.
+            return

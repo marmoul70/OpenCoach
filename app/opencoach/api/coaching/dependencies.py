@@ -474,12 +474,58 @@ def get_daily_session_rescheduling_service(
     )
 
 
+def _build_daily_intervals_workout_sync_service(
+    *,
+    db: Session,
+    training_session_repository: SqlTrainingSessionRepository,
+):
+    """Construit la synchronisation Intervals des décisions daily."""
+
+    from opencoach.database.repositories import (
+        SqlIntegrationConnectionRepository,
+    )
+    from opencoach.security import SecretCipher
+    from opencoach.services.integration_connection import (
+        IntegrationConnectionService,
+    )
+    from opencoach.services.intervals_workout_sync import (
+        IntervalsWorkoutSyncService,
+    )
+
+    integration_connection_repository = (
+        SqlIntegrationConnectionRepository(
+            db
+        )
+    )
+
+    integration_connection_service = (
+        IntegrationConnectionService(
+            repository=(
+                integration_connection_repository
+            ),
+            cipher=SecretCipher.from_env(),
+        )
+    )
+
+    return IntervalsWorkoutSyncService(
+        repository=(
+            training_session_repository
+        ),
+        connection_service=(
+            integration_connection_service
+        ),
+    )
+
+
 def get_daily_session_rescheduling_application_service(
     training_session_repository: SqlTrainingSessionRepository = Depends(
         get_training_session_repository
     ),
     rescheduling_service: DailySessionReschedulingService = Depends(
         get_daily_session_rescheduling_service
+    ),
+    db: Session = Depends(
+        get_db
     ),
 ) -> DailySessionReschedulingApplicationService:
     """Construit l'application explicite d'un report quotidien."""
@@ -490,6 +536,14 @@ def get_daily_session_rescheduling_application_service(
         ),
         rescheduling_service=(
             rescheduling_service
+        ),
+        workout_sync_service=(
+            _build_daily_intervals_workout_sync_service(
+                db=db,
+                training_session_repository=(
+                    training_session_repository
+                ),
+            )
         ),
     )
 
@@ -522,6 +576,9 @@ def get_daily_session_replanning_application_service(
     replanning_service: DailySessionReplanningService = Depends(
         get_daily_session_replanning_service
     ),
+    db: Session = Depends(
+        get_db
+    ),
 ) -> DailySessionReplanningApplicationService:
     """Construit l'application d'un choix de replanification."""
 
@@ -531,6 +588,14 @@ def get_daily_session_replanning_application_service(
         ),
         replanning_service=(
             replanning_service
+        ),
+        workout_sync_service=(
+            _build_daily_intervals_workout_sync_service(
+                db=db,
+                training_session_repository=(
+                    training_session_repository
+                ),
+            )
         ),
     )
 
@@ -630,5 +695,260 @@ def get_physiological_test_application_service(
     return ApplyPhysiologicalTestDecisionService(
         training_session_repository=(
             training_session_repository
+        ),
+    )
+
+
+def build_weekly_debrief_application_service(
+    db: Session,
+    planning_context_factory=None,
+    planning_service_factory=None,
+):
+    """Construit le pipeline production complet du débrief hebdomadaire."""
+
+    from sqlalchemy import select
+
+    from opencoach.coaching.weekly_debrief_application import (
+        WeeklyDebriefApplicationService,
+    )
+    from opencoach.coaching.weekly_debrief_orchestrator import (
+        WeeklyDebriefOrchestrator,
+    )
+    from opencoach.coaching.weekly_debrief_planning_application import (
+        WeeklyDebriefPlanningApplicationService,
+    )
+    from opencoach.coaching.weekly_debrief_planning_context import (
+        DefaultWeeklyDebriefPlanningContextResolver,
+    )
+    from opencoach.coaching.weekly_debrief_sql_runtime import (
+        SqlWeeklyDebriefRuntime,
+    )
+    from opencoach.database.repositories import (
+        SqlIntegrationConnectionRepository,
+    )
+    from opencoach.security import SecretCipher
+    from opencoach.services.integration_connection import (
+        IntegrationConnectionService,
+    )
+    from opencoach.services.intervals_workout_sync import (
+        IntervalsWorkoutSyncService,
+    )
+    from opencoach.database.models import (
+        AthleteProfile as AthleteProfileModel,
+    )
+
+    readiness_service = get_readiness_service(
+        db=db,
+    )
+
+    training_stats_service = (
+        get_training_stats_service(
+            db=db,
+        )
+    )
+
+    history_service = (
+        get_training_history_snapshot_service(
+            db=db,
+            training_stats_service=(
+                training_stats_service
+            ),
+        )
+    )
+
+    physiological_snapshot_service = (
+        get_physiological_snapshot_service(
+            db=db,
+        )
+    )
+
+    weekly_generation_service = (
+        get_weekly_training_generation_service()
+    )
+
+    training_session_repository = (
+        get_training_session_repository(
+            db=db,
+        )
+    )
+
+    persistence_service = (
+        get_weekly_training_persistence_service(
+            repository=(
+                training_session_repository
+            ),
+        )
+    )
+
+    physiological_test_service = (
+        get_automatic_physiological_test_proposal_service(
+            db=db,
+        )
+    )
+
+    def resolve_owner_user_id(
+        athlete_profile_id: UUID,
+    ) -> UUID:
+        user_id = db.scalar(
+            select(
+                AthleteProfileModel.user_id
+            ).where(
+                AthleteProfileModel.id
+                == athlete_profile_id
+            )
+        )
+
+        if user_id is None:
+            raise LookupError(
+                "Profil athlète introuvable pour "
+                "la composition du débrief hebdomadaire : "
+                f"{athlete_profile_id}"
+            )
+
+        return user_id
+
+    if planning_context_factory is None:
+
+        def planning_context_factory(
+            athlete_profile_id: UUID,
+        ):
+            user_id = resolve_owner_user_id(
+                athlete_profile_id
+            )
+
+            planning_context_service = (
+                get_planning_context_service(
+                    user_id=user_id,
+                    db=db,
+                    readiness_service=(
+                        readiness_service
+                    ),
+                    training_stats_service=(
+                        training_stats_service
+                    ),
+                )
+            )
+
+            planning_context_builder = (
+                get_weekly_planning_context_builder(
+                    planning_context_service=(
+                        planning_context_service
+                    ),
+                    history_service=(
+                        history_service
+                    ),
+                )
+            )
+
+            return (
+                DefaultWeeklyDebriefPlanningContextResolver(
+                    context_builder=(
+                        planning_context_builder
+                    ),
+                )
+            )
+
+    if planning_service_factory is None:
+
+        def planning_service_factory(
+            athlete_profile_id: UUID,
+        ):
+            user_id = resolve_owner_user_id(
+                athlete_profile_id
+            )
+
+            athlete_generation_service = (
+                get_athlete_weekly_training_generation_service(
+                    user_id=user_id,
+                    db=db,
+                    physiology_service=(
+                        physiological_snapshot_service
+                    ),
+                    generation_service=(
+                        weekly_generation_service
+                    ),
+                )
+            )
+
+            generation_and_persistence_service = (
+                get_generate_and_persist_training_week_service(
+                    generation_service=(
+                        athlete_generation_service
+                    ),
+                    persistence_service=(
+                        persistence_service
+                    ),
+                )
+            )
+
+            return (
+                get_generate_planned_training_week_service(
+                    generation_service=(
+                        generation_and_persistence_service
+                    ),
+                    physiological_test_service=(
+                        physiological_test_service
+                    ),
+                )
+            )
+
+    runtime = SqlWeeklyDebriefRuntime(
+        db
+    )
+
+    integration_connection_repository = (
+        SqlIntegrationConnectionRepository(
+            db
+        )
+    )
+
+    integration_connection_service = (
+        IntegrationConnectionService(
+            repository=(
+                integration_connection_repository
+            ),
+            cipher=SecretCipher.from_env(),
+        )
+    )
+
+    workout_sync_service = (
+        IntervalsWorkoutSyncService(
+            repository=(
+                training_session_repository
+            ),
+            connection_service=(
+                integration_connection_service
+            ),
+        )
+    )
+
+    planning_application_service = (
+        WeeklyDebriefPlanningApplicationService(
+            debrief_repository=(
+                runtime.weekly_debriefs
+            ),
+            planning_service_factory=(
+                planning_service_factory
+            ),
+            workout_sync_service=(
+                workout_sync_service
+            ),
+        )
+    )
+
+    orchestrator = WeeklyDebriefOrchestrator(
+        closure_service=(
+            runtime.build_closure_service()
+        ),
+        planning_application_service=(
+            planning_application_service
+        ),
+    )
+
+    return WeeklyDebriefApplicationService(
+        runtime=runtime,
+        orchestrator=orchestrator,
+        planning_context_factory=(
+            planning_context_factory
         ),
     )

@@ -55,6 +55,9 @@ def generated_session_to_training_session(
         distance_km=None,
         elevation_gain_m=None,
         planning_key=planning_key,
+        planning_importance=(
+            generated.planning_importance
+        ),
         intensity=(
             canonical_intensity_for_stimulus(
                 proposal.covered_stimuli[0]

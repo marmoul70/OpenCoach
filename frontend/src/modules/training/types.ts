@@ -21,6 +21,14 @@ export type TrainingSessionStatus =
   | 'completed'
   | 'skipped'
 
+export type IntervalsSyncStatus =
+  | 'pending'
+  | 'synced'
+  | 'update_required'
+  | 'failed'
+  | 'deleted'
+
+
 export interface TrainingSession {
   id: string
   date: string
@@ -35,6 +43,13 @@ export interface TrainingSession {
   heartRateZone?: string
   status: TrainingSessionStatus
   activityId?: string
+
+  intervalsExternalId?: string
+  intervalsEventId?: string
+  intervalsSyncStatus?: IntervalsSyncStatus
+  intervalsLastSyncedAt?: string
+  intervalsPayloadHash?: string
+  intervalsSyncError?: string
 }
 
 export interface TrainingSessionCreate {

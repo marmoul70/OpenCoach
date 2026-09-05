@@ -279,6 +279,9 @@ def _replace_training_session_with_test(
         date=original.date,
         type="physiological_test",
         sport_type=original.sport_type,
+        planning_importance=(
+            original.planning_importance
+        ),
         title=generated.title,
         description=(
             _build_test_description(

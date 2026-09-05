@@ -14,6 +14,10 @@ import type {
   PhysiologicalTestProposal,
 } from '../physiological-tests'
 
+import {
+  IntervalsSyncStatus,
+} from './IntervalsSyncStatus'
+
 import type {
   TrainingSession,
 } from './types'
@@ -671,6 +675,11 @@ function SessionRow({
             session.sportType,
           )}
         </p>
+
+        <IntervalsSyncStatus
+          session={session}
+          compact
+        />
 
 
         {physiologicalTestProposal && (

@@ -23,6 +23,10 @@ import {
   useToast,
 } from '../../components/ui/ToastProvider'
 
+import {
+  IntervalsSyncStatus,
+} from './IntervalsSyncStatus'
+
 import type {
   TrainingSession,
 } from './types'
@@ -430,34 +434,35 @@ export function TrainingDetails({
       >
         <SessionHeader
           session={session}
+          onRealized={() => {
+            setOpenSection(
+              'activity',
+            )
+          }}
+          onSkipped={onSkipSession}
+          onMoved={onMoveSession}
         />
 
         <SessionSummary
           session={session}
           guidance={guidance}
         />
+
+        <div
+          className="
+            mt-2.5
+            border-t
+            border-slate-100
+            pt-2
+            dark:border-white/[0.055]
+          "
+        >
+          <IntervalsSyncStatus
+            session={session}
+            header
+          />
+        </div>
       </section>
-
-
-      {(
-        onSkipSession
-        && onMoveSession
-      ) && (
-        <TrainingSessionActions
-          session={session}
-          onRealized={() => {
-            setOpenSection(
-              'activity',
-            )
-          }}
-          onSkipped={
-            onSkipSession
-          }
-          onMoved={
-            onMoveSession
-          }
-        />
-      )}
 
 
       {session.status === 'completed' && (
@@ -689,8 +694,16 @@ function TrainingGuidanceContent({
 
 function SessionHeader({
   session,
+  onRealized,
+  onSkipped,
+  onMoved,
 }: {
   session: TrainingSession
+  onRealized: () => void
+  onSkipped?: () => Promise<void>
+  onMoved?: (
+    targetDate: string,
+  ) => Promise<void>
 }) {
   return (
     <div
@@ -763,11 +776,33 @@ function SessionHeader({
         )}
       </div>
 
-      <StatusBadge
-        status={
-          session.status
-        }
-      />
+      <div
+        className="
+          flex
+          shrink-0
+          items-center
+          gap-1.5
+        "
+      >
+        <StatusBadge
+          status={
+            session.status
+          }
+        />
+
+        {(
+          onSkipped
+          && onMoved
+        ) && (
+          <TrainingSessionActions
+            session={session}
+            compact
+            onRealized={onRealized}
+            onSkipped={onSkipped}
+            onMoved={onMoved}
+          />
+        )}
+      </div>
     </div>
   )
 }

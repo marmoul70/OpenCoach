@@ -3,6 +3,7 @@ import {
   Check,
   ChevronRight,
   MoveRight,
+  Settings2,
   X,
 } from 'lucide-react'
 
@@ -28,6 +29,7 @@ import type {
 
 interface TrainingSessionActionsProps {
   session: TrainingSession
+  compact?: boolean
 
   onRealized: () => void
 
@@ -41,6 +43,7 @@ interface TrainingSessionActionsProps {
 
 export function TrainingSessionActions({
   session,
+  compact = false,
   onRealized,
   onSkipped,
   onMoved,
@@ -48,6 +51,11 @@ export function TrainingSessionActions({
   const {
     toast,
   } = useToast()
+
+  const [
+    actionsOpen,
+    setActionsOpen,
+  ] = useState(false)
 
   const [
     moveOpen,
@@ -87,6 +95,7 @@ export function TrainingSessionActions({
 
 
   useEffect(() => {
+    setActionsOpen(false)
     setMoveOpen(false)
     setOptions(null)
     setSelectedDate(null)
@@ -162,6 +171,8 @@ export function TrainingSessionActions({
     try {
       await onSkipped()
 
+      setActionsOpen(false)
+
       toast({
         type: 'success',
         title: 'Séance non réalisée',
@@ -219,6 +230,7 @@ export function TrainingSessionActions({
       })
 
       setMoveOpen(false)
+      setActionsOpen(false)
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -231,6 +243,491 @@ export function TrainingSessionActions({
     } finally {
       setSaving(false)
     }
+  }
+
+
+  if (compact) {
+    return (
+      <div
+        className="
+          relative
+          shrink-0
+        "
+      >
+        <button
+          type="button"
+          aria-label="Actions de la séance"
+          aria-expanded={actionsOpen}
+          onClick={() => {
+            setActionsOpen(
+              current => !current,
+            )
+
+            if (actionsOpen) {
+              setMoveOpen(false)
+            }
+          }}
+          className="
+            inline-flex
+            h-7
+            w-7
+            items-center
+            justify-center
+            rounded-[8px]
+            border
+            border-black/[0.07]
+            bg-white
+            text-slate-400
+            shadow-sm
+            transition
+            hover:border-black/[0.12]
+            hover:bg-slate-50
+            hover:text-slate-700
+            dark:border-white/[0.08]
+            dark:bg-white/[0.035]
+            dark:text-slate-500
+            dark:hover:bg-white/[0.07]
+            dark:hover:text-slate-200
+          "
+        >
+          <Settings2
+            className="h-3.5 w-3.5"
+          />
+        </button>
+
+
+        {actionsOpen && (
+          <div
+            className={[
+              'absolute right-0 top-[calc(100%+6px)] z-50 ',
+              moveOpen
+                ? 'w-[330px] '
+                : 'w-[220px] ',
+              'rounded-[12px] border ',
+              'border-black/[0.08] ',
+              'bg-white p-2 shadow-xl ',
+              'shadow-black/[0.08] ',
+              'dark:border-white/[0.08] ',
+              'dark:bg-slate-900 ',
+              'dark:shadow-black/30',
+            ].join(' ')}
+          >
+            <div
+              className="
+                px-2
+                pb-1.5
+                pt-1
+              "
+            >
+              <p
+                className="
+                  text-[9.5px]
+                  font-bold
+                  uppercase
+                  tracking-[0.12em]
+                  text-slate-400
+                  dark:text-slate-500
+                "
+              >
+                Actions
+              </p>
+            </div>
+
+
+            {!moveOpen && (
+              <div className="space-y-0.5">
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => {
+                    setActionsOpen(false)
+                    onRealized()
+                  }}
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    gap-2.5
+                    rounded-[8px]
+                    px-2.5
+                    py-2
+                    text-left
+                    text-[11.5px]
+                    font-medium
+                    text-slate-700
+                    transition
+                    hover:bg-emerald-500/[0.07]
+                    hover:text-emerald-700
+                    disabled:opacity-40
+                    dark:text-slate-300
+                    dark:hover:bg-emerald-400/[0.07]
+                    dark:hover:text-emerald-300
+                  "
+                >
+                  <span
+                    className="
+                      flex
+                      h-6
+                      w-6
+                      items-center
+                      justify-center
+                      rounded-[7px]
+                      bg-emerald-500/[0.08]
+                      text-emerald-600
+                      dark:text-emerald-400
+                    "
+                  >
+                    <Check
+                      className="h-3.5 w-3.5"
+                    />
+                  </span>
+
+                  Réalisée
+                </button>
+
+
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() =>
+                    void skipSession()
+                  }
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    gap-2.5
+                    rounded-[8px]
+                    px-2.5
+                    py-2
+                    text-left
+                    text-[11.5px]
+                    font-medium
+                    text-slate-700
+                    transition
+                    hover:bg-red-500/[0.06]
+                    hover:text-red-600
+                    disabled:opacity-40
+                    dark:text-slate-300
+                    dark:hover:bg-red-400/[0.06]
+                    dark:hover:text-red-400
+                  "
+                >
+                  <span
+                    className="
+                      flex
+                      h-6
+                      w-6
+                      items-center
+                      justify-center
+                      rounded-[7px]
+                      bg-red-500/[0.07]
+                      text-red-500
+                    "
+                  >
+                    <X
+                      className="h-3.5 w-3.5"
+                    />
+                  </span>
+
+                  Non réalisée
+                </button>
+
+
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() =>
+                    void openMove()
+                  }
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    gap-2.5
+                    rounded-[8px]
+                    px-2.5
+                    py-2
+                    text-left
+                    text-[11.5px]
+                    font-medium
+                    text-slate-700
+                    transition
+                    hover:bg-slate-100
+                    disabled:opacity-40
+                    dark:text-slate-300
+                    dark:hover:bg-white/[0.05]
+                  "
+                >
+                  <span
+                    className="
+                      flex
+                      h-6
+                      w-6
+                      items-center
+                      justify-center
+                      rounded-[7px]
+                      bg-slate-500/[0.07]
+                      text-slate-500
+                      dark:text-slate-400
+                    "
+                  >
+                    <MoveRight
+                      className="h-3.5 w-3.5"
+                    />
+                  </span>
+
+                  Déplacer
+
+                  <ChevronRight
+                    className="
+                      ml-auto
+                      h-3.5
+                      w-3.5
+                      text-slate-300
+                      dark:text-slate-600
+                    "
+                  />
+                </button>
+              </div>
+            )}
+
+
+            {error && (
+              <div
+                className="
+                  mx-1
+                  mt-2
+                  rounded-[8px]
+                  border
+                  border-red-500/15
+                  bg-red-500/[0.045]
+                  px-2.5
+                  py-2
+                  text-[10.5px]
+                  leading-4
+                  text-red-600
+                  dark:text-red-400
+                "
+              >
+                {error}
+              </div>
+            )}
+
+
+            {moveOpen && (
+              <div
+                className="
+                  mt-1
+                  border-t
+                  border-black/[0.06]
+                  px-1
+                  pt-2.5
+                  dark:border-white/[0.06]
+                "
+              >
+                <div
+                  className="
+                    mb-2.5
+                    flex
+                    items-start
+                    gap-2
+                  "
+                >
+                  <CalendarDays
+                    className="
+                      mt-0.5
+                      h-3.5
+                      w-3.5
+                      shrink-0
+                      text-emerald-500
+                    "
+                  />
+
+                  <div>
+                    <p
+                      className="
+                        text-[11px]
+                        font-semibold
+                        text-slate-800
+                        dark:text-slate-200
+                      "
+                    >
+                      Nouveau jour
+                    </p>
+
+                    <p
+                      className="
+                        mt-0.5
+                        text-[9.5px]
+                        leading-4
+                        text-slate-400
+                        dark:text-slate-500
+                      "
+                    >
+                      Placement recommandé par OpenCoach
+                    </p>
+                  </div>
+                </div>
+
+
+                {loadingOptions ? (
+                  <div
+                    className="
+                      flex
+                      min-h-24
+                      items-center
+                      justify-center
+                    "
+                  >
+                    <span
+                      className="
+                        size-4
+                        animate-spin
+                        rounded-full
+                        border-2
+                        border-slate-200
+                        border-t-emerald-500
+                        dark:border-white/15
+                        dark:border-t-emerald-400
+                      "
+                    />
+                  </div>
+                ) : options ? (
+                  options.days.some(
+                    day => day.selectable,
+                  ) ? (
+                    <>
+                      <div
+                        className="
+                          grid
+                          grid-cols-7
+                          gap-1
+                        "
+                      >
+                        {options.days.map(
+                          day => (
+                            <MoveDayButton
+                              key={day.date}
+                              day={day}
+                              selected={
+                                selectedDate
+                                === day.date
+                              }
+                              onSelect={() => {
+                                if (
+                                  day.selectable
+                                ) {
+                                  setSelectedDate(
+                                    day.date,
+                                  )
+                                }
+                              }}
+                            />
+                          ),
+                        )}
+                      </div>
+
+
+                      {selectedDate && (
+                        <SelectedDayAdvice
+                          day={
+                            options.days.find(
+                              day =>
+                                day.date
+                                === selectedDate,
+                            ) ?? null
+                          }
+                        />
+                      )}
+
+
+                      <div
+                        className="
+                          mt-2.5
+                          flex
+                          items-center
+                          justify-between
+                          gap-2
+                        "
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMoveOpen(false)
+                          }}
+                          className="
+                            rounded-[8px]
+                            px-2.5
+                            py-1.5
+                            text-[10.5px]
+                            font-medium
+                            text-slate-500
+                            transition
+                            hover:bg-slate-100
+                            dark:text-slate-400
+                            dark:hover:bg-white/[0.05]
+                          "
+                        >
+                          Retour
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={
+                            !selectedDate
+                            || saving
+                          }
+                          onClick={() =>
+                            void applyMove()
+                          }
+                          className="
+                            inline-flex
+                            items-center
+                            gap-1
+                            rounded-[8px]
+                            bg-emerald-600
+                            px-2.5
+                            py-1.5
+                            text-[10.5px]
+                            font-semibold
+                            text-white
+                            transition
+                            hover:bg-emerald-700
+                            disabled:cursor-not-allowed
+                            disabled:opacity-40
+                          "
+                        >
+                          Déplacer ici
+
+                          <ChevronRight
+                            className="h-3 w-3"
+                          />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div
+                      className="
+                        rounded-[8px]
+                        bg-amber-500/[0.05]
+                        px-2.5
+                        py-2
+                        text-[10.5px]
+                        text-slate-500
+                        dark:text-slate-400
+                      "
+                    >
+                      Aucun autre jour disponible.
+                    </div>
+                  )
+                ) : null}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
   }
 
 

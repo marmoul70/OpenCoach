@@ -317,3 +317,145 @@ def test_unavailable_skips_planned_session() -> None:
         "Athlète déclaré indisponible."
         in result.reasons
     )
+
+
+def _strength_session(
+    *,
+    intensity: str = "hard",
+    duration: int = 15,
+) -> TrainingSession:
+    return TrainingSession(
+        id=uuid4(),
+        date=TODAY,
+        type="strength_lower_body",
+        sport_type="Strength",
+        title="Renforcement membres inférieurs",
+        description="Séance de renforcement.",
+        duration_minutes=duration,
+        intensity=intensity,
+        status="planned",
+        planning_key=(
+            "2026-08-24:"
+            "session-3-strength_lower_body"
+        ),
+    )
+
+
+def test_moderate_reduction_preserves_strength_modality() -> None:
+    session = _strength_session(
+        intensity="hard",
+        duration=15,
+    )
+
+    result = adapt_daily_training_session(
+        session=session,
+        checkin=_checkin(
+            pain=3,
+            locations=(
+                PainLocation(
+                    area=PainArea.LOWER_BACK,
+                    side=BodySide.CENTER,
+                ),
+            ),
+        ),
+        proposal=_proposal(),
+    )
+
+    assert result.changed
+
+    assert (
+        result.adapted.type
+        == "strength_lower_body"
+    )
+
+    assert (
+        result.adapted.sport_type
+        == "Strength"
+    )
+
+    assert (
+        result.adapted.title
+        == session.title
+    )
+
+    assert (
+        result.adapted.duration_minutes
+        == session.duration_minutes
+    )
+
+    assert (
+        result.adapted.intensity
+        == "moderate"
+    )
+
+    assert (
+        result.adapted.id
+        == session.id
+    )
+
+    assert (
+        result.adapted.date
+        == session.date
+    )
+
+    assert (
+        result.adapted.planning_key
+        == session.planning_key
+    )
+
+
+def test_strong_reduction_preserves_strength_modality() -> None:
+    session = _strength_session(
+        intensity="hard",
+        duration=15,
+    )
+
+    result = adapt_daily_training_session(
+        session=session,
+        checkin=_checkin(
+            pain=2,
+        ),
+        proposal=_proposal(),
+    )
+
+    assert result.changed
+
+    assert (
+        result.adapted.type
+        == "strength_lower_body"
+    )
+
+    assert (
+        result.adapted.sport_type
+        == "Strength"
+    )
+
+    assert (
+        result.adapted.title
+        == session.title
+    )
+
+    assert (
+        result.adapted.duration_minutes
+        == session.duration_minutes
+    )
+
+    assert (
+        result.adapted.intensity
+        == "easy"
+    )
+
+    assert (
+        result.adapted.id
+        == session.id
+    )
+
+    assert (
+        result.adapted.date
+        == session.date
+    )
+
+    assert (
+        result.adapted.planning_key
+        == session.planning_key
+    )

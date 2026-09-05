@@ -374,3 +374,94 @@ def test_missing_current_proposal_is_rejected() -> None:
             athlete=AthleteProfile(),
             source_session_id=source.id,
         )
+
+
+class FakeWorkoutSyncService:
+    def __init__(
+        self,
+        *,
+        error=None,
+    ) -> None:
+        self.error = error
+        self.calls = []
+
+    def sync_period(
+        self,
+        *,
+        athlete_profile_id,
+        start_date,
+        end_date,
+    ):
+        self.calls.append(
+            (
+                athlete_profile_id,
+                start_date,
+                end_date,
+            )
+        )
+
+        if self.error is not None:
+            raise self.error
+
+        return object()
+
+
+def test_sync_failure_does_not_invalidate_rescheduling() -> None:
+    source = _source()
+
+    repository = (
+        FakeTrainingSessionRepository(
+            (
+                source,
+            )
+        )
+    )
+
+    workout_sync = FakeWorkoutSyncService(
+        error=RuntimeError(
+            "intervals unavailable"
+        )
+    )
+
+    application = (
+        DailySessionReschedulingApplicationService(
+            training_session_repository=repository,
+            rescheduling_service=(
+                FakeReschedulingService()
+            ),
+            workout_sync_service=workout_sync,
+        )
+    )
+
+    athlete_profile_id = uuid4()
+
+    result = application.apply(
+        athlete_profile_id=athlete_profile_id,
+        athlete=AthleteProfile(),
+        source_session_id=source.id,
+    )
+
+    assert result.created is True
+    assert result.rescheduled_session is not None
+
+    assert len(repository.saved) == 1
+
+    assert (
+        result.rescheduled_session
+        is repository.saved[0]
+    )
+
+    assert (
+        result.rescheduled_session.status
+        == "planned"
+    )
+
+    assert source.status == "skipped"
+
+    assert workout_sync.calls == [
+        (
+            athlete_profile_id,
+            SOURCE_DATE,
+            TARGET_DATE,
+        )
+    ]

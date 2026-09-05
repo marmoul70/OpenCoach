@@ -43,6 +43,38 @@ class DailySessionAdaptationResult:
     ]
 
 
+def _is_strength_training_session(
+    session: TrainingSession,
+) -> bool:
+    """Identifie une séance appartenant au renforcement."""
+
+    session_type = (
+        session.type
+        .strip()
+        .lower()
+    )
+
+    sport_type = "".join(
+        character
+        for character in (
+            session.sport_type
+            .strip()
+            .lower()
+        )
+        if character.isalnum()
+    )
+
+    return (
+        "strength" in session_type
+        or sport_type
+        in {
+            "strength",
+            "strengthtraining",
+            "weighttraining",
+        }
+    )
+
+
 def adapt_daily_training_session(
     *,
     session: TrainingSession,
@@ -117,6 +149,81 @@ def adapt_daily_training_session(
             adapted=session,
             changed=False,
             reasons=(),
+        )
+
+    # --------------------------------------------------------
+    # Conservation de la discipline : renforcement
+    # --------------------------------------------------------
+
+    if _is_strength_training_session(session):
+        if strong_reduction:
+            if checkin.illness:
+                reasons.append(
+                    "Maladie déclarée."
+                )
+
+            if checkin.energy_rating <= 2:
+                reasons.append(
+                    "Énergie déclarée faible."
+                )
+
+            if checkin.pain_wellness_rating <= 2:
+                reasons.append(
+                    "Douleur ou gêne importante déclarée."
+                )
+
+            target_intensity = "easy"
+
+        else:
+            if checkin.energy_rating == 3:
+                reasons.append(
+                    "Énergie moyenne déclarée."
+                )
+
+            if checkin.pain_wellness_rating == 3:
+                reasons.append(
+                    "Douleur ou gêne modérée déclarée."
+                )
+
+            current_intensity = (
+                session.intensity
+                .strip()
+                .lower()
+            )
+
+            if current_intensity in {
+                "hard",
+                "very_hard",
+                "high",
+            }:
+                target_intensity = "moderate"
+
+            elif current_intensity in {
+                "moderate",
+                "medium",
+            }:
+                target_intensity = "easy"
+
+            else:
+                target_intensity = (
+                    session.intensity
+                )
+
+        adapted = replace(
+            session,
+            intensity=target_intensity,
+            heart_rate_zone=None,
+        )
+
+        return DailySessionAdaptationResult(
+            original=session,
+            adapted=adapted,
+            changed=(
+                adapted != session
+            ),
+            reasons=tuple(
+                reasons
+            ),
         )
 
     # --------------------------------------------------------

@@ -3,6 +3,10 @@ import {
   Plus,
 } from 'lucide-react'
 
+import {
+  IntervalsSyncStatus,
+} from './IntervalsSyncStatus'
+
 import type {
   TrainingSession,
 } from './types'
@@ -294,6 +298,11 @@ function TodayTrainingSession({
             ? ` · ${session.heartRateZone}`
             : ''}
         </p>
+
+        <IntervalsSyncStatus
+          session={session}
+          compact
+        />
       </div>
 
       <ArrowRight

@@ -48,6 +48,12 @@ class TrainingSession(Base):
         index=True,
     )
 
+    planning_importance: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        index=True,
+    )
+
     date: Mapped[date] = mapped_column(
         Date,
         nullable=False,
@@ -120,6 +126,31 @@ class TrainingSession(Base):
         ),
         nullable=True,
         index=True,
+    )
+
+    # Synchronisation workout Intervals.icu
+    intervals_external_id: Mapped[str | None] = mapped_column(
+        nullable=True,
+    )
+
+    intervals_event_id: Mapped[str | None] = mapped_column(
+        nullable=True,
+    )
+
+    intervals_sync_status: Mapped[str | None] = mapped_column(
+        nullable=True,
+    )
+
+    intervals_last_synced_at: Mapped[datetime | None] = mapped_column(
+        nullable=True,
+    )
+
+    intervals_payload_hash: Mapped[str | None] = mapped_column(
+        nullable=True,
+    )
+
+    intervals_sync_error: Mapped[str | None] = mapped_column(
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(

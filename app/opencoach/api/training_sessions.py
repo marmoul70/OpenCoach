@@ -116,6 +116,24 @@ def to_response(
         heart_rate_zone=session.heart_rate_zone,
         status=session.status,
         activity_id=session.activity_id,
+        intervals_external_id=(
+            session.intervals_external_id
+        ),
+        intervals_event_id=(
+            session.intervals_event_id
+        ),
+        intervals_sync_status=(
+            session.intervals_sync_status
+        ),
+        intervals_last_synced_at=(
+            session.intervals_last_synced_at
+        ),
+        intervals_payload_hash=(
+            session.intervals_payload_hash
+        ),
+        intervals_sync_error=(
+            session.intervals_sync_error
+        ),
     )
 
 

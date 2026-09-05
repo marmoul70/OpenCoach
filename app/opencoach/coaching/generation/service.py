@@ -123,6 +123,9 @@ class WeeklyTrainingGenerationService:
                     day=slot.day,
                     phase=envelope.phase,
                     proposal=proposal,
+                    planning_importance=(
+                        slot.intent.importance.value
+                    ),
                     vma_kmh=(
                         physiology.vma.value
                         if (

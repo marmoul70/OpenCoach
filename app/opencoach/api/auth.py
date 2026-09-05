@@ -43,6 +43,10 @@ from opencoach.authentication import (
     verify_session_token,
 )
 
+from opencoach.email_service import (
+    send_welcome_email_safely,
+)
+
 
 router = APIRouter(
     prefix="/api/auth",
@@ -277,6 +281,15 @@ def register(
         )
 
         db.commit()
+
+        send_welcome_email_safely(
+            recipient_email=email,
+            first_name=(
+                payload.first_name
+                .strip()
+            ),
+            username=username,
+        )
 
         return RegisterResponse(
             username=username,

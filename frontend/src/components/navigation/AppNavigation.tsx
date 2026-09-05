@@ -1,4 +1,8 @@
 import {
+  SidePanel,
+} from '../ui/SidePanel'
+
+import {
   Activity,
   Bot,
   CalendarDays,
@@ -9,14 +13,11 @@ import {
   Gauge,
   Home,
   LogOut,
-  Menu,
   Monitor,
   Moon,
-  MoreHorizontal,
   Settings,
   Sun,
   UserRound,
-  X,
 } from 'lucide-react'
 
 import {
@@ -109,7 +110,7 @@ const mobileNavigation = [
   },
   {
     page: 'training',
-    label: 'Semaine',
+    label: 'Entraînement',
     icon: CalendarDays,
   },
   {
@@ -187,7 +188,7 @@ export function AppNavigation({
           left-0
           z-50
           hidden
-          w-64
+          w-56
           flex-col
           border-r
           border-black/[0.065]
@@ -745,8 +746,15 @@ export function AppNavigation({
             gap-2.5
           "
         >
-          <OpenCoachMark
-            compact
+          <img
+            src="/opencoach-logo.png"
+            alt="OpenCoach"
+            className="
+              h-8
+              w-8
+              shrink-0
+              object-contain
+            "
           />
 
           <span
@@ -835,6 +843,9 @@ export function AppNavigation({
                   activePage
                   === page
                 }
+                featured={
+                  page === 'coach'
+                }
                 label={label}
                 icon={
                   <Icon
@@ -850,20 +861,16 @@ export function AppNavigation({
 
           <MobileNavigationItem
             active={
-              isMorePage(
-                activePage,
-              )
+              activePage === 'races'
             }
-            label="Plus"
+            label="Courses"
             icon={
-              <MoreHorizontal
+              <Flag
                 className="h-5 w-5"
               />
             }
             onClick={() =>
-              setMobileMenuOpen(
-                true,
-              )
+              navigate('races')
             }
           />
         </div>
@@ -871,337 +878,327 @@ export function AppNavigation({
 
 
       {/* ================================================
-          Mobile Plus panel
+          Mobile account navigation
          ================================================ */}
 
-      {mobileMenuOpen && (
-        <div
-          className="
-            fixed
-            inset-0
-            z-[70]
-            lg:hidden
-          "
-        >
-          <button
-            type="button"
-            className="
-              absolute
-              inset-0
-              bg-black/35
-              backdrop-blur-[2px]
-            "
-            onClick={() =>
-              setMobileMenuOpen(
-                false,
-              )
-            }
-            aria-label="Fermer le menu"
-          />
+      <SidePanel
+        open={mobileMenuOpen}
+        eyebrow="Navigation"
+        title="Mon espace"
+        onClose={() =>
+          setMobileMenuOpen(false)
+        }
+      >
+        <div className="space-y-5">
 
-          <div
+          <section
             className="
-              absolute
-              inset-x-0
-              bottom-0
-              max-h-[85dvh]
-              overflow-y-auto
-              rounded-t-[28px]
+              flex
+              items-center
+              gap-3
+              rounded-2xl
+              border
+              border-black/[0.06]
               bg-white
-              px-4
-              pb-[calc(1.25rem+env(safe-area-inset-bottom))]
-              pt-3
-              shadow-2xl
-              dark:bg-[#151a1f]
+              p-3
+              shadow-sm
+              dark:border-white/[0.07]
+              dark:bg-white/[0.03]
             "
           >
-            <div
-              className="
-                mx-auto
-                mb-3
-                h-1
-                w-10
-                rounded-full
-                bg-slate-200
-                dark:bg-white/10
-              "
+            <Avatar
+              avatar={avatar}
+              initials={initials}
             />
 
-            <div
-              className="
-                flex
-                items-center
-                justify-between
-                gap-4
-                pb-4
-              "
-            >
-              <div
+            <div className="min-w-0">
+              <p
                 className="
-                  flex
-                  min-w-0
-                  items-center
-                  gap-3
+                  truncate
+                  text-[13px]
+                  font-semibold
+                  text-slate-900
+                  dark:text-slate-100
                 "
               >
-                <Avatar
-                  avatar={avatar}
-                  initials={initials}
-                />
+                {formatName(
+                  firstName,
+                  lastName,
+                )}
+              </p>
 
-                <div className="min-w-0">
-                  <p
-                    className="
-                      truncate
-                      font-bold
-                      text-slate-950
-                      dark:text-white
-                    "
-                  >
-                    {formatName(
-                      firstName,
-                      lastName,
-                    )}
-                  </p>
-
-                  <p
-                    className="
-                      text-xs
-                      text-slate-400
-                    "
-                  >
-                    Athlète OpenCoach
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setMobileMenuOpen(
-                    false,
-                  )
-                }
+              <p
                 className="
-                  flex h-9 w-9
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-slate-100
-                  text-slate-500
-                  dark:bg-white/[0.06]
-                  dark:text-slate-400
+                  mt-0.5
+                  text-[10px]
+                  text-slate-400
                 "
               >
-                <X className="h-4 w-4" />
-              </button>
+                Athlète OpenCoach
+              </p>
             </div>
+          </section>
 
+
+          <section>
+            <p
+              className="
+                mb-2
+                px-1
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.12em]
+                text-slate-400
+                dark:text-slate-500
+              "
+            >
+              Mon suivi
+            </p>
 
             <div
               className="
-                grid
-                grid-cols-2
-                gap-2
-                border-t
+                overflow-hidden
+                rounded-2xl
+                border
                 border-black/[0.06]
-                pt-4
+                bg-white
                 dark:border-white/[0.07]
+                dark:bg-white/[0.025]
               "
             >
-              <MenuCard
-                icon={<Flag />}
-                title="Courses"
-                description="Objectifs et historique"
-                onClick={() =>
-                  navigate(
-                    'races',
-                  )
-                }
-              />
-
-              <MenuCard
+              <MobileDrawerItem
                 icon={<Gauge />}
                 title="Ressenti"
                 description="État du jour"
                 onClick={() =>
-                  navigate(
-                    'feeling',
-                  )
+                  navigate('feeling')
                 }
               />
 
-              <MenuCard
-                icon={<UserRound />}
-                title="Profil"
-                description="Informations personnelles"
+              <MobileDrawerItem
+                icon={<CloudSun />}
+                title="Météo"
+                description="Conditions et prévisions"
+                divider
                 onClick={() =>
-                  navigate(
-                    'profile-personal',
-                  )
+                  navigate('weather')
                 }
               />
 
-              <MenuCard
+            </div>
+          </section>
+
+
+          <section>
+            <p
+              className="
+                mb-2
+                px-1
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.12em]
+                text-slate-400
+                dark:text-slate-500
+              "
+            >
+              Mon profil
+            </p>
+
+            <div
+              className="
+                overflow-hidden
+                rounded-2xl
+                border
+                border-black/[0.06]
+                bg-white
+                dark:border-white/[0.07]
+                dark:bg-white/[0.025]
+              "
+            >
+              <MobileDrawerItem
+                icon={<UserRound />}
+                title="Profil personnel"
+                description="Identité et informations"
+                onClick={() =>
+                  navigate('profile-personal')
+                }
+              />
+
+              <MobileDrawerItem
                 icon={<CircleUserRound />}
                 title="Profil sportif"
                 description="Zones et physiologie"
+                divider
                 onClick={() =>
-                  navigate(
-                    'profile-sport',
-                  )
+                  navigate('profile-sport')
                 }
               />
+            </div>
+          </section>
 
-              <MenuCard
+
+          <section>
+            <p
+              className="
+                mb-2
+                px-1
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.12em]
+                text-slate-400
+                dark:text-slate-500
+              "
+            >
+              OpenCoach
+            </p>
+
+            <div
+              className="
+                overflow-hidden
+                rounded-2xl
+                border
+                border-black/[0.06]
+                bg-white
+                dark:border-white/[0.07]
+                dark:bg-white/[0.025]
+              "
+            >
+              <MobileDrawerItem
                 icon={<Settings />}
                 title="Réglages"
                 description="Configuration OpenCoach"
                 onClick={() =>
-                  navigate(
-                    'settings',
-                  )
-                }
-              />
-
-              <MenuCard
-                icon={<Menu />}
-                title="Navigation"
-                description="Toutes les fonctions"
-                onClick={() =>
-                  setMobileMenuOpen(
-                    false,
-                  )
+                  navigate('settings')
                 }
               />
             </div>
+          </section>
 
 
-            <div
+          <section
+            className="
+              rounded-2xl
+              border
+              border-black/[0.06]
+              bg-white
+              p-3
+              dark:border-white/[0.07]
+              dark:bg-white/[0.025]
+            "
+          >
+            <p
               className="
-                mt-5
-                rounded-2xl
-                bg-slate-50
-                p-4
-                dark:bg-white/[0.035]
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.12em]
+                text-slate-400
+                dark:text-slate-500
               "
             >
-              <p
-                className="
-                  text-xs
-                  font-semibold
-                  text-slate-700
-                  dark:text-slate-300
-                "
-              >
-                Apparence
-              </p>
-
-              <div
-                className="
-                  mt-3
-                  grid
-                  grid-cols-3
-                  gap-2
-                "
-              >
-                <ThemeButton
-                  active={
-                    theme === 'light'
-                  }
-                  icon={
-                    <Sun className="h-4 w-4" />
-                  }
-                  label="Clair"
-                  onClick={() =>
-                    onThemeChange(
-                      'light',
-                    )
-                  }
-                />
-
-                <ThemeButton
-                  active={
-                    theme === 'dark'
-                  }
-                  icon={
-                    <Moon className="h-4 w-4" />
-                  }
-                  label="Sombre"
-                  onClick={() =>
-                    onThemeChange(
-                      'dark',
-                    )
-                  }
-                />
-
-                <ThemeButton
-                  active={
-                    theme === 'system'
-                  }
-                  icon={
-                    <Monitor className="h-4 w-4" />
-                  }
-                  label="Système"
-                  onClick={() =>
-                    onThemeChange(
-                      'system',
-                    )
-                  }
-                />
-              </div>
-            </div>
-
-
-            <button
-              type="button"
-              onClick={
-                onLogout
-              }
-              className="
-                mt-4
-                flex
-                w-full
-                items-center
-                justify-center
-                gap-2
-                rounded-xl
-                px-4
-                py-3
-                text-sm
-                font-semibold
-                text-red-500
-                transition
-                hover:bg-red-50
-                dark:hover:bg-red-500/10
-              "
-            >
-              <LogOut className="h-4 w-4" />
-
-              Se déconnecter
-            </button>
-
+              Apparence
+            </p>
 
             <div
               className="
                 mt-3
-                text-center
-                text-[10px]
-                text-slate-300
-                dark:text-slate-700
+                grid
+                grid-cols-3
+                gap-2
               "
             >
-              {version
-                ? `OpenCoach v${version}`
-                : 'OpenCoach développement'}
+              <ThemeButton
+                active={
+                  theme === 'light'
+                }
+                icon={
+                  <Sun className="h-4 w-4" />
+                }
+                label="Clair"
+                onClick={() =>
+                  onThemeChange('light')
+                }
+              />
 
-              {commit
-                ? ` · ${commit}`
-                : ''}
+              <ThemeButton
+                active={
+                  theme === 'dark'
+                }
+                icon={
+                  <Moon className="h-4 w-4" />
+                }
+                label="Sombre"
+                onClick={() =>
+                  onThemeChange('dark')
+                }
+              />
+
+              <ThemeButton
+                active={
+                  theme === 'system'
+                }
+                icon={
+                  <Monitor className="h-4 w-4" />
+                }
+                label="Système"
+                onClick={() =>
+                  onThemeChange('system')
+                }
+              />
             </div>
+          </section>
+
+
+          <button
+            type="button"
+            onClick={onLogout}
+            className="
+              flex
+              w-full
+              items-center
+              justify-center
+              gap-2
+              rounded-xl
+              px-4
+              py-3
+              text-[11px]
+              font-semibold
+              text-red-500
+              transition
+              hover:bg-red-50
+              dark:text-red-400
+              dark:hover:bg-red-500/10
+            "
+          >
+            <LogOut className="h-4 w-4" />
+
+            Se déconnecter
+          </button>
+
+
+          <div
+            className="
+              pb-2
+              text-center
+              text-[9px]
+              text-slate-300
+              dark:text-slate-700
+            "
+          >
+            {version
+              ? `OpenCoach v${version}`
+              : 'OpenCoach développement'}
+
+            {commit
+              ? ` · ${commit}`
+              : ''}
           </div>
         </div>
-      )}
+      </SidePanel>
+
     </>
   )
 }
@@ -1436,11 +1433,13 @@ export function AppNavigation({
 
 function MobileNavigationItem({
   active,
+  featured = false,
   label,
   icon,
   onClick,
 }: {
   active: boolean
+  featured?: boolean
   label: string
   icon: React.ReactNode
   onClick: () => void
@@ -1454,10 +1453,13 @@ function MobileNavigationItem({
           'relative flex '
           + 'flex-col items-center '
           + 'justify-center '
-          + 'gap-1 text-[7.5px] '
+          + 'text-[7.5px] '
           + 'font-medium'
         ),
-        active
+        featured
+          ? 'gap-0'
+          : 'gap-1',
+        active || featured
           ? (
               'text-emerald-600 '
               + 'dark:text-emerald-400'
@@ -1468,7 +1470,7 @@ function MobileNavigationItem({
             ),
       ].join(' ')}
     >
-      {active && (
+      {active && !featured && (
         <span
           className="
             absolute
@@ -1481,47 +1483,87 @@ function MobileNavigationItem({
         />
       )}
 
-      {icon}
+      {featured ? (
+        <span
+          className="
+            relative
+            -mt-5
+            mb-0.5
+            flex
+            h-[60px]
+            w-[60px]
+            items-center
+            justify-center
+            rounded-full
+            border-[3px]
+            border-white
+            bg-emerald-500
+            text-white
+            shadow-[0_0_0_6px_rgba(16,185,129,0.10),0_0_30px_rgba(16,185,129,0.52),0_10px_24px_rgba(15,23,42,0.20)]
+            transition
+            duration-200
+            dark:border-[#101418]
+            dark:bg-emerald-500
+            [&>svg]:h-7
+            [&>svg]:w-7
+          "
+        >
+          {icon}
+        </span>
+      ) : (
+        icon
+      )}
 
-      <span>
-        {label}
-      </span>
+      {!featured && (
+        <span>
+          {label}
+        </span>
+      )}
     </button>
   )
 }
 
 
-function MenuCard({
+function MobileDrawerItem({
   icon,
   title,
   description,
+  divider = false,
   onClick,
 }: {
   icon: React.ReactNode
   title: string
   description: string
+  divider?: boolean
   onClick: () => void
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="
-        rounded-2xl
-        border
-        border-black/[0.06]
-        p-4
-        text-left
-        transition
-        hover:border-emerald-500/20
-        hover:bg-emerald-50/40
-        dark:border-white/[0.07]
-        dark:hover:bg-emerald-500/[0.04]
-      "
+      className={[
+        (
+          'flex w-full items-center '
+          + 'gap-3 px-3 py-3 '
+          + 'text-left transition '
+          + 'hover:bg-slate-50 '
+          + 'dark:hover:bg-white/[0.04]'
+        ),
+        divider
+          ? (
+              'border-t '
+              + 'border-black/[0.055] '
+              + 'dark:border-white/[0.06]'
+            )
+          : '',
+      ].join(' ')}
     >
-      <div
+      <span
         className="
-          flex h-9 w-9
+          flex
+          h-9
+          w-9
+          shrink-0
           items-center
           justify-center
           rounded-xl
@@ -1529,35 +1571,49 @@ function MenuCard({
           text-emerald-600
           dark:bg-emerald-500/10
           dark:text-emerald-400
-          [&>svg]:h-[18px]
-          [&>svg]:w-[18px]
+          [&>svg]:h-[17px]
+          [&>svg]:w-[17px]
         "
       >
         {icon}
-      </div>
+      </span>
 
-      <p
+      <span className="min-w-0 flex-1">
+        <span
+          className="
+            block
+            text-[11.5px]
+            font-semibold
+            text-slate-800
+            dark:text-slate-100
+          "
+        >
+          {title}
+        </span>
+
+        <span
+          className="
+            mt-0.5
+            block
+            text-[9px]
+            text-slate-400
+            dark:text-slate-500
+          "
+        >
+          {description}
+        </span>
+      </span>
+
+      <span
         className="
-          mt-3
-          text-sm
-          font-semibold
-          text-slate-900
-          dark:text-slate-100
+          text-lg
+          leading-none
+          text-slate-300
+          dark:text-slate-600
         "
       >
-        {title}
-      </p>
-
-      <p
-        className="
-          mt-0.5
-          text-[10px]
-          leading-4
-          text-slate-400
-        "
-      >
-        {description}
-      </p>
+        ›
+      </span>
     </button>
   )
 }
@@ -1612,32 +1668,6 @@ function ThemeButton({
 }
 
 
-function OpenCoachMark({
-  compact = false,
-}: {
-  compact?: boolean
-}) {
-  return (
-    <div
-      className={[
-        (
-          'flex shrink-0 '
-          + 'items-center justify-center '
-          + 'rounded-xl '
-          + 'bg-emerald-600 '
-          + 'font-black text-white '
-          + 'shadow-sm '
-          + 'dark:bg-emerald-500'
-        ),
-        compact
-          ? 'h-7 w-7 text-[10px]'
-          : 'h-10 w-10 text-sm',
-      ].join(' ')}
-    >
-      OC
-    </div>
-  )
-}
 
 
 function Avatar({
@@ -1684,19 +1714,6 @@ function Avatar({
     >
       {initials}
     </div>
-  )
-}
-
-
-function isMorePage(
-  page: NavigationPage,
-): boolean {
-  return (
-    page === 'races'
-    || page === 'feeling'
-    || page === 'profile-personal'
-    || page === 'profile-sport'
-    || page === 'settings'
   )
 }
 

@@ -339,16 +339,78 @@ export function Dashboard({
           actions={
             <div
               className="
-                dashboard__date
+                hidden
+                items-center
+                gap-3
+                px-1
+                py-2
+                lg:flex
               "
             >
-              <CalendarDays
-                size={16}
+              <div
+                className="
+                  flex
+                  h-11
+                  w-11
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-xl
+                  bg-emerald-50
+                  text-emerald-600
+                  dark:bg-emerald-500/10
+                  dark:text-emerald-400
+                "
+              >
+                <CalendarDays
+                  className="h-5 w-5"
+                />
+              </div>
+
+              <div
+                className="
+                  h-8
+                  w-px
+                  shrink-0
+                  bg-slate-200
+                  dark:bg-white/[0.10]
+                "
               />
 
-              <span>
-                {formatTodayShort()}
-              </span>
+              <div
+                className="
+                  min-w-0
+                  pr-1
+                  text-left
+                "
+              >
+                <p
+                  className="
+                    text-[11px]
+                    font-medium
+                    leading-none
+                    text-slate-400
+                    dark:text-slate-500
+                  "
+                >
+                  Aujourd’hui
+                </p>
+
+                <p
+                  className="
+                    mt-1.5
+                    whitespace-nowrap
+                    text-[15px]
+                    font-semibold
+                    leading-none
+                    tracking-[-0.015em]
+                    text-slate-900
+                    dark:text-slate-100
+                  "
+                >
+                  {formatTodayShort()}
+                </p>
+              </div>
             </div>
           }
         />

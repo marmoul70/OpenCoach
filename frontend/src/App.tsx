@@ -426,7 +426,7 @@ function App() {
   return (
     <RaceProvider>
       <TrainingProvider>
-        <div className="min-h-screen bg-slate-50 dark:bg-[#0b1014] pb-16 lg:pb-0 lg:pl-64">
+        <div className="min-h-screen bg-slate-50 dark:bg-[#0b1014] pb-16 lg:pb-0 lg:pl-56">
 
           <AppNavigation
             activePage={page}

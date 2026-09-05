@@ -806,73 +806,92 @@ export function AppNavigation({
 
       <nav
         className="
+          pointer-events-none
           fixed
           inset-x-0
           bottom-0
           z-50
-          border-t
-          border-black/[0.065]
-          bg-white/95
-          pb-[env(safe-area-inset-bottom)]
-          backdrop-blur-xl
           lg:hidden
-          dark:border-white/[0.07]
-          dark:bg-[#101418]/95
         "
         aria-label="Navigation mobile"
       >
         <div
           className="
+            relative
             mx-auto
-            grid
-            h-16
+            h-[88px]
             max-w-lg
-            grid-cols-5
-            px-1
           "
         >
-          {mobileNavigation.map(
-            ({
-              page,
-              label,
-              icon: Icon,
-            }) => (
-              <MobileNavigationItem
-                key={page}
-                active={
-                  activePage
-                  === page
-                }
-                featured={
-                  page === 'coach'
-                }
-                label={label}
-                icon={
-                  <Icon
-                    className="h-5 w-5"
-                  />
-                }
-                onClick={() =>
-                  navigate(page)
-                }
-              />
-            ),
-          )}
+          <div
+            className="
+              pointer-events-auto
+              absolute
+              bottom-[calc(8px+env(safe-area-inset-bottom))]
+              left-3
+              right-3
 
-          <MobileNavigationItem
-            active={
-              activePage === 'races'
-            }
-            label="Courses"
-            icon={
-              <Flag
-                className="h-5 w-5"
-              />
-            }
-            onClick={() =>
-              navigate('races')
-            }
-          />
+              grid
+              h-[68px]
+              grid-cols-5
+
+              rounded-[22px]
+
+              border
+              border-black/[0.065]
+
+              bg-white/95
+
+              px-1
+
+              shadow-[0_10px_30px_rgba(15,23,42,0.14)]
+
+              backdrop-blur-xl
+
+              dark:border-white/[0.08]
+              dark:bg-[#101418]/95
+              dark:shadow-[0_12px_34px_rgba(0,0,0,0.38)]
+            "
+          >
+            {mobileNavigation.map(
+              ({
+                page,
+                label,
+                icon: Icon,
+              }) => (
+                <MobileNavigationItem
+                  key={page}
+                  active={
+                    activePage === page
+                  }
+                  label={label}
+                  icon={
+                    <Icon
+                      className="h-5 w-5"
+                    />
+                  }
+                  onClick={() =>
+                    navigate(page)
+                  }
+                />
+              ),
+            )}
+
+            <MobileNavigationItem
+              active={
+                activePage === 'races'
+              }
+              label="Courses"
+              icon={
+                <Flag
+                  className="h-5 w-5"
+                />
+              }
+              onClick={() =>
+                navigate('races')
+              }
+            />
+          </div>
         </div>
       </nav>
 
@@ -1433,13 +1452,11 @@ export function AppNavigation({
 
 function MobileNavigationItem({
   active,
-  featured = false,
   label,
   icon,
   onClick,
 }: {
   active: boolean
-  featured?: boolean
   label: string
   icon: React.ReactNode
   onClick: () => void
@@ -1450,16 +1467,17 @@ function MobileNavigationItem({
       onClick={onClick}
       className={[
         (
-          'relative flex '
-          + 'flex-col items-center '
+          'relative '
+          + 'flex h-full '
+          + 'flex-col '
+          + 'items-center '
           + 'justify-center '
-          + 'text-[7.5px] '
-          + 'font-medium'
+          + 'gap-[5px] '
+          + 'text-[9px] '
+          + 'font-medium '
+          + 'transition-colors'
         ),
-        featured
-          ? 'gap-0'
-          : 'gap-1',
-        active || featured
+        active
           ? (
               'text-emerald-600 '
               + 'dark:text-emerald-400'
@@ -1470,54 +1488,31 @@ function MobileNavigationItem({
             ),
       ].join(' ')}
     >
-      {active && !featured && (
+      <span
+        className="
+          [&>svg]:h-[19px]
+          [&>svg]:w-[19px]
+        "
+      >
+        {icon}
+      </span>
+
+      <span className="leading-none">
+        {label}
+      </span>
+
+      {active && (
         <span
+          aria-hidden="true"
           className="
             absolute
-            top-0
-            h-0.5
-            w-8
+            bottom-[3px]
+            h-[4px]
+            w-[4px]
             rounded-full
             bg-emerald-500
           "
         />
-      )}
-
-      {featured ? (
-        <span
-          className="
-            relative
-            -mt-5
-            mb-0.5
-            flex
-            h-[60px]
-            w-[60px]
-            items-center
-            justify-center
-            rounded-full
-            border-[3px]
-            border-white
-            bg-emerald-500
-            text-white
-            shadow-[0_0_0_6px_rgba(16,185,129,0.10),0_0_30px_rgba(16,185,129,0.52),0_10px_24px_rgba(15,23,42,0.20)]
-            transition
-            duration-200
-            dark:border-[#101418]
-            dark:bg-emerald-500
-            [&>svg]:h-7
-            [&>svg]:w-7
-          "
-        >
-          {icon}
-        </span>
-      ) : (
-        icon
-      )}
-
-      {!featured && (
-        <span>
-          {label}
-        </span>
       )}
     </button>
   )

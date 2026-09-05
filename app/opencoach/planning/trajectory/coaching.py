@@ -14,7 +14,7 @@ Il ne génère aucune séance concrète.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, timedelta
 
 from opencoach.planning.trajectory.coaching_phase_allocation import (
@@ -391,6 +391,21 @@ def build_coaching_trajectory(
         race_profile=race_profile,
         phase_week_index=phase_week_index,
     )
+
+    if resolved_adjustment.suppressed_stimuli:
+        suppressed_stimuli = set(
+            resolved_adjustment.suppressed_stimuli
+        )
+
+        prescription = replace(
+            prescription,
+            requirements=tuple(
+                requirement
+                for requirement in prescription.requirements
+                if requirement.stimulus
+                not in suppressed_stimuli
+            ),
+        )
 
     current_week_start = (
         input_data.planning_date

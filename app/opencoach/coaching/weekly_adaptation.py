@@ -245,7 +245,7 @@ def build_weekly_adaptation_decision(
             direction=WeeklyAdaptationDirection.RECOVER,
             load_adjustment=LoadAdjustment.REDUCE,
             progression_adjustment=ProgressionAdjustment.PAUSE,
-            load_factor=0.80,
+            load_factor=0.75,
             volume_factor=0.80,
             maximum_progression_rate=0.0,
             intensity_policy=WeeklyIntensityPolicy.REDUCE,

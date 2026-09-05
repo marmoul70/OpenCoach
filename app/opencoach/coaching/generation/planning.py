@@ -35,6 +35,14 @@ from opencoach.physiology.testing.models import (
     SportDiscipline,
 )
 
+from opencoach.coaching.weekly_adaptation import (
+    WeeklyAdaptationDecision,
+)
+from opencoach.coaching.weekly_adaptation_planning import (
+    apply_weekly_adaptation_to_planning_input,
+    apply_weekly_adaptation_to_planning_result,
+)
+
 from .application import (
     GenerateAndPersistTrainingWeekResult,
     GenerateAndPersistTrainingWeekService,
@@ -88,6 +96,9 @@ class GeneratePlannedTrainingWeekService:
             SportDiscipline,
             ...,
         ] = (),
+        weekly_adaptation: (
+            WeeklyAdaptationDecision | None
+        ) = None,
         reconcile_from_date: date | None = None,
         additional_context: tuple[
             str,
@@ -96,11 +107,28 @@ class GeneratePlannedTrainingWeekService:
     ) -> GeneratePlannedTrainingWeekResult:
         """Exécute le pipeline complet de coaching hebdomadaire."""
 
-        planning = (
-            build_current_week_coaching(
-                input_data=planning_input,
+        effective_planning_input = (
+            planning_input
+            if weekly_adaptation is None
+            else apply_weekly_adaptation_to_planning_input(
+                planning_input=planning_input,
+                decision=weekly_adaptation,
             )
         )
+
+        planning = (
+            build_current_week_coaching(
+                input_data=effective_planning_input,
+            )
+        )
+
+        if weekly_adaptation is not None:
+            planning = (
+                apply_weekly_adaptation_to_planning_result(
+                    planning=planning,
+                    decision=weekly_adaptation,
+                )
+            )
 
         generation = (
             self.generation_service

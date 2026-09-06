@@ -290,4 +290,3 @@ def test_zero_delivery_is_retryable() -> None:
     )
     assert repository.mark_calls == []
     assert stored.notification_sent_at is None
-

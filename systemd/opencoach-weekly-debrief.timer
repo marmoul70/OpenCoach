@@ -1,0 +1,30 @@
+[Unit]
+Description=OpenCoach - surveillance de clôture hebdomadaire du dimanche
+
+[Timer]
+OnCalendar=Sun *-*-* 20:00:00
+OnCalendar=Sun *-*-* 20:15:00
+OnCalendar=Sun *-*-* 20:30:00
+OnCalendar=Sun *-*-* 20:45:00
+
+OnCalendar=Sun *-*-* 21:00:00
+OnCalendar=Sun *-*-* 21:15:00
+OnCalendar=Sun *-*-* 21:30:00
+OnCalendar=Sun *-*-* 21:45:00
+
+OnCalendar=Sun *-*-* 22:00:00
+OnCalendar=Sun *-*-* 22:15:00
+OnCalendar=Sun *-*-* 22:30:00
+OnCalendar=Sun *-*-* 22:45:00
+
+OnCalendar=Sun *-*-* 23:00:00
+OnCalendar=Sun *-*-* 23:15:00
+OnCalendar=Sun *-*-* 23:30:00
+OnCalendar=Sun *-*-* 23:45:00
+
+AccuracySec=30s
+Persistent=true
+Unit=opencoach-weekly-debrief.service
+
+[Install]
+WantedBy=timers.target

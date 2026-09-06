@@ -1064,3 +1064,36 @@ La cible du système d’installation OpenCoach est la suivante :
 Cette règle doit être conservée lors des évolutions futures du projet.
 
 Le wiki intégré à l’interface pourra ultérieurement fournir une documentation plus riche sur l’API, le fonctionnement du moteur de planification, les intégrations et la configuration. La procédure de reconstruction doit néanmoins rester disponible dans le dépôt, car elle doit pouvoir être consultée même lorsqu’OpenCoach lui-même n’est plus accessible.
+
+## Workflow hebdomadaire automatisé
+
+OpenCoach exécute automatiquement le workflow de fin de semaine le dimanche soir.
+
+À partir de 20:00, OpenCoach vérifie toutes les 15 minutes si la dernière séance
+de la semaine est terminée et suffisamment synchronisée.
+
+Lorsque la semaine devient éligible, le workflow enchaîne :
+
+1. la clôture de la semaine ;
+2. le débrief hebdomadaire ;
+3. l'adaptation du planning N+1 ;
+4. la synchronisation des séances compatibles avec Intervals.icu ;
+5. la notification Push indiquant que le programme est prêt.
+
+Le timer opencoach-weekly-debrief.timer fonctionne le dimanche de 20:00 à
+23:45 et lance opencoach-weekly-debrief.service.
+
+Les unités sont versionnées dans :
+
+- systemd/opencoach-weekly-debrief.service
+- systemd/opencoach-weekly-debrief.timer
+
+Le workflow est idempotent : un débrief déjà clôturé, un planning déjà appliqué
+et une notification déjà envoyée ne sont pas dupliqués.
+
+Le champ notification_sent_at n'est renseigné qu'après une livraison Push
+réussie vers au moins un abonnement.
+
+Le timer opencoach-training-reminder.timer fonctionne uniquement du lundi au
+samedi à 20:00 afin de ne pas envoyer le dimanche un rappel basé sur un planning
+qui pourrait encore être modifié par le débrief hebdomadaire.

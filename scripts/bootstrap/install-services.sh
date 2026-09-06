@@ -236,8 +236,16 @@ install_systemd_units() {
         "$SYSTEMD_TARGET_DIR/opencoach-intervals-sync.service"
 
     render_unit \
+        "$SYSTEMD_SOURCE_DIR/opencoach-weekly-debrief.service" \
+        "$SYSTEMD_TARGET_DIR/opencoach-weekly-debrief.service"
+
+    render_unit \
         "$SYSTEMD_SOURCE_DIR/opencoach-intervals-sync.timer" \
         "$SYSTEMD_TARGET_DIR/opencoach-intervals-sync.timer"
+
+    render_unit \
+        "$SYSTEMD_SOURCE_DIR/opencoach-weekly-debrief.timer" \
+        "$SYSTEMD_TARGET_DIR/opencoach-weekly-debrief.timer"
 
     systemctl daemon-reload
 }
@@ -320,6 +328,9 @@ enable_services() {
     # Le timer Intervals peut être démarré immédiatement.
     systemctl enable --now \
         opencoach-intervals-sync.timer
+
+    systemctl enable --now \
+        opencoach-weekly-debrief.timer
 }
 
 

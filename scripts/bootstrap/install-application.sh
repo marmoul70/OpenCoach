@@ -789,7 +789,7 @@ EOF
 Description=OpenCoach - rappel quotidien de la séance du lendemain
 
 [Timer]
-OnCalendar=*-*-* 20:00:00
+OnCalendar=Mon..Sat *-*-* 20:00:00
 Persistent=true
 Unit=opencoach-training-reminder.service
 

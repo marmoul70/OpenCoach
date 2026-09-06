@@ -1,0 +1,17 @@
+[Unit]
+Description=OpenCoach - workflow hebdomadaire de clôture et planification
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=@OPENCOACH_USER@
+Group=@OPENCOACH_GROUP@
+WorkingDirectory=@PROJECT_ROOT@
+EnvironmentFile=@PROJECT_ROOT@/.env
+Environment=PYTHONPATH=@PROJECT_ROOT@/app
+
+ExecStart=@PROJECT_ROOT@/.venv/bin/python -m opencoach.commands.run_weekly_debrief_workflow
+
+NoNewPrivileges=true
+PrivateTmp=true

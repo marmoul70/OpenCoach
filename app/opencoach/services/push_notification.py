@@ -192,6 +192,30 @@ class PushNotificationService:
             url=url,
         )
 
+    def send_weekly_debrief_notification(
+        self,
+        *,
+        user_id: UUID,
+        title: str,
+        body: str,
+        url: str = "/training",
+    ) -> PushDeliveryReport:
+        """Envoie la notification de clôture hebdomadaire."""
+
+        subscriptions = [
+            subscription
+            for subscription
+            in self.repository.list_for_user(user_id)
+            if subscription.system_notifications_enabled
+        ]
+
+        return self._send_to_subscriptions(
+            subscriptions=subscriptions,
+            title=title,
+            body=body,
+            url=url,
+        )
+
     def send_training_reminder(
         self,
         *,

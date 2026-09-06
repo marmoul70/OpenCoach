@@ -159,6 +159,43 @@ export type CoachTrainingPhase =
   | 'return_to_training'
 
 
+export interface CoachWeeklyDebrief {
+  weekStart: string
+  weekEnd: string
+
+  verdict: string
+  adaptationDirection: string
+
+  overallScore: number
+  adherenceScore: number
+  durationScore: number
+  loadScore: number
+  keySessionsScore?: number
+  intensityScore: number
+
+  completionRatio: number
+  durationRatio: number
+  loadRatio: number
+
+  headline: string
+  analysis: string
+
+  strengths: string[]
+  warnings: string[]
+
+  plannedSessions: number
+  completedSessions: number
+  skippedSessions: number
+  supplementarySessions: number
+
+  plannedDurationMinutes: number
+  actualDurationMinutes: number
+
+  plannedLoad: number
+  actualLoad: number
+}
+
+
 export interface CoachWeeklyPlan {
   weekStart: string
   weekEnd: string
@@ -213,6 +250,8 @@ export interface CoachToday {
   weeklyAssessment: CoachWeeklyAssessment
 
   weeklyPlan: CoachWeeklyPlan | null
+
+  weeklyDebrief: CoachWeeklyDebrief | null
 
   dataWarning?: string
 }

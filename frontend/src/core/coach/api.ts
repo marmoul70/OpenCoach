@@ -116,6 +116,42 @@ interface CoachTodayApiResponse {
     }>
   } | null
 
+  weekly_debrief: {
+    week_start: string
+    week_end: string
+
+    verdict: string
+    adaptation_direction: string
+
+    overall_score: number
+    adherence_score: number
+    duration_score: number
+    load_score: number
+    key_sessions_score: number | null
+    intensity_score: number
+
+    completion_ratio: number
+    duration_ratio: number
+    load_ratio: number
+
+    headline: string
+    analysis: string
+
+    strengths: string[]
+    warnings: string[]
+
+    planned_sessions: number
+    completed_sessions: number
+    skipped_sessions: number
+    supplementary_sessions: number
+
+    planned_duration_minutes: number
+    actual_duration_minutes: number
+
+    planned_load: number
+    actual_load: number
+  } | null
+
   weekly_plan: {
     week_start: string
     week_end: string
@@ -468,6 +504,103 @@ Promise<CoachToday> {
                       signal.reason,
                   }),
                 ),
+          }
+        : null,
+
+    weeklyDebrief:
+      data.weekly_debrief
+        ? {
+            weekStart:
+              data.weekly_debrief.week_start,
+
+            weekEnd:
+              data.weekly_debrief.week_end,
+
+            verdict:
+              data.weekly_debrief.verdict,
+
+            adaptationDirection:
+              data.weekly_debrief
+                .adaptation_direction,
+
+            overallScore:
+              data.weekly_debrief
+                .overall_score,
+
+            adherenceScore:
+              data.weekly_debrief
+                .adherence_score,
+
+            durationScore:
+              data.weekly_debrief
+                .duration_score,
+
+            loadScore:
+              data.weekly_debrief
+                .load_score,
+
+            keySessionsScore:
+              data.weekly_debrief
+                .key_sessions_score
+              ?? undefined,
+
+            intensityScore:
+              data.weekly_debrief
+                .intensity_score,
+
+            completionRatio:
+              data.weekly_debrief
+                .completion_ratio,
+
+            durationRatio:
+              data.weekly_debrief
+                .duration_ratio,
+
+            loadRatio:
+              data.weekly_debrief
+                .load_ratio,
+
+            headline:
+              data.weekly_debrief.headline,
+
+            analysis:
+              data.weekly_debrief.analysis,
+
+            strengths:
+              data.weekly_debrief.strengths,
+
+            warnings:
+              data.weekly_debrief.warnings,
+
+            plannedSessions:
+              data.weekly_debrief
+                .planned_sessions,
+
+            completedSessions:
+              data.weekly_debrief
+                .completed_sessions,
+
+            skippedSessions:
+              data.weekly_debrief
+                .skipped_sessions,
+
+            supplementarySessions:
+              data.weekly_debrief
+                .supplementary_sessions,
+
+            plannedDurationMinutes:
+              data.weekly_debrief
+                .planned_duration_minutes,
+
+            actualDurationMinutes:
+              data.weekly_debrief
+                .actual_duration_minutes,
+
+            plannedLoad:
+              data.weekly_debrief.planned_load,
+
+            actualLoad:
+              data.weekly_debrief.actual_load,
           }
         : null,
 

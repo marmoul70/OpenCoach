@@ -141,6 +141,44 @@ class CoachWeeklyAssessmentResponse(BaseModel):
     instruction: str
 
 
+class CoachWeeklyDebriefResponse(BaseModel):
+    """Synthèse d'un débrief hebdomadaire clôturé."""
+
+    week_start: date
+    week_end: date
+
+    verdict: str
+    adaptation_direction: str
+
+    overall_score: int
+    adherence_score: int
+    duration_score: int
+    load_score: int
+    key_sessions_score: int | None
+    intensity_score: int
+
+    completion_ratio: float
+    duration_ratio: float
+    load_ratio: float
+
+    headline: str
+    analysis: str
+
+    strengths: list[str]
+    warnings: list[str]
+
+    planned_sessions: int
+    completed_sessions: int
+    skipped_sessions: int
+    supplementary_sessions: int
+
+    planned_duration_minutes: float
+    actual_duration_minutes: float
+
+    planned_load: float
+    actual_load: float
+
+
 class CoachWeeklyPlanResponse(BaseModel):
     """Intention persistée du plan hebdomadaire OpenCoach."""
 
@@ -204,5 +242,7 @@ class CoachTodayResponse(BaseModel):
     weekly_assessment: CoachWeeklyAssessmentResponse
 
     weekly_plan: CoachWeeklyPlanResponse | None
+
+    weekly_debrief: CoachWeeklyDebriefResponse | None
 
     data_warning: str | None

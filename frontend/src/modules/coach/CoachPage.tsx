@@ -17,6 +17,10 @@ import {
   useCoachToday,
 } from './useCoachToday'
 
+import type {
+  CoachWeeklyDebrief,
+} from './types'
+
 import {
   TrainingDetails,
 } from '../training/TrainingDetails'
@@ -97,6 +101,7 @@ export function CoachPage() {
     sessionDecisions,
     weeklyAssessment,
     weeklyPlan,
+    weeklyDebrief,
     dataWarning,
   } = coach
 
@@ -637,6 +642,13 @@ export function CoachPage() {
         </div>
 
 
+        {weeklyDebrief && (
+          <WeeklyDebriefCard
+            debrief={weeklyDebrief}
+          />
+        )}
+
+
         {/* ==================================================
             WEEK TRAJECTORY
             ================================================== */}
@@ -850,6 +862,215 @@ export function CoachPage() {
 /* ============================================================
    COACH COCKPIT V3 UI
    ============================================================ */
+
+function WeeklyDebriefCard({
+  debrief,
+}: {
+  debrief: CoachWeeklyDebrief
+}) {
+  const adaptation =
+    debrief.adaptationDirection === 'recover'
+      ? 'Récupération'
+      : debrief.adaptationDirection === 'reduce'
+        ? 'Alléger'
+        : debrief.adaptationDirection === 'increase'
+          ? 'Augmenter'
+          : debrief.adaptationDirection === 'maintain'
+            ? 'Maintenir'
+            : debrief.adaptationDirection
+
+  const verdict =
+    debrief.verdict === 'overload'
+      ? 'Surcharge'
+      : debrief.verdict === 'underload'
+        ? 'Sous-charge'
+        : debrief.verdict === 'balanced'
+          ? 'Équilibrée'
+          : debrief.verdict
+
+  return (
+    <section className="border-t border-black/[0.06] px-5 py-5 dark:border-white/[0.06] sm:px-6 lg:px-7">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-600 dark:text-emerald-400">
+            Bilan hebdomadaire
+          </p>
+
+          <h3 className="mt-1 text-[18px] font-semibold tracking-[-0.025em] text-slate-900 dark:text-slate-100">
+            {debrief.headline}
+          </h3>
+
+          <p className="mt-1 text-[10px] font-medium text-slate-400 dark:text-slate-500">
+            {formatDebriefPeriod(
+              debrief.weekStart,
+              debrief.weekEnd,
+            )}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-[8px] font-bold uppercase tracking-[0.08em] text-slate-400">
+              Score
+            </p>
+
+            <p className="mt-0.5 text-[25px] font-bold leading-none tracking-[-0.04em] text-slate-900 dark:text-white">
+              {Math.round(debrief.overallScore)}
+              <span className="ml-1 text-[10px] font-semibold text-slate-300">
+                /100
+              </span>
+            </p>
+          </div>
+
+          <span className="rounded-full bg-amber-500/[0.09] px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.07em] text-amber-600 dark:text-amber-400">
+            {verdict}
+          </span>
+        </div>
+      </div>
+
+      <p className="mt-4 max-w-4xl text-[12px] leading-[1.7] text-slate-500 dark:text-slate-400">
+        {debrief.analysis}
+      </p>
+
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <DebriefMetric
+          label="Séances"
+          value={`${debrief.completedSessions}/${debrief.plannedSessions}`}
+          detail={`${debrief.skippedSessions} manquée${debrief.skippedSessions > 1 ? 's' : ''}`}
+        />
+
+        <DebriefMetric
+          label="Durée"
+          value={`${Math.round(debrief.actualDurationMinutes)} min`}
+          detail={`${Math.round(debrief.plannedDurationMinutes)} min prévues`}
+        />
+
+        <DebriefMetric
+          label="Charge"
+          value={formatNumber(debrief.actualLoad)}
+          detail={`${formatNumber(debrief.plannedLoad)} prévue`}
+        />
+
+        <DebriefMetric
+          label="Adhérence"
+          value={`${Math.round(debrief.adherenceScore)}/100`}
+          detail={`${debrief.supplementarySessions} hors programme`}
+        />
+      </div>
+
+      <div className="mt-5 grid gap-5 md:grid-cols-2">
+        {debrief.strengths.length > 0 && (
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-emerald-600 dark:text-emerald-400">
+              Points forts
+            </p>
+
+            <div className="mt-2 space-y-2">
+              {debrief.strengths.map(
+                (strength, index) => (
+                  <p
+                    key={`${strength}-${index}`}
+                    className="text-[11px] leading-5 text-slate-500 dark:text-slate-400"
+                  >
+                    <span className="mr-2 text-emerald-500">
+                      ✓
+                    </span>
+                    {strength}
+                  </p>
+                ),
+              )}
+            </div>
+          </div>
+        )}
+
+        {debrief.warnings.length > 0 && (
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-amber-600 dark:text-amber-400">
+              Points de vigilance
+            </p>
+
+            <div className="mt-2 space-y-2">
+              {debrief.warnings.map(
+                (warning, index) => (
+                  <p
+                    key={`${warning}-${index}`}
+                    className="text-[11px] leading-5 text-slate-500 dark:text-slate-400"
+                  >
+                    <span className="mr-2 text-amber-500">
+                      !
+                    </span>
+                    {warning}
+                  </p>
+                ),
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.055] pt-3 dark:border-white/[0.06]">
+        <span className="text-[9px] font-medium text-slate-400">
+          Décision pour la semaine suivante
+        </span>
+
+        <span className="rounded-full bg-emerald-500/[0.08] px-2.5 py-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+          {adaptation}
+        </span>
+      </div>
+    </section>
+  )
+}
+
+
+function DebriefMetric({
+  label,
+  value,
+  detail,
+}: {
+  label: string
+  value: string
+  detail: string
+}) {
+  return (
+    <div className="rounded-[10px] bg-slate-50 px-3 py-3 dark:bg-white/[0.025]">
+      <p className="text-[8px] font-bold uppercase tracking-[0.08em] text-slate-400">
+        {label}
+      </p>
+
+      <p className="mt-1 text-[17px] font-bold tracking-[-0.025em] text-slate-800 dark:text-slate-200">
+        {value}
+      </p>
+
+      <p className="mt-0.5 text-[8.5px] text-slate-400 dark:text-slate-500">
+        {detail}
+      </p>
+    </div>
+  )
+}
+
+
+function formatDebriefPeriod(
+  weekStart: string,
+  weekEnd: string,
+): string {
+  const formatter =
+    new Intl.DateTimeFormat(
+      'fr-FR',
+      {
+        day: 'numeric',
+        month: 'short',
+      },
+    )
+
+  return (
+    `${formatter.format(
+      new Date(`${weekStart}T12:00:00`),
+    )} → ${formatter.format(
+      new Date(`${weekEnd}T12:00:00`),
+    )}`
+  )
+}
+
 
 function CockpitDecisionPill({
   action,

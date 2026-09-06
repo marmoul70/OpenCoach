@@ -20,6 +20,9 @@ from opencoach.database.session import (
 from opencoach.database.repositories.sql_weekly_training_plan import (
     SqlWeeklyTrainingPlanRepository,
 )
+from opencoach.database.repositories.sql_weekly_debrief import (
+    SqlWeeklyDebriefRepository,
+)
 
 from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
@@ -75,6 +78,7 @@ from opencoach.schemas.coach import (
     CoachSessionResponse,
     CoachTodayResponse,
     CoachWeeklyAssessmentResponse,
+    CoachWeeklyDebriefResponse,
     CoachWeeklyPlanResponse,
     CoachTrajectoryResponse,
     CoachTrajectoryWeekResponse,
@@ -448,16 +452,40 @@ def get_today_coach_decision(
             )
         )
 
+        week_start = current_week_start(
+            reference_date
+        )
+
         weekly_plan = (
             SqlWeeklyTrainingPlanRepository(
                 db
             ).get_plan_for_week(
                 athlete_profile_id,
-                current_week_start(
-                    reference_date
-                ),
+                week_start,
             )
         )
+
+        debrief_repository = (
+            SqlWeeklyDebriefRepository(
+                db
+            )
+        )
+
+        weekly_debrief = (
+            debrief_repository.get_for_week(
+                athlete_profile_id,
+                week_start,
+            )
+        )
+
+        if weekly_debrief is None:
+            weekly_debrief = (
+                debrief_repository.get_for_week(
+                    athlete_profile_id,
+                    week_start
+                    - timedelta(days=7),
+                )
+            )
 
     except PlannedSessionUnavailableError as exc:
         raise HTTPException(
@@ -495,6 +523,7 @@ def get_today_coach_decision(
         assessment,
         weekly_assessment,
         weekly_plan,
+        weekly_debrief,
     )
 
 
@@ -502,6 +531,7 @@ def _to_response(
     assessment: CoachDecisionAssessment,
     weekly_assessment: CoachWeeklyAssessment,
     weekly_plan,
+    weekly_debrief,
 ) -> CoachTodayResponse:
     readiness = assessment.readiness.readiness
 
@@ -748,6 +778,115 @@ def _to_response(
                     weekly_assessment.instruction
                 ),
             )
+        ),
+
+        weekly_debrief=(
+            CoachWeeklyDebriefResponse(
+                week_start=(
+                    weekly_debrief
+                    .facts.week_start
+                ),
+                week_end=(
+                    weekly_debrief
+                    .facts.week_end
+                ),
+                verdict=(
+                    weekly_debrief
+                    .debrief.verdict.value
+                ),
+                adaptation_direction=(
+                    weekly_debrief
+                    .debrief
+                    .adaptation_direction
+                    .value
+                ),
+                overall_score=(
+                    weekly_debrief
+                    .debrief.overall_score
+                ),
+                adherence_score=(
+                    weekly_debrief
+                    .debrief.adherence_score
+                ),
+                duration_score=(
+                    weekly_debrief
+                    .debrief.duration_score
+                ),
+                load_score=(
+                    weekly_debrief
+                    .debrief.load_score
+                ),
+                key_sessions_score=(
+                    weekly_debrief
+                    .debrief.key_sessions_score
+                ),
+                intensity_score=(
+                    weekly_debrief
+                    .debrief.intensity_score
+                ),
+                completion_ratio=(
+                    weekly_debrief
+                    .debrief.completion_ratio
+                ),
+                duration_ratio=(
+                    weekly_debrief
+                    .debrief.duration_ratio
+                ),
+                load_ratio=(
+                    weekly_debrief
+                    .debrief.load_ratio
+                ),
+                headline=(
+                    weekly_debrief
+                    .debrief.headline
+                ),
+                analysis=(
+                    weekly_debrief
+                    .debrief.analysis
+                ),
+                strengths=list(
+                    weekly_debrief
+                    .debrief.strengths
+                ),
+                warnings=list(
+                    weekly_debrief
+                    .debrief.warnings
+                ),
+                planned_sessions=(
+                    weekly_debrief
+                    .facts.planned_sessions
+                ),
+                completed_sessions=(
+                    weekly_debrief
+                    .facts.completed_sessions
+                ),
+                skipped_sessions=(
+                    weekly_debrief
+                    .facts.skipped_sessions
+                ),
+                supplementary_sessions=(
+                    weekly_debrief
+                    .facts.supplementary_sessions
+                ),
+                planned_duration_minutes=(
+                    weekly_debrief
+                    .facts.planned_duration_minutes
+                ),
+                actual_duration_minutes=(
+                    weekly_debrief
+                    .facts.actual_duration_minutes
+                ),
+                planned_load=(
+                    weekly_debrief
+                    .facts.planned_load
+                ),
+                actual_load=(
+                    weekly_debrief
+                    .facts.actual_load
+                ),
+            )
+            if weekly_debrief is not None
+            else None
         ),
 
         weekly_plan=(

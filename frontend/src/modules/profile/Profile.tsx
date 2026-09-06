@@ -1619,6 +1619,21 @@ function HeartRateZone({
     value: string,
   ) => void
 }) {
+  const zoneBarColor = {
+    Z1: 'bg-blue-500',
+    Z2: 'bg-emerald-500',
+    Z3: 'bg-yellow-400',
+    Z4: 'bg-orange-500',
+    Z5: 'bg-red-500',
+  }[
+    zone as
+      | 'Z1'
+      | 'Z2'
+      | 'Z3'
+      | 'Z4'
+      | 'Z5'
+  ] ?? 'bg-slate-400'
+
   const numericValue =
     Number(value)
 
@@ -1681,11 +1696,10 @@ function HeartRateZone({
         "
       >
         <div
-          className="
-            h-full
-            rounded-full
-            bg-emerald-500
-          "
+          className={[
+            'h-full rounded-full',
+            zoneBarColor,
+          ].join(' ')}
           style={{
             width:
               `${progress}%`,

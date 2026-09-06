@@ -62,13 +62,30 @@ export interface EquipmentItem {
   active: boolean
 }
 
+export type ShoeCategory =
+  | 'road'
+  | 'trail'
+  | 'mixed'
+
+export type BikeCategory =
+  | 'road'
+  | 'gravel'
+  | 'mtb'
+  | 'indoor'
+
 export interface Shoe extends EquipmentItem {
+  category?: ShoeCategory
+  preferred: boolean
   distanceKm: number
+  warningDistanceKm?: number
   maxDistanceKm?: number
 }
 
 export interface Bike extends EquipmentItem {
+  category?: BikeCategory
+  preferred: boolean
   distanceKm: number
+  maintenanceDistanceKm?: number
 }
 
 export interface Watch extends EquipmentItem {}

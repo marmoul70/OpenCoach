@@ -10,7 +10,6 @@ import {
   Pencil,
   Plus,
   Route,
-  Trash2,
   Utensils,
   Watch,
 } from 'lucide-react'
@@ -742,7 +741,10 @@ interface AthleteEquipmentSectionProps {
       brand?: string
       model: string
       active: boolean
+      category?: 'road' | 'trail' | 'mixed'
+      preferred: boolean
       distanceKm: number
+      warningDistanceKm?: number
       maxDistanceKm?: number
     }>
 
@@ -751,7 +753,10 @@ interface AthleteEquipmentSectionProps {
       brand?: string
       model: string
       active: boolean
+      category?: 'road' | 'gravel' | 'mtb' | 'indoor'
+      preferred: boolean
       distanceKm: number
+      maintenanceDistanceKm?: number
     }>
 
     watches: Array<{
@@ -761,6 +766,87 @@ interface AthleteEquipmentSectionProps {
       active: boolean
     }>
   }
+}
+
+
+function createEquipmentId(): string {
+  const cryptoApi =
+    globalThis.crypto
+
+  if (
+    cryptoApi
+    && typeof cryptoApi.randomUUID
+      === 'function'
+  ) {
+    return cryptoApi.randomUUID()
+  }
+
+  return [
+    'equipment',
+    Date.now().toString(36),
+    Math.random()
+      .toString(36)
+      .slice(2, 10),
+  ].join('-')
+}
+
+
+function shoeCategoryLabel(
+  category?: string,
+): string {
+  switch (category) {
+    case 'road':
+      return 'Route'
+    case 'trail':
+      return 'Trail'
+    case 'mixed':
+      return 'Mixte'
+    default:
+      return 'Non définie'
+  }
+}
+
+
+function bikeCategoryLabel(
+  category?: string,
+): string {
+  switch (category) {
+    case 'road':
+      return 'Route'
+    case 'gravel':
+      return 'Gravel'
+    case 'mtb':
+      return 'VTT'
+    case 'indoor':
+      return 'Home trainer'
+    default:
+      return 'Non défini'
+  }
+}
+
+
+function shoeUsageStatus(
+  distanceKm: number,
+  warningDistanceKm?: number,
+  maxDistanceKm?: number,
+): 'ok' | 'warning' | 'critical' {
+  if (
+    maxDistanceKm !== undefined
+    && maxDistanceKm > 0
+    && distanceKm >= maxDistanceKm
+  ) {
+    return 'critical'
+  }
+
+  if (
+    warningDistanceKm !== undefined
+    && warningDistanceKm > 0
+    && distanceKm >= warningDistanceKm
+  ) {
+    return 'warning'
+  }
+
+  return 'ok'
 }
 
 
@@ -819,6 +905,18 @@ export function AthleteEquipmentSection({
   ] = useState('')
 
   const [
+    shoeCategory,
+    setShoeCategory,
+  ] = useState<
+    'road' | 'trail' | 'mixed'
+  >('trail')
+
+  const [
+    shoeWarningDistance,
+    setShoeWarningDistance,
+  ] = useState('500')
+
+  const [
     bikeBrand,
     setBikeBrand,
   ] = useState('')
@@ -826,6 +924,23 @@ export function AthleteEquipmentSection({
   const [
     bikeModel,
     setBikeModel,
+  ] = useState('')
+
+  const [
+    bikeCategory,
+    setBikeCategory,
+  ] = useState<
+    'road' | 'gravel' | 'mtb' | 'indoor'
+  >('road')
+
+  const [
+    bikeDistance,
+    setBikeDistance,
+  ] = useState('0')
+
+  const [
+    bikeMaintenanceDistance,
+    setBikeMaintenanceDistance,
   ] = useState('')
 
   const [
@@ -852,7 +967,7 @@ export function AthleteEquipmentSection({
         ...current,
         {
           id:
-            crypto.randomUUID(),
+            createEquipmentId(),
 
           brand:
             shoeBrand.trim()
@@ -860,11 +975,18 @@ export function AthleteEquipmentSection({
 
           model,
           active: true,
+          category: shoeCategory,
+          preferred: false,
 
           distanceKm:
             Number(
               shoeDistance,
             ) || 0,
+
+          warningDistanceKm:
+            parseOptionalNumber(
+              shoeWarningDistance,
+            ),
 
           maxDistanceKm:
             parseOptionalNumber(
@@ -877,6 +999,7 @@ export function AthleteEquipmentSection({
     setShoeBrand('')
     setShoeModel('')
     setShoeDistance('0')
+    setShoeWarningDistance('500')
     setShoeMaxDistance('')
   }
 
@@ -894,7 +1017,7 @@ export function AthleteEquipmentSection({
         ...current,
         {
           id:
-            crypto.randomUUID(),
+            createEquipmentId(),
 
           brand:
             bikeBrand.trim()
@@ -902,13 +1025,26 @@ export function AthleteEquipmentSection({
 
           model,
           active: true,
-          distanceKm: 0,
+          category: bikeCategory,
+          preferred: false,
+
+          distanceKm:
+            Number(
+              bikeDistance,
+            ) || 0,
+
+          maintenanceDistanceKm:
+            parseOptionalNumber(
+              bikeMaintenanceDistance,
+            ),
         },
       ],
     )
 
     setBikeBrand('')
     setBikeModel('')
+    setBikeDistance('0')
+    setBikeMaintenanceDistance('')
   }
 
 
@@ -925,7 +1061,7 @@ export function AthleteEquipmentSection({
         ...current,
         {
           id:
-            crypto.randomUUID(),
+            createEquipmentId(),
 
           brand:
             watchBrand.trim()
@@ -939,6 +1075,126 @@ export function AthleteEquipmentSection({
 
     setWatchBrand('')
     setWatchModel('')
+  }
+
+
+  function togglePreferredShoe(
+    shoeId: string,
+  ) {
+    setShoes(
+      current => {
+        const selected =
+          current.find(
+            shoe =>
+              shoe.id === shoeId,
+          )
+
+        if (!selected) {
+          return current
+        }
+
+        const category =
+          selected.category
+          ?? '__uncategorized__'
+
+        const nextPreferred =
+          !selected.preferred
+
+        return current.map(
+          shoe => {
+            const shoeCategory =
+              shoe.category
+              ?? '__uncategorized__'
+
+            if (
+              shoeCategory
+              !== category
+            ) {
+              return shoe
+            }
+
+            if (
+              shoe.id === shoeId
+            ) {
+              return {
+                ...shoe,
+                preferred:
+                  nextPreferred,
+              }
+            }
+
+            if (!nextPreferred) {
+              return shoe
+            }
+
+            return {
+              ...shoe,
+              preferred: false,
+            }
+          },
+        )
+      },
+    )
+  }
+
+
+  function togglePreferredBike(
+    bikeId: string,
+  ) {
+    setBikes(
+      current => {
+        const selected =
+          current.find(
+            bike =>
+              bike.id === bikeId,
+          )
+
+        if (!selected) {
+          return current
+        }
+
+        const category =
+          selected.category
+          ?? '__uncategorized__'
+
+        const nextPreferred =
+          !selected.preferred
+
+        return current.map(
+          bike => {
+            const currentCategory =
+              bike.category
+              ?? '__uncategorized__'
+
+            if (
+              currentCategory
+              !== category
+            ) {
+              return bike
+            }
+
+            if (
+              bike.id === bikeId
+            ) {
+              return {
+                ...bike,
+                preferred:
+                  nextPreferred,
+              }
+            }
+
+            if (!nextPreferred) {
+              return bike
+            }
+
+            return {
+              ...bike,
+              preferred: false,
+            }
+          },
+        )
+      },
+    )
   }
 
 
@@ -1006,328 +1262,1493 @@ export function AthleteEquipmentSection({
           lg:grid-cols-3
         "
       >
-        <EquipmentColumn
-          title="Chaussures"
-          count={shoes.length}
+        {/* ==================================================
+            CHAUSSURES
+            ================================================== */}
+
+        <div
+          className="
+            overflow-hidden
+            rounded-[14px]
+            border
+            border-emerald-200/70
+            bg-emerald-50/40
+            dark:border-emerald-400/10
+            dark:bg-emerald-400/[0.025]
+          "
         >
-          {shoes.length === 0 ? (
-            <EmptyEquipment />
-          ) : (
-            shoes.map(
-              shoe => (
-                <GearCard
-                  key={shoe.id}
-                  icon={
-                    <Route
-                      className="
-                        h-3.5
-                        w-3.5
-                      "
-                    />
-                  }
-                  title={
-                    gearName(
-                      shoe.brand,
-                      shoe.model,
+          <div
+            className="
+              flex
+              items-center
+              justify-between
+              border-b
+              border-emerald-100
+              bg-emerald-100/55
+              px-3
+              py-2
+              dark:border-emerald-400/10
+              dark:bg-emerald-400/[0.055]
+            "
+          >
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+              "
+            >
+              <div
+                className="
+                  flex
+                  h-6
+                  w-6
+                  items-center
+                  justify-center
+                  rounded-[7px]
+                  bg-white
+                  text-emerald-600
+                  shadow-sm
+                  dark:bg-white/[0.06]
+                  dark:text-emerald-300
+                "
+              >
+                <Route
+                  className="h-3.5 w-3.5"
+                />
+              </div>
+
+              <div>
+                <div
+                  className="
+                    text-[9.5px]
+                    font-bold
+                    uppercase
+                    tracking-[0.08em]
+                    text-emerald-800
+                    dark:text-emerald-300
+                  "
+                >
+                  Chaussures
+                </div>
+
+                <div
+                  className="
+                    text-[8.5px]
+                    text-emerald-600/70
+                    dark:text-emerald-300/50
+                  "
+                >
+                  Running & trail
+                </div>
+              </div>
+            </div>
+
+            <span
+              className="
+                flex
+                h-5
+                min-w-5
+                items-center
+                justify-center
+                rounded-full
+                bg-white
+                px-1.5
+                text-[9px]
+                font-bold
+                text-emerald-700
+                shadow-sm
+                dark:bg-white/[0.07]
+                dark:text-emerald-300
+              "
+            >
+              {shoes.length}
+            </span>
+          </div>
+
+          <div className="space-y-2 p-2">
+            {shoes.length === 0 ? (
+              <EmptyEquipment />
+            ) : (
+              shoes.map(
+                shoe => {
+                  const status =
+                    shoeUsageStatus(
+                      shoe.distanceKm,
+                      shoe.warningDistanceKm,
+                      shoe.maxDistanceKm,
                     )
-                  }
-                  details={
+
+                  const progress =
                     shoe.maxDistanceKm
-                      ? (
-                          `${
+                    && shoe.maxDistanceKm > 0
+                      ? Math.min(
+                          100,
+                          (
                             shoe.distanceKm
-                          } / ${
-                            shoe.maxDistanceKm
-                          } km`
+                            / shoe.maxDistanceKm
+                          ) * 100,
                         )
-                      : (
-                          `${
-                            shoe.distanceKm
-                          } km`
-                        )
-                  }
-                  active={
-                    shoe.active
-                  }
-                  progress={
-                    shoe.maxDistanceKm
-                      ? (
-                          shoe.distanceKm
-                          / shoe.maxDistanceKm
-                        ) * 100
                       : undefined
-                  }
-                  editing={editing}
-                  onToggle={() =>
-                    setShoes(
-                      current =>
-                        current.map(
-                          item =>
-                            item.id
-                            === shoe.id
-                              ? {
-                                  ...item,
-                                  active:
-                                    !item.active,
-                                }
-                              : item,
-                        ),
-                    )
-                  }
-                  onRemove={() =>
-                    setShoes(
-                      current =>
-                        current.filter(
-                          item =>
-                            item.id
-                            !== shoe.id,
-                        ),
-                    )
-                  }
-                />
-              ),
-            )
-          )}
 
-          {editing && (
-            <AddGearCard
-              fields={
-                <>
-                  <MiniInput
-                    placeholder="Marque"
-                    value={
-                      shoeBrand
-                    }
-                    onChange={
-                      setShoeBrand
-                    }
-                  />
-
-                  <MiniInput
-                    placeholder="Modèle"
-                    value={
-                      shoeModel
-                    }
-                    onChange={
-                      setShoeModel
-                    }
-                  />
-
-                  <MiniInput
-                    placeholder="Km actuels"
-                    value={
-                      shoeDistance
-                    }
-                    onChange={
-                      setShoeDistance
-                    }
-                    type="number"
-                  />
-
-                  <MiniInput
-                    placeholder="Km maximum"
-                    value={
-                      shoeMaxDistance
-                    }
-                    onChange={
-                      setShoeMaxDistance
-                    }
-                    type="number"
-                  />
-                </>
-              }
-              onAdd={addShoe}
-            />
-          )}
-        </EquipmentColumn>
-
-
-        <EquipmentColumn
-          title="Vélos"
-          count={bikes.length}
-        >
-          {bikes.length === 0 ? (
-            <EmptyEquipment />
-          ) : (
-            bikes.map(
-              bike => (
-                <GearCard
-                  key={bike.id}
-                  icon={
-                    <Bike
+                  return (
+                    <div
+                      key={shoe.id}
                       className="
-                        h-3.5
-                        w-3.5
+                        relative
+                        overflow-hidden
+                        rounded-[11px]
+                        border
+                        border-black/[0.055]
+                        bg-white
+                        shadow-[0_1px_2px_rgba(15,23,42,0.025)]
+                        dark:border-white/[0.06]
+                        dark:bg-white/[0.025]
                       "
-                    />
-                  }
-                  title={
-                    gearName(
-                      bike.brand,
-                      bike.model,
-                    )
-                  }
-                  details={
-                    `${
-                      bike.distanceKm
-                    } km`
-                  }
-                  active={
-                    bike.active
-                  }
-                  editing={editing}
-                  onToggle={() =>
-                    setBikes(
-                      current =>
-                        current.map(
-                          item =>
-                            item.id
-                            === bike.id
-                              ? {
-                                  ...item,
-                                  active:
-                                    !item.active,
+                    >
+                      <div className="p-2.5">
+                        <div
+                          className="
+                            flex
+                            items-start
+                            gap-2.5
+                          "
+                        >
+                          <div
+                            className="
+                              flex
+                              h-8
+                              w-8
+                              shrink-0
+                              items-center
+                              justify-center
+                              rounded-[9px]
+                              bg-emerald-50
+                              text-emerald-600
+                              dark:bg-emerald-400/10
+                              dark:text-emerald-300
+                            "
+                          >
+                            <Route
+                              className="h-4 w-4"
+                            />
+                          </div>
+
+                          <div
+                            className="
+                              min-w-0
+                              flex-1
+                            "
+                          >
+                            <div
+                              className="
+                                flex
+                                min-w-0
+                                items-center
+                                gap-1.5
+                                pr-5
+                              "
+                            >
+                              <span
+                                className="
+                                  truncate
+                                  text-[10.5px]
+                                  font-semibold
+                                  text-slate-800
+                                  dark:text-slate-100
+                                "
+                              >
+                                {gearName(
+                                  shoe.brand,
+                                  shoe.model,
+                                )}
+                              </span>
+
+                              {shoe.active && (
+                                <span
+                                  className="
+                                    h-1.5
+                                    w-1.5
+                                    shrink-0
+                                    rounded-full
+                                    bg-emerald-500
+                                  "
+                                />
+                              )}
+                            </div>
+
+                            <div
+                              className="
+                                mt-0.5
+                                text-[9px]
+                                text-slate-400
+                                dark:text-slate-500
+                              "
+                            >
+                              {shoe.distanceKm}
+                              {shoe.maxDistanceKm
+                                ? ` / ${shoe.maxDistanceKm}`
+                                : ''}
+                              {' km'}
+                            </div>
+                          </div>
+
+                          {shoe.preferred && (
+                            <div
+                              title="Chaussure préférée"
+                              className="
+                                absolute
+                                right-2.5
+                                top-2.5
+                                flex
+                                h-6
+                                w-6
+                                items-center
+                                justify-center
+                                rounded-full
+                                bg-amber-50
+                                text-[14px]
+                                text-amber-500
+                                dark:bg-amber-400/10
+                              "
+                            >
+                              ★
+                            </div>
+                          )}
+                        </div>
+
+                        <div
+                          className="
+                            mt-2
+                            flex
+                            flex-wrap
+                            items-center
+                            gap-1.5
+                          "
+                        >
+                          <span
+                            className="
+                              inline-flex
+                              rounded-full
+                              border
+                              border-emerald-200
+                              bg-emerald-50
+                              px-2
+                              py-0.5
+                              text-[8.5px]
+                              font-semibold
+                              text-emerald-700
+                              dark:border-emerald-400/15
+                              dark:bg-emerald-400/10
+                              dark:text-emerald-300
+                            "
+                          >
+                            {shoeCategoryLabel(
+                              shoe.category,
+                            )}
+                          </span>
+
+                          <span
+                            className={`
+                              inline-flex
+                              items-center
+                              gap-1
+                              rounded-full
+                              px-2
+                              py-0.5
+                              text-[8.5px]
+                              font-semibold
+                              ${
+                                status === 'critical'
+                                  ? `
+                                    bg-red-50
+                                    text-red-600
+                                    dark:bg-red-400/10
+                                    dark:text-red-300
+                                  `
+                                  : status === 'warning'
+                                    ? `
+                                      bg-amber-50
+                                      text-amber-600
+                                      dark:bg-amber-400/10
+                                      dark:text-amber-300
+                                    `
+                                    : `
+                                      bg-emerald-50
+                                      text-emerald-600
+                                      dark:bg-emerald-400/10
+                                      dark:text-emerald-300
+                                    `
+                              }
+                            `}
+                          >
+                            <span
+                              className={`
+                                h-1.5
+                                w-1.5
+                                rounded-full
+                                ${
+                                  status
+                                  === 'critical'
+                                    ? 'bg-red-500'
+                                    : status
+                                      === 'warning'
+                                      ? 'bg-amber-500'
+                                      : 'bg-emerald-500'
                                 }
-                              : item,
-                        ),
-                    )
-                  }
-                  onRemove={() =>
-                    setBikes(
-                      current =>
-                        current.filter(
-                          item =>
-                            item.id
-                            !== bike.id,
-                        ),
-                    )
-                  }
-                />
-              ),
-            )
-          )}
+                              `}
+                            />
 
-          {editing && (
-            <AddGearCard
-              fields={
-                <>
-                  <MiniInput
-                    placeholder="Marque"
-                    value={
-                      bikeBrand
-                    }
-                    onChange={
-                      setBikeBrand
-                    }
-                  />
+                            {status === 'critical'
+                              ? 'À remplacer'
+                              : status === 'warning'
+                                ? 'À surveiller'
+                                : 'OK'}
+                          </span>
+                        </div>
 
-                  <MiniInput
-                    placeholder="Modèle"
-                    value={
-                      bikeModel
-                    }
-                    onChange={
-                      setBikeModel
-                    }
-                  />
-                </>
-              }
-              onAdd={addBike}
-            />
-          )}
-        </EquipmentColumn>
+                        {progress !== undefined && (
+                          <div
+                            className="
+                              mt-2
+                              h-1
+                              overflow-hidden
+                              rounded-full
+                              bg-slate-100
+                              dark:bg-white/[0.06]
+                            "
+                          >
+                            <div
+                              className={`
+                                h-full
+                                rounded-full
+                                transition-all
+                                ${
+                                  status
+                                  === 'critical'
+                                    ? 'bg-red-500'
+                                    : status
+                                      === 'warning'
+                                      ? 'bg-amber-500'
+                                      : 'bg-emerald-500'
+                                }
+                              `}
+                              style={{
+                                width:
+                                  `${progress}%`,
+                              }}
+                            />
+                          </div>
+                        )}
 
+                        {editing && (
+                          <div
+                            className="
+                              mt-2
+                              grid
+                              grid-cols-2
+                              gap-1.5
+                            "
+                          >
+                            <button
+                              type="button"
+                              onClick={() =>
+                                togglePreferredShoe(
+                                  shoe.id,
+                                )
+                              }
+                              className="
+                                rounded-[7px]
+                                border
+                                border-black/[0.06]
+                                bg-slate-50
+                                px-2
+                                py-1.5
+                                text-[8.5px]
+                                font-medium
+                                text-slate-600
+                                transition
+                                hover:bg-slate-100
+                                dark:border-white/[0.06]
+                                dark:bg-white/[0.035]
+                                dark:text-slate-300
+                              "
+                            >
+                              {shoe.preferred
+                                ? '★ Retirer'
+                                : '☆ Préférée'}
+                            </button>
 
-        <EquipmentColumn
-          title="Montres"
-          count={watches.length}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setShoes(
+                                  current =>
+                                    current.map(
+                                      item =>
+                                        item.id
+                                        === shoe.id
+                                          ? {
+                                              ...item,
+                                              active:
+                                                !item.active,
+                                            }
+                                          : item,
+                                    ),
+                                )
+                              }
+                              className="
+                                rounded-[7px]
+                                border
+                                border-black/[0.06]
+                                bg-slate-50
+                                px-2
+                                py-1.5
+                                text-[8.5px]
+                                font-medium
+                                text-slate-600
+                                transition
+                                hover:bg-slate-100
+                                dark:border-white/[0.06]
+                                dark:bg-white/[0.035]
+                                dark:text-slate-300
+                              "
+                            >
+                              {shoe.active
+                                ? 'Désactiver'
+                                : 'Activer'}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setShoes(
+                                  current =>
+                                    current.filter(
+                                      item =>
+                                        item.id
+                                        !== shoe.id,
+                                    ),
+                                )
+                              }
+                              className="
+                                col-span-2
+                                rounded-[7px]
+                                border
+                                border-red-100
+                                bg-red-50/60
+                                px-2
+                                py-1.5
+                                text-[8.5px]
+                                font-medium
+                                text-red-500
+                                transition
+                                hover:bg-red-50
+                                dark:border-red-400/10
+                                dark:bg-red-400/[0.04]
+                                dark:text-red-300
+                              "
+                            >
+                              Supprimer
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                },
+              )
+            )}
+
+            {editing && (
+              <AddGearCard
+                fields={
+                  <>
+                    <MiniInput
+                      placeholder="Marque"
+                      value={shoeBrand}
+                      onChange={setShoeBrand}
+                    />
+
+                    <MiniInput
+                      placeholder="Modèle"
+                      value={shoeModel}
+                      onChange={setShoeModel}
+                    />
+
+                    <label>
+                      <span
+                        className="
+                          mb-1
+                          block
+                          text-[8.5px]
+                          font-semibold
+                          uppercase
+                          tracking-[0.06em]
+                          text-slate-400
+                        "
+                      >
+                        Catégorie
+                      </span>
+
+                      <select
+                        value={shoeCategory}
+                        onChange={
+                          event =>
+                            setShoeCategory(
+                              event.target.value as
+                                | 'road'
+                                | 'trail'
+                                | 'mixed',
+                            )
+                        }
+                        className="
+                          h-8
+                          w-full
+                          rounded-[8px]
+                          border
+                          border-black/[0.07]
+                          bg-white
+                          px-2
+                          text-[10px]
+                          text-slate-700
+                          outline-none
+                          dark:border-white/[0.07]
+                          dark:bg-white/[0.035]
+                          dark:text-slate-300
+                        "
+                      >
+                        <option value="road">
+                          Route
+                        </option>
+
+                        <option value="trail">
+                          Trail
+                        </option>
+
+                        <option value="mixed">
+                          Mixte
+                        </option>
+                      </select>
+                    </label>
+
+                    <MiniInput
+                      placeholder="Km actuels"
+                      value={shoeDistance}
+                      onChange={setShoeDistance}
+                      type="number"
+                    />
+
+                    <MiniInput
+                      placeholder="Alerte à partir de (km)"
+                      value={
+                        shoeWarningDistance
+                      }
+                      onChange={
+                        setShoeWarningDistance
+                      }
+                      type="number"
+                    />
+
+                    <MiniInput
+                      placeholder="Km maximum"
+                      value={shoeMaxDistance}
+                      onChange={
+                        setShoeMaxDistance
+                      }
+                      type="number"
+                    />
+                  </>
+                }
+                onAdd={addShoe}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* ==================================================
+            VÉLOS
+            ================================================== */}
+
+        <div
+          className="
+            overflow-hidden
+            rounded-[14px]
+            border
+            border-sky-200/70
+            bg-sky-50/40
+            dark:border-sky-400/10
+            dark:bg-sky-400/[0.025]
+          "
         >
-          {watches.length === 0 ? (
-            <EmptyEquipment />
-          ) : (
-            watches.map(
-              watch => (
-                <GearCard
-                  key={watch.id}
-                  icon={
-                    <Watch
-                      className="
-                        h-3.5
-                        w-3.5
-                      "
-                    />
-                  }
-                  title={
-                    gearName(
-                      watch.brand,
-                      watch.model,
-                    )
-                  }
-                  details="Montre connectée"
-                  active={
-                    watch.active
-                  }
-                  editing={editing}
-                  onToggle={() =>
-                    setWatches(
-                      current =>
-                        current.map(
-                          item =>
-                            item.id
-                            === watch.id
-                              ? {
-                                  ...item,
-                                  active:
-                                    !item.active,
-                                }
-                              : item,
-                        ),
-                    )
-                  }
-                  onRemove={() =>
-                    setWatches(
-                      current =>
-                        current.filter(
-                          item =>
-                            item.id
-                            !== watch.id,
-                        ),
-                    )
-                  }
+          <div
+            className="
+              flex
+              items-center
+              justify-between
+              border-b
+              border-sky-100
+              bg-sky-100/55
+              px-3
+              py-2
+              dark:border-sky-400/10
+              dark:bg-sky-400/[0.055]
+            "
+          >
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+              "
+            >
+              <div
+                className="
+                  flex
+                  h-6
+                  w-6
+                  items-center
+                  justify-center
+                  rounded-[7px]
+                  bg-white
+                  text-sky-600
+                  shadow-sm
+                  dark:bg-white/[0.06]
+                  dark:text-sky-300
+                "
+              >
+                <Bike
+                  className="h-3.5 w-3.5"
                 />
-              ),
-            )
-          )}
+              </div>
 
-          {editing && (
-            <AddGearCard
-              fields={
-                <>
-                  <MiniInput
-                    placeholder="Marque"
-                    value={
-                      watchBrand
-                    }
-                    onChange={
-                      setWatchBrand
-                    }
-                  />
+              <div>
+                <div
+                  className="
+                    text-[9.5px]
+                    font-bold
+                    uppercase
+                    tracking-[0.08em]
+                    text-sky-800
+                    dark:text-sky-300
+                  "
+                >
+                  Vélos
+                </div>
 
-                  <MiniInput
-                    placeholder="Modèle"
-                    value={
-                      watchModel
-                    }
-                    onChange={
-                      setWatchModel
-                    }
-                  />
-                </>
-              }
-              onAdd={addWatch}
-            />
-          )}
-        </EquipmentColumn>
+                <div
+                  className="
+                    text-[8.5px]
+                    text-sky-600/70
+                    dark:text-sky-300/50
+                  "
+                >
+                  Route, gravel & VTT
+                </div>
+              </div>
+            </div>
+
+            <span
+              className="
+                flex
+                h-5
+                min-w-5
+                items-center
+                justify-center
+                rounded-full
+                bg-white
+                px-1.5
+                text-[9px]
+                font-bold
+                text-sky-700
+                shadow-sm
+                dark:bg-white/[0.07]
+                dark:text-sky-300
+              "
+            >
+              {bikes.length}
+            </span>
+          </div>
+
+          <div className="space-y-2 p-2">
+            {bikes.length === 0 ? (
+              <EmptyEquipment />
+            ) : (
+              bikes.map(
+                bike => {
+                  const maintenanceDue =
+                    bike.maintenanceDistanceKm
+                    !== undefined
+                    && bike.maintenanceDistanceKm > 0
+                    && bike.distanceKm
+                      >= bike.maintenanceDistanceKm
+
+                  const progress =
+                    bike.maintenanceDistanceKm
+                    !== undefined
+                    && bike.maintenanceDistanceKm > 0
+                      ? Math.min(
+                          100,
+                          (
+                            bike.distanceKm
+                            / bike.maintenanceDistanceKm
+                          ) * 100,
+                        )
+                      : undefined
+
+                  return (
+                    <div
+                      key={bike.id}
+                      className="
+                        relative
+                        rounded-[11px]
+                        border
+                        border-black/[0.055]
+                        bg-white
+                        p-2.5
+                        shadow-[0_1px_2px_rgba(15,23,42,0.025)]
+                        dark:border-white/[0.06]
+                        dark:bg-white/[0.025]
+                      "
+                    >
+                      <div
+                        className="
+                          flex
+                          items-start
+                          gap-2.5
+                        "
+                      >
+                        <div
+                          className="
+                            flex
+                            h-8
+                            w-8
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-[9px]
+                            bg-sky-50
+                            text-sky-600
+                            dark:bg-sky-400/10
+                            dark:text-sky-300
+                          "
+                        >
+                          <Bike
+                            className="h-4 w-4"
+                          />
+                        </div>
+
+                        <div
+                          className="
+                            min-w-0
+                            flex-1
+                          "
+                        >
+                          <div
+                            className="
+                              flex
+                              items-center
+                              gap-1.5
+                              pr-5
+                            "
+                          >
+                            <span
+                              className="
+                                truncate
+                                text-[10.5px]
+                                font-semibold
+                                text-slate-800
+                                dark:text-slate-100
+                              "
+                            >
+                              {gearName(
+                                bike.brand,
+                                bike.model,
+                              )}
+                            </span>
+
+                            {bike.active && (
+                              <span
+                                className="
+                                  h-1.5
+                                  w-1.5
+                                  shrink-0
+                                  rounded-full
+                                  bg-emerald-500
+                                "
+                              />
+                            )}
+                          </div>
+
+                          <div
+                            className="
+                              mt-0.5
+                              text-[9px]
+                              text-slate-400
+                              dark:text-slate-500
+                            "
+                          >
+                            {bike.distanceKm}
+                            {bike.maintenanceDistanceKm
+                              ? ` / ${bike.maintenanceDistanceKm}`
+                              : ''}
+                            {' km'}
+                          </div>
+                        </div>
+
+                        {bike.preferred && (
+                          <div
+                            title="Vélo principal"
+                            className="
+                              absolute
+                              right-2.5
+                              top-2.5
+                              flex
+                              h-6
+                              w-6
+                              items-center
+                              justify-center
+                              rounded-full
+                              bg-amber-50
+                              text-[14px]
+                              text-amber-500
+                              dark:bg-amber-400/10
+                            "
+                          >
+                            ★
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        className="
+                          mt-2
+                          flex
+                          flex-wrap
+                          items-center
+                          gap-1.5
+                        "
+                      >
+                        <span
+                          className="
+                            rounded-full
+                            border
+                            border-sky-200
+                            bg-sky-50
+                            px-2
+                            py-0.5
+                            text-[8.5px]
+                            font-semibold
+                            text-sky-700
+                            dark:border-sky-400/15
+                            dark:bg-sky-400/10
+                            dark:text-sky-300
+                          "
+                        >
+                          {bikeCategoryLabel(
+                            bike.category,
+                          )}
+                        </span>
+
+                        <span
+                          className={`
+                            inline-flex
+                            items-center
+                            gap-1
+                            rounded-full
+                            px-2
+                            py-0.5
+                            text-[8.5px]
+                            font-semibold
+                            ${
+                              maintenanceDue
+                                ? `
+                                  bg-amber-50
+                                  text-amber-600
+                                  dark:bg-amber-400/10
+                                  dark:text-amber-300
+                                `
+                                : `
+                                  bg-emerald-50
+                                  text-emerald-600
+                                  dark:bg-emerald-400/10
+                                  dark:text-emerald-300
+                                `
+                            }
+                          `}
+                        >
+                          <span
+                            className={`
+                              h-1.5
+                              w-1.5
+                              rounded-full
+                              ${
+                                maintenanceDue
+                                  ? 'bg-amber-500'
+                                  : 'bg-emerald-500'
+                              }
+                            `}
+                          />
+
+                          {maintenanceDue
+                            ? 'Entretien à prévoir'
+                            : 'OK'}
+                        </span>
+                      </div>
+
+                      {progress !== undefined && (
+                        <div
+                          className="
+                            mt-2
+                            h-1
+                            overflow-hidden
+                            rounded-full
+                            bg-slate-100
+                            dark:bg-white/[0.06]
+                          "
+                        >
+                          <div
+                            className={`
+                              h-full
+                              rounded-full
+                              ${
+                                maintenanceDue
+                                  ? 'bg-amber-500'
+                                  : 'bg-sky-500'
+                              }
+                            `}
+                            style={{
+                              width:
+                                `${progress}%`,
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {editing && (
+                        <div
+                          className="
+                            mt-2
+                            grid
+                            grid-cols-2
+                            gap-1.5
+                          "
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              togglePreferredBike(
+                                bike.id,
+                              )
+                            }
+                            className="
+                              rounded-[7px]
+                              border
+                              border-black/[0.06]
+                              bg-slate-50
+                              px-2
+                              py-1.5
+                              text-[8.5px]
+                              font-medium
+                              text-slate-600
+                              dark:border-white/[0.06]
+                              dark:bg-white/[0.035]
+                              dark:text-slate-300
+                            "
+                          >
+                            {bike.preferred
+                              ? '★ Retirer'
+                              : '☆ Principal'}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setBikes(
+                                current =>
+                                  current.map(
+                                    item =>
+                                      item.id
+                                      === bike.id
+                                        ? {
+                                            ...item,
+                                            active:
+                                              !item.active,
+                                          }
+                                        : item,
+                                  ),
+                              )
+                            }
+                            className="
+                              rounded-[7px]
+                              border
+                              border-black/[0.06]
+                              bg-slate-50
+                              px-2
+                              py-1.5
+                              text-[8.5px]
+                              font-medium
+                              text-slate-600
+                              dark:border-white/[0.06]
+                              dark:bg-white/[0.035]
+                              dark:text-slate-300
+                            "
+                          >
+                            {bike.active
+                              ? 'Désactiver'
+                              : 'Activer'}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setBikes(
+                                current =>
+                                  current.filter(
+                                    item =>
+                                      item.id
+                                      !== bike.id,
+                                  ),
+                              )
+                            }
+                            className="
+                              col-span-2
+                              rounded-[7px]
+                              border
+                              border-red-100
+                              bg-red-50/60
+                              px-2
+                              py-1.5
+                              text-[8.5px]
+                              font-medium
+                              text-red-500
+                              dark:border-red-400/10
+                              dark:bg-red-400/[0.04]
+                              dark:text-red-300
+                            "
+                          >
+                            Supprimer
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                },
+              )
+            )}
+
+            {editing && (
+              <AddGearCard
+                fields={
+                  <>
+                    <MiniInput
+                      placeholder="Marque"
+                      value={bikeBrand}
+                      onChange={setBikeBrand}
+                    />
+
+                    <MiniInput
+                      placeholder="Modèle"
+                      value={bikeModel}
+                      onChange={setBikeModel}
+                    />
+
+                    <label>
+                      <span
+                        className="
+                          mb-1
+                          block
+                          text-[8.5px]
+                          font-semibold
+                          uppercase
+                          tracking-[0.06em]
+                          text-slate-400
+                        "
+                      >
+                        Catégorie
+                      </span>
+
+                      <select
+                        value={bikeCategory}
+                        onChange={
+                          event =>
+                            setBikeCategory(
+                              event.target.value as
+                                | 'road'
+                                | 'gravel'
+                                | 'mtb'
+                                | 'indoor',
+                            )
+                        }
+                        className="
+                          h-8
+                          w-full
+                          rounded-[8px]
+                          border
+                          border-black/[0.07]
+                          bg-white
+                          px-2
+                          text-[10px]
+                          text-slate-700
+                          outline-none
+                          dark:border-white/[0.07]
+                          dark:bg-white/[0.035]
+                          dark:text-slate-300
+                        "
+                      >
+                        <option value="road">
+                          Route
+                        </option>
+
+                        <option value="gravel">
+                          Gravel
+                        </option>
+
+                        <option value="mtb">
+                          VTT
+                        </option>
+
+                        <option value="indoor">
+                          Home trainer
+                        </option>
+                      </select>
+                    </label>
+
+                    <MiniInput
+                      placeholder="Km actuels"
+                      value={bikeDistance}
+                      onChange={setBikeDistance}
+                      type="number"
+                    />
+
+                    <MiniInput
+                      placeholder="Entretien à (km)"
+                      value={
+                        bikeMaintenanceDistance
+                      }
+                      onChange={
+                        setBikeMaintenanceDistance
+                      }
+                      type="number"
+                    />
+                  </>
+                }
+                onAdd={addBike}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* ==================================================
+            MONTRES
+            ================================================== */}
+
+        <div
+          className="
+            overflow-hidden
+            rounded-[14px]
+            border
+            border-violet-200/70
+            bg-violet-50/40
+            dark:border-violet-400/10
+            dark:bg-violet-400/[0.025]
+          "
+        >
+          <div
+            className="
+              flex
+              items-center
+              justify-between
+              border-b
+              border-violet-100
+              bg-violet-100/55
+              px-3
+              py-2
+              dark:border-violet-400/10
+              dark:bg-violet-400/[0.055]
+            "
+          >
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+              "
+            >
+              <div
+                className="
+                  flex
+                  h-6
+                  w-6
+                  items-center
+                  justify-center
+                  rounded-[7px]
+                  bg-white
+                  text-violet-600
+                  shadow-sm
+                  dark:bg-white/[0.06]
+                  dark:text-violet-300
+                "
+              >
+                <Watch
+                  className="h-3.5 w-3.5"
+                />
+              </div>
+
+              <div>
+                <div
+                  className="
+                    text-[9.5px]
+                    font-bold
+                    uppercase
+                    tracking-[0.08em]
+                    text-violet-800
+                    dark:text-violet-300
+                  "
+                >
+                  Montres
+                </div>
+
+                <div
+                  className="
+                    text-[8.5px]
+                    text-violet-600/70
+                    dark:text-violet-300/50
+                  "
+                >
+                  Historique appareils
+                </div>
+              </div>
+            </div>
+
+            <span
+              className="
+                flex
+                h-5
+                min-w-5
+                items-center
+                justify-center
+                rounded-full
+                bg-white
+                px-1.5
+                text-[9px]
+                font-bold
+                text-violet-700
+                shadow-sm
+                dark:bg-white/[0.07]
+                dark:text-violet-300
+              "
+            >
+              {watches.length}
+            </span>
+          </div>
+
+          <div className="space-y-2 p-2">
+            {watches.length === 0 ? (
+              <EmptyEquipment />
+            ) : (
+              watches.map(
+                watch => (
+                  <div
+                    key={watch.id}
+                    className="
+                      rounded-[11px]
+                      border
+                      border-black/[0.055]
+                      bg-white
+                      p-2.5
+                      shadow-[0_1px_2px_rgba(15,23,42,0.025)]
+                      dark:border-white/[0.06]
+                      dark:bg-white/[0.025]
+                    "
+                  >
+                    <div
+                      className="
+                        flex
+                        items-center
+                        gap-2.5
+                      "
+                    >
+                      <div
+                        className="
+                          flex
+                          h-8
+                          w-8
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-[9px]
+                          bg-violet-50
+                          text-violet-600
+                          dark:bg-violet-400/10
+                          dark:text-violet-300
+                        "
+                      >
+                        <Watch
+                          className="h-4 w-4"
+                        />
+                      </div>
+
+                      <div
+                        className="
+                          min-w-0
+                          flex-1
+                        "
+                      >
+                        <div
+                          className="
+                            flex
+                            items-center
+                            gap-1.5
+                          "
+                        >
+                          <span
+                            className="
+                              truncate
+                              text-[10.5px]
+                              font-semibold
+                              text-slate-800
+                              dark:text-slate-100
+                            "
+                          >
+                            {gearName(
+                              watch.brand,
+                              watch.model,
+                            )}
+                          </span>
+
+                          {watch.active && (
+                            <span
+                              className="
+                                h-1.5
+                                w-1.5
+                                rounded-full
+                                bg-emerald-500
+                              "
+                            />
+                          )}
+                        </div>
+
+                        <div
+                          className="
+                            mt-0.5
+                            text-[9px]
+                            text-slate-400
+                            dark:text-slate-500
+                          "
+                        >
+                          {watch.active
+                            ? 'Montre actuelle'
+                            : 'Ancienne montre'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {editing && (
+                      <div
+                        className="
+                          mt-2
+                          grid
+                          grid-cols-2
+                          gap-1.5
+                        "
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setWatches(
+                              current =>
+                                current.map(
+                                  item =>
+                                    item.id
+                                    === watch.id
+                                      ? {
+                                          ...item,
+                                          active:
+                                            !item.active,
+                                        }
+                                      : item,
+                                ),
+                            )
+                          }
+                          className="
+                            rounded-[7px]
+                            border
+                            border-black/[0.06]
+                            bg-slate-50
+                            px-2
+                            py-1.5
+                            text-[8.5px]
+                            font-medium
+                            text-slate-600
+                            dark:border-white/[0.06]
+                            dark:bg-white/[0.035]
+                            dark:text-slate-300
+                          "
+                        >
+                          {watch.active
+                            ? 'Archiver'
+                            : 'Réactiver'}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setWatches(
+                              current =>
+                                current.filter(
+                                  item =>
+                                    item.id
+                                    !== watch.id,
+                                ),
+                            )
+                          }
+                          className="
+                            rounded-[7px]
+                            border
+                            border-red-100
+                            bg-red-50/60
+                            px-2
+                            py-1.5
+                            text-[8.5px]
+                            font-medium
+                            text-red-500
+                            dark:border-red-400/10
+                            dark:bg-red-400/[0.04]
+                            dark:text-red-300
+                          "
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ),
+              )
+            )}
+
+            {editing && (
+              <AddGearCard
+                fields={
+                  <>
+                    <MiniInput
+                      placeholder="Marque"
+                      value={watchBrand}
+                      onChange={setWatchBrand}
+                    />
+
+                    <MiniInput
+                      placeholder="Modèle"
+                      value={watchModel}
+                      onChange={setWatchModel}
+                    />
+                  </>
+                }
+                onAdd={addWatch}
+              />
+            )}
+          </div>
+        </div>
       </div>
     </AthleteSection>
   )
@@ -2251,250 +3672,14 @@ function ModernNumberField({
 }
 
 
-function EquipmentColumn({
-  title,
-  count,
-  children,
-}: {
-  title: string
-  count: number
-  children: ReactNode
-}) {
-  return (
-    <div>
-      <div
-        className="
-          mb-2
-          flex
-          items-center
-          justify-between
-        "
-      >
-        <SmallHeading>
-          {title}
-        </SmallHeading>
-
-        <span
-          className="
-            text-[9px]
-            text-slate-400
-          "
-        >
-          {count}
-        </span>
-      </div>
-
-      <div className="space-y-2">
-        {children}
-      </div>
-    </div>
-  )
-}
 
 
-function GearCard({
-  icon,
-  title,
-  details,
-  active,
-  progress,
-  editing,
-  onToggle,
-  onRemove,
-}: {
-  icon: ReactNode
-  title: string
-  details: string
-  active: boolean
-  progress?: number
-  editing: boolean
-  onToggle: () => void
-  onRemove: () => void
-}) {
-  return (
-    <div
-      className="
-        rounded-[10px]
-        border
-        border-black/[0.055]
-        bg-slate-50
-        p-2.5
-        dark:border-white/[0.055]
-        dark:bg-white/[0.022]
-      "
-    >
-      <div
-        className="
-          flex
-          items-start
-          gap-2
-        "
-      >
-        <div
-          className="
-            flex
-            h-7
-            w-7
-            shrink-0
-            items-center
-            justify-center
-            rounded-[8px]
-            bg-white
-            text-emerald-600
-            dark:bg-white/[0.05]
-            dark:text-emerald-400
-          "
-        >
-          {icon}
-        </div>
-
-        <div
-          className="
-            min-w-0
-            flex-1
-          "
-        >
-          <div
-            className="
-              flex
-              items-center
-              gap-1.5
-            "
-          >
-            <p
-              className="
-                truncate
-                text-[10.5px]
-                font-semibold
-                text-slate-800
-                dark:text-slate-200
-              "
-            >
-              {title}
-            </p>
-
-            {active && (
-              <span
-                className="
-                  h-1.5
-                  w-1.5
-                  shrink-0
-                  rounded-full
-                  bg-emerald-500
-                "
-              />
-            )}
-          </div>
-
-          <p
-            className="
-              mt-0.5
-              text-[9px]
-              text-slate-400
-            "
-          >
-            {details}
-          </p>
-        </div>
-      </div>
 
 
-      {progress !== undefined && (
-        <div
-          className="
-            mt-2
-            h-[3px]
-            overflow-hidden
-            rounded-full
-            bg-slate-200/70
-            dark:bg-white/[0.055]
-          "
-        >
-          <div
-            className="
-              h-full
-              rounded-full
-              bg-emerald-500
-            "
-            style={{
-              width:
-                `${
-                  Math.min(
-                    100,
-                    Math.max(
-                      0,
-                      progress,
-                    ),
-                  )
-                }%`,
-            }}
-          />
-        </div>
-      )}
 
 
-      {editing && (
-        <div
-          className="
-            mt-2
-            flex
-            justify-end
-            gap-1
-          "
-        >
-          <button
-            type="button"
-            onClick={onToggle}
-            className="
-              h-7
-              rounded-[7px]
-              px-2
-              text-[9px]
-              font-semibold
-              text-slate-400
-              hover:bg-white
-              hover:text-slate-700
-              dark:hover:bg-white/[0.04]
-              dark:hover:text-slate-200
-            "
-          >
-            {
-              active
-                ? 'Désactiver'
-                : 'Activer'
-            }
-          </button>
 
-          <button
-            type="button"
-            onClick={onRemove}
-            aria-label="Supprimer"
-            className="
-              flex
-              h-7
-              w-7
-              items-center
-              justify-center
-              rounded-[7px]
-              text-slate-300
-              transition
-              hover:bg-red-50
-              hover:text-red-500
-              dark:hover:bg-red-500/[0.06]
-            "
-          >
-            <Trash2
-              className="
-                h-3
-                w-3
-              "
-            />
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
+
 
 
 function AddGearCard({

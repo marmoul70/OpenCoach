@@ -674,7 +674,9 @@ export function IntervalsSection() {
                 "
               />
 
-              Configuration
+              <span className="hidden sm:inline">
+                Configuration
+              </span>
             </button>
           )}
         </div>

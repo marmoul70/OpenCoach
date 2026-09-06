@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 from opencoach.database.models import (
+    ActivityEquipmentAssignment,
     AthleteProfile as AthleteProfileModel,
     Bike as BikeModel,
     Shoe as ShoeModel,
@@ -157,41 +158,23 @@ class SqlProfileRepository(ProfileRepository):
             )
 
             # Équipements
-            database_profile.shoes.clear()
-            database_profile.bikes.clear()
-            database_profile.watches.clear()
-
-            database_profile.shoes.extend(
-                ShoeModel(
-                    id=shoe.id,
-                    model=shoe.model,
-                    brand=shoe.brand,
-                    active=shoe.active,
-                    distance_km=shoe.distance_km,
-                    max_distance_km=shoe.max_distance_km,
-                )
-                for shoe in profile.equipment.shoes
+            #
+            # Les équipements sont synchronisés par identifiant.
+            # Un objet existant ne doit jamais être supprimé puis
+            # recréé lors d'une simple sauvegarde du profil :
+            # les affectations d'activités référencent directement
+            # les identifiants des chaussures et des vélos.
+            self._sync_shoes(
+                database_profile,
+                profile.equipment.shoes,
             )
-
-            database_profile.bikes.extend(
-                BikeModel(
-                    id=bike.id,
-                    model=bike.model,
-                    brand=bike.brand,
-                    active=bike.active,
-                    distance_km=bike.distance_km,
-                )
-                for bike in profile.equipment.bikes
+            self._sync_bikes(
+                database_profile,
+                profile.equipment.bikes,
             )
-
-            database_profile.watches.extend(
-                WatchModel(
-                    id=watch.id,
-                    model=watch.model,
-                    brand=watch.brand,
-                    active=watch.active,
-                )
-                for watch in profile.equipment.watches
+            self._sync_watches(
+                database_profile,
+                profile.equipment.watches,
             )
 
             self.session.commit()
@@ -281,7 +264,10 @@ class SqlProfileRepository(ProfileRepository):
                         model=shoe.model,
                         brand=shoe.brand,
                         active=shoe.active,
+                        category=shoe.category,
+                        preferred=shoe.preferred,
                         distance_km=shoe.distance_km,
+                        warning_distance_km=shoe.warning_distance_km,
                         max_distance_km=shoe.max_distance_km,
                     )
                     for shoe in profile.shoes
@@ -292,7 +278,10 @@ class SqlProfileRepository(ProfileRepository):
                         model=bike.model,
                         brand=bike.brand,
                         active=bike.active,
+                        category=bike.category,
+                        preferred=bike.preferred,
                         distance_km=bike.distance_km,
+                        maintenance_distance_km=bike.maintenance_distance_km,
                     )
                     for bike in profile.bikes
                 ],
@@ -312,6 +301,200 @@ class SqlProfileRepository(ProfileRepository):
                 sodium_per_hour=profile.sodium_per_hour,
             ),
         )
+
+    def _sync_shoes(
+        self,
+        database_profile: AthleteProfileModel,
+        shoes: list[Shoe],
+    ) -> None:
+        existing_by_id = {
+            str(shoe.id): shoe
+            for shoe in database_profile.shoes
+        }
+        incoming_ids = {
+            str(shoe.id)
+            for shoe in shoes
+        }
+
+        for database_shoe in list(
+            database_profile.shoes
+        ):
+            if (
+                str(database_shoe.id)
+                in incoming_ids
+            ):
+                continue
+
+            has_history = (
+                self.session.scalar(
+                    select(
+                        ActivityEquipmentAssignment.id
+                    )
+                    .where(
+                        ActivityEquipmentAssignment
+                        .athlete_profile_id
+                        == database_profile.id,
+                        ActivityEquipmentAssignment
+                        .shoe_id
+                        == database_shoe.id,
+                    )
+                    .limit(1)
+                )
+                is not None
+            )
+
+            if has_history:
+                # Une paire déjà utilisée fait partie
+                # de l'historique sportif de l'athlète.
+                database_shoe.active = False
+                database_shoe.preferred = False
+            else:
+                database_profile.shoes.remove(
+                    database_shoe
+                )
+
+        for shoe in shoes:
+            database_shoe = existing_by_id.get(
+                str(shoe.id)
+            )
+
+            if database_shoe is None:
+                database_shoe = ShoeModel(
+                    id=shoe.id,
+                )
+                database_profile.shoes.append(
+                    database_shoe
+                )
+
+            database_shoe.model = shoe.model
+            database_shoe.brand = shoe.brand
+            database_shoe.active = shoe.active
+            database_shoe.category = shoe.category
+            database_shoe.preferred = shoe.preferred
+            database_shoe.distance_km = (
+                shoe.distance_km
+            )
+            database_shoe.warning_distance_km = (
+                shoe.warning_distance_km
+            )
+            database_shoe.max_distance_km = (
+                shoe.max_distance_km
+            )
+
+
+    def _sync_bikes(
+        self,
+        database_profile: AthleteProfileModel,
+        bikes: list[Bike],
+    ) -> None:
+        existing_by_id = {
+            str(bike.id): bike
+            for bike in database_profile.bikes
+        }
+        incoming_ids = {
+            str(bike.id)
+            for bike in bikes
+        }
+
+        for database_bike in list(
+            database_profile.bikes
+        ):
+            if (
+                str(database_bike.id)
+                in incoming_ids
+            ):
+                continue
+
+            has_history = (
+                self.session.scalar(
+                    select(
+                        ActivityEquipmentAssignment.id
+                    )
+                    .where(
+                        ActivityEquipmentAssignment
+                        .athlete_profile_id
+                        == database_profile.id,
+                        ActivityEquipmentAssignment
+                        .bike_id
+                        == database_bike.id,
+                    )
+                    .limit(1)
+                )
+                is not None
+            )
+
+            if has_history:
+                # Même règle pour les vélos :
+                # l'historique d'utilisation est conservé.
+                database_bike.active = False
+                database_bike.preferred = False
+            else:
+                database_profile.bikes.remove(
+                    database_bike
+                )
+
+        for bike in bikes:
+            database_bike = existing_by_id.get(
+                str(bike.id)
+            )
+
+            if database_bike is None:
+                database_bike = BikeModel(
+                    id=bike.id,
+                )
+                database_profile.bikes.append(
+                    database_bike
+                )
+
+            database_bike.model = bike.model
+            database_bike.brand = bike.brand
+            database_bike.active = bike.active
+            database_bike.category = bike.category
+            database_bike.preferred = bike.preferred
+            database_bike.distance_km = (
+                bike.distance_km
+            )
+            database_bike.maintenance_distance_km = (
+                bike.maintenance_distance_km
+            )
+
+
+    @staticmethod
+    def _sync_watches(
+        database_profile: AthleteProfileModel,
+        watches: list[Watch],
+    ) -> None:
+        existing_by_id = {
+            str(watch.id): watch
+            for watch in database_profile.watches
+        }
+        incoming_ids = {
+            str(watch.id)
+            for watch in watches
+        }
+
+        for watch in list(database_profile.watches):
+            if str(watch.id) not in incoming_ids:
+                database_profile.watches.remove(
+                    watch
+                )
+
+        for watch in watches:
+            database_watch = existing_by_id.get(
+                str(watch.id)
+            )
+
+            if database_watch is None:
+                database_watch = WatchModel(
+                    id=watch.id,
+                )
+                database_profile.watches.append(
+                    database_watch
+                )
+
+            database_watch.model = watch.model
+            database_watch.brand = watch.brand
+            database_watch.active = watch.active
 
     @staticmethod
     def _heart_rate_zones_to_database(

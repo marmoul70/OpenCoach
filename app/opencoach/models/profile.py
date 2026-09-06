@@ -90,13 +90,21 @@ class EquipmentItem:
 
 @dataclass
 class Shoe(EquipmentItem):
+    category: str | None = None
+    preferred: bool = False
     distance_km: float = 0
+    baseline_distance_km: float = 0
+    warning_distance_km: float | None = None
     max_distance_km: float | None = None
 
 
 @dataclass
 class Bike(EquipmentItem):
+    category: str | None = None
+    preferred: bool = False
     distance_km: float = 0
+    baseline_distance_km: float = 0
+    maintenance_distance_km: float | None = None
 
 
 @dataclass

@@ -122,6 +122,21 @@ class TrainingActivityCandidateResponse(BaseModel):
     duration_score: float | None
     elevation_score: float | None
 
+class TrainingEquipmentShoeResponse(BaseModel):
+    id: str
+    brand: str | None = None
+    model: str
+    category: str | None = None
+    preferred: bool
+
+
+class TrainingEquipmentProposalResponse(BaseModel):
+    activity_id: UUID
+    activity_category: str
+    selected_shoe_id: str | None
+    shoes: list[TrainingEquipmentShoeResponse]
+
+
 class TrainingAvailableActivityResponse(BaseModel):
     id: UUID
     provider: str
@@ -140,9 +155,10 @@ class TrainingAvailableActivityResponse(BaseModel):
 
 
 class TrainingSessionValidateRequest(BaseModel):
-    """Activité choisie explicitement par l'athlète."""
+    """Activité et matériel choisis par l'athlète."""
 
     activity_id: UUID
+    shoe_id: str | None = None
 
 
 class SessionExecutionMetricResponse(BaseModel):

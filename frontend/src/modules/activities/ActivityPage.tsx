@@ -1172,11 +1172,13 @@ export function ActivityPage() {
             }
             onValidateSession={async (
               activityId,
+              shoeId,
             ) => {
               const result =
                 await validateTrainingSession(
                   selectedSession.id,
                   activityId,
+                  shoeId,
                 )
 
               setTrainingSessions(

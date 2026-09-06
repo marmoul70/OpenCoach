@@ -225,7 +225,11 @@ class EquipmentItemSchema(BaseModel):
 
 
 class ShoeSchema(EquipmentItemSchema):
+    category: str | None = Field(default=None, max_length=50)
+    preferred: bool = False
     distance_km: float = Field(default=0, ge=0)
+    baseline_distance_km: float = Field(default=0, ge=0)
+    warning_distance_km: float | None = Field(default=None, ge=0)
     max_distance_km: float | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
@@ -243,7 +247,11 @@ class ShoeSchema(EquipmentItemSchema):
 
 
 class BikeSchema(EquipmentItemSchema):
+    category: str | None = Field(default=None, max_length=50)
+    preferred: bool = False
     distance_km: float = Field(default=0, ge=0)
+    baseline_distance_km: float = Field(default=0, ge=0)
+    maintenance_distance_km: float | None = Field(default=None, ge=0)
 
 
 class WatchSchema(EquipmentItemSchema):

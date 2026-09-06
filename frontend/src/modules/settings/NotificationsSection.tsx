@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Smartphone,
   Sparkles,
+  Trash2,
 } from 'lucide-react'
 
 import {
@@ -24,6 +25,7 @@ import {
 } from '../../components/ui/ToastProvider'
 
 import {
+  deletePushDevice,
   deletePushSubscription,
   fetchPushDevices,
   fetchPushPreferences,
@@ -92,6 +94,21 @@ export function NotificationsSection() {
   >(
     DEFAULT_PREFERENCES,
   )
+
+
+  const [
+    deviceToDelete,
+    setDeviceToDelete,
+  ] = useState<
+    PushDevice | null
+  >(null)
+
+  const [
+    deletingDevice,
+    setDeletingDevice,
+  ] = useState(false)
+
+
 
 
   const refreshState =
@@ -327,6 +344,65 @@ export function NotificationsSection() {
       })
     } finally {
       setBusy(false)
+    }
+  }
+
+
+  async function confirmDeleteDevice() {
+    if (
+      !deviceToDelete
+      || deviceToDelete.current
+    ) {
+      return
+    }
+
+    setDeletingDevice(true)
+
+    try {
+      await deletePushDevice(
+        deviceToDelete.id,
+      )
+
+      setDevices(currentDevices =>
+        currentDevices.filter(
+          device =>
+            device.id
+            !== deviceToDelete.id,
+        ),
+      )
+
+      toast({
+        type: 'success',
+
+        title:
+          'Appareil supprimé',
+
+        message:
+          (
+            deviceToDelete.device_name
+            + ' ne recevra plus '
+            + 'les notifications OpenCoach.'
+          ),
+      })
+
+      setDeviceToDelete(null)
+    } catch (reason) {
+      toast({
+        type: 'error',
+
+        title:
+          'Suppression impossible',
+
+        message:
+          reason instanceof Error
+            ? reason.message
+            : (
+                'Impossible de supprimer '
+                + 'cet appareil.'
+              ),
+      })
+    } finally {
+      setDeletingDevice(false)
     }
   }
 
@@ -987,12 +1063,189 @@ export function NotificationsSection() {
                   divided={
                     index > 0
                   }
+                  onDelete={
+                    device.current
+                      ? undefined
+                      : () =>
+                          setDeviceToDelete(
+                            device,
+                          )
+                  }
                 />
               ),
             )}
           </div>
         )}
       </section>
+
+      {deviceToDelete && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[100]
+            flex
+            items-center
+            justify-center
+            bg-black/45
+            px-4
+            backdrop-blur-[2px]
+          "
+          onClick={() => {
+            if (!deletingDevice) {
+              setDeviceToDelete(null)
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-device-title"
+            className="
+              w-full
+              max-w-[380px]
+              rounded-[14px]
+              border
+              border-black/[0.07]
+              bg-white
+              p-5
+              shadow-2xl
+              dark:border-white/[0.08]
+              dark:bg-[#151b1f]
+            "
+            onClick={event => {
+              event.stopPropagation()
+            }}
+          >
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-[10px]
+                bg-red-50
+                text-red-500
+                dark:bg-red-500/[0.08]
+              "
+            >
+              <Trash2
+                className="
+                  h-[18px]
+                  w-[18px]
+                "
+              />
+            </div>
+
+            <h3
+              id="delete-device-title"
+              className="
+                mt-4
+                text-[15px]
+                font-bold
+                text-slate-950
+                dark:text-white
+              "
+            >
+              Supprimer cet appareil ?
+            </h3>
+
+            <p
+              className="
+                mt-2
+                text-[11px]
+                leading-relaxed
+                text-slate-500
+                dark:text-slate-400
+              "
+            >
+              {deviceToDelete.device_name}
+              {' · '}
+              {deviceToDelete.browser}
+              {' ne recevra plus les '}
+              notifications OpenCoach.
+            </p>
+
+            <div
+              className="
+                mt-5
+                flex
+                justify-end
+                gap-2
+              "
+            >
+              <button
+                type="button"
+                disabled={deletingDevice}
+                onClick={() =>
+                  setDeviceToDelete(null)
+                }
+                className="
+                  h-9
+                  rounded-[8px]
+                  border
+                  border-black/[0.08]
+                  px-3
+                  text-[10px]
+                  font-semibold
+                  text-slate-600
+                  transition
+                  hover:bg-slate-50
+                  disabled:opacity-40
+                  dark:border-white/[0.08]
+                  dark:text-slate-300
+                  dark:hover:bg-white/[0.04]
+                "
+              >
+                Annuler
+              </button>
+
+              <button
+                type="button"
+                disabled={deletingDevice}
+                onClick={() =>
+                  void confirmDeleteDevice()
+                }
+                className="
+                  flex
+                  h-9
+                  items-center
+                  gap-1.5
+                  rounded-[8px]
+                  bg-red-600
+                  px-3
+                  text-[10px]
+                  font-semibold
+                  text-white
+                  transition
+                  hover:bg-red-700
+                  disabled:opacity-50
+                "
+              >
+                {deletingDevice ? (
+                  <LoaderCircle
+                    className="
+                      h-3.5
+                      w-3.5
+                      animate-spin
+                    "
+                  />
+                ) : (
+                  <Trash2
+                    className="
+                      h-3.5
+                      w-3.5
+                    "
+                  />
+                )}
+
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1307,9 +1560,11 @@ function ModernToggle({
 function DeviceRow({
   device,
   divided,
+  onDelete,
 }: {
   device: PushDevice
   divided: boolean
+  onDelete?: () => void
 }) {
   return (
     <div
@@ -1423,6 +1678,41 @@ function DeviceRow({
           }
         </p>
       </div>
+
+      {onDelete && (
+        <button
+          type="button"
+          aria-label={
+            'Supprimer '
+            + device.device_name
+          }
+          title="Supprimer cet appareil"
+          onClick={onDelete}
+          className="
+            flex
+            h-8
+            w-8
+            shrink-0
+            items-center
+            justify-center
+            rounded-[8px]
+            text-slate-300
+            transition
+            hover:bg-red-50
+            hover:text-red-500
+            dark:text-slate-600
+            dark:hover:bg-red-500/[0.08]
+            dark:hover:text-red-400
+          "
+        >
+          <Trash2
+            className="
+              h-3.5
+              w-3.5
+            "
+          />
+        </button>
+      )}
     </div>
   )
 }

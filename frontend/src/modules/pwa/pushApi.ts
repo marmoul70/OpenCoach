@@ -259,6 +259,25 @@ export async function fetchPushDevices(
 }
 
 
+export async function deletePushDevice(
+  deviceId: string,
+): Promise<void> {
+  const response = await fetch(
+    `/api/push/devices/${deviceId}`,
+    {
+      method: 'DELETE',
+      credentials: 'include',
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      'Impossible de supprimer cet appareil.',
+    )
+  }
+}
+
+
 export async function fetchPushPreferences(
   endpoint: string,
 ): Promise<PushPreferences> {

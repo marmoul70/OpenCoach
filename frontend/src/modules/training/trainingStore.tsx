@@ -69,6 +69,7 @@ interface TrainingStoreValue {
   validateSession: (
     sessionId: string,
     activityId: string,
+    shoeId: string | null,
   ) => Promise<SessionExecutionDebrief>
 
   refreshSessions: () => Promise<void>
@@ -479,6 +480,7 @@ export function TrainingProvider({
   async function validateSession(
     sessionId: string,
     activityId: string,
+    shoeId: string | null,
   ): Promise<SessionExecutionDebrief> {
     setError(null)
 
@@ -487,6 +489,7 @@ export function TrainingProvider({
         await validateTrainingSessionApi(
           sessionId,
           activityId,
+          shoeId,
         )
 
       setSessions((current) =>

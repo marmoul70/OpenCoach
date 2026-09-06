@@ -13,10 +13,12 @@ import {
 } from 'react'
 
 import {
+  fetchTrainingEquipmentProposal,
   fetchTrainingSessionActivityCandidates,
   fetchTrainingSessionDebrief,
   type SessionExecutionDebrief,
   type TrainingActivityCandidate,
+  type TrainingEquipmentProposal,
 } from '../../core/training/api'
 
 import {
@@ -58,6 +60,7 @@ interface TrainingDetailsProps {
 
   onValidateSession: (
     activityId: string,
+    shoeId: string | null,
   ) => Promise<SessionExecutionDebrief>
 
   onSkipSession?: () => Promise<void>
@@ -115,6 +118,32 @@ export function TrainingDetails({
     setSelectedActivityId,
   ] = useState<string | null>(
     session.activityId ?? null,
+  )
+
+  const [
+    equipmentProposal,
+    setEquipmentProposal,
+  ] = useState<
+    TrainingEquipmentProposal | null
+  >(null)
+
+  const [
+    loadingEquipmentProposal,
+    setLoadingEquipmentProposal,
+  ] = useState(false)
+
+  const [
+    equipmentProposalError,
+    setEquipmentProposalError,
+  ] = useState<string | null>(
+    null,
+  )
+
+  const [
+    selectedShoeId,
+    setSelectedShoeId,
+  ] = useState<string | null>(
+    null,
   )
 
   const [
@@ -337,6 +366,76 @@ export function TrainingDetails({
   ])
 
 
+  useEffect(() => {
+    let mounted = true
+
+    setEquipmentProposal(null)
+    setEquipmentProposalError(null)
+    setSelectedShoeId(null)
+
+    if (
+      !selectedActivityId
+      || session.status === 'completed'
+    ) {
+      setLoadingEquipmentProposal(false)
+
+      return () => {
+        mounted = false
+      }
+    }
+
+    setLoadingEquipmentProposal(true)
+
+    void fetchTrainingEquipmentProposal(
+      session.id,
+      selectedActivityId,
+    )
+      .then((proposal) => {
+        if (!mounted) {
+          return
+        }
+
+        setEquipmentProposal(
+          proposal,
+        )
+
+        setSelectedShoeId(
+          proposal.selectedShoeId
+          ?? null,
+        )
+      })
+      .catch((reason) => {
+        if (!mounted) {
+          return
+        }
+
+        setEquipmentProposalError(
+          reason instanceof Error
+            ? reason.message
+            : (
+                'Impossible de déterminer '
+                + 'la paire de chaussures.'
+              ),
+        )
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoadingEquipmentProposal(
+            false,
+          )
+        }
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [
+    selectedActivityId,
+    session.id,
+    session.status,
+  ])
+
+
   function handleActivitySelect(
     activityId: string,
   ) {
@@ -365,6 +464,13 @@ export function TrainingDetails({
       return
     }
 
+    if (loadingEquipmentProposal) {
+      setValidationError(
+        'Sélection du matériel en cours.',
+      )
+      return
+    }
+
     setValidationError(null)
     setValidating(true)
 
@@ -372,6 +478,7 @@ export function TrainingDetails({
       const result =
         await onValidateSession(
           selectedActivityId,
+          selectedShoeId,
         )
 
       setDebrief(
@@ -572,6 +679,21 @@ export function TrainingDetails({
               selectedActivityId
             }
             validating={validating}
+            equipmentProposal={
+              equipmentProposal
+            }
+            loadingEquipmentProposal={
+              loadingEquipmentProposal
+            }
+            equipmentProposalError={
+              equipmentProposalError
+            }
+            selectedShoeId={
+              selectedShoeId
+            }
+            onShoeSelect={
+              setSelectedShoeId
+            }
             validationError={
               validationError
             }
@@ -1137,6 +1259,22 @@ interface ActivitySectionProps {
 
   validating: boolean
 
+  equipmentProposal:
+    TrainingEquipmentProposal | null
+
+  loadingEquipmentProposal:
+    boolean
+
+  equipmentProposalError:
+    string | null
+
+  selectedShoeId:
+    string | null
+
+  onShoeSelect: (
+    shoeId: string | null,
+  ) => void
+
   validationError:
     string | null
 
@@ -1155,6 +1293,11 @@ function ActivitySection({
   error,
   selectedActivityId,
   validating,
+  equipmentProposal,
+  loadingEquipmentProposal,
+  equipmentProposalError,
+  selectedShoeId,
+  onShoeSelect,
   validationError,
   onActivitySelect,
   onValidate,
@@ -1349,6 +1492,232 @@ function ActivitySection({
           </div>
         )}
 
+
+      {selectedActivityId
+        && loadingEquipmentProposal && (
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+              rounded-[10px]
+              border
+              border-slate-200/70
+              bg-slate-50/70
+              px-3
+              py-2.5
+              dark:border-white/[0.06]
+              dark:bg-white/[0.025]
+            "
+          >
+            <span
+              className="
+                size-3.5
+                shrink-0
+                animate-spin
+                rounded-full
+                border-2
+                border-slate-200
+                border-t-emerald-500
+                dark:border-white/15
+                dark:border-t-emerald-400
+              "
+              aria-hidden="true"
+            />
+
+            <span
+              className="
+                text-[11px]
+                text-slate-500
+                dark:text-slate-400
+              "
+            >
+              Sélection de la paire…
+            </span>
+          </div>
+        )}
+
+      {selectedActivityId
+        && equipmentProposalError && (
+          <div
+            className="
+              rounded-[10px]
+              border
+              border-amber-500/20
+              bg-amber-500/[0.05]
+              px-3
+              py-2.5
+              text-[11px]
+              text-amber-700
+              dark:border-amber-400/20
+              dark:bg-amber-400/[0.05]
+              dark:text-amber-300
+            "
+          >
+            {equipmentProposalError}
+          </div>
+        )}
+
+      {selectedActivityId
+        && equipmentProposal
+        && (
+          equipmentProposal.activityCategory
+          === 'trail_running'
+          || equipmentProposal.activityCategory
+          === 'road_running'
+        )
+        && (
+          <div
+            className="
+              rounded-[10px]
+              border
+              border-slate-200/80
+              bg-slate-50/70
+              px-3
+              py-2.5
+              dark:border-white/[0.06]
+              dark:bg-white/[0.025]
+            "
+          >
+            <div
+              className="
+                mb-2
+                flex
+                items-center
+                justify-between
+                gap-2
+              "
+            >
+              <div>
+                <p
+                  className="
+                    text-[11px]
+                    font-semibold
+                    text-slate-700
+                    dark:text-slate-200
+                  "
+                >
+                  Chaussures
+                </p>
+
+                <p
+                  className="
+                    mt-0.5
+                    text-[10px]
+                    text-slate-400
+                    dark:text-slate-500
+                  "
+                >
+                  Paire proposée par OpenCoach
+                </p>
+              </div>
+
+              {selectedShoeId
+                === equipmentProposal.selectedShoeId
+                && selectedShoeId && (
+                  <span
+                    className="
+                      inline-flex
+                      items-center
+                      gap-1
+                      rounded-full
+                      bg-amber-500/10
+                      px-2
+                      py-1
+                      text-[9px]
+                      font-semibold
+                      text-amber-700
+                      dark:text-amber-300
+                    "
+                  >
+                    <Star
+                      className="size-3"
+                      aria-hidden="true"
+                    />
+                    Recommandée
+                  </span>
+                )}
+            </div>
+
+            {equipmentProposal.shoes.length > 0 ? (
+              <select
+                value={
+                  selectedShoeId
+                  ?? ''
+                }
+                disabled={
+                  validating
+                  || completed
+                }
+                onChange={(event) => {
+                  onShoeSelect(
+                    event.target.value
+                    || null,
+                  )
+                }}
+                className="
+                  min-h-9
+                  w-full
+                  rounded-[9px]
+                  border
+                  border-slate-200
+                  bg-white
+                  px-2.5
+                  text-[11px]
+                  font-medium
+                  text-slate-700
+                  outline-none
+                  transition
+                  focus:border-emerald-500
+                  focus:ring-2
+                  focus:ring-emerald-500/10
+                  disabled:opacity-60
+                  dark:border-white/[0.08]
+                  dark:bg-white/[0.035]
+                  dark:text-slate-200
+                "
+              >
+                {!selectedShoeId && (
+                  <option value="">
+                    Choisir une paire
+                  </option>
+                )}
+
+                {equipmentProposal.shoes.map(
+                  shoe => (
+                    <option
+                      key={shoe.id}
+                      value={shoe.id}
+                    >
+                      {[
+                        shoe.preferred
+                          ? '★'
+                          : null,
+                        shoe.brand,
+                        shoe.model,
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                    </option>
+                  ),
+                )}
+              </select>
+            ) : (
+              <p
+                className="
+                  text-[10.5px]
+                  leading-4
+                  text-slate-500
+                  dark:text-slate-400
+                "
+              >
+                Aucune paire active compatible.
+                Ajoutez ou activez une paire dans
+                votre profil.
+              </p>
+            )}
+          </div>
+        )}
 
       {validationError && (
         <div

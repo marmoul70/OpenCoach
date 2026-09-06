@@ -244,6 +244,34 @@ class SqlPushSubscriptionRepository:
             ) from exc
 
 
+    def delete_by_id_for_user(
+        self,
+        device_id: UUID,
+        user_id: UUID,
+    ) -> None:
+        try:
+            self.session.execute(
+                delete(
+                    PushSubscription
+                ).where(
+                    PushSubscription.id
+                    == device_id,
+                    PushSubscription.user_id
+                    == user_id,
+                )
+            )
+
+            self.session.commit()
+
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+
+            raise PushSubscriptionRepositoryError(
+                "Impossible de supprimer "
+                "l'appareil Push."
+            ) from exc
+
+
     def increment_badge(
         self,
         endpoint: str,

@@ -38,10 +38,32 @@ class Shoe(Base):
         nullable=False,
     )
 
+    category: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+
+    preferred: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
     distance_km: Mapped[float] = mapped_column(
         Float,
         default=0,
         nullable=False,
+    )
+
+    baseline_distance_km: Mapped[float] = mapped_column(
+        Float,
+        default=0,
+        nullable=False,
+    )
+
+    warning_distance_km: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
     )
 
     max_distance_km: Mapped[float | None] = mapped_column(

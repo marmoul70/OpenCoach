@@ -809,11 +809,13 @@ phaseLabel={
             }
             onValidateSession={async (
               activityId,
+              shoeId,
             ) => {
               const analysis =
                 await validateSession(
                   selectedSession.id,
                   activityId,
+                  shoeId,
                 )
 
               await loadStats()

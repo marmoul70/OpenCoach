@@ -1,4 +1,7 @@
 from opencoach.database.models.activity import Activity
+from .activity_equipment_assignment import (
+    ActivityEquipmentAssignment,
+)
 from .activity_detail import (
     ActivityDetail,
     ActivityInterval,
@@ -30,6 +33,7 @@ from .physiological_measurement import (
 
 __all__ = [
     "Activity",
+    "ActivityEquipmentAssignment",
     "ActivityDetail",
     "ActivityInterval",
     "ActivityStream",

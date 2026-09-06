@@ -26,6 +26,10 @@ from opencoach.database.repositories import (
 from opencoach.database.repositories.sql_activity import (
     SqlActivityRepository,
 )
+from opencoach.database.repositories.sql_activity_equipment_assignment import (
+    ActivityEquipmentAssignmentError,
+    SqlActivityEquipmentAssignmentRepository,
+)
 from opencoach.database.repositories.sql_activity_detail import (
     SqlActivityDetailRepository,
 )
@@ -41,6 +45,8 @@ from opencoach.schemas.training_session import (
     SessionExecutionDebriefResponse,
     SessionExecutionMetricResponse,
     TrainingActivityCandidateResponse,
+    TrainingEquipmentProposalResponse,
+    TrainingEquipmentShoeResponse,
     TrainingAvailableActivityResponse,
     TrainingSessionActivityUpdate,
     TrainingSessionCreate,
@@ -56,6 +62,18 @@ from opencoach.training import (
     match_activity_to_session,
 )
 from opencoach.models import TrainingSession
+from opencoach.equipment.proposal_service import (
+    EquipmentProposalService,
+)
+from opencoach.equipment.mileage_service import (
+    EquipmentMileageError,
+    EquipmentMileageService,
+)
+from opencoach.database.models.shoe import (
+    Shoe as ShoeModel,
+)
+
+
 from opencoach.training.session_execution.validation_service import (
     TrainingSessionActivityNotFoundError,
     TrainingSessionAlreadyValidatedError,
@@ -676,6 +694,135 @@ def list_candidate_activities(
 
 
 @router.get(
+    "/{session_id}/equipment-proposal",
+    response_model=TrainingEquipmentProposalResponse,
+)
+def get_training_session_equipment_proposal(
+    session_id: UUID,
+    activity_id: UUID,
+    athlete_profile_id: UUID = Depends(
+        get_current_athlete_profile_id
+    ),
+    db: Session = Depends(get_db),
+) -> TrainingEquipmentProposalResponse:
+    """Propose la chaussure OpenCoach pour une activité."""
+
+    training_repository = (
+        SqlTrainingSessionRepository(db)
+    )
+
+    training_session = (
+        training_repository.get_session(
+            athlete_profile_id,
+            session_id,
+        )
+    )
+
+    if training_session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Séance introuvable.",
+        )
+
+    activity_repository = SqlActivityRepository(
+        db
+    )
+
+    activity = activity_repository.get_activity(
+        athlete_profile_id,
+        activity_id,
+    )
+
+    if activity is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Activité introuvable.",
+        )
+
+    database_shoes = (
+        db.query(ShoeModel)
+        .filter(
+            ShoeModel.athlete_profile_id
+            == athlete_profile_id,
+            ShoeModel.active.is_(True),
+        )
+        .all()
+    )
+
+    from opencoach.models.profile import Shoe
+
+    shoes = [
+        Shoe(
+            id=shoe.id,
+            brand=shoe.brand,
+            model=shoe.model,
+            active=shoe.active,
+            category=shoe.category,
+            preferred=shoe.preferred,
+            distance_km=shoe.distance_km,
+            warning_distance_km=(
+                shoe.warning_distance_km
+            ),
+            max_distance_km=(
+                shoe.max_distance_km
+            ),
+        )
+        for shoe in database_shoes
+    ]
+
+    proposal = (
+        EquipmentProposalService()
+        .propose_shoe(
+            activity=activity,
+            shoes=shoes,
+        )
+    )
+
+    compatible_ids = set(
+        proposal.compatible_shoe_ids
+    )
+
+    compatible_by_id = {
+        shoe.id: shoe
+        for shoe in database_shoes
+        if shoe.id in compatible_ids
+    }
+
+    return TrainingEquipmentProposalResponse(
+        activity_id=activity_id,
+        activity_category=(
+            proposal.activity_category.value
+        ),
+        selected_shoe_id=(
+            proposal.selected_shoe_id
+        ),
+        shoes=[
+            TrainingEquipmentShoeResponse(
+                id=shoe_id,
+                brand=(
+                    compatible_by_id[shoe_id].brand
+                ),
+                model=(
+                    compatible_by_id[shoe_id].model
+                ),
+                category=(
+                    compatible_by_id[
+                        shoe_id
+                    ].category
+                ),
+                preferred=(
+                    compatible_by_id[
+                        shoe_id
+                    ].preferred
+                ),
+            )
+            for shoe_id
+            in proposal.compatible_shoe_ids
+        ],
+    )
+
+
+@router.get(
     "/{session_id}/guidance",
     response_model=SessionGuidanceResponse,
 )
@@ -854,6 +1001,190 @@ def validate_training_session(
             )
         ),
     )
+
+    # --------------------------------------------------------
+    # Matériel réellement utilisé
+    # --------------------------------------------------------
+    #
+    # L'affectation est flushée avant la validation.
+    # Le writer de validation effectue ensuite la transaction
+    # normale : l'affectation et la clôture restent dans le même
+    # cycle SQL.
+    #
+    # Le kilométrage est recalculé depuis la baseline et
+    # les affectations avant le commit de validation.
+    #
+    if payload.shoe_id is not None:
+        activity_repository = (
+            SqlActivityRepository(db)
+        )
+
+        selected_activity = (
+            activity_repository.get_activity(
+                athlete_profile_id,
+                payload.activity_id,
+            )
+        )
+
+        if selected_activity is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Activité introuvable.",
+            )
+
+        selected_shoe = (
+            db.query(ShoeModel)
+            .filter(
+                ShoeModel.id
+                == payload.shoe_id,
+                ShoeModel.athlete_profile_id
+                == athlete_profile_id,
+                ShoeModel.active.is_(True),
+            )
+            .one_or_none()
+        )
+
+        if selected_shoe is None:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "La paire sélectionnée "
+                    "est introuvable ou inactive."
+                ),
+            )
+
+        database_shoes = (
+            db.query(ShoeModel)
+            .filter(
+                ShoeModel.athlete_profile_id
+                == athlete_profile_id,
+                ShoeModel.active.is_(True),
+            )
+            .all()
+        )
+
+        from opencoach.models.profile import Shoe
+
+        domain_shoes = [
+            Shoe(
+                id=shoe.id,
+                brand=shoe.brand,
+                model=shoe.model,
+                active=shoe.active,
+                category=shoe.category,
+                preferred=shoe.preferred,
+                distance_km=shoe.distance_km,
+                warning_distance_km=(
+                    shoe.warning_distance_km
+                ),
+                max_distance_km=(
+                    shoe.max_distance_km
+                ),
+            )
+            for shoe in database_shoes
+        ]
+
+        proposal = (
+            EquipmentProposalService()
+            .propose_shoe(
+                activity=selected_activity,
+                shoes=domain_shoes,
+            )
+        )
+
+        assignment_source = (
+            "automatic"
+            if (
+                proposal.selected_shoe_id
+                == payload.shoe_id
+            )
+            else "manual"
+        )
+
+        assignment_repository = (
+            SqlActivityEquipmentAssignmentRepository(
+                db
+            )
+        )
+
+        previous_assignment = (
+            assignment_repository.get_for_activity(
+                athlete_profile_id=(
+                    athlete_profile_id
+                ),
+                activity_id=(
+                    payload.activity_id
+                ),
+            )
+        )
+
+        previous_shoe_id = (
+            previous_assignment.shoe_id
+            if previous_assignment is not None
+            else None
+        )
+
+        try:
+            assignment_repository.assign_shoe(
+                athlete_profile_id=(
+                    athlete_profile_id
+                ),
+                activity_id=(
+                    payload.activity_id
+                ),
+                shoe_id=(
+                    payload.shoe_id
+                ),
+                distance_km=(
+                    (
+                        selected_activity.distance_m
+                        or 0.0
+                    )
+                    / 1000.0
+                ),
+                assignment_source=(
+                    assignment_source
+                ),
+            )
+
+            mileage_service = (
+                EquipmentMileageService(db)
+            )
+
+            # La nouvelle affectation a déjà été flushée par
+            # le repository. Le SUM voit donc immédiatement
+            # la distance réellement affectée à cette paire.
+            mileage_service.recalculate_shoe(
+                athlete_profile_id=(
+                    athlete_profile_id
+                ),
+                shoe_id=payload.shoe_id,
+            )
+
+            # En cas de changement de paire, l'ancienne doit
+            # également perdre les kilomètres de l'activité.
+            if (
+                previous_shoe_id is not None
+                and previous_shoe_id
+                != payload.shoe_id
+            ):
+                mileage_service.recalculate_shoe(
+                    athlete_profile_id=(
+                        athlete_profile_id
+                    ),
+                    shoe_id=previous_shoe_id,
+                )
+
+        except (
+            ActivityEquipmentAssignmentError,
+            EquipmentMileageError,
+        ) as exc:
+            db.rollback()
+
+            raise HTTPException(
+                status_code=422,
+                detail=str(exc),
+            ) from exc
 
     try:
         result = service.execute(

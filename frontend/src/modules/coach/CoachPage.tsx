@@ -830,10 +830,12 @@ export function CoachPage() {
             }
             onValidateSession={async (
               activityId,
+              shoeId,
             ) => {
               return validateSession(
                 selectedTrainingSession.id,
                 activityId,
+                shoeId,
               )
             }}
           />

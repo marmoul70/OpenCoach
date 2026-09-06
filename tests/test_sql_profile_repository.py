@@ -416,3 +416,461 @@ def test_profile_repository_persists_sport_disciplines() -> None:
                 "trail_running",
             ]
         )
+
+
+def test_save_profile_preserves_equipment_assignment() -> None:
+    """Une sauvegarde du profil conserve les FK matériel existantes."""
+    from datetime import datetime, timezone
+    from uuid import uuid4
+
+    from opencoach.database.models.activity import (
+        Activity as ActivityModel,
+    )
+    from opencoach.database.models.activity_equipment_assignment import (
+        ActivityEquipmentAssignment,
+    )
+    from opencoach.database.models.shoe import (
+        Shoe as ShoeModel,
+    )
+    from opencoach.database.models.athlete_profile import (
+        AthleteProfile as AthleteProfileModel,
+    )
+    from opencoach.database.repositories.sql_activity_equipment_assignment import (
+        SqlActivityEquipmentAssignmentRepository,
+    )
+
+    db = create_session()
+
+    try:
+        create_test_user(db)
+
+        repository = SqlProfileRepository(
+            db,
+            TEST_USER_ID,
+        )
+
+        profile = AthleteProfile()
+        profile.equipment.shoes.append(
+            Shoe(
+                id="shoe-stable-fk",
+                brand="ASICS",
+                model="Trabuco",
+                active=True,
+                category="trail",
+                preferred=True,
+                distance_km=367.0,
+                warning_distance_km=500.0,
+                max_distance_km=800.0,
+            )
+        )
+
+        repository.save_profile(profile)
+
+        database_profile = (
+            db.query(AthleteProfileModel)
+            .filter(
+                AthleteProfileModel.user_id
+                == TEST_USER_ID
+            )
+            .one()
+        )
+
+        profile_id = database_profile.id
+
+        activity = ActivityModel(
+            id=uuid4(),
+            athlete_profile_id=profile_id,
+            provider="test",
+            provider_activity_id=(
+                f"equipment-fk-{uuid4()}"
+            ),
+            name="Trail FK test",
+            sport_type="TrailRun",
+            start_at=datetime.now(timezone.utc),
+            distance_m=6591.0,
+        )
+
+        db.add(activity)
+        db.commit()
+
+        assignment_repository = (
+            SqlActivityEquipmentAssignmentRepository(
+                db
+            )
+        )
+
+        assignment_repository.assign_shoe(
+            athlete_profile_id=profile_id,
+            activity_id=activity.id,
+            shoe_id="shoe-stable-fk",
+            distance_km=6.591,
+            assignment_source="automatic",
+        )
+
+        db.commit()
+
+        assignment_before = (
+            db.query(
+                ActivityEquipmentAssignment
+            )
+            .filter(
+                ActivityEquipmentAssignment.activity_id
+                == activity.id
+            )
+            .one()
+        )
+
+        assignment_id = assignment_before.id
+
+        # ----------------------------------------------------
+        # Sauvegarde normale du profil.
+        # La chaussure existe déjà et doit être mise à jour
+        # sur place, jamais supprimée/recréée.
+        # ----------------------------------------------------
+
+        loaded = repository.get_profile()
+
+        shoe = loaded.equipment.shoes[0]
+        shoe.distance_km = 400.0
+
+        repository.save_profile(loaded)
+
+        # ----------------------------------------------------
+        # La chaussure SQL existe toujours avec le même ID.
+        # ----------------------------------------------------
+
+        database_shoe = (
+            db.query(ShoeModel)
+            .filter(
+                ShoeModel.id
+                == "shoe-stable-fk"
+            )
+            .one()
+        )
+
+        assert database_shoe.id == "shoe-stable-fk"
+        assert database_shoe.distance_km == 400.0
+
+        # ----------------------------------------------------
+        # Et surtout l'affectation FK existe toujours.
+        # ----------------------------------------------------
+
+        assignment_after = (
+            db.query(
+                ActivityEquipmentAssignment
+            )
+            .filter(
+                ActivityEquipmentAssignment.activity_id
+                == activity.id
+            )
+            .one()
+        )
+
+        assert assignment_after.id == assignment_id
+        assert (
+            assignment_after.shoe_id
+            == "shoe-stable-fk"
+        )
+        assert assignment_after.distance_km == 6.591
+
+    finally:
+        db.close()
+
+
+
+def test_save_profile_archives_used_equipment() -> None:
+    """Le matériel utilisé est archivé, jamais supprimé."""
+    from datetime import datetime, timezone
+    from uuid import uuid4
+
+    from opencoach.database.models.activity import (
+        Activity as ActivityModel,
+    )
+    from opencoach.database.models.activity_equipment_assignment import (
+        ActivityEquipmentAssignment,
+    )
+    from opencoach.database.models.athlete_profile import (
+        AthleteProfile as AthleteProfileModel,
+    )
+    from opencoach.database.models.bike import (
+        Bike as BikeModel,
+    )
+    from opencoach.database.models.shoe import (
+        Shoe as ShoeModel,
+    )
+    from opencoach.database.repositories.sql_activity_equipment_assignment import (
+        SqlActivityEquipmentAssignmentRepository,
+    )
+
+    db = create_session()
+
+    try:
+        create_test_user(db)
+
+        repository = SqlProfileRepository(
+            db,
+            TEST_USER_ID,
+        )
+
+        profile = AthleteProfile()
+
+        profile.equipment.shoes.append(
+            Shoe(
+                id="shoe-history",
+                brand="ASICS",
+                model="Trabuco",
+                active=True,
+                category="trail",
+                preferred=True,
+                distance_km=367.0,
+            )
+        )
+
+        profile.equipment.bikes.append(
+            Bike(
+                id="bike-history",
+                brand="Lapierre",
+                model="Tecnic",
+                active=True,
+                category="mtb",
+                preferred=True,
+                distance_km=350.0,
+            )
+        )
+
+        repository.save_profile(profile)
+
+        database_profile = (
+            db.query(AthleteProfileModel)
+            .filter(
+                AthleteProfileModel.user_id
+                == TEST_USER_ID
+            )
+            .one()
+        )
+
+        profile_id = database_profile.id
+
+        trail_activity = ActivityModel(
+            id=uuid4(),
+            athlete_profile_id=profile_id,
+            provider="test",
+            provider_activity_id=(
+                f"shoe-history-{uuid4()}"
+            ),
+            name="Trail historique",
+            sport_type="TrailRun",
+            start_at=datetime.now(
+                timezone.utc
+            ),
+            distance_m=10000.0,
+        )
+
+        bike_activity = ActivityModel(
+            id=uuid4(),
+            athlete_profile_id=profile_id,
+            provider="test",
+            provider_activity_id=(
+                f"bike-history-{uuid4()}"
+            ),
+            name="Vélo historique",
+            sport_type="Ride",
+            start_at=datetime.now(
+                timezone.utc
+            ),
+            distance_m=25000.0,
+        )
+
+        db.add_all(
+            [
+                trail_activity,
+                bike_activity,
+            ]
+        )
+        db.commit()
+
+        assignments = (
+            SqlActivityEquipmentAssignmentRepository(
+                db
+            )
+        )
+
+        assignments.assign_shoe(
+            athlete_profile_id=profile_id,
+            activity_id=trail_activity.id,
+            shoe_id="shoe-history",
+            distance_km=10.0,
+            assignment_source="automatic",
+        )
+
+        assignments.assign_bike(
+            athlete_profile_id=profile_id,
+            activity_id=bike_activity.id,
+            bike_id="bike-history",
+            distance_km=25.0,
+            assignment_source="automatic",
+        )
+
+        db.commit()
+
+        shoe_assignment_id = (
+            db.query(
+                ActivityEquipmentAssignment.id
+            )
+            .filter(
+                ActivityEquipmentAssignment.activity_id
+                == trail_activity.id
+            )
+            .scalar()
+        )
+
+        bike_assignment_id = (
+            db.query(
+                ActivityEquipmentAssignment.id
+            )
+            .filter(
+                ActivityEquipmentAssignment.activity_id
+                == bike_activity.id
+            )
+            .scalar()
+        )
+
+        loaded = repository.get_profile()
+
+        loaded.equipment.shoes = []
+        loaded.equipment.bikes = []
+
+        repository.save_profile(loaded)
+
+        database_shoe = (
+            db.query(ShoeModel)
+            .filter(
+                ShoeModel.id
+                == "shoe-history"
+            )
+            .one()
+        )
+
+        database_bike = (
+            db.query(BikeModel)
+            .filter(
+                BikeModel.id
+                == "bike-history"
+            )
+            .one()
+        )
+
+        assert database_shoe.active is False
+        assert database_shoe.preferred is False
+
+        assert database_bike.active is False
+        assert database_bike.preferred is False
+
+        shoe_assignment = (
+            db.query(
+                ActivityEquipmentAssignment
+            )
+            .filter(
+                ActivityEquipmentAssignment.id
+                == shoe_assignment_id
+            )
+            .one()
+        )
+
+        bike_assignment = (
+            db.query(
+                ActivityEquipmentAssignment
+            )
+            .filter(
+                ActivityEquipmentAssignment.id
+                == bike_assignment_id
+            )
+            .one()
+        )
+
+        assert (
+            shoe_assignment.shoe_id
+            == "shoe-history"
+        )
+
+        assert (
+            bike_assignment.bike_id
+            == "bike-history"
+        )
+
+    finally:
+        db.close()
+
+
+def test_save_profile_deletes_unused_equipment() -> None:
+    """Le matériel neuf sans historique reste supprimable."""
+    from opencoach.database.models.bike import (
+        Bike as BikeModel,
+    )
+    from opencoach.database.models.shoe import (
+        Shoe as ShoeModel,
+    )
+
+    db = create_session()
+
+    try:
+        create_test_user(db)
+
+        repository = SqlProfileRepository(
+            db,
+            TEST_USER_ID,
+        )
+
+        profile = AthleteProfile()
+
+        profile.equipment.shoes.append(
+            Shoe(
+                id="shoe-unused",
+                model="Unused shoe",
+                active=True,
+                category="road",
+                preferred=True,
+            )
+        )
+
+        profile.equipment.bikes.append(
+            Bike(
+                id="bike-unused",
+                model="Unused bike",
+                active=True,
+                category="road",
+                preferred=True,
+            )
+        )
+
+        repository.save_profile(profile)
+
+        loaded = repository.get_profile()
+
+        loaded.equipment.shoes = []
+        loaded.equipment.bikes = []
+
+        repository.save_profile(loaded)
+
+        assert (
+            db.query(ShoeModel)
+            .filter(
+                ShoeModel.id
+                == "shoe-unused"
+            )
+            .one_or_none()
+            is None
+        )
+
+        assert (
+            db.query(BikeModel)
+            .filter(
+                BikeModel.id
+                == "bike-unused"
+            )
+            .one_or_none()
+            is None
+        )
+
+    finally:
+        db.close()

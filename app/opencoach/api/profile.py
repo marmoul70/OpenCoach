@@ -169,7 +169,10 @@ def schema_to_domain(
                     model=shoe.model,
                     brand=shoe.brand,
                     active=shoe.active,
+                    category=shoe.category,
+                    preferred=shoe.preferred,
                     distance_km=shoe.distance_km,
+                    warning_distance_km=shoe.warning_distance_km,
                     max_distance_km=shoe.max_distance_km,
                 )
                 for shoe in profile.equipment.shoes
@@ -180,7 +183,10 @@ def schema_to_domain(
                     model=bike.model,
                     brand=bike.brand,
                     active=bike.active,
+                    category=bike.category,
+                    preferred=bike.preferred,
                     distance_km=bike.distance_km,
+                    maintenance_distance_km=bike.maintenance_distance_km,
                 )
                 for bike in profile.equipment.bikes
             ],

@@ -582,7 +582,10 @@ interface EquipmentSectionProps {
       brand?: string
       model: string
       active: boolean
+      category?: 'road' | 'trail' | 'mixed'
+      preferred: boolean
       distanceKm: number
+      warningDistanceKm?: number
       maxDistanceKm?: number
     }>
     bikes: Array<{
@@ -590,7 +593,10 @@ interface EquipmentSectionProps {
       brand?: string
       model: string
       active: boolean
+      category?: 'road' | 'gravel' | 'mtb' | 'indoor'
+      preferred: boolean
       distanceKm: number
+      maintenanceDistanceKm?: number
     }>
     watches: Array<{
       id: string
@@ -635,6 +641,7 @@ export function EquipmentSection({
         brand: newShoeBrand.trim() || undefined,
         model,
         active: true,
+        preferred: false,
         distanceKm: Number(newShoeDistance) || 0,
         maxDistanceKm: parseOptionalNumber(
           newShoeMaxDistance,
@@ -662,6 +669,7 @@ export function EquipmentSection({
         brand: newBikeBrand.trim() || undefined,
         model,
         active: true,
+        preferred: false,
         distanceKm: 0,
       },
     ])

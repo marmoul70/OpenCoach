@@ -243,6 +243,82 @@ export async function fetchTrainingSessionActivityCandidates(
   return data.map(mapTrainingActivityCandidate)
 }
 
+export interface TrainingEquipmentShoe {
+  id: string
+  brand?: string
+  model: string
+  category?: string
+  preferred: boolean
+}
+
+export interface TrainingEquipmentProposal {
+  activityId: string
+  activityCategory: string
+  selectedShoeId?: string
+  shoes: TrainingEquipmentShoe[]
+}
+
+interface TrainingEquipmentProposalApiResponse {
+  activity_id: string
+  activity_category: string
+  selected_shoe_id: string | null
+  shoes: Array<{
+    id: string
+    brand: string | null
+    model: string
+    category: string | null
+    preferred: boolean
+  }>
+}
+
+export async function fetchTrainingEquipmentProposal(
+  sessionId: string,
+  activityId: string,
+): Promise<TrainingEquipmentProposal> {
+  const params = new URLSearchParams({
+    activity_id: activityId,
+  })
+
+  const response = await fetch(
+    `/api/training-sessions/${sessionId}`
+    + `/equipment-proposal?${params.toString()}`,
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      'Impossible de déterminer '
+      + `le matériel (${response.status}).`,
+    )
+  }
+
+  const data = (
+    await response.json()
+  ) as TrainingEquipmentProposalApiResponse
+
+  return {
+    activityId: data.activity_id,
+    activityCategory:
+      data.activity_category,
+    selectedShoeId:
+      data.selected_shoe_id
+      ?? undefined,
+    shoes: data.shoes.map(
+      shoe => ({
+        id: shoe.id,
+        brand:
+          shoe.brand
+          ?? undefined,
+        model: shoe.model,
+        category:
+          shoe.category
+          ?? undefined,
+        preferred: shoe.preferred,
+      }),
+    ),
+  }
+}
+
+
 export async function updateTrainingSessionActivity(
   sessionId: string,
   activityId: string | null,
@@ -552,6 +628,7 @@ function mapSessionExecutionDebrief(
 export async function validateTrainingSession(
   sessionId: string,
   activityId: string,
+  shoeId: string | null = null,
 ): Promise<TrainingSessionValidationResult> {
   const response = await fetch(
     `/api/training-sessions/${sessionId}/validate`,
@@ -564,6 +641,7 @@ export async function validateTrainingSession(
 
       body: JSON.stringify({
         activity_id: activityId,
+        shoe_id: shoeId,
       }),
     },
   )

@@ -74,12 +74,18 @@ interface ApiEquipmentItem {
 }
 
 interface ApiShoe extends ApiEquipmentItem {
+  category?: 'road' | 'trail' | 'mixed' | null
+  preferred: boolean
   distance_km: number
+  warning_distance_km?: number | null
   max_distance_km?: number | null
 }
 
 interface ApiBike extends ApiEquipmentItem {
+  category?: 'road' | 'gravel' | 'mtb' | 'indoor' | null
+  preferred: boolean
   distance_km: number
+  maintenance_distance_km?: number | null
 }
 
 interface ApiWatch extends ApiEquipmentItem {}
@@ -194,8 +200,13 @@ function fromApi(profile: ApiProfile): AthleteProfile {
         brand: shoe.brand ?? undefined,
         model: shoe.model,
         active: shoe.active,
+        category: shoe.category ?? undefined,
+        preferred: shoe.preferred ?? false,
         distanceKm: shoe.distance_km,
-        maxDistanceKm: optionalNumber(shoe.max_distance_km),
+        warningDistanceKm:
+          optionalNumber(shoe.warning_distance_km),
+        maxDistanceKm:
+          optionalNumber(shoe.max_distance_km),
       })),
 
       bikes: profile.equipment.bikes.map((bike) => ({
@@ -203,7 +214,11 @@ function fromApi(profile: ApiProfile): AthleteProfile {
         brand: bike.brand ?? undefined,
         model: bike.model,
         active: bike.active,
+        category: bike.category ?? undefined,
+        preferred: bike.preferred ?? false,
         distanceKm: bike.distance_km,
+        maintenanceDistanceKm:
+          optionalNumber(bike.maintenance_distance_km),
       })),
 
       watches: profile.equipment.watches.map((watch) => ({
@@ -323,8 +338,13 @@ function toApi(profile: AthleteProfile): ApiProfile {
         brand: shoe.brand ?? null,
         model: shoe.model,
         active: shoe.active,
+        category: shoe.category ?? null,
+        preferred: shoe.preferred,
         distance_km: shoe.distanceKm,
-        max_distance_km: shoe.maxDistanceKm ?? null,
+        warning_distance_km:
+          shoe.warningDistanceKm ?? null,
+        max_distance_km:
+          shoe.maxDistanceKm ?? null,
       })),
 
       bikes: profile.equipment.bikes.map((bike) => ({
@@ -332,7 +352,11 @@ function toApi(profile: AthleteProfile): ApiProfile {
         brand: bike.brand ?? null,
         model: bike.model,
         active: bike.active,
+        category: bike.category ?? null,
+        preferred: bike.preferred,
         distance_km: bike.distanceKm,
+        maintenance_distance_km:
+          bike.maintenanceDistanceKm ?? null,
       })),
 
       watches: profile.equipment.watches.map((watch) => ({

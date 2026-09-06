@@ -324,6 +324,34 @@ def list_push_devices(
     }
 
 
+@router.delete(
+    "/devices/{device_id}",
+)
+def delete_push_device(
+    device_id: UUID,
+    user_id: UUID = Depends(
+        get_current_user_id,
+    ),
+    session: Session = Depends(
+        get_db
+    ),
+) -> dict[str, bool]:
+    repository = (
+        SqlPushSubscriptionRepository(
+            session
+        )
+    )
+
+    repository.delete_by_id_for_user(
+        device_id,
+        user_id,
+    )
+
+    return {
+        "deleted": True,
+    }
+
+
 @router.post(
     "/preferences/read",
 )

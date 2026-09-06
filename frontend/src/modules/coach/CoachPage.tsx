@@ -929,7 +929,9 @@ function WeeklyDebriefCard({
       </div>
 
       <p className="mt-4 max-w-4xl text-[12px] leading-[1.7] text-slate-500 dark:text-slate-400">
-        {debrief.analysis}
+        {buildWeeklyDebriefSummary(
+          debrief,
+        )}
       </p>
 
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1010,7 +1012,7 @@ function WeeklyDebriefCard({
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.055] pt-3 dark:border-white/[0.06]">
         <span className="text-[9px] font-medium text-slate-400">
-          Décision pour la semaine suivante
+          Décision OpenCoach pour la semaine suivante
         </span>
 
         <span className="rounded-full bg-emerald-500/[0.08] px-2.5 py-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -1046,6 +1048,28 @@ function DebriefMetric({
       </p>
     </div>
   )
+}
+
+
+function buildWeeklyDebriefSummary(
+  debrief: CoachWeeklyDebrief,
+): string {
+  const durationPercent =
+    Math.round(
+      debrief.durationRatio * 100,
+    )
+
+  const loadPercent =
+    Math.round(
+      debrief.loadRatio * 100,
+    )
+
+  return [
+    `Conformité globale : ${Math.round(debrief.overallScore)}/100.`,
+    `Séances réalisées : ${debrief.completedSessions}/${debrief.plannedSessions}.`,
+    `Temps réalisé : ${Math.round(debrief.actualDurationMinutes)} min sur ${Math.round(debrief.plannedDurationMinutes)} min prévues (${durationPercent} %).`,
+    `Charge réalisée : ${formatNumber(debrief.actualLoad)} sur ${formatNumber(debrief.plannedLoad)} prévue (${loadPercent} %).`,
+  ].join(' ')
 }
 
 

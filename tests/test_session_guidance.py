@@ -15,6 +15,7 @@ def session(
     description: str = "",
     intensity: str = "moderate",
     heart_rate_zone: str | None = None,
+    duration_minutes: int = 60,
 ) -> TrainingSession:
     return TrainingSession(
         id=uuid4(),
@@ -27,7 +28,7 @@ def session(
         sport_type="Run",
         title=session_type,
         description=description,
-        duration_minutes=60,
+        duration_minutes=duration_minutes,
         intensity=intensity,
         heart_rate_zone=heart_rate_zone,
     )
@@ -254,3 +255,38 @@ def test_guidance_exposes_structured_intensity_targets() -> None:
     assert rpe.reference == "rpe"
     assert rpe.minimum == 2
     assert rpe.maximum == 3
+
+
+def test_easy_guidance_blocks_fit_total_session_duration() -> None:
+    training_session = session(
+        "aerobic_easy",
+        duration_minutes=55,
+    )
+
+    guidance = build_session_guidance(
+        training_session
+    )
+
+    warmup_minutes = sum(
+        step.duration_minutes or 0
+        for step in guidance.warmup
+    )
+    main_minutes = sum(
+        step.duration_minutes or 0
+        for step in guidance.main_set
+    )
+    cooldown_minutes = sum(
+        step.duration_minutes or 0
+        for step in guidance.cooldown
+    )
+
+    assert warmup_minutes == 10
+    assert main_minutes == 40
+    assert cooldown_minutes == 5
+
+    assert (
+        warmup_minutes
+        + main_minutes
+        + cooldown_minutes
+        == training_session.duration_minutes
+    )

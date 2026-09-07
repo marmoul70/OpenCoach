@@ -78,9 +78,77 @@ def test_continuous_hr_session():
     assert payload.start_date_local == (
         "2026-09-08T00:00:00"
     )
-    assert "- 45m 129-152bpm HR" in (
-        payload.description
+    assert (
+        "Échauffement"
+        in payload.description
     )
+
+    assert (
+        "- 10m"
+        in payload.description
+    )
+
+    assert (
+        "- 30m 129-152bpm HR"
+        in payload.description
+    )
+
+    assert (
+        "Retour au calme"
+        in payload.description
+    )
+
+    assert (
+        "- 5m"
+        in payload.description
+    )
+
+
+
+def test_continuous_session_exports_full_total_duration():
+    session = make_session(
+        prescription={
+            "version": 1,
+            "work_structure": {
+                "type": "continuous",
+                "stimulus": "aerobic_easy",
+                "available_minutes": 55,
+                "continuous_minutes": 55,
+            },
+            "intensity": {
+                "targets": [
+                    {
+                        "reference": "heart_rate",
+                        "minimum": 130,
+                        "maximum": 138,
+                    },
+                ],
+            },
+        },
+    )
+
+    session.duration_minutes = 55
+
+    payload = map_training_session_to_intervals(
+        session
+    )
+
+    assert payload is not None
+
+    assert "Échauffement" in payload.description
+    assert "- 10m" in payload.description
+
+    assert (
+        "- 40m 130-138bpm HR"
+        in payload.description
+    )
+
+    assert (
+        "Retour au calme"
+        in payload.description
+    )
+
+    assert "- 5m" in payload.description
 
 
 def test_distance_repeats_use_individualized_pace():

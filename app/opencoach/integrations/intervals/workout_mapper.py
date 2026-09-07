@@ -18,6 +18,9 @@ import json
 import re
 from typing import Any
 
+from opencoach.coaching.session_guidance import (
+    build_session_guidance,
+)
 from opencoach.models import TrainingSession
 
 
@@ -75,19 +78,7 @@ def build_intervals_external_id(
 def map_training_session_to_intervals(
     session: TrainingSession,
 ) -> IntervalsWorkoutPayload | None:
-    """Mappe une séance OpenCoach vers Intervals.icu.
-
-    Pour une sortie longue, ``duration_minutes`` représente
-    temporairement le cœur de séance côté OpenCoach.
-
-    Le workout transmis à Intervals ajoute explicitement :
-    - 15 min d'échauffement ;
-    - le cœur de séance ;
-    - 5 min de retour au calme.
-
-    Ce correctif concerne uniquement la représentation
-    Intervals/Suunto et ne modifie pas la séance OpenCoach.
-    """
+    """Mappe une séance OpenCoach vers Intervals.icu."""
 
     payload = (
         _map_training_session_to_intervals_base(
@@ -118,27 +109,55 @@ def map_training_session_to_intervals(
 def _build_long_endurance_description(
     session: TrainingSession,
 ) -> str:
-    """Construit les trois phases d'une sortie longue."""
+    """Construit les phases exécutables d'une sortie longue."""
 
-    main_minutes = int(
-        session.duration_minutes
+    guidance = build_session_guidance(
+        session
     )
 
-    return (
-        f"{session.title}\n"
-        "\n"
-        "Échauffement\n"
-        "- 15m\n"
-        "\n"
-        f"{session.title}\n"
-        f"- {main_minutes}m\n"
-        "\n"
-        "Retour au calme\n"
-        "- 5m"
-    )
+    lines: list[str] = []
+
+    for step in guidance.warmup:
+        if step.duration_minutes is None:
+            continue
+
+        lines.extend(
+            (
+                "Échauffement",
+                f"- {step.duration_minutes}m",
+                "",
+            )
+        )
+
+    for step in guidance.main_set:
+        if step.duration_minutes is None:
+            continue
+
+        lines.extend(
+            (
+                session.title,
+                f"- {step.duration_minutes}m",
+            )
+        )
+
+    for step in guidance.cooldown:
+        if step.duration_minutes is None:
+            continue
+
+        lines.extend(
+            (
+                "",
+                "Retour au calme",
+                f"- {step.duration_minutes}m",
+            )
+        )
+
+    return "\n".join(lines)
 
 
 def _map_training_session_to_intervals_base(
+
+
     session: TrainingSession,
 ) -> IntervalsWorkoutPayload | None:
     """Convertit une séance OpenCoach en workout Intervals.
@@ -232,26 +251,83 @@ def _build_continuous_description(
     prescription: dict[str, Any],
     work_structure: dict[str, Any],
 ) -> str:
-    minutes = (
-        work_structure.get("continuous_minutes")
-        or work_structure.get("available_minutes")
-        or session.duration_minutes
+    guidance = build_session_guidance(
+        session
     )
 
-    target = _primary_target(prescription)
+    warmup_minutes = sum(
+        step.duration_minutes or 0
+        for step in guidance.warmup
+    )
 
-    target_text = _format_target(target)
+    cooldown_minutes = sum(
+        step.duration_minutes or 0
+        for step in guidance.cooldown
+    )
 
-    line = f"- {int(minutes)}m"
+    main_minutes = (
+        session.duration_minutes
+        - warmup_minutes
+        - cooldown_minutes
+    )
+
+    if main_minutes <= 0:
+        main_minutes = int(
+            work_structure.get(
+                "continuous_minutes"
+            )
+            or work_structure.get(
+                "available_minutes"
+            )
+            or session.duration_minutes
+        )
+
+    target = _primary_target(
+        prescription
+    )
+
+    target_text = _format_target(
+        target
+    )
+
+    main_line = (
+        f"- {main_minutes}m"
+    )
 
     if target_text:
-        line += f" {target_text}"
+        main_line += (
+            f" {target_text}"
+        )
 
-    return "\n".join(
+    lines: list[str] = []
+
+    if warmup_minutes > 0:
+        lines.extend(
+            (
+                "Échauffement",
+                f"- {warmup_minutes}m",
+                "",
+            )
+        )
+
+    lines.extend(
         (
             session.title,
-            line,
+            main_line,
         )
+    )
+
+    if cooldown_minutes > 0:
+        lines.extend(
+            (
+                "",
+                "Retour au calme",
+                f"- {cooldown_minutes}m",
+            )
+        )
+
+    return "\n".join(
+        lines
     )
 
 

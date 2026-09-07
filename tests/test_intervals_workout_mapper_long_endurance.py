@@ -29,13 +29,11 @@ def test_long_endurance_contains_full_workout() -> None:
     assert payload is not None
 
     assert payload.description == (
-        "Sortie longue\n"
-        "\n"
         "Échauffement\n"
         "- 15m\n"
         "\n"
         "Sortie longue\n"
-        "- 60m\n"
+        "- 40m\n"
         "\n"
         "Retour au calme\n"
         "- 5m"

@@ -14,7 +14,7 @@ Les explications riches sont dérivées dans cette couche dédiée.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from opencoach.models import (
     TrainingSession,
@@ -161,8 +161,65 @@ def build_session_guidance(
         _build_generic,
     )
 
-    return builder(
-        session
+    return _normalize_guidance_duration(
+        session,
+        builder(
+            session
+        ),
+    )
+
+
+def _normalize_guidance_duration(
+    session: TrainingSession,
+    guidance: SessionGuidance,
+) -> SessionGuidance:
+    """Fait tenir les blocs dans la durée totale planifiée."""
+
+    if (
+        session.type == "rest"
+        or len(guidance.main_set) != 1
+    ):
+        return guidance
+
+    main_step = guidance.main_set[0]
+
+    if main_step.duration_minutes is None:
+        return guidance
+
+    warmup_minutes = sum(
+        step.duration_minutes or 0
+        for step in guidance.warmup
+    )
+
+    cooldown_minutes = sum(
+        step.duration_minutes or 0
+        for step in guidance.cooldown
+    )
+
+    reserved_minutes = (
+        warmup_minutes
+        + cooldown_minutes
+    )
+
+    if reserved_minutes <= 0:
+        return guidance
+
+    main_minutes = (
+        session.duration_minutes
+        - reserved_minutes
+    )
+
+    if main_minutes <= 0:
+        return guidance
+
+    return replace(
+        guidance,
+        main_set=(
+            replace(
+                main_step,
+                duration_minutes=main_minutes,
+            ),
+        ),
     )
 
 

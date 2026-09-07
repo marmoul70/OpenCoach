@@ -179,6 +179,19 @@ export interface AcceptAdaptationResponse {
   rescheduling_proposal: ReschedulingProposal | null
 }
 
+export interface DailyAdaptationOption {
+  source_session: ReplanningSession
+  adapted_session: ReplanningSession
+  changed: boolean
+  reasons: string[]
+}
+
+export interface DailyAdaptationOptions {
+  checkin_id: string
+  options: DailyAdaptationOption[]
+  reason: string | null
+}
+
 async function apiError(
   response: Response,
 ): Promise<Error> {
@@ -253,6 +266,7 @@ export async function saveDailyCheckIn(
 
 export async function acceptDailyAdaptation(
   checkinId: string,
+  sourceSessionId?: string,
 ): Promise<AcceptAdaptationResponse> {
   const response = await fetch(
     (
@@ -262,6 +276,14 @@ export async function acceptDailyAdaptation(
     ),
     {
       method: 'POST',
+      headers: sourceSessionId
+        ? { 'Content-Type': 'application/json' }
+        : undefined,
+      body: sourceSessionId
+        ? JSON.stringify({
+            source_session_id: sourceSessionId,
+          })
+        : undefined,
     },
   )
 
@@ -273,6 +295,23 @@ export async function acceptDailyAdaptation(
 
   return response.json() as Promise<AcceptAdaptationResponse>
 }
+
+export async function fetchDailyAdaptationOptions(
+  checkinId: string,
+): Promise<DailyAdaptationOptions> {
+  const response = await fetch(
+    '/api/coach/check-in/'
+    + `${checkinId}`
+    + '/adaptation/options',
+  )
+
+  if (!response.ok) {
+    throw await apiError(response)
+  }
+
+  return response.json() as Promise<DailyAdaptationOptions>
+}
+
 
 export async function declineDailyAdaptation(
   checkinId: string,

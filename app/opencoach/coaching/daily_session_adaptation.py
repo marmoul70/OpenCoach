@@ -209,8 +209,28 @@ def adapt_daily_training_session(
                     session.intensity
                 )
 
+        reduction_factor = (
+            0.65
+            if strong_reduction
+            else 0.80
+        )
+
+        reduced_duration = max(
+            5,
+            round(
+                session.duration_minutes
+                * reduction_factor
+            ),
+        )
+
+        reduced_duration = min(
+            reduced_duration,
+            session.duration_minutes,
+        )
+
         adapted = replace(
             session,
+            duration_minutes=reduced_duration,
             intensity=target_intensity,
             heart_rate_zone=None,
         )

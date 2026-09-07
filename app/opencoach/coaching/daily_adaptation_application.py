@@ -86,8 +86,9 @@ class ApplyAcceptedDailyAdaptationService:
         athlete_profile_id: UUID,
         checkin: AthleteDailyCheckIn,
         proposal: CoachAdaptationProposal,
+        source_session_id: UUID | None = None,
     ) -> DailySessionAdaptationResult:
-        """Adapte l'unique séance planifiée du jour."""
+        """Adapte une séance planifiée explicitement ciblée."""
 
         if checkin.id is None:
             raise DailyAdaptationApplicationError(
@@ -123,10 +124,17 @@ class ApplyAcceptedDailyAdaptationService:
             )
         )
 
+        if source_session_id is not None:
+            candidates = tuple(
+                session
+                for session in candidates
+                if session.id == source_session_id
+            )
+
         if not candidates:
             raise DailyAdaptationSessionNotFoundError(
                 "Aucune séance planifiée aujourd'hui "
-                "ne peut être adaptée."
+                "ne correspond au choix de l'athlète."
             )
 
         if len(candidates) > 1:
@@ -261,6 +269,41 @@ class ApplyAcceptedDailyAdaptationService:
             != original.duration_minutes
         ):
             prescription = adapted.prescription
+
+            session_type = original.type.strip().lower()
+            sport_type = "".join(
+                character
+                for character in original.sport_type.strip().lower()
+                if character.isalnum()
+            )
+
+            if (
+                "strength" in session_type
+                or sport_type in {
+                    "strength",
+                    "strengthtraining",
+                    "weighttraining",
+                }
+            ):
+                if isinstance(prescription, dict):
+                    work_structure = prescription.get("work_structure")
+                    if isinstance(work_structure, dict):
+                        updated_structure = {**work_structure}
+                        for key in (
+                            "available_minutes",
+                            "duration_minutes",
+                            "total_minutes",
+                        ):
+                            if key in updated_structure:
+                                updated_structure[key] = adapted.duration_minutes
+                        return replace(
+                            adapted,
+                            prescription={
+                                **prescription,
+                                "work_structure": updated_structure,
+                            },
+                        )
+                return adapted
 
             if not isinstance(
                 prescription,

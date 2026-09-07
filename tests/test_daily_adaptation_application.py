@@ -332,6 +332,63 @@ def test_multiple_sessions_are_never_chosen_arbitrarily() -> None:
     assert repository.saved == []
 
 
+def test_explicit_source_session_selects_requested_session() -> None:
+    checkin = _checkin()
+
+    first = _session(
+        slot="running",
+    )
+    selected = _session(
+        slot="strength",
+    )
+
+    repository = FakeTrainingSessionRepository(
+        (
+            first,
+            selected,
+        )
+    )
+
+    service = _adaptation_service(
+        repository
+    )
+
+    result = service.execute(
+        athlete_profile_id=uuid4(),
+        checkin=checkin,
+        proposal=_proposal(
+            checkin
+        ),
+        source_session_id=selected.id,
+    )
+
+    assert result.changed
+
+    assert (
+        result.original.id
+        == selected.id
+    )
+
+    assert (
+        result.adapted.id
+        == selected.id
+    )
+
+    assert len(
+        repository.saved
+    ) == 1
+
+    assert (
+        repository.saved[0].id
+        == selected.id
+    )
+
+    assert (
+        first.id
+        != repository.saved[0].id
+    )
+
+
 def test_completed_session_is_not_candidate() -> None:
     checkin = _checkin()
 

@@ -13,7 +13,6 @@ import {
 } from 'react'
 
 import {
-  declineDailyAdaptation,
   fetchTodayCheckIn,
   saveDailyCheckIn,
   type BodySide,
@@ -29,6 +28,7 @@ import {
 
 import {
   DailyDecisionModal,
+  type FeelingSessionAction,
 } from './DailyDecisionModal'
 
 
@@ -96,6 +96,13 @@ export function FeelingWidgets() {
     false,
   )
 
+  const [
+    decisionAction,
+    setDecisionAction,
+  ] = useState<FeelingSessionAction | null>(
+    null,
+  )
+
 
   useEffect(() => {
     let cancelled =
@@ -155,39 +162,6 @@ export function FeelingWidgets() {
     )
   }
 
-
-  async function declineCoachAction() {
-    if (
-      !state
-      || !state.adaptation
-    ) {
-      return
-    }
-
-    try {
-      await declineDailyAdaptation(
-        state.checkin.id,
-      )
-
-      await refreshState()
-
-      toast({
-        type: 'success',
-        title: 'Adaptation annulée',
-        message:
-          'Le planning actuel est conservé.',
-      })
-    } catch (reason) {
-      toast({
-        type: 'error',
-        title: 'Décision impossible',
-        message:
-          getErrorMessage(
-            reason,
-          ),
-      })
-    }
-  }
 
 
   async function persist(
@@ -436,13 +410,9 @@ export function FeelingWidgets() {
                 <= 3
               )
             }
-            onOpen={() => {
-              setDecisionModalOpen(
-                true,
-              )
-            }}
-            onCancel={() => {
-              void declineCoachAction()
+            onOpen={(action) => {
+              setDecisionAction(action)
+              setDecisionModalOpen(true)
             }}
           />
         )}
@@ -450,11 +420,11 @@ export function FeelingWidgets() {
 
       <DailyDecisionModal
         open={decisionModalOpen}
+        initialAction={decisionAction}
         state={state}
         onClose={() => {
-          setDecisionModalOpen(
-            false,
-          )
+          setDecisionModalOpen(false)
+          setDecisionAction(null)
         }}
         onStateChanged={
           refreshState
@@ -1830,197 +1800,50 @@ function CoachActionCard({
   state,
   forcePainAdaptation = false,
   onOpen,
-  onCancel,
 }: {
   state: DailyCheckInState
   forcePainAdaptation?: boolean
-  onOpen: () => void
-  onCancel: () => void
+  onOpen: (action: FeelingSessionAction) => void
 }) {
-  const adaptation =
-    state.adaptation
+  const adaptation = state.adaptation
 
   if (
-    (
-      !adaptation
-      || !adaptation
-        .awaiting_athlete_decision
-    )
+    (!adaptation || !adaptation.awaiting_athlete_decision)
     && !forcePainAdaptation
   ) {
     return null
   }
 
   return (
-    <section
-      className="
-        relative
-        overflow-hidden
-        rounded-[14px]
-        border
-        border-white/[0.07]
-        bg-[#141917]
-        p-4
-        text-white
-        shadow-[0_10px_30px_rgba(4,12,8,0.08)]
-      "
-    >
-      <div
-        className="
-          pointer-events-none
-          absolute
-          -right-20
-          -top-24
-          h-48
-          w-48
-          rounded-full
-          bg-emerald-500/[0.10]
-          blur-3xl
-        "
-      />
+    <section className="relative overflow-hidden rounded-[14px] border border-white/[0.07] bg-[#141917] p-4 text-white">
+      <div className="relative">
+        <span className="inline-flex rounded-full bg-emerald-400/[0.10] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-emerald-300">
+          Action requise
+        </span>
 
-      <div
-        className="
-          relative
-          flex
-          flex-col
-          gap-4
-          sm:flex-row
-          sm:items-center
-          sm:justify-between
-        "
-      >
-        <div className="min-w-0">
-          <div
-            className="
-              flex
-              items-center
-              gap-2
-            "
-          >
-            <span
-              className="
-                inline-flex
-                rounded-full
-                bg-emerald-400/[0.10]
-                px-2
-                py-0.5
-                text-[8px]
-                font-bold
-                uppercase
-                tracking-[0.08em]
-                text-emerald-300
-              "
-            >
-              Action requise
-            </span>
-          </div>
+        <h2 className="mt-3 text-[15px] font-semibold tracking-[-0.02em] text-white">
+          Que veux-tu faire avec l’entraînement du jour ?
+        </h2>
 
-          <h2
-            className="
-              mt-3
-              text-[15px]
-              font-semibold
-              tracking-[-0.02em]
-              text-white
-            "
-          >
-            OpenCoach propose une adaptation
-          </h2>
+        <p className="mt-1.5 max-w-2xl text-[11px] leading-5 text-white/50">
+          {forcePainAdaptation
+            ? (
+                'Une douleur évaluée à '
+                + `${state.checkin.pain_wellness_rating}/5 `
+                + 'peut justifier une modification de la séance du jour.'
+              )
+            : adaptation?.reason}
+        </p>
 
-          <p
-            className="
-              mt-1.5
-              max-w-2xl
-              text-[11px]
-              leading-5
-              text-white/50
-            "
-          >
-            {
-              forcePainAdaptation
-                ? (
-                    'Une douleur évaluée à '
-                    + `${state.checkin.pain_wellness_rating}/5 `
-                    + 'peut justifier une adaptation '
-                    + 'de la séance du jour.'
-                  )
-                : adaptation?.reason
-            }
-          </p>
-
-          <p
-            className="
-              mt-2
-              max-w-2xl
-              text-[9.5px]
-              leading-4
-              text-white/30
-            "
-          >
-            Tu peux examiner la proposition avant
-            de modifier le planning du jour.
-          </p>
-        </div>
-
-
-        <div
-          className="
-            flex
-            shrink-0
-            flex-wrap
-            gap-2
-          "
-        >
-          <button
-            type="button"
-            onClick={onOpen}
-            className="
-              inline-flex
-              h-9
-              items-center
-              justify-center
-              rounded-[8px]
-              border
-              border-emerald-400/25
-              bg-emerald-400/[0.09]
-              px-3
-              text-[10px]
-              font-semibold
-              text-emerald-300
-              transition
-              hover:border-emerald-400/40
-              hover:bg-emerald-400/[0.14]
-              hover:text-emerald-200
-            "
-          >
-            Examiner
-            <span className="ml-1.5">
-              →
-            </span>
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <button type="button" onClick={() => onOpen('reduce')} className="h-10 rounded-[9px] border border-emerald-400/25 bg-emerald-400/[0.09] px-3 text-[10.5px] font-semibold text-emerald-300">
+            Réduire
           </button>
-
-          <button
-            type="button"
-            onClick={onCancel}
-            className="
-              inline-flex
-              h-9
-              items-center
-              justify-center
-              rounded-[8px]
-              border
-              border-white/[0.07]
-              px-3
-              text-[10px]
-              font-semibold
-              text-white/40
-              transition
-              hover:bg-white/[0.04]
-              hover:text-white/70
-            "
-          >
-            Conserver
+          <button type="button" onClick={() => onOpen('move')} className="h-10 rounded-[9px] border border-sky-400/20 bg-sky-400/[0.07] px-3 text-[10.5px] font-semibold text-sky-300">
+            Déplacer
+          </button>
+          <button type="button" onClick={() => onOpen('cancel')} className="h-10 rounded-[9px] border border-rose-400/20 bg-rose-400/[0.07] px-3 text-[10.5px] font-semibold text-rose-300">
+            Annuler
           </button>
         </div>
       </div>

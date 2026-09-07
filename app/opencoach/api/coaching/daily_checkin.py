@@ -48,6 +48,9 @@ from opencoach.coaching.daily_checkin import (
 from opencoach.coaching.daily_checkin_policy import (
     assess_daily_checkin,
 )
+from opencoach.coaching.daily_session_adaptation import (
+    adapt_daily_training_session,
+)
 from opencoach.coaching.daily_session_rescheduling_service import (
     DailySessionReschedulingService,
 )
@@ -121,6 +124,12 @@ class PainLocationPayload(BaseModel):
     side: BodySide = (
         BodySide.NOT_APPLICABLE
     )
+
+
+class DailyAdaptationAcceptPayload(BaseModel):
+    """Séance explicitement choisie pour une réduction."""
+
+    source_session_id: UUID | None = None
 
 
 class DailyReschedulingAcceptPayload(BaseModel):
@@ -518,11 +527,98 @@ def _change_adaptation_decision(
     )
 
 
+@router.get(
+    "/{checkin_id}/adaptation/options",
+)
+def get_daily_adaptation_options(
+    checkin_id: UUID,
+    athlete_profile_id: UUID = Depends(
+        get_current_athlete_profile_id
+    ),
+    checkin_repository: DailyCheckInRepository = Depends(
+        get_daily_checkin_repository
+    ),
+    adaptation_repository: DailyAdaptationRepository = Depends(
+        get_daily_adaptation_repository
+    ),
+    training_session_repository: SqlTrainingSessionRepository = Depends(
+        get_training_session_repository
+    ),
+):
+    """Prévisualise la réduction de chaque séance planifiée du jour."""
+
+    checkin = checkin_repository.get_for_date(
+        athlete_profile_id,
+        date.today(),
+    )
+
+    if checkin is None or checkin.id != checkin_id:
+        raise HTTPException(status_code=404, detail="Check-in introuvable.")
+
+    proposal = adaptation_repository.get_for_checkin(
+        athlete_profile_id,
+        checkin_id,
+    )
+    if proposal is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Aucune proposition d'adaptation pour ce check-in.",
+        )
+
+    if checkin.unavailable:
+        return {
+            "checkin_id": str(checkin_id),
+            "options": [],
+            "reason": "Indisponibilité totale: utiliser Déplacer ou Annuler.",
+        }
+
+    preview_proposal = (
+        proposal
+        if proposal.adaptation_authorized
+        else proposal.accept()
+    )
+
+    sessions = training_session_repository.list_sessions_between(
+        athlete_profile_id,
+        checkin.date,
+        checkin.date,
+    )
+
+    options = []
+    for session in sessions:
+        if (
+            session.status != "planned"
+            or session.activity_id is not None
+            or session.type == "rest"
+        ):
+            continue
+
+        result = adapt_daily_training_session(
+            session=session,
+            checkin=checkin,
+            proposal=(preview_proposal).accept(),
+        )
+
+        options.append({
+            "source_session": _replanning_session_response(result.original),
+            "adapted_session": _replanning_session_response(result.adapted),
+            "changed": result.changed,
+            "reasons": list(result.reasons),
+        })
+
+    return {
+        "checkin_id": str(checkin_id),
+        "options": options,
+        "reason": None,
+    }
+
+
 @router.post(
     "/{checkin_id}/adaptation/accept",
 )
 def accept_daily_adaptation(
     checkin_id: UUID,
+    payload: DailyAdaptationAcceptPayload | None = Body(default=None),
     athlete_profile_id: UUID = Depends(
         get_current_athlete_profile_id
     ),
@@ -781,6 +877,11 @@ def accept_daily_adaptation(
             ),
             checkin=checkin,
             proposal=accepted,
+            source_session_id=(
+                payload.source_session_id
+                if payload is not None
+                else None
+            ),
         )
 
     except DailyAdaptationSessionNotFoundError as exc:

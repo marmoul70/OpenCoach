@@ -1,25 +1,36 @@
 import {
+  ArrowLeft,
+  Ban,
   CalendarDays,
-  Check,
-  Sparkles,
+  ChevronRight,
+  Gauge,
 } from 'lucide-react'
 
 import {
-  useCallback,
   useEffect,
-  useRef,
   useState,
 } from 'react'
 
 import {
   acceptDailyAdaptation,
-  applyDailyReplanning,
-  fetchDailyReplanning,
+  declineDailyAdaptation,
+  fetchDailyAdaptationOptions,
+  type DailyAdaptationOption,
   type DailyCheckInState,
-  type DailyReplanningState,
-  type ReplanningOption,
-  type ReplanningProposal,
 } from '../../core/checkin'
+
+import {
+  fetchTrainingSessionMoveOptions,
+  fetchTrainingSessions,
+  moveTrainingSession,
+  updateTrainingSessionStatus,
+  type TrainingSessionMoveDay,
+  type TrainingSessionMoveOptions,
+} from '../../core/training/api'
+
+import {
+  notifyTrainingSessionUpdated,
+} from '../../core/events'
 
 import {
   SidePanel,
@@ -29,14 +40,20 @@ import {
   useToast,
 } from '../../components/ui/ToastProvider'
 
+import type {
+  TrainingSession,
+} from '../training/types'
 
-import {
-  TRAINING_SESSION_UPDATED_EVENT,
-} from '../../core/events'
+
+export type FeelingSessionAction =
+  | 'reduce'
+  | 'move'
+  | 'cancel'
 
 
 interface DailyDecisionModalProps {
   open: boolean
+  initialAction: FeelingSessionAction | null
   state: DailyCheckInState | null
   onClose: () => void
   onStateChanged: () => Promise<void>
@@ -45,938 +62,497 @@ interface DailyDecisionModalProps {
 
 export function DailyDecisionModal({
   open,
+  initialAction,
   state,
   onClose,
   onStateChanged,
 }: DailyDecisionModalProps) {
-  const {
-    toast,
-  } = useToast()
-
-  const startedRef =
-    useRef(false)
-
-  const [
-    replanning,
-    setReplanning,
-  ] = useState<DailyReplanningState | null>(
-    null,
-  )
-
-  const [
-    loading,
-    setLoading,
-  ] = useState(
-    false,
-  )
-
-  const [
-    applyingSessionId,
-    setApplyingSessionId,
-  ] = useState<string | null>(
-    null,
-  )
-
-  const [
-    resolvedSessionIds,
-    setResolvedSessionIds,
-  ] = useState<Set<string>>(
-    () => new Set(),
-  )
-
-
-  const loadProposals =
-    useCallback(
-      async () => {
-        if (
-          !state
-          || !state.adaptation
-        ) {
-          return
-        }
-
-        try {
-          setLoading(
-            true,
-          )
-
-          await acceptDailyAdaptation(
-            state.checkin.id,
-          )
-
-          const result =
-            await fetchDailyReplanning(
-              state.checkin.id,
-            )
-
-          setReplanning(
-            result,
-          )
-
-          await onStateChanged()
-
-          if (
-            result.proposals.length === 0
-          ) {
-            toast({
-              type: 'success',
-              title: 'Analyse terminée',
-              message:
-                'OpenCoach a traité la séance du jour.',
-            })
-          }
-        } catch (reason) {
-          startedRef.current =
-            false
-
-          toast({
-            type: 'error',
-            title: 'Adaptation impossible',
-            message:
-              getErrorMessage(
-                reason,
-              ),
-          })
-        } finally {
-          setLoading(
-            false,
-          )
-        }
-      },
-      [
-        state,
-        onStateChanged,
-        toast,
-      ],
-    )
-
-
-  const visibleProposals =
-    replanning?.proposals.filter(
-      (proposal) => {
-        const id =
-          proposal.source_session.id
-
-        return (
-          id === null
-          || !resolvedSessionIds.has(
-            id,
-          )
-        )
-      },
-    )
-    ?? []
-
+  const { toast } = useToast()
+  const [action, setAction] = useState<FeelingSessionAction | null>(initialAction)
+  const [sessions, setSessions] = useState<TrainingSession[]>([])
+  const [reductions, setReductions] = useState<DailyAdaptationOption[]>([])
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
+  const [moveOptions, setMoveOptions] = useState<TrainingSessionMoveOptions | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!open) {
-      startedRef.current =
-        false
-
-      setReplanning(
-        null,
-      )
-
-      setResolvedSessionIds(
-        new Set(),
-      )
-
+      setAction(null)
+      setSessions([])
+      setReductions([])
+      setSelectedSessionId(null)
+      setMoveOptions(null)
+      setSelectedDate(null)
       return
     }
 
-    if (
-      startedRef.current
-      || !state
-      || !state.adaptation
-    ) {
+    setAction(initialAction)
+
+    if (!state) {
       return
     }
 
-    startedRef.current =
-      true
+    void loadSessions(state.checkin.date)
+  }, [open, initialAction, state])
 
-    void loadProposals()
-  }, [
-    open,
-    state,
-    loadProposals,
-  ])
+  useEffect(() => {
+    if (!open || action !== 'reduce' || !state?.adaptation) {
+      return
+    }
+    void loadReductions()
+  }, [open, action, state])
 
-
-  if (
-    !open
-    || !state
-    || !state.adaptation
-  ) {
+  if (!open || !state) {
     return null
   }
 
-  const currentState =
-    state
-
-
-  async function applyOption(
-    proposal: ReplanningProposal,
-    option: ReplanningOption,
-  ) {
-    const sourceId =
-      proposal.source_session.id
-
-    if (!sourceId) {
-      return
-    }
-
+  async function loadSessions(date: string) {
     try {
-      setApplyingSessionId(
-        sourceId,
-      )
-
-      await applyDailyReplanning(
-        currentState.checkin.id,
-        {
-          source_session_id:
-            sourceId,
-
-          action:
-            option.action,
-
-          target_date:
-            option.target_date,
-        },
-      )
-
-      window.dispatchEvent(
-        new Event(
-          TRAINING_SESSION_UPDATED_EVENT,
+      setLoading(true)
+      const result = await fetchTrainingSessions(date, date)
+      setSessions(
+        result.filter(
+          session => session.status === 'planned' && session.type !== 'rest',
         ),
       )
-
-      setResolvedSessionIds(
-        (previous) => {
-          const next =
-            new Set(
-              previous,
-            )
-
-          next.add(
-            sourceId,
-          )
-
-          return next
-        },
-      )
-
-      toast({
-        type: 'success',
-        title:
-          getActionSuccessTitle(
-            option,
-          ),
-        message:
-          getActionSuccessMessage(
-            option,
-          ),
-      })
-
-      await onStateChanged()
     } catch (reason) {
-      toast({
-        type: 'error',
-        title: 'Replanification impossible',
-        message:
-          getErrorMessage(
-            reason,
-          ),
-      })
+      showError('Séances indisponibles', reason)
     } finally {
-      setApplyingSessionId(
-        null,
-      )
+      setLoading(false)
     }
   }
 
+  async function loadReductions() {
+    try {
+      setLoading(true)
+      const result = await fetchDailyAdaptationOptions(state!.checkin.id)
+      setReductions(result.options)
+    } catch (reason) {
+      showError('Réduction impossible', reason)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  const allResolved =
-    replanning !== null
-    && visibleProposals.length === 0
+  async function reduce(option: DailyAdaptationOption) {
+    const sourceId = option.source_session.id
+    if (!sourceId) return
 
+    try {
+      setSaving(true)
+      const result = await acceptDailyAdaptation(state!.checkin.id, sourceId)
+
+      if (
+        !result.session_adapted
+        || !result.adapted_session
+      ) {
+        throw new Error(
+          result.already_accepted
+            ? (
+                'Cette adaptation avait déjà été '
+                + 'acceptée, mais la réduction '
+                + 'n’a pas été appliquée à la séance.'
+              )
+            : (
+                'La réduction n’a pas été appliquée '
+                + 'à la séance.'
+              ),
+        )
+      }
+      notifyTrainingSessionUpdated()
+      await onStateChanged()
+      toast({
+        type: 'success',
+        title: 'Séance réduite',
+        message: result.adapted_session
+          ? `${result.adapted_session.title} · ${result.adapted_session.duration_minutes} min`
+          : 'La réduction a été enregistrée.',
+      })
+      onClose()
+    } catch (reason) {
+      showError('Réduction impossible', reason)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function chooseMoveSession(session: TrainingSession) {
+    try {
+      setSelectedSessionId(session.id)
+      setMoveOptions(null)
+      setSelectedDate(null)
+      setLoading(true)
+      const result = await fetchTrainingSessionMoveOptions(session.id)
+      setMoveOptions(result)
+      setSelectedDate(result.bestDate ?? null)
+    } catch (reason) {
+      showError('Déplacement impossible', reason)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function move() {
+    if (!selectedSessionId || !selectedDate) return
+
+    try {
+      setSaving(true)
+      await moveTrainingSession(selectedSessionId, selectedDate)
+      if (state!.adaptation?.awaiting_athlete_decision) {
+        await declineDailyAdaptation(state!.checkin.id)
+      }
+      notifyTrainingSessionUpdated()
+      await onStateChanged()
+      toast({
+        type: 'success',
+        title: 'Séance déplacée',
+        message: `Nouvelle date : ${formatDate(selectedDate)}.`,
+      })
+      onClose()
+    } catch (reason) {
+      showError('Déplacement impossible', reason)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function cancel(session: TrainingSession) {
+    const confirmed = window.confirm(
+      `Annuler « ${session.title} » ?\n\nLa séance restera dans le planning comme non faite.`,
+    )
+    if (!confirmed) return
+
+    try {
+      setSaving(true)
+      await updateTrainingSessionStatus(session.id, 'skipped')
+      if (state!.adaptation?.awaiting_athlete_decision) {
+        await declineDailyAdaptation(state!.checkin.id)
+      }
+      notifyTrainingSessionUpdated()
+      await onStateChanged()
+      toast({
+        type: 'success',
+        title: 'Séance annulée / non faite',
+        message: 'OpenCoach la conservera dans le suivi de la semaine.',
+      })
+      onClose()
+    } catch (reason) {
+      showError('Annulation impossible', reason)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function showError(title: string, reason: unknown) {
+    toast({
+      type: 'error',
+      title,
+      message: reason instanceof Error
+        ? reason.message
+        : 'Une erreur inattendue est survenue.',
+    })
+  }
 
   return (
     <SidePanel
       open={open}
       onClose={onClose}
-      eyebrow="Adaptation"
-      title="Adapter l’entraînement"
+      eyebrow="Ressenti"
+      title={
+        action === 'reduce'
+          ? 'Réduire une séance'
+          : action === 'move'
+            ? 'Déplacer une séance'
+            : action === 'cancel'
+              ? 'Annuler une séance'
+              : 'Adapter l’entraînement'
+      }
     >
       <div className="space-y-4">
-
-        {loading && !replanning && (
-          <div
-            className="
-              flex
-              min-h-40
-              flex-col
-              items-center
-              justify-center
-              gap-3
-              text-center
-            "
+        {action && (
+          <button
+            type="button"
+            onClick={() => {
+              setAction(null)
+              setSelectedSessionId(null)
+              setMoveOptions(null)
+              setSelectedDate(null)
+            }}
+            className="inline-flex items-center gap-1.5 text-[10.5px] font-medium text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
           >
-            <span
-              className="
-                h-7
-                w-7
-                animate-spin
-                rounded-full
-                border-[2.5px]
-                border-slate-200
-                border-t-emerald-500
-                dark:border-white/[0.10]
-                dark:border-t-emerald-400
-              "
-              aria-hidden="true"
-            />
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Changer d’action
+          </button>
+        )}
 
-            <div>
-              <p
-                className="
-                  font-semibold
-                  text-slate-800 dark:text-slate-100
-                "
-              >
-                Analyse du planning
-              </p>
-
-              <p
-                className="
-                  mt-1
-                  text-sm
-                  text-slate-500 dark:text-slate-400
-                "
-              >
-                Recherche des meilleures options
-                de replanification.
-              </p>
-            </div>
+        {!action && (
+          <div className="grid gap-2">
+            <button type="button" onClick={() => setAction('reduce')} className="rounded-[11px] border border-black/[0.07] p-3 text-left dark:border-white/[0.07]">
+              <div className="flex items-center gap-3">
+                <Gauge className="h-4 w-4 text-emerald-500" />
+                <div><p className="text-[12px] font-semibold">Réduire</p><p className="text-[10px] text-slate-400">Alléger une séance du jour.</p></div>
+              </div>
+            </button>
+            <button type="button" onClick={() => setAction('move')} className="rounded-[11px] border border-black/[0.07] p-3 text-left dark:border-white/[0.07]">
+              <div className="flex items-center gap-3"><CalendarDays className="h-4 w-4 text-sky-500" /><div><p className="text-[12px] font-semibold">Déplacer</p><p className="text-[10px] text-slate-400">Reporter avec les règles du planning.</p></div></div>
+            </button>
+            <button type="button" onClick={() => setAction('cancel')} className="rounded-[11px] border border-rose-500/15 p-3 text-left">
+              <div className="flex items-center gap-3"><Ban className="h-4 w-4 text-rose-500" /><div><p className="text-[12px] font-semibold">Annuler</p><p className="text-[10px] text-slate-400">Marquer la séance comme non faite.</p></div></div>
+            </button>
           </div>
         )}
 
+        {loading && <div className="py-10 text-center text-[11px] text-slate-400">Chargement…</div>}
 
-        {replanning && !allResolved && (
-          <>
-            <div
-              className="
-                flex
-                items-center
-                gap-2
-              "
-            >
-              <Sparkles
-                className="
-                  h-4
-                  w-4
-                  text-emerald-600 dark:text-emerald-400
-                "
-              />
-
-              <p
-                className="
-                  text-sm
-                  font-semibold
-                  text-slate-800 dark:text-slate-100
-                "
-              >
-                Choisissez l’action à appliquer
-              </p>
-            </div>
-
-            {replanning.coordination_reasons.length > 0 && (
-              <section
-                className="
-                  rounded-xl
-                  border
-                  border-emerald-500/15
-                  bg-emerald-500/[0.05]
-                  dark:border-emerald-400/15
-                  dark:bg-emerald-400/[0.05]
-                  p-3
-                "
-              >
-                <p
-                  className="
-                    text-xs
-                    font-semibold
-                    uppercase
-                    tracking-wide
-                    text-emerald-600 dark:text-emerald-400
-                  "
-                >
-                  Analyse OpenCoach
-                </p>
-
-                <p
-                  className="
-                    mt-1
-                    text-sm
-                    leading-relaxed
-                    text-slate-500 dark:text-slate-400
-                  "
-                >
-                  {
-                    replanning
-                      .coordination_reasons[0]
-                  }
-                </p>
-              </section>
+        {!loading && action === 'reduce' && (
+          <div className="space-y-3">
+            {reductions.length === 0 && (
+              <p className="rounded-[10px] border border-black/[0.06] p-3 text-[10.5px] text-slate-500 dark:border-white/[0.07]">Aucune séance du jour ne peut être réduite.</p>
             )}
-
-            <div className="space-y-3">
-              {visibleProposals.map(
-                (proposal) => (
-                  <SessionDecisionCard
-                    key={
-                      proposal.source_session.id
-                      ?? proposal.source_session.title
-                    }
-                    proposal={proposal}
-                    loading={
-                      applyingSessionId
-                      === proposal.source_session.id
-                    }
-                    onChoose={(option) => {
-                      void applyOption(
-                        proposal,
-                        option,
-                      )
-                    }}
-                  />
-                ),
-              )}
-            </div>
-          </>
+            {reductions.map(option => (
+              <section key={option.source_session.id ?? option.source_session.title} className="rounded-[12px] border border-black/[0.07] p-3.5 dark:border-white/[0.07]">
+                <p className="text-[12px] font-semibold">{option.source_session.title}</p>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[10px]">
+                  <div className="rounded-lg bg-slate-50 p-2.5 dark:bg-white/[0.025]">
+                    <p className="font-semibold text-slate-400">Actuelle</p>
+                    <p className="mt-1">{option.source_session.duration_minutes} min</p>
+                    <p>{option.source_session.intensity}</p>
+                  </div>
+                  <div className="rounded-lg bg-emerald-500/[0.05] p-2.5">
+                    <p className="font-semibold text-emerald-600 dark:text-emerald-400">Réduite</p>
+                    <p className="mt-1">{option.adapted_session.duration_minutes} min</p>
+                    <p>{option.adapted_session.intensity}</p>
+                  </div>
+                </div>
+                <p className="mt-2 text-[9.5px] text-slate-400">{option.adapted_session.type} · {option.adapted_session.sport_type}</p>
+                <button type="button" disabled={saving || !option.changed} onClick={() => void reduce(option)} className="mt-3 h-8 rounded-[8px] border border-emerald-500/20 bg-emerald-500/[0.08] px-3 text-[10px] font-semibold text-emerald-700 disabled:opacity-40 dark:text-emerald-300">Appliquer cette réduction</button>
+              </section>
+            ))}
+          </div>
         )}
 
+        {!loading && action === 'move' && (
+          <div className="space-y-3">
+            {sessions.map(session => (
+              <button
+                key={session.id}
+                type="button"
+                onClick={() => void chooseMoveSession(session)}
+                className={[
+                  'flex w-full items-center gap-3 rounded-[10px] border p-3 text-left transition',
+                  selectedSessionId === session.id
+                    ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
+                    : 'border-black/[0.06] dark:border-white/[0.07]',
+                ].join(' ')}
+              >
+                <CalendarDays className="h-4 w-4 shrink-0 text-emerald-500" />
+                <div className="min-w-0">
+                  <p className="truncate text-[11.5px] font-semibold">{session.title}</p>
+                  <p className="mt-0.5 text-[9.5px] text-slate-400">
+                    {session.durationMinutes} min · {session.sportType}
+                  </p>
+                </div>
+              </button>
+            ))}
 
-        {allResolved && (
-          <section
-            className="
-              rounded-2xl
-              border
-              border-emerald-500/15
-              bg-emerald-500/[0.05]
-              dark:border-emerald-400/15
-              dark:bg-emerald-400/[0.05]
-              p-5
-              text-center
-            "
-          >
-            <div
-              className="
-                mx-auto
-                flex
-                size-11
-                items-center
-                justify-center
-                rounded-full
-                bg-emerald-500/[0.10]
-                text-emerald-600
-                dark:bg-emerald-400/[0.10]
-                dark:text-emerald-400
-              "
-            >
-              <Check
-                className="h-6 w-6"
-              />
-            </div>
+            {moveOptions && (
+              <div className="border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+                <div className="mb-3 flex items-start gap-2">
+                  <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                  <div>
+                    <p className="text-[12px] font-semibold text-slate-800 dark:text-slate-200">
+                      Choisir un nouveau jour
+                    </p>
+                    <p className="mt-0.5 text-[10.5px] leading-4 text-slate-400 dark:text-slate-500">
+                      Le score indique la qualité du placement selon votre semaine.
+                    </p>
+                  </div>
+                </div>
 
-            <h3
-              className="
-                mt-3
-                font-semibold
-                text-slate-800 dark:text-slate-100
-              "
-            >
-              Planning mis à jour
-            </h3>
+                {moveOptions.days.some(day => day.selectable) ? (
+                  <>
+                    <div className="grid grid-cols-7 gap-1">
+                      {moveOptions.days.map(day => (
+                        <MoveDayButton
+                          key={day.date}
+                          day={day}
+                          selected={selectedDate === day.date}
+                          onSelect={() => {
+                            if (day.selectable) {
+                              setSelectedDate(day.date)
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
 
-            <p
-              className="
-                mt-1
-                text-sm
-                text-slate-500 dark:text-slate-400
-              "
-            >
-              Le planning de la semaine
-              a été mis à jour.
-            </p>
+                    {selectedDate && (
+                      <SelectedDayAdvice
+                        day={moveOptions.days.find(day => day.date === selectedDate) ?? null}
+                      />
+                    )}
 
-            <button
-              type="button"
-              className="
-                mt-4
-                inline-flex
-                h-8
-                items-center
-                justify-center
-                rounded-[8px]
-                border
-                border-emerald-500/15
-                bg-emerald-500/[0.10]
-                px-3.5
-                text-[10.5px]
-                font-semibold
-                text-emerald-600 dark:text-emerald-400
-                outline-none
-                transition
-                hover:border-emerald-500/25
-                hover:bg-emerald-500/[0.15]
-                active:scale-[0.98]
-                dark:border-emerald-400/15
-                dark:bg-emerald-400/[0.09]
-                dark:text-emerald-300
-                dark:hover:bg-emerald-400/[0.14]
-              "
-              onClick={onClose}
-            >
-              Terminer
-            </button>
-          </section>
+                    <div className="mt-3 flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        disabled={!selectedDate || saving}
+                        onClick={() => void move()}
+                        className="inline-flex items-center gap-1.5 rounded-[9px] bg-emerald-600 px-3 py-2 text-[11.5px] font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Déplacer ici
+                        <ChevronRight className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-[10px] border border-amber-500/15 bg-amber-500/[0.045] px-3 py-3 dark:border-amber-400/15 dark:bg-amber-400/[0.04]">
+                    <p className="text-[12px] font-semibold text-slate-800 dark:text-slate-200">
+                      Déplacement impossible
+                    </p>
+                    <p className="mt-1 text-[10.5px] leading-4 text-slate-500 dark:text-slate-400">
+                      Cette séance ne peut plus être déplacée cette semaine.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
+        {!loading && action === 'cancel' && (
+          <div className="space-y-2">
+            {sessions.map(session => (
+              <button key={session.id} type="button" disabled={saving} onClick={() => void cancel(session)} className="flex w-full items-center gap-3 rounded-[10px] border border-rose-500/15 p-3 text-left disabled:opacity-40">
+                <Ban className="h-4 w-4 text-rose-500" />
+                <div><p className="text-[11.5px] font-semibold">{session.title}</p><p className="text-[9.5px] text-slate-400">{session.durationMinutes} min · {session.sportType}</p></div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </SidePanel>
   )
 }
 
 
-function SessionDecisionCard({
-  proposal,
-  loading,
-  onChoose,
+function MoveDayButton({
+  day,
+  selected,
+  onSelect,
 }: {
-  proposal: ReplanningProposal
-  loading: boolean
-  onChoose: (
-    option: ReplanningOption,
-  ) => void
+  day: TrainingSessionMoveDay
+  selected: boolean
+  onSelect: () => void
 }) {
-  const recommended =
-    proposal.options.find(
-      (option) =>
-        option.recommended,
-    )
-
-  const others =
-    proposal.options.filter(
-      (option) =>
-        !option.recommended,
-    )
+  const date = new Date(`${day.date}T12:00:00`)
+  const weekday = date
+    .toLocaleDateString('fr-FR', { weekday: 'short' })
+    .replace('.', '')
+  const dayNumber = date.getDate()
 
   return (
-    <section
-      className="
-        rounded-[13px]
-        border
-        border-black/[0.06]
-        bg-white
-        p-3.5
-        shadow-[0_1px_2px_rgba(15,23,42,0.02)]
-        dark:border-white/[0.07]
-        dark:bg-[#171d21]
-      "
+    <button
+      type="button"
+      disabled={!day.selectable}
+      onClick={onSelect}
+      title={day.blockingReasons[0] ?? day.reasons[0] ?? undefined}
+      className={[
+        'relative flex min-w-0 flex-col items-center rounded-[9px] border px-1 py-2 transition',
+        selected
+          ? 'border-emerald-500/45 bg-emerald-50 dark:bg-emerald-500/[0.08]'
+          : 'border-black/[0.06] bg-slate-50 dark:border-white/[0.06] dark:bg-white/[0.02]',
+        !day.selectable
+          ? 'cursor-not-allowed opacity-40'
+          : 'hover:border-emerald-500/30 hover:bg-emerald-50/50',
+      ].join(' ')}
     >
-      <div
-        className="
-          flex
-          items-center
-          gap-3
-        "
-      >
-        <div
-          className="
-            flex
-            size-8
-            shrink-0
-            items-center
-            justify-center
-            rounded-lg
-            bg-emerald-500/[0.10]
-            text-emerald-600
-            dark:bg-emerald-400/[0.10]
-            dark:text-emerald-400
-          "
-        >
-          <CalendarDays
-            className="h-4 w-4"
-          />
-        </div>
-
-        <div>
-          <p
-            className="
-              font-semibold
-              text-slate-800 dark:text-slate-100
-            "
-          >
-            {proposal.source_session.title}
-          </p>
-
-          <p
-            className="
-              text-xs
-              text-slate-400 dark:text-slate-500
-            "
-          >
-            {
-              proposal
-                .source_session
-                .duration_minutes
-            } min
-          </p>
-        </div>
-      </div>
-
-
-      {recommended && (
-        <div
-          className="
-            mt-3
-            rounded-xl
-            border
-            border-emerald-500/15
-            bg-emerald-500/[0.05]
-            dark:border-emerald-400/15
-            dark:bg-emerald-400/[0.05]
-            p-3
-          "
-        >
-          <div
-            className="
-              flex
-              items-center
-              justify-between
-              gap-3
-            "
-          >
-            <div>
-              <span
-                className="
-                  inline-flex
-                  h-5
-                  items-center
-                  rounded-full
-                  border
-                  border-emerald-500/15
-                  bg-emerald-500/[0.08]
-                  px-2
-                  text-[9.5px]
-                  font-bold
-                  uppercase
-                  tracking-[0.06em]
-                  text-emerald-600 dark:text-emerald-400
-                  dark:border-emerald-400/15
-                  dark:bg-emerald-400/[0.08]
-                  dark:text-emerald-300
-                "
-              >
-                ★ Recommandé
-              </span>
-
-              <p
-                className="
-                  mt-2
-                  text-sm
-                  font-semibold
-                  text-slate-800 dark:text-slate-100
-                "
-              >
-                {
-                  getOptionLabel(
-                    recommended,
-                  )
-                }
-              </p>
-
-              <p
-                className="
-                  mt-0.5
-                  text-xs
-                  text-slate-500 dark:text-slate-400
-                "
-              >
-                {
-                  getOptionDetails(
-                    recommended,
-                  )
-                }
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="
-                inline-flex
-                h-8
-                shrink-0
-                items-center
-                justify-center
-                rounded-[8px]
-                border
-                border-emerald-500/15
-                bg-emerald-500/[0.10]
-                px-3
-                text-[10.5px]
-                font-semibold
-                text-emerald-600 dark:text-emerald-400
-                outline-none
-                transition
-                hover:border-emerald-500/25
-                hover:bg-emerald-500/[0.15]
-                active:scale-[0.98]
-                disabled:cursor-not-allowed
-                disabled:opacity-50
-                dark:border-emerald-400/15
-                dark:bg-emerald-400/[0.09]
-                dark:text-emerald-300
-                dark:hover:bg-emerald-400/[0.14]
-              "
-              disabled={loading}
-              onClick={() => {
-                onChoose(
-                  recommended,
-                )
-              }}
-            >
-              {loading
-                ? (
-                    <span
-                      className="
-                        h-3.5
-                        w-3.5
-                        animate-spin
-                        rounded-full
-                        border-2
-                        border-emerald-700/20
-                        border-t-emerald-700
-                        dark:border-emerald-300/20
-                        dark:border-t-emerald-300
-                      "
-                      aria-hidden="true"
-                    />
-                  )
-                : 'Appliquer'}
-            </button>
-          </div>
-        </div>
+      {day.recommended && (
+        <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[8px] font-bold text-white">
+          ★
+        </span>
       )}
-
-
-      {others.length > 0 && (
-        <div
-          className="
-            mt-2
-            grid
-            gap-2
-            sm:grid-cols-2
-          "
-        >
-          {others.map(
-            (option) => (
-              <button
-                key={
-                  option.action
-                  + ':'
-                  + (
-                    option.target_date
-                    ?? 'none'
-                  )
-                }
-                type="button"
-                className="
-                  min-h-11
-                  w-full
-                  rounded-[9px]
-                  border
-                  border-black/[0.06]
-                  bg-slate-50/70
-                  px-3
-                  py-2.5
-                  text-left
-                  text-slate-700
-                  outline-none
-                  transition
-                  hover:border-black/[0.10]
-                  hover:bg-slate-100
-                  active:scale-[0.99]
-                  disabled:cursor-not-allowed
-                  disabled:opacity-50
-                  dark:border-white/[0.07]
-                  dark:bg-white/[0.025]
-                  dark:text-slate-200
-                  dark:hover:border-white/[0.11]
-                  dark:hover:bg-white/[0.05]
-                "
-                disabled={loading}
-                onClick={() => {
-                  onChoose(
-                    option,
-                  )
-                }}
-              >
-                <span>
-                  <span
-                    className="
-                      block
-                      text-xs
-                      font-semibold
-                    "
-                  >
-                    {
-                      getOptionLabel(
-                        option,
-                      )
-                    }
-                  </span>
-
-                  <span
-                    className="
-                      mt-0.5
-                      block
-                      text-xs
-                      font-normal
-                      opacity-50
-                    "
-                  >
-                    {
-                      getOptionDetails(
-                        option,
-                      )
-                    }
-                  </span>
-                </span>
-              </button>
-            ),
-          )}
-        </div>
-      )}
-    </section>
+      <span className="text-[9.5px] font-semibold uppercase text-slate-400 dark:text-slate-500">
+        {weekday}
+      </span>
+      <span className="mt-0.5 text-[13px] font-bold text-slate-800 dark:text-slate-200">
+        {dayNumber}
+      </span>
+      <span className={['mt-1 text-[10px] font-bold', scoreClass(day)].join(' ')}>
+        {day.current ? 'Actuel' : `${day.score}%`}
+      </span>
+    </button>
   )
 }
 
 
-function getOptionLabel(
-  option: ReplanningOption,
-): string {
-  if (
-    option.action
-    === 'cancel'
-  ) {
-    return 'Annuler'
-  }
-
-  if (
-    option.action
-    === 'move_adapted'
-  ) {
-    return 'Déplacer et adapter'
-  }
-
-  return 'Déplacer sans modifier'
-}
-
-
-function getOptionDetails(
-  option: ReplanningOption,
-): string {
-  if (
-    option.action
-    === 'cancel'
-  ) {
-    return ''
-  }
-
-  if (!option.target_date) {
-    return ''
-  }
-
-  const date =
-    formatDate(
-      option.target_date,
-    )
-
-  const duration =
-    option.session
-      ?.duration_minutes
+function SelectedDayAdvice({
+  day,
+}: {
+  day: TrainingSessionMoveDay | null
+}) {
+  if (!day) return null
 
   return (
-    duration
-      ? `${date} · ${duration} min`
-      : date
+    <div className="mt-3 rounded-[10px] border border-black/[0.06] bg-slate-50 p-3 dark:border-white/[0.06] dark:bg-white/[0.02]">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[12px] font-semibold text-slate-800 dark:text-slate-200">
+            {formatLongDate(day.date)}
+          </p>
+          <p className="mt-0.5 text-[10.5px] font-medium text-slate-400 dark:text-slate-500">
+            {levelLabel(day)}
+          </p>
+        </div>
+        <span className={['text-[18px] font-bold', scoreClass(day)].join(' ')}>
+          {day.score}%
+        </span>
+      </div>
+      <div className="mt-2 space-y-1">
+        {day.reasons.slice(0, 4).map(reason => (
+          <p key={reason} className="text-[10.5px] leading-4 text-slate-500 dark:text-slate-400">
+            • {reason}
+          </p>
+        ))}
+      </div>
+    </div>
   )
 }
 
 
-function getActionSuccessTitle(
-  option: ReplanningOption,
-): string {
-  if (
-    option.action
-    === 'cancel'
-  ) {
-    return 'Séance annulée'
-  }
-
-  if (
-    option.action
-    === 'move_adapted'
-  ) {
-    return 'Séance déplacée et adaptée'
-  }
-
-  return 'Séance déplacée'
+function scoreClass(day: TrainingSessionMoveDay): string {
+  if (!day.selectable) return 'text-slate-400 dark:text-slate-600'
+  if (day.score >= 85) return 'text-emerald-600 dark:text-emerald-400'
+  if (day.score >= 70) return 'text-lime-600 dark:text-lime-400'
+  if (day.score >= 50) return 'text-amber-600 dark:text-amber-400'
+  return 'text-red-500 dark:text-red-400'
 }
 
 
-function getActionSuccessMessage(
-  option: ReplanningOption,
-): string {
-  if (
-    option.action
-    === 'cancel'
-  ) {
-    return 'La séance reste annulée.'
+function levelLabel(day: TrainingSessionMoveDay): string {
+  switch (day.level) {
+    case 'excellent': return 'Excellent choix'
+    case 'good': return 'Bon choix'
+    case 'possible': return 'Possible'
+    case 'discouraged': return 'Déconseillé'
+    case 'impossible': return 'Impossible'
+    case 'current': return 'Emplacement actuel'
   }
+}
 
-  return getOptionDetails(
-    option,
+
+function formatLongDate(value: string): string {
+  return new Date(`${value}T12:00:00`).toLocaleDateString(
+    'fr-FR',
+    { weekday: 'long', day: 'numeric', month: 'long' },
   )
 }
 
 
-function formatDate(
-  value: string,
-): string {
+function formatDate(value: string): string {
   return new Intl.DateTimeFormat(
     'fr-FR',
-    {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    },
-  ).format(
-    new Date(
-      `${value}T12:00:00`,
-    ),
-  )
-}
-
-
-function getErrorMessage(
-  reason: unknown,
-): string {
-  return (
-    reason instanceof Error
-      ? reason.message
-      : 'Une erreur est survenue.'
-  )
+    { weekday: 'long', day: 'numeric', month: 'long' },
+  ).format(new Date(`${value}T12:00:00`))
 }

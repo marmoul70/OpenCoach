@@ -1,6 +1,9 @@
 import {
   ArrowRight,
+  Check,
+  Clock3,
   Plus,
+  X,
 } from 'lucide-react'
 
 import {
@@ -9,6 +12,7 @@ import {
 
 import type {
   TrainingSession,
+  TrainingSessionStatus,
 } from './types'
 
 import {
@@ -223,6 +227,78 @@ function todaySessionVisualClass(
   )
 }
 
+
+function TodaySessionStatusBadge({
+  status,
+}: {
+  status: TrainingSessionStatus
+}) {
+  if (status === 'completed') {
+    return (
+      <span
+        className="
+          inline-flex
+          items-center
+          gap-1
+          rounded-full
+          bg-emerald-500/10
+          px-1.5
+          py-0.5
+          text-[10px]
+          font-semibold
+          text-emerald-400
+        "
+      >
+        <Check className="h-3 w-3" />
+        Réalisé
+      </span>
+    )
+  }
+
+  if (status === 'skipped') {
+    return (
+      <span
+        className="
+          inline-flex
+          items-center
+          gap-1
+          rounded-full
+          bg-red-500/10
+          px-1.5
+          py-0.5
+          text-[10px]
+          font-semibold
+          text-red-400
+        "
+      >
+        <X className="h-3 w-3" />
+        Non réalisé
+      </span>
+    )
+  }
+
+  return (
+    <span
+      className="
+        inline-flex
+        items-center
+        gap-1
+        rounded-full
+        bg-slate-500/10
+        px-1.5
+        py-0.5
+        text-[10px]
+        font-semibold
+        text-slate-400
+      "
+    >
+      <Clock3 className="h-3 w-3" />
+      À faire
+    </span>
+  )
+}
+
+
 function TodayTrainingSession({
   session,
   onOpen,
@@ -250,16 +326,29 @@ function TodayTrainingSession({
       ].join(' ')}
     >
       <div className="min-w-0">
-        <p
+        <div
           className="
-            truncate
-            text-[15px]
-            font-semibold
-            text-white
+            flex
+            flex-wrap
+            items-center
+            gap-1.5
           "
         >
-          {session.title}
-        </p>
+          <p
+            className="
+              truncate
+              text-[15px]
+              font-semibold
+              text-white
+            "
+          >
+            {session.title}
+          </p>
+
+          <TodaySessionStatusBadge
+            status={session.status}
+          />
+        </div>
 
         <p
           className="

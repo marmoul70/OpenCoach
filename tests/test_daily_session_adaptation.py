@@ -380,7 +380,12 @@ def test_moderate_reduction_preserves_strength_modality() -> None:
 
     assert (
         result.adapted.duration_minutes
-        == session.duration_minutes
+        == 12
+    )
+
+    assert (
+        result.adapted.duration_minutes
+        < session.duration_minutes
     )
 
     assert (
@@ -437,7 +442,12 @@ def test_strong_reduction_preserves_strength_modality() -> None:
 
     assert (
         result.adapted.duration_minutes
-        == session.duration_minutes
+        == 10
+    )
+
+    assert (
+        result.adapted.duration_minutes
+        < session.duration_minutes
     )
 
     assert (

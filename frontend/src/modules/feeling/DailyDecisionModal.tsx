@@ -94,46 +94,63 @@ export function DailyDecisionModal({
       return
     }
 
-    void loadSessions(state.checkin.date)
-  }, [open, initialAction, state])
+    const date = state.checkin.date
+
+    async function loadSessions() {
+      try {
+        setLoading(true)
+        const result = await fetchTrainingSessions(date, date)
+        setSessions(
+          result.filter(
+            session => session.status === 'planned' && session.type !== 'rest',
+          ),
+        )
+      } catch (reason) {
+        toast({
+          type: 'error',
+          title: 'Séances indisponibles',
+          message: reason instanceof Error
+            ? reason.message
+            : 'Une erreur inattendue est survenue.',
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadSessions()
+  }, [open, initialAction, state, toast])
 
   useEffect(() => {
     if (!open || action !== 'reduce' || !state?.adaptation) {
       return
     }
+
+    const checkinId = state.checkin.id
+
+    async function loadReductions() {
+      try {
+        setLoading(true)
+        const result = await fetchDailyAdaptationOptions(checkinId)
+        setReductions(result.options)
+      } catch (reason) {
+        toast({
+          type: 'error',
+          title: 'Réduction impossible',
+          message: reason instanceof Error
+            ? reason.message
+            : 'Une erreur inattendue est survenue.',
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
     void loadReductions()
-  }, [open, action, state])
+  }, [open, action, state, toast])
 
   if (!open || !state) {
     return null
-  }
-
-  async function loadSessions(date: string) {
-    try {
-      setLoading(true)
-      const result = await fetchTrainingSessions(date, date)
-      setSessions(
-        result.filter(
-          session => session.status === 'planned' && session.type !== 'rest',
-        ),
-      )
-    } catch (reason) {
-      showError('Séances indisponibles', reason)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function loadReductions() {
-    try {
-      setLoading(true)
-      const result = await fetchDailyAdaptationOptions(state!.checkin.id)
-      setReductions(result.options)
-    } catch (reason) {
-      showError('Réduction impossible', reason)
-    } finally {
-      setLoading(false)
-    }
   }
 
   async function reduce(option: DailyAdaptationOption) {

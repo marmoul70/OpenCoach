@@ -106,7 +106,12 @@ export function CoachPage() {
   } = coach
 
   const todayItem =
-    sessionDecisions.find(item => item.session !== null)
+    sessionDecisions.find(
+      item => (
+        item.session?.date
+        === coach.date
+      ),
+    )
 
   const session = todayItem?.session ?? null
 
@@ -351,6 +356,10 @@ export function CoachPage() {
                           >
                             Séance du jour
                           </span>
+
+                          <SessionStatusBadge
+                            status={session.status}
+                          />
 
                           {todayItem && (
                             <CockpitDecisionPill
@@ -1804,5 +1813,55 @@ function formatTodayShort(): string {
     },
   ).format(
     new Date(),
+  )
+}
+
+function SessionStatusBadge({
+  status,
+}: {
+  status: 'planned' | 'completed' | 'skipped'
+}) {
+  const presentation = {
+    planned: {
+      label: 'À faire',
+      className: (
+        'border-sky-400/20 '
+        + 'bg-sky-400/[0.08] '
+        + 'text-sky-300'
+      ),
+    },
+    completed: {
+      label: 'Réalisé',
+      className: (
+        'border-emerald-400/20 '
+        + 'bg-emerald-400/[0.08] '
+        + 'text-emerald-300'
+      ),
+    },
+    skipped: {
+      label: 'Non réalisé',
+      className: (
+        'border-slate-400/20 '
+        + 'bg-slate-400/[0.08] '
+        + 'text-slate-300'
+      ),
+    },
+  }[status]
+
+  return (
+    <span
+      className={[
+        (
+          'inline-flex items-center '
+          + 'rounded-full border '
+          + 'px-2 py-0.5 '
+          + 'text-[9px] font-bold '
+          + 'uppercase tracking-[0.08em]'
+        ),
+        presentation.className,
+      ].join(' ')}
+    >
+      {presentation.label}
+    </span>
   )
 }

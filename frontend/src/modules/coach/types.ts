@@ -36,7 +36,10 @@ export interface CoachSession {
   intensity: string
   heartRateZone?: string
 
-  status: string
+  status:
+    | 'planned'
+    | 'completed'
+    | 'skipped'
 }
 
 

@@ -40,6 +40,10 @@ import {
 } from '../coach/CoachTodayWidget'
 
 import {
+  useTrainingSessions,
+} from '../training/trainingStore'
+
+import {
   PhysiologicalTestProposalCard,
 } from '../physiological-tests'
 
@@ -83,12 +87,22 @@ export function Dashboard({
   onOpenRaces,
   onOpenWeather,
 }: DashboardProps) {
+  const {
+    goToCurrentWeek,
+  } = useTrainingSessions()
+
   const profile =
     useAthleteProfile()
 
   const {
     toast,
   } = useToast()
+
+  useEffect(() => {
+    goToCurrentWeek()
+  }, [
+    goToCurrentWeek,
+  ])
 
   const firstName =
     profile.identity.firstName.trim()

@@ -206,8 +206,34 @@ export function CoachTodayWidget({
     readiness,
     recentLoad,
     recentLoadAssessment,
+    sessionDecisions,
     dataWarning,
   } = coach
+
+  console.log(
+    '[OpenCoach DEBUG coach today]',
+    {
+      coachDate: coach.date,
+      sessions: sessionDecisions.map(
+        item => ({
+          date: item.session?.date ?? null,
+          title: item.session?.title ?? null,
+          status: item.session?.status ?? null,
+        }),
+      ),
+    },
+  )
+
+  const todayItem =
+    sessionDecisions.find(
+      item => (
+        item.session?.date
+        === coach.date
+      ),
+    )
+
+  const session =
+    todayItem?.session ?? null
 
   const summary =
     buildWeeklySummary(
@@ -341,6 +367,12 @@ export function CoachTodayWidget({
               >
                 Analyse du jour
               </span>
+
+              {session && (
+                <SessionStatusBadge
+                  status={session.status}
+                />
+              )}
             </div>
 
             <h3
@@ -1324,4 +1356,63 @@ function formatNumber(
       maximumFractionDigits: 0,
     },
   ).format(value)
+}
+
+function SessionStatusBadge({
+  status,
+}: {
+  status:
+    | 'planned'
+    | 'completed'
+    | 'skipped'
+}) {
+  const presentation = {
+    planned: {
+      label: 'À faire',
+      className: (
+        'border-sky-500/20 '
+        + 'bg-sky-500/[0.08] '
+        + 'text-sky-600 '
+        + 'dark:text-sky-300'
+      ),
+    },
+
+    completed: {
+      label: 'Réalisé',
+      className: (
+        'border-emerald-500/20 '
+        + 'bg-emerald-500/[0.08] '
+        + 'text-emerald-600 '
+        + 'dark:text-emerald-300'
+      ),
+    },
+
+    skipped: {
+      label: 'Non réalisé',
+      className: (
+        'border-slate-400/20 '
+        + 'bg-slate-400/[0.08] '
+        + 'text-slate-500 '
+        + 'dark:text-slate-300'
+      ),
+    },
+  }[status]
+
+  return (
+    <span
+      className={[
+        (
+          'inline-flex items-center '
+          + 'rounded-full border '
+          + 'px-2 py-0.5 '
+          + 'text-[9px] '
+          + 'font-bold uppercase '
+          + 'tracking-[0.08em]'
+        ),
+        presentation.className,
+      ].join(' ')}
+    >
+      {presentation.label}
+    </span>
+  )
 }

@@ -27,7 +27,7 @@ interface CoachTodayApiResponse {
       intensity: string
       heart_rate_zone: string | null
 
-      status: string
+      status: 'planned' | 'completed' | 'skipped'
     } | null
 
     decision: {

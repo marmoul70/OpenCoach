@@ -67,7 +67,7 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
     import os
     from datetime import datetime, timezone
     from sqlalchemy import select
-    from opencoach.database.models import IntegrationConnection
+    from opencoach.database.models import CorosSyncLock, IntegrationConnection
     from opencoach.database.session import SessionLocal
     from opencoach.integrations.coros.client import CorosMcpClient
     from opencoach.integrations.coros.oauth import CorosOAuthClientService
@@ -122,7 +122,10 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
                 "coros_sync_checkpoint": current,
                 "coros_sync_job": state,
             }
-            # Committe chaque fenêtre et l'état visible du traitement.
+            lock = db.get(CorosSyncLock, athlete_profile_id)
+            if lock is not None and lock.job_id == str(job_id):
+                lock.acquired_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            # Committe chaque fenêtre, l'état visible et le heartbeat du verrou.
             db.commit()
 
         result = CorosImportService(
@@ -173,4 +176,12 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
         # ou réponses brutes renvoyés par le fournisseur.
         COROS_SYNC_JOBS.failure(job_id, "La synchronisation COROS a échoué. Vérifie la connexion puis consulte les journaux OpenCoach.")
     finally:
+        try:
+            lock = db.get(CorosSyncLock, athlete_profile_id)
+            if lock is not None and lock.job_id == str(job_id):
+                db.delete(lock)
+                db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("Impossible de libérer le verrou COROS (job=%s)", job_id)
         db.close()

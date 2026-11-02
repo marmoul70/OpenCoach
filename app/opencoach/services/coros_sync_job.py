@@ -77,7 +77,7 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
     import os
     from datetime import datetime, timedelta, timezone
     from sqlalchemy import select
-    from opencoach.database.models import CorosSyncLock, IntegrationConnection
+    from opencoach.database.models import Activity, CorosSyncLock, IntegrationConnection
     from opencoach.database.session import SessionLocal
     from opencoach.integrations.coros.client import CorosMcpClient
     from opencoach.integrations.coros.oauth import CorosOAuthClientService
@@ -106,7 +106,20 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
         # Ne basculer en incrémental qu’après un import initial ayant
         # réellement enregistré des activités. Une ancienne exécution
         # ayant importé uniquement les métriques ne doit pas tronquer l’historique.
-        initial_import_completed = bool(config.get("coros_initial_import_completed"))
+        # A stale config flag must never skip the six-month import when no
+        # COROS activities have actually been persisted.
+        has_coros_activities = db.scalar(
+            select(Activity.id)
+            .where(
+                Activity.athlete_profile_id == athlete_profile_id,
+                Activity.provider == "coros",
+            )
+            .limit(1)
+        ) is not None
+        initial_import_completed = (
+            bool(config.get("coros_initial_import_completed"))
+            and has_coros_activities
+        )
         incremental_start = (
             connection.last_synced_at.date() - timedelta(days=7)
             if initial_import_completed and connection.last_synced_at is not None

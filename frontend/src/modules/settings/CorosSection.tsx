@@ -63,8 +63,9 @@ export function CorosSection() {
             .then(syncResult => {
               if (!mounted) return
               const total = Object.values(syncResult.imported_snapshots).reduce((sum, count) => sum + count, 0)
+              const activities = syncResult.imported_snapshots.activities ?? 0
               const skipped = syncResult.skipped.length ? ` Éléments ignorés : ${syncResult.skipped.join(', ')}.` : ''
-              setMessage(`Import terminé : ${total} instantanés enregistrés (${syncResult.start_date} → ${syncResult.end_date}).${skipped}`)
+              setMessage(`Import terminé : ${activities} activité(s) et ${total} instantanés enregistrés (${syncResult.start_date} → ${syncResult.end_date}).${skipped}`)
               return fetchCorosConnection().then(refreshed => {
                 if (mounted) setConnection(refreshed)
               })
@@ -148,8 +149,9 @@ export function CorosSection() {
     try {
       const result = await syncCorosHistory()
       const total = Object.values(result.imported_snapshots).reduce((sum, count) => sum + count, 0)
+      const activities = result.imported_snapshots.activities ?? 0
       const skipped = result.skipped.length ? ` Éléments ignorés : ${result.skipped.join(', ')}.` : ''
-      setMessage(`Import terminé : ${total} instantanés enregistrés (${result.start_date} → ${result.end_date}).${skipped}`)
+      setMessage(`Import terminé : ${activities} activité(s) et ${total} instantanés enregistrés (${result.start_date} → ${result.end_date}).${skipped}`)
       const refreshed = await fetchCorosConnection()
       setConnection(refreshed)
     } catch (reason) {

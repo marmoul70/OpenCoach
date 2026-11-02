@@ -1,8 +1,6 @@
 import {
-  Activity,
   CheckCircle2,
   CircleAlert,
-  CloudDownload,
   Link2,
   LoaderCircle,
   RefreshCw,

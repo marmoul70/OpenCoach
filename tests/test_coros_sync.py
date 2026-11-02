@@ -1,6 +1,6 @@
 from datetime import date
 
-from opencoach.integrations.coros.sync import CorosImportService, six_months_ago
+from opencoach.integrations.coros.sync import CorosImportService, _build_tool_arguments, six_months_ago
 
 
 class FakeClient:
@@ -116,3 +116,33 @@ def test_importer_uses_explicit_incremental_start_date():
     assert result["start_date"] == "2026-05-27"
     assert len(client.calls) == 1
     assert client.calls[0][1] == {"startDate": "20260527", "endDate": "20260602"}
+
+
+def test_activity_detail_arguments_follow_the_discovered_mcp_schema():
+    tool = {
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "labelId": {"type": "string"},
+                "sportType": {"type": "integer"},
+                "includeLaps": {"type": "boolean"},
+            },
+            "required": ["labelId", "sportType"],
+        }
+    }
+    assert _build_tool_arguments(tool, {
+        "labelId": 123,
+        "sportType": "102",
+        "unused": "ignored",
+    }) == {"labelId": "123", "sportType": 102}
+
+
+def test_activity_detail_arguments_skip_when_required_schema_value_missing():
+    tool = {
+        "inputSchema": {
+            "type": "object",
+            "properties": {"labelId": {"type": "string"}, "sportType": {"type": "integer"}},
+            "required": ["labelId", "sportType"],
+        }
+    }
+    assert _build_tool_arguments(tool, {"labelId": "abc"}) is None

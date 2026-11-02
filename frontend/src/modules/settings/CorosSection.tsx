@@ -272,6 +272,7 @@ export function CorosSection() {
             <option value={12}>Toutes les 12 heures</option>
             <option value={24}>Toutes les 24 heures</option>
           </select>
+          <span className="mt-1.5 block text-[11px] text-slate-500">La synchronisation automatique sera activée avec le planificateur. L’import manuel fonctionne dès maintenant.</span>
         </label>
         <div className="rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-white/[0.04]">
           <span className="block text-xs font-medium text-slate-700 dark:text-slate-200">Historique initial</span>

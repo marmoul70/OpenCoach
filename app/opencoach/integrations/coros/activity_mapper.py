@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import math
 from typing import Any
 from uuid import UUID
 
@@ -54,10 +55,13 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
         for key in ("workoutTime", "durationSeconds", "elapsed_time_seconds")
         if record.get(key) is not None
     ), None)
-    try:
-        duration_seconds = int(duration) if duration is not None else None
-    except (TypeError, ValueError):
-        duration_seconds = None
+    if duration is not None:
+        try:
+            parsed_duration = int(duration)
+            if not isinstance(duration, bool) and parsed_duration >= 0 and float(duration) == parsed_duration:
+                activity.elapsed_time_seconds = parsed_duration
+        except (TypeError, ValueError, OverflowError):
+            pass
 
     activity = db.scalar(select(Activity).where(
         Activity.provider == "coros",
@@ -76,41 +80,20 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
     activity.name = str(record.get("name") or sport_type)
     activity.sport_type = sport_type
     activity.start_at = start_at
-    activity.elapsed_time_seconds = duration_seconds
-    distance = next((
-        record[key]
-        for key in ("distanceMeters", "distance_m")
-        if record.get(key) is not None
-    ), None)
-    try:
-        activity.distance_m = float(distance) if distance is not None else None
-    except (TypeError, ValueError):
-        activity.distance_m = None
-    elevation = next((
-        record[key]
-        for key in ("totalAscent", "elevationGain", "elevation_gain_m")
-        if record.get(key) is not None
-    ), None)
-    try:
-        activity.elevation_gain_m = float(elevation) if elevation is not None else None
-    except (TypeError, ValueError):
-        activity.elevation_gain_m = None
-    average_hr = next((
-        record[key]
-        for key in ("avgHr", "averageHeartRate", "average_heart_rate")
-        if record.get(key) is not None
-    ), None)
-    try:
-        activity.average_heart_rate = float(average_hr) if average_hr is not None else None
-    except (TypeError, ValueError):
-        activity.average_heart_rate = None
-    max_hr = next((
-        record[key]
-        for key in ("maxHr", "maxHeartRate", "max_heart_rate")
-        if record.get(key) is not None
-    ), None)
-    try:
-        activity.max_heart_rate = float(max_hr) if max_hr is not None else None
-    except (TypeError, ValueError):
-        activity.max_heart_rate = None
+    metric_fields = {
+        "distance_m": ("distanceMeters", "distance_m"),
+        "elevation_gain_m": ("totalAscent", "elevationGain", "elevation_gain_m"),
+        "average_heart_rate": ("avgHr", "averageHeartRate", "average_heart_rate"),
+        "max_heart_rate": ("maxHr", "maxHeartRate", "max_heart_rate"),
+    }
+    for attribute, keys in metric_fields.items():
+        value = next((record[key] for key in keys if record.get(key) is not None), None)
+        if value is None or isinstance(value, bool):
+            continue
+        try:
+            parsed_value = float(value)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if math.isfinite(parsed_value) and parsed_value >= 0:
+            setattr(activity, attribute, parsed_value)
     return True

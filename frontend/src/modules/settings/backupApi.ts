@@ -38,6 +38,7 @@ export interface BackupRestoreResult {
   restored: boolean
   safetyBackupFilename: string
   importedRevision: string
+  environmentRestored: boolean
 }
 
 
@@ -45,6 +46,7 @@ interface ApiBackupRestoreResult {
   restored: boolean
   safety_backup_filename: string
   imported_revision: string
+  environment_restored?: boolean
 }
 
 
@@ -66,8 +68,8 @@ function restoreFromApi(
     restored: result.restored,
     safetyBackupFilename:
       result.safety_backup_filename,
-    importedRevision:
-      result.imported_revision,
+    importedRevision: result.imported_revision,
+    environmentRestored: result.environment_restored ?? false,
   }
 }
 
@@ -231,9 +233,9 @@ export async function restoreExistingBackup(
   const data =
     await response.json() as ApiBackupRestoreResult
 
-  return restoreFromApi(
-    data,
-  )
+  const result = restoreFromApi(data)
+  await waitForBackendRestart(result.environmentRestored)
+  return result
 }
 
 
@@ -269,6 +271,22 @@ export async function restoreBackupFile(
 }
 
 
+
+async function waitForBackendRestart(environmentRestored: boolean): Promise<void> {
+  if (!environmentRestored) return
+  await new Promise(resolve => window.setTimeout(resolve, 1800))
+  const deadline = Date.now() + 30000
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch('/api/health/ready', { cache: 'no-store' })
+      if (response.ok) return
+    } catch {
+      // Backend restart in progress.
+    }
+    await new Promise(resolve => window.setTimeout(resolve, 1000))
+  }
+  throw new Error('La sauvegarde est restaurée, mais le backend ne répond pas encore.')
+}
 export function backupDownloadUrl(
   filename: string,
 ): string {

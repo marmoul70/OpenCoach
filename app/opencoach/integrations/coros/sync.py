@@ -184,6 +184,8 @@ def _find_rows(value: Any) -> list[dict[str, Any]]:
             if found:
                 return found
     if isinstance(value, dict):
+        if isinstance(value.get("text"), str) and set(value) == {"text"}:
+            return _parse_coros_sport_records_text(value["text"])
         for key in ("records", "list", "data", "items", "days", "dailyData", "sleepList", "result"):
             child = value.get(key)
             if isinstance(child, (dict, list, str)):

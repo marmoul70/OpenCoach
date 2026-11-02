@@ -14,6 +14,7 @@ from opencoach.database.models.user import User
 from opencoach.database.models.watch import Watch
 from opencoach.database.models.wellness import WellnessDaily
 from opencoach.database.models.coros_daily_data import CorosDailyData
+from opencoach.database.models.coros_sync_lock import CorosSyncLock
 from opencoach.database.models.integration_connection import (
     IntegrationConnection,
 )
@@ -46,6 +47,7 @@ __all__ = [
     "WellnessDaily",
     "IntegrationConnection",
     "CorosDailyData",
+    "CorosSyncLock",
     "TrainingSession",
     "WeeklyTrainingPlan",
     "DailyContext",

@@ -265,9 +265,9 @@ export async function restoreBackupFile(
   const data =
     await response.json() as ApiBackupRestoreResult
 
-  return restoreFromApi(
-    data,
-  )
+  const result = restoreFromApi(data)
+  await waitForBackendRestart(result.environmentRestored)
+  return result
 }
 
 

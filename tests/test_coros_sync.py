@@ -198,3 +198,26 @@ def test_activity_details_use_discovered_tool_schema_during_import():
     assert detail_calls == [("getActivityDetail", {"labelId": "activity-1", "sportType": 102})]
     activity_snapshot = next(row for row in db.added if row.category == "activities")
     assert activity_snapshot.payload["activity_detail"] == {"laps": [{"lap": 1}]}
+
+
+def test_empty_metric_response_does_not_create_a_fake_snapshot():
+    class EmptyMetricClient(FakeClient):
+        def call_tool(self, name, arguments):
+            self.calls.append((name, arguments))
+            return {"content": [{"type": "text", "text": "[]"}]}
+
+    db = FakeDb()
+    service = CorosImportService(
+        EmptyMetricClient(),
+        db,
+        profile_id="00000000-0000-0000-0000-000000000001",
+    )
+
+    result = service.import_history(
+        {"activities": False, "sleep": True},
+        start_date=date(2026, 6, 2),
+        today=date(2026, 6, 2),
+    )
+
+    assert result["imported_snapshots"]["sleep"] == 0
+    assert db.added == []

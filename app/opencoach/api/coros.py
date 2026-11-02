@@ -397,6 +397,19 @@ def start_coros_sync(
     if active is not None:
         return {"job_id": str(active.id), "status": active.status}
     job = COROS_SYNC_JOBS.create(athlete_profile_id)
+    connection.config = {
+        **(connection.config or {}),
+        "coros_sync_job": {
+            "job_id": str(job.id),
+            "status": "pending",
+            "created_at": job.created_at.isoformat(),
+            "finished_at": None,
+            "result": None,
+            "error": None,
+            "progress": {"category": None, "next_date": None},
+        },
+    }
+    db.commit()
     background_tasks.add_task(run_coros_sync_job, job_id=job.id, athlete_profile_id=athlete_profile_id)
     return {"job_id": str(job.id), "status": job.status}
 
@@ -405,15 +418,18 @@ def start_coros_sync(
 def get_coros_sync_status(
     job_id: UUID,
     athlete_profile_id: UUID = Depends(get_current_athlete_profile_id),
+    db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    job = COROS_SYNC_JOBS.get(job_id)
-    if job is None or job.athlete_profile_id != athlete_profile_id:
+    connection = _connection(db, athlete_profile_id)
+    state = (connection.config or {}).get("coros_sync_job") if connection else None
+    if not state or state.get("job_id") != str(job_id):
         raise HTTPException(status_code=404, detail="Import COROS introuvable.")
     return {
-        "job_id": str(job.id),
-        "status": job.status,
-        "created_at": job.created_at.isoformat(),
-        "finished_at": job.finished_at.isoformat() if job.finished_at else None,
-        "result": job.result,
-        "error": job.error,
+        "job_id": state["job_id"],
+        "status": state.get("status", "unknown"),
+        "created_at": state.get("created_at"),
+        "finished_at": state.get("finished_at"),
+        "result": state.get("result"),
+        "error": state.get("error"),
+        "progress": state.get("progress"),
     }

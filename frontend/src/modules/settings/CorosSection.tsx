@@ -126,7 +126,7 @@ export function CorosSection() {
     setMessage(null)
     try {
       const result = await testCorosConnection()
-      setAvailableTools(result.available_tools)
+      setAvailableTools(Array.isArray(result.available_tools) ? result.available_tools : [])
       setMessage(`Connexion MCP opérationnelle : ${result.available_tools_count} outils COROS disponibles.`)
       const refreshed = await fetchCorosConnection()
       setConnection(refreshed)
@@ -343,12 +343,12 @@ export function CorosSection() {
 
       {message && <p role="status" className="text-xs text-emerald-700 dark:text-emerald-400">{message}</p>}
       {availableTools.length > 0 && (
-        <details className="rounded-lg border border-slate-200 p-3 text-xs dark:border-white/10">
-          <summary className="cursor-pointer font-medium text-slate-700 dark:text-slate-200">Outils COROS disponibles ({availableTools.length})</summary>
-          <ul className="mt-2 grid gap-1 sm:grid-cols-2">
-            {availableTools.map(tool => <li key={tool} className="font-mono text-[11px] text-slate-500">{tool}</li>)}
+        <section aria-label="Outils COROS disponibles" className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+          <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-100">Outils COROS disponibles ({availableTools.length})</h3>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {availableTools.map(tool => <li key={tool} className="rounded-md bg-slate-100 px-2 py-1.5 font-mono text-[11px] text-slate-700 dark:bg-white/5 dark:text-slate-300">{tool}</li>)}
           </ul>
-        </details>
+        </section>
       )}
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</p>}
       {!connection.connected && <p className="text-[11px] text-slate-500">Connecte COROS pour activer les synchronisations automatiques. Tu peux aussi lancer un import manuel à tout moment.</p>}

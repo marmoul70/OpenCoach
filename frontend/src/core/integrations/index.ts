@@ -20,6 +20,7 @@ export {
   startCorosOAuth,
   testCorosConnection,
   syncCorosHistory,
+  waitForCorosSync,
   type CorosConnection,
   type CorosSettingsUpdate,
   type CorosSyncResult,

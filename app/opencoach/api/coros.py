@@ -383,7 +383,19 @@ def sync_coros_history(
         try:
             refreshed = refresh_secret_if_needed(secret, _oauth(), now=datetime.now(timezone.utc).timestamp())
             client = CorosMcpClient(refreshed["access_token"])
-            result = CorosImportService(client, db, athlete_profile_id).import_history(
+
+            def update_lock_heartbeat(category: str, next_date: str | None) -> None:
+                current_lock = db.get(CorosSyncLock, athlete_profile_id)
+                if current_lock is not None and current_lock.job_id == lock.job_id:
+                    current_lock.acquired_at = datetime.now(timezone.utc).replace(tzinfo=None)
+                    db.commit()
+
+            result = CorosImportService(
+                client,
+                db,
+                athlete_profile_id,
+                progress_callback=update_lock_heartbeat,
+            ).import_history(
                 (connection.config or {}).get("categories", DEFAULT_CATEGORIES),
                 months=6,
                 start_date=(

@@ -37,6 +37,10 @@ class CorosSyncJobStore:
         with self._lock:
             return self._jobs.get(job_id)
 
+    def discard(self, job_id: UUID) -> None:
+        with self._lock:
+            self._jobs.pop(job_id, None)
+
     def running(self, job_id: UUID) -> None:
         with self._lock:
             job = self._jobs.get(job_id)

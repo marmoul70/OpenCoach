@@ -59,37 +59,23 @@ class AuthenticationMiddleware(
             in PROTECTED_EXACT_PATHS
         )
 
-        if requires_auth:
-            token = (
-                request.cookies.get(
-                    COOKIE_NAME
-                )
-            )
-
-            identity = (
-                read_session_identity(
-                    token
-                )
-            )
-
-            if (
-                identity is None
-                or identity.user_id is None
-            ):
-                return JSONResponse(
-                    status_code=401,
-                    content={
-                        "detail": (
-                            "Authentification "
-                            "requise."
-                        )
-                    },
-                )
-
-            request.state.user_id = (
-                identity.user_id
-            )
-
-        return await call_next(
-            request
+        token = request.cookies.get(COOKIE_NAME)
+        identity = read_session_identity(token)
+        authenticated_user_id = (
+            identity.user_id
+            if identity is not None
+            else None
         )
+
+        if authenticated_user_id is not None:
+            request.state.user_id = authenticated_user_id
+
+        if requires_auth and authenticated_user_id is None:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "detail": "Authentification requise."
+                },
+            )
+
+        return await call_next(request)

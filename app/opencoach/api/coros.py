@@ -366,7 +366,7 @@ def sync_coros_history(
 
     lock = CorosSyncLock(
         athlete_profile_id=athlete_profile_id,
-        job_id=f"sync-{uuid4()}",
+        job_id=str(uuid4()),
     )
     db.add(lock)
     try:

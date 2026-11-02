@@ -9,6 +9,7 @@ from opencoach.api.coaching.dependencies import (
     get_daily_checkin_repository,
     get_daily_session_rescheduling_service,
     get_training_session_repository,
+    get_physiological_snapshot_service,
 )
 from opencoach.api.intervals import (
     get_current_athlete_profile_id,
@@ -29,6 +30,20 @@ from opencoach.models import (
     AthleteProfile,
     TrainingSession,
 )
+from opencoach.planning.physiology.snapshot_service import (
+    PhysiologicalCalibrationSnapshotService,
+)
+
+
+class FakePhysiologicalMeasurementRepository:
+    def get_latest_measurement(
+        self,
+        athlete_profile_id,
+        metric,
+    ):
+        del athlete_profile_id
+        del metric
+        return None
 
 
 class FakeDailyCheckInRepository:
@@ -339,6 +354,16 @@ def _client():
     app.dependency_overrides[
         get_daily_session_rescheduling_service
     ] = lambda: rescheduling_service
+
+    # Ces tests utilisent un profil synthétique : aucune mesure historique
+    # SQL n'est nécessaire pour vérifier l'acceptation de l'adaptation.
+    app.dependency_overrides[
+        get_physiological_snapshot_service
+    ] = lambda: PhysiologicalCalibrationSnapshotService(
+        measurement_repository=(
+            FakePhysiologicalMeasurementRepository()
+        )
+    )
 
     return (
         TestClient(app),

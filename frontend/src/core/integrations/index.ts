@@ -19,6 +19,8 @@ export {
   saveCorosSettings,
   startCorosOAuth,
   testCorosConnection,
+  syncCorosHistory,
   type CorosConnection,
   type CorosSettingsUpdate,
+  type CorosSyncResult,
 } from './coros'

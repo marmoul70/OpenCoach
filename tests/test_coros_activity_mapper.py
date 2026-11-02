@@ -73,3 +73,36 @@ def test_coros_activity_keeps_unknown_sport_code_instead_of_guessing():
         "startTimestamp": 1790000000,
     }) is True
     assert db.added[0].sport_type == "COROS (987654)"
+
+
+def test_sparse_coros_update_preserves_existing_metrics():
+    from types import SimpleNamespace
+
+    existing = SimpleNamespace(
+        name="Trail",
+        sport_type="Trail",
+        start_at=datetime.fromtimestamp(1790000000),
+        elapsed_time_seconds=5400,
+        distance_m=12500.0,
+        elevation_gain_m=650.0,
+        average_heart_rate=148.0,
+        max_heart_rate=176.0,
+    )
+
+    class ExistingDb(FakeDb):
+        def scalar(self, statement):
+            return existing
+
+    db = ExistingDb()
+    assert upsert_coros_activity(db, uuid4(), {
+        "labelId": "activity-42",
+        "sportType": 102,
+        "startTimestamp": 1790000000,
+    }) is True
+
+    assert db.added == []
+    assert existing.elapsed_time_seconds == 5400
+    assert existing.distance_m == 12500.0
+    assert existing.elevation_gain_m == 650.0
+    assert existing.average_heart_rate == 148.0
+    assert existing.max_heart_rate == 176.0

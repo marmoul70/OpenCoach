@@ -78,10 +78,27 @@ export function saveCorosSettings(
 }
 
 
+export interface CorosToolProperty {
+  type?: string | string[]
+  description?: string
+  enum?: Array<string | number | boolean>
+  default?: unknown
+}
+
+export interface CorosAvailableTool {
+  name: string
+  description: string
+  input_schema: {
+    type?: string
+    required?: string[]
+    properties?: Record<string, CorosToolProperty>
+  }
+}
+
 export interface CorosConnectionTest {
   connected: boolean
   mcp_reachable: boolean
-  available_tools: string[]
+  available_tools: CorosAvailableTool[]
   available_tools_count: number
 }
 

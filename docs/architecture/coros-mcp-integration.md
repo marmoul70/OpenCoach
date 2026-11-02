@@ -2,7 +2,7 @@
 
 Conception initiale de l'intégration COROS dans OpenCoach.
 
-- Serveur officiel COROS MCP, région Europe : `https://mcp.coros.com/mcp`.
+- Serveur officiel COROS MCP, région Europe : `https://mcpeu.coros.com/mcp`.
 - Connexion OAuth/PKCE avec parcours navigateur ; ne jamais collecter le mot de passe COROS.
 - Historique initial limité aux six derniers mois.
 - Import des activités, détails, tours, sommeil, HRV, fréquence cardiaque, stress, santé quotidienne et charge selon disponibilité des outils COROS.

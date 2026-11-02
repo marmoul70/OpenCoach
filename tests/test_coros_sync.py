@@ -85,3 +85,34 @@ def test_importer_resumes_from_saved_weekly_checkpoint():
     assert client.calls[0][1] == {"startDate": "20260527", "endDate": "20260602"}
     assert result["imported_snapshots"]["sleep"] == 2
     assert checkpoints == [("sleep", None)]
+
+
+def test_importer_honors_requested_months():
+    client = FakeClient()
+    db = FakeDb()
+    service = CorosImportService(client, db, profile_id="00000000-0000-0000-0000-000000000001")
+
+    result = service.import_history(
+        {"activities": False, "sleep": True},
+        months=2,
+        today=date(2026, 6, 2),
+    )
+
+    assert result["start_date"] == "2026-04-02"
+
+
+def test_importer_uses_explicit_incremental_start_date():
+    client = FakeClient()
+    db = FakeDb()
+    service = CorosImportService(client, db, profile_id="00000000-0000-0000-0000-000000000001")
+
+    result = service.import_history(
+        {"activities": False, "sleep": True},
+        months=6,
+        start_date=date(2026, 5, 27),
+        today=date(2026, 6, 2),
+    )
+
+    assert result["start_date"] == "2026-05-27"
+    assert len(client.calls) == 1
+    assert client.calls[0][1] == {"startDate": "20260527", "endDate": "20260602"}

@@ -50,19 +50,6 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
             sport_code,
             f"COROS ({sport_code})" if sport_code is not None else "COROS",
         )
-    duration = next((
-        record[key]
-        for key in ("workoutTime", "durationSeconds", "elapsed_time_seconds")
-        if record.get(key) is not None
-    ), None)
-    if duration is not None:
-        try:
-            parsed_duration = int(duration)
-            if not isinstance(duration, bool) and parsed_duration >= 0 and float(duration) == parsed_duration:
-                activity.elapsed_time_seconds = parsed_duration
-        except (TypeError, ValueError, OverflowError):
-            pass
-
     activity = db.scalar(select(Activity).where(
         Activity.provider == "coros",
         Activity.provider_activity_id == str(label_id),
@@ -80,6 +67,19 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
     activity.name = str(record.get("name") or sport_type)
     activity.sport_type = sport_type
     activity.start_at = start_at
+    duration = next((
+        record[key]
+        for key in ("workoutTime", "durationSeconds", "elapsed_time_seconds")
+        if record.get(key) is not None
+    ), None)
+    if duration is not None:
+        try:
+            parsed_duration = int(duration)
+            if not isinstance(duration, bool) and parsed_duration >= 0 and float(duration) == parsed_duration:
+                activity.elapsed_time_seconds = parsed_duration
+        except (TypeError, ValueError, OverflowError):
+            pass
+
     metric_fields = {
         "distance_m": ("distanceMeters", "distance_m"),
         "elevation_gain_m": ("totalAscent", "elevationGain", "elevation_gain_m"),

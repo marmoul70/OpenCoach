@@ -95,12 +95,82 @@ def _decode_tool_result(result: dict[str, Any]) -> Any:
     return _jsonable(result)
 
 
+
+def _parse_coros_sport_records_text(raw: str) -> list[dict[str, Any]]:
+    """Convertit le rapport texte de querySportRecords en activités normalisées."""
+    import re
+
+    records: list[dict[str, Any]] = []
+    blocks = re.split(r"(?m)^\\s*\\d+\\.\\s+", raw.strip())
+    for block in blocks[1:]:
+        lines = block.strip().splitlines()
+        if not lines:
+            continue
+        title = re.match(r"(.+?)\\s+[—-]\\s+(\\d{4}-\\d{2}-\\d{2})$", lines[0].strip())
+        if not title:
+            continue
+        record: dict[str, Any] = {"name": title.group(1).strip(), "date": title.group(2)}
+
+        def value(pattern: str) -> str | None:
+            match = re.search(pattern, block, re.IGNORECASE)
+            return match.group(1).strip() if match else None
+
+        fields = {
+            "labelId": r"\\bLabelId\\s*:\\s*(\\d+)",
+            "sportType": r"\\bSportType\\s*:\\s*(\\d+)",
+            "startTimestamp": r"\\bstartTimestamp\\s*=\\s*(\\d+)",
+            "endTimestamp": r"\\bendTimestamp\\s*=\\s*(\\d+)",
+            "avgHr": r"\\bAvg HR\\s*:\\s*(\\d+)\\s*bpm",
+            "maxHr": r"\\bMax HR\\s*:\\s*(\\d+)\\s*bpm",
+            "calories": r"\\bCalories\\s*:\\s*(\\d+)\\s*kcal",
+        }
+        for key, pattern in fields.items():
+            found = value(pattern)
+            if found is not None:
+                record[key] = int(found)
+
+        duration = value(r"\\bDuration\\s*:\\s*(\\d+):(\\d{2})(?::(\\d{2}))?")
+        if duration:
+            parts = [int(part) for part in duration.split(":")]
+            record["workoutTime"] = parts[0] * 3600 + parts[1] * 60 + (parts[2] if len(parts) == 3 else 0)
+
+        distance = value(r"\\bDistance\\s*:\\s*([\\d.]+)\\s*km")
+        if distance is not None:
+            record["distanceMeters"] = float(distance) * 1000
+        else:
+            distance = value(r"\\bDistance\\s*:\\s*([\\d.]+)\\s*m(?:\\s|$)")
+            if distance is not None:
+                record["distanceMeters"] = float(distance)
+
+        pace = value(r"\\bAverage Pace\\s*:\\s*(\\d+):(\\d{2})\\s*/km")
+        if pace:
+            minutes, seconds = (int(part) for part in pace.split(":"))
+            record["averagePaceSecondsPerKm"] = minutes * 60 + seconds
+
+        speed = value(r"\\bAverage Speed\\s*:\\s*([\\d.]+)\\s*km/h")
+        if speed is not None:
+            record["average_speed_mps"] = float(speed) / 3.6
+
+        location = value(r"\\bLocation\\s*:\\s*([^\\r\\n]+)")
+        if location:
+            record["location"] = location
+
+        coordinates = re.search(r"\\bStart Coordinates\\s*:\\s*([-+\\d.]+)\\s*,\\s*([-+\\d.]+)", block, re.IGNORECASE)
+        if coordinates:
+            record["startLatitude"] = float(coordinates.group(1))
+            record["startLongitude"] = float(coordinates.group(2))
+
+        if record.get("labelId") and record.get("startTimestamp") and record.get("sportType") is not None:
+            records.append(record)
+    return records
+
+
 def _find_rows(value: Any) -> list[dict[str, Any]]:
     if isinstance(value, str):
         decoded = _decode_text_payload(value)
-        return _find_rows(decoded) if not (
-            isinstance(decoded, dict) and set(decoded) == {"text"}
-        ) else []
+        if isinstance(decoded, dict) and set(decoded) == {"text"}:
+            return _parse_coros_sport_records_text(value)
+        return _find_rows(decoded)
     if isinstance(value, list):
         rows = [item for item in value if isinstance(item, dict)]
         if rows:

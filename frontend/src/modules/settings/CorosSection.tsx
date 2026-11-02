@@ -292,7 +292,7 @@ export function CorosSection() {
             <option value={12}>Toutes les 12 heures</option>
             <option value={24}>Toutes les 24 heures</option>
           </select>
-          <span className="mt-1.5 block text-[11px] text-slate-500">La synchronisation automatique sera activée avec le planificateur. L’import manuel fonctionne dès maintenant.</span>
+          <span className="mt-1.5 block text-[11px] text-slate-500">Le service vérifie les échéances toutes les 15 minutes et lance l’import lorsque la fréquence est atteinte.</span>
         </label>
         <div className="rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-white/[0.04]">
           <span className="block text-xs font-medium text-slate-700 dark:text-slate-200">Historique initial</span>
@@ -320,7 +320,7 @@ export function CorosSection() {
 
       {message && <p role="status" className="text-xs text-emerald-700 dark:text-emerald-400">{message}</p>}
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</p>}
-      {!connection.connected && <p className="text-[11px] text-slate-500">La fréquence est mémorisée pour la future planification automatique. En attendant, utilise « Lancer l’import » pour synchroniser manuellement.</p>}
+      {!connection.connected && <p className="text-[11px] text-slate-500">Connecte COROS pour activer les synchronisations automatiques. Tu peux aussi lancer un import manuel à tout moment.</p>}
     </div>
   )
 }

@@ -9,7 +9,7 @@ Conception initiale de l'intégration COROS dans OpenCoach.
 - Synchronisation incrémentale configurable depuis l'interface web.
 - Intégration indépendante d'Intervals.icu et strictement en lecture seule : aucune modification du planning COROS.
 - Jetons chiffrés côté backend, aucun secret exposé au frontend.
-- Import reprenable, idempotent et respectueux des quotas COROS, notamment 50 fichiers FIT par fenêtre de 24 heures.
+- Import idempotent par jour et catégorie ; les données déjà présentes sont mises à jour au lieu d'être dupliquées. Les FIT restent désactivés par défaut et soumis au quota COROS de 50 fichiers par fenêtre de 24 heures.
 
 Le détail du flux OAuth et les outils doivent être validés par tests d'intégration simulés avant de déclarer la connexion opérationnelle.
 
@@ -23,7 +23,7 @@ Découvrir le catalogue avec `tools/list`, puis utiliser selon disponibilité : 
 
 ## Import et synchronisation
 
-La première fenêtre est six mois glissants. Découper les requêtes en plages conformes aux limites propres à chaque outil ; enregistrer la progression et reprendre après interruption. Les FIT sont facultatifs et limités à 50 fichiers/liens par fenêtre fixe de 24 h. Synchronisation idempotente des activités et des jours de santé. Fréquence automatique configurable : désactivée, 6 h, 12 h ou 24 h.
+La première fenêtre est six mois glissants. Le endpoint manuel `POST /api/integrations/coros/sync` importe les activités et les détails disponibles, ainsi que les catégories quotidiennes activées, dans `coros_daily_data`. Les plages datées sont découpées en fenêtres de sept jours et les écritures sont idempotentes. Les outils COROS limités à une fenêtre glissante (santé quotidienne, FC au repos, stress et charge) ne fournissent ici que leurs sept derniers jours ; sommeil, HRV et FC moyenne utilisent des plages datées. Une relance reprend sans doublons, mais aucun curseur de progression n'est encore persisté. Les FIT ne sont pas encore téléchargés. Le réglage de fréquence est enregistré dans l'interface mais le planificateur automatique reste à implémenter.
 
 ## Interface cible
 

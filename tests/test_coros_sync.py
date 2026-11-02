@@ -286,7 +286,9 @@ def test_activity_detail_invalid_boolean_and_lossy_integer_are_rejected():
     assert _build_tool_arguments(boolean_tool, {"includeLaps": "perhaps"}) is None
     assert _build_tool_arguments(integer_tool, {"sportType": 102.5}) is None
 
-\n\ndef test_activity_import_builds_query_arguments_from_discovered_schema():
+
+
+def test_activity_import_builds_query_arguments_from_discovered_schema():
     client = FakeActivityClient()
     db = FakeDb()
     service = CorosImportService(

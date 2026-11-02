@@ -14,6 +14,7 @@ import {
   pollCorosOAuth,
   saveCorosSettings,
   startCorosOAuth,
+  testCorosConnection,
   type CorosConnection,
 } from '../../core/integrations'
 
@@ -40,6 +41,7 @@ export function CorosSection() {
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [testing, setTesting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -87,6 +89,23 @@ export function CorosSection() {
       setError(errorMessage(reason))
     } finally {
       setConnecting(false)
+    }
+  }
+
+
+  async function handleTestConnection() {
+    setTesting(true)
+    setError(null)
+    setMessage(null)
+    try {
+      const result = await testCorosConnection()
+      setMessage(`Connexion MCP opérationnelle : ${result.available_tools_count} outils COROS disponibles.`)
+      const refreshed = await fetchCorosConnection()
+      setConnection(refreshed)
+    } catch (reason) {
+      setError(errorMessage(reason))
+    } finally {
+      setTesting(false)
     }
   }
 
@@ -174,6 +193,17 @@ export function CorosSection() {
           {connecting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
           {connecting ? 'En attente de l’autorisation COROS…' : connection.connected ? 'Reconnecter COROS' : 'Connecter mon compte COROS'}
         </button>
+        {connection.connected && (
+          <button
+            type="button"
+            onClick={handleTestConnection}
+            disabled={testing || connecting}
+            className="mt-4 ml-2 inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-white/15 dark:text-slate-200 dark:hover:bg-white/5"
+          >
+            {testing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {testing ? 'Test en cours…' : 'Tester la connexion MCP'}
+          </button>
+        )}
       </div>
 
       <div className="space-y-3">

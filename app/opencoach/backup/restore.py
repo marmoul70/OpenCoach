@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import tempfile
 import threading
@@ -13,6 +14,7 @@ from sqlalchemy.engine import make_url
 
 from opencoach.database.session import (
     DATABASE_URL,
+    PROJECT_ROOT,
 )
 
 from .service import (
@@ -41,6 +43,7 @@ class BackupRestoreResult:
 
     safety_backup: BackupInfo
     imported_revision: str
+    environment_restored: bool = False
 
 
 class BackupRestoreService:
@@ -115,14 +118,13 @@ class BackupRestoreService:
                 archive_bytes
             )
 
-            imported_database = (
-                directory
-                / "opencoach-import.db"
-            )
+            imported_database = directory / "opencoach-import.db"
+            imported_environment = directory / "imported.env"
 
-            self._extract_and_validate_archive(
+            has_environment = self._extract_and_validate_archive(
                 archive_path=archive_path,
                 database_path=imported_database,
+                environment_path=imported_environment,
             )
 
             self._validate_sqlite_database(
@@ -166,9 +168,14 @@ class BackupRestoreService:
                     destination_path=active_database,
                 )
 
-                self._validate_sqlite_database(
-                    active_database
-                )
+                self._validate_sqlite_database(active_database)
+
+                if has_environment:
+                    target_environment = PROJECT_ROOT / ".env"
+                    staged_environment = target_environment.with_suffix(".env.restore")
+                    staged_environment.write_bytes(imported_environment.read_bytes())
+                    os.chmod(staged_environment, 0o600)
+                    os.replace(staged_environment, target_environment)
 
             except Exception as restore_error:
                 try:
@@ -206,9 +213,8 @@ class BackupRestoreService:
                 safety_backup=(
                     safety_backup
                 ),
-                imported_revision=(
-                    imported_revision
-                ),
+                imported_revision=imported_revision,
+                environment_restored=has_environment,
             )
 
 
@@ -266,20 +272,22 @@ class BackupRestoreService:
         *,
         archive_path: Path,
         database_path: Path,
-    ) -> None:
+        environment_path: Path | None = None,
+    ) -> bool:
         try:
             with zipfile.ZipFile(
                 archive_path,
                 mode="r",
             ) as archive:
-                names = set(
-                    archive.namelist()
-                )
+                names = archive.namelist()
+                if len(names) != len(set(names)):
+                    raise ValueError("Archive OpenCoach invalide : entrées ZIP dupliquées.")
 
-                expected = {
-                    "opencoach.db",
-                    "manifest.json",
-                }
+                allowed = {"opencoach.db", "manifest.json", ".env"}
+                if not set(names).issubset(allowed):
+                    raise ValueError("Archive OpenCoach invalide : fichier inattendu.")
+
+                expected = {"opencoach.db", "manifest.json"}
 
                 if not expected.issubset(
                     names
@@ -323,22 +331,24 @@ class BackupRestoreService:
                         "une sauvegarde OpenCoach."
                     )
 
-                if (
-                    manifest.get(
-                        "format_version"
-                    )
-                    != BACKUP_FORMAT_VERSION
-                ):
+                if manifest.get("format_version") not in (1, BACKUP_FORMAT_VERSION):
                     raise ValueError(
                         "Version du format de "
                         "sauvegarde incompatible."
                     )
 
-                database_path.write_bytes(
-                    archive.read(
-                        "opencoach.db"
-                    )
-                )
+                database_path.write_bytes(archive.read("opencoach.db"))
+
+                environment_member = manifest.get("environment")
+                has_environment = environment_member == ".env" and ".env" in names
+                if environment_member not in (None, ".env"):
+                    raise ValueError("Le chemin du fichier d'environnement est invalide.")
+                if has_environment and environment_path is not None:
+                    environment_path.write_bytes(archive.read(".env"))
+                    if environment_path.stat().st_size > 1024 * 1024:
+                        raise ValueError("Le fichier .env dépasse la taille autorisée.")
+
+                return has_environment
 
         except zipfile.BadZipFile as exc:
             raise ValueError(

@@ -146,9 +146,19 @@ class CorosImportService:
         if self.progress_callback:
             self.progress_callback(category, next_date.isoformat() if next_date else None)
 
-    def import_history(self, categories: dict[str, bool], *, months: int = 6, today: date | None = None, checkpoint: dict[str, str] | None = None) -> dict[str, Any]:
+    def import_history(
+        self,
+        categories: dict[str, bool],
+        *,
+        months: int = 6,
+        today: date | None = None,
+        start_date: date | None = None,
+        checkpoint: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         end = today or datetime.now(timezone.utc).date()
-        start = six_months_ago(end)
+        start = start_date or six_months_ago(end)
+        if start > end:
+            raise ValueError("La date de début de l'import COROS dépasse la date de fin.")
         tools = {item.get("name") for item in self.client.list_tools()}
         imported: dict[str, int] = {}
         skipped: list[str] = []

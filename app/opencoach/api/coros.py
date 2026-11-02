@@ -9,12 +9,13 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
 )
-from opencoach.database.models import IntegrationConnection
+from opencoach.database.models import CorosSyncLock, IntegrationConnection
 from opencoach.database.session import get_db
 from opencoach.integrations.coros.client import CorosMcpClient
 from opencoach.integrations.coros.tokens import refresh_secret_if_needed
@@ -398,20 +399,33 @@ def start_coros_sync(
     active = COROS_SYNC_JOBS.find_active(athlete_profile_id)
     if active is not None:
         return {"job_id": str(active.id), "status": active.status}
+
     job = COROS_SYNC_JOBS.create(athlete_profile_id)
-    connection.config = {
-        **(connection.config or {}),
-        "coros_sync_job": {
-            "job_id": str(job.id),
-            "status": "pending",
-            "created_at": job.created_at.isoformat(),
-            "finished_at": None,
-            "result": None,
-            "error": None,
-            "progress": {"category": None, "next_date": None},
-        },
-    }
-    db.commit()
+    db.add(CorosSyncLock(
+        athlete_profile_id=athlete_profile_id,
+        job_id=str(job.id),
+    ))
+    try:
+        connection.config = {
+            **(connection.config or {}),
+            "coros_sync_job": {
+                "job_id": str(job.id),
+                "status": "pending",
+                "created_at": job.created_at.isoformat(),
+                "finished_at": None,
+                "result": None,
+                "error": None,
+                "progress": {"category": None, "next_date": None},
+            },
+        }
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        existing_lock = db.get(CorosSyncLock, athlete_profile_id)
+        if existing_lock is None:
+            raise HTTPException(status_code=409, detail="Un import COROS est déjà en cours.")
+        return {"job_id": existing_lock.job_id, "status": "running"}
+
     background_tasks.add_task(run_coros_sync_job, job_id=job.id, athlete_profile_id=athlete_profile_id)
     return {"job_id": str(job.id), "status": job.status}
 

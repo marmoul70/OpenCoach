@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from calendar import monthrange
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
@@ -12,7 +13,6 @@ from sqlalchemy.orm import Session
 from opencoach.database.models import CorosDailyData
 from opencoach.integrations.coros.activity_mapper import upsert_coros_activity
 from opencoach.integrations.coros.client import CorosMcpClient
-from opencoach.integrations.coros.errors import CorosMcpProtocolError
 
 
 DATE_KEYS = ("date", "day", "metricDate", "startDate", "wakeDate", "recordDate")
@@ -27,9 +27,6 @@ CATEGORY_TO_TOOL = {
     "health_check": "queryHealthCheckTimeSeries",
     "training_load": "queryTrainingLoadAssessment",
 }
-DATE_RANGE_TOOLS = {"sleep", "hrv", "heart_rate"}
-WEEKLY_TOOLS = {"daily_health", "resting_heart_rate", "stress", "stress_timeseries", "health_check"}
-
 
 def months_ago(day: date, months: int) -> date:
     if months < 0:
@@ -164,16 +161,35 @@ def _build_tool_arguments(
                 return None
             continue
         expected_type = definition.get("type")
+        if isinstance(expected_type, list):
+            expected_type = next(
+                (item for item in expected_type if item != "null"), None
+            )
         try:
             if expected_type == "string":
                 value = str(value)
             elif expected_type == "integer":
+                if isinstance(value, bool):
+                    return None
+                if isinstance(value, float) and not value.is_integer():
+                    return None
                 value = int(value)
             elif expected_type == "number":
+                if isinstance(value, bool):
+                    return None
                 value = float(value)
+                if not math.isfinite(value):
+                    return None
             elif expected_type == "boolean":
-                value = bool(value)
-        except (TypeError, ValueError):
+                if isinstance(value, bool):
+                    pass
+                elif value in (0, 1):
+                    value = bool(value)
+                elif isinstance(value, str) and value.strip().casefold() in {"true", "false"}:
+                    value = value.strip().casefold() == "true"
+                else:
+                    return None
+        except (TypeError, ValueError, OverflowError):
             return None
         arguments[property_name] = value
     if any(key not in arguments for key in required):

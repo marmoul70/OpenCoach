@@ -174,8 +174,8 @@ export function BackupSection() {
           'Sauvegarde créée',
 
         message:
-          'La base OpenCoach '
-          + 'a été sauvegardée.',
+          'La base, les comptes et la configuration '
+          + 'OpenCoach ont été sauvegardés dans le ZIP.',
       })
     } catch (reason) {
       const message =

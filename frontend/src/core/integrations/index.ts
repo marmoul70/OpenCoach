@@ -13,3 +13,11 @@ export {
   type IntervalsConnectionUpdate,
   type IntervalsSyncResult,
 } from './api'
+export {
+  fetchCorosConnection,
+  pollCorosOAuth,
+  saveCorosSettings,
+  startCorosOAuth,
+  type CorosConnection,
+  type CorosSettingsUpdate,
+} from './coros'

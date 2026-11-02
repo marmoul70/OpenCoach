@@ -242,3 +242,35 @@ def test_activity_detail_arguments_match_snake_case_schema_names():
         "labelId": "activity-2",
         "sportType": 102,
     }) == {"label_id": "activity-2", "sport_type": 102}
+
+
+def test_activity_detail_boolean_string_false_is_not_coerced_to_true():
+    tool = {
+        "inputSchema": {
+            "type": "object",
+            "properties": {"includeLaps": {"type": "boolean"}},
+            "required": ["includeLaps"],
+        }
+    }
+    assert _build_tool_arguments(tool, {"include_laps": "false"}) == {
+        "includeLaps": False
+    }
+
+
+def test_activity_detail_invalid_boolean_and_lossy_integer_are_rejected():
+    boolean_tool = {
+        "inputSchema": {
+            "type": "object",
+            "properties": {"includeLaps": {"type": "boolean"}},
+            "required": ["includeLaps"],
+        }
+    }
+    integer_tool = {
+        "inputSchema": {
+            "type": "object",
+            "properties": {"sportType": {"type": "integer"}},
+            "required": ["sportType"],
+        }
+    }
+    assert _build_tool_arguments(boolean_tool, {"includeLaps": "perhaps"}) is None
+    assert _build_tool_arguments(integer_tool, {"sportType": 102.5}) is None

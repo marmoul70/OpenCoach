@@ -196,7 +196,11 @@ def test_activity_details_use_discovered_tool_schema_during_import():
     assert result["imported_snapshots"]["activities"] == 1
     detail_calls = [call for call in client.calls if call[0] == "getActivityDetail"]
     assert detail_calls == [("getActivityDetail", {"labelId": "activity-1", "sportType": 102})]
-    activity_snapshot = next(row for row in db.added if row.category == "activities")
+    from opencoach.database.models import CorosDailyData
+    activity_snapshot = next(
+        row for row in db.added
+        if isinstance(row, CorosDailyData) and row.category == "activities"
+    )
     assert activity_snapshot.payload["activity_detail"] == {"laps": [{"lap": 1}]}
 
 

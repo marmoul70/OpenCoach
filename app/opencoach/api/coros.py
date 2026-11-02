@@ -386,6 +386,11 @@ def sync_coros_history(
             result = CorosImportService(client, db, athlete_profile_id).import_history(
                 (connection.config or {}).get("categories", DEFAULT_CATEGORIES),
                 months=6,
+                start_date=(
+                    connection.last_synced_at.date() - timedelta(days=7)
+                    if connection.last_synced_at is not None
+                    else None
+                ),
             )
         except CorosMcpAuthenticationError as exc:
             connection.enabled = False

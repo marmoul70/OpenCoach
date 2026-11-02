@@ -101,61 +101,59 @@ def _parse_coros_sport_records_text(raw: str) -> list[dict[str, Any]]:
     import re
 
     records: list[dict[str, Any]] = []
-    blocks = re.split(r"(?m)^\\s*\\d+\\.\\s+", raw.strip())
+    blocks = re.split(r"(?m)^\s*\d+\.\s+", raw.strip())
     for block in blocks[1:]:
         lines = block.strip().splitlines()
         if not lines:
             continue
-        title = re.match(r"(.+?)\\s+[—-]\\s+(\\d{4}-\\d{2}-\\d{2})$", lines[0].strip())
+        title = re.match(r"(.+?)\s+[—-]\s+(\d{4}-\d{2}-\d{2})$", lines[0].strip())
         if not title:
             continue
         record: dict[str, Any] = {"name": title.group(1).strip(), "date": title.group(2)}
 
-        def value(pattern: str) -> str | None:
-            match = re.search(pattern, block, re.IGNORECASE)
-            return match.group(1).strip() if match else None
+        def capture(pattern: str) -> re.Match[str] | None:
+            return re.search(pattern, block, re.IGNORECASE)
 
         fields = {
-            "labelId": r"\\bLabelId\\s*:\\s*(\\d+)",
-            "sportType": r"\\bSportType\\s*:\\s*(\\d+)",
-            "startTimestamp": r"\\bstartTimestamp\\s*=\\s*(\\d+)",
-            "endTimestamp": r"\\bendTimestamp\\s*=\\s*(\\d+)",
-            "avgHr": r"\\bAvg HR\\s*:\\s*(\\d+)\\s*bpm",
-            "maxHr": r"\\bMax HR\\s*:\\s*(\\d+)\\s*bpm",
-            "calories": r"\\bCalories\\s*:\\s*(\\d+)\\s*kcal",
+            "labelId": r"\bLabelId\s*:\s*(\d+)",
+            "sportType": r"\bSportType\s*:\s*(\d+)",
+            "startTimestamp": r"\bstartTimestamp\s*=\s*(\d+)",
+            "endTimestamp": r"\bendTimestamp\s*=\s*(\d+)",
+            "avgHr": r"\bAvg HR\s*:\s*(\d+)\s*bpm",
+            "maxHr": r"\bMax HR\s*:\s*(\d+)\s*bpm",
+            "calories": r"\bCalories\s*:\s*(\d+)\s*kcal",
         }
         for key, pattern in fields.items():
-            found = value(pattern)
-            if found is not None:
-                record[key] = int(found)
+            match = capture(pattern)
+            if match:
+                record[key] = int(match.group(1))
 
-        duration = value(r"\\bDuration\\s*:\\s*(\\d+):(\\d{2})(?::(\\d{2}))?")
+        duration = capture(r"\bDuration\s*:\s*(\d+):(\d{2})(?::(\d{2}))?")
         if duration:
-            parts = [int(part) for part in duration.split(":")]
+            parts = [int(part) for part in duration.groups() if part is not None]
             record["workoutTime"] = parts[0] * 3600 + parts[1] * 60 + (parts[2] if len(parts) == 3 else 0)
 
-        distance = value(r"\\bDistance\\s*:\\s*([\\d.]+)\\s*km")
-        if distance is not None:
-            record["distanceMeters"] = float(distance) * 1000
+        distance = capture(r"\bDistance\s*:\s*([\d.]+)\s*km")
+        if distance:
+            record["distanceMeters"] = float(distance.group(1)) * 1000
         else:
-            distance = value(r"\\bDistance\\s*:\\s*([\\d.]+)\\s*m(?:\\s|$)")
-            if distance is not None:
-                record["distanceMeters"] = float(distance)
+            distance = capture(r"\bDistance\s*:\s*([\d.]+)\s*m(?:\s|$)")
+            if distance:
+                record["distanceMeters"] = float(distance.group(1))
 
-        pace = value(r"\\bAverage Pace\\s*:\\s*(\\d+):(\\d{2})\\s*/km")
+        pace = capture(r"\bAverage Pace\s*:\s*(\d+):(\d{2})\s*/km")
         if pace:
-            minutes, seconds = (int(part) for part in pace.split(":"))
-            record["averagePaceSecondsPerKm"] = minutes * 60 + seconds
+            record["averagePaceSecondsPerKm"] = int(pace.group(1)) * 60 + int(pace.group(2))
 
-        speed = value(r"\\bAverage Speed\\s*:\\s*([\\d.]+)\\s*km/h")
-        if speed is not None:
-            record["average_speed_mps"] = float(speed) / 3.6
+        speed = capture(r"\bAverage Speed\s*:\s*([\d.]+)\s*km/h")
+        if speed:
+            record["average_speed_mps"] = float(speed.group(1)) / 3.6
 
-        location = value(r"\\bLocation\\s*:\\s*([^\\r\\n]+)")
+        location = capture(r"\bLocation\s*:\s*([^\r\n]+)")
         if location:
-            record["location"] = location
+            record["location"] = location.group(1).strip()
 
-        coordinates = re.search(r"\\bStart Coordinates\\s*:\\s*([-+\\d.]+)\\s*,\\s*([-+\\d.]+)", block, re.IGNORECASE)
+        coordinates = capture(r"\bStart Coordinates\s*:\s*([-+\d.]+)\s*,\s*([-+\d.]+)")
         if coordinates:
             record["startLatitude"] = float(coordinates.group(1))
             record["startLongitude"] = float(coordinates.group(2))

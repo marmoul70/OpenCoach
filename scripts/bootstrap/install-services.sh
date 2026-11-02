@@ -78,53 +78,40 @@ prepare_environment_file() {
 
     if [[ ! -f "$ENV_FILE" ]]; then
         if [[ ! -f "$ENV_EXAMPLE" ]]; then
-            log_error \
-                ".env et .env.example sont absents."
-
+            log_error ".env et .env.example sont absents."
             return 1
         fi
 
-        log_info \
-            "Création du fichier .env"
+        log_info "Création du fichier .env"
+        cp "$ENV_EXAMPLE" "$ENV_FILE"
+    fi
 
-        cp \
-            "$ENV_EXAMPLE" \
-            "$ENV_FILE"
+    if ! grep -Eq '^[[:space:]]*OPENCOACH_SECRET_KEY=.+$' "$ENV_FILE"; then
+        log_info "Génération de la clé de chiffrement OpenCoach"
 
         generated_key="$(
             "$VENV_PYTHON" -c \
                 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
         )"
 
-        sed -i \
-            "s|^OPENCOACH_SECRET_KEY=.*$|OPENCOACH_SECRET_KEY=$generated_key|" \
-            "$ENV_FILE"
+        if grep -qE '^[[:space:]]*OPENCOACH_SECRET_KEY=' "$ENV_FILE"; then
+            sed -i \
+                "s|^[[:space:]]*OPENCOACH_SECRET_KEY=.*$|OPENCOACH_SECRET_KEY=$generated_key|" \
+                "$ENV_FILE"
+        else
+            printf '\nOPENCOACH_SECRET_KEY=%s\n' "$generated_key" >> "$ENV_FILE"
+        fi
 
-        log_success \
-            "Nouvelle OPENCOACH_SECRET_KEY générée."
+        log_success "Nouvelle OPENCOACH_SECRET_KEY générée."
     fi
 
-
-    if ! grep -Eq \
-        '^[[:space:]]*OPENCOACH_SECRET_KEY=.+$' \
-        "$ENV_FILE"; then
-
-        log_error \
-            "OPENCOACH_SECRET_KEY est absente ou vide dans .env."
-
-        log_error \
-            "Si une base OpenCoach existante est restaurée, restaurez également sa clé d'origine."
-
+    if ! grep -Eq '^[[:space:]]*OPENCOACH_SECRET_KEY=.+$' "$ENV_FILE"; then
+        log_error "OPENCOACH_SECRET_KEY est absente ou vide dans .env."
         return 1
     fi
 
-
-    chown \
-        "$OPENCOACH_USER:$OPENCOACH_GROUP" \
-        "$ENV_FILE"
-
-    chmod 600 \
-        "$ENV_FILE"
+    chown "$OPENCOACH_USER:$OPENCOACH_GROUP" "$ENV_FILE"
+    chmod 600 "$ENV_FILE"
 }
 
 

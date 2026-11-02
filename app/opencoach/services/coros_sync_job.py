@@ -91,11 +91,34 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
             raise RuntimeError("La connexion COROS doit être réautorisée.")
         oauth = CorosOAuthClientService(redirect_uri=os.getenv("OPENCOACH_COROS_REDIRECT_URI", "http://127.0.0.1:43123/callback"))
         refreshed = refresh_secret_if_needed(secret, oauth, now=datetime.now(timezone.utc).timestamp())
-        result = CorosImportService(CorosMcpClient(refreshed["access_token"]), db, athlete_profile_id).import_history(
-            (connection.config or {}).get("categories", {}), months=6,
+        config = dict(connection.config or {})
+        checkpoint = dict(config.get("coros_sync_checkpoint") or {})
+
+        def save_checkpoint(category: str, next_date: str | None) -> None:
+            current = dict((connection.config or {}).get("coros_sync_checkpoint") or {})
+            completed = set(filter(None, current.get("_completed", "").split(",")))
+            if next_date is None:
+                current.pop(category, None)
+                completed.add(category)
+            else:
+                current[category] = next_date
+                completed.discard(category)
+            current["_completed"] = ",".join(sorted(completed))
+            connection.config = {**(connection.config or {}), "coros_sync_checkpoint": current}
+            # Committe chaque fenêtre de sept jours avec son point de reprise.
+            db.commit()
+
+        result = CorosImportService(
+            CorosMcpClient(refreshed["access_token"]),
+            db,
+            athlete_profile_id,
+            progress_callback=save_checkpoint,
+        ).import_history(
+            config.get("categories", {}), months=6, checkpoint=checkpoint,
         )
         if refreshed != secret:
             connection.encrypted_secret = cipher.encrypt(json.dumps(refreshed, separators=(",", ":")))
+        connection.config = {key: value for key, value in (connection.config or {}).items() if key != "coros_sync_checkpoint"}
         connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db.commit()
         COROS_SYNC_JOBS.success(job_id, result)

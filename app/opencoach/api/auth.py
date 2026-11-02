@@ -340,11 +340,14 @@ def _set_session_cookie(
         .lower()
     )
 
-    secure_cookie = host not in {
-        "localhost",
-        "127.0.0.1",
-        "::1",
-    }
+    forwarded_proto = (
+        request.headers
+        .get("x-forwarded-proto", request.url.scheme)
+        .split(",", 1)[0]
+        .strip()
+        .lower()
+    )
+    secure_cookie = forwarded_proto == "https"
 
     response.set_cookie(
         key=COOKIE_NAME,

@@ -11,7 +11,7 @@ from opencoach.integrations.coros.errors import (
 )
 
 
-DEFAULT_COROS_MCP_URL = "https://mcp.coros.com/mcp"
+DEFAULT_COROS_MCP_URL = "https://mcpeu.coros.com/mcp"
 MCP_PROTOCOL_VERSION = "2025-06-18"
 
 

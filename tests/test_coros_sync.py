@@ -334,3 +334,60 @@ def test_non_json_mcp_activity_text_does_not_create_fake_activity_rows():
     response = {"content": [{"type": "text", "text": "No workout records found."}]}
 
     assert _find_rows(_decode_tool_result(response)) == []
+
+
+def test_human_readable_coros_sport_records_are_parsed_into_activity_rows():
+    from opencoach.integrations.coros.sync import _decode_tool_result, _find_rows
+
+    response = {
+        "content": [{
+            "type": "text",
+            "text": """Sport Records — 2026-10-27 to 2026-11-02 (3 records)
+========================
+
+1. Trail Run — 2026-11-01
+   Location: Lyoffans Trail
+   Start Coordinates: 47.647999, 6.585000
+   Time Window: startTimestamp=1793520440 | endTimestamp=1793527991
+   Duration: 1:58:10 | Distance: 18.75 km
+   Average Pace: 6:18 /km | Avg HR: 140 bpm | Calories: 1311 kcal
+   LabelId: 481446507948572982 | SportType: 102
+
+2. Soccer — 2026-10-30
+   Location: Lure Football
+   Time Window: startTimestamp=1793347403 | endTimestamp=1793349257
+   Duration: 30:55 | Distance: 468 m
+   Average Speed: 0.9 km/h | Avg HR: 91 bpm | Calories: 162 kcal
+   LabelId: 481398528334135296 | SportType: 1003
+
+3. Outdoor Run — 2026-10-28
+   Location: Lure Course
+   Time Window: startTimestamp=1793173915 | endTimestamp=1793176863
+   Duration: 49:08 | Distance: 7.64 km
+   Average Pace: 6:26 /km | Avg HR: 119 bpm | Calories: 529 kcal
+   LabelId: 481352252475343251 | SportType: 100"""
+        }]
+    }
+
+    rows = _find_rows(_decode_tool_result(response))
+
+    assert len(rows) == 3
+    assert rows[0]["name"] == "Trail Run"
+    assert rows[0]["labelId"] == 481446507948572982
+    assert rows[0]["sportType"] == 102
+    assert rows[0]["startTimestamp"] == 1793520440
+    assert rows[0]["workoutTime"] == 7090
+    assert rows[0]["distanceMeters"] == 18750
+    assert rows[0]["averagePaceSecondsPerKm"] == 378
+    assert rows[0]["avgHr"] == 140
+    assert rows[0]["calories"] == 1311
+    assert rows[0]["location"] == "Lyoffans Trail"
+    assert rows[0]["startLatitude"] == 47.647999
+    assert rows[0]["startLongitude"] == 6.585
+
+    assert rows[1]["workoutTime"] == 1855
+    assert rows[1]["distanceMeters"] == 468
+    assert rows[1]["average_speed_mps"] == 0.25
+
+    assert rows[2]["workoutTime"] == 2948
+    assert rows[2]["distanceMeters"] == 7640

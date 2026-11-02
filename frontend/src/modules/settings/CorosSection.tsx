@@ -89,10 +89,13 @@ export function CorosSection() {
 
     try {
       const result = await startCorosOAuth()
-      const popup = window.open(result.login_url, '_blank', 'noopener,noreferrer')
+      const popup = window.open(result.login_url, '_blank')
       if (!popup) {
         throw new Error('Autorise les fenêtres contextuelles pour ouvrir COROS.')
       }
+      // Conserve la référence retournée par window.open pour détecter le blocage,
+      // puis coupe immédiatement l'accès à window.opener pour éviter le reverse tabnabbing.
+      popup.opener = null
 
       const startedAt = Date.now()
       while (Date.now() - startedAt < 5 * 60 * 1000) {

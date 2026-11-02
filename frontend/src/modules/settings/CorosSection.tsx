@@ -47,6 +47,7 @@ export function CorosSection() {
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [availableTools, setAvailableTools] = useState<string[]>([])
 
   useEffect(() => {
     let mounted = true
@@ -60,7 +61,8 @@ export function CorosSection() {
             .then(syncResult => {
               if (!mounted) return
               const total = Object.values(syncResult.imported_snapshots).reduce((sum, count) => sum + count, 0)
-              setMessage(`Import terminé : ${total} instantanés enregistrés (${syncResult.start_date} → ${syncResult.end_date}).`)
+              const skipped = syncResult.skipped.length ? ` Éléments ignorés : ${syncResult.skipped.join(', ')}.` : ''
+              setMessage(`Import terminé : ${total} instantanés enregistrés (${syncResult.start_date} → ${syncResult.end_date}).${skipped}`)
               return fetchCorosConnection().then(refreshed => {
                 if (mounted) setConnection(refreshed)
               })
@@ -124,6 +126,7 @@ export function CorosSection() {
     setMessage(null)
     try {
       const result = await testCorosConnection()
+      setAvailableTools(result.available_tools)
       setMessage(`Connexion MCP opérationnelle : ${result.available_tools_count} outils COROS disponibles.`)
       const refreshed = await fetchCorosConnection()
       setConnection(refreshed)
@@ -142,7 +145,8 @@ export function CorosSection() {
     try {
       const result = await syncCorosHistory()
       const total = Object.values(result.imported_snapshots).reduce((sum, count) => sum + count, 0)
-      setMessage(`Import terminé : ${total} instantanés enregistrés (${result.start_date} → ${result.end_date}).`)
+      const skipped = result.skipped.length ? ` Éléments ignorés : ${result.skipped.join(', ')}.` : ''
+      setMessage(`Import terminé : ${total} instantanés enregistrés (${result.start_date} → ${result.end_date}).${skipped}`)
       const refreshed = await fetchCorosConnection()
       setConnection(refreshed)
     } catch (reason) {
@@ -338,6 +342,14 @@ export function CorosSection() {
       </div>
 
       {message && <p role="status" className="text-xs text-emerald-700 dark:text-emerald-400">{message}</p>}
+      {availableTools.length > 0 && (
+        <details className="rounded-lg border border-slate-200 p-3 text-xs dark:border-white/10">
+          <summary className="cursor-pointer font-medium text-slate-700 dark:text-slate-200">Outils COROS disponibles ({availableTools.length})</summary>
+          <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+            {availableTools.map(tool => <li key={tool} className="font-mono text-[11px] text-slate-500">{tool}</li>)}
+          </ul>
+        </details>
+      )}
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</p>}
       {!connection.connected && <p className="text-[11px] text-slate-500">Connecte COROS pour activer les synchronisations automatiques. Tu peux aussi lancer un import manuel à tout moment.</p>}
       </div>

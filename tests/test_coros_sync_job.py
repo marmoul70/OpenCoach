@@ -39,3 +39,20 @@ def test_coros_sync_job_store_can_discard_rejected_job():
 
     assert store.get(job.id) is None
     assert store.find_active(job.athlete_profile_id) is None
+
+def test_incremental_coros_sync_requires_persisted_activities():
+    from opencoach.services.coros_sync_job import should_use_incremental_coros_sync
+
+    assert should_use_incremental_coros_sync(
+        {"coros_initial_import_completed": True},
+        has_coros_activities=True,
+    ) is True
+    assert should_use_incremental_coros_sync(
+        {"coros_initial_import_completed": True},
+        has_coros_activities=False,
+    ) is False
+    assert should_use_incremental_coros_sync(
+        {"coros_initial_import_completed": False},
+        has_coros_activities=True,
+    ) is False
+    assert should_use_incremental_coros_sync({}, has_coros_activities=False) is False

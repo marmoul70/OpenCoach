@@ -454,4 +454,22 @@ export async function restoreInitialBackup(file: File): Promise<void> {
     }
     throw new Error(message)
   }
+
+  // Le backend redémarre si le ZIP contient un .env.
+  // On attend son retour avant de recharger l'interface.
+  await new Promise(resolve => window.setTimeout(resolve, 1800))
+  const deadline = Date.now() + 30000
+  while (Date.now() < deadline) {
+    try {
+      const ready = await fetch('/api/health/ready', {
+        credentials: 'same-origin',
+        cache: 'no-store',
+      })
+      if (ready.ok) return
+    } catch {
+      // Le backend est momentanément en cours de redémarrage.
+    }
+    await new Promise(resolve => window.setTimeout(resolve, 1000))
+  }
+  throw new Error('La sauvegarde est restaurée, mais le backend ne répond pas encore. Actualisez la page dans quelques instants.')
 }

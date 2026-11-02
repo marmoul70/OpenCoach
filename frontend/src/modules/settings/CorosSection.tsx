@@ -18,6 +18,7 @@ import {
   waitForCorosSync,
   testCorosConnection,
   type CorosConnection,
+  type CorosAvailableTool,
 } from '../../core/integrations'
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -47,7 +48,7 @@ export function CorosSection() {
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
-  const [availableTools, setAvailableTools] = useState<string[]>([])
+  const [availableTools, setAvailableTools] = useState<CorosAvailableTool[]>([])
   const [availableToolsCount, setAvailableToolsCount] = useState<number | null>(null)
 
   useEffect(() => {
@@ -349,7 +350,25 @@ export function CorosSection() {
           <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-100">Outils COROS reçus : {availableToolsCount}</h3>
           {availableTools.length > 0 ? (
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-              {availableTools.map(tool => <li key={tool} className="rounded-md bg-slate-100 px-2 py-1.5 font-mono text-[11px] text-slate-700 dark:bg-white/5 dark:text-slate-300">{tool}</li>)}
+              {availableTools.map(tool => (
+                <li key={tool.name} className="rounded-lg border border-slate-200 p-3 dark:border-white/10">
+                  <p className="font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-100">{tool.name}</p>
+                  {tool.description && <p className="mt-1 text-[11px] text-slate-500">{tool.description}</p>}
+                  <p className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Paramètres attendus</p>
+                  {Object.entries(tool.input_schema?.properties ?? {}).length > 0 ? (
+                    <ul className="mt-1 space-y-1">
+                      {Object.entries(tool.input_schema.properties ?? {}).map(([name, definition]) => (
+                        <li key={name} className="text-[11px] text-slate-600 dark:text-slate-300">
+                          <span className="font-mono font-medium">{name}</span>
+                          <span className="text-slate-400"> · {Array.isArray(definition.type) ? definition.type.join(' | ') : definition.type ?? 'type non précisé'}</span>
+                          {tool.input_schema.required?.includes(name) && <span className="ml-1 text-amber-600">obligatoire</span>}
+                          {definition.description && <span className="block text-slate-500">{definition.description}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : <p className="mt-1 text-[11px] text-slate-500">Aucun paramètre déclaré.</p>}
+                </li>
+              ))}
             </ul>
           ) : (
             <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">Le serveur annonce {availableToolsCount} outils, mais n'a transmis aucun nom. La réponse API est incomplète.</p>

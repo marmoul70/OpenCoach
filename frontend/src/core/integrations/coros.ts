@@ -67,3 +67,15 @@ export function saveCorosSettings(
     },
   )
 }
+
+
+export interface CorosConnectionTest {
+  connected: boolean
+  mcp_reachable: boolean
+  available_tools: string[]
+  available_tools_count: number
+}
+
+export function testCorosConnection(): Promise<CorosConnectionTest> {
+  return corosRequest('/api/integrations/coros/test', { method: 'POST' })
+}

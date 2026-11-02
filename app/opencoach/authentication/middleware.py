@@ -21,6 +21,8 @@ PUBLIC_PATHS = {
     "/api/auth/register",
     "/api/auth/login",
     "/api/auth/session",
+    "/api/auth/setup-status",
+    "/api/backups/restore",
     "/api/auth/logout",
     "/api/health",
     "/api/health/ready",

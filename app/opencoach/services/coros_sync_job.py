@@ -188,18 +188,30 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
             # la prochaine exécution retente toute la fenêtre de six mois.
             connection.config = {**(connection.config or {}), "coros_initial_import_completed": False}
         state = dict((connection.config or {}).get("coros_sync_job") or job_state)
+        no_activities_error = (
+            activities_enabled
+            and imported_activities == 0
+            and not initial_import_completed
+        )
         state.update({
-            "status": "success",
+            "status": "error" if no_activities_error else "success",
             "finished_at": datetime.now(timezone.utc).isoformat(),
             "result": result,
-            "error": None,
+            "error": (
+                "Aucune activité COROS n’a été importée sur la fenêtre initiale de six mois. "
+                "L’historique reste à réessayer ; consulte les journaux pour vérifier querySportRecords."
+                if no_activities_error else None
+            ),
             "progress": {"category": None, "next_date": None},
         })
         connection.config = {**(connection.config or {}), "coros_sync_job": state}
         if not activities_enabled or imported_activities > 0:
             connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db.commit()
-        COROS_SYNC_JOBS.success(job_id, result)
+        if no_activities_error:
+            COROS_SYNC_JOBS.failure(job_id, state["error"])
+        else:
+            COROS_SYNC_JOBS.success(job_id, result)
     except Exception:
         db.rollback()
         logger.exception("Échec de la synchronisation COROS (job=%s, profile=%s)", job_id, athlete_profile_id)

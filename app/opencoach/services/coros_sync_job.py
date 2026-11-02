@@ -39,18 +39,24 @@ class CorosSyncJobStore:
 
     def running(self, job_id: UUID) -> None:
         with self._lock:
-            self._jobs[job_id].status = "running"
+            job = self._jobs.get(job_id)
+            if job is not None:
+                job.status = "running"
 
     def success(self, job_id: UUID, result: dict[str, Any]) -> None:
         with self._lock:
-            job = self._jobs[job_id]
+            job = self._jobs.get(job_id)
+            if job is None:
+                return
             job.status = "success"
             job.result = result
             job.finished_at = datetime.now(timezone.utc)
 
     def failure(self, job_id: UUID, error: str) -> None:
         with self._lock:
-            job = self._jobs[job_id]
+            job = self._jobs.get(job_id)
+            if job is None:
+                return
             job.status = "error"
             job.error = error
             job.finished_at = datetime.now(timezone.utc)

@@ -23,8 +23,11 @@ from opencoach.backup import (
 )
 from opencoach.database.session import (
     PROJECT_ROOT,
+    SessionLocal,
     engine,
 )
+from opencoach.database.models.user import User
+from sqlalchemy import select
 
 
 router = APIRouter(
@@ -65,6 +68,7 @@ class BackupRestoreResponse(BaseModel):
     restored: bool
     safety_backup_filename: str
     imported_revision: str
+    environment_restored: bool = False
 
 
 def _service() -> BackupService:
@@ -208,10 +212,17 @@ async def restore_uploaded_backup(
             ),
         )
 
-    archive = (
-        await request.body()
-    )
+    # En accès public uniquement tant qu'aucun compte n'existe.
+    db = SessionLocal()
+    try:
+        has_users = db.scalar(select(User.id).limit(1)) is not None
+    finally:
+        db.close()
 
+    if has_users and not getattr(request.state, "user_id", None):
+        raise HTTPException(status_code=401, detail="Connectez-vous pour restaurer une sauvegarde.")
+
+    archive = await request.body()
     service = (
         _restore_service()
     )
@@ -248,9 +259,8 @@ async def restore_uploaded_backup(
             .safety_backup
             .filename
         ),
-        imported_revision=(
-            result.imported_revision
-        ),
+        imported_revision=result.imported_revision,
+        environment_restored=result.environment_restored,
     )
 
 

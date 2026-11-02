@@ -12,7 +12,7 @@ EnvironmentFile=@PROJECT_ROOT@/.env
 
 ExecStart=@PROJECT_ROOT@/.venv/bin/python -m uvicorn opencoach.api.app:app --host 127.0.0.1 --port 8000
 
-Restart=on-failure
+Restart=always
 RestartSec=5
 
 NoNewPrivileges=true

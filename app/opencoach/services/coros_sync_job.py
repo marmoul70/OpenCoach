@@ -57,3 +57,48 @@ class CorosSyncJobStore:
 
 
 COROS_SYNC_JOBS = CorosSyncJobStore()
+
+
+
+def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
+    """Exécute l'import COROS dans une session DB dédiée."""
+    import json
+    import os
+    from datetime import datetime, timezone
+    from sqlalchemy import select
+    from opencoach.database.models import IntegrationConnection
+    from opencoach.database.session import SessionLocal
+    from opencoach.integrations.coros.client import CorosMcpClient
+    from opencoach.integrations.coros.oauth import CorosOAuthClientService
+    from opencoach.integrations.coros.tokens import refresh_secret_if_needed
+    from opencoach.integrations.coros.sync import CorosImportService
+    from opencoach.security import SecretCipher
+
+    COROS_SYNC_JOBS.running(job_id)
+    db = SessionLocal()
+    try:
+        connection = db.scalar(select(IntegrationConnection).where(
+            IntegrationConnection.athlete_profile_id == athlete_profile_id,
+            IntegrationConnection.provider == "coros",
+        ))
+        if connection is None or not connection.enabled or connection.encrypted_secret is None:
+            raise RuntimeError("La connexion COROS est absente ou désactivée.")
+        cipher = SecretCipher.from_env()
+        secret = json.loads(cipher.decrypt(connection.encrypted_secret))
+        if secret.get("status") != "connected":
+            raise RuntimeError("La connexion COROS doit être réautorisée.")
+        oauth = CorosOAuthClientService(redirect_uri=os.getenv("OPENCOACH_COROS_REDIRECT_URI", "http://127.0.0.1:43123/callback"))
+        refreshed = refresh_secret_if_needed(secret, oauth, now=datetime.now(timezone.utc).timestamp())
+        result = CorosImportService(CorosMcpClient(refreshed["access_token"]), db, athlete_profile_id).import_history(
+            (connection.config or {}).get("categories", {}), months=6,
+        )
+        if refreshed != secret:
+            connection.encrypted_secret = cipher.encrypt(json.dumps(refreshed, separators=(",", ":")))
+        connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        db.commit()
+        COROS_SYNC_JOBS.success(job_id, result)
+    except Exception as exc:
+        db.rollback()
+        COROS_SYNC_JOBS.failure(job_id, str(exc))
+    finally:
+        db.close()

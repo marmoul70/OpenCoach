@@ -62,3 +62,26 @@ def test_importer_stores_each_sleep_day_idempotently_by_upsert_key():
     }
     assert all(row.category == "sleep" for row in db.added)
     assert all(name == "querySleepOverview" for name, _ in client.calls)
+
+
+def test_importer_resumes_from_saved_weekly_checkpoint():
+    client = FakeClient()
+    db = FakeDb()
+    checkpoints = []
+    service = CorosImportService(
+        client,
+        db,
+        profile_id="00000000-0000-0000-0000-000000000001",
+        progress_callback=lambda category, next_date: checkpoints.append((category, next_date)),
+    )
+
+    result = service.import_history(
+        {"activities": False, "sleep": True},
+        today=date(2026, 6, 2),
+        checkpoint={"sleep": "2026-05-27"},
+    )
+
+    assert len(client.calls) == 1
+    assert client.calls[0][1] == {"startDate": "20260527", "endDate": "20260602"}
+    assert result["imported_snapshots"]["sleep"] == 2
+    assert checkpoints == [("sleep", None)]

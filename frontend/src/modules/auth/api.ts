@@ -423,3 +423,35 @@ export async function updateAccountEmail(
     message,
   )
 }
+
+export async function needsInitialSetup(): Promise<boolean> {
+  const response = await fetch('/api/auth/setup-status', {
+    credentials: 'same-origin',
+    cache: 'no-store',
+  })
+  if (!response.ok) {
+    throw new Error('Impossible de vérifier la configuration initiale.')
+  }
+  const data = await response.json() as { needs_setup: boolean }
+  return data.needs_setup
+}
+
+
+export async function restoreInitialBackup(file: File): Promise<void> {
+  const response = await fetch('/api/backups/restore', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/zip' },
+    body: file,
+  })
+  if (!response.ok) {
+    let message = 'Impossible de restaurer cette sauvegarde.'
+    try {
+      const data = await response.json() as { detail?: string }
+      message = data.detail ?? message
+    } catch {
+      // Keep fallback message.
+    }
+    throw new Error(message)
+  }
+}

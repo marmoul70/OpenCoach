@@ -21,7 +21,7 @@ from opencoach.database.session import (
 )
 
 
-BACKUP_FORMAT_VERSION = 1
+BACKUP_FORMAT_VERSION = 2
 
 DEFAULT_BACKUP_DIRECTORY = (
     PROJECT_ROOT
@@ -113,19 +113,15 @@ class BackupService:
                 ),
             )
 
+            environment_file = PROJECT_ROOT / ".env"
+            has_environment = environment_file.is_file()
+
             manifest = {
-                "format_version": (
-                    BACKUP_FORMAT_VERSION
-                ),
-                "application": (
-                    "OpenCoach"
-                ),
-                "created_at": (
-                    created_at.isoformat()
-                ),
-                "database": (
-                    "opencoach.db"
-                ),
+                "format_version": BACKUP_FORMAT_VERSION,
+                "application": "OpenCoach",
+                "created_at": created_at.isoformat(),
+                "database": "opencoach.db",
+                "environment": ".env" if has_environment else None,
             }
 
             manifest_path = (
@@ -159,6 +155,14 @@ class BackupService:
                     manifest_path,
                     arcname="manifest.json",
                 )
+
+                # Le fichier contient des secrets : le ZIP est volontairement
+                # non chiffré, à conserver dans un emplacement privé.
+                if has_environment:
+                    archive.write(
+                        environment_file,
+                        arcname=".env",
+                    )
 
         self.cleanup_old_backups()
 

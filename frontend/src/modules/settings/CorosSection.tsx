@@ -15,6 +15,7 @@ import {
   saveCorosSettings,
   startCorosOAuth,
   syncCorosHistory,
+  waitForCorosSync,
   testCorosConnection,
   type CorosConnection,
 } from '../../core/integrations'
@@ -52,6 +53,25 @@ export function CorosSection() {
     fetchCorosConnection()
       .then(result => {
         if (mounted) setConnection(result)
+        const activeJob = result.sync_job
+        if (activeJob && ['pending', 'running'].includes(activeJob.status)) {
+          setSyncing(true)
+          waitForCorosSync(activeJob.job_id)
+            .then(syncResult => {
+              if (!mounted) return
+              const total = Object.values(syncResult.imported_snapshots).reduce((sum, count) => sum + count, 0)
+              setMessage(`Import terminé : ${total} instantanés enregistrés (${syncResult.start_date} → ${syncResult.end_date}).`)
+              return fetchCorosConnection().then(refreshed => {
+                if (mounted) setConnection(refreshed)
+              })
+            })
+            .catch(reason => {
+              if (mounted) setError(errorMessage(reason))
+            })
+            .finally(() => {
+              if (mounted) setSyncing(false)
+            })
+        }
       })
       .catch(reason => {
         if (mounted) setError(errorMessage(reason))

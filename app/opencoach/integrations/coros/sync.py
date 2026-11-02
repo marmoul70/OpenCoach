@@ -448,5 +448,5 @@ class CorosImportService:
         # Aucun résultat activité : conserver le checkpoint initial pour
         # retenter toute la fenêtre au prochain lancement.
         if count == 0:
-            self._checkpoint("activities", start.isoformat())
+            self._checkpoint("activities", start)
         return count

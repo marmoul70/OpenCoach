@@ -79,3 +79,16 @@ export interface CorosConnectionTest {
 export function testCorosConnection(): Promise<CorosConnectionTest> {
   return corosRequest('/api/integrations/coros/test', { method: 'POST' })
 }
+
+
+export interface CorosSyncResult {
+  status: string
+  start_date: string
+  end_date: string
+  imported_snapshots: Record<string, number>
+  skipped: string[]
+}
+
+export function syncCorosHistory(): Promise<CorosSyncResult> {
+  return corosRequest('/api/integrations/coros/sync', { method: 'POST' })
+}

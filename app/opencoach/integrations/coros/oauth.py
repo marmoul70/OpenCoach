@@ -64,7 +64,7 @@ class CorosOAuthClientService:
         if not redirect_uri.startswith("https://") and not redirect_uri.startswith(
             "http://127.0.0.1"
         ):
-            raise ValueError("L'URI de redirection OAuth doit être sécurisée.")
+            raise ValueError("L'URI de redirection OAuth doit utiliser une connexion sécurisée.")
 
         self.issuer = issuer.rstrip("/")
         self.mcp_url = mcp_url

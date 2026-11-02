@@ -277,6 +277,7 @@ async def restore_uploaded_backup(
 )
 def restore_existing_backup(
     filename: str,
+    background_tasks: BackgroundTasks,
 ) -> BackupRestoreResponse:
     service = (
         _restore_service()
@@ -317,16 +318,14 @@ def restore_existing_backup(
             detail=str(exc),
         ) from exc
 
+    if result.environment_restored:
+        background_tasks.add_task(_restart_backend_after_response)
+
     return BackupRestoreResponse(
         restored=True,
-        safety_backup_filename=(
-            result
-            .safety_backup
-            .filename
-        ),
-        imported_revision=(
-            result.imported_revision
-        ),
+        safety_backup_filename=result.safety_backup.filename,
+        imported_revision=result.imported_revision,
+        environment_restored=result.environment_restored,
     )
 
 

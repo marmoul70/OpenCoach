@@ -85,6 +85,8 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
         "elevation_gain_m": ("totalAscent", "elevationGain", "elevation_gain_m"),
         "average_heart_rate": ("avgHr", "averageHeartRate", "average_heart_rate"),
         "max_heart_rate": ("maxHr", "maxHeartRate", "max_heart_rate"),
+        "average_speed_mps": ("average_speed_mps", "averageSpeedMps"),
+        "calories": ("calories",),
     }
     for attribute, keys in metric_fields.items():
         value = next((record[key] for key in keys if record.get(key) is not None), None)

@@ -31,13 +31,17 @@ DATE_RANGE_TOOLS = {"sleep", "hrv", "heart_rate"}
 WEEKLY_TOOLS = {"daily_health", "resting_heart_rate", "stress", "stress_timeseries", "health_check"}
 
 
-def six_months_ago(day: date) -> date:
-    month = day.month - 6
-    year = day.year
-    while month <= 0:
-        month += 12
-        year -= 1
+def months_ago(day: date, months: int) -> date:
+    if months < 0:
+        raise ValueError("Le nombre de mois ne peut pas être négatif.")
+    month_index = day.year * 12 + day.month - 1 - months
+    year, month_zero_based = divmod(month_index, 12)
+    month = month_zero_based + 1
     return day.replace(year=year, month=month, day=min(day.day, monthrange(year, month)[1]))
+
+
+def six_months_ago(day: date) -> date:
+    return months_ago(day, 6)
 
 
 def _jsonable(value: Any) -> Any:
@@ -156,7 +160,7 @@ class CorosImportService:
         checkpoint: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         end = today or datetime.now(timezone.utc).date()
-        start = start_date or six_months_ago(end)
+        start = start_date or months_ago(end, months)
         if start > end:
             raise ValueError("La date de début de l'import COROS dépasse la date de fin.")
         tools = {item.get("name") for item in self.client.list_tools()}

@@ -79,7 +79,7 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
     activity.elapsed_time_seconds = duration_seconds
     distance = next((
         record[key]
-        for key in ("distance", "distanceMeters", "distance_m")
+        for key in ("distanceMeters", "distance_m")
         if record.get(key) is not None
     ), None)
     try:

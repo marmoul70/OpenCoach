@@ -18,3 +18,24 @@ def test_coros_sync_job_store_tracks_owner_and_terminal_result():
     assert saved.result["imported_snapshots"]["sleep"] == 12
     assert saved.finished_at is not None
     assert store.find_active(profile_id) is None
+
+
+def test_coros_sync_job_store_ignores_external_scheduled_job_updates():
+    store = CorosSyncJobStore()
+    unknown_job_id = uuid4()
+
+    store.running(unknown_job_id)
+    store.success(unknown_job_id, {"ok": True})
+    store.failure(unknown_job_id, "error")
+
+    assert store.get(unknown_job_id) is None
+
+
+def test_coros_sync_job_store_can_discard_rejected_job():
+    store = CorosSyncJobStore()
+    job = store.create(uuid4())
+
+    store.discard(job.id)
+
+    assert store.get(job.id) is None
+    assert store.find_active(job.athlete_profile_id) is None

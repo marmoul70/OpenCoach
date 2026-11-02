@@ -75,7 +75,7 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
     import json
     import logging
     import os
-    from datetime import datetime, timezone
+    from datetime import datetime, timedelta, timezone
     from sqlalchemy import select
     from opencoach.database.models import CorosSyncLock, IntegrationConnection
     from opencoach.database.session import SessionLocal
@@ -103,6 +103,13 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
         refreshed = refresh_secret_if_needed(secret, oauth, now=datetime.now(timezone.utc).timestamp())
         config = dict(connection.config or {})
         checkpoint = dict(config.get("coros_sync_checkpoint") or {})
+        # Premier import : six mois. Imports suivants : fenêtre de reprise
+        # de sept jours pour récupérer les données COROS publiées en retard.
+        incremental_start = (
+            connection.last_synced_at.date() - timedelta(days=7)
+            if connection.last_synced_at is not None
+            else None
+        )
         job_state = {
             "job_id": str(job_id),
             "status": "running",
@@ -144,7 +151,10 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
             athlete_profile_id,
             progress_callback=save_checkpoint,
         ).import_history(
-            config.get("categories", {}), months=6, checkpoint=checkpoint,
+            config.get("categories", {}),
+            months=6,
+            start_date=incremental_start,
+            checkpoint=checkpoint,
         )
         if refreshed != secret:
             connection.encrypted_secret = cipher.encrypt(json.dumps(refreshed, separators=(",", ":")))

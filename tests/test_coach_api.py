@@ -42,6 +42,11 @@ from opencoach.readiness import (
 )
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+from opencoach.database.base import Base
+from opencoach.database import models as _database_models  # noqa: F401
+from opencoach.database.session import get_db
 
 from opencoach.training import (
     DailyTrainingLoadService,
@@ -344,6 +349,29 @@ def create_client(
     weekly_service: FakeCoachWeeklyAssessmentService | None = None,
 ):
     app = create_app()
+
+    # /api/coach/today consulte aussi les repositories SQL du plan
+    # hebdomadaire et du débrief. Fournir un schéma SQLite isolé évite
+    # que ces tests unitaires dépendent de la base locale du runner.
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    TestSessionLocal = sessionmaker(
+        bind=engine,
+        expire_on_commit=False,
+    )
+
+    def override_get_db():
+        db = TestSessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
 
     profile_id = uuid4()
 

@@ -349,7 +349,20 @@ def test_coros_connection(
     if refreshed != secret:
         _save_secret(connection, cipher, refreshed)
     db.commit()
-    return {"connected": True, "mcp_reachable": True, "available_tools": [tool.get("name") for tool in tools if tool.get("name")], "available_tools_count": len(tools)}
+    return {
+        "connected": True,
+        "mcp_reachable": True,
+        "available_tools": [
+            {
+                "name": tool.get("name"),
+                "description": tool.get("description", ""),
+                "input_schema": tool.get("inputSchema", {}),
+            }
+            for tool in tools
+            if tool.get("name")
+        ],
+        "available_tools_count": len(tools),
+    }
 
 
 @router.post("/sync")

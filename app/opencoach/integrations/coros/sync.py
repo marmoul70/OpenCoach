@@ -244,6 +244,8 @@ class CorosImportService:
 
     def _call_and_store(self, tool_name: str, arguments: dict[str, Any], category: str, fallback: date) -> int:
         raw = _decode_tool_result(self.client.call_tool(tool_name, arguments))
+        if raw is None or raw == [] or raw == {}:
+            return 0
         rows = _find_rows(raw)
         if not rows:
             rows = [{"data": raw}]

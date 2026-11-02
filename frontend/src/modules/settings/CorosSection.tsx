@@ -14,6 +14,7 @@ import {
   pollCorosOAuth,
   saveCorosSettings,
   startCorosOAuth,
+  syncCorosHistory,
   testCorosConnection,
   type CorosConnection,
 } from '../../core/integrations'
@@ -42,6 +43,7 @@ export function CorosSection() {
   const [connecting, setConnecting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -106,6 +108,24 @@ export function CorosSection() {
       setError(errorMessage(reason))
     } finally {
       setTesting(false)
+    }
+  }
+
+
+  async function handleSyncHistory() {
+    setSyncing(true)
+    setError(null)
+    setMessage(null)
+    try {
+      const result = await syncCorosHistory()
+      const total = Object.values(result.imported_snapshots).reduce((sum, count) => sum + count, 0)
+      setMessage(`Import terminé : ${total} instantanés enregistrés (${result.start_date} → ${result.end_date}).`)
+      const refreshed = await fetchCorosConnection()
+      setConnection(refreshed)
+    } catch (reason) {
+      setError(errorMessage(reason))
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -205,6 +225,19 @@ export function CorosSection() {
           </button>
         )}
       </div>
+
+      {connection.connected && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+          <div>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">Importer l’historique COROS</p>
+            <p className="mt-1 text-xs text-slate-500">Import initial sur six mois, puis mise à jour des données disponibles.</p>
+          </div>
+          <button type="button" onClick={handleSyncHistory} disabled={syncing || testing} className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50">
+            {syncing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {syncing ? 'Import en cours…' : 'Lancer l’import'}
+          </button>
+        </div>
+      )}
 
       <div className="space-y-3">
         <div>

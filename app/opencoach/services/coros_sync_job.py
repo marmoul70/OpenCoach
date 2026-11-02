@@ -67,6 +67,10 @@ class CorosSyncJobStore:
 
 
 COROS_SYNC_JOBS = CorosSyncJobStore()
+def should_use_incremental_coros_sync(config: dict[str, Any], has_coros_activities: bool) -> bool:
+    """Only use the seven-day window after activities exist in the canonical table."""
+    return bool(config.get("coros_initial_import_completed")) and has_coros_activities
+
 
 
 
@@ -116,9 +120,9 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
             )
             .limit(1)
         ) is not None
-        initial_import_completed = (
-            bool(config.get("coros_initial_import_completed"))
-            and has_coros_activities
+        initial_import_completed = should_use_incremental_coros_sync(
+            config,
+            has_coros_activities,
         )
         incremental_start = (
             connection.last_synced_at.date() - timedelta(days=7)

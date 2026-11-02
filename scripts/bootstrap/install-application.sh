@@ -200,259 +200,59 @@ install_python_application() {
 
 
 configure_authentication() {
-    local auth_keys=(
-        "OPENCOACH_AUTH_PIN_SALT"
-        "OPENCOACH_AUTH_PIN_HASH"
-        "OPENCOACH_AUTH_SESSION_SECRET"
-    )
-
-    local configured_count=0
-    local key
-
-    if [[ -f "$ENV_FILE" ]]; then
-        for key in "${auth_keys[@]}"; do
-            if grep -qE \
-                "^${key}=.+" \
-                "$ENV_FILE"; then
-
-                configured_count=$((configured_count + 1))
-            fi
-        done
-    fi
-
-    if (( configured_count == ${#auth_keys[@]} )); then
-        log_success \
-            "Authentification OpenCoach déjà configurée."
-
-        return
-    fi
-
-    if (( configured_count > 0 )); then
-        log_error \
-            "Configuration d'authentification OpenCoach incomplète dans .env."
-
-        log_error \
-            "L'installation refuse de remplacer des secrets existants."
-
-        return 1
-    fi
-
     log_info \
-        "Configuration de l'accès sécurisé à OpenCoach"
-
-    printf '\n'
-    printf '%s\n' \
-        "Un code PIN personnel à 6 chiffres est requis."
-    printf '%s\n' \
-        "Ce code permettra de se connecter à OpenCoach."
-    printf '\n'
-
-    local pin=""
-    local pin_confirmation=""
-
-    while true; do
-        read -r -s \
-            -p "Code PIN OpenCoach (6 chiffres) : " \
-            pin
-
-        printf '\n'
-
-        if [[ ! "$pin" =~ ^[0-9]{6}$ ]]; then
-            log_warning \
-                "Le code PIN doit contenir exactement 6 chiffres."
-
-            continue
-        fi
-
-        read -r -s \
-            -p "Confirmez le code PIN : " \
-            pin_confirmation
-
-        printf '\n'
-
-        if [[ "$pin" != "$pin_confirmation" ]]; then
-            log_warning \
-                "Les deux codes PIN ne correspondent pas."
-
-            continue
-        fi
-
-        break
-    done
+        "Configuration de l'authentification OpenCoach"
 
     touch "$ENV_FILE"
-
-    chown \
-        "$OPENCOACH_USER:$OPENCOACH_GROUP" \
-        "$ENV_FILE"
-
-    chmod \
-        600 \
-        "$ENV_FILE"
+    chown "$OPENCOACH_USER:$OPENCOACH_GROUP" "$ENV_FILE"
+    chmod 600 "$ENV_FILE"
 
     if ! run_as_project_owner \
-        env \
-        OPENCOACH_INSTALL_PIN="$pin" \
         "$VENV_PYTHON" \
         - "$ENV_FILE" <<'PYTHON'
-import base64
-import hashlib
-import os
 import secrets
 import sys
-
 from pathlib import Path
 
-
-env_path = Path(
-    sys.argv[1]
-)
-
-pin = os.environ.get(
-    "OPENCOACH_INSTALL_PIN",
-    "",
-)
-
-if (
-    len(pin) != 6
-    or not pin.isdigit()
-):
-    raise SystemExit(
-        "PIN invalide."
-    )
-
-
-salt = secrets.token_bytes(
-    16
-)
-
-pin_hash = hashlib.scrypt(
-    pin.encode(
-        "utf-8"
-    ),
-    salt=salt,
-    n=2**15,
-    r=8,
-    p=1,
-    dklen=32,
-    maxmem=64 * 1024 * 1024,
-)
-
+env_path = Path(sys.argv[1])
+lines = env_path.read_text(encoding="utf-8").splitlines() if env_path.exists() else []
+existing = {}
+for line in lines:
+    if "=" in line and not line.lstrip().startswith("#"):
+        key, value = line.split("=", 1)
+        existing[key.strip()] = value.strip()
 
 values = {
-    "OPENCOACH_AUTH_PIN_SALT": (
-        base64
-        .urlsafe_b64encode(
-            salt
-        )
-        .decode(
-            "ascii"
-        )
-    ),
-    "OPENCOACH_AUTH_PIN_HASH": (
-        base64
-        .urlsafe_b64encode(
-            pin_hash
-        )
-        .decode(
-            "ascii"
-        )
-    ),
-    "OPENCOACH_AUTH_SESSION_SECRET": (
-        secrets.token_urlsafe(
-            48
-        )
-    ),
+    "OPENCOACH_AUTH_SESSION_SECRET": secrets.token_urlsafe(48),
     "OPENCOACH_AUTH_SESSION_DAYS": "30",
     "OPENCOACH_AUTH_MAX_ATTEMPTS": "5",
     "OPENCOACH_AUTH_LOCK_SECONDS": "300",
 }
+for key in list(values):
+    if existing.get(key):
+        values.pop(key)
 
-
-lines = []
-
-if env_path.exists():
-    lines = env_path.read_text(
-        encoding="utf-8",
-    ).splitlines()
-
-
-managed_keys = set(
-    values
-)
-
-filtered_lines = [
-    line
-    for line in lines
-    if not any(
-        line.startswith(
-            key + "="
-        )
-        for key in managed_keys
-    )
+filtered = [
+    line for line in lines
+    if not any(line.startswith(key + "=") for key in values)
 ]
-
-
-while (
-    filtered_lines
-    and filtered_lines[-1] == ""
-):
-    filtered_lines.pop()
-
-
-if filtered_lines:
-    filtered_lines.append(
-        ""
-    )
-
-
-filtered_lines.append(
-    "# OpenCoach authentication"
-)
-
-
-for key, value in values.items():
-    filtered_lines.append(
-        f"{key}={value}"
-    )
-
-
-env_path.write_text(
-    "\n".join(
-        filtered_lines
-    )
-    + "\n",
-    encoding="utf-8",
-)
+while filtered and not filtered[-1].strip():
+    filtered.pop()
+if filtered:
+    filtered.append("")
+filtered.append("# OpenCoach session authentication")
+filtered.extend(f"{key}={value}" for key, value in values.items())
+env_path.write_text("\\n".join(filtered) + "\\n", encoding="utf-8")
 PYTHON
     then
-        unset pin
-        unset pin_confirmation
-
-        log_error \
-            "Impossible de générer les secrets d'authentification."
-
+        log_error "Impossible de générer le secret de session OpenCoach."
         return 1
     fi
 
-    unset pin
-    unset pin_confirmation
-
-    chmod \
-        600 \
-        "$ENV_FILE"
-
-    chown \
-        "$OPENCOACH_USER:$OPENCOACH_GROUP" \
-        "$ENV_FILE"
-
-    log_success \
-        "Authentification OpenCoach configurée."
-
-    log_info \
-        "Le PIN n'est pas stocké en clair."
+    chmod 600 "$ENV_FILE"
+    chown "$OPENCOACH_USER:$OPENCOACH_GROUP" "$ENV_FILE"
+    log_success "Authentification configurée : aucun PIN global ou compte prédéfini."
 }
-
 
 
 configure_web_push() {

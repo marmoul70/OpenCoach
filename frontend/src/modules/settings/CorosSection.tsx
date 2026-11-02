@@ -198,7 +198,23 @@ export function CorosSection() {
   }
 
   return (
-    <div className="space-y-5 p-4 sm:p-5">
+    <>
+      {syncing && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed right-5 top-5 z-[100] flex max-w-sm items-start gap-3 rounded-xl border border-emerald-500/30 bg-[#111b1a] px-4 py-3 text-white shadow-2xl"
+        >
+          <LoaderCircle className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-emerald-400" />
+          <div>
+            <p className="text-sm font-semibold">Import COROS en cours</p>
+            <p className="mt-1 text-xs leading-5 text-slate-300">
+              Récupération de ton historique et de tes données de récupération. Cela peut prendre quelques minutes.
+            </p>
+          </div>
+        </div>
+      )}
+      <div className="space-y-5 p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white">
@@ -324,6 +340,7 @@ export function CorosSection() {
       {message && <p role="status" className="text-xs text-emerald-700 dark:text-emerald-400">{message}</p>}
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</p>}
       {!connection.connected && <p className="text-[11px] text-slate-500">Connecte COROS pour activer les synchronisations automatiques. Tu peux aussi lancer un import manuel à tout moment.</p>}
-    </div>
+      </div>
+    </>
   )
 }

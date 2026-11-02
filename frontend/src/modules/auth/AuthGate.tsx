@@ -84,13 +84,16 @@ export function AuthGate({
     let cancelled = false
 
     void checkSession()
-      .then((authenticated) => {
+      .then(async (authenticated) => {
+        if (!authenticated) {
+          const initialSetup = await needsInitialSetup()
+          if (!cancelled) {
+            setNeedsSetup(initialSetup)
+            setAuthView(initialSetup ? 'first-install' : 'login')
+          }
+        }
         if (!cancelled) {
-          setState(
-            authenticated
-              ? 'authenticated'
-              : 'unauthenticated',
-          )
+          setState(authenticated ? 'authenticated' : 'unauthenticated')
         }
       })
       .catch(() => {

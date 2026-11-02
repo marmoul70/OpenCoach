@@ -18,6 +18,7 @@ export {
   pollCorosOAuth,
   saveCorosSettings,
   startCorosOAuth,
+  testCorosConnection,
   type CorosConnection,
   type CorosSettingsUpdate,
 } from './coros'

@@ -131,7 +131,10 @@ def _parse_coros_sport_records_text(raw: str) -> list[dict[str, Any]]:
         duration = capture(r"\bDuration\s*:\s*(\d+):(\d{2})(?::(\d{2}))?")
         if duration:
             parts = [int(part) for part in duration.groups() if part is not None]
-            record["workoutTime"] = parts[0] * 3600 + parts[1] * 60 + (parts[2] if len(parts) == 3 else 0)
+            if len(parts) == 3:
+                record["workoutTime"] = parts[0] * 3600 + parts[1] * 60 + parts[2]
+            else:
+                record["workoutTime"] = parts[0] * 60 + parts[1]
 
         distance = capture(r"\bDistance\s*:\s*([\d.]+)\s*km")
         if distance:

@@ -89,8 +89,6 @@ class SessionIdentity:
     slots=True,
 )
 class AuthSettings:
-    pin_salt: bytes
-    pin_hash: bytes
     session_secret: bytes
     session_days: int
     max_attempts: int
@@ -98,66 +96,27 @@ class AuthSettings:
 
 
 def get_auth_settings() -> AuthSettings:
-    salt_raw = _setting(
-        "OPENCOACH_AUTH_PIN_SALT"
-    )
-
-    hash_raw = _setting(
-        "OPENCOACH_AUTH_PIN_HASH"
-    )
-
     secret_raw = _setting(
         "OPENCOACH_AUTH_SESSION_SECRET"
     )
 
-    if (
-        not salt_raw
-        or not hash_raw
-        or not secret_raw
-    ):
+    if not secret_raw:
         raise RuntimeError(
-            "Authentification OpenCoach "
-            "non configurée."
+            "Secret de session OpenCoach non configuré."
         )
 
     return AuthSettings(
-        pin_salt=(
-            base64
-            .urlsafe_b64decode(
-                salt_raw
-            )
-        ),
-        pin_hash=(
-            base64
-            .urlsafe_b64decode(
-                hash_raw
-            )
-        ),
-        session_secret=(
-            secret_raw.encode(
-                "utf-8"
-            )
-        ),
+        session_secret=secret_raw.encode("utf-8"),
         session_days=int(
-            _setting(
-                "OPENCOACH_AUTH_SESSION_DAYS"
-            )
-            or "30"
+            _setting("OPENCOACH_AUTH_SESSION_DAYS") or "30"
         ),
         max_attempts=int(
-            _setting(
-                "OPENCOACH_AUTH_MAX_ATTEMPTS"
-            )
-            or "5"
+            _setting("OPENCOACH_AUTH_MAX_ATTEMPTS") or "5"
         ),
         lock_seconds=int(
-            _setting(
-                "OPENCOACH_AUTH_LOCK_SECONDS"
-            )
-            or "300"
+            _setting("OPENCOACH_AUTH_LOCK_SECONDS") or "300"
         ),
     )
-
 
 
 def create_session_token(

@@ -148,4 +148,4 @@ def test_coros_client_rejects_invalid_json_rpc_response():
 
 
 def test_coros_endpoint_defaults_to_europe():
-    assert DEFAULT_COROS_MCP_URL == "https://mcp.coros.com/mcp"
+    assert DEFAULT_COROS_MCP_URL == "https://mcpeu.coros.com/mcp"

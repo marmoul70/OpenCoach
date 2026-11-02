@@ -137,6 +137,48 @@ def _upsert_snapshot(db: Session, profile_id: UUID, metric_date: date, category:
         row.imported_at = datetime.now(timezone.utc)
 
 
+
+def _build_tool_arguments(
+    tool: dict[str, Any],
+    available_values: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Construit les arguments à partir du schéma MCP réellement annoncé."""
+    schema = tool.get("inputSchema")
+    if not isinstance(schema, dict):
+        return None
+    properties = schema.get("properties")
+    if not isinstance(properties, dict):
+        return None
+    normalized_values = {str(key).casefold(): value for key, value in available_values.items()}
+    required = schema.get("required", [])
+    if not isinstance(required, list):
+        return None
+    arguments: dict[str, Any] = {}
+    for property_name, definition in properties.items():
+        if not isinstance(definition, dict):
+            continue
+        value = normalized_values.get(str(property_name).casefold())
+        if value is None:
+            if property_name in required:
+                return None
+            continue
+        expected_type = definition.get("type")
+        try:
+            if expected_type == "string":
+                value = str(value)
+            elif expected_type == "integer":
+                value = int(value)
+            elif expected_type == "number":
+                value = float(value)
+            elif expected_type == "boolean":
+                value = bool(value)
+        except (TypeError, ValueError):
+            return None
+        arguments[property_name] = value
+    if any(key not in arguments for key in required):
+        return None
+    return arguments
+
 class CorosImportService:
     """Import incrémental, idempotent et reprenable des données COROS."""
 
@@ -163,7 +205,12 @@ class CorosImportService:
         start = start_date or months_ago(end, months)
         if start > end:
             raise ValueError("La date de début de l'import COROS dépasse la date de fin.")
-        tools = {item.get("name") for item in self.client.list_tools()}
+        tool_definitions = {
+            item.get("name"): item
+            for item in self.client.list_tools()
+            if item.get("name")
+        }
+        tools = set(tool_definitions)
         imported: dict[str, int] = {}
         skipped: list[str] = []
 
@@ -243,13 +290,17 @@ class CorosImportService:
                 metric_date = _row_date(record, cursor)
                 payload = dict(record)
                 if categories.get("activity_details") and "getActivityDetail" in tools:
-                    label_id = record.get("labelId")
-                    sport_type = record.get("sportType")
-                    if label_id is not None and sport_type is not None:
-                        detail = _decode_tool_result(self.client.call_tool("getActivityDetail", {
-                            "labelId": str(label_id),
-                            "sportType": int(sport_type),
-                        }))
+                    detail_arguments = _build_tool_arguments(
+                        tool_definitions["getActivityDetail"],
+                        {
+                            "labelId": record.get("labelId") or record.get("label_id"),
+                            "sportType": record.get("sportType") or record.get("sport_type"),
+                        },
+                    )
+                    if detail_arguments is not None:
+                        detail = _decode_tool_result(
+                            self.client.call_tool("getActivityDetail", detail_arguments)
+                        )
                         payload["activity_detail"] = detail
                 upsert_coros_activity(self.db, self.profile_id, record)
                 _upsert_snapshot(self.db, self.profile_id, metric_date, "activities", payload)

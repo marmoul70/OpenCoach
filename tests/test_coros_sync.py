@@ -146,3 +146,55 @@ def test_activity_detail_arguments_skip_when_required_schema_value_missing():
         }
     }
     assert _build_tool_arguments(tool, {"labelId": "abc"}) is None
+
+
+class FakeActivityClient:
+    def __init__(self):
+        self.calls = []
+
+    def list_tools(self):
+        return [
+            {"name": "querySportRecords"},
+            {
+                "name": "getActivityDetail",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "labelId": {"type": "string"},
+                        "sportType": {"type": "integer"},
+                    },
+                    "required": ["labelId", "sportType"],
+                },
+            },
+        ]
+
+    def call_tool(self, name, arguments):
+        self.calls.append((name, arguments))
+        if name == "querySportRecords":
+            return {"content": [{
+                "type": "text",
+                "text": '[{"labelId":"activity-1","sportType":102,"startTimestamp":1790000000}]',
+            }]}
+        return {"content": [{"type": "text", "text": '{"laps":[{"lap":1}]}'}]}
+
+
+def test_activity_details_use_discovered_tool_schema_during_import():
+    client = FakeActivityClient()
+    db = FakeDb()
+    service = CorosImportService(
+        client,
+        db,
+        profile_id="00000000-0000-0000-0000-000000000001",
+    )
+
+    result = service.import_history(
+        {"activities": True, "activity_details": True},
+        start_date=date(2026, 9, 21),
+        today=date(2026, 9, 21),
+    )
+
+    assert result["imported_snapshots"]["activities"] == 1
+    detail_calls = [call for call in client.calls if call[0] == "getActivityDetail"]
+    assert detail_calls == [("getActivityDetail", {"labelId": "activity-1", "sportType": 102})]
+    activity_snapshot = next(row for row in db.added if row.category == "activities")
+    assert activity_snapshot.payload["activity_detail"] == {"laps": [{"lap": 1}]}

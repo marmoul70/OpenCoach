@@ -149,7 +149,8 @@ def _build_tool_arguments(
     properties = schema.get("properties")
     if not isinstance(properties, dict):
         return None
-    normalized_values = {str(key).casefold(): value for key, value in available_values.items()}
+    normalize_key = lambda value: "".join(char for char in str(value).casefold() if char.isalnum())
+    normalized_values = {normalize_key(key): value for key, value in available_values.items()}
     required = schema.get("required", [])
     if not isinstance(required, list):
         return None
@@ -157,7 +158,7 @@ def _build_tool_arguments(
     for property_name, definition in properties.items():
         if not isinstance(definition, dict):
             continue
-        value = normalized_values.get(str(property_name).casefold())
+        value = normalized_values.get(normalize_key(property_name))
         if value is None:
             if property_name in required:
                 return None

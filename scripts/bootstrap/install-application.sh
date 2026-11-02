@@ -250,7 +250,7 @@ if filtered:
     filtered.append("")
 filtered.append("# OpenCoach session authentication")
 filtered.extend(f"{key}={value}" for key, value in values.items())
-env_path.write_text("\\n".join(filtered) + "\\n", encoding="utf-8")
+env_path.write_text("\n".join(filtered) + "\n", encoding="utf-8")
 PYTHON
     then
         log_error "Impossible de générer le secret de session OpenCoach."

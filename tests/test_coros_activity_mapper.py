@@ -54,6 +54,8 @@ def test_coros_activity_maps_available_metrics_and_string_sport_name():
         "totalAscent": 650,
         "avgHr": 148,
         "maxHr": 176,
+        "average_speed_mps": 3.2,
+        "calories": 850,
     }) is True
 
     activity = db.added[0]
@@ -63,6 +65,8 @@ def test_coros_activity_maps_available_metrics_and_string_sport_name():
     assert activity.elevation_gain_m == 650
     assert activity.average_heart_rate == 148
     assert activity.max_heart_rate == 176
+    assert activity.average_speed_mps == 3.2
+    assert activity.calories == 850
 
 
 def test_coros_activity_keeps_unknown_sport_code_instead_of_guessing():

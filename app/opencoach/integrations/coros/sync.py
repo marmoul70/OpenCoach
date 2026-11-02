@@ -24,6 +24,7 @@ CATEGORY_TO_TOOL = {
     "stress": "queryStressLevel",
     "stress_timeseries": "queryStressTimeSeries",
     "health_check": "queryHealthCheckTimeSeries",
+    "training_load": "queryTrainingLoadAssessment",
 }
 DATE_RANGE_TOOLS = {"sleep", "hrv", "heart_rate"}
 WEEKLY_TOOLS = {"daily_health", "resting_heart_rate", "stress", "stress_timeseries", "health_check"}
@@ -153,7 +154,7 @@ class CorosImportService:
                 imported["activities"] = self._import_activities(start, end, tools, categories)
 
         for category, enabled in categories.items():
-            if not enabled or category in {"activities", "activity_details", "fit_files", "training_load"}:
+            if not enabled or category in {"activities", "activity_details", "fit_files"}:
                 continue
             tool_name = CATEGORY_TO_TOOL.get(category)
             if not tool_name:
@@ -185,15 +186,16 @@ class CorosImportService:
 
     def _import_daily_category(self, category: str, tool_name: str, start: date, end: date) -> int:
         count = 0
+        if category in {"daily_health", "resting_heart_rate", "stress", "training_load"}:
+            # Ces endpoints exposent une fenêtre glissante récente uniquement.
+            return self._call_and_store(tool_name, {"days": 7}, category, end)
+
         cursor = start
         while cursor <= end:
             window_end = min(cursor + timedelta(days=6), end)
-            if category in DATE_RANGE_TOOLS:
-                args = {"startDate": cursor.strftime("%Y%m%d"), "endDate": window_end.strftime("%Y%m%d")}
-            else:
-                args = {"days": (window_end - cursor).days + 1}
-                if category in {"stress_timeseries", "health_check"}:
-                    args = {"startDate": cursor.strftime("%Y%m%d"), "endDate": window_end.strftime("%Y%m%d"), "days": (window_end - cursor).days + 1}
+            args = {"startDate": cursor.strftime("%Y%m%d"), "endDate": window_end.strftime("%Y%m%d")}
+            if category in {"stress_timeseries", "health_check"}:
+                args["days"] = (window_end - cursor).days + 1
             count += self._call_and_store(tool_name, args, category, cursor)
             cursor = window_end + timedelta(days=1)
         return count

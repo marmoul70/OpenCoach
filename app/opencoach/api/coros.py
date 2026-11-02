@@ -4,7 +4,7 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -366,7 +366,7 @@ def sync_coros_history(
 
     lock = CorosSyncLock(
         athlete_profile_id=athlete_profile_id,
-        job_id=f"sync-{UUID(int=0)}",
+        job_id=f"sync-{uuid4()}",
     )
     db.add(lock)
     try:

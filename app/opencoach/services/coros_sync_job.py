@@ -93,6 +93,17 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
         refreshed = refresh_secret_if_needed(secret, oauth, now=datetime.now(timezone.utc).timestamp())
         config = dict(connection.config or {})
         checkpoint = dict(config.get("coros_sync_checkpoint") or {})
+        job_state = {
+            "job_id": str(job_id),
+            "status": "running",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "finished_at": None,
+            "result": None,
+            "error": None,
+            "progress": {"category": None, "next_date": None},
+        }
+        connection.config = {**config, "coros_sync_job": job_state}
+        db.commit()
 
         def save_checkpoint(category: str, next_date: str | None) -> None:
             current = dict((connection.config or {}).get("coros_sync_checkpoint") or {})
@@ -104,8 +115,14 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
                 current[category] = next_date
                 completed.discard(category)
             current["_completed"] = ",".join(sorted(completed))
-            connection.config = {**(connection.config or {}), "coros_sync_checkpoint": current}
-            # Committe chaque fenêtre de sept jours avec son point de reprise.
+            state = dict((connection.config or {}).get("coros_sync_job") or job_state)
+            state["progress"] = {"category": category, "next_date": next_date}
+            connection.config = {
+                **(connection.config or {}),
+                "coros_sync_checkpoint": current,
+                "coros_sync_job": state,
+            }
+            # Committe chaque fenêtre et l'état visible du traitement.
             db.commit()
 
         result = CorosImportService(
@@ -119,12 +136,39 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
         if refreshed != secret:
             connection.encrypted_secret = cipher.encrypt(json.dumps(refreshed, separators=(",", ":")))
         connection.config = {key: value for key, value in (connection.config or {}).items() if key != "coros_sync_checkpoint"}
+        state = dict((connection.config or {}).get("coros_sync_job") or job_state)
+        state.update({
+            "status": "success",
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+            "result": result,
+            "error": None,
+            "progress": {"category": None, "next_date": None},
+        })
+        connection.config = {**(connection.config or {}), "coros_sync_job": state}
         connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db.commit()
         COROS_SYNC_JOBS.success(job_id, result)
     except Exception:
         db.rollback()
         logger.exception("Échec de la synchronisation COROS (job=%s, profile=%s)", job_id, athlete_profile_id)
+        try:
+            failed_connection = db.scalar(select(IntegrationConnection).where(
+                IntegrationConnection.athlete_profile_id == athlete_profile_id,
+                IntegrationConnection.provider == "coros",
+            ))
+            if failed_connection is not None:
+                state = dict((failed_connection.config or {}).get("coros_sync_job") or {})
+                state.update({
+                    "job_id": str(job_id),
+                    "status": "error",
+                    "finished_at": datetime.now(timezone.utc).isoformat(),
+                    "error": "La synchronisation COROS a échoué. Vérifie la connexion puis consulte les journaux OpenCoach.",
+                })
+                failed_connection.config = {**(failed_connection.config or {}), "coros_sync_job": state}
+                db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("Impossible de sauvegarder l'état d'erreur COROS (job=%s)", job_id)
         # Ne jamais exposer à l'interface les détails internes, URL, jetons
         # ou réponses brutes renvoyés par le fournisseur.
         COROS_SYNC_JOBS.failure(job_id, "La synchronisation COROS a échoué. Vérifie la connexion puis consulte les journaux OpenCoach.")

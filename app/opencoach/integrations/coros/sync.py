@@ -444,4 +444,8 @@ class CorosImportService:
             cursor = window_end + timedelta(days=1)
             self.db.commit()
             self._checkpoint("activities", cursor if cursor <= end else None)
+        # Aucun résultat activité : conserver le checkpoint initial pour
+        # retenter toute la fenêtre au prochain lancement.
+        if count == 0:
+            self._checkpoint("activities", start.isoformat())
         return count

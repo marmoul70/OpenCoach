@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from opencoach.database.models import CorosDailyData
+from opencoach.integrations.coros.activity_mapper import upsert_coros_activity
 from opencoach.integrations.coros.client import CorosMcpClient
 from opencoach.integrations.coros.errors import CorosMcpProtocolError
 
@@ -223,6 +224,7 @@ class CorosImportService:
                             "sportType": int(sport_type),
                         }))
                         payload["activity_detail"] = detail
+                upsert_coros_activity(self.db, self.profile_id, record)
                 _upsert_snapshot(self.db, self.profile_id, metric_date, "activities", payload)
                 count += 1
             cursor = window_end + timedelta(days=1)

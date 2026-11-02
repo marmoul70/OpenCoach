@@ -225,3 +225,20 @@ def test_empty_metric_response_does_not_create_a_fake_snapshot():
 
     assert result["imported_snapshots"]["sleep"] == 0
     assert db.added == []
+
+
+def test_activity_detail_arguments_match_snake_case_schema_names():
+    tool = {
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "label_id": {"type": "string"},
+                "sport_type": {"type": "integer"},
+            },
+            "required": ["label_id", "sport_type"],
+        }
+    }
+    assert _build_tool_arguments(tool, {
+        "labelId": "activity-2",
+        "sportType": 102,
+    }) == {"label_id": "activity-2", "sport_type": 102}

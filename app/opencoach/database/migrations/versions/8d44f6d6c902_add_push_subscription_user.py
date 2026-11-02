@@ -30,28 +30,35 @@ def upgrade() -> None:
             sa.text("SELECT COUNT(*) FROM users")
         ).scalar_one()
 
-        if user_count != 1:
-            raise RuntimeError(
-                "Migration Push impossible : des abonnements historiques "
-                "existent, mais aucun utilisateur unique ne permet de "
-                "leur attribuer un propriétaire. Nettoyez ou attribuez "
-                "ces abonnements avant de relancer la migration."
+        if user_count == 0:
+            # Les abonnements historiques sans compte propriétaire
+            # sont des données de navigateur obsolètes. Ils devront
+            # être recréés après la première inscription.
+            connection.execute(
+                sa.text("DELETE FROM push_subscriptions")
             )
+        elif user_count == 1:
+            user_id = connection.execute(
+                sa.text("SELECT id FROM users LIMIT 1")
+            ).scalar_one()
 
-        user_id = connection.execute(
-            sa.text("SELECT id FROM users LIMIT 1")
-        ).scalar_one()
-
-        connection.execute(
-            sa.text(
-                """
-                UPDATE push_subscriptions
-                SET user_id = :user_id
-                WHERE user_id IS NULL
-                """
-            ),
-            {"user_id": user_id},
-        )
+            connection.execute(
+                sa.text(
+                    """
+                    UPDATE push_subscriptions
+                    SET user_id = :user_id
+                    WHERE user_id IS NULL
+                    """
+                ),
+                {"user_id": user_id},
+            )
+        else:
+            raise RuntimeError(
+                "Migration Push impossible : plusieurs utilisateurs "
+                "existent et les abonnements historiques ne possèdent "
+                "pas encore de propriétaire. Attribuez-les explicitement "
+                "avant de relancer la migration."
+            )
 
     with op.batch_alter_table("push_subscriptions") as batch_op:
         batch_op.alter_column(

@@ -195,6 +195,17 @@ def _client_key(
     return "unknown"
 
 
+@router.get("/setup-status")
+def setup_status() -> dict[str, bool]:
+    """Indique si OpenCoach attend encore son premier compte."""
+    db = SessionLocal()
+    try:
+        has_users = db.scalar(select(User.id).limit(1)) is not None
+        return {"needs_setup": not has_users}
+    finally:
+        db.close()
+
+
 @router.post(
     "/register",
     response_model=RegisterResponse,

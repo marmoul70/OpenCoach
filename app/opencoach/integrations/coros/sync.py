@@ -212,8 +212,6 @@ class CorosImportService:
             cursor = window_end + timedelta(days=1)
             self.db.commit()
             self._checkpoint(category, cursor if cursor <= end else None)
-        if cursor > end:
-            self._checkpoint(category, None)
         return count
 
     def _import_activities(self, start: date, end: date, tools: set[str], categories: dict[str, bool], resume_date: str | None = None) -> int:
@@ -245,6 +243,4 @@ class CorosImportService:
             cursor = window_end + timedelta(days=1)
             self.db.commit()
             self._checkpoint("activities", cursor if cursor <= end else None)
-        if cursor > end:
-            self._checkpoint("activities", None)
         return count

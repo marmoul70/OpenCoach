@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from calendar import monthrange
 from datetime import date, datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Callable
 from uuid import UUID
 
 from sqlalchemy import select
@@ -136,23 +136,29 @@ def _upsert_snapshot(db: Session, profile_id: UUID, metric_date: date, category:
 class CorosImportService:
     """Import incrémental, idempotent et reprenable des données COROS."""
 
-    def __init__(self, client: CorosMcpClient, db: Session, profile_id: UUID):
+    def __init__(self, client: CorosMcpClient, db: Session, profile_id: UUID, *, progress_callback: Callable[[str, str | None], None] | None = None):
         self.client = client
         self.db = db
         self.profile_id = profile_id
+        self.progress_callback = progress_callback
 
-    def import_history(self, categories: dict[str, bool], *, months: int = 6, today: date | None = None) -> dict[str, Any]:
+    def _checkpoint(self, category: str, next_date: date | None) -> None:
+        if self.progress_callback:
+            self.progress_callback(category, next_date.isoformat() if next_date else None)
+
+    def import_history(self, categories: dict[str, bool], *, months: int = 6, today: date | None = None, checkpoint: dict[str, str] | None = None) -> dict[str, Any]:
         end = today or datetime.now(timezone.utc).date()
         start = six_months_ago(end)
         tools = {item.get("name") for item in self.client.list_tools()}
         imported: dict[str, int] = {}
         skipped: list[str] = []
 
-        if categories.get("activities", True):
+        saved = checkpoint or {}
+        if categories.get("activities", True) and "activities" not in saved.get("_completed", "").split(","):
             if "querySportRecords" not in tools:
                 skipped.append("activities:outil_non_disponible")
             else:
-                imported["activities"] = self._import_activities(start, end, tools, categories)
+                imported["activities"] = self._import_activities(start, end, tools, categories, saved.get("activities"))
 
         for category, enabled in categories.items():
             if not enabled or category in {"activities", "activity_details", "fit_files"}:
@@ -163,7 +169,9 @@ class CorosImportService:
             if tool_name not in tools:
                 skipped.append(f"{category}:outil_non_disponible")
                 continue
-            imported[category] = self._import_daily_category(category, tool_name, start, end)
+            if category in saved.get("_completed", "").split(","):
+                continue
+            imported[category] = self._import_daily_category(category, tool_name, start, end, saved.get(category))
 
         self.db.commit()
         return {
@@ -185,13 +193,16 @@ class CorosImportService:
             count += 1
         return count
 
-    def _import_daily_category(self, category: str, tool_name: str, start: date, end: date) -> int:
+    def _import_daily_category(self, category: str, tool_name: str, start: date, end: date, resume_date: str | None = None) -> int:
         count = 0
         if category in {"daily_health", "resting_heart_rate", "stress", "training_load"}:
             # Ces endpoints exposent une fenêtre glissante récente uniquement.
-            return self._call_and_store(tool_name, {"days": 7}, category, end)
+            count = self._call_and_store(tool_name, {"days": 7}, category, end)
+            self.db.commit()
+            self._checkpoint(category, None)
+            return count
 
-        cursor = start
+        cursor = max(start, date.fromisoformat(resume_date)) if resume_date else start
         while cursor <= end:
             window_end = min(cursor + timedelta(days=6), end)
             args = {"startDate": cursor.strftime("%Y%m%d"), "endDate": window_end.strftime("%Y%m%d")}
@@ -199,11 +210,15 @@ class CorosImportService:
                 args["days"] = (window_end - cursor).days + 1
             count += self._call_and_store(tool_name, args, category, cursor)
             cursor = window_end + timedelta(days=1)
+            self.db.commit()
+            self._checkpoint(category, cursor if cursor <= end else None)
+        if cursor > end:
+            self._checkpoint(category, None)
         return count
 
-    def _import_activities(self, start: date, end: date, tools: set[str], categories: dict[str, bool]) -> int:
+    def _import_activities(self, start: date, end: date, tools: set[str], categories: dict[str, bool], resume_date: str | None = None) -> int:
         count = 0
-        cursor = start
+        cursor = max(start, date.fromisoformat(resume_date)) if resume_date else start
         while cursor <= end:
             window_end = min(cursor + timedelta(days=6), end)
             raw = _decode_tool_result(self.client.call_tool("querySportRecords", {
@@ -228,4 +243,8 @@ class CorosImportService:
                 _upsert_snapshot(self.db, self.profile_id, metric_date, "activities", payload)
                 count += 1
             cursor = window_end + timedelta(days=1)
+            self.db.commit()
+            self._checkpoint("activities", cursor if cursor <= end else None)
+        if cursor > end:
+            self._checkpoint("activities", None)
         return count

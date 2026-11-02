@@ -16,6 +16,8 @@ from opencoach.authentication.dependencies import (
 )
 from opencoach.database.models import IntegrationConnection
 from opencoach.database.session import get_db
+from opencoach.integrations.coros.client import CorosMcpClient
+from opencoach.integrations.coros.tokens import refresh_secret_if_needed
 from opencoach.integrations.coros.errors import (
     CorosMcpAuthenticationError,
     CorosMcpError,
@@ -312,3 +314,32 @@ def update_coros_settings(
         "sync_interval_hours": connection.config["sync_interval_hours"],
         "categories": connection.config["categories"],
     }
+
+
+@router.post("/test")
+def test_coros_connection(
+    athlete_profile_id: UUID = Depends(get_current_athlete_profile_id),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Vérifie le renouvellement OAuth et l'accès au serveur MCP."""
+    connection = _connection(db, athlete_profile_id)
+    if connection is None or not connection.enabled:
+        raise HTTPException(status_code=409, detail="Connecte d'abord ton compte COROS.")
+    cipher = _cipher()
+    secret = _read_secret(connection, cipher)
+    if secret.get("status") != "connected":
+        raise HTTPException(status_code=409, detail="La connexion COROS doit être réautorisée.")
+    try:
+        refreshed = refresh_secret_if_needed(secret, _oauth(), now=datetime.now(timezone.utc).timestamp())
+        tools = CorosMcpClient(refreshed["access_token"]).list_tools()
+    except CorosMcpAuthenticationError as exc:
+        connection.enabled = False
+        connection.config = {**(connection.config or {}), "connected": False}
+        db.commit()
+        raise HTTPException(status_code=401, detail="La connexion COROS a expiré. Reconnecte ton compte.") from exc
+    except CorosMcpError as exc:
+        raise HTTPException(status_code=502, detail="Le serveur COROS MCP est temporairement indisponible.") from exc
+    if refreshed != secret:
+        _save_secret(connection, cipher, refreshed)
+    db.commit()
+    return {"connected": True, "mcp_reachable": True, "available_tools": [tool.get("name") for tool in tools if tool.get("name")], "available_tools_count": len(tools)}

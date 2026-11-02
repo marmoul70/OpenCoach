@@ -40,3 +40,36 @@ def test_coros_activity_without_stable_id_or_timestamp_is_skipped():
     db = FakeDb()
     assert upsert_coros_activity(db, uuid4(), {"sportType": 102}) is False
     assert db.added == []
+
+
+def test_coros_activity_maps_available_metrics_and_string_sport_name():
+    db = FakeDb()
+    profile_id = uuid4()
+    assert upsert_coros_activity(db, profile_id, {
+        "labelId": "activity-metrics",
+        "sportType": "Trail Running",
+        "startTimestamp": 1790000000000,
+        "workoutTime": 3600,
+        "distanceMeters": 12500,
+        "totalAscent": 650,
+        "avgHr": 148,
+        "maxHr": 176,
+    }) is True
+
+    activity = db.added[0]
+    assert activity.sport_type == "Trail Running"
+    assert activity.elapsed_time_seconds == 3600
+    assert activity.distance_m == 12500
+    assert activity.elevation_gain_m == 650
+    assert activity.average_heart_rate == 148
+    assert activity.max_heart_rate == 176
+
+
+def test_coros_activity_keeps_unknown_sport_code_instead_of_guessing():
+    db = FakeDb()
+    assert upsert_coros_activity(db, uuid4(), {
+        "labelId": "unknown-sport",
+        "sportType": 987654,
+        "startTimestamp": 1790000000,
+    }) is True
+    assert db.added[0].sport_type == "COROS (987654)"

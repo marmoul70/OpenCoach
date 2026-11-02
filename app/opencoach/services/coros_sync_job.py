@@ -103,11 +103,13 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
         refreshed = refresh_secret_if_needed(secret, oauth, now=datetime.now(timezone.utc).timestamp())
         config = dict(connection.config or {})
         checkpoint = dict(config.get("coros_sync_checkpoint") or {})
-        # Premier import : six mois. Imports suivants : fenêtre de reprise
-        # de sept jours pour récupérer les données COROS publiées en retard.
+        # Ne basculer en incrémental qu’après un import initial ayant
+        # réellement enregistré des activités. Une ancienne exécution
+        # ayant importé uniquement les métriques ne doit pas tronquer l’historique.
+        initial_import_completed = bool(config.get("coros_initial_import_completed"))
         incremental_start = (
             connection.last_synced_at.date() - timedelta(days=7)
-            if connection.last_synced_at is not None
+            if initial_import_completed and connection.last_synced_at is not None
             else None
         )
         job_state = {
@@ -159,6 +161,15 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
         if refreshed != secret:
             connection.encrypted_secret = cipher.encrypt(json.dumps(refreshed, separators=(",", ":")))
         connection.config = {key: value for key, value in (connection.config or {}).items() if key != "coros_sync_checkpoint"}
+        categories = config.get("categories", {})
+        activities_enabled = categories.get("activities", True)
+        imported_activities = result.get("imported_snapshots", {}).get("activities", 0)
+        if activities_enabled and imported_activities > 0:
+            connection.config = {**(connection.config or {}), "coros_initial_import_completed": True}
+        elif activities_enabled:
+            # Aucun résultat activité : conserver l’état initial pour que
+            # la prochaine exécution retente toute la fenêtre de six mois.
+            connection.config = {**(connection.config or {}), "coros_initial_import_completed": False}
         state = dict((connection.config or {}).get("coros_sync_job") or job_state)
         state.update({
             "status": "success",
@@ -168,7 +179,8 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
             "progress": {"category": None, "next_date": None},
         })
         connection.config = {**(connection.config or {}), "coros_sync_job": state}
-        connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        if not activities_enabled or imported_activities > 0:
+            connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db.commit()
         COROS_SYNC_JOBS.success(job_id, result)
     except Exception:

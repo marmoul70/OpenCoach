@@ -154,7 +154,18 @@ class FakeActivityClient:
 
     def list_tools(self):
         return [
-            {"name": "querySportRecords"},
+            {
+                "name": "querySportRecords",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "startDate": {"type": "string"},
+                        "endDate": {"type": "string"},
+                        "limit": {"type": "integer"},
+                    },
+                    "required": [],
+                },
+            },
             {
                 "name": "getActivityDetail",
                 "inputSchema": {
@@ -274,3 +285,50 @@ def test_activity_detail_invalid_boolean_and_lossy_integer_are_rejected():
     }
     assert _build_tool_arguments(boolean_tool, {"includeLaps": "perhaps"}) is None
     assert _build_tool_arguments(integer_tool, {"sportType": 102.5}) is None
+
+\n\ndef test_activity_import_builds_query_arguments_from_discovered_schema():
+    client = FakeActivityClient()
+    db = FakeDb()
+    service = CorosImportService(
+        client,
+        db,
+        profile_id="00000000-0000-0000-0000-000000000001",
+    )
+
+    service.import_history(
+        {"activities": True, "activity_details": False},
+        start_date=date(2026, 9, 21),
+        today=date(2026, 9, 21),
+    )
+
+    assert client.calls[0] == (
+        "querySportRecords",
+        {"startDate": "20260921", "endDate": "20260921", "limit": 100},
+    )
+
+
+def test_mcp_text_with_json_prefix_is_decoded_into_activity_records():
+    from opencoach.integrations.coros.sync import _decode_tool_result, _find_rows
+
+    response = {
+        "content": [{
+            "type": "text",
+            "text": 'COROS workout records:\\n[{"labelId":"run-1","sportType":102,"startTimestamp":1790000000}]',
+        }]
+    }
+
+    rows = _find_rows(_decode_tool_result(response))
+
+    assert rows == [{
+        "labelId": "run-1",
+        "sportType": 102,
+        "startTimestamp": 1790000000,
+    }]
+
+
+def test_non_json_mcp_activity_text_does_not_create_fake_activity_rows():
+    from opencoach.integrations.coros.sync import _decode_tool_result, _find_rows
+
+    response = {"content": [{"type": "text", "text": "No workout records found."}]}
+
+    assert _find_rows(_decode_tool_result(response)) == []

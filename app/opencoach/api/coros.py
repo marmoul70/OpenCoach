@@ -413,7 +413,7 @@ def sync_coros_history(
                 months=6,
                 start_date=(
                     connection.last_synced_at.date() - timedelta(days=7)
-                    if connection.last_synced_at is not None
+                    if (connection.config or {}).get("coros_initial_import_completed") and connection.last_synced_at is not None
                     else None
                 ),
             )
@@ -427,7 +427,15 @@ def sync_coros_history(
             raise HTTPException(status_code=502, detail="L'import COROS a échoué : le serveur MCP est indisponible ou a retourné une réponse invalide.") from exc
         if refreshed != secret:
             _save_secret(connection, cipher, refreshed)
-        connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        categories = (connection.config or {}).get("categories", DEFAULT_CATEGORIES)
+        imported_activities = result.get("imported_snapshots", {}).get("activities", 0)
+        if categories.get("activities", True) and imported_activities > 0:
+            connection.config = {**(connection.config or {}), "coros_initial_import_completed": True}
+            connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        elif not categories.get("activities", True):
+            connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        else:
+            connection.config = {**(connection.config or {}), "coros_initial_import_completed": False}
         db.commit()
         return {"status": "completed", **result}
     finally:

@@ -4,7 +4,7 @@ import base64
 import hashlib
 import secrets
 from dataclasses import dataclass
-from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qs, parse_qsl, urlencode, urlparse, urlunparse
 
 import httpx
 
@@ -159,7 +159,7 @@ class CorosOAuthClientService:
 
         parsed = urlparse(pending.authorize_url)
         query = list(
-            __import__("urllib.parse", fromlist=["parse_qsl"]).parse_qsl(
+            parse_qsl(
                 parsed.query,
                 keep_blank_values=True,
             )

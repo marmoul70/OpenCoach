@@ -219,7 +219,7 @@ class CorosImportService:
             if "querySportRecords" not in tools:
                 skipped.append("activities:outil_non_disponible")
             else:
-                imported["activities"] = self._import_activities(start, end, tools, categories, saved.get("activities"))
+                imported["activities"] = self._import_activities(start, end, tool_definitions, categories, saved.get("activities"))
 
         for category, enabled in categories.items():
             if not enabled or category in {"activities", "activity_details", "fit_files"}:
@@ -275,7 +275,7 @@ class CorosImportService:
             self._checkpoint(category, cursor if cursor <= end else None)
         return count
 
-    def _import_activities(self, start: date, end: date, tools: set[str], categories: dict[str, bool], resume_date: str | None = None) -> int:
+    def _import_activities(self, start: date, end: date, tool_definitions: dict[str, dict[str, Any]], categories: dict[str, bool], resume_date: str | None = None) -> int:
         count = 0
         cursor = max(start, date.fromisoformat(resume_date)) if resume_date else start
         while cursor <= end:
@@ -289,7 +289,7 @@ class CorosImportService:
             for record in records:
                 metric_date = _row_date(record, cursor)
                 payload = dict(record)
-                if categories.get("activity_details") and "getActivityDetail" in tools:
+                if categories.get("activity_details") and "getActivityDetail" in tool_definitions:
                     detail_arguments = _build_tool_arguments(
                         tool_definitions["getActivityDetail"],
                         {

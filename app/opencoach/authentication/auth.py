@@ -1,8 +1,7 @@
-"""Authentification locale OpenCoach par PIN."""
+"""Authentification locale OpenCoach par utilisateur."""
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import hmac
 import os

@@ -63,6 +63,7 @@ COROS_SYNC_JOBS = CorosSyncJobStore()
 def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
     """Exécute l'import COROS dans une session DB dédiée."""
     import json
+    import logging
     import os
     from datetime import datetime, timezone
     from sqlalchemy import select
@@ -74,6 +75,7 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
     from opencoach.integrations.coros.sync import CorosImportService
     from opencoach.security import SecretCipher
 
+    logger = logging.getLogger(__name__)
     COROS_SYNC_JOBS.running(job_id)
     db = SessionLocal()
     try:
@@ -97,8 +99,11 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
         connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db.commit()
         COROS_SYNC_JOBS.success(job_id, result)
-    except Exception as exc:
+    except Exception:
         db.rollback()
-        COROS_SYNC_JOBS.failure(job_id, str(exc))
+        logger.exception("Échec de la synchronisation COROS (job=%s, profile=%s)", job_id, athlete_profile_id)
+        # Ne jamais exposer à l'interface les détails internes, URL, jetons
+        # ou réponses brutes renvoyés par le fournisseur.
+        COROS_SYNC_JOBS.failure(job_id, "La synchronisation COROS a échoué. Vérifie la connexion puis consulte les journaux OpenCoach.")
     finally:
         db.close()

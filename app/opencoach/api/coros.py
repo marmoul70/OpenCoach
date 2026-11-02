@@ -304,9 +304,11 @@ def update_coros_settings(
     connection.config = {
         **current,
         "sync_interval_hours": payload.sync_interval_hours,
+        # Ne conserver que les catégories connues et compléter les nouvelles
+        # préférences avec leurs valeurs par défaut (compatibilité UI/API).
         "categories": {
-            key: bool(value)
-            for key, value in payload.categories.items()
+            key: bool(payload.categories.get(key, DEFAULT_CATEGORIES[key]))
+            for key in DEFAULT_CATEGORIES
         },
     }
     db.commit()

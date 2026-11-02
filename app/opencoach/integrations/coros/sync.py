@@ -143,7 +143,10 @@ def _parse_coros_sport_records_text(raw: str) -> list[dict[str, Any]]:
 
         pace = capture(r"\bAverage Pace\s*:\s*(\d+):(\d{2})\s*/km")
         if pace:
-            record["averagePaceSecondsPerKm"] = int(pace.group(1)) * 60 + int(pace.group(2))
+            pace_seconds = int(pace.group(1)) * 60 + int(pace.group(2))
+            record["averagePaceSecondsPerKm"] = pace_seconds
+            if pace_seconds > 0:
+                record["average_speed_mps"] = 1000 / pace_seconds
 
         speed = capture(r"\bAverage Speed\s*:\s*([\d.]+)\s*km/h")
         if speed:

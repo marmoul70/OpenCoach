@@ -7,6 +7,15 @@ export interface CorosConnection {
   sync_interval_hours: number
   categories: Record<string, boolean>
   initial_import_months: 6
+  sync_job: {
+    job_id: string
+    status: 'pending' | 'running' | 'success' | 'error' | 'interrupted'
+    created_at: string | null
+    finished_at: string | null
+    result: CorosSyncResult | null
+    error: string | null
+    progress?: { category: string | null; next_date: string | null }
+  } | null
 }
 
 export interface CorosSettingsUpdate {
@@ -89,11 +98,7 @@ export interface CorosSyncResult {
   skipped: string[]
 }
 
-export async function syncCorosHistory(): Promise<CorosSyncResult> {
-  const started = await corosRequest<{ job_id: string; status: string }>(
-    '/api/integrations/coros/sync/start',
-    { method: 'POST' },
-  )
+export async function waitForCorosSync(jobId: string): Promise<CorosSyncResult> {
   const deadline = Date.now() + 10 * 60 * 1000
   while (Date.now() < deadline) {
     await new Promise(resolve => window.setTimeout(resolve, 2000))
@@ -101,9 +106,18 @@ export async function syncCorosHistory(): Promise<CorosSyncResult> {
       status: string
       result: CorosSyncResult | null
       error: string | null
-    }>(`/api/integrations/coros/sync/status/${started.job_id}`)
+    }>(`/api/integrations/coros/sync/status/${jobId}`)
     if (job.status === 'success' && job.result) return job.result
     if (job.status === 'error') throw new Error(job.error || 'L’import COROS a échoué.')
+    if (job.status === 'interrupted') throw new Error('L’import COROS a été interrompu. Relance-le pour reprendre au dernier point sauvegardé.')
   }
   throw new Error('L’import COROS est toujours en cours. Vérifie son état avant de le relancer.')
+}
+
+export async function syncCorosHistory(): Promise<CorosSyncResult> {
+  const started = await corosRequest<{ job_id: string; status: string }>(
+    '/api/integrations/coros/sync/start',
+    { method: 'POST' },
+  )
+  return waitForCorosSync(started.job_id)
 }

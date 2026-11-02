@@ -357,34 +357,57 @@ def sync_coros_history(
     athlete_profile_id: UUID = Depends(get_current_athlete_profile_id),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Lance un import idempotent de l'historique COROS disponible."""
+    """Import synchrone historique, protégé par le verrou partagé."""
     connection = _connection(db, athlete_profile_id)
     if connection is None or not connection.enabled:
         raise HTTPException(status_code=409, detail="Connecte d'abord ton compte COROS.")
-    cipher = _cipher()
-    secret = _read_secret(connection, cipher)
-    if secret.get("status") != "connected":
-        raise HTTPException(status_code=409, detail="La connexion COROS doit être réautorisée.")
+    if db.get(CorosSyncLock, athlete_profile_id) is not None:
+        raise HTTPException(status_code=409, detail="Une synchronisation COROS est déjà en cours.")
+
+    lock = CorosSyncLock(
+        athlete_profile_id=athlete_profile_id,
+        job_id=f"sync-{UUID(int=0)}",
+    )
+    db.add(lock)
     try:
-        refreshed = refresh_secret_if_needed(secret, _oauth(), now=datetime.now(timezone.utc).timestamp())
-        client = CorosMcpClient(refreshed["access_token"])
-        result = CorosImportService(client, db, athlete_profile_id).import_history(
-            (connection.config or {}).get("categories", DEFAULT_CATEGORIES),
-            months=6,
-        )
-    except CorosMcpAuthenticationError as exc:
-        connection.enabled = False
-        connection.config = {**(connection.config or {}), "connected": False}
         db.commit()
-        raise HTTPException(status_code=401, detail="La connexion COROS a expiré. Reconnecte ton compte.") from exc
-    except CorosMcpError as exc:
+    except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=502, detail="L'import COROS a échoué : le serveur MCP est indisponible ou a retourné une réponse invalide.") from exc
-    if refreshed != secret:
-        _save_secret(connection, cipher, refreshed)
-    connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    db.commit()
-    return {"status": "completed", **result}
+        raise HTTPException(status_code=409, detail="Une synchronisation COROS est déjà en cours.") from exc
+
+    try:
+        cipher = _cipher()
+        secret = _read_secret(connection, cipher)
+        if secret.get("status") != "connected":
+            raise HTTPException(status_code=409, detail="La connexion COROS doit être réautorisée.")
+        try:
+            refreshed = refresh_secret_if_needed(secret, _oauth(), now=datetime.now(timezone.utc).timestamp())
+            client = CorosMcpClient(refreshed["access_token"])
+            result = CorosImportService(client, db, athlete_profile_id).import_history(
+                (connection.config or {}).get("categories", DEFAULT_CATEGORIES),
+                months=6,
+            )
+        except CorosMcpAuthenticationError as exc:
+            connection.enabled = False
+            connection.config = {**(connection.config or {}), "connected": False}
+            db.commit()
+            raise HTTPException(status_code=401, detail="La connexion COROS a expiré. Reconnecte ton compte.") from exc
+        except CorosMcpError as exc:
+            db.rollback()
+            raise HTTPException(status_code=502, detail="L'import COROS a échoué : le serveur MCP est indisponible ou a retourné une réponse invalide.") from exc
+        if refreshed != secret:
+            _save_secret(connection, cipher, refreshed)
+        connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        db.commit()
+        return {"status": "completed", **result}
+    finally:
+        try:
+            current_lock = db.get(CorosSyncLock, athlete_profile_id)
+            if current_lock is not None and current_lock.job_id == lock.job_id:
+                db.delete(current_lock)
+                db.commit()
+        except Exception:
+            db.rollback()
 
 
 @router.post("/sync/start")

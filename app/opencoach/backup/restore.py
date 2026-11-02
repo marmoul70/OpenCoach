@@ -173,7 +173,15 @@ class BackupRestoreService:
                 if has_environment:
                     target_environment = PROJECT_ROOT / ".env"
                     staged_environment = target_environment.with_suffix(".env.restore")
-                    staged_environment.write_bytes(imported_environment.read_bytes())
+                    environment_content = imported_environment.read_text(encoding="utf-8").splitlines()
+                    active_database_url = os.environ.get("OPENCOACH_DATABASE_URL")
+                    if active_database_url:
+                        environment_content = [
+                            line for line in environment_content
+                            if not line.startswith("OPENCOACH_DATABASE_URL=")
+                        ]
+                        environment_content.append(f"OPENCOACH_DATABASE_URL={active_database_url}")
+                    staged_environment.write_text("\n".join(environment_content) + "\n", encoding="utf-8")
                     os.chmod(staged_environment, 0o600)
                     os.replace(staged_environment, target_environment)
 
@@ -279,11 +287,20 @@ class BackupRestoreService:
                 archive_path,
                 mode="r",
             ) as archive:
-                names = archive.namelist()
+                entries = archive.infolist()
+                names = [entry.filename for entry in entries]
                 if len(names) != len(set(names)):
                     raise ValueError("Archive OpenCoach invalide : entrées ZIP dupliquées.")
 
                 allowed = {"opencoach.db", "manifest.json", ".env"}
+                if any(entry.is_dir() for entry in entries):
+                    raise ValueError("Archive OpenCoach invalide : dossier inattendu.")
+                if sum(entry.file_size for entry in entries) > 500 * 1024 * 1024:
+                    raise ValueError("Le contenu décompressé dépasse la limite de 500 Mo.")
+                if any(entry.filename == "manifest.json" and entry.file_size > 1024 * 1024 for entry in entries):
+                    raise ValueError("Le manifest dépasse la taille autorisée.")
+                if any(entry.filename == ".env" and entry.file_size > 1024 * 1024 for entry in entries):
+                    raise ValueError("Le fichier .env dépasse la taille autorisée.")
                 if not set(names).issubset(allowed):
                     raise ValueError("Archive OpenCoach invalide : fichier inattendu.")
 
@@ -319,6 +336,9 @@ class BackupRestoreService:
                         "Le manifest de sauvegarde "
                         "est invalide."
                     ) from exc
+
+                if not isinstance(manifest, dict):
+                    raise ValueError("Le manifest de sauvegarde est invalide.")
 
                 if (
                     manifest.get(

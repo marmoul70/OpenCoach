@@ -131,6 +131,7 @@ def get_coros_connection(
             "sync_interval_hours": 12,
             "categories": DEFAULT_CATEGORIES,
             "initial_import_months": 6,
+            "sync_job": None,
         }
 
     config = connection.config or {}
@@ -147,6 +148,7 @@ def get_coros_connection(
         "sync_interval_hours": config.get("sync_interval_hours", 12),
         "categories": config.get("categories", DEFAULT_CATEGORIES),
         "initial_import_months": 6,
+        "sync_job": config.get("coros_sync_job"),
     }
 
 

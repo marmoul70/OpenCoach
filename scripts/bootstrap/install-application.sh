@@ -203,6 +203,14 @@ configure_authentication() {
     log_info \
         "Configuration de l'authentification OpenCoach"
 
+    if [[ ! -f "$ENV_FILE" ]]; then
+        if [[ ! -f "$PROJECT_ROOT/.env.example" ]]; then
+            log_error ".env.example est introuvable."
+            return 1
+        fi
+        cp "$PROJECT_ROOT/.env.example" "$ENV_FILE"
+    fi
+
     touch "$ENV_FILE"
     chown "$OPENCOACH_USER:$OPENCOACH_GROUP" "$ENV_FILE"
     chmod 600 "$ENV_FILE"

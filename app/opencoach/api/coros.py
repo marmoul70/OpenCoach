@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
@@ -399,6 +399,16 @@ def start_coros_sync(
     active = COROS_SYNC_JOBS.find_active(athlete_profile_id)
     if active is not None:
         return {"job_id": str(active.id), "status": active.status}
+
+    existing_lock = db.get(CorosSyncLock, athlete_profile_id)
+    if existing_lock is not None:
+        lock_age = datetime.now(timezone.utc).replace(tzinfo=None) - existing_lock.acquired_at
+        if lock_age > timedelta(minutes=30):
+            # Récupère un verrou orphelin après arrêt brutal du processus.
+            db.delete(existing_lock)
+            db.commit()
+        else:
+            return {"job_id": existing_lock.job_id, "status": "running"}
 
     job = COROS_SYNC_JOBS.create(athlete_profile_id)
     db.add(CorosSyncLock(

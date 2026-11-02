@@ -431,6 +431,7 @@ def start_coros_sync(
         db.commit()
     except IntegrityError:
         db.rollback()
+        COROS_SYNC_JOBS.discard(job.id)
         existing_lock = db.get(CorosSyncLock, athlete_profile_id)
         if existing_lock is None:
             raise HTTPException(status_code=409, detail="Un import COROS est déjà en cours.")

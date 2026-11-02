@@ -22,6 +22,7 @@ export {
   syncCorosHistory,
   waitForCorosSync,
   type CorosConnection,
+  type CorosAvailableTool,
   type CorosSettingsUpdate,
   type CorosSyncResult,
 } from './coros'

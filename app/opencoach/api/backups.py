@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
+import signal
 
 from datetime import datetime
 from typing import Literal
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     HTTPException,
     Request,
 )
@@ -69,6 +72,10 @@ class BackupRestoreResponse(BaseModel):
     safety_backup_filename: str
     imported_revision: str
     environment_restored: bool = False
+
+
+def _restart_backend_after_response() -> None:
+    os.kill(os.getpid(), signal.SIGTERM)
 
 
 def _service() -> BackupService:
@@ -188,6 +195,7 @@ def get_backup_status() -> BackupStatusResponse:
 )
 async def restore_uploaded_backup(
     request: Request,
+    background_tasks: BackgroundTasks,
 ) -> BackupRestoreResponse:
     content_type = (
         request.headers.get(
@@ -252,13 +260,12 @@ async def restore_uploaded_backup(
             detail=str(exc),
         ) from exc
 
+    if result.environment_restored:
+        background_tasks.add_task(_restart_backend_after_response)
+
     return BackupRestoreResponse(
         restored=True,
-        safety_backup_filename=(
-            result
-            .safety_backup
-            .filename
-        ),
+        safety_backup_filename=result.safety_backup.filename,
         imported_revision=result.imported_revision,
         environment_restored=result.environment_restored,
     )

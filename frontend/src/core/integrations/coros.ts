@@ -89,6 +89,21 @@ export interface CorosSyncResult {
   skipped: string[]
 }
 
-export function syncCorosHistory(): Promise<CorosSyncResult> {
-  return corosRequest('/api/integrations/coros/sync', { method: 'POST' })
+export async function syncCorosHistory(): Promise<CorosSyncResult> {
+  const started = await corosRequest<{ job_id: string; status: string }>(
+    '/api/integrations/coros/sync/start',
+    { method: 'POST' },
+  )
+  const deadline = Date.now() + 10 * 60 * 1000
+  while (Date.now() < deadline) {
+    await new Promise(resolve => window.setTimeout(resolve, 2000))
+    const job = await corosRequest<{
+      status: string
+      result: CorosSyncResult | null
+      error: string | null
+    }>(`/api/integrations/coros/sync/status/${started.job_id}`)
+    if (job.status === 'success' && job.result) return job.result
+    if (job.status === 'error') throw new Error(job.error || 'L’import COROS a échoué.')
+  }
+  throw new Error('L’import COROS est toujours en cours. Vérifie son état avant de le relancer.')
 }

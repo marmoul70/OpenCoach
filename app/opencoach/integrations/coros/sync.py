@@ -1,0 +1,227 @@
+from __future__ import annotations
+
+import json
+from calendar import monthrange
+from datetime import date, datetime, timedelta, timezone
+from typing import Any
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from opencoach.database.models import CorosDailyData
+from opencoach.integrations.coros.client import CorosMcpClient
+from opencoach.integrations.coros.errors import CorosMcpProtocolError
+
+
+DATE_KEYS = ("date", "day", "metricDate", "startDate", "wakeDate", "recordDate")
+CATEGORY_TO_TOOL = {
+    "daily_health": "queryDailyHealthData",
+    "sleep": "querySleepOverview",
+    "hrv": "querySleepHrv",
+    "heart_rate": "queryAvgHeartRate",
+    "resting_heart_rate": "queryRestingHeartRate",
+    "stress": "queryStressLevel",
+    "stress_timeseries": "queryStressTimeSeries",
+    "health_check": "queryHealthCheckTimeSeries",
+}
+DATE_RANGE_TOOLS = {"sleep", "hrv", "heart_rate"}
+WEEKLY_TOOLS = {"daily_health", "resting_heart_rate", "stress", "stress_timeseries", "health_check"}
+
+
+def six_months_ago(day: date) -> date:
+    month = day.month - 6
+    year = day.year
+    while month <= 0:
+        month += 12
+        year -= 1
+    return day.replace(year=year, month=month, day=min(day.day, monthrange(year, month)[1]))
+
+
+def _jsonable(value: Any) -> Any:
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {str(k): _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    return str(value)
+
+
+def _decode_tool_result(result: dict[str, Any]) -> Any:
+    structured = result.get("structuredContent")
+    if structured is not None:
+        return _jsonable(structured)
+    content = result.get("content")
+    if isinstance(content, list):
+        decoded = []
+        for item in content:
+            if isinstance(item, dict) and isinstance(item.get("text"), str):
+                raw = item["text"]
+                try:
+                    decoded.append(json.loads(raw))
+                except ValueError:
+                    decoded.append({"text": raw})
+            else:
+                decoded.append(_jsonable(item))
+        if len(decoded) == 1:
+            return decoded[0]
+        return decoded
+    return _jsonable(result)
+
+
+def _find_rows(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, list):
+        rows = [item for item in value if isinstance(item, dict)]
+        if rows:
+            return rows
+        for item in value:
+            found = _find_rows(item)
+            if found:
+                return found
+    if isinstance(value, dict):
+        for key in ("records", "list", "data", "items", "days", "dailyData", "sleepList", "result"):
+            child = value.get(key)
+            if isinstance(child, (dict, list)):
+                found = _find_rows(child)
+                if found:
+                    return found
+        if any(key in value for key in DATE_KEYS):
+            return [value]
+    return []
+
+
+def _row_date(row: dict[str, Any], fallback: date) -> date:
+    for key in DATE_KEYS:
+        value = row.get(key)
+        if isinstance(value, str):
+            candidate = value.strip()
+            for fmt in ("%Y%m%d", "%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"):
+                try:
+                    return datetime.strptime(candidate[:26], fmt).date()
+                except ValueError:
+                    continue
+        if isinstance(value, (int, float)) and value > 10_000_000:
+            try:
+                return datetime.fromtimestamp(value / (1000 if value > 10_000_000_000 else 1), timezone.utc).date()
+            except (OverflowError, OSError, ValueError):
+                pass
+    return fallback
+
+
+def _upsert_snapshot(db: Session, profile_id: UUID, metric_date: date, category: str, payload: Any) -> None:
+    row = db.scalar(select(CorosDailyData).where(
+        CorosDailyData.athlete_profile_id == profile_id,
+        CorosDailyData.metric_date == metric_date,
+        CorosDailyData.category == category,
+    ))
+    normalized = payload if isinstance(payload, dict) else {"data": payload}
+    if row is None:
+        row = CorosDailyData(
+            athlete_profile_id=profile_id,
+            metric_date=metric_date,
+            category=category,
+            payload=normalized,
+        )
+        db.add(row)
+    else:
+        row.payload = normalized
+        row.imported_at = datetime.now(timezone.utc)
+
+
+class CorosImportService:
+    """Import incrémental, idempotent et reprenable des données COROS."""
+
+    def __init__(self, client: CorosMcpClient, db: Session, profile_id: UUID):
+        self.client = client
+        self.db = db
+        self.profile_id = profile_id
+
+    def import_history(self, categories: dict[str, bool], *, months: int = 6, today: date | None = None) -> dict[str, Any]:
+        end = today or datetime.now(timezone.utc).date()
+        start = six_months_ago(end)
+        tools = {item.get("name") for item in self.client.list_tools()}
+        imported: dict[str, int] = {}
+        skipped: list[str] = []
+
+        if categories.get("activities", True):
+            if "querySportRecords" not in tools:
+                skipped.append("activities:outil_non_disponible")
+            else:
+                imported["activities"] = self._import_activities(start, end, tools, categories)
+
+        for category, enabled in categories.items():
+            if not enabled or category in {"activities", "activity_details", "fit_files", "training_load"}:
+                continue
+            tool_name = CATEGORY_TO_TOOL.get(category)
+            if not tool_name:
+                continue
+            if tool_name not in tools:
+                skipped.append(f"{category}:outil_non_disponible")
+                continue
+            imported[category] = self._import_daily_category(category, tool_name, start, end)
+
+        self.db.commit()
+        return {
+            "start_date": start.isoformat(),
+            "end_date": end.isoformat(),
+            "imported_snapshots": imported,
+            "skipped": skipped,
+        }
+
+    def _call_and_store(self, tool_name: str, arguments: dict[str, Any], category: str, fallback: date) -> int:
+        raw = _decode_tool_result(self.client.call_tool(tool_name, arguments))
+        rows = _find_rows(raw)
+        if not rows:
+            rows = [{"data": raw}]
+        count = 0
+        for item in rows:
+            metric_date = _row_date(item, fallback)
+            _upsert_snapshot(self.db, self.profile_id, metric_date, category, item)
+            count += 1
+        return count
+
+    def _import_daily_category(self, category: str, tool_name: str, start: date, end: date) -> int:
+        count = 0
+        cursor = start
+        while cursor <= end:
+            window_end = min(cursor + timedelta(days=6), end)
+            if category in DATE_RANGE_TOOLS:
+                args = {"startDate": cursor.strftime("%Y%m%d"), "endDate": window_end.strftime("%Y%m%d")}
+            else:
+                args = {"days": (window_end - cursor).days + 1}
+                if category in {"stress_timeseries", "health_check"}:
+                    args = {"startDate": cursor.strftime("%Y%m%d"), "endDate": window_end.strftime("%Y%m%d"), "days": (window_end - cursor).days + 1}
+            count += self._call_and_store(tool_name, args, category, cursor)
+            cursor = window_end + timedelta(days=1)
+        return count
+
+    def _import_activities(self, start: date, end: date, tools: set[str], categories: dict[str, bool]) -> int:
+        count = 0
+        cursor = start
+        while cursor <= end:
+            window_end = min(cursor + timedelta(days=6), end)
+            raw = _decode_tool_result(self.client.call_tool("querySportRecords", {
+                "startDate": cursor.strftime("%Y%m%d"),
+                "endDate": window_end.strftime("%Y%m%d"),
+                "limit": 100,
+            }))
+            records = _find_rows(raw)
+            for record in records:
+                metric_date = _row_date(record, cursor)
+                payload = dict(record)
+                if categories.get("activity_details") and "getActivityDetail" in tools:
+                    label_id = record.get("labelId")
+                    sport_type = record.get("sportType")
+                    if label_id is not None and sport_type is not None:
+                        detail = _decode_tool_result(self.client.call_tool("getActivityDetail", {
+                            "labelId": str(label_id),
+                            "sportType": int(sport_type),
+                        }))
+                        payload["activity_detail"] = detail
+                _upsert_snapshot(self.db, self.profile_id, metric_date, "activities", payload)
+                count += 1
+            cursor = window_end + timedelta(days=1)
+        return count

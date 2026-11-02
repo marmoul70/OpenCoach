@@ -391,3 +391,27 @@ def test_human_readable_coros_sport_records_are_parsed_into_activity_rows():
 
     assert rows[2]["workoutTime"] == 2948
     assert rows[2]["distanceMeters"] == 7640
+
+
+def test_empty_activity_history_keeps_initial_checkpoint_for_full_retry():
+    class EmptyActivityClient(FakeActivityClient):
+        def call_tool(self, name, arguments):
+            self.calls.append((name, arguments))
+            return {"content": [{"type": "text", "text": "No workout records found."}]}
+
+    checkpoints = []
+    service = CorosImportService(
+        EmptyActivityClient(),
+        FakeDb(),
+        profile_id="00000000-0000-0000-0000-000000000001",
+        progress_callback=lambda category, next_date: checkpoints.append((category, next_date)),
+    )
+
+    result = service.import_history(
+        {"activities": True, "activity_details": False},
+        start_date=date(2026, 5, 1),
+        today=date(2026, 11, 2),
+    )
+
+    assert result["imported_snapshots"]["activities"] == 0
+    assert checkpoints[-1] == ("activities", "2026-05-01")

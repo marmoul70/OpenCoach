@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -29,6 +29,7 @@ from opencoach.integrations.coros.oauth import (
     CorosPendingLogin,
 )
 from opencoach.security import SecretCipher, SecretCipherError
+from opencoach.services.coros_sync_job import COROS_SYNC_JOBS, run_coros_sync_job
 
 
 router = APIRouter(
@@ -379,3 +380,38 @@ def sync_coros_history(
     connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     return {"status": "completed", **result}
+
+
+@router.post("/sync/start")
+def start_coros_sync(
+    background_tasks: BackgroundTasks,
+    athlete_profile_id: UUID = Depends(get_current_athlete_profile_id),
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    connection = _connection(db, athlete_profile_id)
+    if connection is None or not connection.enabled:
+        raise HTTPException(status_code=409, detail="Connecte d'abord ton compte COROS.")
+    active = COROS_SYNC_JOBS.find_active(athlete_profile_id)
+    if active is not None:
+        return {"job_id": str(active.id), "status": active.status}
+    job = COROS_SYNC_JOBS.create(athlete_profile_id)
+    background_tasks.add_task(run_coros_sync_job, job_id=job.id, athlete_profile_id=athlete_profile_id)
+    return {"job_id": str(job.id), "status": job.status}
+
+
+@router.get("/sync/status/{job_id}")
+def get_coros_sync_status(
+    job_id: UUID,
+    athlete_profile_id: UUID = Depends(get_current_athlete_profile_id),
+) -> dict[str, Any]:
+    job = COROS_SYNC_JOBS.get(job_id)
+    if job is None or job.athlete_profile_id != athlete_profile_id:
+        raise HTTPException(status_code=404, detail="Import COROS introuvable.")
+    return {
+        "job_id": str(job.id),
+        "status": job.status,
+        "created_at": job.created_at.isoformat(),
+        "finished_at": job.finished_at.isoformat() if job.finished_at else None,
+        "result": job.result,
+        "error": job.error,
+    }

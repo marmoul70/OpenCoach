@@ -53,6 +53,30 @@ def _jsonable(value: Any) -> Any:
     return str(value)
 
 
+def _decode_text_payload(raw: str) -> Any:
+    """Décode un JSON MCP éventuellement entouré de texte ou de fences."""
+    candidate = raw.strip()
+    if candidate.startswith("```"):
+        candidate = candidate.split("\n", 1)[-1]
+        if candidate.endswith("```"):
+            candidate = candidate[:-3].strip()
+    try:
+        return json.loads(candidate)
+    except (TypeError, ValueError):
+        pass
+
+    # Certains serveurs MCP préfixent le JSON d'un court texte explicatif.
+    # On ne conserve que le premier objet/tableau JSON complet et valide.
+    for index, char in enumerate(candidate):
+        if char not in "[{":
+            continue
+        try:
+            return json.JSONDecoder().raw_decode(candidate[index:])[0]
+        except ValueError:
+            continue
+    return {"text": raw}
+
+
 def _decode_tool_result(result: dict[str, Any]) -> Any:
     structured = result.get("structuredContent")
     if structured is not None:
@@ -62,11 +86,7 @@ def _decode_tool_result(result: dict[str, Any]) -> Any:
         decoded = []
         for item in content:
             if isinstance(item, dict) and isinstance(item.get("text"), str):
-                raw = item["text"]
-                try:
-                    decoded.append(json.loads(raw))
-                except ValueError:
-                    decoded.append({"text": raw})
+                decoded.append(_decode_text_payload(item["text"]))
             else:
                 decoded.append(_jsonable(item))
         if len(decoded) == 1:
@@ -76,6 +96,11 @@ def _decode_tool_result(result: dict[str, Any]) -> Any:
 
 
 def _find_rows(value: Any) -> list[dict[str, Any]]:
+    if isinstance(value, str):
+        decoded = _decode_text_payload(value)
+        return _find_rows(decoded) if not (
+            isinstance(decoded, dict) and set(decoded) == {"text"}
+        ) else []
     if isinstance(value, list):
         rows = [item for item in value if isinstance(item, dict)]
         if rows:
@@ -87,11 +112,13 @@ def _find_rows(value: Any) -> list[dict[str, Any]]:
     if isinstance(value, dict):
         for key in ("records", "list", "data", "items", "days", "dailyData", "sleepList", "result"):
             child = value.get(key)
-            if isinstance(child, (dict, list)):
+            if isinstance(child, (dict, list, str)):
                 found = _find_rows(child)
                 if found:
                     return found
-        if any(key in value for key in DATE_KEYS):
+        if any(key in value for key in DATE_KEYS) or any(
+            key in value for key in ("labelId", "label_id", "startTimestamp")
+        ):
             return [value]
     return []
 
@@ -299,11 +326,25 @@ class CorosImportService:
         cursor = max(start, date.fromisoformat(resume_date)) if resume_date else start
         while cursor <= end:
             window_end = min(cursor + timedelta(days=6), end)
-            raw = _decode_tool_result(self.client.call_tool("querySportRecords", {
+            available_values = {
                 "startDate": cursor.strftime("%Y%m%d"),
                 "endDate": window_end.strftime("%Y%m%d"),
                 "limit": 100,
-            }))
+            }
+            query_tool = tool_definitions.get("querySportRecords", {})
+            arguments = _build_tool_arguments(query_tool, available_values)
+            # Compatibilité avec les anciens serveurs MCP qui n'exposent pas
+            # inputSchema dans tools/list. Si le schéma est présent, il reste
+            # toujours la source de vérité pour les noms et types de paramètres.
+            if arguments is None and not isinstance(query_tool.get("inputSchema"), dict):
+                arguments = available_values
+            if arguments is None:
+                raise ValueError(
+                    "Le schéma MCP querySportRecords ne permet pas de construire les paramètres."
+                )
+            raw = _decode_tool_result(
+                self.client.call_tool("querySportRecords", arguments)
+            )
             records = _find_rows(raw)
             for record in records:
                 metric_date = _row_date(record, cursor)

@@ -261,7 +261,7 @@ export function CorosSection() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-200">Synchronisation automatique</span>
+          <span className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-200">Fréquence souhaitée</span>
           <select
             value={connection.sync_interval_hours}
             onChange={event => setConnection(current => current ? { ...current, sync_interval_hours: Number(event.target.value) } : current)}
@@ -276,7 +276,7 @@ export function CorosSection() {
         <div className="rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-white/[0.04]">
           <span className="block text-xs font-medium text-slate-700 dark:text-slate-200">Historique initial</span>
           <span className="mt-1 block text-sm font-semibold text-slate-900 dark:text-white">6 derniers mois</span>
-          <span className="mt-1 block text-[11px] text-slate-500">Fenêtre fixe pour le premier import.</span>
+          <span className="mt-1 block text-[11px] text-slate-500">Fenêtre cible du premier import.</span>
         </div>
       </div>
 
@@ -299,7 +299,7 @@ export function CorosSection() {
 
       {message && <p role="status" className="text-xs text-emerald-700 dark:text-emerald-400">{message}</p>}
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">{error}</p>}
-      {!connection.connected && <p className="text-[11px] text-slate-500">Les préférences seront enregistrables après connexion. L’import des données sera activé dans la prochaine étape.</p>}
+      {!connection.connected && <p className="text-[11px] text-slate-500">La fréquence est mémorisée pour la future planification automatique. En attendant, utilise « Lancer l’import » pour synchroniser manuellement.</p>}
     </div>
   )
 }

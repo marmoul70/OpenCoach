@@ -438,7 +438,8 @@ class CorosImportService:
                             self.client.call_tool("getActivityDetail", detail_arguments)
                         )
                         payload["activity_detail"] = detail
-                upsert_coros_activity(self.db, self.profile_id, record)
+                if not upsert_coros_activity(self.db, self.profile_id, record):
+                    continue
                 _upsert_snapshot(self.db, self.profile_id, metric_date, "activities", payload)
                 count += 1
             cursor = window_end + timedelta(days=1)

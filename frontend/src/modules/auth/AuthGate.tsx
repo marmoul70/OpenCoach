@@ -338,6 +338,12 @@ function FirstInstallChoice({ onCreate, onRestored }: { onCreate: () => void; on
   }
   return (
     <main className="pwa-safe-screen flex min-h-[100dvh] items-center justify-center bg-[#f5f7f6] px-4 py-8 dark:bg-[#0b1014]">
+      {loading && (
+        <div role="status" aria-live="polite" className="fixed bottom-6 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-xl dark:border-white/10 dark:bg-[#20282e] dark:text-slate-100">
+          <RefreshCcw className="h-4 w-4 shrink-0 animate-spin text-emerald-600 dark:text-emerald-400" />
+          <span><strong className="block font-semibold">Restauration en cours…</strong><span className="text-xs text-slate-500 dark:text-slate-400">Veuillez patienter et ne fermez pas cette page.</span></span>
+        </div>
+      )}
       <section className="w-full max-w-[420px] rounded-2xl border border-black/[0.07] bg-white p-6 shadow-sm dark:border-white/[0.08] dark:bg-[#151b1f]">
         <img src="/opencoach-logo.png" alt="OpenCoach" className="mx-auto h-16 w-16 object-contain" />
         <h1 className="mt-3 text-center text-xl font-bold text-slate-950 dark:text-white">Bienvenue sur OpenCoach</h1>

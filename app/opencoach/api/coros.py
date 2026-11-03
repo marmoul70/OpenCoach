@@ -108,9 +108,12 @@ def _recover_interrupted_coros_sync(
         except PermissionError:
             return
         except ProcessLookupError:
+            # The worker process is definitively gone.
             pass
         except OSError:
-            pass
+            # An unexpected OS error is not proof that the worker stopped.
+            # Keep the lock; a later status check can retry recovery safely.
+            return
     elif job_id is not None and COROS_SYNC_JOBS.get(job_id) is not None:
         return
 

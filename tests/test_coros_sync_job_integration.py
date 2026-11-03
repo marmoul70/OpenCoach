@@ -37,10 +37,9 @@ def test_coros_sync_worker_persists_success_and_releases_lock(monkeypatch):
 
     with TestSession() as setup_db:
         user = User(email=f"{profile_id}@example.test")
-        profile = AthleteProfile(user=user)
+        profile = AthleteProfile(id=profile_id, user=user)
         setup_db.add(profile)
         setup_db.flush()
-        profile_id = profile.id
         connection = IntegrationConnection(
             athlete_profile_id=profile_id,
             provider="coros",

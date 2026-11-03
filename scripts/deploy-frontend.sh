@@ -67,7 +67,7 @@ for asset in "${ASSET_PATHS[@]}"; do
         || fail "Fichier déployé manquant : $WEB_ROOT/$asset"
 done
 
-if command -v nginx >/dev/null 2>&1 && systemctl is-active --quiet nginx; then
+if command -v nginx >/dev/null 2>&1 && sudo systemctl is-active --quiet nginx; then
     sudo nginx -t || fail "Configuration Nginx invalide. Le rechargement est annulé."
     sudo systemctl reload nginx || fail "Impossible de recharger Nginx."
     log "OK" "Nginx rechargé."

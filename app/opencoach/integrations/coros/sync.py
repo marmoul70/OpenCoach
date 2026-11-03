@@ -285,6 +285,10 @@ def _upsert_activity_snapshot(
             payload={"activities": activities},
         )
         db.add(row)
+        # SessionLocal utilise autoflush=False : sans flush explicite, une
+        # seconde activité du même jour ne voit pas ce snapshot encore pending
+        # et tente d'insérer une deuxième ligne avec la même clé unique.
+        db.flush()
     else:
         row.payload = {"activities": activities}
         row.imported_at = datetime.now(timezone.utc)

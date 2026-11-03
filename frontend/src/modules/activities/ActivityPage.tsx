@@ -1739,7 +1739,7 @@ function ActivityMobileCard({
   onOpenSession: (
     sessionId: string,
   ) => void
-  onOpenActivity: (activityId: string) => void
+  onOpenActivity: (activity: ActivitySummary) => void
 }) {
   return (
     <article

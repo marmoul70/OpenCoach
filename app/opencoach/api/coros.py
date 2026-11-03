@@ -451,6 +451,7 @@ def sync_coros_history(
     # Même worker que /sync/start : checkpoint, import initial, statut,
     # rafraîchissement OAuth et libération du verrou ont une seule implémentation.
     run_coros_sync_job(job_id=job_id, athlete_profile_id=athlete_profile_id)
+    COROS_SYNC_JOBS.discard(job_id)
 
     db.expire_all()
     refreshed_connection = _connection(db, athlete_profile_id)

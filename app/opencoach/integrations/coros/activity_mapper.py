@@ -54,6 +54,10 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
         Activity.provider == "coros",
         Activity.provider_activity_id == str(label_id),
     ))
+    # The current database uniqueness constraint is global per provider/id.
+    # Never let an import for one profile mutate another profile's activity.
+    if activity is not None and activity.athlete_profile_id != profile_id:
+        return False
     if activity is None:
         activity = Activity(
             athlete_profile_id=profile_id,

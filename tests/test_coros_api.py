@@ -146,6 +146,7 @@ def test_orphaned_coros_sync_is_marked_interrupted_and_unlocks_profile():
         config = {
             "coros_sync_job": {
                 "job_id": job_id,
+                "worker_pid": 2147483647,
                 "status": "running",
                 "error": None,
             }

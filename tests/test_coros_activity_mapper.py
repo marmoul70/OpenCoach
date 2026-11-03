@@ -82,7 +82,9 @@ def test_coros_activity_keeps_unknown_sport_code_instead_of_guessing():
 def test_sparse_coros_update_preserves_existing_metrics():
     from types import SimpleNamespace
 
+    profile_id = uuid4()
     existing = SimpleNamespace(
+        athlete_profile_id=profile_id,
         name="Trail",
         sport_type="Trail",
         start_at=datetime.fromtimestamp(1790000000),
@@ -98,7 +100,7 @@ def test_sparse_coros_update_preserves_existing_metrics():
             return existing
 
     db = ExistingDb()
-    assert upsert_coros_activity(db, uuid4(), {
+    assert upsert_coros_activity(db, profile_id, {
         "labelId": "activity-42",
         "sportType": 102,
         "startTimestamp": 1790000000,
@@ -110,3 +112,38 @@ def test_sparse_coros_update_preserves_existing_metrics():
     assert existing.elevation_gain_m == 650.0
     assert existing.average_heart_rate == 148.0
     assert existing.max_heart_rate == 176.0
+
+
+
+def test_coros_activity_from_another_profile_is_not_modified():
+    from types import SimpleNamespace
+
+    existing_profile_id = uuid4()
+    importing_profile_id = uuid4()
+    existing = SimpleNamespace(
+        athlete_profile_id=existing_profile_id,
+        name="Existing profile run",
+        sport_type="Trail",
+        start_at=datetime.fromtimestamp(1790000000),
+        elapsed_time_seconds=5400,
+        distance_m=12500.0,
+    )
+
+    class ExistingDb(FakeDb):
+        def scalar(self, statement):
+            return existing
+
+    db = ExistingDb()
+    saved = upsert_coros_activity(db, importing_profile_id, {
+        "labelId": "activity-42",
+        "sportType": 102,
+        "startTimestamp": 1790000000,
+        "workoutTime": 3600,
+    })
+
+    assert saved is False
+    assert db.added == []
+    assert existing.athlete_profile_id == existing_profile_id
+    assert existing.name == "Existing profile run"
+    assert existing.elapsed_time_seconds == 5400
+    assert existing.distance_m == 12500.0

@@ -56,3 +56,27 @@ def test_incremental_coros_sync_requires_persisted_activities():
         has_coros_activities=True,
     ) is False
     assert should_use_incremental_coros_sync({}, has_coros_activities=False) is False
+
+
+
+def test_incomplete_initial_import_reopens_completed_activity_checkpoint():
+    from opencoach.services.coros_sync_job import prepare_coros_checkpoint
+
+    prepared = prepare_coros_checkpoint(
+        {"activities": "2026-10-30", "_completed": "activities,sleep"},
+        initial_import_completed=False,
+    )
+
+    assert prepared["activities"] == "2026-10-30"
+    assert prepared["_completed"] == "sleep"
+
+
+def test_completed_initial_import_preserves_activity_checkpoint_marker():
+    from opencoach.services.coros_sync_job import prepare_coros_checkpoint
+
+    checkpoint = {"activities": "2026-10-30", "_completed": "activities,sleep"}
+
+    assert prepare_coros_checkpoint(
+        checkpoint,
+        initial_import_completed=True,
+    ) == checkpoint

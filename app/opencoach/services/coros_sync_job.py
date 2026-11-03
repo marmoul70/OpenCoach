@@ -72,6 +72,30 @@ def should_use_incremental_coros_sync(config: dict[str, Any], has_coros_activiti
     return bool(config.get("coros_initial_import_completed")) and has_coros_activities
 
 
+def prepare_coros_checkpoint(
+    checkpoint: dict[str, Any] | None,
+    *,
+    initial_import_completed: bool,
+) -> dict[str, Any]:
+    """Do not let a stale completed marker skip an unfinished initial activity import."""
+    prepared = dict(checkpoint or {})
+    if initial_import_completed:
+        return prepared
+
+    raw_completed = prepared.get("_completed", "")
+    completed = (
+        set(filter(None, raw_completed.split(",")))
+        if isinstance(raw_completed, str)
+        else set()
+    )
+    completed.discard("activities")
+    if completed:
+        prepared["_completed"] = ",".join(sorted(completed))
+    else:
+        prepared.pop("_completed", None)
+    return prepared
+
+
 
 
 def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
@@ -123,6 +147,10 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
         initial_import_completed = should_use_incremental_coros_sync(
             config,
             has_coros_activities,
+        )
+        checkpoint = prepare_coros_checkpoint(
+            checkpoint,
+            initial_import_completed=initial_import_completed,
         )
         incremental_start = (
             connection.last_synced_at.date() - timedelta(days=7)

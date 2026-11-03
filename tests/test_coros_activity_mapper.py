@@ -82,7 +82,9 @@ def test_coros_activity_keeps_unknown_sport_code_instead_of_guessing():
 def test_sparse_coros_update_preserves_existing_metrics():
     from types import SimpleNamespace
 
+    profile_id = uuid4()
     existing = SimpleNamespace(
+        athlete_profile_id=profile_id,
         name="Trail",
         sport_type="Trail",
         start_at=datetime.fromtimestamp(1790000000),
@@ -98,7 +100,7 @@ def test_sparse_coros_update_preserves_existing_metrics():
             return existing
 
     db = ExistingDb()
-    assert upsert_coros_activity(db, uuid4(), {
+    assert upsert_coros_activity(db, profile_id, {
         "labelId": "activity-42",
         "sportType": 102,
         "startTimestamp": 1790000000,

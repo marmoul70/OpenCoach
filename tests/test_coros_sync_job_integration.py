@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from opencoach.database.base import Base
+from opencoach.integrations.coros.errors import CorosMcpAuthenticationError
 from opencoach.database.models import (
     Activity,
     AthleteProfile,

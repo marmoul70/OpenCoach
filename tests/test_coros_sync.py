@@ -34,11 +34,17 @@ class FakeDb:
 
         entity = statement.column_descriptions[0].get("entity")
         if entity is CorosDailyData:
+            params = statement.compile().params
+            profile_id = params.get("athlete_profile_id_1")
+            metric_date = params.get("metric_date_1")
+            category = params.get("category_1")
             return next(
                 (
                     row for row in self.added
                     if isinstance(row, CorosDailyData)
-                    and row.athlete_profile_id == statement.whereclause.right.value
+                    and row.athlete_profile_id == profile_id
+                    and row.metric_date == metric_date
+                    and row.category == category
                 ),
                 None,
             )
@@ -435,7 +441,6 @@ def test_empty_activity_history_keeps_initial_checkpoint_for_full_retry():
 
 
 def test_activity_snapshots_keep_multiple_activities_on_the_same_day():
-    from datetime import datetime, timezone
     from opencoach.database.models import CorosDailyData
 
     db = FakeDb()

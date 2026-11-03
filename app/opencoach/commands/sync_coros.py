@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
@@ -86,11 +87,36 @@ def list_due_targets(session, *, now: datetime) -> list[CorosSyncTarget]:
     return targets
 
 
+def _worker_is_alive(pid: object) -> bool:
+    """Return conservatively whether a persisted worker PID may still be active."""
+    if not isinstance(pid, int) or isinstance(pid, bool) or pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except (PermissionError, OSError):
+        # An OS error other than ESRCH is not proof that the process is gone.
+        return True
+    return True
+
+
 def _acquire_lock(session, *, profile_id: UUID, job_id: UUID, now: datetime) -> bool:
     lock = session.get(CorosSyncLock, profile_id)
     if lock is not None:
         acquired = lock.acquired_at
         if now - acquired > STALE_LOCK_AFTER:
+            connection = session.scalar(select(IntegrationConnection).where(
+                IntegrationConnection.athlete_profile_id == profile_id,
+                IntegrationConnection.provider == PROVIDER,
+            ))
+            state = ((connection.config or {}).get("coros_sync_job") or {}) if connection else {}
+            same_active_job = (
+                state.get("job_id") == lock.job_id
+                and state.get("status") in {"pending", "running"}
+            )
+            if same_active_job and _worker_is_alive(state.get("worker_pid")):
+                return False
             session.delete(lock)
             session.commit()
         else:

@@ -8,7 +8,7 @@
 # - appliquer les permissions ;
 # - installer les unités systemd ;
 # - activer le backend au démarrage ;
-# - activer le timer de synchronisation Intervals.
+# - activer les timers de synchronisation Intervals et COROS.
 
 set -Eeuo pipefail
 
@@ -223,12 +223,20 @@ install_systemd_units() {
         "$SYSTEMD_TARGET_DIR/opencoach-intervals-sync.service"
 
     render_unit \
+        "$SYSTEMD_SOURCE_DIR/opencoach-coros-sync.service" \
+        "$SYSTEMD_TARGET_DIR/opencoach-coros-sync.service"
+
+    render_unit \
         "$SYSTEMD_SOURCE_DIR/opencoach-weekly-debrief.service" \
         "$SYSTEMD_TARGET_DIR/opencoach-weekly-debrief.service"
 
     render_unit \
         "$SYSTEMD_SOURCE_DIR/opencoach-intervals-sync.timer" \
         "$SYSTEMD_TARGET_DIR/opencoach-intervals-sync.timer"
+
+    render_unit \
+        "$SYSTEMD_SOURCE_DIR/opencoach-coros-sync.timer" \
+        "$SYSTEMD_TARGET_DIR/opencoach-coros-sync.timer"
 
     render_unit \
         "$SYSTEMD_SOURCE_DIR/opencoach-weekly-debrief.timer" \
@@ -312,9 +320,12 @@ enable_services() {
     systemctl enable --now \
         opencoach-backend.service
 
-    # Le timer Intervals peut être démarré immédiatement.
+    # Les timers d'intégration vérifient les fréquences configurées.
     systemctl enable --now \
         opencoach-intervals-sync.timer
+
+    systemctl enable --now \
+        opencoach-coros-sync.timer
 
     systemctl enable --now \
         opencoach-weekly-debrief.timer
@@ -340,6 +351,9 @@ main() {
 
     log_info \
         "Synchronisation Intervals active toutes les 15 minutes."
+
+    log_info \
+        "Vérification des synchronisations COROS active toutes les 15 minutes."
 }
 
 

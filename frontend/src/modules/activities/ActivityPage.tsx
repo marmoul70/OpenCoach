@@ -39,6 +39,10 @@ import type {
   TrainingSession,
 } from '../training/types'
 
+import {
+  ActivityDetailPanel,
+} from './ActivityDetailPanel'
+
 
 type PeriodFilter =
   | '30d'
@@ -113,6 +117,11 @@ export function ActivityPage() {
   ] = useState<string | null>(
     null,
   )
+
+  const [
+    selectedActivity,
+    setSelectedActivity,
+  ] = useState<{ provider: string; providerActivityId: string } | null>(null)
 
 
   useEffect(() => {
@@ -1099,6 +1108,7 @@ export function ActivityPage() {
                             onOpenSession={
                               setSelectedSessionId
                             }
+                            onOpenActivity={(activity) => setSelectedActivity({ provider: activity.provider, providerActivityId: activity.provider_activity_id })}
                           />
                         ),
                       )}
@@ -1138,6 +1148,7 @@ export function ActivityPage() {
                         onOpenSession={
                           setSelectedSessionId
                         }
+                        onOpenActivity={(activity) => setSelectedActivity({ provider: activity.provider, providerActivityId: activity.provider_activity_id })}
                       />
                     ),
                   )}
@@ -1147,6 +1158,17 @@ export function ActivityPage() {
         </section>
       </div>
 
+
+      <SidePanel
+        open={Boolean(selectedActivity)}
+        eyebrow="Données COROS"
+        title="Fiche détaillée de l'activité"
+        onClose={() => setSelectedActivity(null)}
+      >
+        {selectedActivity && (
+          <ActivityDetailPanel provider={selectedActivity.provider} providerActivityId={selectedActivity.providerActivityId} />
+        )}
+      </SidePanel>
 
       <SidePanel
         open={
@@ -1463,17 +1485,22 @@ function ActivityDesktopRow({
   activity,
   session,
   onOpenSession,
+  onOpenActivity,
 }: {
   activity: ActivitySummary
   session?: TrainingSession
   onOpenSession: (
     sessionId: string,
   ) => void
+  onOpenActivity: (activity: ActivitySummary) => void
 }) {
   return (
     <tr
+      onClick={() => onOpenActivity(activity)}
+      aria-label={`Ouvrir le détail de ${activity.name}`}
       className="
         group
+        cursor-pointer
         border-b
         border-black/[0.045]
         transition-colors
@@ -1620,11 +1647,10 @@ function ActivityDesktopRow({
         {session ? (
           <button
             type="button"
-            onClick={() =>
-              onOpenSession(
-                session.id,
-              )
-            }
+            onClick={(event) => {
+              event.stopPropagation()
+              onOpenSession(session.id)
+            }}
             aria-label="Voir la séance"
             title="Voir la séance"
             className="
@@ -1706,12 +1732,14 @@ function ActivityMobileCard({
   activity,
   session,
   onOpenSession,
+  onOpenActivity,
 }: {
   activity: ActivitySummary
   session?: TrainingSession
   onOpenSession: (
     sessionId: string,
   ) => void
+  onOpenActivity: (activity: ActivitySummary) => void
 }) {
   return (
     <article
@@ -1859,6 +1887,13 @@ function ActivityMobileCard({
           gap-3
         "
       >
+        <button
+          type="button"
+          onClick={() => onOpenActivity(activity)}
+          className="rounded-lg border border-emerald-500/25 px-3 py-2 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400"
+        >
+          Voir le détail
+        </button>
         <div>
           <p
             className="

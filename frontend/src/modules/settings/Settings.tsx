@@ -1,4 +1,5 @@
 import {
+  Activity,
   Bell,
   ChevronRight,
   Database,
@@ -36,10 +37,15 @@ import {
   IntervalsSection,
 } from './IntervalsSection'
 
+import {
+  CorosSection,
+} from './CorosSection'
+
 
 type SettingsPage =
   | 'location'
   | 'intervals'
+  | 'coros'
   | 'notifications'
   | 'tasks'
   | 'backup'
@@ -65,6 +71,15 @@ SettingsNavigationItem[] = [
       'Lieu utilisé pour la météo et le contexte.',
     group: 'Général',
     icon: MapPin,
+  },
+  {
+    id: 'coros',
+    label: 'COROS',
+    shortLabel: 'COROS',
+    description:
+      'Connexion et import des données de la montre.',
+    group: 'Connexions',
+    icon: Activity,
   },
   {
     id: 'intervals',
@@ -617,6 +632,11 @@ function renderSettingsPage(
   },
 ) {
   switch (page) {
+    case 'coros':
+      return (
+        <CorosSection />
+      )
+
     case 'intervals':
       return (
         <IntervalsSection />

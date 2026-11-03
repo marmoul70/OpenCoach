@@ -237,6 +237,59 @@ def _upsert_snapshot(db: Session, profile_id: UUID, metric_date: date, category:
         row.imported_at = datetime.now(timezone.utc)
 
 
+def _upsert_activity_snapshot(
+    db: Session,
+    profile_id: UUID,
+    metric_date: date,
+    payload: dict[str, Any],
+) -> None:
+    """Conserve toutes les activités d'une journée dans un snapshot unique."""
+    row = db.scalar(select(CorosDailyData).where(
+        CorosDailyData.athlete_profile_id == profile_id,
+        CorosDailyData.metric_date == metric_date,
+        CorosDailyData.category == "activities",
+    ))
+    normalized = dict(payload)
+    stored_payload = row.payload if row is not None and isinstance(row.payload, dict) else {}
+
+    # Les anciennes versions stockaient une seule activité directement dans
+    # payload. La convertir à la volée évite toute migration et préserve l'historique.
+    stored_activities = stored_payload.get("activities")
+    if isinstance(stored_activities, list):
+        activities = [item for item in stored_activities if isinstance(item, dict)]
+    elif stored_payload:
+        activities = [stored_payload]
+    else:
+        activities = []
+
+    activity_id = normalized.get("labelId") or normalized.get("label_id")
+    existing_index = next(
+        (
+            index
+            for index, item in enumerate(activities)
+            if activity_id is not None
+            and str(item.get("labelId") or item.get("label_id")) == str(activity_id)
+        ),
+        None,
+    )
+    if existing_index is None:
+        activities.append(normalized)
+    else:
+        activities[existing_index] = normalized
+
+    if row is None:
+        row = CorosDailyData(
+            athlete_profile_id=profile_id,
+            metric_date=metric_date,
+            category="activities",
+            payload={"activities": activities},
+        )
+        db.add(row)
+    else:
+        row.payload = {"activities": activities}
+        row.imported_at = datetime.now(timezone.utc)
+
+
 
 def _build_tool_arguments(
     tool: dict[str, Any],
@@ -440,7 +493,7 @@ class CorosImportService:
                         payload["activity_detail"] = detail
                 if not upsert_coros_activity(self.db, self.profile_id, record):
                     continue
-                _upsert_snapshot(self.db, self.profile_id, metric_date, "activities", payload)
+                _upsert_activity_snapshot(self.db, self.profile_id, metric_date, payload)
                 count += 1
             cursor = window_end + timedelta(days=1)
             self.db.commit()

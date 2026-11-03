@@ -30,7 +30,7 @@ jobs:
       - name: Bash syntax check
         run: |
           bash -n scripts/bootstrap/install.sh
-          bash -n scripts/bootstrap/check-environment.sh
+          bash -n scripts/bootstrap/check-environment.sh\n          bash -n scripts/deploy-frontend.sh
           bash -n scripts/maintenance/shellcheck.sh
           bash -n tests/test-libraries.sh
 

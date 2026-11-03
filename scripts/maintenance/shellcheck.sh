@@ -19,7 +19,7 @@ fi
 
 echo "[INFO] Analyse des scripts OpenCoach..."
 
-shellcheck -x scripts/bootstrap/check-environment.sh
+shellcheck -x scripts/bootstrap/check-environment.sh scripts/deploy-frontend.sh
 
 echo
 echo "[ OK ] ShellCheck terminé sans erreur."

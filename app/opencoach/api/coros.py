@@ -420,7 +420,8 @@ def sync_coros_history(
     if db.get(CorosSyncLock, athlete_profile_id) is not None:
         raise HTTPException(status_code=409, detail="Une synchronisation COROS est déjà en cours.")
 
-    job_id = uuid4()
+    job = COROS_SYNC_JOBS.create(athlete_profile_id)
+    job_id = job.id
     db.add(CorosSyncLock(
         athlete_profile_id=athlete_profile_id,
         job_id=str(job_id),
@@ -441,6 +442,7 @@ def sync_coros_history(
         db.commit()
     except IntegrityError as exc:
         db.rollback()
+        COROS_SYNC_JOBS.discard(job_id)
         raise HTTPException(
             status_code=409,
             detail="Une synchronisation COROS est déjà en cours.",

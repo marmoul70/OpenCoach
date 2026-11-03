@@ -27,7 +27,8 @@ def test_coros_sync_worker_persists_success_and_releases_lock(monkeypatch):
     TestSession = sessionmaker(bind=engine, expire_on_commit=False)
 
     profile_id = uuid4()
-    job_id = uuid4()
+    job = coros_sync_job.COROS_SYNC_JOBS.create(profile_id)
+    job_id = job.id
     secret = {"status": "connected", "access_token": "test-access"}
     initial_checkpoint = {
         "activities": "2026-10-30",
@@ -105,6 +106,14 @@ def test_coros_sync_worker_persists_success_and_releases_lock(monkeypatch):
             }
             self.progress_callback("activities", "2026-10-23")
             self.progress_callback("activities", None)
+            self.db.add(Activity(
+                athlete_profile_id=self.owner_id,
+                provider="coros",
+                provider_activity_id="test-activity-1",
+                name="Test trail",
+                sport_type="trail_running",
+                start_at=datetime(2026, 11, 3, 7, 0),
+            ))
             return {"imported_snapshots": {"activities": 1}}
 
     monkeypatch.setattr(
@@ -120,7 +129,6 @@ def test_coros_sync_worker_persists_success_and_releases_lock(monkeypatch):
         FakeImporter,
     )
 
-    coros_sync_job.COROS_SYNC_JOBS.create(profile_id)
     coros_sync_job.run_coros_sync_job(
         job_id=job_id,
         athlete_profile_id=profile_id,
@@ -142,7 +150,7 @@ def test_coros_sync_worker_persists_success_and_releases_lock(monkeypatch):
         )
 
         assert saved_lock is None
-        assert saved_activity is None
+        assert saved_activity is not None
         assert saved_connection.config["coros_initial_import_completed"] is True
         assert "coros_sync_checkpoint" not in saved_connection.config
         assert saved_connection.config["coros_sync_job"]["status"] == "success"
@@ -151,7 +159,8 @@ def test_coros_sync_worker_persists_success_and_releases_lock(monkeypatch):
         }
         assert saved_connection.last_synced_at is not None
 
-    job = coros_sync_job.COROS_SYNC_JOBS.get(job_id)
-    assert job is not None
-    assert job.status == "success"
+    saved_job = coros_sync_job.COROS_SYNC_JOBS.get(job_id)
+    assert saved_job is not None
+    assert saved_job.status == "success"
+    coros_sync_job.COROS_SYNC_JOBS.discard(job_id)
     engine.dispose()

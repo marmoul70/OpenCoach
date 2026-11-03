@@ -75,7 +75,7 @@ def test_coros_activity_detail_returns_saved_snapshot():
     )
 
     client = make_client(activity, [snapshot], profile_id)
-    response = client.get(f"/api/activities/{activity_id}/detail")
+    response = client.get("/api/activities/provider/coros/481446507948572982/detail")
 
     assert response.status_code == 200
     payload = response.json()

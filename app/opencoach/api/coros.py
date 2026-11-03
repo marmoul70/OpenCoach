@@ -504,6 +504,17 @@ def start_coros_sync(
     _recover_interrupted_coros_sync(db, athlete_profile_id, connection)
     existing_lock = db.get(CorosSyncLock, athlete_profile_id)
     if existing_lock is not None:
+        persisted_job = (connection.config or {}).get("coros_sync_job") or {}
+        # A live worker may legitimately run longer than the stale-lock
+        # threshold. Never evict its lock just because a window is slow.
+        if (
+            persisted_job.get("job_id") == existing_lock.job_id
+            and persisted_job.get("status") in {"pending", "running"}
+        ):
+            return {
+                "job_id": existing_lock.job_id,
+                "status": persisted_job["status"],
+            }
         lock_age = datetime.now(timezone.utc).replace(tzinfo=None) - existing_lock.acquired_at
         if lock_age > timedelta(minutes=30):
             # Récupère un verrou orphelin après arrêt brutal du processus.

@@ -1,6 +1,11 @@
 from datetime import date
 
-from opencoach.integrations.coros.sync import CorosImportService, _build_tool_arguments, six_months_ago
+from opencoach.integrations.coros.sync import (
+    CorosImportService,
+    _build_tool_arguments,
+    _upsert_activity_snapshot,
+    six_months_ago,
+)
 
 
 class FakeClient:
@@ -25,6 +30,18 @@ class FakeDb:
         self.added = []
 
     def scalar(self, statement):
+        from opencoach.database.models import CorosDailyData
+
+        entity = statement.column_descriptions[0].get("entity")
+        if entity is CorosDailyData:
+            return next(
+                (
+                    row for row in self.added
+                    if isinstance(row, CorosDailyData)
+                    and row.athlete_profile_id == statement.whereclause.right.value
+                ),
+                None,
+            )
         return None
 
     def add(self, row):
@@ -212,7 +229,7 @@ def test_activity_details_use_discovered_tool_schema_during_import():
         row for row in db.added
         if isinstance(row, CorosDailyData) and row.category == "activities"
     )
-    assert activity_snapshot.payload["activity_detail"] == {"laps": [{"lap": 1}]}
+    assert activity_snapshot.payload["activities"][0]["activity_detail"] == {"laps": [{"lap": 1}]}
 
 
 def test_empty_metric_response_does_not_create_a_fake_snapshot():
@@ -415,3 +432,68 @@ def test_empty_activity_history_keeps_initial_checkpoint_for_full_retry():
 
     assert result["imported_snapshots"]["activities"] == 0
     assert checkpoints[-1] == ("activities", "2026-05-01")
+
+
+def test_activity_snapshots_keep_multiple_activities_on_the_same_day():
+    from datetime import datetime, timezone
+    from opencoach.database.models import CorosDailyData
+
+    db = FakeDb()
+    profile_id = "00000000-0000-0000-0000-000000000001"
+    metric_date = date(2026, 5, 10)
+
+    _upsert_activity_snapshot(db, profile_id, metric_date, {
+        "labelId": "trail-1",
+        "name": "Trail Run",
+    })
+    _upsert_activity_snapshot(db, profile_id, metric_date, {
+        "labelId": "strength-1",
+        "name": "Strength",
+    })
+
+    snapshots = [
+        row for row in db.added
+        if isinstance(row, CorosDailyData) and row.category == "activities"
+    ]
+    assert len(snapshots) == 1
+    assert [item["labelId"] for item in snapshots[0].payload["activities"]] == [
+        "trail-1",
+        "strength-1",
+    ]
+
+    # Un nouvel import de la même activité met à jour son détail sans la dupliquer.
+    _upsert_activity_snapshot(db, profile_id, metric_date, {
+        "labelId": "trail-1",
+        "name": "Trail Run",
+        "activity_detail": {"laps": [{"lap": 1}]},
+    })
+    assert len(snapshots[0].payload["activities"]) == 2
+    assert snapshots[0].payload["activities"][0]["activity_detail"] == {
+        "laps": [{"lap": 1}]
+    }
+
+
+def test_activity_snapshot_migrates_legacy_single_activity_payload():
+    from opencoach.database.models import CorosDailyData
+
+    db = FakeDb()
+    profile_id = "00000000-0000-0000-0000-000000000001"
+    legacy = CorosDailyData(
+        athlete_profile_id=profile_id,
+        metric_date=date(2026, 5, 10),
+        category="activities",
+        payload={"labelId": "legacy-1", "name": "Trail Run"},
+    )
+    db.added.append(legacy)
+
+    _upsert_activity_snapshot(db, profile_id, date(2026, 5, 10), {
+        "labelId": "new-1",
+        "name": "Strength",
+    })
+
+    assert legacy.payload == {
+        "activities": [
+            {"labelId": "legacy-1", "name": "Trail Run"},
+            {"labelId": "new-1", "name": "Strength"},
+        ]
+    }

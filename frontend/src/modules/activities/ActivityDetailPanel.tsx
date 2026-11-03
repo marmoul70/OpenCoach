@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
-  Bike,
   Flame,
   Footprints,
   Gauge,
@@ -98,23 +97,23 @@ export function ActivityDetailPanel({ activityId }: Props) {
   const parsed = useMemo(() => {
     if (!detail) return null
     const text = collectText(detail.coros_detail)
-    const elevation = capture(text, /Elevation Gain\\s*\\/\\s*Loss\\s*:\\s*([\\d.]+\\s*m\\s*\\/\\s*[\\d.]+\\s*m)/i)
-    const elevationParts = elevation?.match(/([\\d.]+)\\s*m\\s*\\/\\s*([\\d.]+)\\s*m/i)
-    const speedPace = capture(text, /Average Pace\\s*:\\s*([\\d:]+\\s*\\/km)/i)
-    const movingPace = capture(text, /Moving Average Pace\\s*:\\s*([\\d:]+\\s*\\/km)/i)
-    const adjustedPace = capture(text, /Adjusted Pace\\s*:\\s*([\\d:]+\\s*\\/km)/i)
-    const bestKm = capture(text, /Best Kilometer\\s*:\\s*([\\d:]+\\s*\\/km)/i)
-    const avgHr = capture(text, /Average Heart Rate\\s*:\\s*(\\d+)\\s*bpm/i)
-    const maxHr = capture(text, /Max(?:imum)? Heart Rate\\s*:\\s*(\\d+)\\s*bpm/i)
-    const cadence = capture(text, /Average Cadence\\s*:\\s*([\\d.]+)\\s*spm/i)
-    const stride = capture(text, /Average Stride Length\\s*:\\s*([\\d.]+)\\s*m/i)
-    const power = capture(text, /Average Power\\s*:\\s*([\\d.]+)\\s*W/i)
-    const calories = capture(text, /Calories\\s*:\\s*(\\d+)\\s*kcal/i)
-    const load = capture(text, /Training Load\\s*:\\s*([\\d.]+)/i)
-    const aerobic = capture(text, /Aerobic TE\\s*:\\s*([\\d.]+)/i)
-    const anaerobic = capture(text, /Anaerobic TE\\s*:\\s*([\\d.]+)/i)
-    const focus = capture(text, /Training Focus\\s*:\\s*([^\\r\\n]+)/i)
-    const effort = capture(text, /Perceived Effort\\s*:\\s*([^\\r\\n]+)/i)
+    const elevation = capture(text, /Elevation Gain\s*\/\s*Loss\s*:\s*([\d.]+\s*m\s*\/\s*[\d.]+\s*m)/i)
+    const elevationParts = elevation?.match(/([\d.]+)\s*m\s*\/\s*([\d.]+)\s*m/i)
+    const speedPace = capture(text, /Average Pace\s*:\s*([\d:]+\s*\/km)/i)
+    const movingPace = capture(text, /Moving Average Pace\s*:\s*([\d:]+\s*\/km)/i)
+    const adjustedPace = capture(text, /Adjusted Pace\s*:\s*([\d:]+\s*\/km)/i)
+    const bestKm = capture(text, /Best Kilometer\s*:\s*([\d:]+\s*\/km)/i)
+    const avgHr = capture(text, /Average Heart Rate\s*:\s*(\d+)\s*bpm/i)
+    const maxHr = capture(text, /Max(?:imum)? Heart Rate\s*:\s*(\d+)\s*bpm/i)
+    const cadence = capture(text, /Average Cadence\s*:\s*([\d.]+)\s*spm/i)
+    const stride = capture(text, /Average Stride Length\s*:\s*([\d.]+)\s*m/i)
+    const power = capture(text, /Average Power\s*:\s*([\d.]+)\s*W/i)
+    const calories = capture(text, /Calories\s*:\s*(\d+)\s*kcal/i)
+    const load = capture(text, /Training Load\s*:\s*([\d.]+)/i)
+    const aerobic = capture(text, /Aerobic TE\s*:\s*([\d.]+)/i)
+    const anaerobic = capture(text, /Anaerobic TE\s*:\s*([\d.]+)/i)
+    const focus = capture(text, /Training Focus\s*:\s*([^\r\n]+)/i)
+    const effort = capture(text, /Perceived Effort\s*:\s*([^\r\n]+)/i)
     return {
       text,
       elevationGain: elevationParts ? Number(elevationParts[1]) : detail.elevation_gain_m,

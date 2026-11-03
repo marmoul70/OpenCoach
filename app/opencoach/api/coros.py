@@ -19,7 +19,6 @@ from opencoach.database.models import CorosSyncLock, IntegrationConnection
 from opencoach.database.session import get_db
 from opencoach.integrations.coros.client import CorosMcpClient
 from opencoach.integrations.coros.tokens import refresh_secret_if_needed
-from opencoach.integrations.coros.sync import CorosImportService
 from opencoach.integrations.coros.errors import (
     CorosMcpAuthenticationError,
     CorosMcpError,
@@ -80,6 +79,63 @@ def _connection(
     )
 
 
+def _recover_interrupted_coros_sync(
+    db: Session,
+    athlete_profile_id: UUID,
+    connection: IntegrationConnection | None,
+) -> None:
+    """Mark a persisted job interrupted when its in-process worker no longer exists."""
+    if connection is None:
+        return
+
+    state = dict((connection.config or {}).get("coros_sync_job") or {})
+    if state.get("status") not in {"pending", "running"}:
+        return
+
+    raw_job_id = state.get("job_id")
+    try:
+        job_id = UUID(str(raw_job_id))
+    except (TypeError, ValueError):
+        job_id = None
+
+    # PID lets multiple API workers distinguish a live job owned by another
+    # process from a job left behind by a server restart.
+    worker_pid = state.get("worker_pid")
+    if isinstance(worker_pid, int) and worker_pid > 0:
+        try:
+            os.kill(worker_pid, 0)
+            return
+        except PermissionError:
+            return
+        except ProcessLookupError:
+            # The worker process is definitively gone.
+            pass
+        except OSError:
+            # An unexpected OS error is not proof that the worker stopped.
+            # Keep the lock; a later status check can retry recovery safely.
+            return
+    elif job_id is not None and COROS_SYNC_JOBS.get(job_id) is not None:
+        return
+
+    state.update({
+        "status": "interrupted",
+        "finished_at": datetime.now(timezone.utc).isoformat(),
+        "error": (
+            "La synchronisation COROS a été interrompue par un arrêt du serveur. "
+            "Relance-la pour reprendre au dernier point sauvegardé."
+        ),
+    })
+    connection.config = {
+        **(connection.config or {}),
+        "coros_sync_job": state,
+    }
+
+    lock = db.get(CorosSyncLock, athlete_profile_id)
+    if lock is not None and lock.job_id == str(raw_job_id):
+        db.delete(lock)
+    db.commit()
+
+
 def _oauth() -> CorosOAuthClientService:
     return CorosOAuthClientService(
         redirect_uri=os.getenv(
@@ -135,6 +191,7 @@ def get_coros_connection(
             "sync_job": None,
         }
 
+    _recover_interrupted_coros_sync(db, athlete_profile_id, connection)
     config = connection.config or {}
     return {
         "provider": "coros",
@@ -370,82 +427,68 @@ def sync_coros_history(
     athlete_profile_id: UUID = Depends(get_current_athlete_profile_id),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Import synchrone historique, protégé par le verrou partagé."""
+    """Import synchrone compatible, exécuté par le worker COROS partagé."""
     connection = _connection(db, athlete_profile_id)
     if connection is None or not connection.enabled:
         raise HTTPException(status_code=409, detail="Connecte d'abord ton compte COROS.")
     if db.get(CorosSyncLock, athlete_profile_id) is not None:
         raise HTTPException(status_code=409, detail="Une synchronisation COROS est déjà en cours.")
 
-    lock = CorosSyncLock(
+    job = COROS_SYNC_JOBS.create(athlete_profile_id)
+    job_id = job.id
+    db.add(CorosSyncLock(
         athlete_profile_id=athlete_profile_id,
-        job_id=str(uuid4()),
-    )
-    db.add(lock)
+        job_id=str(job_id),
+    ))
+    connection.config = {
+        **(connection.config or {}),
+        "coros_sync_job": {
+            "job_id": str(job_id),
+            "worker_pid": os.getpid(),
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "finished_at": None,
+            "result": None,
+            "error": None,
+            "progress": {"category": None, "next_date": None},
+        },
+    }
     try:
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Une synchronisation COROS est déjà en cours.") from exc
+        COROS_SYNC_JOBS.discard(job_id)
+        raise HTTPException(
+            status_code=409,
+            detail="Une synchronisation COROS est déjà en cours.",
+        ) from exc
 
-    try:
-        cipher = _cipher()
-        secret = _read_secret(connection, cipher)
-        if secret.get("status") != "connected":
-            raise HTTPException(status_code=409, detail="La connexion COROS doit être réautorisée.")
-        try:
-            refreshed = refresh_secret_if_needed(secret, _oauth(), now=datetime.now(timezone.utc).timestamp())
-            client = CorosMcpClient(refreshed["access_token"])
+    # Même worker que /sync/start : checkpoint, import initial, statut,
+    # rafraîchissement OAuth et libération du verrou ont une seule implémentation.
+    run_coros_sync_job(job_id=job_id, athlete_profile_id=athlete_profile_id)
+    COROS_SYNC_JOBS.discard(job_id)
 
-            def update_lock_heartbeat(category: str, next_date: str | None) -> None:
-                current_lock = db.get(CorosSyncLock, athlete_profile_id)
-                if current_lock is not None and current_lock.job_id == lock.job_id:
-                    current_lock.acquired_at = datetime.now(timezone.utc).replace(tzinfo=None)
-                    db.commit()
-
-            result = CorosImportService(
-                client,
-                db,
-                athlete_profile_id,
-                progress_callback=update_lock_heartbeat,
-            ).import_history(
-                (connection.config or {}).get("categories", DEFAULT_CATEGORIES),
-                months=6,
-                start_date=(
-                    connection.last_synced_at.date() - timedelta(days=7)
-                    if (connection.config or {}).get("coros_initial_import_completed") and connection.last_synced_at is not None
-                    else None
-                ),
-            )
-        except CorosMcpAuthenticationError as exc:
-            connection.enabled = False
-            connection.config = {**(connection.config or {}), "connected": False}
-            db.commit()
-            raise HTTPException(status_code=401, detail="La connexion COROS a expiré. Reconnecte ton compte.") from exc
-        except CorosMcpError as exc:
-            db.rollback()
-            raise HTTPException(status_code=502, detail="L'import COROS a échoué : le serveur MCP est indisponible ou a retourné une réponse invalide.") from exc
-        if refreshed != secret:
-            _save_secret(connection, cipher, refreshed)
-        categories = (connection.config or {}).get("categories", DEFAULT_CATEGORIES)
-        imported_activities = result.get("imported_snapshots", {}).get("activities", 0)
-        if categories.get("activities", True) and imported_activities > 0:
-            connection.config = {**(connection.config or {}), "coros_initial_import_completed": True}
-            connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        elif not categories.get("activities", True):
-            connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        else:
-            connection.config = {**(connection.config or {}), "coros_initial_import_completed": False}
-        db.commit()
-        return {"status": "completed", **result}
-    finally:
-        try:
-            current_lock = db.get(CorosSyncLock, athlete_profile_id)
-            if current_lock is not None and current_lock.job_id == lock.job_id:
-                db.delete(current_lock)
-                db.commit()
-        except Exception:
-            db.rollback()
+    db.expire_all()
+    refreshed_connection = _connection(db, athlete_profile_id)
+    state = (
+        (refreshed_connection.config or {}).get("coros_sync_job")
+        if refreshed_connection is not None
+        else None
+    )
+    if not state or state.get("job_id") != str(job_id):
+        raise HTTPException(
+            status_code=500,
+            detail="L'état de la synchronisation COROS est introuvable.",
+        )
+    if state.get("status") != "success":
+        status_code = state.get("http_status", 502)
+        if status_code not in {401, 502}:
+            status_code = 502
+        raise HTTPException(
+            status_code=status_code,
+            detail=state.get("error") or "La synchronisation COROS a échoué.",
+        )
+    return {"status": "completed", **(state.get("result") or {})}
 
 
 @router.post("/sync/start")
@@ -461,8 +504,20 @@ def start_coros_sync(
     if active is not None:
         return {"job_id": str(active.id), "status": active.status}
 
+    _recover_interrupted_coros_sync(db, athlete_profile_id, connection)
     existing_lock = db.get(CorosSyncLock, athlete_profile_id)
     if existing_lock is not None:
+        persisted_job = (connection.config or {}).get("coros_sync_job") or {}
+        # A live worker may legitimately run longer than the stale-lock
+        # threshold. Never evict its lock just because a window is slow.
+        if (
+            persisted_job.get("job_id") == existing_lock.job_id
+            and persisted_job.get("status") in {"pending", "running"}
+        ):
+            return {
+                "job_id": existing_lock.job_id,
+                "status": persisted_job["status"],
+            }
         lock_age = datetime.now(timezone.utc).replace(tzinfo=None) - existing_lock.acquired_at
         if lock_age > timedelta(minutes=30):
             # Récupère un verrou orphelin après arrêt brutal du processus.
@@ -481,6 +536,7 @@ def start_coros_sync(
             **(connection.config or {}),
             "coros_sync_job": {
                 "job_id": str(job.id),
+                "worker_pid": os.getpid(),
                 "status": "pending",
                 "created_at": job.created_at.isoformat(),
                 "finished_at": None,
@@ -509,6 +565,7 @@ def get_coros_sync_status(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     connection = _connection(db, athlete_profile_id)
+    _recover_interrupted_coros_sync(db, athlete_profile_id, connection)
     state = (connection.config or {}).get("coros_sync_job") if connection else None
     if not state or state.get("job_id") != str(job_id):
         raise HTTPException(status_code=404, detail="Import COROS introuvable.")

@@ -108,6 +108,7 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
     from opencoach.database.models import Activity, CorosSyncLock, IntegrationConnection
     from opencoach.database.session import SessionLocal
     from opencoach.integrations.coros.client import CorosMcpClient
+    from opencoach.integrations.coros.errors import CorosMcpAuthenticationError
     from opencoach.integrations.coros.oauth import CorosOAuthClientService
     from opencoach.integrations.coros.tokens import refresh_secret_if_needed
     from opencoach.integrations.coros.sync import CorosImportService
@@ -159,6 +160,7 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
         )
         job_state = {
             "job_id": str(job_id),
+            "worker_pid": os.getpid(),
             "status": "running",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "finished_at": None,
@@ -240,8 +242,9 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
             COROS_SYNC_JOBS.failure(job_id, state["error"])
         else:
             COROS_SYNC_JOBS.success(job_id, result)
-    except Exception:
+    except Exception as exc:
         db.rollback()
+        authentication_error = isinstance(exc, CorosMcpAuthenticationError)
         logger.exception("Échec de la synchronisation COROS (job=%s, profile=%s)", job_id, athlete_profile_id)
         try:
             failed_connection = db.scalar(select(IntegrationConnection).where(
@@ -250,13 +253,23 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
             ))
             if failed_connection is not None:
                 state = dict((failed_connection.config or {}).get("coros_sync_job") or {})
+                if authentication_error:
+                    failed_connection.enabled = False
                 state.update({
                     "job_id": str(job_id),
                     "status": "error",
                     "finished_at": datetime.now(timezone.utc).isoformat(),
-                    "error": "La synchronisation COROS a échoué. Vérifie la connexion puis consulte les journaux OpenCoach.",
+                    "http_status": 401 if authentication_error else 502,
+                    "error": (
+                        "La connexion COROS a expiré. Reconnecte ton compte."
+                        if authentication_error
+                        else "La synchronisation COROS a échoué. Vérifie la connexion puis consulte les journaux OpenCoach."
+                    ),
                 })
-                failed_connection.config = {**(failed_connection.config or {}), "coros_sync_job": state}
+                failed_config = dict(failed_connection.config or {})
+                if authentication_error:
+                    failed_config["connected"] = False
+                failed_connection.config = {**failed_config, "coros_sync_job": state}
                 db.commit()
         except Exception:
             db.rollback()

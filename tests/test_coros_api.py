@@ -89,3 +89,25 @@ def test_legacy_sync_endpoint_returns_error_when_shared_worker_fails(monkeypatch
     assert response.status_code == 502
     assert response.json() == {"detail": "Import interrompu."}
     assert db.expirations == 1
+
+
+
+def test_legacy_sync_endpoint_preserves_coros_authentication_error_status(monkeypatch):
+    def worker(*, job_id: UUID, athlete_profile_id: UUID):
+        db.connection.config["coros_sync_job"] = {
+            "job_id": str(job_id),
+            "status": "error",
+            "http_status": 401,
+            "result": None,
+            "error": "La connexion COROS a expiré. Reconnecte ton compte.",
+        }
+
+    client, db, _ = make_sync_client(monkeypatch, worker)
+
+    response = client.post("/api/integrations/coros/sync")
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": "La connexion COROS a expiré. Reconnecte ton compte."
+    }
+    assert db.expirations == 1

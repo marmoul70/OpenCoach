@@ -58,10 +58,11 @@ export interface ActivityDetailResponse {
 }
 
 export async function fetchActivityDetail(
-  activityId: string,
+  provider: string,
+  providerActivityId: string,
 ): Promise<ActivityDetailResponse> {
   const response = await fetch(
-    `/api/activities/${encodeURIComponent(activityId)}/detail`,
+    `/api/activities/provider/${encodeURIComponent(provider)}/${encodeURIComponent(providerActivityId)}/detail`,
   )
 
   if (!response.ok) {

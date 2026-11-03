@@ -39,6 +39,10 @@ import type {
   TrainingSession,
 } from '../training/types'
 
+import {
+  ActivityDetailPanel,
+} from './ActivityDetailPanel'
+
 
 type PeriodFilter =
   | '30d'
@@ -113,6 +117,11 @@ export function ActivityPage() {
   ] = useState<string | null>(
     null,
   )
+
+  const [
+    selectedActivityId,
+    setSelectedActivityId,
+  ] = useState<string | null>(null)
 
 
   useEffect(() => {
@@ -1099,6 +1108,9 @@ export function ActivityPage() {
                             onOpenSession={
                               setSelectedSessionId
                             }
+                            onOpenActivity={
+                              setSelectedActivityId
+                            }
                           />
                         ),
                       )}
@@ -1138,6 +1150,9 @@ export function ActivityPage() {
                         onOpenSession={
                           setSelectedSessionId
                         }
+                        onOpenActivity={
+                          setSelectedActivityId
+                        }
                       />
                     ),
                   )}
@@ -1147,6 +1162,17 @@ export function ActivityPage() {
         </section>
       </div>
 
+
+      <SidePanel
+        open={Boolean(selectedActivityId)}
+        eyebrow="Données COROS"
+        title="Fiche détaillée de l'activité"
+        onClose={() => setSelectedActivityId(null)}
+      >
+        {selectedActivityId && (
+          <ActivityDetailPanel activityId={selectedActivityId} />
+        )}
+      </SidePanel>
 
       <SidePanel
         open={
@@ -1463,17 +1489,22 @@ function ActivityDesktopRow({
   activity,
   session,
   onOpenSession,
+  onOpenActivity,
 }: {
   activity: ActivitySummary
   session?: TrainingSession
   onOpenSession: (
     sessionId: string,
   ) => void
+  onOpenActivity: (activityId: string) => void
 }) {
   return (
     <tr
+      onClick={() => activity.id && onOpenActivity(activity.id)}
+      aria-label={`Ouvrir le détail de ${activity.name}`}
       className="
         group
+        cursor-pointer
         border-b
         border-black/[0.045]
         transition-colors
@@ -1620,11 +1651,10 @@ function ActivityDesktopRow({
         {session ? (
           <button
             type="button"
-            onClick={() =>
-              onOpenSession(
-                session.id,
-              )
-            }
+            onClick={(event) => {
+              event.stopPropagation()
+              onOpenSession(session.id)
+            }}
             aria-label="Voir la séance"
             title="Voir la séance"
             className="
@@ -1706,12 +1736,14 @@ function ActivityMobileCard({
   activity,
   session,
   onOpenSession,
+  onOpenActivity,
 }: {
   activity: ActivitySummary
   session?: TrainingSession
   onOpenSession: (
     sessionId: string,
   ) => void
+  onOpenActivity: (activityId: string) => void
 }) {
   return (
     <article
@@ -1859,6 +1891,13 @@ function ActivityMobileCard({
           gap-3
         "
       >
+        <button
+          type="button"
+          onClick={() => activity.id && onOpenActivity(activity.id)}
+          className="rounded-lg border border-emerald-500/25 px-3 py-2 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400"
+        >
+          Voir le détail
+        </button>
         <div>
           <p
             className="

@@ -35,6 +35,9 @@ class FakeDb:
     def add(self, row):
         self.added.append(row)
 
+    def flush(self):
+        pass
+
     def commit(self):
         pass
 
@@ -536,6 +539,55 @@ def test_activity_snapshots_keep_multiple_activities_on_the_same_day():
     assert len(snapshots[0].payload["activities"]) == 2
     assert snapshots[0].payload["activities"][0]["activity_detail"] == {
         "laps": [{"lap": 1}]
+    }
+
+
+class AutoflushDisabledFakeDb:
+    """Simule SessionLocal : les SELECT ne voient que les lignes flushées."""
+
+    def __init__(self):
+        self.persisted = []
+        self.pending = []
+
+    def scalar(self, statement):
+        from opencoach.database.models import CorosDailyData
+
+        params = statement.compile().params
+        profile_id = params.get("athlete_profile_id_1")
+        metric_date = params.get("metric_date_1")
+        category = params.get("category_1")
+        return next((
+            row for row in self.persisted
+            if isinstance(row, CorosDailyData)
+            and row.athlete_profile_id == profile_id
+            and row.metric_date == metric_date
+            and row.category == category
+        ), None)
+
+    def add(self, row):
+        self.pending.append(row)
+
+    def flush(self):
+        self.persisted.extend(self.pending)
+        self.pending.clear()
+
+
+def test_activity_snapshot_flushes_before_next_same_day_upsert_with_autoflush_disabled():
+    db = AutoflushDisabledFakeDb()
+    profile_id = "00000000-0000-0000-0000-000000000001"
+    metric_date = date(2026, 5, 10)
+
+    _upsert_activity_snapshot(db, profile_id, metric_date, {
+        "labelId": "trail-1", "name": "Trail Run",
+    })
+    _upsert_activity_snapshot(db, profile_id, metric_date, {
+        "labelId": "strength-1", "name": "Strength",
+    })
+
+    assert db.pending == []
+    assert len(db.persisted) == 1
+    assert {item["labelId"] for item in db.persisted[0].payload["activities"]} == {
+        "trail-1", "strength-1",
     }
 
 

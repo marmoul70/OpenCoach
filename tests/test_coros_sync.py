@@ -30,24 +30,6 @@ class FakeDb:
         self.added = []
 
     def scalar(self, statement):
-        from opencoach.database.models import CorosDailyData
-
-        entity = statement.column_descriptions[0].get("entity")
-        if entity is CorosDailyData:
-            params = statement.compile().params
-            profile_id = params.get("athlete_profile_id_1")
-            metric_date = params.get("metric_date_1")
-            category = params.get("category_1")
-            return next(
-                (
-                    row for row in self.added
-                    if isinstance(row, CorosDailyData)
-                    and row.athlete_profile_id == profile_id
-                    and row.metric_date == metric_date
-                    and row.category == category
-                ),
-                None,
-            )
         return None
 
     def add(self, row):
@@ -171,6 +153,31 @@ def test_activity_detail_arguments_skip_when_required_schema_value_missing():
     assert _build_tool_arguments(tool, {"labelId": "abc"}) is None
 
 
+class SnapshotAwareFakeDb(FakeDb):
+    """Fake DB qui simule l'upsert par profil, date et catégorie."""
+
+    def scalar(self, statement):
+        from opencoach.database.models import CorosDailyData
+
+        entity = statement.column_descriptions[0].get("entity")
+        if entity is not CorosDailyData:
+            return None
+        params = statement.compile().params
+        profile_id = params.get("athlete_profile_id_1")
+        metric_date = params.get("metric_date_1")
+        category = params.get("category_1")
+        return next(
+            (
+                row for row in self.added
+                if isinstance(row, CorosDailyData)
+                and row.athlete_profile_id == profile_id
+                and row.metric_date == metric_date
+                and row.category == category
+            ),
+            None,
+        )
+
+
 class FakeActivityClient:
     def __init__(self):
         self.calls = []
@@ -265,7 +272,7 @@ def test_activity_import_groups_multiple_records_from_the_same_day():
                 }]}
             return {"content": [{"type": "text", "text": "{}"}]}
 
-    db = FakeDb()
+    db = SnapshotAwareFakeDb()
     service = CorosImportService(
         MultiActivityClient(),
         db,
@@ -497,7 +504,7 @@ def test_empty_activity_history_keeps_initial_checkpoint_for_full_retry():
 def test_activity_snapshots_keep_multiple_activities_on_the_same_day():
     from opencoach.database.models import CorosDailyData
 
-    db = FakeDb()
+    db = SnapshotAwareFakeDb()
     profile_id = "00000000-0000-0000-0000-000000000001"
     metric_date = date(2026, 5, 10)
 
@@ -535,7 +542,7 @@ def test_activity_snapshots_keep_multiple_activities_on_the_same_day():
 def test_activity_snapshot_migrates_legacy_single_activity_payload():
     from opencoach.database.models import CorosDailyData
 
-    db = FakeDb()
+    db = SnapshotAwareFakeDb()
     profile_id = "00000000-0000-0000-0000-000000000001"
     legacy = CorosDailyData(
         athlete_profile_id=profile_id,

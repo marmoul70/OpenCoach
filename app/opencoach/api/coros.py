@@ -98,9 +98,20 @@ def _recover_interrupted_coros_sync(
     except (TypeError, ValueError):
         job_id = None
 
-    # A live job is registered in this process. A persisted job without a
-    # registry entry survived a process restart (or lost its worker).
-    if job_id is not None and COROS_SYNC_JOBS.get(job_id) is not None:
+    # PID lets multiple API workers distinguish a live job owned by another
+    # process from a job left behind by a server restart.
+    worker_pid = state.get("worker_pid")
+    if isinstance(worker_pid, int) and worker_pid > 0:
+        try:
+            os.kill(worker_pid, 0)
+            return
+        except PermissionError:
+            return
+        except ProcessLookupError:
+            pass
+        except OSError:
+            pass
+    elif job_id is not None and COROS_SYNC_JOBS.get(job_id) is not None:
         return
 
     state.update({
@@ -430,6 +441,7 @@ def sync_coros_history(
         **(connection.config or {}),
         "coros_sync_job": {
             "job_id": str(job_id),
+            "worker_pid": os.getpid(),
             "status": "pending",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "finished_at": None,
@@ -510,6 +522,7 @@ def start_coros_sync(
             **(connection.config or {}),
             "coros_sync_job": {
                 "job_id": str(job.id),
+                "worker_pid": os.getpid(),
                 "status": "pending",
                 "created_at": job.created_at.isoformat(),
                 "finished_at": None,

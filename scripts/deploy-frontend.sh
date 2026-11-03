@@ -15,12 +15,12 @@ FRONTEND_DIR="$PROJECT_ROOT/frontend"
 DIST_DIR="$FRONTEND_DIR/dist"
 WEB_ROOT="/var/www/opencoach"
 
-log() {
-    printf '[%s] %s\n' "$1" "$2"
-}
+# Reuse the shared OpenCoach colored logging functions.
+# shellcheck source=./scripts/lib/log.sh
+source "$PROJECT_ROOT/scripts/lib/log.sh"
 
 fail() {
-    log "ERREUR" "$1" >&2
+    log_error "$1"
     exit 1
 }
 
@@ -31,7 +31,7 @@ command -v sudo >/dev/null 2>&1 || fail "sudo est requis."
 [[ -f "$FRONTEND_DIR/package.json" ]] || fail "Projet frontend introuvable : $FRONTEND_DIR"
 [[ -f "$FRONTEND_DIR/package-lock.json" ]] || fail "package-lock.json introuvable."
 
-log "INFO" "Compilation du frontend..."
+log_info "Compilation du frontend..."
 (
     cd "$FRONTEND_DIR"
     npm run build
@@ -51,8 +51,8 @@ for asset in "${ASSET_PATHS[@]}"; do
     [[ -s "$DIST_DIR/$asset" ]] || fail "Fichier compilé manquant : $DIST_DIR/$asset"
 done
 
-log "INFO" "Validation du build réussie."
-log "INFO" "Préparation des droits administrateur..."
+log_success "Validation du build réussie."
+log_info "Préparation des droits administrateur..."
 sudo -v
 
 sudo install -d "$WEB_ROOT"
@@ -67,13 +67,15 @@ for asset in "${ASSET_PATHS[@]}"; do
         || fail "Fichier déployé manquant : $WEB_ROOT/$asset"
 done
 
-if command -v nginx >/dev/null 2>&1 && sudo systemctl is-active --quiet nginx; then
+# Ne pas tester "command -v nginx" sans sudo : /usr/sbin peut être absent
+# du PATH utilisateur alors que le service Nginx fonctionne.
+if sudo systemctl is-active --quiet nginx; then
     sudo nginx -t || fail "Configuration Nginx invalide. Le rechargement est annulé."
     sudo systemctl reload nginx || fail "Impossible de recharger Nginx."
-    log "OK" "Nginx rechargé."
+    log_success "Nginx rechargé."
 else
-    log "ATTENTION" "Nginx n'est pas actif : les fichiers sont copiés, mais aucun rechargement n'a été effectué."
+    log_warning "Nginx n'est pas actif : les fichiers sont copiés, mais aucun rechargement n'a été effectué."
 fi
 
-log "OK" "Frontend déployé dans $WEB_ROOT."
-log "INFO" "Rechargez le navigateur avec Ctrl + F5."
+log_success "Frontend déployé dans $WEB_ROOT."
+log_info "Rechargez le navigateur avec Ctrl + F5."

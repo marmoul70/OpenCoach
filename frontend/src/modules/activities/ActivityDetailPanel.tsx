@@ -17,7 +17,8 @@ import {
 } from '../../core/activities'
 
 interface Props {
-  activityId: string
+  provider: string
+  providerActivityId: string
 }
 
 type Metric = {
@@ -72,7 +73,7 @@ function DetailMetric({ label, value, icon }: Metric) {
   )
 }
 
-export function ActivityDetailPanel({ activityId }: Props) {
+export function ActivityDetailPanel({ provider, providerActivityId }: Props) {
   const [detail, setDetail] = useState<ActivityDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -81,7 +82,7 @@ export function ActivityDetailPanel({ activityId }: Props) {
     let active = true
     setLoading(true)
     setError(null)
-    fetchActivityDetail(activityId)
+    fetchActivityDetail(provider, providerActivityId)
       .then(value => {
         if (active) setDetail(value)
       })
@@ -92,7 +93,7 @@ export function ActivityDetailPanel({ activityId }: Props) {
         if (active) setLoading(false)
       })
     return () => { active = false }
-  }, [activityId])
+  }, [provider, providerActivityId])
 
   const parsed = useMemo(() => {
     if (!detail) return null

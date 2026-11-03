@@ -419,8 +419,11 @@ def sync_coros_history(
             detail="L'état de la synchronisation COROS est introuvable.",
         )
     if state.get("status") != "success":
+        status_code = state.get("http_status", 502)
+        if status_code not in {401, 502}:
+            status_code = 502
         raise HTTPException(
-            status_code=502,
+            status_code=status_code,
             detail=state.get("error") or "La synchronisation COROS a échoué.",
         )
     return {"status": "completed", **(state.get("result") or {})}

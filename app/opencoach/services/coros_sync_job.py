@@ -160,6 +160,7 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
         )
         job_state = {
             "job_id": str(job_id),
+            "worker_pid": os.getpid(),
             "status": "running",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "finished_at": None,

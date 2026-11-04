@@ -2,9 +2,7 @@ import {
   Activity,
   CalendarDays,
   CircleAlert,
-  Footprints,
   HeartPulse,
-  Moon,
   RefreshCw,
   Waves,
 } from 'lucide-react'

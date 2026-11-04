@@ -82,3 +82,70 @@ export async function fetchWellnessTrends(
 
   return response.json() as Promise<WellnessTrends>
 }
+
+
+export interface RecoveryMetricSummary {
+  current: number | null
+  average: number | null
+  median: number | null
+  sample_count: number
+  coverage_days: number
+  expected_days: number
+}
+
+export interface RecoveryWindow {
+  days: number
+  start_date: string
+  end_date: string
+  recorded_days: number
+  coverage_ratio: number
+  metrics: Record<string, RecoveryMetricSummary>
+}
+
+export interface RecoveryTimeSeriesMetric {
+  metric: string
+  unit: string | null
+  current: number
+  average: number
+  median: number
+  minimum: number
+  maximum: number
+  sample_count: number
+  coverage_days: number
+  first_measured_at: string
+  last_measured_at: string
+  statuses: string[]
+  source_categories: string[]
+}
+
+export interface RecoverySubjective {
+  date: string
+  fatigue: number
+  pain: number
+  illness_status: string
+  treatment_impact: string
+  motivation: number
+}
+
+export interface RecoveryAssessment {
+  date: string
+  provider: string
+  source_date: string | null
+  data_age_days: number | null
+  data_status: 'fresh' | 'stale' | 'unavailable' | string
+  windows: RecoveryWindow[]
+  time_series: RecoveryTimeSeriesMetric[]
+  subjective: RecoverySubjective | null
+}
+
+export async function fetchRecoveryAssessment(): Promise<RecoveryAssessment> {
+  const response = await fetch('/api/wellness/recovery')
+
+  if (!response.ok) {
+    throw new Error(
+      `Impossible de charger les données Santé (${response.status}).`,
+    )
+  }
+
+  return response.json() as Promise<RecoveryAssessment>
+}

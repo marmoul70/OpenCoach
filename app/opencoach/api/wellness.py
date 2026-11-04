@@ -243,6 +243,7 @@ def get_recovery_assessment(
     context_repository: SqlDailyContextRepository = Depends(
         get_daily_context_repository,
     ),
+    db: Session = Depends(get_db),
 ) -> dict:
     """Expose la synthèse descriptive 7/14/30 jours au coach."""
 
@@ -272,7 +273,7 @@ def get_recovery_assessment(
             target_date,
         )
         time_series_snapshots = SqlCorosDailyDataRepository(
-            repository.session
+            db
         ).list_time_series_snapshots(
             athlete_profile_id,
             start_date,

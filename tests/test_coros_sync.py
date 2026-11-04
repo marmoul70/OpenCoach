@@ -38,6 +38,9 @@ class FakeDb:
     def flush(self):
         pass
 
+    def refresh(self, row):
+        pass
+
     def commit(self):
         pass
 

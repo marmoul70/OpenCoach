@@ -19,6 +19,10 @@ from .profile import ProfileRepository
 from .sql_activity import SqlActivityRepository
 from .sql_profile import SqlProfileRepository
 from .sql_wellness import SqlWellnessRepository
+from .sql_coros_daily_data import (
+    CorosDailyDataRepositoryError,
+    SqlCorosDailyDataRepository,
+)
 from .wellness import WellnessRepository
 from .training_session import TrainingSessionRepository
 from .weekly_training_plan import (
@@ -34,7 +38,6 @@ from .integration_connection import (
 from .sql_integration_connection import (
     SqlIntegrationConnectionRepository,
 )
-
 from .sql_training_session import (
     SqlTrainingSessionRepository,
 )
@@ -53,6 +56,7 @@ from .physiological_measurement import (
 from .sql_physiological_measurement import (
     SqlPhysiologicalMeasurementRepository,
 )
+
 __all__ = [
     "ActivityRepository",
     "ActivityDetailRepository",
@@ -65,6 +69,8 @@ __all__ = [
     "SqlWellnessRepository",
     "WellnessRepository",
     "WellnessRepositoryError",
+    "CorosDailyDataRepositoryError",
+    "SqlCorosDailyDataRepository",
     "IntegrationConnectionRepository",
     "SqlIntegrationConnectionRepository",
     "IntegrationConnectionRepositoryError",

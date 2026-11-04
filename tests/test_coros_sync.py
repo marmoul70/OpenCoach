@@ -803,12 +803,14 @@ Resting Heart Rate: 47 bpm
     assert stress.payload["samples"][0]["metric"] == "stress"
     assert stress.payload["samples"][0]["value"] == 22
     assert stress.payload["samples"][0]["score"] == 1
+    assert stress.payload["samples"][0]["source_date"] == "2026-11-02"
 
     health_by_metric = {
         sample["metric"]: sample for sample in health.payload["samples"]
     }
     assert health.payload["source_category"] == "health_check"
     assert health_by_metric["heart_rate"]["value"] == 54
+    assert health_by_metric["heart_rate"]["source_date"] == "2026-11-02"
     assert health_by_metric["hrv"]["value"] == 59
     assert health_by_metric["stress"]["value"] == 19
     assert health_by_metric["respiration_rate"]["value"] == 18

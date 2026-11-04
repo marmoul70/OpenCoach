@@ -196,7 +196,7 @@ def aggregate_coros_time_series(
 ) -> tuple[RecoveryTimeSeriesMetric, ...]:
     """Agrège les échantillons normalisés en dédupliquant les sources qui se recouvrent."""
 
-    samples: dict[str, dict[tuple[str, float, str | None], dict]] = {}
+    samples: dict[tuple[str, str | None], dict[tuple[str, float], dict]] = {}
     allowed_categories = {
         "hrv_timeseries",
         "stress_points",
@@ -235,8 +235,8 @@ def aggregate_coros_time_series(
             unit = sample.get("unit")
             if not isinstance(unit, str):
                 unit = None
-            key = (measured_at.isoformat(), value, unit)
-            bucket = samples.setdefault(metric, {})
+            key = (measured_at.isoformat(), value)
+            bucket = samples.setdefault((metric, unit), {})
             existing = bucket.get(key)
             if existing is None:
                 bucket[key] = {
@@ -251,7 +251,10 @@ def aggregate_coros_time_series(
                 existing["categories"].add(category)
 
     result: list[RecoveryTimeSeriesMetric] = []
-    for metric, unique_samples in sorted(samples.items()):
+    for (metric, unit), unique_samples in sorted(
+        samples.items(),
+        key=lambda item: (item[0][0], item[0][1] or ""),
+    ):
         values = sorted(
             unique_samples.values(),
             key=lambda item: item["measured_at"],
@@ -259,7 +262,6 @@ def aggregate_coros_time_series(
         if not values:
             continue
         numeric = [item["value"] for item in values]
-        units = {item["unit"] for item in values}
         statuses = tuple(sorted({
             item["status"]
             for item in values
@@ -273,7 +275,7 @@ def aggregate_coros_time_series(
         result.append(
             RecoveryTimeSeriesMetric(
                 metric=metric,
-                unit=next(iter(units)) if len(units) == 1 else None,
+                unit=unit,
                 current=numeric[-1],
                 average=fmean(numeric),
                 median=float(median(numeric)),

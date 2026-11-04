@@ -314,6 +314,7 @@ def test_parses_timestamped_sleep_hrv_samples_without_aggregating_them() -> None
     assert samples[0].source_timezone == 4
     assert samples[0].status == 4
     assert samples[0].confidence == 95833
+    assert samples[0].source_date == date(2026, 11, 3)
     assert [sample.value for sample in samples] == [99, 36, 33]
 
 

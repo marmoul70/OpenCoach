@@ -184,4 +184,7 @@ def test_get_latest_wellness_prefers_coros_when_available() -> None:
     assert response.json()["hrv_baseline"] == 42.0
     assert response.json()["stress_avg"] == 28.0
     assert response.json()["sleep_deep_seconds"] == 7200
-    assert repository.calls == [(profile_id, "coros")]
+    assert repository.calls == [
+        (profile_id, "coros"),
+        (profile_id, "intervals"),
+    ]

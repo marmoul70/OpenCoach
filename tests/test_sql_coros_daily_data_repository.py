@@ -124,3 +124,40 @@ def test_snapshot_upsert_is_idempotent_for_same_profile_date_and_category():
         assert rows[0].payload["samples"][0]["value"] == 51
     finally:
         db.close()
+
+
+def test_repository_reads_legacy_seven_day_chunk_starting_before_window():
+    db = create_session()
+    try:
+        profile = create_profile(db)
+        db.add(
+            CorosDailyData(
+                athlete_profile_id=profile.id,
+                metric_date=date(2026, 10, 26),
+                category="hrv_timeseries",
+                payload={
+                    "samples": [
+                        {
+                            "metric": "sleep_hrv",
+                            "measured_at": "2026-11-01T00:10:00+00:00",
+                            "source_date": "2026-11-01",
+                            "value": 48,
+                            "unit": "ms",
+                        }
+                    ]
+                },
+            )
+        )
+        db.commit()
+
+        result = SqlCorosDailyDataRepository(db).list_time_series_snapshots(
+            profile.id,
+            date(2026, 11, 1),
+            date(2026, 11, 4),
+        )
+
+        assert len(result) == 1
+        assert result[0]["metric_date"] == date(2026, 10, 26)
+        assert result[0]["payload"]["samples"][0]["source_date"] == "2026-11-01"
+    finally:
+        db.close()

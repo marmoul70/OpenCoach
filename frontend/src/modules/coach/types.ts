@@ -239,12 +239,52 @@ export interface CoachWeeklyAssessment {
 }
 
 
+
+export interface CoachRecoveryMetric {
+  current: number | null
+  average: number | null
+  median: number | null
+  sampleCount: number
+  coverageDays: number
+  expectedDays: number
+}
+
+export interface CoachRecoveryWindow {
+  days: number
+  startDate: string
+  endDate: string
+  recordedDays: number
+  coverageRatio: number
+  metrics: Record<string, CoachRecoveryMetric>
+}
+
+export interface CoachSubjectiveRecovery {
+  date: string
+  fatigue: number
+  pain: number
+  illnessStatus: string
+  treatmentImpact: string
+  motivation: number
+}
+
+export interface CoachRecovery {
+  date: string
+  provider: string
+  sourceDate: string | null
+  dataAgeDays: number | null
+  dataStatus: 'fresh' | 'stale' | 'unavailable'
+  windows: CoachRecoveryWindow[]
+  subjective: CoachSubjectiveRecovery | null
+}
+
 export interface CoachToday {
   date: string
 
   sessionDecisions: CoachSessionDecision[]
 
   readiness: CoachReadiness
+
+  recovery: CoachRecovery
 
   recentLoad: CoachRecentLoad | null
   recentLoadAssessment:

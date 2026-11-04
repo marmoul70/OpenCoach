@@ -58,7 +58,7 @@ def test_repository_lists_only_normalized_time_series_in_date_range():
             ),
             CorosDailyData(
                 athlete_profile_id=profile.id,
-                metric_date=date(2026, 10, 31),
+                metric_date=date(2026, 10, 24),
                 category="health_check_points",
                 payload={"samples": []},
             ),

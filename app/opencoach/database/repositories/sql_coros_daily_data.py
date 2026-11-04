@@ -1,6 +1,6 @@
 """Lecture des snapshots COROS normalisés en séries temporelles."""
 
-from datetime import date
+from datetime import date, timedelta
 from uuid import UUID
 
 from sqlalchemy import select
@@ -41,7 +41,7 @@ class SqlCorosDailyDataRepository:
                 select(CorosDailyData)
                 .where(
                     CorosDailyData.athlete_profile_id == athlete_profile_id,
-                    CorosDailyData.metric_date >= start_date,
+                    CorosDailyData.metric_date >= start_date - timedelta(days=6),
                     CorosDailyData.metric_date <= end_date,
                     CorosDailyData.category.in_(self.TIME_SERIES_CATEGORIES),
                 )

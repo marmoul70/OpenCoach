@@ -287,3 +287,59 @@ High: No data
         (date(2026, 11, 2), 19.0),
         (date(2026, 11, 1), 33.0),
     ]
+
+
+def test_parses_timestamped_sleep_hrv_samples_without_aggregating_them() -> None:
+    from datetime import datetime, timezone
+
+    from opencoach.integrations.coros.wellness_mapper import (
+        map_coros_hrv_time_series,
+    )
+
+    report = """Sleep HRV — Last 1 day
+========================
+2026-11-03:
+  timestamp=1792969790, timezone=4, hrv=99 ms, status=4, confidence=95833
+  timestamp=1792970390, timezone=4, hrv=36 ms, status=4, confidence=100000
+  timestamp=1792970990, timezone=4, hrv=33 ms, status=4, confidence=100000
+"""
+    samples = map_coros_hrv_time_series({"data": report})
+
+    assert len(samples) == 3
+    assert samples[0].measured_at == datetime.fromtimestamp(
+        1792969790, tz=timezone.utc
+    )
+    assert samples[0].value == 99
+    assert samples[0].unit == "ms"
+    assert samples[0].source_timezone == 4
+    assert samples[0].status == 4
+    assert samples[0].confidence == 95833
+    assert [sample.value for sample in samples] == [99, 36, 33]
+
+
+def test_hrv_time_series_parser_ignores_invalid_and_duplicate_samples() -> None:
+    from opencoach.integrations.coros.wellness_mapper import (
+        map_coros_hrv_time_series,
+    )
+
+    report = """Sleep HRV Time Series — Last 1 day
+2026-11-03:
+  timestamp=1792969790, timezone=4, hrv=36 ms, status=4, confidence=100000
+  timestamp=1792969790, timezone=4, hrv=37 ms, status=4, confidence=100000
+  timestamp=not-a-timestamp, timezone=4, hrv=42 ms, status=4, confidence=100000
+  timestamp=1792970390, timezone=4, hrv=33 ms, status=4, confidence=100000
+"""
+    samples = map_coros_hrv_time_series({"data": report})
+
+    assert len(samples) == 2
+    assert [sample.value for sample in samples] == [36, 33]
+
+
+def test_hrv_time_series_parser_returns_empty_when_section_is_absent() -> None:
+    from opencoach.integrations.coros.wellness_mapper import (
+        map_coros_hrv_time_series,
+    )
+
+    assert map_coros_hrv_time_series(
+        {"data": "Sleep HRV — Last 1 day\\nHRV Avg: 42 ms"}
+    ) == []

@@ -432,3 +432,20 @@ def test_time_series_parsers_return_empty_for_unrecognized_payloads() -> None:
 
     assert map_coros_stress_time_series({"data": "no measurements"}) == []
     assert map_coros_health_check_time_series({"data": "no measurements"}) == []
+
+
+
+def test_parses_resting_heart_rate_report_for_each_date() -> None:
+    from opencoach.integrations.coros.wellness_mapper import map_coros_wellness_report
+
+    report = """Resting Heart Rate — Last 3 days
+2026-11-04: 51 bpm
+2026-11-03: 50 bpm
+2026-11-02: 50 bpm
+"""
+    days = map_coros_wellness_report("resting_heart_rate", {"data": report}, date(2026, 11, 4))
+    assert [(item.date, item.resting_hr) for item in days] == [
+        (date(2026, 11, 4), 51),
+        (date(2026, 11, 3), 50),
+        (date(2026, 11, 2), 50),
+    ]

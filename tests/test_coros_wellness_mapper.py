@@ -490,3 +490,19 @@ Main Sleep (asleep): 7h 30min
     assert days[0].sleep_score == 0
     assert days[0].sleep_seconds == 27_000
 
+
+def test_ignores_zero_sleep_score_without_sleep_measurements() -> None:
+    from opencoach.integrations.coros.wellness_mapper import map_coros_wellness_report
+
+    # Certains rapports ne fournissent qu'un score nul, sans texte explicite
+    # signalant l'absence de données (montre déchargée, par exemple).
+    report = """Sleep Overview
+2026-10-01
+Sleep Score: 0
+"""
+    days = map_coros_wellness_report(
+        "sleep", {"data": report}, date(2026, 10, 2)
+    )
+
+    assert days == []
+

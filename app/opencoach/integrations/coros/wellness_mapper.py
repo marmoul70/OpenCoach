@@ -142,7 +142,7 @@ def _duration_seconds(value: str) -> int | None:
 
 
 def _report_dates(text: str) -> list[tuple[date, str]]:
-    matches = list(re.finditer(r"(?m)^\s*(?:---\s*)?(\d{4}-\d{2}-\d{2}|\d{8})(?:\s*---)?\s*$", text))
+    matches = list(re.finditer(r"(?m)^\s*(?:---\s*)?(\d{4}-\d{2}-\d{2}|\d{8})(?:\s*:)?(?:\s*---)?\s*$", text))
     entries: list[tuple[date, str]] = []
     for index, match in enumerate(matches):
         raw_date = match.group(1)

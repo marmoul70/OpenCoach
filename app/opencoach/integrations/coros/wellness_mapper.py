@@ -47,7 +47,7 @@ def _number(data: dict[str, Any], aliases: tuple[str, ...]) -> float | None:
 
 def _integer(data: dict[str, Any], aliases: tuple[str, ...]) -> int | None:
     value = _number(data, aliases)
-    if value is None or not value.is_integer():
+    if value is None or not value.is_integer() or value < 0:
         return None
     return int(value)
 

@@ -643,6 +643,12 @@ WELLNESS_REBUILD_FIELDS = (
     "provider_updated_at",
 )
 
+# provider_updated_at seul ne constitue pas une mesure Wellness exploitable.
+WELLNESS_REBUILD_METRIC_FIELDS = tuple(
+    field for field in WELLNESS_REBUILD_FIELDS
+    if field != "provider_updated_at"
+)
+
 
 def rebuild_wellness_from_snapshots(
     db: Session,
@@ -691,6 +697,11 @@ def rebuild_wellness_from_snapshots(
         for mapped in mapped_days:
             if not start_date <= mapped.date <= end_date:
                 continue
+            if not any(
+                getattr(mapped, field) is not None
+                for field in WELLNESS_REBUILD_METRIC_FIELDS
+            ):
+                continue
 
             aggregated = mapped_by_date.get(mapped.date)
             if aggregated is None:
@@ -721,7 +732,7 @@ def rebuild_wellness_from_snapshots(
         mapped = mapped_by_date[wellness_date]
         if not any(
             getattr(mapped, field) is not None
-            for field in WELLNESS_REBUILD_FIELDS
+            for field in WELLNESS_REBUILD_METRIC_FIELDS
         ):
             continue
 

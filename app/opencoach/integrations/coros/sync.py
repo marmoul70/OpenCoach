@@ -451,30 +451,36 @@ class CorosImportService:
                 snapshot_category, parser = series_definition
                 samples = parser(item)
                 if samples:
-                    _upsert_snapshot(
-                        self.db,
-                        self.profile_id,
-                        metric_date,
-                        snapshot_category,
-                        {
-                            "source_category": category,
-                            "samples": [
-                                {
-                                    "metric": sample.metric,
-                                    "measured_at": sample.measured_at.isoformat(),
-                                    "source_date": str(sample.source_date) if sample.source_date else None,
-                                    "value": sample.value,
-                                    "unit": sample.unit,
-                                    "source_timezone": sample.source_timezone,
-                                    "status": sample.status,
-                                    "confidence": sample.confidence,
-                                    "score": sample.score,
-                                    "metadata": sample.metadata,
-                                }
-                                for sample in samples
-                            ],
-                        },
-                    )
+                    samples_by_date: dict[date, list[Any]] = {}
+                    for sample in samples:
+                        sample_date = sample.source_date or sample.measured_at.date()
+                        samples_by_date.setdefault(sample_date, []).append(sample)
+
+                    for sample_date, dated_samples in samples_by_date.items():
+                        _upsert_snapshot(
+                            self.db,
+                            self.profile_id,
+                            sample_date,
+                            snapshot_category,
+                            {
+                                "source_category": category,
+                                "samples": [
+                                    {
+                                        "metric": sample.metric,
+                                        "measured_at": sample.measured_at.isoformat(),
+                                        "source_date": str(sample.source_date) if sample.source_date else None,
+                                        "value": sample.value,
+                                        "unit": sample.unit,
+                                        "source_timezone": sample.source_timezone,
+                                        "status": sample.status,
+                                        "confidence": sample.confidence,
+                                        "score": sample.score,
+                                        "metadata": sample.metadata,
+                                    }
+                                    for sample in dated_samples
+                                ],
+                            },
+                        )
 
             if category in {
                 "daily_health",

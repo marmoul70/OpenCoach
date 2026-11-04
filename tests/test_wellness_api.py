@@ -29,14 +29,18 @@ class FakeWellnessRepository:
     def get_latest(
         self,
         athlete_profile_id,
+        *,
+        provider=None,
     ) -> WellnessDay | None:
-        self.calls.append(
-            athlete_profile_id,
-        )
+        self.calls.append((athlete_profile_id, provider))
 
         if self.error is not None:
             raise self.error
 
+        if self.wellness is None or (
+            provider is not None and self.wellness.provider != provider
+        ):
+            return None
         return self.wellness
 
 
@@ -95,17 +99,26 @@ def test_get_latest_wellness() -> None:
         "ramp_rate": -1.2402077,
         "resting_hr": 46,
         "hrv": 52.0,
+        "hrv_baseline": None,
+        "stress_avg": None,
         "sleep_seconds": 76140,
         "sleep_score": 77.0,
         "sleep_quality": 3,
+        "sleep_deep_seconds": None,
+        "sleep_light_seconds": None,
+        "sleep_rem_seconds": None,
+        "sleep_awake_seconds": None,
         "avg_sleeping_hr": 48.0,
+        "min_sleeping_hr": None,
+        "max_sleeping_hr": None,
         "spo2": 99.0,
         "steps": 34711,
         "provider_updated_at": None,
     }
 
     assert repository.calls == [
-        profile_id,
+        (profile_id, "coros"),
+        (profile_id, "intervals"),
     ]
 
 
@@ -149,3 +162,26 @@ def test_get_latest_wellness_handles_storage_error() -> None:
             "Impossible de charger les données Wellness."
         )
     }
+
+
+def test_get_latest_wellness_prefers_coros_when_available() -> None:
+    repository = FakeWellnessRepository(
+        WellnessDay(
+            provider="coros",
+            date=date(2026, 11, 4),
+            hrv=45.0,
+            hrv_baseline=42.0,
+            stress_avg=28.0,
+            sleep_deep_seconds=7200,
+        )
+    )
+    client, profile_id = create_client(repository)
+
+    response = client.get("/api/wellness/latest")
+
+    assert response.status_code == 200
+    assert response.json()["provider"] == "coros"
+    assert response.json()["hrv_baseline"] == 42.0
+    assert response.json()["stress_avg"] == 28.0
+    assert response.json()["sleep_deep_seconds"] == 7200
+    assert repository.calls == [(profile_id, "coros")]

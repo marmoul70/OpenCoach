@@ -155,3 +155,50 @@ def build_recovery_assessment(
         windows=tuple(summaries),
         subjective=subjective,
     )
+
+
+
+def recovery_assessment_to_dict(
+    assessment: RecoveryAssessment,
+) -> dict:
+    """Sérialise le contrat partagé par les API Wellness et Coach."""
+    return {
+        "date": assessment.date.isoformat(),
+        "provider": assessment.provider,
+        "source_date": assessment.source_date.isoformat() if assessment.source_date else None,
+        "data_age_days": assessment.data_age_days,
+        "data_status": assessment.data_status,
+        "windows": [
+            {
+                "days": window.days,
+                "start_date": window.start_date.isoformat(),
+                "end_date": window.end_date.isoformat(),
+                "recorded_days": window.recorded_days,
+                "coverage_ratio": window.coverage_ratio,
+                "metrics": {
+                    name: {
+                        "current": metric.current,
+                        "average": metric.average,
+                        "median": metric.median,
+                        "sample_count": metric.sample_count,
+                        "coverage_days": metric.coverage_days,
+                        "expected_days": metric.expected_days,
+                    }
+                    for name, metric in window.metrics.items()
+                },
+            }
+            for window in assessment.windows
+        ],
+        "subjective": (
+            {
+                "date": assessment.subjective.date.isoformat(),
+                "fatigue": assessment.subjective.fatigue,
+                "pain": assessment.subjective.pain,
+                "illness_status": assessment.subjective.illness_status,
+                "treatment_impact": assessment.subjective.treatment_impact,
+                "motivation": assessment.subjective.motivation,
+            }
+            if assessment.subjective is not None
+            else None
+        ),
+    }

@@ -240,6 +240,7 @@ def map_coros_hrv_time_series(payload: Any) -> list[CorosTimeSeriesSample]:
                 source_timezone=int(match.group(2)) if match.group(2) is not None else None,
                 status=int(match.group(4)) if match.group(4) is not None else None,
                 confidence=int(match.group(5)) if match.group(5) is not None else None,
+                source_date=_source_date_before(series_text, match.start()),
             )
         )
     return samples
@@ -289,6 +290,7 @@ def map_coros_stress_time_series(payload: Any) -> list[CorosTimeSeriesSample]:
                 source_timezone=int(match.group(2)) if match.group(2) is not None else None,
                 score=int(match.group(4)) if match.group(4) is not None else None,
                 metadata=auxiliary,
+                source_date=_source_date_before(text, match.start()),
             )
         )
     return samples

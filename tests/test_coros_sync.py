@@ -661,3 +661,71 @@ Main Sleep (asleep): 8h 10min
         (date(2026, 6, 1), 27_000, 82),
         (date(2026, 6, 2), 29_400, 90),
     }
+
+
+def test_hrv_import_persists_normalized_time_series_alongside_raw_report() -> None:
+    from opencoach.database.models import CorosDailyData
+
+    class HrvClient(FakeClient):
+        def list_tools(self):
+            return [{"name": "querySleepHrv"}]
+
+        def call_tool(self, name, arguments):
+            self.calls.append((name, arguments))
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": """Sleep HRV — Last 1 day
+2026-11-03:
+  HRV Avg: 46 ms — Normal
+  Normal Range: 35 - 49 ms
+  Baseline: 42 ms
+
+Sleep HRV Time Series — Last 1 day
+2026-11-03:
+  timestamp=1792969790, timezone=4, hrv=99 ms, status=4, confidence=95833
+  timestamp=1792970390, timezone=4, hrv=36 ms, status=4, confidence=100000
+""",
+                }]
+            }
+
+    db = FakeDb()
+    service = CorosImportService(
+        HrvClient(),
+        db,
+        profile_id="00000000-0000-0000-0000-000000000001",
+    )
+
+    result = service.import_history(
+        {"activities": False, "hrv": True},
+        start_date=date(2026, 11, 3),
+        today=date(2026, 11, 3),
+    )
+
+    snapshots = [row for row in db.added if isinstance(row, CorosDailyData)]
+    raw_snapshot = next(row for row in snapshots if row.category == "hrv")
+    series_snapshot = next(
+        row for row in snapshots if row.category == "hrv_timeseries"
+    )
+
+    assert result["imported_snapshots"]["hrv"] == 1
+    assert raw_snapshot.payload["text"].startswith("Sleep HRV")
+    assert series_snapshot.payload["source_category"] == "hrv"
+    assert series_snapshot.payload["samples"] == [
+        {
+            "measured_at": "2026-10-25T22:43:10+00:00",
+            "value": 99.0,
+            "unit": "ms",
+            "source_timezone": 4,
+            "status": 4,
+            "confidence": 95833,
+        },
+        {
+            "measured_at": "2026-10-25T22:53:10+00:00",
+            "value": 36.0,
+            "unit": "ms",
+            "source_timezone": 4,
+            "status": 4,
+            "confidence": 100000,
+        },
+    ]

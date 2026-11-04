@@ -14,7 +14,7 @@ from opencoach.database.models import CorosDailyData
 from opencoach.database.repositories import SqlWellnessRepository
 from opencoach.integrations.coros.activity_mapper import upsert_coros_activity
 from opencoach.integrations.coros.client import CorosMcpClient
-from opencoach.integrations.coros.wellness_mapper import map_coros_wellness
+from opencoach.integrations.coros.wellness_mapper import map_coros_wellness_report
 
 
 DATE_KEYS = ("date", "day", "metricDate", "startDate", "wakeDate", "recordDate")
@@ -444,59 +444,32 @@ class CorosImportService:
                 "health_check",
                 "training_load",
             }:
-                mapped = map_coros_wellness(
-                    category,
-                    item,
-                    metric_date,
-                )
+                wellness_days = map_coros_wellness_report(category, item, metric_date)
                 wellness_repository = SqlWellnessRepository(self.db)
-                existing = wellness_repository.get_by_date(
-                    self.profile_id,
-                    metric_date,
-                    provider="coros",
-                )
-                # Plusieurs outils COROS alimentent la même journée. Une
-                # réponse partielle ne doit jamais effacer une mesure déjà
-                # importée depuis une autre catégorie.
-                if existing is not None:
-                    for field in (
-                        "fitness_ctl",
-                        "fatigue_atl",
-                        "ramp_rate",
-                        "resting_hr",
-                        "hrv",
-                        "sleep_seconds",
-                        "sleep_score",
-                        "sleep_quality",
-                        "avg_sleeping_hr",
-                        "spo2",
-                        "steps",
-                        "provider_updated_at",
-                    ):
-                        if getattr(mapped, field) is None:
-                            setattr(mapped, field, getattr(existing, field))
+                for mapped in wellness_days:
+                    existing = wellness_repository.get_by_date(
+                        self.profile_id, mapped.date, provider="coros"
+                    )
+                    if existing is not None:
+                        # Fusion non destructive : plusieurs catégories alimentent une journée.
+                        for field in (
+                            "fitness_ctl", "fatigue_atl", "ramp_rate", "resting_hr",
+                            "hrv", "sleep_seconds", "sleep_score", "sleep_quality",
+                            "avg_sleeping_hr", "spo2", "steps", "provider_updated_at",
+                        ):
+                            if getattr(mapped, field) is None:
+                                setattr(mapped, field, getattr(existing, field))
 
-                has_metrics = any(
-                    getattr(mapped, field) is not None
-                    for field in (
-                        "fitness_ctl",
-                        "fatigue_atl",
-                        "ramp_rate",
-                        "resting_hr",
-                        "hrv",
-                        "sleep_seconds",
-                        "sleep_score",
-                        "sleep_quality",
-                        "avg_sleeping_hr",
-                        "spo2",
-                        "steps",
+                    has_metrics = any(
+                        getattr(mapped, field) is not None
+                        for field in (
+                            "fitness_ctl", "fatigue_atl", "ramp_rate", "resting_hr",
+                            "hrv", "sleep_seconds", "sleep_score", "sleep_quality",
+                            "avg_sleeping_hr", "spo2", "steps",
+                        )
                     )
-                )
-                if has_metrics:
-                    wellness_repository.save_wellness_day(
-                        self.profile_id,
-                        mapped,
-                    )
+                    if has_metrics:
+                        wellness_repository.save_wellness_day(self.profile_id, mapped)
             count += 1
         return count
 

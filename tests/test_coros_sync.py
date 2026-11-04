@@ -73,7 +73,7 @@ def test_importer_stores_each_sleep_day_idempotently_by_upsert_key():
         date(2026, 6, 1),
         date(2026, 6, 2),
     }
-    assert all(row.category == "sleep" for row in db.added)
+    assert all(row.category == "sleep" for row in snapshots)
     assert all(name == "querySleepOverview" for name, _ in client.calls)
 
 

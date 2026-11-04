@@ -8,6 +8,8 @@ from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
 )
 from opencoach.database.repositories import (
+    CorosDailyDataRepositoryError,
+    SqlCorosDailyDataRepository,
     DailyContextRepositoryError,
     SqlDailyContextRepository,
     SqlWellnessRepository,
@@ -269,9 +271,17 @@ def get_recovery_assessment(
             athlete_profile_id,
             target_date,
         )
+        time_series_snapshots = SqlCorosDailyDataRepository(
+            repository.session
+        ).list_time_series_snapshots(
+            athlete_profile_id,
+            start_date,
+            target_date,
+        )
     except (
         WellnessRepositoryError,
         DailyContextRepositoryError,
+        CorosDailyDataRepositoryError,
     ) as exc:
         raise HTTPException(
             status_code=503,
@@ -283,5 +293,6 @@ def get_recovery_assessment(
         target_date=target_date,
         provider=provider,
         subjective_context=subjective_context,
+        time_series_snapshots=time_series_snapshots,
     )
     return recovery_assessment_to_dict(assessment)

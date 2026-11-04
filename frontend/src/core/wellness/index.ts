@@ -1,6 +1,12 @@
 export {
   fetchLatestWellness,
+  fetchRecoveryAssessment,
   fetchWellnessTrends,
+  type RecoveryAssessment,
+  type RecoveryMetricSummary,
+  type RecoverySubjective,
+  type RecoveryTimeSeriesMetric,
+  type RecoveryWindow,
   type WellnessLatest,
   type WellnessMetricTrend,
   type WellnessTrendDirection,

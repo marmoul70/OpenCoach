@@ -720,6 +720,8 @@ Sleep HRV Time Series — Last 1 day
             "source_timezone": 4,
             "status": 4,
             "confidence": 95833,
+            "score": None,
+            "metadata": None,
         },
         {
             "metric": "sleep_hrv",
@@ -729,6 +731,8 @@ Sleep HRV Time Series — Last 1 day
             "source_timezone": 4,
             "status": 4,
             "confidence": 100000,
+            "score": None,
+            "metadata": None,
         },
     ]
 

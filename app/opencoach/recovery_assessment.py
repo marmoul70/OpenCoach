@@ -244,11 +244,11 @@ def aggregate_coros_time_series(
                     "value": value,
                     "unit": unit,
                     "status": sample.get("status"),
-                    "category": category,
+                    "categories": {category},
                 }
             else:
                 # Une même mesure peut être renvoyée par HRV et Health Check.
-                existing["category"] = min(existing["category"], category)
+                existing["categories"].add(category)
 
     result: list[RecoveryTimeSeriesMetric] = []
     for metric, unique_samples in sorted(samples.items()):
@@ -265,7 +265,11 @@ def aggregate_coros_time_series(
             for item in values
             if isinstance(item["status"], str) and item["status"]
         }))
-        categories = tuple(sorted({item["category"] for item in values}))
+        categories = tuple(sorted({
+            category
+            for item in values
+            for category in item["categories"]
+        }))
         result.append(
             RecoveryTimeSeriesMetric(
                 metric=metric,

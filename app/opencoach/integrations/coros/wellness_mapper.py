@@ -177,9 +177,12 @@ class CorosTimeSeriesSample:
     measured_at: datetime
     value: float
     unit: str
+    metric: str = "sleep_hrv"
     source_timezone: int | None = None
     status: int | None = None
     confidence: int | None = None
+    score: int | None = None
+    metadata: dict[str, Any] | None = None
 
 
 def map_coros_hrv_time_series(payload: Any) -> list[CorosTimeSeriesSample]:
@@ -221,11 +224,148 @@ def map_coros_hrv_time_series(payload: Any) -> list[CorosTimeSeriesSample]:
                 measured_at=measured_at,
                 value=float(match.group(3)),
                 unit="ms",
+                metric="sleep_hrv",
                 source_timezone=int(match.group(2)) if match.group(2) is not None else None,
                 status=int(match.group(4)) if match.group(4) is not None else None,
                 confidence=int(match.group(5)) if match.group(5) is not None else None,
             )
         )
+    return samples
+
+
+def _sample_datetime(epoch: int) -> datetime | None:
+    try:
+        return datetime.fromtimestamp(epoch, tz=timezone.utc)
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
+def map_coros_stress_time_series(payload: Any) -> list[CorosTimeSeriesSample]:
+    """Extrait les points stress COROS avec score et signaux auxiliaires."""
+    text = _report_text(payload)
+    if not text:
+        return []
+
+    pattern = re.compile(
+        r"(?m)^\\s*timestamp\\s*=\\s*(\\d+)"
+        r"(?:\\s*,\\s*timezone\\s*=\\s*(-?\\d+))?"
+        r"\\s*,\\s*stress\\s*=\\s*(-?\\d+(?:\\.\\d+)?)"
+        r"(?:\\s*,\\s*score\\s*=\\s*(-?\\d+))?"
+        r"(?:\\s*,\\s*stressHrv\\s*=\\s*(-?\\d+(?:\\.\\d+)?))?"
+        r"(?:\\s*,\\s*stressHr\\s*=\\s*(-?\\d+(?:\\.\\d+)?))?\\s*$",
+        re.IGNORECASE,
+    )
+    samples: list[CorosTimeSeriesSample] = []
+    seen: set[int] = set()
+    for match in pattern.finditer(text):
+        epoch = int(match.group(1))
+        measured_at = _sample_datetime(epoch)
+        if measured_at is None or epoch in seen:
+            continue
+        seen.add(epoch)
+        auxiliary: dict[str, float] = {}
+        if match.group(5) is not None:
+            auxiliary["stress_hrv"] = float(match.group(5))
+        if match.group(6) is not None:
+            auxiliary["stress_hr"] = float(match.group(6))
+        samples.append(
+            CorosTimeSeriesSample(
+                measured_at=measured_at,
+                value=float(match.group(3)),
+                unit="index",
+                metric="stress",
+                source_timezone=int(match.group(2)) if match.group(2) is not None else None,
+                score=int(match.group(4)) if match.group(4) is not None else None,
+                metadata=auxiliary,
+            )
+        )
+    return samples
+
+
+def map_coros_health_check_time_series(payload: Any) -> list[CorosTimeSeriesSample]:
+    """Convertit le dernier bilan COROS en points typés, sans mélanger les unités."""
+    text = _report_text(payload)
+    if not text:
+        return []
+
+    header = re.search(
+        r"(?im)^\\s*timestamp\\s*=\\s*(\\d+)"
+        r"(?:\\s*,\\s*timezone\\s*=\\s*(-?\\d+))?"
+        r"(?:\\s*,\\s*source\\s*=\\s*([^,]+))?"
+        r"(?:\\s*,\\s*device\\s*=\\s*([^,]+))?"
+        r"(?:\\s*,\\s*dataSource\\s*=\\s*([^\\n]+))?\\s*$",
+        text,
+    )
+    default_epoch = int(header.group(1)) if header else None
+    source_timezone = int(header.group(2)) if header and header.group(2) else None
+    metadata = {
+        key: value.strip()
+        for key, value in (
+            ("source", header.group(3) if header else None),
+            ("device", header.group(4) if header else None),
+            ("data_source", header.group(5) if header else None),
+        )
+        if value
+    }
+    labels = {
+        "Heart Rate List": ("heart_rate", "bpm"),
+        "HRV List": ("hrv", "ms"),
+        "Stress List": ("stress", "index"),
+        "Respiration Rate List": ("respiration_rate", "breaths/min"),
+        "SpO2 List": ("spo2", "%"),
+    }
+    samples: list[CorosTimeSeriesSample] = []
+    seen: set[tuple[str, int]] = set()
+    for label, (metric, unit) in labels.items():
+        list_match = re.search(
+            rf"(?im)^\\s*{re.escape(label)}\\s*:\\s*\\[([^\\]]*)\\]",
+            text,
+        )
+        if not list_match:
+            continue
+        for point in re.finditer(
+            r"(\\d+)\\s*=\\s*(-?\\d+(?:\\.\\d+)?)\\s*(bpm|ms|/min|%)?",
+            list_match.group(1),
+            re.IGNORECASE,
+        ):
+            epoch = int(point.group(1))
+            measured_at = _sample_datetime(epoch)
+            key = (metric, epoch)
+            if measured_at is None or key in seen:
+                continue
+            seen.add(key)
+            samples.append(
+                CorosTimeSeriesSample(
+                    measured_at=measured_at,
+                    value=float(point.group(2)),
+                    unit=unit,
+                    metric=metric,
+                    source_timezone=source_timezone,
+                    metadata=metadata or None,
+                )
+            )
+
+    if default_epoch is not None:
+        measured_at = _sample_datetime(default_epoch)
+        if measured_at is not None:
+            for label, metric, unit, pattern in (
+                ("Resting Heart Rate", "resting_hr", "bpm", r"Resting Heart Rate:\\s*(\\d+(?:\\.\\d+)?)\\s*bpm"),
+                ("Stress Level", "stress_level_score", "level", r"Stress Level:\\s*(\\d+(?:\\.\\d+)?)"),
+            ):
+                value_match = re.search(pattern, text, re.IGNORECASE)
+                if value_match and (metric, default_epoch) not in seen:
+                    samples.append(
+                        CorosTimeSeriesSample(
+                            measured_at=measured_at,
+                            value=float(value_match.group(1)),
+                            unit=unit,
+                            metric=metric,
+                            source_timezone=source_timezone,
+                            metadata=metadata or None,
+                        )
+                    )
+                    seen.add((metric, default_epoch))
+    samples.sort(key=lambda sample: (sample.measured_at, sample.metric))
     return samples
 
 

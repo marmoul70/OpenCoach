@@ -58,6 +58,9 @@ def create_wellness_day() -> WellnessDay:
         ramp_rate=-2.8922691,
         steps=1627,
         resting_hr=46,
+        avg_hr=62.0,
+        min_hr=41.0,
+        max_hr=154.0,
         hrv=52.0,
         hrv_baseline=47.0,
         stress_avg=24.0,
@@ -107,6 +110,9 @@ def test_sql_wellness_repository_inserts_day() -> None:
         assert saved.ramp_rate == -2.8922691
         assert saved.steps == 1627
         assert saved.resting_hr == 46
+        assert saved.avg_hr == 62.0
+        assert saved.min_hr == 41.0
+        assert saved.max_hr == 154.0
         assert saved.hrv == 52.0
         assert saved.hrv_baseline == 47.0
         assert saved.stress_avg == 24.0

@@ -82,6 +82,21 @@ interface CoachTodayApiResponse {
         expected_days: number
       }>
     }>
+    time_series: Array<{
+      metric: string
+      unit: string | null
+      current: number
+      average: number
+      median: number
+      minimum: number
+      maximum: number
+      sample_count: number
+      coverage_days: number
+      first_measured_at: string
+      last_measured_at: string
+      statuses: string[]
+      source_categories: string[]
+    }>
     subjective: {
       date: string
       fatigue: number
@@ -427,6 +442,21 @@ Promise<CoachToday> {
             },
           ]),
         ),
+      })),
+      timeSeries: data.recovery.time_series.map((metric) => ({
+        metric: metric.metric,
+        unit: metric.unit,
+        current: metric.current,
+        average: metric.average,
+        median: metric.median,
+        minimum: metric.minimum,
+        maximum: metric.maximum,
+        sampleCount: metric.sample_count,
+        coverageDays: metric.coverage_days,
+        firstMeasuredAt: metric.first_measured_at,
+        lastMeasuredAt: metric.last_measured_at,
+        statuses: metric.statuses,
+        sourceCategories: metric.source_categories,
       })),
       subjective: data.recovery.subjective
         ? {

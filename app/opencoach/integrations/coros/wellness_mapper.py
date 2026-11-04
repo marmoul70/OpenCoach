@@ -195,7 +195,7 @@ def map_coros_hrv_time_series(payload: Any) -> list[CorosTimeSeriesSample]:
     if not text:
         return []
 
-    marker = re.search(r"(?im)^\s*Sleep HRV Time Series\b[^\n]*$", text)
+    marker = re.search(r"(?im)Sleep HRV Time Series[^\r\n]*", text)
     if not marker:
         return []
     series_text = text[marker.end():]

@@ -83,6 +83,9 @@ class WellnessDaily(Base):
         nullable=True,
     )
 
+    hrv_baseline: Mapped[float | None] = mapped_column(Float, nullable=True)
+    stress_avg: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     sleep_seconds: Mapped[int | None] = mapped_column(
         Integer,
         nullable=True,
@@ -98,10 +101,18 @@ class WellnessDaily(Base):
         nullable=True,
     )
 
+    sleep_deep_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sleep_light_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sleep_rem_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sleep_awake_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     avg_sleeping_hr: Mapped[float | None] = mapped_column(
         Float,
         nullable=True,
     )
+
+    min_sleeping_hr: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_sleeping_hr: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     spo2: Mapped[float | None] = mapped_column(
         Float,

@@ -1,4 +1,8 @@
-"""Mapping conservateur des snapshots santé COROS vers le modèle Wellness."""
+"""Mapping conservateur des rapports santé COROS vers WellnessDay.
+
+Le MCP COROS renvoie certaines métriques sous forme de rapports texte.
+Les données brutes restent conservées séparément dans CorosDailyData.
+"""
 
 from __future__ import annotations
 
@@ -14,13 +18,12 @@ def _key(value: str) -> str:
     return re.sub(r"[^a-z0-9]", "", value.casefold())
 
 
-def _flatten(value: Any, *, prefix: str = "") -> dict[str, Any]:
-    """Aplati les objets imbriqués sans écraser les premières valeurs rencontrées."""
+def _flatten(value: Any) -> dict[str, Any]:
+    """Aplati les objets imbriqués sans écraser les premières valeurs."""
     flattened: dict[str, Any] = {}
     if isinstance(value, dict):
         for raw_key, child in value.items():
-            key = str(raw_key)
-            flattened.setdefault(_key(key), child)
+            flattened.setdefault(_key(str(raw_key)), child)
             if isinstance(child, dict):
                 for nested_key, nested_value in _flatten(child).items():
                     flattened.setdefault(nested_key, nested_value)
@@ -69,14 +72,8 @@ def map_coros_wellness(
     payload: dict[str, Any],
     wellness_date: date,
 ) -> WellnessDay:
-    """Convertit un snapshot COROS en WellnessDay.
-
-    Le mapping est volontairement permissif sur les noms de champs, mais
-    conservateur sur les valeurs : une métrique non présente reste None.
-    Les alias devront être enrichis à partir de payloads COROS réels validés.
-    """
+    """Convertit un payload JSON structuré COROS en WellnessDay."""
     data = _flatten(payload)
-
     resting_hr = _integer(data, (
         "restingHeartRate", "restingHr", "restHr", "resting_heart_rate",
         "restingHeartRateBpm", "rhr",
@@ -93,8 +90,6 @@ def map_coros_wellness(
         "sleepSeconds", "sleepDurationSeconds", "totalSleepSeconds",
         "totalSleepTimeSeconds", "sleepDuration",
     ))
-    # Les durées exprimées en minutes ne sont converties que si le nom du
-    # champ l'indique explicitement.
     if sleep_seconds is None:
         sleep_minutes = _number(data, (
             "sleepMinutes", "sleepDurationMinutes", "totalSleepMinutes",
@@ -102,42 +97,131 @@ def map_coros_wellness(
         if sleep_minutes is not None and sleep_minutes >= 0:
             sleep_seconds = round(sleep_minutes * 60)
 
-    sleep_score = _number(data, (
-        "sleepScore", "sleep_score", "sleepQualityScore",
-    ))
-    sleep_quality = _integer(data, (
-        "sleepQuality", "sleep_quality",
-    ))
-    spo2 = _number(data, (
-        "spo2", "bloodOxygen", "bloodOxygenLevel", "oxygenSaturation",
-        "averageSpo2",
-    ))
-    steps = _integer(data, (
-        "steps", "stepCount", "dailySteps",
-    ))
-    fitness_ctl = _number(data, (
-        "fitnessCtl", "ctl", "chronicTrainingLoad",
-    ))
-    fatigue_atl = _number(data, (
-        "fatigueAtl", "atl", "acuteTrainingLoad",
-    ))
-    ramp_rate = _number(data, (
-        "rampRate", "trainingLoadRampRate",
-    ))
-
     return WellnessDay(
         provider="coros",
         date=wellness_date,
-        fitness_ctl=fitness_ctl,
-        fatigue_atl=fatigue_atl,
-        ramp_rate=ramp_rate,
+        fitness_ctl=_number(data, ("fitnessCtl", "ctl", "chronicTrainingLoad")),
+        fatigue_atl=_number(data, ("fatigueAtl", "atl", "acuteTrainingLoad")),
+        ramp_rate=_number(data, ("rampRate", "trainingLoadRampRate")),
         resting_hr=resting_hr,
         hrv=hrv,
         sleep_seconds=sleep_seconds,
-        sleep_score=sleep_score,
-        sleep_quality=sleep_quality,
+        sleep_score=_number(data, ("sleepScore", "sleep_score", "sleepQualityScore")),
+        sleep_quality=_integer(data, ("sleepQuality", "sleep_quality")),
         avg_sleeping_hr=avg_sleeping_hr,
-        spo2=spo2,
-        steps=steps,
+        spo2=_number(data, ("spo2", "bloodOxygen", "bloodOxygenLevel", "oxygenSaturation", "averageSpo2")),
+        steps=_integer(data, ("steps", "stepCount", "dailySteps")),
         provider_updated_at=_datetime(data),
     )
+
+
+def _report_text(payload: Any) -> str | None:
+    if isinstance(payload, str):
+        return payload
+    if isinstance(payload, dict):
+        for key in ("data", "text"):
+            value = payload.get(key)
+            if isinstance(value, str):
+                return value
+            if isinstance(value, dict):
+                nested = _report_text(value)
+                if nested:
+                    return nested
+    return None
+
+
+def _duration_seconds(value: str) -> int | None:
+    match = re.search(r"(?:(\d+)\s*h)?\s*(?:(\d+)\s*min)?", value, re.IGNORECASE)
+    if not match or not any(match.groups()):
+        return None
+    hours = int(match.group(1) or 0)
+    minutes = int(match.group(2) or 0)
+    if minutes >= 60:
+        return None
+    return hours * 3600 + minutes * 60
+
+
+def _report_dates(text: str) -> list[tuple[date, str]]:
+    matches = list(re.finditer(r"(?m)^\s*(?:---\s*)?(\d{4}-\d{2}-\d{2}|\d{8})(?:\s*---)?\s*$", text))
+    entries: list[tuple[date, str]] = []
+    for index, match in enumerate(matches):
+        raw_date = match.group(1)
+        try:
+            day = datetime.strptime(raw_date, "%Y%m%d").date() if len(raw_date) == 8 else date.fromisoformat(raw_date)
+        except ValueError:
+            continue
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        entries.append((day, text[match.end():end]))
+    return entries
+
+
+def map_coros_wellness_report(
+    category: str,
+    payload: Any,
+    fallback_date: date,
+) -> list[WellnessDay]:
+    """Extrait une journée Wellness par date contenue dans un rapport COROS.
+
+    Seules les métriques dont la signification est explicite sont mappées.
+    Les valeurs absentes restent None ; les rapports non reconnus ne créent
+    pas artificiellement de journée.
+    """
+    text = _report_text(payload)
+    if not text:
+        if isinstance(payload, dict):
+            return [map_coros_wellness(category, payload, fallback_date)]
+        return []
+
+    # Les rapports quotidiens peuvent contenir plusieurs jours sous forme
+    # de sous-sections --- YYYYMMDD ---.
+    entries = _report_dates(text)
+    if not entries and re.search(r"\b(?:Sleep Score|HRV Avg|Short-Term Load):", text):
+        entries = [(fallback_date, text)]
+
+    result: list[WellnessDay] = []
+    header_resting_hr = re.search(r"Resting HR:\s*(\d+)\s*bpm", text, re.IGNORECASE)
+
+    for day, block in entries:
+        values: dict[str, Any] = {}
+        if category == "daily_health":
+            steps = re.search(r"Steps:\s*([\d,]+)", block, re.IGNORECASE)
+            if steps:
+                values["steps"] = int(steps.group(1).replace(",", ""))
+            total_sleep = re.search(r"Total:\s*([^|\n]+)", block, re.IGNORECASE)
+            if total_sleep:
+                seconds = _duration_seconds(total_sleep.group(1))
+                if seconds is not None:
+                    values["sleepSeconds"] = seconds
+            sleep_hr = re.search(r"Sleep HR:\s*Avg\s*(\d+(?:\.\d+)?)\s*bpm", block, re.IGNORECASE)
+            if sleep_hr:
+                values["avgSleepingHr"] = float(sleep_hr.group(1))
+            if day == fallback_date and header_resting_hr:
+                values["restingHeartRate"] = int(header_resting_hr.group(1))
+
+        elif category == "sleep":
+            score = re.search(r"Sleep Score:\s*(\d+(?:\.\d+)?)", block, re.IGNORECASE)
+            if score:
+                values["sleepScore"] = float(score.group(1))
+            main_sleep = re.search(r"Main Sleep \(asleep\):\s*([^\n]+)", block, re.IGNORECASE)
+            daily_sleep = re.search(r"Daily Sleep:\s*([^\n]+)", block, re.IGNORECASE)
+            duration = _duration_seconds((main_sleep or daily_sleep).group(1)) if (main_sleep or daily_sleep) else None
+            if duration is not None:
+                values["sleepSeconds"] = duration
+
+        elif category == "hrv":
+            average = re.search(r"HRV Avg:\s*(\d+(?:\.\d+)?)\s*ms", block, re.IGNORECASE)
+            if average:
+                values["hrv"] = float(average.group(1))
+
+        elif category == "training_load":
+            short = re.search(r"Short-Term Load:\s*(\d+(?:\.\d+)?)", block, re.IGNORECASE)
+            long = re.search(r"Long-Term Load:\s*(\d+(?:\.\d+)?)", block, re.IGNORECASE)
+            if short:
+                values["fatigueAtl"] = float(short.group(1))
+            if long:
+                values["fitnessCtl"] = float(long.group(1))
+
+        if values:
+            result.append(map_coros_wellness(category, values, day))
+
+    return result

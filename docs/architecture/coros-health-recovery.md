@@ -101,7 +101,8 @@ Les rapports bruts ne doivent pas être ajoutés comme fixtures permanentes : il
 - [x] Exposer ces mesures dans les réponses Wellness et les tendances API.
 - [x] Faire préférer COROS au Readiness et au coach, avec repli vers Intervals sans mélanger les baselines.
 - [ ] Étendre le modèle canonique aux séries temporelles et autres mesures confirmées.
-- [ ] Valider l'import complet en base et l'idempotence avec les réponses MCP réelles.
+- [x] Valider les migrations et les tests d'intégration en CI.
+- [ ] Valider un import complet sur la base locale de production et contrôler l'idempotence après synchronisation réelle.
 
 ### Sprint 2 — Readiness indépendant d'Intervals
 

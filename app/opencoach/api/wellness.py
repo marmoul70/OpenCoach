@@ -44,7 +44,13 @@ def get_latest_wellness(
     try:
         wellness = repository.get_latest(
             athlete_profile_id,
+            provider="coros",
         )
+        if wellness is None:
+            wellness = repository.get_latest(
+                athlete_profile_id,
+                provider="intervals",
+            )
 
     except WellnessRepositoryError as exc:
         raise HTTPException(
@@ -63,6 +69,7 @@ def get_latest_wellness(
 @router.get("/trends")
 def get_wellness_trends(
     days: int = 7,
+    provider: str = "coros",
     athlete_profile_id: UUID = Depends(
         get_current_athlete_profile_id,
     ),
@@ -71,6 +78,12 @@ def get_wellness_trends(
     ),
 ) -> dict:
     """Retourne les tendances Wellness récentes."""
+
+    if provider not in {"coros", "intervals"}:
+        raise HTTPException(
+            status_code=422,
+            detail="Le fournisseur doit être coros ou intervals.",
+        )
 
     if not 2 <= days <= 30:
         raise HTTPException(
@@ -96,9 +109,18 @@ def get_wellness_trends(
                 athlete_profile_id,
                 start_date,
                 end_date,
-                provider="intervals",
+                provider=provider,
             )
         )
+        if not wellness_days and provider == "coros":
+            wellness_days = repository.list_range(
+                athlete_profile_id,
+                start_date,
+                end_date,
+                provider="intervals",
+            )
+            if wellness_days:
+                provider = "intervals"
 
     except WellnessRepositoryError as exc:
         raise HTTPException(
@@ -116,15 +138,16 @@ def get_wellness_trends(
         days=days,
     )
 
-    return _trends_response(
-        trends
-    )
+    return _trends_response(trends, provider=provider)
 
 
 def _trends_response(
     trends: WellnessTrends,
+    *,
+    provider: str,
 ) -> dict:
     return {
+        "provider": provider,
         "start_date": (
             trends.start_date.isoformat()
         ),
@@ -133,18 +156,18 @@ def _trends_response(
         ),
         "days": trends.days,
         "metrics": {
-            "hrv": _metric_trend_response(
-                trends.hrv
-            ),
-            "resting_hr": _metric_trend_response(
-                trends.resting_hr
-            ),
+            "hrv": _metric_trend_response(trends.hrv),
+            "hrv_baseline": _metric_trend_response(trends.hrv_baseline),
+            "resting_hr": _metric_trend_response(trends.resting_hr),
+            "stress_avg": _metric_trend_response(trends.stress_avg),
             "sleep_score": _metric_trend_response(
                 trends.sleep_score
             ),
-            "sleep_seconds": _metric_trend_response(
-                trends.sleep_seconds
-            ),
+            "sleep_seconds": _metric_trend_response(trends.sleep_seconds),
+            "sleep_deep_seconds": _metric_trend_response(trends.sleep_deep_seconds),
+            "sleep_light_seconds": _metric_trend_response(trends.sleep_light_seconds),
+            "sleep_rem_seconds": _metric_trend_response(trends.sleep_rem_seconds),
+            "sleep_awake_seconds": _metric_trend_response(trends.sleep_awake_seconds),
             "fitness_ctl": _metric_trend_response(
                 trends.fitness_ctl
             ),

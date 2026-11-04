@@ -247,12 +247,12 @@ def map_coros_stress_time_series(payload: Any) -> list[CorosTimeSeriesSample]:
         return []
 
     pattern = re.compile(
-        r"(?m)^\\s*timestamp\\s*=\\s*(\\d+)"
-        r"(?:\\s*,\\s*timezone\\s*=\\s*(-?\\d+))?"
-        r"\\s*,\\s*stress\\s*=\\s*(-?\\d+(?:\\.\\d+)?)"
-        r"(?:\\s*,\\s*score\\s*=\\s*(-?\\d+))?"
-        r"(?:\\s*,\\s*stressHrv\\s*=\\s*(-?\\d+(?:\\.\\d+)?))?"
-        r"(?:\\s*,\\s*stressHr\\s*=\\s*(-?\\d+(?:\\.\\d+)?))?\\s*$",
+        r"(?m)^\s*timestamp\s*=\s*(\d+)"
+        r"(?:\s*,\s*timezone\s*=\s*(-?\d+))?"
+        r"\s*,\s*stress\s*=\s*(-?\d+(?:\.\d+)?)"
+        r"(?:\s*,\s*score\s*=\s*(-?\d+))?"
+        r"(?:\s*,\s*stressHrv\s*=\s*(-?\d+(?:\.\d+)?))?"
+        r"(?:\s*,\s*stressHr\s*=\s*(-?\d+(?:\.\d+)?))?\s*$",
         re.IGNORECASE,
     )
     samples: list[CorosTimeSeriesSample] = []
@@ -289,11 +289,11 @@ def map_coros_health_check_time_series(payload: Any) -> list[CorosTimeSeriesSamp
         return []
 
     header = re.search(
-        r"(?im)^\\s*timestamp\\s*=\\s*(\\d+)"
-        r"(?:\\s*,\\s*timezone\\s*=\\s*(-?\\d+))?"
-        r"(?:\\s*,\\s*source\\s*=\\s*([^,]+))?"
-        r"(?:\\s*,\\s*device\\s*=\\s*([^,]+))?"
-        r"(?:\\s*,\\s*dataSource\\s*=\\s*([^\\n]+))?\\s*$",
+        r"(?im)^\s*timestamp\s*=\s*(\d+)"
+        r"(?:\s*,\s*timezone\s*=\s*(-?\d+))?"
+        r"(?:\s*,\s*source\s*=\s*([^,]+))?"
+        r"(?:\s*,\s*device\s*=\s*([^,]+))?"
+        r"(?:\s*,\s*dataSource\s*=\s*([^\n]+))?\s*$",
         text,
     )
     default_epoch = int(header.group(1)) if header else None
@@ -318,13 +318,13 @@ def map_coros_health_check_time_series(payload: Any) -> list[CorosTimeSeriesSamp
     seen: set[tuple[str, int]] = set()
     for label, (metric, unit) in labels.items():
         list_match = re.search(
-            rf"(?im)^\\s*{re.escape(label)}\\s*:\\s*\\[([^\\]]*)\\]",
+            rf"(?im)^\s*{re.escape(label)}\s*:\s*\[([^\]]*)\]",
             text,
         )
         if not list_match:
             continue
         for point in re.finditer(
-            r"(\\d+)\\s*=\\s*(-?\\d+(?:\\.\\d+)?)\\s*(bpm|ms|/min|%)?",
+            r"(\d+)\s*=\s*(-?\d+(?:\.\d+)?)\s*(bpm|ms|/min|%)?",
             list_match.group(1),
             re.IGNORECASE,
         ):
@@ -349,8 +349,8 @@ def map_coros_health_check_time_series(payload: Any) -> list[CorosTimeSeriesSamp
         measured_at = _sample_datetime(default_epoch)
         if measured_at is not None:
             for label, metric, unit, pattern in (
-                ("Resting Heart Rate", "resting_hr", "bpm", r"Resting Heart Rate:\\s*(\\d+(?:\\.\\d+)?)\\s*bpm"),
-                ("Stress Level", "stress_level_score", "level", r"Stress Level:\\s*(\\d+(?:\\.\\d+)?)"),
+                ("Resting Heart Rate", "resting_hr", "bpm", r"Resting Heart Rate:\s*(\d+(?:\.\d+)?)\s*bpm"),
+                ("Stress Level", "stress_level_score", "level", r"Stress Level:\s*(\d+(?:\.\d+)?)"),
             ):
                 value_match = re.search(pattern, text, re.IGNORECASE)
                 if value_match and (metric, default_epoch) not in seen:

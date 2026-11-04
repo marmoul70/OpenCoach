@@ -42,15 +42,23 @@ def get_latest_wellness(
     ),
 ) -> WellnessDay:
     try:
-        wellness = repository.get_latest(
+        coros_latest = repository.get_latest(
             athlete_profile_id,
             provider="coros",
         )
-        if wellness is None:
-            wellness = repository.get_latest(
-                athlete_profile_id,
-                provider="intervals",
-            )
+        intervals_latest = repository.get_latest(
+            athlete_profile_id,
+            provider="intervals",
+        )
+        available = [
+            item for item in (coros_latest, intervals_latest)
+            if item is not None
+        ]
+        wellness = max(
+            available,
+            key=lambda item: (item.date, item.provider == "coros"),
+            default=None,
+        )
 
     except WellnessRepositoryError as exc:
         raise HTTPException(

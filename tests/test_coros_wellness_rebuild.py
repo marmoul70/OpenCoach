@@ -236,3 +236,35 @@ def test_rebuild_rejects_invalid_date_range() -> None:
             )
     finally:
         db.close()
+
+
+def test_rebuild_skips_metadata_only_snapshots() -> None:
+    db = create_session()
+    try:
+        profile = create_profile(db)
+        db.add(
+            CorosDailyData(
+                athlete_profile_id=profile.id,
+                metric_date=date(2026, 11, 2),
+                category="sleep",
+                payload={"updatedAt": "2026-11-02T08:00:00Z"},
+            )
+        )
+        db.commit()
+
+        result = rebuild_wellness_from_snapshots(
+            db,
+            profile.id,
+            date(2026, 11, 2),
+            date(2026, 11, 2),
+            dry_run=False,
+        )
+
+        assert result["snapshots_scanned"] == 1
+        assert result["mapped_days"] == 0
+        assert result["created"] == 0
+        assert result["updated"] == 0
+        assert db.scalars(select(WellnessDaily)).all() == []
+    finally:
+        db.close()
+

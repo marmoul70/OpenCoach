@@ -230,3 +230,44 @@ def test_maps_hrv_baseline_from_individual_night_record() -> None:
     assert len(days) == 1
     assert days[0].hrv == 46
     assert days[0].hrv_baseline == 42
+
+
+
+def test_parses_stress_level_report_for_each_date() -> None:
+    from opencoach.integrations.coros.wellness_mapper import map_coros_wellness_report
+
+    report = """Stress Level — Last 3 days
+========================
+
+2026-11-03:
+Average Stress: 33
+Relaxed: No data
+Low: No data
+Medium: No data
+High: No data
+
+2026-11-02:
+Average Stress: 19
+Relaxed: No data
+Low: No data
+Medium: No data
+High: No data
+
+2026-11-01:
+Average Stress: 33
+Relaxed: No data
+Low: No data
+Medium: No data
+High: No data
+"""
+    days = map_coros_wellness_report(
+        "stress",
+        {"data": report},
+        date(2026, 11, 3),
+    )
+
+    assert [(item.date, item.stress_avg) for item in days] == [
+        (date(2026, 11, 3), 33.0),
+        (date(2026, 11, 2), 19.0),
+        (date(2026, 11, 1), 33.0),
+    ]

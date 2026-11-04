@@ -150,15 +150,6 @@ class ReadinessService:
             else "stale"
         )
 
-        if current is None:
-            raise ReadinessDataUnavailableError(
-                (
-                    "Aucune donnée Wellness disponible "
-                    f"pour le {target_date.isoformat()} "
-                    f"avec le fournisseur {self.provider}."
-                )
-            )
-
         baseline_thresholds = (
             self.thresholds
             .readiness

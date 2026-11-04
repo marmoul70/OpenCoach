@@ -104,27 +104,33 @@ class ReadinessService:
     ) -> ReadinessAssessment:
         """Calcule le Daily Readiness pour une date donnée."""
 
-        selected_provider: str | None = None
-        current: WellnessDay | None = None
         provider_order = (self.provider, *self.fallback_providers)
+        candidates: list[tuple[int, str, WellnessDay]] = []
 
-        # Chaque fournisseur est évalué séparément : les métriques du jour
-        # et l'historique de référence proviennent toujours de la même source.
-        for candidate_provider in provider_order:
-            current = self.repository.get_by_date(
+        # Chaque source est évaluée indépendamment. On retient la plus fraîche ;
+        # à date identique, l'ordre configuré donne la priorité à COROS.
+        for priority, candidate_provider in enumerate(provider_order):
+            candidate = self.repository.get_by_date(
                 athlete_profile_id,
                 target_date,
                 provider=candidate_provider,
             )
-            if current is None:
-                current = self.repository.get_latest_on_or_before(
+            if candidate is None:
+                candidate = self.repository.get_latest_on_or_before(
                     athlete_profile_id,
                     target_date,
                     provider=candidate_provider,
                 )
-            if current is not None:
-                selected_provider = candidate_provider
-                break
+            if candidate is not None:
+                candidates.append((priority, candidate_provider, candidate))
+
+        selected_provider: str | None = None
+        current: WellnessDay | None = None
+        if candidates:
+            _, selected_provider, current = max(
+                candidates,
+                key=lambda item: (item[2].date, -item[0]),
+            )
 
         if current is None or selected_provider is None:
             providers = ", ".join(provider_order)

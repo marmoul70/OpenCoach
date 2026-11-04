@@ -12,6 +12,7 @@ import {
   Flag,
   Gauge,
   Home,
+  HeartPulse,
   LogOut,
   Monitor,
   Moon,
@@ -36,6 +37,7 @@ export type NavigationPage =
   | 'races'
   | 'activities'
   | 'weather'
+  | 'health'
 
 
 export type NavigationTheme =
@@ -85,6 +87,11 @@ const mainNavigation = [
     icon: Bot,
   },
   {
+    page: 'health',
+    label: 'Santé',
+    icon: HeartPulse,
+  },
+  {
     page: 'activities',
     label: 'Activités',
     icon: Activity,
@@ -122,6 +129,11 @@ const mobileNavigation = [
     page: 'activities',
     label: 'Activités',
     icon: Activity,
+  },
+  {
+    page: 'health',
+    label: 'Santé',
+    icon: HeartPulse,
   },
 ] as const
 
@@ -834,7 +846,7 @@ export function AppNavigation({
 
               grid
               h-[68px]
-              grid-cols-5
+              grid-cols-6
 
               rounded-[22px]
 

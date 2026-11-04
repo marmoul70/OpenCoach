@@ -585,3 +585,26 @@ def test_sql_wellness_repository_latest_on_or_before_returns_none_when_unavailab
 
     finally:
         db.close()
+
+def test_sql_wellness_repository_get_latest_filters_provider() -> None:
+    db = create_session()
+    try:
+        profile = create_profile(db)
+        repository = SqlWellnessRepository(db)
+
+        intervals = create_wellness_day()
+        intervals.date = date(2026, 8, 20)
+        coros = create_wellness_day()
+        coros.provider = "coros"
+        coros.date = date(2026, 8, 19)
+
+        repository.save_wellness_day(profile.id, intervals)
+        repository.save_wellness_day(profile.id, coros)
+
+        result = repository.get_latest(profile.id, provider="coros")
+
+        assert result is not None
+        assert result.provider == "coros"
+        assert result.date == date(2026, 8, 19)
+    finally:
+        db.close()

@@ -606,3 +606,154 @@ class CorosImportService:
         if count == 0:
             self._checkpoint("activities", start)
         return count
+
+WELLNESS_REBUILD_CATEGORIES = (
+    "daily_health",
+    "sleep",
+    "hrv",
+    "heart_rate",
+    "resting_heart_rate",
+    "stress",
+    "training_load",
+)
+
+WELLNESS_REBUILD_FIELDS = (
+    "fitness_ctl",
+    "fatigue_atl",
+    "ramp_rate",
+    "resting_hr",
+    "avg_hr",
+    "min_hr",
+    "max_hr",
+    "hrv",
+    "hrv_baseline",
+    "stress_avg",
+    "sleep_seconds",
+    "sleep_score",
+    "sleep_quality",
+    "sleep_deep_seconds",
+    "sleep_light_seconds",
+    "sleep_rem_seconds",
+    "sleep_awake_seconds",
+    "avg_sleeping_hr",
+    "min_sleeping_hr",
+    "max_sleeping_hr",
+    "spo2",
+    "steps",
+    "provider_updated_at",
+)
+
+
+def rebuild_wellness_from_snapshots(
+    db: Session,
+    profile_id: UUID,
+    start_date: date,
+    end_date: date,
+    *,
+    dry_run: bool = True,
+) -> dict[str, int | bool]:
+    """Reconstruit Wellness COROS depuis les snapshots locaux, sans appel MCP.
+
+    Les dates internes des rapports peuvent différer de CorosDailyData.metric_date
+    et un snapshot peut contenir plusieurs jours. Tous les snapshots des catégories
+    quotidiennes sont donc parcourus, puis les journées mappées sont filtrées.
+
+    Les valeurs COROS déjà non nulles dans wellness_daily sont prioritaires :
+    la reconstruction ne fait que créer des journées ou compléter les champs vides.
+    Les autres fournisseurs (notamment Intervals) ne sont jamais lus ni modifiés.
+
+    En mode dry_run (par défaut), aucune écriture ni validation SQL n'est effectuée.
+    Les compteurs created/updated indiquent alors les opérations qui seraient faites.
+    """
+    if start_date > end_date:
+        raise ValueError("start_date doit être antérieure ou égale à end_date.")
+
+    snapshots = db.scalars(
+        select(CorosDailyData)
+        .where(
+            CorosDailyData.athlete_profile_id == profile_id,
+            CorosDailyData.category.in_(WELLNESS_REBUILD_CATEGORIES),
+        )
+        .order_by(
+            CorosDailyData.imported_at.asc(),
+            CorosDailyData.metric_date.asc(),
+            CorosDailyData.category.asc(),
+        )
+    ).all()
+
+    mapped_by_date: dict[date, Any] = {}
+    for snapshot in snapshots:
+        mapped_days = map_coros_wellness_report(
+            snapshot.category,
+            snapshot.payload,
+            snapshot.metric_date,
+        )
+        for mapped in mapped_days:
+            if not start_date <= mapped.date <= end_date:
+                continue
+
+            aggregated = mapped_by_date.get(mapped.date)
+            if aggregated is None:
+                mapped_by_date[mapped.date] = mapped
+                continue
+
+            # Les snapshots les plus récemment importés sont parcourus en dernier.
+            # Une valeur absente ne remplace jamais une mesure déjà récupérée.
+            for field in WELLNESS_REBUILD_FIELDS:
+                value = getattr(mapped, field)
+                if value is not None:
+                    setattr(aggregated, field, value)
+
+    repository = SqlWellnessRepository(db)
+    existing_days = repository.list_range(
+        profile_id,
+        start_date,
+        end_date,
+        provider="coros",
+    )
+    existing_by_date = {item.date: item for item in existing_days}
+
+    created = 0
+    updated = 0
+    skipped = 0
+
+    for wellness_date in sorted(mapped_by_date):
+        mapped = mapped_by_date[wellness_date]
+        if not any(
+            getattr(mapped, field) is not None
+            for field in WELLNESS_REBUILD_FIELDS
+        ):
+            continue
+
+        existing = existing_by_date.get(wellness_date)
+        if existing is None:
+            created += 1
+            if not dry_run:
+                repository.save_wellness_day(profile_id, mapped)
+            continue
+
+        changed = False
+        for field in WELLNESS_REBUILD_FIELDS:
+            existing_value = getattr(existing, field)
+            if existing_value is not None:
+                # Ne jamais remplacer une valeur COROS déjà persistée.
+                setattr(mapped, field, existing_value)
+            elif getattr(mapped, field) is not None:
+                changed = True
+
+        if changed:
+            updated += 1
+            if not dry_run:
+                repository.save_wellness_day(profile_id, mapped)
+        else:
+            skipped += 1
+
+    return {
+        "snapshots_scanned": len(snapshots),
+        "mapped_days": len(mapped_by_date),
+        "created": created,
+        "updated": updated,
+        "skipped": skipped,
+        "dry_run": dry_run,
+    }
+

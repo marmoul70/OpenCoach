@@ -296,7 +296,7 @@ def test_parses_timestamped_sleep_hrv_samples_without_aggregating_them() -> None
         map_coros_hrv_time_series,
     )
 
-    report = """Sleep HRV — Last 1 day
+    report = """Sleep HRV Time Series — Last 1 day
 ========================
 2026-11-03:
   timestamp=1792969790, timezone=4, hrv=99 ms, status=4, confidence=95833

@@ -189,3 +189,25 @@ Si plusieurs profils athlètes existent dans la base, fournir explicitement \`--
 - La commande ne contacte pas COROS, ne modifie pas la configuration de synchronisation et n'écrit rien dans le calendrier COROS.
 - Vérifier les compteurs de simulation avant d'utiliser \`--apply\`.
 - La simulation n'est pas un remplacement de sauvegarde ; elle ne valide pas non plus la plausibilité physiologique des mesures.
+
+
+## Frontend Santé & Récupération
+
+Une page dédiée est disponible sur la branche de travail à l'adresse interne `/health`, avec une entrée **Santé** dans les navigations desktop et mobile. Elle complète la carte compacte « État de forme » du Dashboard sans la remplacer.
+
+Le composant `frontend/src/modules/health/HealthPage.tsx` consomme l'endpoint existant `GET /api/wellness/recovery` au moyen du contrat TypeScript centralisé dans `frontend/src/core/wellness/api.ts`. Il ne duplique ni le calcul des fenêtres ni l'agrégation des séries côté navigateur.
+
+La page présente :
+- la source, la date de la dernière journée, l'état de fraîcheur et la couverture sur 30 jours ;
+- un sélecteur 7/14/30 jours avec les mesures quotidiennes disponibles (HRV, baseline, fréquence cardiaque, sommeil détaillé, stress, SpO₂, pas et charge) ;
+- les séries COROS horodatées avec moyenne, minimum, maximum, nombre de mesures et jours couverts ;
+- le ressenti subjectif séparément des mesures capteurs lorsqu'il est renseigné.
+
+Les mesures absentes restent affichées comme indisponibles et ne sont jamais converties en zéro. Les séries sont descriptives et ne changent pas le calcul Readiness. Le bouton Actualiser relit l'API ; il ne déclenche pas de synchronisation COROS.
+
+Validation attendue sur VM après mise à jour de la branche :
+1. Ouvrir `/health` sur desktop et mobile.
+2. Vérifier la navigation Santé et le lien direct.
+3. Contrôler les fenêtres 7/14/30 jours et la cohérence des compteurs avec la base locale.
+4. Vérifier le rendu des champs absents et des séries détaillées.
+5. Vérifier qu'Actualiser ne déclenche aucun import ni appel de synchronisation COROS.

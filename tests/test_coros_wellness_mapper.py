@@ -369,6 +369,8 @@ def test_parses_stress_time_series_points_and_auxiliary_signals() -> None:
     assert samples[0].unit == "index"
     assert samples[0].score == 1
     assert samples[0].source_timezone == 4
+    assert samples[0].measured_at.date() == date(2026, 11, 2)
+    assert samples[0].source_date == date(2026, 11, 3)
     assert samples[0].metadata == {"stress_hrv": 0.0, "stress_hr": 0.0}
     assert samples[1].value == 68
     assert samples[1].score == 3
@@ -405,6 +407,7 @@ Resting Heart Rate: 47 bpm
         "stress_level_score",
     }
     assert by_metric["heart_rate"].value == 54
+    assert by_metric["heart_rate"].source_date == date(2026, 11, 2)
     assert by_metric["heart_rate"].unit == "bpm"
     assert by_metric["hrv"].value == 59
     assert by_metric["hrv"].unit == "ms"

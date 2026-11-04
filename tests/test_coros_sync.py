@@ -685,6 +685,8 @@ Sleep HRV Time Series — Last 1 day
 2026-10-29:
   timestamp=1793228990, timezone=4, hrv=99 ms, status=4, confidence=95833
   timestamp=1793229590, timezone=4, hrv=36 ms, status=4, confidence=100000
+2026-10-30:
+  timestamp=1793315690, timezone=4, hrv=37 ms, status=4, confidence=100000
 """,
                 }]
             }
@@ -699,19 +701,24 @@ Sleep HRV Time Series — Last 1 day
     result = service.import_history(
         {"activities": False, "hrv": True},
         start_date=date(2026, 10, 29),
-        today=date(2026, 10, 29),
+        today=date(2026, 10, 30),
     )
 
     snapshots = [row for row in db.added if isinstance(row, CorosDailyData)]
     raw_snapshot = next(row for row in snapshots if row.category == "hrv")
-    series_snapshot = next(
+    series_snapshots = [
         row for row in snapshots if row.category == "hrv_timeseries"
-    )
+    ]
 
     assert result["imported_snapshots"]["hrv"] == 1
     assert raw_snapshot.payload["data"]["text"].startswith("Sleep HRV")
-    assert series_snapshot.payload["source_category"] == "hrv"
-    assert series_snapshot.payload["samples"] == [
+    assert len(series_snapshots) == 2
+    samples_by_date = {
+        row.metric_date: row.payload["samples"]
+        for row in series_snapshots
+    }
+    assert set(samples_by_date) == {date(2026, 10, 29), date(2026, 10, 30)}
+    assert samples_by_date[date(2026, 10, 29)] == [
         {
             "metric": "sleep_hrv",
             "measured_at": "2026-10-28T23:09:50+00:00",
@@ -737,6 +744,8 @@ Sleep HRV Time Series — Last 1 day
             "metadata": None,
         },
     ]
+    assert samples_by_date[date(2026, 10, 30)][0]["source_date"] == "2026-10-30"
+    assert samples_by_date[date(2026, 10, 30)][0]["value"] == 37.0
 
 
 def test_stress_and_health_check_imports_persist_typed_time_series() -> None:

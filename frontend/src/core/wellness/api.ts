@@ -53,15 +53,25 @@ export interface WellnessMetricTrend {
 }
 
 export interface WellnessTrends {
+  provider: string
   start_date: string
   end_date: string
   days: number
 
   metrics: {
     hrv: WellnessMetricTrend
+    hrv_baseline: WellnessMetricTrend
     resting_hr: WellnessMetricTrend
+    avg_hr: WellnessMetricTrend
+    min_hr: WellnessMetricTrend
+    max_hr: WellnessMetricTrend
+    stress_avg: WellnessMetricTrend
     sleep_score: WellnessMetricTrend
     sleep_seconds: WellnessMetricTrend
+    sleep_deep_seconds: WellnessMetricTrend
+    sleep_light_seconds: WellnessMetricTrend
+    sleep_rem_seconds: WellnessMetricTrend
+    sleep_awake_seconds: WellnessMetricTrend
     fitness_ctl: WellnessMetricTrend
     fatigue_atl: WellnessMetricTrend
   }
@@ -82,7 +92,6 @@ export async function fetchWellnessTrends(
 
   return response.json() as Promise<WellnessTrends>
 }
-
 
 export interface RecoveryMetricSummary {
   current: number | null

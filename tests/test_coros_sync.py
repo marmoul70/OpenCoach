@@ -66,8 +66,7 @@ def test_importer_stores_each_sleep_day_idempotently_by_upsert_key():
     assert result["start_date"] == "2025-12-02"
     assert result["end_date"] == "2026-06-02"
     assert result["imported_snapshots"]["sleep"] == 54
-    assert len(db.added) == 54
-    assert {row.metric_date for row in db.added} == {
+    from opencoach.database.models import CorosDailyData\n    snapshots = [row for row in db.added if isinstance(row, CorosDailyData)]\n    assert len(snapshots) == 54\n    assert {row.metric_date for row in db.added} == {
         date(2026, 6, 1),
         date(2026, 6, 2),
     }

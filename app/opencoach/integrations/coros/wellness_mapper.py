@@ -406,6 +406,20 @@ def map_coros_wellness_report(
         if parsed_days:
             return parsed_days
 
+    if category == "resting_heart_rate" and text:
+        parsed_days: list[WellnessDay] = []
+        for line in text.splitlines():
+            match = re.fullmatch(r"\s*(\d{4}-\d{2}-\d{2}):\s*(\d+(?:\.\d+)?)\s*bpm\s*", line)
+            if not match:
+                continue
+            try:
+                metric_date = date.fromisoformat(match.group(1))
+            except ValueError:
+                continue
+            parsed_days.append(map_coros_wellness(category, {"restingHeartRate": float(match.group(2))}, metric_date))
+        if parsed_days:
+            return parsed_days
+
     if not text:
         if isinstance(payload, dict):
             return [map_coros_wellness(category, payload, fallback_date)]

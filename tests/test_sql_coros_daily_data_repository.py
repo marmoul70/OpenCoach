@@ -20,8 +20,8 @@ def create_session():
     return sessionmaker(bind=engine, expire_on_commit=False)()
 
 
-def create_profile(db):
-    user = User(email="series@opencoach.local")
+def create_profile(db, email="series@opencoach.local"):
+    user = User(email=email)
     profile = AthleteProfile(
         user=user,
         first_name="Test",
@@ -36,7 +36,7 @@ def test_repository_lists_only_normalized_time_series_in_date_range():
     db = create_session()
     try:
         profile = create_profile(db)
-        other_profile = create_profile(db)
+        other_profile = create_profile(db, email="other-series@opencoach.local")
         db.add_all([
             CorosDailyData(
                 athlete_profile_id=profile.id,

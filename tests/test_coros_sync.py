@@ -715,6 +715,7 @@ Sleep HRV Time Series — Last 1 day
         {
             "metric": "sleep_hrv",
             "measured_at": "2026-10-25T23:09:50+00:00",
+            "source_date": "2026-11-03",
             "value": 99.0,
             "unit": "ms",
             "source_timezone": 4,
@@ -726,6 +727,7 @@ Sleep HRV Time Series — Last 1 day
         {
             "metric": "sleep_hrv",
             "measured_at": "2026-10-25T23:19:50+00:00",
+            "source_date": "2026-11-03",
             "value": 36.0,
             "unit": "ms",
             "source_timezone": 4,

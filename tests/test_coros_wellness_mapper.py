@@ -70,7 +70,7 @@ def test_missing_or_invalid_metrics_remain_none() -> None:
     assert wellness.hrv is None
     assert wellness.resting_hr is None
     assert wellness.spo2 is None
-    assert wellness.steps == -2
+    assert wellness.steps is None
 
 
 def test_mapper_does_not_invent_metrics_from_empty_payload() -> None:

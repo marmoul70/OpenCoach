@@ -184,7 +184,7 @@ def map_coros_wellness_report(
     if category == "heart_rate" and text:
         parsed_days: list[WellnessDay] = []
         pattern = re.compile(
-            r"(?m)^\\s*(\\d{4}-\\d{2}-\\d{2}):\\s*"
+            r"(?m)^\s*(\d{4}-\d{2}-\d{2}):\s*"
             r"(\\d+(?:\\.\\d+)?)\\s*bpm\\s*"
             r"\\(\\s*Min:\\s*(\\d+(?:\\.\\d+)?),\\s*"
             r"Max:\\s*(\\d+(?:\\.\\d+)?)\\s*\\)"

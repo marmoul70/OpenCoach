@@ -713,7 +713,7 @@ Sleep HRV Time Series — Last 1 day
     assert series_snapshot.payload["source_category"] == "hrv"
     assert series_snapshot.payload["samples"] == [
         {
-            "measured_at": "2026-10-25T22:43:10+00:00",
+            "measured_at": "2026-10-25T23:09:50+00:00",
             "value": 99.0,
             "unit": "ms",
             "source_timezone": 4,
@@ -721,7 +721,7 @@ Sleep HRV Time Series — Last 1 day
             "confidence": 95833,
         },
         {
-            "measured_at": "2026-10-25T22:53:10+00:00",
+            "measured_at": "2026-10-25T23:19:50+00:00",
             "value": 36.0,
             "unit": "ms",
             "source_timezone": 4,

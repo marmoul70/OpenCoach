@@ -676,13 +676,13 @@ def test_hrv_import_persists_normalized_time_series_alongside_raw_report() -> No
                 "content": [{
                     "type": "text",
                     "text": """Sleep HRV — Last 1 day
-2026-11-03:
+2026-10-29:
   HRV Avg: 46 ms — Normal
   Normal Range: 35 - 49 ms
   Baseline: 42 ms
 
 Sleep HRV Time Series — Last 1 day
-2026-11-03:
+2026-10-29:
   timestamp=1792969790, timezone=4, hrv=99 ms, status=4, confidence=95833
   timestamp=1792970390, timezone=4, hrv=36 ms, status=4, confidence=100000
 """,
@@ -698,8 +698,8 @@ Sleep HRV Time Series — Last 1 day
 
     result = service.import_history(
         {"activities": False, "hrv": True},
-        start_date=date(2026, 11, 3),
-        today=date(2026, 11, 3),
+        start_date=date(2026, 10, 29),
+        today=date(2026, 10, 29),
     )
 
     snapshots = [row for row in db.added if isinstance(row, CorosDailyData)]
@@ -714,8 +714,8 @@ Sleep HRV Time Series — Last 1 day
     assert series_snapshot.payload["samples"] == [
         {
             "metric": "sleep_hrv",
-            "measured_at": "2026-10-25T23:09:50+00:00",
-            "source_date": "2026-11-03",
+            "measured_at": "2026-10-28T23:09:50+00:00",
+            "source_date": "2026-10-29",
             "value": 99.0,
             "unit": "ms",
             "source_timezone": 4,
@@ -726,8 +726,8 @@ Sleep HRV Time Series — Last 1 day
         },
         {
             "metric": "sleep_hrv",
-            "measured_at": "2026-10-25T23:19:50+00:00",
-            "source_date": "2026-11-03",
+            "measured_at": "2026-10-28T23:24:50+00:00",
+            "source_date": "2026-10-29",
             "value": 36.0,
             "unit": "ms",
             "source_timezone": 4,

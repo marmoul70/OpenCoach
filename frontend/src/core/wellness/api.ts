@@ -79,9 +79,10 @@ export interface WellnessTrends {
 
 export async function fetchWellnessTrends(
   days = 7,
+  provider: 'coros' | 'intervals' = 'coros',
 ): Promise<WellnessTrends> {
   const response = await fetch(
-    `/api/wellness/trends?days=${days}`,
+    `/api/wellness/trends?days=${days}&provider=${provider}`,
   )
 
   if (!response.ok) {

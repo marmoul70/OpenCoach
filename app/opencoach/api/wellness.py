@@ -180,6 +180,9 @@ def _trends_response(
             "hrv": _metric_trend_response(trends.hrv),
             "hrv_baseline": _metric_trend_response(trends.hrv_baseline),
             "resting_hr": _metric_trend_response(trends.resting_hr),
+            "avg_hr": _metric_trend_response(trends.avg_hr),
+            "min_hr": _metric_trend_response(trends.min_hr),
+            "max_hr": _metric_trend_response(trends.max_hr),
             "stress_avg": _metric_trend_response(trends.stress_avg),
             "sleep_score": _metric_trend_response(
                 trends.sleep_score

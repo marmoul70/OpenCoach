@@ -176,3 +176,57 @@ Sleep Summary:
     assert days[1].date == date(2026, 11, 3)
     assert days[1].sleep_seconds == 26_640
     assert days[1].resting_hr == 54
+
+
+def test_maps_coros_recovery_detail_from_daily_health_report() -> None:
+    from opencoach.integrations.coros.wellness_mapper import map_coros_wellness_report
+
+    report = """Daily Health Data — Last 2 days | Resting HR: 54 bpm | HRV Baseline: 42 ms
+--- 20261102 ---
+Steps: 5,266 | Calories: 291 kcal | Exercise: 2 min
+Stress: Avg 19
+Sleep Summary:
+  Total: 10h 11min | Deep: 2h 14min | Light: 5h 44min | REM: 1h 57min | Awake: 16 min
+  Sleep HR: Avg 49 bpm | Min 42 bpm | Max 74 bpm
+
+--- 20261103 ---
+Steps: 10,148 | Calories: 838 kcal | Exercise: 33 min
+Stress: Avg 33
+Sleep Summary:
+  Total: 7h 24min | Deep: 51 min | Light: 4h 30min | REM: 1h 46min | Awake: 17 min
+  Sleep HR: Avg 50 bpm | Min 44 bpm | Max 73 bpm
+"""
+    days = map_coros_wellness_report("daily_health", {"data": report}, date(2026, 11, 3))
+
+    assert days[0].stress_avg == 19
+    assert days[0].sleep_deep_seconds == 8_040
+    assert days[0].sleep_light_seconds == 20_640
+    assert days[0].sleep_rem_seconds == 7_020
+    assert days[0].sleep_awake_seconds == 960
+    assert days[0].min_sleeping_hr == 42
+    assert days[0].max_sleeping_hr == 74
+    assert days[0].hrv_baseline is None
+
+    assert days[1].stress_avg == 33
+    assert days[1].hrv_baseline == 42
+    assert days[1].sleep_deep_seconds == 3_060
+    assert days[1].sleep_light_seconds == 16_200
+    assert days[1].sleep_rem_seconds == 6_360
+    assert days[1].sleep_awake_seconds == 1_020
+    assert days[1].min_sleeping_hr == 44
+    assert days[1].max_sleeping_hr == 73
+
+
+def test_maps_hrv_baseline_from_individual_night_record() -> None:
+    from opencoach.integrations.coros.wellness_mapper import map_coros_wellness_report
+
+    report = """Sleep HRV — Last 1 day
+2026-11-03:
+  HRV Avg: 46 ms — Normal
+  Normal Range: 35 - 49 ms
+  Baseline: 42 ms
+"""
+    days = map_coros_wellness_report("hrv", {"data": report}, date(2026, 11, 3))
+    assert len(days) == 1
+    assert days[0].hrv == 46
+    assert days[0].hrv_baseline == 42

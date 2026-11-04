@@ -44,6 +44,9 @@ class WellnessTrends:
     hrv: WellnessMetricTrend
     hrv_baseline: WellnessMetricTrend
     resting_hr: WellnessMetricTrend
+    avg_hr: WellnessMetricTrend
+    min_hr: WellnessMetricTrend
+    max_hr: WellnessMetricTrend
     stress_avg: WellnessMetricTrend
     sleep_score: WellnessMetricTrend
     sleep_seconds: WellnessMetricTrend
@@ -71,6 +74,9 @@ def build_wellness_trends(
         hrv=_metric_trend(wellness_days, "hrv"),
         hrv_baseline=_metric_trend(wellness_days, "hrv_baseline"),
         resting_hr=_metric_trend(wellness_days, "resting_hr"),
+        avg_hr=_metric_trend(wellness_days, "avg_hr"),
+        min_hr=_metric_trend(wellness_days, "min_hr"),
+        max_hr=_metric_trend(wellness_days, "max_hr"),
         stress_avg=_metric_trend(wellness_days, "stress_avg"),
         sleep_score=_metric_trend(
             wellness_days,

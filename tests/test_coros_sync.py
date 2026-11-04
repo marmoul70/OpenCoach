@@ -683,8 +683,8 @@ def test_hrv_import_persists_normalized_time_series_alongside_raw_report() -> No
 
 Sleep HRV Time Series — Last 1 day
 2026-10-29:
-  timestamp=1792969790, timezone=4, hrv=99 ms, status=4, confidence=95833
-  timestamp=1792970390, timezone=4, hrv=36 ms, status=4, confidence=100000
+  timestamp=1793228990, timezone=4, hrv=99 ms, status=4, confidence=95833
+  timestamp=1793229590, timezone=4, hrv=36 ms, status=4, confidence=100000
 """,
                 }]
             }
@@ -726,7 +726,7 @@ Sleep HRV Time Series — Last 1 day
         },
         {
             "metric": "sleep_hrv",
-            "measured_at": "2026-10-28T23:24:50+00:00",
+            "measured_at": "2026-10-28T23:19:50+00:00",
             "source_date": "2026-10-29",
             "value": 36.0,
             "unit": "ms",

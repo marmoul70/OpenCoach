@@ -41,6 +41,7 @@ type Page =
   | 'races'
   | 'activities'
   | 'weather'
+  | 'health'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -52,6 +53,7 @@ interface BuildInfo {
 }
 
 import { WeatherPage } from './modules/weather/WeatherPage'
+import { HealthPage } from './modules/health/HealthPage'
 
 function App() {
   const {
@@ -63,6 +65,12 @@ function App() {
       new URL(
         window.location.href,
       )
+
+    if (
+      url.pathname === '/health'
+    ) {
+      return 'health'
+    }
 
     if (
       url.pathname === '/weather'
@@ -90,6 +98,19 @@ function App() {
       )
 
     if (
+      page === 'health'
+      && url.pathname !== '/health'
+    ) {
+      window.history.replaceState(
+        null,
+        '',
+        '/health',
+      )
+
+      return
+    }
+
+    if (
       page === 'weather'
       && url.pathname !== '/weather'
     ) {
@@ -97,6 +118,19 @@ function App() {
         null,
         '',
         '/weather',
+      )
+
+      return
+    }
+
+    if (
+      page !== 'health'
+      && url.pathname === '/health'
+    ) {
+      window.history.replaceState(
+        null,
+        '',
+        '/',
       )
 
       return
@@ -477,6 +511,7 @@ function App() {
           {page === 'activities' && <ActivityPage />}
           {page === 'races' && <RacePage />}
           {page === 'weather' && <WeatherPage />}
+          {page === 'health' && <HealthPage />}
           {page === 'profile-personal' && <PersonalProfile />}
           {page === 'profile-sport' && <Profile />}
           {page === 'settings' && <Settings />}

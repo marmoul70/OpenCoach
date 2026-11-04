@@ -312,6 +312,7 @@ def map_coros_health_check_time_series(payload: Any) -> list[CorosTimeSeriesSamp
     )
     default_epoch = int(header.group(1)) if header else None
     source_timezone = int(header.group(2)) if header and header.group(2) else None
+    source_date = _source_date_before(text, header.start()) if header else None
     metadata = {
         key: value.strip()
         for key, value in (
@@ -356,6 +357,7 @@ def map_coros_health_check_time_series(payload: Any) -> list[CorosTimeSeriesSamp
                     metric=metric,
                     source_timezone=source_timezone,
                     metadata=metadata or None,
+                    source_date=source_date,
                 )
             )
 
@@ -376,6 +378,7 @@ def map_coros_health_check_time_series(payload: Any) -> list[CorosTimeSeriesSamp
                             metric=metric,
                             source_timezone=source_timezone,
                             metadata=metadata or None,
+                            source_date=source_date,
                         )
                     )
                     seen.add((metric, default_epoch))

@@ -731,3 +731,80 @@ Sleep HRV Time Series — Last 1 day
             "confidence": 100000,
         },
     ]
+
+
+def test_stress_and_health_check_imports_persist_typed_time_series() -> None:
+    from opencoach.database.models import CorosDailyData
+
+    class TimeSeriesClient(FakeClient):
+        def list_tools(self):
+            return [
+                {"name": "queryStressTimeSeries"},
+                {"name": "queryHealthCheckTimeSeries"},
+            ]
+
+        def call_tool(self, name, arguments):
+            self.calls.append((name, arguments))
+            if name == "queryStressTimeSeries":
+                report = """Stress Time Series — 2026-11-02
+2026-11-02:
+  timestamp=1793636665, timezone=4, stress=22, score=1, stressHrv=0, stressHr=0
+  timestamp=1793636965, timezone=4, stress=68, score=3, stressHrv=0, stressHr=0
+"""
+            else:
+                report = """Health Check Time Series
+Date: 2026-11-02
+timestamp=1793636665, timezone=4, source=dailyRhmList, device=COROS PACE 4 Pro 44E703, dataSource=COROS PACE 4 Pro
+Heart Rate List: [1793636665=54 bpm]
+HRV List: [1793636665=59 ms]
+Stress List: [1793636665=19]
+Respiration Rate List: [1793636665=18/min]
+SpO2 List: [1793636665=98%]
+Stress Level: 1
+Resting Heart Rate: 47 bpm
+"""
+            return {"content": [{"type": "text", "text": report}]}
+
+    db = FakeDb()
+    service = CorosImportService(
+        TimeSeriesClient(),
+        db,
+        profile_id="00000000-0000-0000-0000-000000000001",
+    )
+
+    result = service.import_history(
+        {
+            "activities": False,
+            "stress_timeseries": True,
+            "health_check": True,
+        },
+        start_date=date(2026, 11, 2),
+        today=date(2026, 11, 2),
+    )
+
+    snapshots = [row for row in db.added if isinstance(row, CorosDailyData)]
+    stress = next(row for row in snapshots if row.category == "stress_points")
+    health = next(
+        row for row in snapshots if row.category == "health_check_points"
+    )
+
+    assert result["imported_snapshots"] == {
+        "stress_timeseries": 1,
+        "health_check": 1,
+    }
+    assert stress.payload["source_category"] == "stress_timeseries"
+    assert len(stress.payload["samples"]) == 2
+    assert stress.payload["samples"][0]["metric"] == "stress"
+    assert stress.payload["samples"][0]["value"] == 22
+    assert stress.payload["samples"][0]["score"] == 1
+
+    health_by_metric = {
+        sample["metric"]: sample for sample in health.payload["samples"]
+    }
+    assert health.payload["source_category"] == "health_check"
+    assert health_by_metric["heart_rate"]["value"] == 54
+    assert health_by_metric["hrv"]["value"] == 59
+    assert health_by_metric["stress"]["value"] == 19
+    assert health_by_metric["respiration_rate"]["value"] == 18
+    assert health_by_metric["spo2"]["value"] == 98
+    assert health_by_metric["resting_hr"]["value"] == 47

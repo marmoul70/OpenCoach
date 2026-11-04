@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import math
 import re
-from datetime import date, datetime
+from dataclasses import dataclass
+from datetime import date, datetime, timezone
 from typing import Any
 
 from opencoach.models import WellnessDay
@@ -167,6 +168,73 @@ def _report_dates(text: str) -> list[tuple[date, str]]:
         end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
         entries.append((day, text[match.end():end]))
     return entries
+
+
+@dataclass(frozen=True, slots=True)
+class CorosTimeSeriesSample:
+    """Point de mesure COROS horodaté, sans agrégation ni perte de métadonnées."""
+
+    measured_at: datetime
+    value: float
+    unit: str
+    source_timezone: int | None = None
+    status: int | None = None
+    confidence: int | None = None
+
+
+def map_coros_hrv_time_series(payload: Any) -> list[CorosTimeSeriesSample]:
+    """Extrait les points HRV nocturnes du rapport COROS observé.
+
+    Les timestamps epoch sont conservés en UTC. Le champ timezone fourni par
+    COROS reste une métadonnée opaque : sa sémantique n'est pas supposée ici.
+    """
+    text = _report_text(payload)
+    if not text:
+        return []
+
+    section = re.search(
+        r"(?ims)^\s*Sleep HRV Time Series\b.*?^\s*(?=\S.*?—|\Z)(.*?)(?=^\s*[^\n]*—[^\n]*$|\Z)",
+        text,
+    )
+    if not section:
+        # Le titre de section peut être le dernier bloc du rapport.
+        marker = re.search(r"(?im)^\s*Sleep HRV Time Series\b[^\n]*$", text)
+        if not marker:
+            return []
+        series_text = text[marker.end():]
+    else:
+        series_text = section.group(1)
+
+    pattern = re.compile(
+        r"(?m)^\s*timestamp\s*=\s*(\d+)"
+        r"(?:\s*,\s*timezone\s*=\s*(-?\d+))?"
+        r"\s*,\s*hrv\s*=\s*(-?\d+(?:\.\d+)?)\s*ms"
+        r"(?:\s*,\s*status\s*=\s*(-?\d+))?"
+        r"(?:\s*,\s*confidence\s*=\s*(-?\d+))?\s*$",
+        re.IGNORECASE,
+    )
+    samples: list[CorosTimeSeriesSample] = []
+    seen: set[int] = set()
+    for match in pattern.finditer(series_text):
+        epoch = int(match.group(1))
+        if epoch in seen:
+            continue
+        try:
+            measured_at = datetime.fromtimestamp(epoch, tz=timezone.utc)
+        except (OverflowError, OSError, ValueError):
+            continue
+        seen.add(epoch)
+        samples.append(
+            CorosTimeSeriesSample(
+                measured_at=measured_at,
+                value=float(match.group(3)),
+                unit="ms",
+                source_timezone=int(match.group(2)) if match.group(2) is not None else None,
+                status=int(match.group(4)) if match.group(4) is not None else None,
+                confidence=int(match.group(5)) if match.group(5) is not None else None,
+            )
+        )
+    return samples
 
 
 def map_coros_wellness_report(

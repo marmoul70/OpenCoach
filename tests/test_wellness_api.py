@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -8,12 +8,13 @@ from opencoach.api.intervals import (
     get_current_athlete_profile_id,
 )
 from opencoach.api.wellness import (
+    get_daily_context_repository,
     get_wellness_repository,
 )
 from opencoach.database.repositories import (
     WellnessRepositoryError,
 )
-from opencoach.models import WellnessDay
+from opencoach.models import DailyContext, WellnessDay
 
 
 class FakeWellnessRepository:
@@ -25,6 +26,24 @@ class FakeWellnessRepository:
         self.wellness = wellness
         self.error = error
         self.calls = []
+
+    def list_range(
+        self,
+        athlete_profile_id,
+        start_date,
+        end_date,
+        *,
+        provider=None,
+    ):
+        if self.error is not None:
+            raise self.error
+        if (
+            self.wellness is None
+            or self.wellness.provider != provider
+            or not start_date <= self.wellness.date <= end_date
+        ):
+            return []
+        return [self.wellness]
 
     def get_latest(
         self,
@@ -188,3 +207,74 @@ def test_get_latest_wellness_prefers_coros_when_available() -> None:
         (profile_id, "coros"),
         (profile_id, "intervals"),
     ]
+
+
+
+class FakeDailyContextRepository:
+    def __init__(self, context=None):
+        self.context = context
+
+    def get_by_date(self, athlete_profile_id, context_date):
+        if self.context is not None and self.context.date == context_date:
+            return self.context
+        return None
+
+
+def test_get_recovery_assessment_exposes_windows_and_subjective_fatigue() -> None:
+    target = date.today()
+    repository = FakeWellnessRepository(
+        WellnessDay(
+            provider="coros",
+            date=target,
+            hrv=46.0,
+            hrv_baseline=43.0,
+            resting_hr=48,
+            stress_avg=25.0,
+            sleep_seconds=7 * 3600,
+            fatigue_atl=32.0,
+            fitness_ctl=40.0,
+        )
+    )
+    context_repository = FakeDailyContextRepository(
+        DailyContext(
+            date=target,
+            fatigue_subjective=3,
+            pain_level=1,
+            illness_status="none",
+            treatment_impact="none",
+            motivation=4,
+        )
+    )
+    client, _ = create_client(repository)
+    client.app.dependency_overrides[
+        get_daily_context_repository
+    ] = lambda: context_repository
+
+    response = client.get("/api/wellness/recovery")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["provider"] == "coros"
+    assert payload["data_status"] == "fresh"
+    assert [item["days"] for item in payload["windows"]] == [7, 14, 30]
+    assert payload["windows"][0]["metrics"]["hrv"]["current"] == 46.0
+    assert payload["windows"][0]["metrics"]["hrv"]["sample_count"] == 1
+    assert payload["windows"][0]["metrics"]["stress_avg"]["current"] == 25.0
+    assert payload["subjective"]["fatigue"] == 3
+    assert payload["subjective"]["pain"] == 1
+
+
+def test_get_recovery_assessment_returns_unavailable_when_no_sensor_data() -> None:
+    client, _ = create_client(FakeWellnessRepository())
+    client.app.dependency_overrides[
+        get_daily_context_repository
+    ] = lambda: FakeDailyContextRepository()
+
+    response = client.get("/api/wellness/recovery")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["data_status"] == "unavailable"
+    assert payload["source_date"] is None
+    assert payload["windows"][0]["metrics"]["hrv"]["current"] is None
+    assert payload["subjective"] is None

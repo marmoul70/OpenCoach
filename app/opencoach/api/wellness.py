@@ -8,11 +8,18 @@ from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
 )
 from opencoach.database.repositories import (
+    DailyContextRepositoryError,
+    SqlDailyContextRepository,
     SqlWellnessRepository,
     WellnessRepositoryError,
 )
 from opencoach.database.session import get_db
 from opencoach.models import WellnessDay
+from opencoach.recovery_assessment import (
+    RecoveryAssessment,
+    RecoveryWindow,
+    build_recovery_assessment,
+)
 from opencoach.wellness_trends import (
     WellnessMetricTrend,
     WellnessTrends,
@@ -210,4 +217,113 @@ def _metric_trend_response(
             }
             for point in trend.points
         ],
+    }
+
+
+
+@router.get("/recovery")
+def get_recovery_assessment(
+    athlete_profile_id: UUID = Depends(
+        get_current_athlete_profile_id,
+    ),
+    repository: SqlWellnessRepository = Depends(
+        get_wellness_repository,
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Expose la synthèse descriptive 7/14/30 jours au coach."""
+
+    target_date = date.today()
+    start_date = target_date - timedelta(days=29)
+    provider = "coros"
+
+    try:
+        wellness_days = repository.list_range(
+            athlete_profile_id,
+            start_date,
+            target_date,
+            provider=provider,
+        )
+        if not wellness_days:
+            wellness_days = repository.list_range(
+                athlete_profile_id,
+                start_date,
+                target_date,
+                provider="intervals",
+            )
+            if wellness_days:
+                provider = "intervals"
+
+        subjective_context = SqlDailyContextRepository(db).get_by_date(
+            athlete_profile_id,
+            target_date,
+        )
+    except (
+        WellnessRepositoryError,
+        DailyContextRepositoryError,
+    ) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible de charger la synthèse de récupération.",
+        ) from exc
+
+    assessment = build_recovery_assessment(
+        wellness_days=wellness_days,
+        target_date=target_date,
+        provider=provider,
+        subjective_context=subjective_context,
+    )
+    return _recovery_assessment_response(assessment)
+
+
+def _recovery_assessment_response(
+    assessment: RecoveryAssessment,
+) -> dict:
+    return {
+        "date": assessment.date.isoformat(),
+        "provider": assessment.provider,
+        "source_date": (
+            assessment.source_date.isoformat()
+            if assessment.source_date is not None
+            else None
+        ),
+        "data_age_days": assessment.data_age_days,
+        "data_status": assessment.data_status,
+        "windows": [
+            _recovery_window_response(window)
+            for window in assessment.windows
+        ],
+        "subjective": (
+            {
+                "date": assessment.subjective.date.isoformat(),
+                "fatigue": assessment.subjective.fatigue,
+                "pain": assessment.subjective.pain,
+                "illness_status": assessment.subjective.illness_status,
+                "treatment_impact": assessment.subjective.treatment_impact,
+                "motivation": assessment.subjective.motivation,
+            }
+            if assessment.subjective is not None
+            else None
+        ),
+    }
+
+
+def _recovery_window_response(window: RecoveryWindow) -> dict:
+    return {
+        "days": window.days,
+        "start_date": window.start_date.isoformat(),
+        "end_date": window.end_date.isoformat(),
+        "recorded_days": window.recorded_days,
+        "coverage_ratio": window.coverage_ratio,
+        "metrics": {
+            name: {
+                "current": metric.current,
+                "average": metric.average,
+                "median": metric.median,
+                "sample_count": metric.sample_count,
+                "coverage_days": metric.coverage_days,
+                "expected_days": metric.expected_days,
+            }
+            for name, metric in window.metrics.items()
+        },
     }

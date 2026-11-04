@@ -229,7 +229,16 @@ def aggregate_coros_time_series(
                 value = float(raw_value)
             except (TypeError, ValueError):
                 continue
-            if not isfinite(value) or not start_date <= measured_at.date() <= end_date:
+            source_date_raw = sample.get("source_date")
+            try:
+                sample_date = (
+                    date.fromisoformat(source_date_raw)
+                    if isinstance(source_date_raw, str)
+                    else measured_at.date()
+                )
+            except ValueError:
+                sample_date = measured_at.date()
+            if not isfinite(value) or not start_date <= sample_date <= end_date:
                 continue
 
             unit = sample.get("unit")
@@ -241,6 +250,7 @@ def aggregate_coros_time_series(
             if existing is None:
                 bucket[key] = {
                     "measured_at": measured_at,
+                    "source_date": sample_date,
                     "value": value,
                     "unit": unit,
                     "status": sample.get("status"),
@@ -283,7 +293,7 @@ def aggregate_coros_time_series(
                 maximum=max(numeric),
                 sample_count=len(values),
                 coverage_days=len({
-                    item["measured_at"].date() for item in values
+                    item["source_date"] for item in values
                 }),
                 first_measured_at=values[0]["measured_at"].isoformat(),
                 last_measured_at=values[-1]["measured_at"].isoformat(),

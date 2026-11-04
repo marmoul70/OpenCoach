@@ -26,7 +26,7 @@ Intervals.icu sert de référence d'architecture et de fournisseur secondaire é
 
 ### Écart fonctionnel majeur
 
-Le connecteur COROS stocke aujourd'hui les réponses brutes dans `coros_daily_data`, mais ne les transforme pas en `WellnessDay`. Le moteur Readiness et le coach lisent explicitement le fournisseur Intervals. Par conséquent, les données COROS ne constituent pas encore la source de santé réellement utilisée par le coach, même si elles sont importées.
+Le connecteur COROS stocke les réponses brutes dans `coros_daily_data`. Les réponses MCP observées sur le compte de test ne sont pas toutes des objets JSON : plusieurs outils renvoient des rapports texte contenant plusieurs dates. Le mapper doit donc extraire les journées internes au rapport, et non attribuer toutes les mesures à la date du snapshot. Le moteur Readiness et le coach lisent encore explicitement le fournisseur Intervals.
 
 ## Architecture cible
 
@@ -68,6 +68,14 @@ Les données brutes sont conservées pour permettre de corriger les mappings san
 
 Les champs exacts et les unités doivent être confirmés à partir des schémas MCP et de réponses réelles COROS. Ne pas supposer que COROS fournit une mesure simplement parce qu'Intervals.icu possède un champ homonyme.
 
+### Contrat confirmé par l'export COROS de test (2026-11-04)
+
+Les 36 snapshots exportés contiennent des rapports texte pour `daily_health`, `sleep`, `hrv`, `heart_rate`, `stress` et `training_load`. Les rapports `daily_health`, `sleep`, `hrv` et `training_load` peuvent contenir plusieurs dates dans un seul payload. Les dates du sommeil et de la HRV sont des dates de réveil.
+
+Le parseur de la branche de travail normalise actuellement les champs déjà représentables dans `WellnessDay` : durée du sommeil principal, score de sommeil, HRV nocturne moyenne, FC au repos du jour le plus récent du rapport santé, FC moyenne du sommeil, pas, charge courte (ATL) et charge longue (CTL). Le ratio de charge COROS n'est pas enregistré dans `ramp_rate` car ces deux notions ne sont pas équivalentes. Le stress, les phases détaillées du sommeil, la baseline HRV et les séries temporelles restent conservés dans les snapshots bruts jusqu'à l'évolution du modèle canonique.
+
+Les rapports bruts ne doivent pas être ajoutés comme fixtures permanentes : ils peuvent contenir des données personnelles. Les tests utilisent des extraits synthétiques reprenant leur structure.
+
 ## Principes de conception
 
 1. **OpenCoach est propriétaire de l'historique normalisé.** Une fois synchronisées, les données utiles restent consultables dans OpenCoach sans appel à Intervals.icu.
@@ -85,10 +93,12 @@ Les champs exacts et les unités doivent être confirmés à partir des schémas
 ### Sprint 1 — Contrat et mapping COROS
 
 - Capturer/valider les schémas réels de `tools/list` pour les outils santé activés.
-- Établir des fixtures anonymisées de réponses réelles par catégorie.
-- Définir un mapper COROS indépendant du client MCP.
-- Convertir les snapshots bruts en `WellnessDay` et les persister via `SqlWellnessRepository`.
-- Ajouter tests unitaires sur champs absents, types inattendus, dates, unités, payloads partiels et idempotence.
+- [x] Examiner un export réel anonymisé des snapshots COROS.
+- [x] Définir un parseur indépendant du client MCP pour les rapports texte.
+- [x] Extraire plusieurs journées datées d'un même rapport et les persister via `SqlWellnessRepository`.
+- [x] Ajouter des tests synthétiques pour sommeil, HRV, santé quotidienne et charge.
+- [ ] Étendre le modèle canonique pour stress, baseline HRV, phases du sommeil et séries temporelles.
+- [ ] Valider l'import complet en base et l'idempotence avec les réponses MCP réelles.
 
 ### Sprint 2 — Readiness indépendant d'Intervals
 

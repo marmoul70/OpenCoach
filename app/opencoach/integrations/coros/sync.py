@@ -454,6 +454,7 @@ class CorosImportService:
                         # Fusion non destructive : plusieurs catégories alimentent une journée.
                         for field in (
                             "fitness_ctl", "fatigue_atl", "ramp_rate", "resting_hr",
+                            "avg_hr", "min_hr", "max_hr",
                             "hrv", "hrv_baseline", "stress_avg",
                             "sleep_seconds", "sleep_score", "sleep_quality",
                             "sleep_deep_seconds", "sleep_light_seconds",
@@ -468,6 +469,7 @@ class CorosImportService:
                         getattr(mapped, field) is not None
                         for field in (
                             "fitness_ctl", "fatigue_atl", "ramp_rate", "resting_hr",
+                            "avg_hr", "min_hr", "max_hr",
                             "hrv", "hrv_baseline", "stress_avg",
                             "sleep_seconds", "sleep_score", "sleep_quality",
                             "sleep_deep_seconds", "sleep_light_seconds",

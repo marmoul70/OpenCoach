@@ -14,7 +14,10 @@ from opencoach.database.models import CorosDailyData
 from opencoach.database.repositories import SqlWellnessRepository
 from opencoach.integrations.coros.activity_mapper import upsert_coros_activity
 from opencoach.integrations.coros.client import CorosMcpClient
-from opencoach.integrations.coros.wellness_mapper import map_coros_wellness_report
+from opencoach.integrations.coros.wellness_mapper import (
+    map_coros_hrv_time_series,
+    map_coros_wellness_report,
+)
 
 
 DATE_KEYS = ("date", "day", "metricDate", "startDate", "wakeDate", "recordDate")
@@ -432,6 +435,30 @@ class CorosImportService:
         for item in rows:
             metric_date = _row_date(item, fallback)
             _upsert_snapshot(self.db, self.profile_id, metric_date, category, item)
+
+            if category == "hrv":
+                samples = map_coros_hrv_time_series(item)
+                if samples:
+                    _upsert_snapshot(
+                        self.db,
+                        self.profile_id,
+                        metric_date,
+                        "hrv_timeseries",
+                        {
+                            "samples": [
+                                {
+                                    "measured_at": sample.measured_at.isoformat(),
+                                    "value": sample.value,
+                                    "unit": sample.unit,
+                                    "source_timezone": sample.source_timezone,
+                                    "status": sample.status,
+                                    "confidence": sample.confidence,
+                                }
+                                for sample in samples
+                            ],
+                            "source_category": "hrv",
+                        },
+                    )
 
             if category in {
                 "daily_health",

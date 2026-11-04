@@ -183,6 +183,18 @@ class CorosTimeSeriesSample:
     confidence: int | None = None
     score: int | None = None
     metadata: dict[str, Any] | None = None
+    source_date: date | None = None
+
+
+def _source_date_before(text: str, position: int) -> date | None:
+    """Date de regroupement COROS explicite précédant un échantillon."""
+    matches = list(re.finditer(r"(?m)^\s*(?:Date:\s*)?(\d{4}-\d{2}-\d{2})\s*:?[ \t]*$", text[:position], re.IGNORECASE))
+    for match in reversed(matches):
+        try:
+            return date.fromisoformat(match.group(1))
+        except ValueError:
+            continue
+    return None
 
 
 def map_coros_hrv_time_series(payload: Any) -> list[CorosTimeSeriesSample]:

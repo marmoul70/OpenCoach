@@ -462,7 +462,7 @@ class CorosImportService:
                                 {
                                     "metric": sample.metric,
                                     "measured_at": sample.measured_at.isoformat(),
-                                    "source_date": sample.source_date.isoformat(),
+                                    "source_date": str(sample.source_date) if sample.source_date else None,
                                     "value": sample.value,
                                     "unit": sample.unit,
                                     "source_timezone": sample.source_timezone,

@@ -620,3 +620,44 @@ def test_activity_snapshot_migrates_legacy_single_activity_payload():
             {"labelId": "new-1", "name": "Strength"},
         ]
     }
+
+
+
+def test_importer_normalizes_each_date_from_a_multiday_coros_sleep_report():
+    from opencoach.database.models import CorosDailyData, WellnessDaily
+
+    class MultiDaySleepClient(FakeClient):
+        def call_tool(self, name, arguments):
+            self.calls.append((name, arguments))
+            return {"content": [{
+                "type": "text",
+                "text": """Sleep Overview
+2026-06-01
+Sleep Score: 82
+Main Sleep (asleep): 7h 30min
+2026-06-02
+Sleep Score: 90
+Main Sleep (asleep): 8h 10min
+""",
+            }]}
+
+    db = FakeDb()
+    service = CorosImportService(
+        MultiDaySleepClient(),
+        db,
+        profile_id="00000000-0000-0000-0000-000000000001",
+    )
+    result = service.import_history(
+        {"activities": False, "sleep": True},
+        start_date=date(2026, 6, 2),
+        today=date(2026, 6, 2),
+    )
+
+    snapshots = [row for row in db.added if isinstance(row, CorosDailyData)]
+    wellness = [row for row in db.added if isinstance(row, WellnessDaily)]
+    assert result["imported_snapshots"]["sleep"] == 1
+    assert len(snapshots) == 1
+    assert {(row.date, row.sleep_seconds, row.sleep_score) for row in wellness} == {
+        (date(2026, 6, 1), 27_000, 82),
+        (date(2026, 6, 2), 29_400, 90),
+    }

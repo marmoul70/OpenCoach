@@ -200,10 +200,11 @@ Le composant `frontend/src/modules/health/HealthPage.tsx` consomme l'endpoint ex
 La page présente :
 - la source, la date de la dernière journée, l'état de fraîcheur et la couverture sur 30 jours ;
 - un sélecteur 7/14/30 jours avec les mesures quotidiennes disponibles (HRV, baseline, fréquence cardiaque, sommeil détaillé, stress, SpO₂, pas et charge) ;
+- des graphiques d'évolution quotidienne sur 7/14/30 jours pour HRV, FC au repos, sommeil, CTL, ATL et stress, calculés depuis l'endpoint de tendances déjà existant ;
 - les séries COROS horodatées avec moyenne, minimum, maximum, nombre de mesures et jours couverts ;
 - le ressenti subjectif séparément des mesures capteurs lorsqu'il est renseigné.
 
-Les mesures absentes restent affichées comme indisponibles et ne sont jamais converties en zéro. Les séries sont descriptives et ne changent pas le calcul Readiness. Le bouton Actualiser relit l'API ; il ne déclenche pas de synchronisation COROS.
+Les mesures absentes restent affichées comme indisponibles et ne sont jamais converties en zéro. Les graphiques et les mesures quotidiennes utilisent le même fournisseur (COROS ou Intervals selon la source retenue par l'évaluation de récupération), afin d'éviter de juxtaposer des séries issues de baselines différentes. Les séries sont descriptives et ne changent pas le calcul Readiness. Le bouton Actualiser relit l'API ; il ne déclenche pas de synchronisation COROS.
 
 Validation attendue sur VM après mise à jour de la branche :
 1. Ouvrir `/health` sur desktop et mobile.

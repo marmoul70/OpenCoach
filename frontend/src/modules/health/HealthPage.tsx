@@ -13,8 +13,11 @@ import {
 
 import {
   fetchRecoveryAssessment,
+  fetchWellnessTrends,
   type RecoveryAssessment,
   type RecoveryMetricSummary,
+  type WellnessMetricTrend,
+  type WellnessTrends,
 } from '../../core/wellness'
 
 type WindowSize = 7 | 14 | 30
@@ -59,6 +62,7 @@ const SERIES_LABELS: Record<string, string> = {
 
 export function HealthPage() {
   const [assessment, setAssessment] = useState<RecoveryAssessment | null>(null)
+  const [trends, setTrends] = useState<WellnessTrends | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [windowSize, setWindowSize] = useState<WindowSize>(7)
@@ -69,9 +73,15 @@ export function HealthPage() {
     setLoading(true)
     setError(null)
 
-    fetchRecoveryAssessment()
-      .then((result) => {
-        if (mounted) setAssessment(result)
+    Promise.all([
+      fetchRecoveryAssessment(),
+      fetchWellnessTrends(30),
+    ])
+      .then(([assessmentResult, trendsResult]) => {
+        if (mounted) {
+          setAssessment(assessmentResult)
+          setTrends(trendsResult)
+        }
       })
       .catch((reason: unknown) => {
         if (mounted) {
@@ -142,7 +152,7 @@ export function HealthPage() {
           </div>
         )}
 
-        {!loading && !error && assessment && (
+        {!loading && !error && assessment && trends && (
           <>
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <StatusCard
@@ -231,6 +241,30 @@ export function HealthPage() {
               )}
             </section>
 
+
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141a1e] sm:p-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Évolution des indicateurs</h2>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Tendances quotidiennes issues du même fournisseur que les données Wellness.
+                  </p>
+                </div>
+                <span className="text-xs text-slate-400 dark:text-slate-500">
+                  Source : {trends.provider.toUpperCase()} · {windowSize} derniers jours
+                </span>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <TrendChart title="HRV nocturne" unit="ms" trend={trends.metrics.hrv} days={windowSize} endDate={trends.end_date} />
+                <TrendChart title="Fréquence cardiaque au repos" unit="bpm" trend={trends.metrics.resting_hr} days={windowSize} endDate={trends.end_date} />
+                <TrendChart title="Score de sommeil" unit="/100" trend={trends.metrics.sleep_score} days={windowSize} endDate={trends.end_date} />
+                <TrendChart title="Durée du sommeil" unit="duration" trend={trends.metrics.sleep_seconds} days={windowSize} endDate={trends.end_date} />
+                <TrendChart title="Charge chronique · CTL" unit="load" trend={trends.metrics.fitness_ctl} days={windowSize} endDate={trends.end_date} />
+                <TrendChart title="Charge aiguë · ATL" unit="load" trend={trends.metrics.fatigue_atl} days={windowSize} endDate={trends.end_date} />
+                <TrendChart title="Stress moyen" unit="score" trend={trends.metrics.stress_avg} days={windowSize} endDate={trends.end_date} />
+              </div>
+            </section>
+
             <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141a1e] sm:p-5">
               <div className="flex items-center gap-2">
                 <Waves className="h-5 w-5 text-sky-600 dark:text-sky-400" />
@@ -293,6 +327,88 @@ export function HealthPage() {
         )}
       </div>
     </main>
+  )
+}
+
+
+function TrendChart({
+  title,
+  unit,
+  trend,
+  days,
+  endDate,
+}: {
+  title: string
+  unit: string
+  trend: WellnessMetricTrend
+  days: WindowSize
+  endDate: string
+}) {
+  const end = new Date(`${endDate}T12:00:00`).getTime()
+  const start = end - (days - 1) * 24 * 60 * 60 * 1000
+  const points = trend.points.filter((point) => {
+    const timestamp = new Date(`${point.date}T12:00:00`).getTime()
+    return timestamp >= start && timestamp <= end
+  })
+
+  if (points.length === 0) {
+    return (
+      <div className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
+        <p className="mt-8 text-center text-sm text-slate-400">Aucune donnée sur {days} jours</p>
+        <div className="mt-7 border-t border-slate-100 dark:border-white/5" />
+      </div>
+    )
+  }
+
+  const values = points.map((point) => point.value)
+  const minimum = Math.min(...values)
+  const maximum = Math.max(...values)
+  const range = maximum - minimum || 1
+  const coordinates = points.map((point, index) => {
+    const x = points.length === 1 ? 160 : 8 + (index / (points.length - 1)) * 304
+    const y = 88 - ((point.value - minimum) / range) * 72
+    return { x, y, point }
+  })
+  const polyline = coordinates.map(({ x, y }) => `${x},${y}`).join(' ')
+  const latest = points[points.length - 1]
+
+  return (
+    <div className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
+        <span className="text-[10px] text-slate-400">{points.length} j</span>
+      </div>
+      <p className="mt-2 text-xl font-bold tabular-nums text-slate-950 dark:text-white">
+        {formatMetric(latest.value, unit)}
+      </p>
+      <svg
+        viewBox="0 0 320 104"
+        role="img"
+        aria-label={`Évolution de ${title} sur ${days} jours`}
+        className="mt-2 h-28 w-full overflow-visible text-emerald-500"
+      >
+        <line x1="8" y1="88" x2="312" y2="88" stroke="currentColor" opacity="0.15" strokeDasharray="3 4" />
+        <polyline
+          points={polyline}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {coordinates.map(({ x, y, point }) => (
+          <circle key={point.date} cx={x} cy={y} r="2.8" fill="currentColor">
+            <title>{formatDate(point.date)} : {formatMetric(point.value, unit)}</title>
+          </circle>
+        ))}
+      </svg>
+      <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
+        <span>{formatDate(points[0].date)}</span>
+        <span>Moy. {trend.average == null ? '—' : formatMetric(trend.average, unit)}</span>
+        <span>{formatDate(latest.date)}</span>
+      </div>
+    </div>
   )
 }
 

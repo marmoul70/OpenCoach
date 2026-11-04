@@ -15,7 +15,6 @@ import {
   fetchRecoveryAssessment,
   type RecoveryAssessment,
   type RecoveryMetricSummary,
-  type RecoveryWindow,
 } from '../../core/wellness'
 
 type WindowSize = 7 | 14 | 30

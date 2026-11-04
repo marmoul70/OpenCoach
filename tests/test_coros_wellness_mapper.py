@@ -343,3 +343,92 @@ def test_hrv_time_series_parser_returns_empty_when_section_is_absent() -> None:
     assert map_coros_hrv_time_series(
         {"data": "Sleep HRV — Last 1 day\\nHRV Avg: 42 ms"}
     ) == []
+
+
+def test_parses_stress_time_series_points_and_auxiliary_signals() -> None:
+    from datetime import datetime, timezone
+
+    from opencoach.integrations.coros.wellness_mapper import (
+        map_coros_stress_time_series,
+    )
+
+    report = """Stress Time Series — 2026-11-03
+2026-11-03:
+  timestamp=1793636665, timezone=4, stress=22, score=1, stressHrv=0, stressHr=0
+  timestamp=1793636965, timezone=4, stress=68, score=3, stressHrv=0, stressHr=0
+"""
+    samples = map_coros_stress_time_series({"text": report})
+
+    assert len(samples) == 2
+    assert samples[0].metric == "stress"
+    assert samples[0].measured_at == datetime.fromtimestamp(
+        1793636665, tz=timezone.utc
+    )
+    assert samples[0].value == 22
+    assert samples[0].unit == "index"
+    assert samples[0].score == 1
+    assert samples[0].source_timezone == 4
+    assert samples[0].metadata == {"stress_hrv": 0.0, "stress_hr": 0.0}
+    assert samples[1].value == 68
+    assert samples[1].score == 3
+
+
+def test_parses_coros_health_check_metrics_with_distinct_units() -> None:
+    from datetime import datetime, timezone
+
+    from opencoach.integrations.coros.wellness_mapper import (
+        map_coros_health_check_time_series,
+    )
+
+    report = """Health Check Time Series
+Date: 2026-11-02
+timestamp=1793636665, timezone=4, source=dailyRhmList, device=COROS PACE 4 Pro 44E703, dataSource=COROS PACE 4 Pro
+Heart Rate List: [1793636665=54 bpm]
+HRV List: [1793636665=59 ms]
+Stress List: [1793636665=19]
+Respiration Rate List: [1793636665=18/min]
+SpO2 List: [1793636665=98%]
+Stress Level: 1
+Resting Heart Rate: 47 bpm
+"""
+    samples = map_coros_health_check_time_series({"text": report})
+    by_metric = {sample.metric: sample for sample in samples}
+
+    assert set(by_metric) == {
+        "heart_rate",
+        "hrv",
+        "stress",
+        "respiration_rate",
+        "spo2",
+        "resting_hr",
+        "stress_level_score",
+    }
+    assert by_metric["heart_rate"].value == 54
+    assert by_metric["heart_rate"].unit == "bpm"
+    assert by_metric["hrv"].value == 59
+    assert by_metric["hrv"].unit == "ms"
+    assert by_metric["stress"].value == 19
+    assert by_metric["respiration_rate"].value == 18
+    assert by_metric["respiration_rate"].unit == "breaths/min"
+    assert by_metric["spo2"].value == 98
+    assert by_metric["spo2"].unit == "%"
+    assert by_metric["resting_hr"].value == 47
+    assert by_metric["stress_level_score"].value == 1
+    assert by_metric["heart_rate"].measured_at == datetime.fromtimestamp(
+        1793636665, tz=timezone.utc
+    )
+    assert by_metric["heart_rate"].metadata == {
+        "source": "dailyRhmList",
+        "device": "COROS PACE 4 Pro 44E703",
+        "data_source": "COROS PACE 4 Pro",
+    }
+
+
+def test_time_series_parsers_return_empty_for_unrecognized_payloads() -> None:
+    from opencoach.integrations.coros.wellness_mapper import (
+        map_coros_health_check_time_series,
+        map_coros_stress_time_series,
+    )
+
+    assert map_coros_stress_time_series({"data": "no measurements"}) == []
+    assert map_coros_health_check_time_series({"data": "no measurements"}) == []

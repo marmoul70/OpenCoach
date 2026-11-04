@@ -15,7 +15,9 @@ from opencoach.database.repositories import SqlWellnessRepository
 from opencoach.integrations.coros.activity_mapper import upsert_coros_activity
 from opencoach.integrations.coros.client import CorosMcpClient
 from opencoach.integrations.coros.wellness_mapper import (
+    map_coros_health_check_time_series,
     map_coros_hrv_time_series,
+    map_coros_stress_time_series,
     map_coros_wellness_report,
 )
 
@@ -436,27 +438,40 @@ class CorosImportService:
             metric_date = _row_date(item, fallback)
             _upsert_snapshot(self.db, self.profile_id, metric_date, category, item)
 
-            if category == "hrv":
-                samples = map_coros_hrv_time_series(item)
+            series_parsers = {
+                "hrv": ("hrv_timeseries", map_coros_hrv_time_series),
+                "stress_timeseries": ("stress_points", map_coros_stress_time_series),
+                "health_check": (
+                    "health_check_points",
+                    map_coros_health_check_time_series,
+                ),
+            }
+            series_definition = series_parsers.get(category)
+            if series_definition is not None:
+                snapshot_category, parser = series_definition
+                samples = parser(item)
                 if samples:
                     _upsert_snapshot(
                         self.db,
                         self.profile_id,
                         metric_date,
-                        "hrv_timeseries",
+                        snapshot_category,
                         {
+                            "source_category": category,
                             "samples": [
                                 {
+                                    "metric": sample.metric,
                                     "measured_at": sample.measured_at.isoformat(),
                                     "value": sample.value,
                                     "unit": sample.unit,
                                     "source_timezone": sample.source_timezone,
                                     "status": sample.status,
                                     "confidence": sample.confidence,
+                                    "score": sample.score,
+                                    "metadata": sample.metadata,
                                 }
                                 for sample in samples
                             ],
-                            "source_category": "hrv",
                         },
                     )
 

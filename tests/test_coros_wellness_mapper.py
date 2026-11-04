@@ -453,3 +453,40 @@ def test_parses_resting_heart_rate_report_for_each_date() -> None:
         (date(2026, 11, 3), 50),
         (date(2026, 11, 2), 50),
     ]
+
+
+def test_ignores_zero_sleep_score_when_details_are_unavailable() -> None:
+    from opencoach.integrations.coros.wellness_mapper import map_coros_wellness_report
+
+    report = """Sleep Overview
+========================
+
+2026-10-01
+Sleep Score: 0
+Sleep detail for this day is not available yet.
+"""
+    days = map_coros_wellness_report(
+        "sleep", {"data": report}, date(2026, 10, 2)
+    )
+
+    assert days == []
+
+
+def test_preserves_zero_sleep_score_when_details_are_available() -> None:
+    from opencoach.integrations.coros.wellness_mapper import map_coros_wellness_report
+
+    report = """Sleep Overview
+========================
+
+2026-10-01
+Sleep Score: 0
+Main Sleep (asleep): 7h 30min
+"""
+    days = map_coros_wellness_report(
+        "sleep", {"data": report}, date(2026, 10, 2)
+    )
+
+    assert len(days) == 1
+    assert days[0].sleep_score == 0
+    assert days[0].sleep_seconds == 27_000
+

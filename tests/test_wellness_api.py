@@ -8,6 +8,7 @@ from opencoach.api.intervals import (
     get_current_athlete_profile_id,
 )
 from opencoach.api.wellness import (
+    get_coros_daily_data_repository,
     get_daily_context_repository,
     get_wellness_repository,
 )
@@ -213,6 +214,11 @@ def test_get_latest_wellness_prefers_coros_when_available() -> None:
 
 
 
+class FakeCorosDailyDataRepository:
+    def list_time_series_snapshots(self, athlete_profile_id, start_date, end_date):
+        return []
+
+
 class FakeDailyContextRepository:
     def __init__(self, context=None):
         self.context = context
@@ -252,6 +258,9 @@ def test_get_recovery_assessment_exposes_windows_and_subjective_fatigue() -> Non
     client.app.dependency_overrides[
         get_daily_context_repository
     ] = lambda: context_repository
+    client.app.dependency_overrides[
+        get_coros_daily_data_repository
+    ] = lambda: FakeCorosDailyDataRepository()
 
     response = client.get("/api/wellness/recovery")
 
@@ -272,6 +281,9 @@ def test_get_recovery_assessment_returns_unavailable_when_no_sensor_data() -> No
     client.app.dependency_overrides[
         get_daily_context_repository
     ] = lambda: FakeDailyContextRepository()
+    client.app.dependency_overrides[
+        get_coros_daily_data_repository
+    ] = lambda: FakeCorosDailyDataRepository()
 
     response = client.get("/api/wellness/recovery")
 

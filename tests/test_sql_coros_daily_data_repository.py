@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from opencoach.database.base import Base
@@ -82,5 +82,45 @@ def test_repository_lists_only_normalized_time_series_in_date_range():
             "stress_points",
         ]
         assert result[0]["payload"]["samples"][0]["value"] == 48
+    finally:
+        db.close()
+
+
+
+def test_snapshot_upsert_is_idempotent_for_same_profile_date_and_category():
+    from opencoach.integrations.coros.sync import _upsert_snapshot
+
+    db = create_session()
+    try:
+        profile = create_profile(db)
+        metric_date = date(2026, 11, 3)
+        _upsert_snapshot(
+            db,
+            profile.id,
+            metric_date,
+            "hrv_timeseries",
+            {"samples": [{"metric": "sleep_hrv", "value": 48}]},
+        )
+        db.commit()
+
+        _upsert_snapshot(
+            db,
+            profile.id,
+            metric_date,
+            "hrv_timeseries",
+            {"samples": [{"metric": "sleep_hrv", "value": 51}]},
+        )
+        db.commit()
+
+        rows = db.scalars(
+            select(CorosDailyData).where(
+                CorosDailyData.athlete_profile_id == profile.id,
+                CorosDailyData.metric_date == metric_date,
+                CorosDailyData.category == "hrv_timeseries",
+            )
+        ).all()
+
+        assert len(rows) == 1
+        assert rows[0].payload["samples"][0]["value"] == 51
     finally:
         db.close()

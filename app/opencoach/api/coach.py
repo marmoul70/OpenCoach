@@ -141,7 +141,8 @@ def get_coach_decision_service(
         daily_context_repository=(
             daily_context_repository
         ),
-        provider="intervals",
+        provider="coros",
+        fallback_providers=("intervals",),
     )
 
     daily_training_load_service = (

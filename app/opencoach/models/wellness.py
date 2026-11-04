@@ -14,6 +14,9 @@ class WellnessDay:
     ramp_rate: float | None = None
 
     resting_hr: int | None = None
+    avg_hr: float | None = None
+    min_hr: float | None = None
+    max_hr: float | None = None
     hrv: float | None = None
     hrv_baseline: float | None = None
     stress_avg: float | None = None

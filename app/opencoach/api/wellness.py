@@ -47,6 +47,12 @@ def get_daily_context_repository(
     return SqlDailyContextRepository(db)
 
 
+def get_coros_daily_data_repository(
+    db: Session = Depends(get_db),
+) -> SqlCorosDailyDataRepository:
+    return SqlCorosDailyDataRepository(db)
+
+
 @router.get("/latest")
 def get_latest_wellness(
     athlete_profile_id: UUID = Depends(
@@ -243,7 +249,9 @@ def get_recovery_assessment(
     context_repository: SqlDailyContextRepository = Depends(
         get_daily_context_repository,
     ),
-    db: Session = Depends(get_db),
+    time_series_repository: SqlCorosDailyDataRepository = Depends(
+        get_coros_daily_data_repository,
+    ),
 ) -> dict:
     """Expose la synthèse descriptive 7/14/30 jours au coach."""
 
@@ -272,9 +280,7 @@ def get_recovery_assessment(
             athlete_profile_id,
             target_date,
         )
-        time_series_snapshots = SqlCorosDailyDataRepository(
-            db
-        ).list_time_series_snapshots(
+        time_series_snapshots = time_series_repository.list_time_series_snapshots(
             athlete_profile_id,
             start_date,
             target_date,

@@ -494,8 +494,16 @@ def map_coros_wellness_report(
 
         elif category == "sleep":
             score = re.search(r"Sleep Score:\s*(\d+(?:\.\d+)?)", block, re.IGNORECASE)
+            details_unavailable = re.search(
+                r"Sleep detail for this day is not available yet",
+                block,
+                re.IGNORECASE,
+            )
             if score:
-                values["sleepScore"] = float(score.group(1))
+                sleep_score = float(score.group(1))
+                if sleep_score > 0 or not details_unavailable:
+                    values["sleepScore"] = sleep_score
+
             main_sleep = re.search(r"Main Sleep \(asleep\):\s*([^\n]+)", block, re.IGNORECASE)
             daily_sleep = re.search(r"Daily Sleep:\s*([^\n]+)", block, re.IGNORECASE)
             duration = _duration_seconds((main_sleep or daily_sleep).group(1)) if (main_sleep or daily_sleep) else None

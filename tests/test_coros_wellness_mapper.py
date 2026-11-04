@@ -233,6 +233,22 @@ def test_maps_hrv_baseline_from_individual_night_record() -> None:
 
 
 
+def test_parses_average_heart_rate_report_for_each_date() -> None:
+    from opencoach.integrations.coros.wellness_mapper import map_coros_wellness_report
+
+    report = """Average Heart Rate — Last 3 days
+2026-11-03: 68 bpm (Min: 44, Max: 154)
+2026-11-02: 56 bpm (Min: 42, Max: 96)
+2026-11-01: 69 bpm (Min: 45, Max: 151)
+"""
+    days = map_coros_wellness_report("heart_rate", {"data": report}, date(2026, 11, 3))
+    assert [(item.date, item.avg_hr, item.min_hr, item.max_hr) for item in days] == [
+        (date(2026, 11, 3), 68.0, 44.0, 154.0),
+        (date(2026, 11, 2), 56.0, 42.0, 96.0),
+        (date(2026, 11, 1), 69.0, 45.0, 151.0),
+    ]
+
+
 def test_parses_stress_level_report_for_each_date() -> None:
     from opencoach.integrations.coros.wellness_mapper import map_coros_wellness_report
 

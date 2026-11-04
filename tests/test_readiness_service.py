@@ -116,19 +116,19 @@ class FakeWellnessRepository(
             )
         )
 
-        if self.current is None:
-            return None
-
-        if self.current.date != wellness_date:
-            return None
-
-        if (
-            provider is not None
-            and self.current.provider != provider
-        ):
-            return None
-
-        return self.current
+        candidates = [
+            wellness
+            for wellness in ([self.current] + self.history)
+            if (
+                wellness is not None
+                and wellness.date == wellness_date
+                and (
+                    provider is None
+                    or wellness.provider == provider
+                )
+            )
+        ]
+        return candidates[0] if candidates else None
 
     def list_range(
         self,
@@ -784,3 +784,52 @@ def test_readiness_service_builds_baseline_before_fallback_source_date() -> None
             "intervals",
         )
     ]
+
+def test_readiness_prefers_coros_and_uses_only_coros_for_baseline() -> None:
+    coros_current = create_current_day()
+    coros_current.provider = "coros"
+    coros_history = create_history()
+    for item in coros_history:
+        item.provider = "coros"
+
+    intervals_current = create_current_day()
+    intervals_history = create_history()
+    repository = FakeWellnessRepository(
+        current=intervals_current,
+        history=coros_history + intervals_history,
+    )
+    # Add the COROS current day to the available history collection.
+    repository.history.append(coros_current)
+
+    service = ReadinessService(
+        repository,
+        thresholds=load_threshold_settings(),
+        provider="coros",
+        fallback_providers=("intervals",),
+    )
+    profile_id = uuid4()
+
+    result = service.calculate(profile_id, TARGET_DATE)
+
+    assert result.provider == "coros"
+    assert result.current.provider == "coros"
+    assert repository.list_range_calls[-1][-1] == "coros"
+    assert repository.get_by_date_calls[0][-1] == "coros"
+
+
+def test_readiness_falls_back_to_intervals_when_coros_is_unavailable() -> None:
+    repository = FakeWellnessRepository(
+        current=create_current_day(),
+        history=create_history(),
+    )
+    service = ReadinessService(
+        repository,
+        thresholds=load_threshold_settings(),
+        provider="coros",
+        fallback_providers=("intervals",),
+    )
+
+    result = service.calculate(uuid4(), TARGET_DATE)
+
+    assert result.provider == "intervals"
+    assert repository.list_range_calls[-1][-1] == "intervals"

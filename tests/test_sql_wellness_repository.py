@@ -59,10 +59,18 @@ def create_wellness_day() -> WellnessDay:
         steps=1627,
         resting_hr=46,
         hrv=52.0,
+        hrv_baseline=47.0,
+        stress_avg=24.0,
         sleep_seconds=76140,
         sleep_score=77.0,
         sleep_quality=3,
+        sleep_deep_seconds=7200,
+        sleep_light_seconds=36000,
+        sleep_rem_seconds=9000,
+        sleep_awake_seconds=1200,
         avg_sleeping_hr=48.0,
+        min_sleeping_hr=41.0,
+        max_sleeping_hr=62.0,
         spo2=99.0,
         provider_updated_at=datetime(
             2026,
@@ -100,10 +108,18 @@ def test_sql_wellness_repository_inserts_day() -> None:
         assert saved.steps == 1627
         assert saved.resting_hr == 46
         assert saved.hrv == 52.0
+        assert saved.hrv_baseline == 47.0
+        assert saved.stress_avg == 24.0
         assert saved.sleep_seconds == 76140
         assert saved.sleep_score == 77.0
         assert saved.sleep_quality == 3
+        assert saved.sleep_deep_seconds == 7200
+        assert saved.sleep_light_seconds == 36000
+        assert saved.sleep_rem_seconds == 9000
+        assert saved.sleep_awake_seconds == 1200
         assert saved.avg_sleeping_hr == 48.0
+        assert saved.min_sleeping_hr == 41.0
+        assert saved.max_sleeping_hr == 62.0
         assert saved.spo2 == 99.0
 
     finally:

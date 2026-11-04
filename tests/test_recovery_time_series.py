@@ -14,14 +14,16 @@ def test_time_series_aggregation_deduplicates_overlapping_coros_sources():
                 "samples": [
                     {
                         "metric": "sleep_hrv",
-                        "measured_at": "2026-11-03T02:00:00+00:00",
+                        "measured_at": "2026-11-02T23:00:00+00:00",
+                        "source_date": "2026-11-03",
                         "value": 48,
                         "unit": "ms",
                         "status": "normal",
                     },
                     {
                         "metric": "sleep_hrv",
-                        "measured_at": "2026-11-03T02:05:00+00:00",
+                        "measured_at": "2026-11-02T23:05:00+00:00",
+                        "source_date": "2026-11-03",
                         "value": 52,
                         "unit": "ms",
                         "status": "normal",
@@ -35,14 +37,16 @@ def test_time_series_aggregation_deduplicates_overlapping_coros_sources():
                 "samples": [
                     {
                         "metric": "sleep_hrv",
-                        "measured_at": "2026-11-03T02:00:00+00:00",
+                        "measured_at": "2026-11-02T23:00:00+00:00",
+                        "source_date": "2026-11-03",
                         "value": 48,
                         "unit": "ms",
                         "status": "normal",
                     },
                     {
                         "metric": "heart_rate",
-                        "measured_at": "2026-11-03T02:00:00+00:00",
+                        "measured_at": "2026-11-02T23:00:00+00:00",
+                        "source_date": "2026-11-03",
                         "value": 44,
                         "unit": "bpm",
                     },
@@ -56,6 +60,7 @@ def test_time_series_aggregation_deduplicates_overlapping_coros_sources():
                     {
                         "metric": "stress",
                         "measured_at": "2026-10-30T10:00:00+00:00",
+                        "source_date": "2026-10-30",
                         "value": 32,
                         "unit": "score",
                     },
@@ -89,6 +94,7 @@ def test_time_series_aggregation_deduplicates_overlapping_coros_sources():
     assert hrv.minimum == 48
     assert hrv.maximum == 52
     assert hrv.unit == "ms"
+    assert hrv.coverage_days == 1
     assert hrv.source_categories == (
         "health_check_points",
         "hrv_timeseries",

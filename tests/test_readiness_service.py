@@ -833,3 +833,26 @@ def test_readiness_falls_back_to_intervals_when_coros_is_unavailable() -> None:
 
     assert result.provider == "intervals"
     assert repository.list_range_calls[-1][-1] == "intervals"
+
+
+def test_readiness_uses_fresher_intervals_when_coros_is_stale() -> None:
+    stale_coros = create_history(days=1)[0]
+    stale_coros.provider = "coros"
+    stale_coros.date = TARGET_DATE - timedelta(days=3)
+    repository = FakeWellnessRepository(
+        current=create_current_day(),
+        history=[stale_coros] + create_history(),
+    )
+    service = ReadinessService(
+        repository,
+        thresholds=load_threshold_settings(),
+        provider="coros",
+        fallback_providers=("intervals",),
+    )
+
+    result = service.calculate(uuid4(), TARGET_DATE)
+
+    assert result.provider == "intervals"
+    assert result.source_date == TARGET_DATE
+    assert result.data_status == "fresh"
+    assert repository.list_range_calls[-1][-1] == "intervals"

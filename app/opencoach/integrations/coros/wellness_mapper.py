@@ -82,6 +82,9 @@ def map_coros_wellness(
         "hrv", "hrvValue", "hrvMs", "rmssd", "hrvRmssd", "nightHrv",
         "averageHrv", "avgHrv",
     ))
+    avg_hr = _number(data, ("averageHeartRate", "avgHeartRate", "avgHr", "averageHr"))
+    min_hr = _number(data, ("minHeartRate", "minimumHeartRate", "minHr"))
+    max_hr = _number(data, ("maxHeartRate", "maximumHeartRate", "maxHr"))
     avg_sleeping_hr = _number(data, (
         "averageSleepingHeartRate", "avgSleepingHr", "sleepingHeartRate",
         "averageSleepHeartRate", "sleepAvgHr",
@@ -104,6 +107,9 @@ def map_coros_wellness(
         fatigue_atl=_number(data, ("fatigueAtl", "atl", "acuteTrainingLoad")),
         ramp_rate=_number(data, ("rampRate", "trainingLoadRampRate")),
         resting_hr=resting_hr,
+        avg_hr=avg_hr,
+        min_hr=min_hr,
+        max_hr=max_hr,
         hrv=hrv,
         hrv_baseline=_number(data, ("hrvBaseline", "baselineHrv", "hrvBase")),
         stress_avg=_number(data, ("stressAvg", "averageStress", "avgStress")),
@@ -175,6 +181,31 @@ def map_coros_wellness_report(
     pas artificiellement de journée.
     """
     text = _report_text(payload)
+    if category == "heart_rate" and text:
+        parsed_days: list[WellnessDay] = []
+        pattern = re.compile(
+            r"(?m)^\\s*(\\d{4}-\\d{2}-\\d{2}):\\s*"
+            r"(\\d+(?:\\.\\d+)?)\\s*bpm\\s*"
+            r"\\(\\s*Min:\\s*(\\d+(?:\\.\\d+)?),\\s*"
+            r"Max:\\s*(\\d+(?:\\.\\d+)?)\\s*\\)"
+        )
+        for match in pattern.finditer(text):
+            try:
+                metric_date = date.fromisoformat(match.group(1))
+            except ValueError:
+                continue
+            parsed_days.append(map_coros_wellness(
+                category,
+                {
+                    "avgHr": float(match.group(2)),
+                    "minHr": float(match.group(3)),
+                    "maxHr": float(match.group(4)),
+                },
+                metric_date,
+            ))
+        if parsed_days:
+            return parsed_days
+
     if not text:
         if isinstance(payload, dict):
             return [map_coros_wellness(category, payload, fallback_date)]

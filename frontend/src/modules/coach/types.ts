@@ -267,6 +267,22 @@ export interface CoachSubjectiveRecovery {
   motivation: number
 }
 
+export interface CoachRecoveryTimeSeriesMetric {
+  metric: string
+  unit: string | null
+  current: number
+  average: number
+  median: number
+  minimum: number
+  maximum: number
+  sampleCount: number
+  coverageDays: number
+  firstMeasuredAt: string
+  lastMeasuredAt: string
+  statuses: string[]
+  sourceCategories: string[]
+}
+
 export interface CoachRecovery {
   date: string
   provider: string
@@ -274,6 +290,7 @@ export interface CoachRecovery {
   dataAgeDays: number | null
   dataStatus: 'fresh' | 'stale' | 'unavailable'
   windows: CoachRecoveryWindow[]
+  timeSeries: CoachRecoveryTimeSeriesMetric[]
   subjective: CoachSubjectiveRecovery | null
 }
 

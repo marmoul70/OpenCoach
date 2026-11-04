@@ -73,11 +73,12 @@ export function HealthPage() {
     setLoading(true)
     setError(null)
 
-    Promise.all([
-      fetchRecoveryAssessment(),
-      fetchWellnessTrends(30),
-    ])
-      .then(([assessmentResult, trendsResult]) => {
+    fetchRecoveryAssessment()
+      .then(async (assessmentResult) => {
+        const trendsResult = await fetchWellnessTrends(
+          30,
+          assessmentResult.provider === 'intervals' ? 'intervals' : 'coros',
+        )
         if (mounted) {
           setAssessment(assessmentResult)
           setTrends(trendsResult)

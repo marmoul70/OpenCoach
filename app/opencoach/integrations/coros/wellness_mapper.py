@@ -192,18 +192,10 @@ def map_coros_hrv_time_series(payload: Any) -> list[CorosTimeSeriesSample]:
     if not text:
         return []
 
-    section = re.search(
-        r"(?ims)^\s*Sleep HRV Time Series\b.*?^\s*(?=\S.*?—|\Z)(.*?)(?=^\s*[^\n]*—[^\n]*$|\Z)",
-        text,
-    )
-    if not section:
-        # Le titre de section peut être le dernier bloc du rapport.
-        marker = re.search(r"(?im)^\s*Sleep HRV Time Series\b[^\n]*$", text)
-        if not marker:
-            return []
-        series_text = text[marker.end():]
-    else:
-        series_text = section.group(1)
+    marker = re.search(r"(?im)^\\s*Sleep HRV Time Series\\b[^\\n]*$", text)
+    if not marker:
+        return []
+    series_text = text[marker.end():]
 
     pattern = re.compile(
         r"(?m)^\s*timestamp\s*=\s*(\d+)"

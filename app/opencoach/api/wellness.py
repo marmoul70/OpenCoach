@@ -39,6 +39,12 @@ def get_wellness_repository(
     return SqlWellnessRepository(db)
 
 
+def get_daily_context_repository(
+    db: Session = Depends(get_db),
+) -> SqlDailyContextRepository:
+    return SqlDailyContextRepository(db)
+
+
 @router.get("/latest")
 def get_latest_wellness(
     athlete_profile_id: UUID = Depends(
@@ -229,7 +235,9 @@ def get_recovery_assessment(
     repository: SqlWellnessRepository = Depends(
         get_wellness_repository,
     ),
-    db: Session = Depends(get_db),
+    context_repository: SqlDailyContextRepository = Depends(
+        get_daily_context_repository,
+    ),
 ) -> dict:
     """Expose la synthèse descriptive 7/14/30 jours au coach."""
 
@@ -254,7 +262,7 @@ def get_recovery_assessment(
             if wellness_days:
                 provider = "intervals"
 
-        subjective_context = SqlDailyContextRepository(db).get_by_date(
+        subjective_context = context_repository.get_by_date(
             athlete_profile_id,
             target_date,
         )

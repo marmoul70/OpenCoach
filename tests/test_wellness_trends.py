@@ -161,6 +161,9 @@ def test_wellness_trends_include_coros_recovery_metrics() -> None:
             date=date(2026, 11, 3),
             hrv=42,
             hrv_baseline=40,
+            avg_hr=62,
+            min_hr=41,
+            max_hr=154,
             stress_avg=31,
             sleep_deep_seconds=5400,
             sleep_light_seconds=14400,
@@ -188,6 +191,9 @@ def test_wellness_trends_include_coros_recovery_metrics() -> None:
     )
 
     assert result.hrv_baseline.current == 41
+    assert result.avg_hr.current == 62
+    assert result.min_hr.current == 41
+    assert result.max_hr.current == 154
     assert result.stress_avg.current == 24
     assert result.sleep_deep_seconds.current == 7200
     assert result.sleep_light_seconds.current == 16200

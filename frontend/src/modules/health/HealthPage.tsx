@@ -372,6 +372,7 @@ function TrendChart({
   })
   const polyline = coordinates.map(({ x, y }) => `${x},${y}`).join(' ')
   const latest = points[points.length - 1]
+  const average = values.reduce((total, value) => total + value, 0) / values.length
 
   return (
     <div className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
@@ -405,7 +406,7 @@ function TrendChart({
       </svg>
       <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
         <span>{formatDate(points[0].date)}</span>
-        <span>Moy. {trend.average == null ? '—' : formatMetric(trend.average, unit)}</span>
+        <span>Moy. {formatMetric(average, unit)}</span>
         <span>{formatDate(latest.date)}</span>
       </div>
     </div>

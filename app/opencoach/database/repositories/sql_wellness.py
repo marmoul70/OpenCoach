@@ -66,6 +66,9 @@ class SqlWellnessRepository(WellnessRepository):
             database_wellness.resting_hr = (
                 wellness.resting_hr
             )
+            database_wellness.avg_hr = wellness.avg_hr
+            database_wellness.min_hr = wellness.min_hr
+            database_wellness.max_hr = wellness.max_hr
             database_wellness.hrv = wellness.hrv
             database_wellness.hrv_baseline = wellness.hrv_baseline
             database_wellness.stress_avg = wellness.stress_avg
@@ -364,6 +367,9 @@ class SqlWellnessRepository(WellnessRepository):
             fatigue_atl=wellness.fatigue_atl,
             ramp_rate=wellness.ramp_rate,
             resting_hr=wellness.resting_hr,
+            avg_hr=wellness.avg_hr,
+            min_hr=wellness.min_hr,
+            max_hr=wellness.max_hr,
             hrv=wellness.hrv,
             hrv_baseline=wellness.hrv_baseline,
             stress_avg=wellness.stress_avg,

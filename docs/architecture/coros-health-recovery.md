@@ -143,3 +143,49 @@ Le module `opencoach.recovery_assessment` fournit une synthèse distincte du sco
 Le ressenti quotidien est repris uniquement depuis `DailyContext` pour la date demandée : fatigue, douleur, maladie, impact du traitement et motivation. Il n'est jamais déduit des capteurs. Si aucune mesure n'est disponible, les champs restent `null` et l'état de source est `unavailable`. Une source ancienne est signalée comme `stale`.
 
 L'endpoint `GET /api/wellness/recovery` expose cette synthèse au coach et au futur écran Santé/Récupération. Il privilégie COROS et ne bascule sur Intervals que si aucune journée COROS n'est présente dans la fenêtre. Cette synthèse est descriptive : aucun seuil de stress ou de fatigue n'est introduit dans le score Readiness à ce stade.
+
+
+## Reconstruction de l'historique Wellness COROS
+
+Les snapshots déjà archivés dans \`coros_daily_data\` peuvent être retraités sans nouvel appel au serveur MCP COROS. Cette opération est utile lorsqu'un correctif de mapping doit être appliqué aux anciennes réponses ou lorsque des snapshots ont été importés avant la disponibilité du mapping quotidien.
+
+### Fonctionnement
+
+- \`rebuild_wellness_from_snapshots()\` relit les snapshots des catégories quotidiennes COROS du profil ciblé.
+- La date métier extraite du rapport est utilisée ; \`CorosDailyData.metric_date\` n'est pas considérée comme la date unique des mesures, car un rapport peut contenir plusieurs journées.
+- Les résultats sont agrégés par date avant toute écriture.
+- Seuls les champs COROS absents sont complétés. Une valeur COROS déjà non nulle n'est pas remplacée.
+- Les enregistrements Intervals ne sont ni lus pour la fusion, ni modifiés.
+- Les snapshots sans mesure Wellness exploitable ne créent pas de journée vide.
+- L'opération est idempotente : une seconde exécution sans nouveau snapshot ni changement de mapping ne doit produire aucune création ou mise à jour.
+
+### Simulation puis application
+
+Depuis la racine du dépôt, avec l'environnement virtuel OpenCoach activé :
+
+\`\`\`bash
+.venv/bin/python scripts/maintenance/rebuild-coros-wellness.py \\
+  --start-date 2026-10-01 \\
+  --end-date 2026-11-04
+\`\`\`
+
+La commande est en simulation par défaut : elle affiche le nombre de snapshots parcourus, les journées mappées et les créations/compléments qui seraient effectués. Elle ne modifie pas la base.
+
+Après vérification du résultat, l'application réelle nécessite l'option explicite \`--apply\` :
+
+\`\`\`bash
+.venv/bin/python scripts/maintenance/rebuild-coros-wellness.py \\
+  --start-date 2026-10-01 \\
+  --end-date 2026-11-04 \\
+  --apply
+\`\`\`
+
+Si plusieurs profils athlètes existent dans la base, fournir explicitement \`--profile-id UUID\`. La commande refuse de choisir arbitrairement un profil.
+
+### Sécurité opérationnelle
+
+- Effectuer une sauvegarde SQLite avant une application réelle.
+- Ne pas lancer cette commande pendant une synchronisation COROS concurrente.
+- La commande ne contacte pas COROS, ne modifie pas la configuration de synchronisation et n'écrit rien dans le calendrier COROS.
+- Vérifier les compteurs de simulation avant d'utiliser \`--apply\`.
+- La simulation n'est pas un remplacement de sauvegarde ; elle ne valide pas non plus la plausibilité physiologique des mesures.

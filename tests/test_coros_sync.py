@@ -709,7 +709,7 @@ Sleep HRV Time Series — Last 1 day
     )
 
     assert result["imported_snapshots"]["hrv"] == 1
-    assert raw_snapshot.payload["data"].startswith("Sleep HRV")
+    assert raw_snapshot.payload["data"]["text"].startswith("Sleep HRV")
     assert series_snapshot.payload["source_category"] == "hrv"
     assert series_snapshot.payload["samples"] == [
         {

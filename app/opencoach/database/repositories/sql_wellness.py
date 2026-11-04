@@ -115,19 +115,22 @@ class SqlWellnessRepository(WellnessRepository):
     def get_latest(
         self,
         athlete_profile_id: UUID,
+        *,
+        provider: str | None = None,
     ) -> WellnessDay | None:
         """Retourne la dernière journée Wellness disponible."""
 
         try:
+            conditions = [
+                WellnessDaily.athlete_profile_id == athlete_profile_id,
+            ]
+            if provider is not None:
+                conditions.append(WellnessDaily.provider == provider)
+
             statement = (
                 select(WellnessDaily)
-                .where(
-                    WellnessDaily.athlete_profile_id
-                    == athlete_profile_id,
-                )
-                .order_by(
-                    WellnessDaily.date.desc(),
-                )
+                .where(*conditions)
+                .order_by(WellnessDaily.date.desc())
                 .limit(1)
             )
 

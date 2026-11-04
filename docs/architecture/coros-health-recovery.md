@@ -134,3 +134,12 @@ Les rapports bruts ne doivent pas être ajoutés comme fixtures permanentes : il
 - Les absences de données ne sont jamais remplacées par des zéros ou des valeurs estimées.
 - Les tests couvrent les payloads réels COROS anonymisés et les imports répétés.
 - Aucune modification n'est envoyée vers le calendrier COROS.
+
+
+## Synthèse de récupération descriptive — ajout sur la branche de travail
+
+Le module `opencoach.recovery_assessment` fournit une synthèse distincte du score Readiness. Il calcule des fenêtres glissantes de 7, 14 et 30 jours, sans fusionner les fournisseurs, et retourne pour chaque mesure la dernière valeur disponible, moyenne, médiane, nombre d'échantillons et couverture. Les domaines physiologiques (HRV, FC, sommeil, stress) et la charge (ATL/CTL) sont présentés séparément.
+
+Le ressenti quotidien est repris uniquement depuis `DailyContext` pour la date demandée : fatigue, douleur, maladie, impact du traitement et motivation. Il n'est jamais déduit des capteurs. Si aucune mesure n'est disponible, les champs restent `null` et l'état de source est `unavailable`. Une source ancienne est signalée comme `stale`.
+
+L'endpoint `GET /api/wellness/recovery` expose cette synthèse au coach et au futur écran Santé/Récupération. Il privilégie COROS et ne bascule sur Intervals que si aucune journée COROS n'est présente dans la fenêtre. Cette synthèse est descriptive : aucun seuil de stress ou de fatigue n'est introduit dans le score Readiness à ce stade.

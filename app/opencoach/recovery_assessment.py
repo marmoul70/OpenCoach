@@ -3,10 +3,12 @@
 Ce module expose les observations physiologiques, la charge et le ressenti
 séparément. Il ne transforme pas les mesures en diagnostic ni en score.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from math import isfinite
 from statistics import fmean, median
 
 from opencoach.models import DailyContext, WellnessDay
@@ -37,6 +39,25 @@ class RecoveryWindow:
 
 
 @dataclass(frozen=True, slots=True)
+class RecoveryTimeSeriesMetric:
+    """Statistiques descriptives d'une série COROS horodatée."""
+
+    metric: str
+    unit: str | None
+    current: float
+    average: float
+    median: float
+    minimum: float
+    maximum: float
+    sample_count: int
+    coverage_days: int
+    first_measured_at: str
+    last_measured_at: str
+    statuses: tuple[str, ...]
+    source_categories: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class SubjectiveRecovery:
     """Ressenti saisi par l'athlète, non inféré des capteurs."""
 
@@ -59,6 +80,7 @@ class RecoveryAssessment:
     data_status: str
     windows: tuple[RecoveryWindow, ...]
     subjective: SubjectiveRecovery | None
+    time_series: tuple[RecoveryTimeSeriesMetric, ...] = ()
 
 
 METRICS: tuple[str, ...] = (
@@ -87,9 +109,10 @@ def build_recovery_assessment(
     target_date: date,
     provider: str,
     subjective_context: DailyContext | None = None,
+    time_series_snapshots: list[dict] | None = None,
     windows: tuple[int, ...] = (7, 14, 30),
 ) -> RecoveryAssessment:
-    """Construit des fenêtres 7/14/30 j, en conservant la provenance."""
+    """Construit les fenêtres quotidiennes et les séries temporelles COROS."""
 
     ordered = sorted(
         (
@@ -157,8 +180,112 @@ def build_recovery_assessment(
         data_status=status,
         windows=tuple(summaries),
         subjective=subjective,
+        time_series=aggregate_coros_time_series(
+            time_series_snapshots or [],
+            start_date=target_date - timedelta(days=29),
+            end_date=target_date,
+        ),
     )
 
+
+def aggregate_coros_time_series(
+    snapshots: list[dict],
+    *,
+    start_date: date,
+    end_date: date,
+) -> tuple[RecoveryTimeSeriesMetric, ...]:
+    """Agrège les échantillons normalisés en dédupliquant les sources qui se recouvrent."""
+
+    samples: dict[str, dict[tuple[str, float, str | None], dict]] = {}
+    allowed_categories = {
+        "hrv_timeseries",
+        "stress_points",
+        "health_check_points",
+    }
+
+    for snapshot in snapshots:
+        if not isinstance(snapshot, dict):
+            continue
+        category = snapshot.get("category")
+        payload = snapshot.get("payload")
+        if category not in allowed_categories or not isinstance(payload, dict):
+            continue
+        raw_samples = payload.get("samples")
+        if not isinstance(raw_samples, list):
+            continue
+
+        for sample in raw_samples:
+            if not isinstance(sample, dict):
+                continue
+            metric = sample.get("metric")
+            measured_at_raw = sample.get("measured_at")
+            raw_value = sample.get("value")
+            if not isinstance(metric, str) or not isinstance(measured_at_raw, str):
+                continue
+            try:
+                measured_at = datetime.fromisoformat(
+                    measured_at_raw.replace("Z", "+00:00")
+                )
+                value = float(raw_value)
+            except (TypeError, ValueError):
+                continue
+            if not isfinite(value) or not start_date <= measured_at.date() <= end_date:
+                continue
+
+            unit = sample.get("unit")
+            if not isinstance(unit, str):
+                unit = None
+            key = (measured_at.isoformat(), value, unit)
+            bucket = samples.setdefault(metric, {})
+            existing = bucket.get(key)
+            if existing is None:
+                bucket[key] = {
+                    "measured_at": measured_at,
+                    "value": value,
+                    "unit": unit,
+                    "status": sample.get("status"),
+                    "category": category,
+                }
+            else:
+                # Une même mesure peut être renvoyée par HRV et Health Check.
+                existing["category"] = min(existing["category"], category)
+
+    result: list[RecoveryTimeSeriesMetric] = []
+    for metric, unique_samples in sorted(samples.items()):
+        values = sorted(
+            unique_samples.values(),
+            key=lambda item: item["measured_at"],
+        )
+        if not values:
+            continue
+        numeric = [item["value"] for item in values]
+        units = {item["unit"] for item in values}
+        statuses = tuple(sorted({
+            item["status"]
+            for item in values
+            if isinstance(item["status"], str) and item["status"]
+        }))
+        categories = tuple(sorted({item["category"] for item in values}))
+        result.append(
+            RecoveryTimeSeriesMetric(
+                metric=metric,
+                unit=next(iter(units)) if len(units) == 1 else None,
+                current=numeric[-1],
+                average=fmean(numeric),
+                median=float(median(numeric)),
+                minimum=min(numeric),
+                maximum=max(numeric),
+                sample_count=len(values),
+                coverage_days=len({
+                    item["measured_at"].date() for item in values
+                }),
+                first_measured_at=values[0]["measured_at"].isoformat(),
+                last_measured_at=values[-1]["measured_at"].isoformat(),
+                statuses=statuses,
+                source_categories=categories,
+            )
+        )
+    return tuple(result)
 
 
 def recovery_assessment_to_dict(
@@ -191,6 +318,24 @@ def recovery_assessment_to_dict(
                 },
             }
             for window in assessment.windows
+        ],
+        "time_series": [
+            {
+                "metric": item.metric,
+                "unit": item.unit,
+                "current": item.current,
+                "average": item.average,
+                "median": item.median,
+                "minimum": item.minimum,
+                "maximum": item.maximum,
+                "sample_count": item.sample_count,
+                "coverage_days": item.coverage_days,
+                "first_measured_at": item.first_measured_at,
+                "last_measured_at": item.last_measured_at,
+                "statuses": list(item.statuses),
+                "source_categories": list(item.source_categories),
+            }
+            for item in assessment.time_series
         ],
         "subjective": (
             {

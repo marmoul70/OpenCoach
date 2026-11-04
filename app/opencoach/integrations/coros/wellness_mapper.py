@@ -248,6 +248,15 @@ def map_coros_wellness_report(
             if baseline:
                 values["hrvBaseline"] = float(baseline.group(1))
 
+        elif category == "stress":
+            average_stress = re.search(
+                r"Average Stress:\s*(\d+(?:\.\d+)?)",
+                block,
+                re.IGNORECASE,
+            )
+            if average_stress:
+                values["stressAvg"] = float(average_stress.group(1))
+
         elif category == "training_load":
             short = re.search(r"Short-Term Load:\s*(\d+(?:\.\d+)?)", block, re.IGNORECASE)
             long = re.search(r"Long-Term Load:\s*(\d+(?:\.\d+)?)", block, re.IGNORECASE)

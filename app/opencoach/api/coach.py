@@ -62,6 +62,10 @@ from opencoach.readiness import (
     ReadinessDataUnavailableError,
     ReadinessService,
 )
+from opencoach.recovery_assessment import (
+    build_recovery_assessment,
+    recovery_assessment_to_dict,
+)
 from opencoach.training import (
     DailyTrainingLoadService,
     RecentTrainingLoadService,
@@ -488,6 +492,23 @@ def get_today_coach_decision(
                 )
             )
 
+        recovery_provider = assessment.readiness.provider
+        recovery_wellness_days = SqlWellnessRepository(db).list_range(
+            athlete_profile_id,
+            reference_date - timedelta(days=29),
+            reference_date,
+            provider=recovery_provider,
+        )
+        recovery_assessment = build_recovery_assessment(
+            wellness_days=recovery_wellness_days,
+            target_date=reference_date,
+            provider=recovery_provider,
+            subjective_context=assessment.readiness.context,
+        )
+        recovery_payload = recovery_assessment_to_dict(
+            recovery_assessment
+        )
+
     except PlannedSessionUnavailableError as exc:
         raise HTTPException(
             status_code=404,
@@ -525,6 +546,7 @@ def get_today_coach_decision(
         weekly_assessment,
         weekly_plan,
         weekly_debrief,
+        recovery_payload,
     )
 
 
@@ -533,6 +555,7 @@ def _to_response(
     weekly_assessment: CoachWeeklyAssessment,
     weekly_plan,
     weekly_debrief,
+    recovery_payload: dict,
 ) -> CoachTodayResponse:
     readiness = assessment.readiness.readiness
 
@@ -905,6 +928,7 @@ def _to_response(
         ),
 
         data_warning=data_warning,
+        recovery=recovery_payload,
     )
 
 def _build_data_warning(

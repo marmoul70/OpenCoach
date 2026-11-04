@@ -78,6 +78,10 @@ class WellnessDaily(Base):
         nullable=True,
     )
 
+    avg_hr: Mapped[float | None] = mapped_column(Float, nullable=True)
+    min_hr: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_hr: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     hrv: Mapped[float | None] = mapped_column(
         Float,
         nullable=True,

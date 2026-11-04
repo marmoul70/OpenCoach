@@ -180,6 +180,7 @@ def map_coros_wellness_report(
 
     result: list[WellnessDay] = []
     header_resting_hr = re.search(r"Resting HR:\s*(\d+)\s*bpm", text, re.IGNORECASE)
+    header_hrv_baseline = re.search(r"HRV Baseline:\s*(\d+(?:\.\d+)?)\s*ms", text, re.IGNORECASE)
 
     for day, block in entries:
         values: dict[str, Any] = {}
@@ -192,11 +193,34 @@ def map_coros_wellness_report(
                 seconds = _duration_seconds(total_sleep.group(1))
                 if seconds is not None:
                     values["sleepSeconds"] = seconds
+            stress = re.search(r"Stress:\s*Avg\s*(\d+(?:\.\d+)?)", block, re.IGNORECASE)
+            if stress:
+                values["stressAvg"] = float(stress.group(1))
+            for label, field in (
+                ("Deep", "sleepDeepSeconds"),
+                ("Light", "sleepLightSeconds"),
+                ("REM", "sleepRemSeconds"),
+                ("Awake", "sleepAwakeSeconds"),
+            ):
+                stage = re.search(rf"\b{label}:\s*([^|\n]+)", block, re.IGNORECASE)
+                if stage:
+                    seconds = _duration_seconds(stage.group(1))
+                    if seconds is not None:
+                        values[field] = seconds
             sleep_hr = re.search(r"Sleep HR:\s*Avg\s*(\d+(?:\.\d+)?)\s*bpm", block, re.IGNORECASE)
             if sleep_hr:
                 values["avgSleepingHr"] = float(sleep_hr.group(1))
-            if day == fallback_date and header_resting_hr:
-                values["restingHeartRate"] = int(header_resting_hr.group(1))
+            sleep_hr_min = re.search(r"Sleep HR:.*?\bMin\s*(\d+(?:\.\d+)?)\s*bpm", block, re.IGNORECASE)
+            if sleep_hr_min:
+                values["minSleepingHr"] = float(sleep_hr_min.group(1))
+            sleep_hr_max = re.search(r"Sleep HR:.*?\bMax\s*(\d+(?:\.\d+)?)\s*bpm", block, re.IGNORECASE)
+            if sleep_hr_max:
+                values["maxSleepingHr"] = float(sleep_hr_max.group(1))
+            if day == fallback_date:
+                if header_resting_hr:
+                    values["restingHeartRate"] = int(header_resting_hr.group(1))
+                if header_hrv_baseline:
+                    values["hrvBaseline"] = float(header_hrv_baseline.group(1))
 
         elif category == "sleep":
             score = re.search(r"Sleep Score:\s*(\d+(?:\.\d+)?)", block, re.IGNORECASE)
@@ -210,8 +234,11 @@ def map_coros_wellness_report(
 
         elif category == "hrv":
             average = re.search(r"HRV Avg:\s*(\d+(?:\.\d+)?)\s*ms", block, re.IGNORECASE)
+            baseline = re.search(r"Baseline:\s*(\d+(?:\.\d+)?)\s*ms", block, re.IGNORECASE)
             if average:
                 values["hrv"] = float(average.group(1))
+            if baseline:
+                values["hrvBaseline"] = float(baseline.group(1))
 
         elif category == "training_load":
             short = re.search(r"Short-Term Load:\s*(\d+(?:\.\d+)?)", block, re.IGNORECASE)

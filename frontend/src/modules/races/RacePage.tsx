@@ -237,10 +237,10 @@ export function RacePage() {
                     overflow-hidden
                     rounded-[14px]
                     border
-                    border-black/[0.065]
-                    bg-white
-                    dark:border-white/[0.065]
-                    dark:bg-[#151b1f]
+                    border-[var(--oc-border)]
+                    bg-[var(--oc-surface)]
+                    dark:border-[var(--oc-border)]
+                    dark:bg-[var(--oc-surface)]
                   "
                 >
                   <SectionHeader
@@ -309,10 +309,10 @@ export function RacePage() {
                   overflow-hidden
                   rounded-[14px]
                   border
-                  border-black/[0.065]
-                  bg-white
-                  dark:border-white/[0.065]
-                  dark:bg-[#151b1f]
+                  border-[var(--oc-border)]
+                  bg-[var(--oc-surface)]
+                  dark:border-[var(--oc-border)]
+                  dark:bg-[var(--oc-surface)]
                 "
               >
                 <SectionHeader
@@ -341,10 +341,10 @@ export function RacePage() {
                 overflow-hidden
                 rounded-[14px]
                 border
-                border-black/[0.065]
-                bg-white
-                dark:border-white/[0.065]
-                dark:bg-[#151b1f]
+                border-[var(--oc-border)]
+                bg-[var(--oc-surface)]
+                dark:border-[var(--oc-border)]
+                dark:bg-[var(--oc-surface)]
               "
             >
               <SectionHeader
@@ -355,7 +355,7 @@ export function RacePage() {
                     className="
                       text-[9px]
                       font-semibold
-                      text-slate-400
+                      text-[var(--oc-muted-soft)]
                     "
                   >
                     {
@@ -817,10 +817,10 @@ function RaceOverview({
         overflow-hidden
         rounded-[13px]
         border
-        border-black/[0.065]
-        bg-white
-        dark:border-white/[0.065]
-        dark:bg-[#151b1f]
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
+        dark:border-[var(--oc-border)]
+        dark:bg-[var(--oc-surface)]
       "
     >
       <OverviewMetric
@@ -895,11 +895,11 @@ function OverviewMetric({
         justify-center
         gap-2.5
         border-r
-        border-black/[0.055]
+        border-[var(--oc-border)]
         px-3
         py-3
         last:border-r-0
-        dark:border-white/[0.055]
+        dark:border-[var(--oc-border)]
       "
     >
       <div
@@ -917,8 +917,8 @@ function OverviewMetric({
             font-bold
             leading-none
             tabular-nums
-            text-slate-800
-            dark:text-slate-200
+            text-[var(--oc-text-secondary)]
+            dark:text-[var(--oc-text-secondary)]
           "
         >
           {value}
@@ -931,7 +931,7 @@ function OverviewMetric({
             font-semibold
             uppercase
             tracking-[0.07em]
-            text-slate-400
+            text-[var(--oc-muted-soft)]
           "
         >
           {label}
@@ -989,8 +989,8 @@ function PreparationRace({
               bottom-1/2
               top-0
               w-px
-              bg-slate-200
-              dark:bg-white/[0.08]
+              bg-[var(--oc-border-strong)]
+              dark:bg-[var(--oc-surface-muted)]
             "
           />
         )}
@@ -1007,7 +1007,7 @@ function PreparationRace({
             ),
             primary
               ? 'bg-emerald-500'
-              : 'bg-slate-300 dark:bg-slate-600',
+              : 'bg-slate-300 dark:bg-[var(--oc-muted-soft)]',
           ].join(' ')}
         />
 
@@ -1017,8 +1017,8 @@ function PreparationRace({
             bottom-0
             top-1/2
             w-px
-            bg-slate-200
-            dark:bg-white/[0.08]
+            bg-[var(--oc-border-strong)]
+            dark:bg-[var(--oc-surface-muted)]
           "
         />
       </div>
@@ -1033,10 +1033,10 @@ function PreparationRace({
           justify-between
           gap-3
           border-b
-          border-black/[0.045]
+          border-[var(--oc-border)]
           py-3
           last:border-b-0
-          dark:border-white/[0.045]
+          dark:border-[var(--oc-border)]
         "
       >
         <div className="min-w-0">
@@ -1054,7 +1054,7 @@ function PreparationRace({
                 font-bold
                 uppercase
                 tracking-[0.07em]
-                text-slate-400
+                text-[var(--oc-muted-soft)]
               "
             >
               {
@@ -1077,8 +1077,8 @@ function PreparationRace({
               truncate
               text-[12px]
               font-semibold
-              text-slate-800
-              dark:text-slate-200
+              text-[var(--oc-text-secondary)]
+              dark:text-[var(--oc-text-secondary)]
             "
           >
             {race.name}
@@ -1088,7 +1088,7 @@ function PreparationRace({
             className="
               mt-0.5
               text-[9.5px]
-              text-slate-400
+              text-[var(--oc-muted-soft)]
             "
           >
             {
@@ -1112,7 +1112,7 @@ function PreparationRace({
             h-4
             w-4
             shrink-0
-            text-slate-300
+            text-[var(--oc-muted-soft)]
             transition
             group-hover:translate-x-0.5
             group-hover:text-emerald-500
@@ -1155,15 +1155,15 @@ function RaceResponsiveList({
         >
           <thead
             className="
-              bg-slate-50/70
-              dark:bg-white/[0.018]
+              bg-[var(--oc-surface-hover)]
+              dark:bg-[var(--oc-surface-muted)]
             "
           >
             <tr
               className="
                 border-b
-                border-black/[0.055]
-                dark:border-white/[0.055]
+                border-[var(--oc-border)]
+                dark:border-[var(--oc-border)]
               "
             >
               <TableHeader>
@@ -1235,8 +1235,8 @@ function RaceResponsiveList({
       <div
         className="
           divide-y
-          divide-black/[0.05]
-          dark:divide-white/[0.05]
+          divide-[var(--oc-border)]
+          dark:divide-[var(--oc-border)]
           md:hidden
         "
       >
@@ -1282,7 +1282,7 @@ function TableHeader({
           + 'font-bold '
           + 'uppercase '
           + 'tracking-[0.08em] '
-          + 'text-slate-400'
+          + 'text-[var(--oc-muted-soft)]'
         ),
         align === 'right'
           ? 'text-right'
@@ -1308,11 +1308,11 @@ function RaceTableRow({
     <tr
       className="
         border-b
-        border-black/[0.045]
+        border-[var(--oc-border)]
         transition
         last:border-b-0
-        hover:bg-slate-50/70
-        dark:border-white/[0.045]
+        hover:bg-[var(--oc-surface-hover)]
+        dark:border-[var(--oc-border)]
         dark:hover:bg-white/[0.018]
       "
     >
@@ -1323,8 +1323,8 @@ function RaceTableRow({
           py-3
           text-[10.5px]
           font-semibold
-          text-slate-600
-          dark:text-slate-400
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-muted-soft)]
         "
       >
         {
@@ -1346,8 +1346,8 @@ function RaceTableRow({
             truncate
             text-[12px]
             font-semibold
-            text-slate-800
-            dark:text-slate-200
+            text-[var(--oc-text-secondary)]
+            dark:text-[var(--oc-text-secondary)]
           "
         >
           {race.name}
@@ -1358,7 +1358,7 @@ function RaceTableRow({
             mt-0.5
             truncate
             text-[9px]
-            text-slate-400
+            text-[var(--oc-muted-soft)]
           "
         >
           {race.location}
@@ -1466,8 +1466,8 @@ function NumberCell({
         text-[10.5px]
         font-medium
         tabular-nums
-        text-slate-600
-        dark:text-slate-400
+        text-[var(--oc-text-secondary)]
+        dark:text-[var(--oc-muted-soft)]
       "
     >
       {children}
@@ -1515,7 +1515,7 @@ function RaceMobileCard({
                 font-bold
                 uppercase
                 tracking-[0.07em]
-                text-slate-400
+                text-[var(--oc-muted-soft)]
               "
             >
               {
@@ -1544,8 +1544,8 @@ function RaceMobileCard({
               text-[15px]
               font-semibold
               tracking-[-0.02em]
-              text-slate-800
-              dark:text-slate-200
+              text-[var(--oc-text-secondary)]
+              dark:text-[var(--oc-text-secondary)]
             "
           >
             {race.name}
@@ -1558,7 +1558,7 @@ function RaceMobileCard({
               items-center
               gap-1
               text-[10px]
-              text-slate-400
+              text-[var(--oc-muted-soft)]
             "
           >
             <MapPin
@@ -1612,10 +1612,10 @@ function RaceMobileCard({
           gap-x-6
           gap-y-3
           rounded-[10px]
-          bg-slate-50
+          bg-[var(--oc-surface-muted)]
           px-3
           py-3
-          dark:bg-white/[0.022]
+          dark:bg-[var(--oc-surface-muted)]
         "
       >
         <MobileMetric
@@ -1691,7 +1691,7 @@ function MobileMetric({
           font-semibold
           uppercase
           tracking-[0.07em]
-          text-slate-400
+          text-[var(--oc-muted-soft)]
         "
       >
         {label}
@@ -1703,8 +1703,8 @@ function MobileMetric({
           text-[11px]
           font-semibold
           tabular-nums
-          text-slate-700
-          dark:text-slate-300
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-muted-soft)]
         "
       >
         {value}
@@ -1745,8 +1745,8 @@ function PriorityPill({
             )
           : (
               'bg-slate-500/[0.07] '
-              + 'text-slate-500 '
-              + 'dark:text-slate-400'
+              + 'text-[var(--oc-muted)] '
+              + 'dark:text-[var(--oc-muted-soft)]'
             ),
       ].join(' ')}
     >
@@ -1771,14 +1771,14 @@ function RaceTypePill({
         inline-flex
         whitespace-nowrap
         rounded-full
-        bg-slate-100
+        bg-[var(--oc-surface-muted)]
         px-2
         py-0.5
         text-[8px]
         font-semibold
-        text-slate-500
-        dark:bg-white/[0.045]
-        dark:text-slate-400
+        text-[var(--oc-muted)]
+        dark:bg-[var(--oc-surface-muted)]
+        dark:text-[var(--oc-muted-soft)]
       "
     >
       {
@@ -1829,10 +1829,10 @@ function SectionHeader({
         justify-between
         gap-3
         border-b
-        border-black/[0.055]
+        border-[var(--oc-border)]
         px-4
         py-3
-        dark:border-white/[0.055]
+        dark:border-[var(--oc-border)]
         sm:px-5
       "
     >
@@ -1843,7 +1843,7 @@ function SectionHeader({
             font-bold
             uppercase
             tracking-[0.1em]
-            text-slate-400
+            text-[var(--oc-muted-soft)]
           "
         >
           {eyebrow}
@@ -1854,8 +1854,8 @@ function SectionHeader({
             mt-0.5
             text-[13px]
             font-semibold
-            text-slate-800
-            dark:text-slate-200
+            text-[var(--oc-text-secondary)]
+            dark:text-[var(--oc-text-secondary)]
           "
         >
           {title}
@@ -1883,13 +1883,13 @@ function NoPrimaryRace({
         rounded-[15px]
         border
         border-dashed
-        border-black/[0.09]
-        bg-white
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
         px-5
         py-8
         text-center
-        dark:border-white/[0.09]
-        dark:bg-[#151b1f]
+        dark:border-[var(--oc-border)]
+        dark:bg-[var(--oc-surface)]
       "
     >
       <Trophy
@@ -1905,8 +1905,8 @@ function NoPrimaryRace({
           mt-3
           text-[15px]
           font-semibold
-          text-slate-800
-          dark:text-slate-200
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-text-secondary)]
         "
       >
         Aucun objectif principal
@@ -1918,7 +1918,7 @@ function NoPrimaryRace({
           max-w-md
           text-[10.5px]
           leading-5
-          text-slate-400
+          text-[var(--oc-muted-soft)]
         "
       >
         Ajoute ta prochaine course cible pour que
@@ -1982,7 +1982,7 @@ function EmptyState({
           h-5
           w-5
           text-slate-200
-          dark:text-slate-700
+          dark:text-[var(--oc-text-secondary)]
         "
       />
 
@@ -1991,8 +1991,8 @@ function EmptyState({
           mt-2
           text-[11px]
           font-semibold
-          text-slate-600
-          dark:text-slate-300
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-muted-soft)]
         "
       >
         {title}
@@ -2002,7 +2002,7 @@ function EmptyState({
         className="
           mt-1
           text-[9.5px]
-          text-slate-400
+          text-[var(--oc-muted-soft)]
         "
       >
         {description}
@@ -2022,10 +2022,10 @@ function LoadingState() {
         justify-center
         rounded-[14px]
         border
-        border-black/[0.065]
-        bg-white
-        dark:border-white/[0.065]
-        dark:bg-[#151b1f]
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
+        dark:border-[var(--oc-border)]
+        dark:bg-[var(--oc-surface)]
       "
     >
       <span

@@ -383,7 +383,8 @@ function ExecutionStage({
         <h3
           className={[
             (
-              'text-[11.5px] '
+              'training-guidance-v3__stage-title '
+              + 'text-[11.5px] 
               + 'font-bold uppercase '
               + 'tracking-[0.055em]'
             ),
@@ -570,6 +571,7 @@ function GuidanceStepCard({
           {showTitle && (
             <p
               className="
+                training-guidance-v3__step-title
                 text-[12px]
                 font-semibold
                 leading-5
@@ -585,7 +587,8 @@ function GuidanceStepCard({
             <p
               className={[
                 (
-                  'text-[10.5px] leading-[1.5] '
+                  'training-guidance-v3__step-description '
+                  + 'text-[10.5px] leading-[1.5] '
                   + 'text-[var(--oc-muted)] '
                   + 'text-[var(--oc-muted)]'
                 ),
@@ -631,6 +634,7 @@ function GuidanceStepCard({
       {hasIntervalStructure && (
         <div
           className="
+            training-guidance-v3__interval
             mt-2.5
             border-t
             border-[var(--oc-border)]
@@ -1112,6 +1116,7 @@ function IntensityTargets({
   return (
     <div
       className="
+        training-guidance-v3__targets
         mt-2.5
         flex
         flex-wrap
@@ -1179,6 +1184,7 @@ function IntensityValue({
   return (
     <div
       className="
+        training-guidance-v3__target-value
         inline-flex
         items-center
         gap-1.5

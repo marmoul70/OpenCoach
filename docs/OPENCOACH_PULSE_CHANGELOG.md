@@ -500,3 +500,23 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Composant existant conservé ; aucune duplication.
 - Contrôle CI à effectuer sur le commit final.
 - Contrôle visuel clair/sombre et responsive à réaliser dans le navigateur.
+
+
+## 2026-11-05 — Sprint 20 : menus d'actions des séances
+
+### Livré
+- Bouton d'actions : surface, bordure, texte et survol basés sur les tokens Pulse.
+- Menu contextuel : surface élevée et ombre du système, cohérentes en clair/sombre.
+- Actions neutres (déplacer, retour) : couleurs et survol harmonisés.
+- Panneau de conseil du jour sélectionné : surface secondaire, bordure et typographie Pulse.
+- État de score non sélectionnable : texte secondaire sémantique.
+
+### Garde-fous
+- Actions réalisées/non réalisées, déplacement, sélection de date, validation, chargement et erreurs inchangés.
+- Couleurs fonctionnelles des actions (succès, danger, avertissement) conservées.
+- Aucun changement de callback, logique de sélection, API, backend, stockage, dépendance, VM, merge ou déploiement.
+
+### Contrôles
+- Composant existant conservé ; modifications limitées aux classes visuelles des zones ciblées.
+- CI à confirmer sur le commit final.
+- Parcours interactif et contrôle visuel clair/sombre à réaliser dans le navigateur.

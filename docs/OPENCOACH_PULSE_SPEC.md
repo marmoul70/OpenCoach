@@ -105,6 +105,16 @@ Cette arborescence est une cible évolutive, pas une obligation de déplacer imm
 
 Les composants visuels ne font pas d'appels réseau, ne calculent pas de scores physiologiques et ne modifient pas le planning. Les données et règles métier sont injectées par les modules.
 
+### 4.1 Contrat de LineChart partagé
+
+- Implémentation SVG native, sans dépendance graphique externe à ce stade.
+- Les points portent un identifiant stable, un libellé et une valeur numérique nullable.
+- Une valeur `null` représente une absence de mesure : elle crée une rupture visuelle de la ligne et ne devient jamais zéro.
+- Le composant reçoit les valeurs déjà formatées et ne connaît ni les unités métier ni les règles de période.
+- Le module appelant reste responsable du filtrage temporel, des agrégats métier et de la fraîcheur des données.
+- La grille, les repères, les séries et les surfaces utilisent les tokens sémantiques du design system.
+- Chaque graphique expose un nom accessible et des détails de points via les éléments SVG.
+
 ## 5. Règles de données et santé
 
 - Conserver les contrats API et les types existants.

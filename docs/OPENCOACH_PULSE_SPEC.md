@@ -181,3 +181,17 @@ La primitive `LineChart` reste en SVG natif pour les séries simples. Pour les g
 - Laisser Vite produire les chunks à partir des imports dynamiques. Ne pas fixer de découpage manuel avant d'avoir mesuré les bundles réels.
 - Toute évolution doit préserver les routes, les données, les appels API et les règles métier.
 - La validation de performance doit suivre les tailles des chunks gzip/brotli, le poids du bundle initial et les temps de build. Les budgets chiffrés seront fixés après une mesure de référence CI, pas inventés.
+
+
+### Échelle typographique commune
+
+Les rôles typographiques sont définis dans les tokens `--oc-type-*` et appliqués par des classes sémantiques :
+- Titre de page : `--oc-type-page-title` (24 à 30 px selon la largeur).
+- Titre de section : `--oc-type-section-title` (18 px).
+- Titre de carte : `--oc-type-card-title` (16 px).
+- Texte courant : `--oc-type-body` (13 px).
+- Information secondaire : `--oc-type-secondary` (12 px).
+- Libellé : `--oc-type-label` (11 px).
+- Légende : `--oc-type-caption` (10 px).
+
+Règle : un même rôle conserve la même taille sur toutes les pages. Les KPI et valeurs de données peuvent utiliser une taille dédiée lorsqu'ils constituent le point focal d'une carte, mais ne doivent pas modifier la hiérarchie des titres et informations.

@@ -305,3 +305,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### À contrôler
 - Vérification visuelle réelle sur iPhone, tablette et desktop, avec thèmes clair/sombre/système.
 - Contrôle des états focus clavier, menu ouvert/fermé, tiroir mobile et zones tactiles.
+
+
+## 2026-11-05 — Sprint 10 : cartes Coach et entraînement du jour
+
+### Livré
+- Widget d'entraînement du Dashboard : surface principale, états chargement/erreur, métriques secondaires et séparateurs raccordés aux tokens sémantiques Pulse.
+- Widget Coach du jour : surfaces, bordures, textes secondaires, métriques et fonds neutres migrés vers les tokens clair/sombre.
+- Les cartes interactives utilisent le contrat partagé `.oc-interactive-surface` pour le survol, le focus clavier et le respect de la réduction des animations.
+- Les accents de statut (succès, vigilance, erreur), les icônes, les données, les libellés et les interactions existantes sont conservés.
+
+### Garde-fous
+- Aucune modification des hooks de récupération des données, des types de séance, des calculs de durée/charge, des règles de statut ou des callbacks.
+- Aucun changement API, backend, stockage, synchronisation COROS/Intervals ou dépendance.
+- Le widget de planning « Aujourd’hui » reste un composant distinct ; il n'a pas été dupliqué ni remplacé.
+
+### Contrôles
+- Relecture statique des composants après migration ; les derniers fonds et textes neutres codés en dur ont été éliminés des deux widgets ciblés.
+- CI à relancer sur les derniers commits avant de considérer le sprint techniquement validé.
+- Contrôle visuel iPhone/tablette/desktop et thèmes clair/sombre toujours requis.

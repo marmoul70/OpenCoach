@@ -444,3 +444,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Classes visuelles ciblées ajoutées aux composants existants ; aucune duplication de logique ou de composant.
 - Les couleurs d'état utilisent les tokens sémantiques Pulse (success, warning, danger) et les surfaces neutres utilisent les tokens de thème.
 - CI à confirmer sur les derniers commits ; contrôle visuel clair/sombre et responsive à effectuer dans le navigateur réel.
+
+
+## 2026-11-05 — Sprint 17 : carte « Aujourd'hui »
+
+### Livré
+- Carte de séance prioritaire : surfaces, bordures, titres et métadonnées harmonisés avec les tokens Pulse.
+- États réalisée, à faire et non réalisée : badges sémantiques cohérents avec le planning hebdomadaire.
+- État sans séance : surface secondaire et contraste alignés sur le thème actif.
+- Mise en page mobile : métadonnées autorisées à revenir à la ligne pour éviter les débordements.
+
+### Garde-fous
+- Les séances affichées, leurs informations, leurs statuts et leurs repères de type restent inchangés.
+- Les interactions d'ouverture/ajout, la flèche, la synchronisation Intervals et les formats de durée/distance/intensité sont conservés.
+- Aucun changement API, backend, stockage, dépendance, VM, merge ou déploiement.
+
+### Contrôles
+- Le composant existant est conservé ; seules des classes de présentation et des règles CSS ciblées sont ajoutées.
+- Les surfaces et statuts utilisent les tokens Pulse clair/sombre.
+- CI à confirmer sur les derniers commits et contrôle visuel navigateur à effectuer.

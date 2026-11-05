@@ -1824,3 +1824,133 @@ svg {
     padding: 12px !important;
   }
 }
+
+
+/* ---------------------------------------------------------
+   GUIDAGE — étapes et consignes plus lisibles
+   --------------------------------------------------------- */
+
+.training-guidance-v3__stage-title {
+  color: var(--oc-text) !important;
+  font-size: 13px !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.045em !important;
+}
+
+.training-guidance-v3__stage:nth-child(2)
+.training-guidance-v3__stage-title {
+  color: var(--oc-accent) !important;
+}
+
+.training-guidance-v3__step {
+  padding: 13px 15px !important;
+}
+
+.training-guidance-v3__step-title {
+  color: var(--oc-text) !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.45 !important;
+}
+
+.training-guidance-v3__step-description {
+  color: var(--oc-text-secondary) !important;
+  font-size: 12px !important;
+  line-height: 1.65 !important;
+}
+
+.training-guidance-v3__interval {
+  margin-top: 13px !important;
+  padding-top: 12px !important;
+}
+
+.training-guidance-v3__interval > div:first-child > div > p:last-child {
+  color: var(--oc-text) !important;
+  font-size: 14px !important;
+  font-weight: 750 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.training-guidance-v3__interval > div:first-child > p {
+  color: var(--oc-text-secondary) !important;
+  font-size: 12px !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.training-guidance-v3__targets {
+  gap: 9px 12px !important;
+  padding-top: 11px !important;
+}
+
+.training-guidance-v3__target-value > span:last-child {
+  color: var(--oc-text) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.training-guidance-v3__step > div > div > span {
+  font-size: 11px !important;
+}
+
+.workout-coach-context > summary {
+  padding: 14px 16px !important;
+  font-size: 13px !important;
+}
+
+.workout-coach-context > summary > div > span:last-child {
+  font-size: 11px !important;
+}
+
+.workout-coach-context > div {
+  padding: 16px !important;
+  gap: 18px !important;
+}
+
+.workout-coach-context .workout-objective-card {
+  padding: 15px !important;
+}
+
+.workout-coach-context .workout-objective-card p:last-child {
+  font-size: 13px !important;
+  line-height: 1.65 !important;
+}
+
+.workout-coach-context section > div > h3 {
+  font-size: 13px !important;
+}
+
+.workout-coach-context section > div + div,
+.workout-coach-context section > p,
+.workout-coach-context section ul {
+  color: var(--oc-text-secondary) !important;
+  font-size: 12px !important;
+  line-height: 1.7 !important;
+}
+
+.workout-coach-context section li {
+  padding-block: 2px;
+}
+
+@media (max-width: 639px) {
+  .training-guidance-v3__step {
+    padding: 10px 11px !important;
+  }
+
+  .training-guidance-v3__step-title {
+    font-size: 12.5px !important;
+  }
+
+  .training-guidance-v3__step-description {
+    font-size: 11.5px !important;
+  }
+
+  .training-guidance-v3__interval > div:first-child > div > p:last-child {
+    font-size: 13px !important;
+  }
+
+  .workout-coach-context > div {
+    padding: 12px !important;
+    gap: 15px !important;
+  }
+}

@@ -304,25 +304,14 @@ export function SidePanel({
       >
         <header
           className="
+            oc-panel-header
             flex
             min-h-[58px]
             shrink-0
             items-center
             justify-between
             gap-3
-
-            border-b
-            border-black/[0.06]
-
-            bg-white/90
-
             px-4
-
-            backdrop-blur-xl
-
-            dark:border-white/[0.07]
-            dark:bg-[#141a1e]/95
-
             sm:px-5
           "
         >

@@ -23,6 +23,7 @@ class PushDeliveryReport:
     sent: int
     failed: int
     removed: int
+    persisted: bool = False
 
 
 class PushConfigurationError(RuntimeError):
@@ -77,16 +78,18 @@ class PushNotificationService:
         url: str = "/",
     ) -> PushDeliveryReport:
         subscriptions = self.repository.list_all()
+        user_ids = self._active_user_ids(
+            {subscription.user_id for subscription in subscriptions}
+        )
         self._persist_for_users(
-            user_ids=self._active_user_ids(
-                {subscription.user_id for subscription in subscriptions}
-            ),
+            user_ids=user_ids,
             title=title,
             body=body,
             url=url,
             category="system",
         )
         return self._send_to_subscriptions(
+            persisted=bool(user_ids),
             subscriptions=subscriptions,
             title=title,
             body=body,
@@ -122,6 +125,7 @@ class PushNotificationService:
             title=title,
             body=body,
             url=url,
+            persisted=True,
         )
 
     def send_system_backup_error(
@@ -132,10 +136,11 @@ class PushNotificationService:
         url: str = "/settings",
     ) -> PushDeliveryReport:
         all_subscriptions = self.repository.list_all()
+        user_ids = self._active_user_ids(
+            {subscription.user_id for subscription in all_subscriptions}
+        )
         self._persist_for_users(
-            user_ids=self._active_user_ids(
-                {subscription.user_id for subscription in all_subscriptions}
-            ),
+            user_ids=user_ids,
             title=title,
             body=body,
             url=url,
@@ -155,6 +160,7 @@ class PushNotificationService:
             title=title,
             body=body,
             url=url,
+            persisted=bool(user_ids),
         )
 
     def send_weekly_debrief_notification(
@@ -182,6 +188,7 @@ class PushNotificationService:
             title=title,
             body=body,
             url=url,
+            persisted=True,
         )
 
     def send_training_reminder(
@@ -209,6 +216,7 @@ class PushNotificationService:
             title=title,
             body=body,
             url=url,
+            persisted=True,
         )
 
     def _send_to_subscriptions(
@@ -218,6 +226,7 @@ class PushNotificationService:
         title: str,
         body: str,
         url: str,
+        persisted: bool = False,
     ) -> PushDeliveryReport:
         private_key = os.getenv(
             "OPENCOACH_VAPID_PRIVATE_KEY",
@@ -229,7 +238,12 @@ class PushNotificationService:
         ).strip()
 
         if not subscriptions:
-            return PushDeliveryReport(sent=0, failed=0, removed=0)
+            return PushDeliveryReport(
+                sent=0,
+                failed=0,
+                removed=0,
+                persisted=persisted,
+            )
 
         if not private_key:
             raise PushConfigurationError(
@@ -275,7 +289,12 @@ class PushNotificationService:
                     continue
                 failed += 1
 
-        return PushDeliveryReport(sent=sent, failed=failed, removed=removed)
+        return PushDeliveryReport(
+            sent=sent,
+            failed=failed,
+            removed=removed,
+            persisted=persisted,
+        )
 
     @staticmethod
     def _send_one(

@@ -110,8 +110,8 @@ export function HealthPage() {
   )
 
   return (
-    <main className="oc-app-shell min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <main className="oc-app-shell min-h-screen px-3 py-4 sm:px-5 lg:px-6">
+      <div className="mx-auto max-w-[1440px] space-y-4">
         <PageHeader
           eyebrow={<><HeartPulse className="h-4 w-4" /> Santé & récupération</>}
           title="Suivi physiologique"
@@ -177,7 +177,7 @@ export function HealthPage() {
               />
             </section>
 
-            <section className="oc-surface p-4 sm:p-5">
+            <section className="oc-surface p-3 sm:p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="oc-type-section-title text-[var(--oc-text)]">
@@ -213,16 +213,16 @@ export function HealthPage() {
                     </span>
                   </div>
 
-                  <div className="mt-5 space-y-6">
+                  <div className="mt-3 space-y-4">
                     {GROUPS.map((group) => {
                       const items = METRICS.filter((metric) => metric.group === group)
                       return (
-                        <section key={group} className="rounded-2xl border border-[var(--oc-border)] bg-[var(--oc-surface-raised)] p-4 shadow-sm sm:p-5">
-                          <div className="mb-4 flex items-center justify-between gap-3">
+                        <section key={group} className="rounded-xl border border-[var(--oc-border)] bg-[var(--oc-surface-raised)] p-3 shadow-sm sm:p-3.5">
+                          <div className="mb-3 flex items-center justify-between gap-3">
                             <h3 className="oc-type-section-title font-semibold text-[var(--oc-text)]">{group}</h3>
                             <span className="rounded-full bg-[var(--oc-accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--oc-accent)]">{items.length} indicateurs</span>
                           </div>
-                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
+                          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                             {items.map((metric) => (
                               <MetricTile
                                 key={metric.key}
@@ -241,7 +241,7 @@ export function HealthPage() {
             </section>
 
 
-            <section className="oc-surface p-4 sm:p-5">
+            <section className="oc-surface p-3 sm:p-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <h2 className="oc-type-section-title text-[var(--oc-text)]">Évolution des indicateurs</h2>
@@ -264,7 +264,7 @@ export function HealthPage() {
               </div>
             </section>
 
-            <section className="oc-surface p-4 sm:p-5">
+            <section className="oc-surface p-3 sm:p-4">
               <div className="flex items-center gap-2">
                 <Waves className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                 <div>
@@ -397,13 +397,13 @@ function StatusCard({
   icon: React.ReactNode
 }) {
   return (
-    <div className="relative min-w-0 overflow-hidden rounded-2xl border border-[var(--oc-border)] bg-[var(--oc-surface-raised)] p-4 shadow-[var(--oc-shadow-card)]">
+    <div className="relative min-w-0 overflow-hidden rounded-xl border border-[var(--oc-border)] bg-[var(--oc-surface-raised)] p-3 shadow-[var(--oc-shadow-card)]">
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500/80 via-teal-400/50 to-transparent" />
       <div className="flex items-center justify-between gap-3">
         <span className="oc-type-label font-semibold uppercase tracking-wide text-[var(--oc-muted)]">{label}</span>
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--oc-accent-soft)] text-[var(--oc-accent)]">{icon}</span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--oc-accent-soft)] text-[var(--oc-accent)] [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
       </div>
-      <p className="mt-4 break-words text-2xl font-bold tracking-tight tabular-nums text-[var(--oc-text)]">{value}</p>
+      <p className="mt-2 break-words text-xl font-bold tracking-tight tabular-nums text-[var(--oc-text)]">{value}</p>
       <p className="mt-1 oc-type-secondary leading-relaxed">{detail}</p>
     </div>
   )
@@ -420,26 +420,26 @@ function MetricTile({
 }) {
   const value = metric?.current
   return (
-    <article className="min-w-0 rounded-xl border border-[var(--oc-border)] bg-[var(--oc-page)]/70 p-3.5 transition-colors hover:border-[var(--oc-border-strong)] sm:p-4">
+    <article className="min-w-0 rounded-lg border border-[var(--oc-border)] bg-[var(--oc-page)]/70 p-3 transition-colors hover:border-[var(--oc-border-strong)]">
       <div className="flex items-start justify-between gap-3">
         <p className="oc-type-body font-semibold leading-snug text-[var(--oc-text-secondary)]">{label}</p>
         <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[var(--oc-accent)]" aria-hidden="true" />
       </div>
-      <p className="mt-2 text-2xl font-bold tracking-tight tabular-nums text-[var(--oc-text)]">
+      <p className="mt-1.5 text-xl font-bold tracking-tight tabular-nums text-[var(--oc-text)]">
         {value == null ? '—' : formatMetric(value, unit)}
       </p>
-      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[var(--oc-border)] pt-3">
+      <div className="mt-2 grid grid-cols-3 gap-2 border-t border-[var(--oc-border)] pt-2">
         <div className="min-w-0">
           <p className="oc-type-caption">Moyenne</p>
-          <p className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--oc-text-secondary)]">{metric?.average == null ? '—' : formatMetric(metric.average, unit)}</p>
+          <p className="mt-0.5 truncate text-[11px] font-semibold tabular-nums text-[var(--oc-text-secondary)]">{metric?.average == null ? '—' : formatMetric(metric.average, unit)}</p>
         </div>
         <div className="min-w-0">
           <p className="oc-type-caption">Mesures</p>
-          <p className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--oc-text-secondary)]">{metric?.sample_count ?? 0}</p>
+          <p className="mt-0.5 truncate text-[11px] font-semibold tabular-nums text-[var(--oc-text-secondary)]">{metric?.sample_count ?? 0}</p>
         </div>
         <div className="min-w-0">
           <p className="oc-type-caption">Jours couverts</p>
-          <p className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--oc-text-secondary)]">{metric?.coverage_days ?? 0}</p>
+          <p className="mt-0.5 truncate text-[11px] font-semibold tabular-nums text-[var(--oc-text-secondary)]">{metric?.coverage_days ?? 0}</p>
         </div>
       </div>
     </article>

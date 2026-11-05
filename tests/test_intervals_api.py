@@ -661,7 +661,7 @@ def test_saved_intervals_connection_succeeds(
         provider = "intervals"
         athlete_id = "i651743"
         secret = "secret-api-key"
-        web_cookie = None
+        web_cookie = "stored-personal-cookie"
 
     class FakeConnectionService:
         def get_credentials(
@@ -683,6 +683,11 @@ def test_saved_intervals_connection_succeeds(
         ) -> None:
             assert api_key == "secret-api-key"
             assert athlete_id == "i651743"
+            assert web_cookie == "stored-personal-cookie"
+            self.web_cookie = web_cookie
+
+        def trigger_partner_sync(self):
+            assert self.web_cookie == "stored-personal-cookie"
 
         def get_athlete(
             self,

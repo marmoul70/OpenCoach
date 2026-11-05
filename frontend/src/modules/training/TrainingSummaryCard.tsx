@@ -23,7 +23,7 @@ export function TrainingSummaryCard({
         shadow-[var(--oc-shadow-card)]
       "
     >
-      <div className="flex items-center gap-2 text-[var(--oc-text-muted)]">
+      <div className="flex items-center gap-2 text-[var(--oc-text-secondary)]">
         <Icon className="h-4 w-4" />
 
         <span className="oc-type-label font-medium uppercase tracking-wide">
@@ -36,7 +36,7 @@ export function TrainingSummaryCard({
       </p>
 
       {description && (
-        <p className="oc-type-secondary text-[var(--oc-text-muted)]">
+        <p className="oc-type-secondary text-[var(--oc-text-secondary)]">
           {description}
         </p>
       )}

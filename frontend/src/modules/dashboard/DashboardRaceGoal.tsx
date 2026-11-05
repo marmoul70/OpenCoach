@@ -201,7 +201,7 @@ export function DashboardRaceGoal({
         >
           <p
             className="
-              text-[10px]
+              oc-type-caption
               font-semibold uppercase
               tracking-wide
               text-emerald-600
@@ -228,8 +228,7 @@ export function DashboardRaceGoal({
           mt-5 grid
           grid-cols-3
           divide-x
-          divide-black/[0.06]
-          dark:divide-white/[0.07]
+          divide-[var(--oc-border)]
         "
       >
         <Metric
@@ -260,8 +259,7 @@ export function DashboardRaceGoal({
         <div
           className="
             mb-2 flex items-center
-            justify-between
-            text-xs
+            justify-between oc-type-secondary
           "
         >
           <span
@@ -310,7 +308,7 @@ export function DashboardRaceGoal({
         <span
           className="
             flex items-center gap-2
-            text-xs font-semibold
+            oc-type-body font-semibold
             text-emerald-600
             dark:text-emerald-400
           "

@@ -35,7 +35,7 @@ export function LineChart({
   ariaLabel,
   headerMeta,
 }: LineChartProps) {
-  if (points.length === 0) {
+  if (points.length === 0 || !points.some((point) => point.value !== null)) {
     return (
       <section className="oc-surface min-w-0 p-4" aria-label={title}>
         <h3 className="text-sm font-semibold text-[var(--oc-text)]">{title}</h3>

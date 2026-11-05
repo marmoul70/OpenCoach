@@ -15,7 +15,7 @@ export function DashboardDetails() {
         </p>
       </div>
 
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-[var(--oc-muted)]">
         Les données d'entraînement, de récupération,
         de nutrition et de matériel seront progressivement
         intégrées ici.

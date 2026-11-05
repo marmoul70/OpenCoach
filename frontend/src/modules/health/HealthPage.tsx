@@ -272,7 +272,7 @@ export function HealthPage() {
               </div>
 
               {assessment.time_series.length === 0 ? (
-                <p className="mt-4 rounded-xl bg-slate-50 p-4 oc-type-body text-[var(--oc-muted)] bg-[var(--oc-surface-muted)]">
+                <p className="mt-4 rounded-xl p-4 oc-type-body text-[var(--oc-muted)] bg-[var(--oc-surface-muted)]">
                   Aucune série détaillée disponible sur cette période. Les données quotidiennes restent consultables ci-dessus.
                 </p>
               ) : (
@@ -288,7 +288,7 @@ export function HealthPage() {
                         </span>
                       </div>
                       <p className="mt-3 text-xl font-bold tabular-nums text-[var(--oc-text)]">
-                        {formatNumber(series.current)} <span className="text-xs font-medium text-slate-400">{series.unit ?? ''}</span>
+                        {formatNumber(series.current)} <span className="oc-type-caption font-medium text-[var(--oc-muted)]">{series.unit ?? ''}</span>
                       </p>
                       <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                         <MiniValue label="Moyenne" value={formatNumber(series.average)} />

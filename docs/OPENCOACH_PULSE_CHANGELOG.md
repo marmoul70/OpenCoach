@@ -216,3 +216,32 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Les appels de données, états de chargement/erreur, filtres de période et données affichées sont inchangés.
 - Les cartes de métriques utilisent `MetricCard` et les courbes utilisent `LineChart` : la page Santé consomme désormais deux primitives communes du design system.
 - Les tuiles de séries horodatées restent locales pour le moment : leur contenu est plus spécifique (courant, moyenne, minimum, maximum, couverture et plage temporelle). Elles seront factorisées après définition d'un contrat de widget adapté, sans créer une abstraction trop générique.
+
+
+## 2026-11-05 — Sprint 5 : cohérence inter-pages et chargement optimisé
+
+### Performance de compilation et chargement
+- Conversion des pages métier en imports dynamiques via `React.lazy` : Dashboard, Coach, Planning, Ressenti, Activités, Courses, Météo, Santé, Profils et Réglages.
+- Ajout d'un fallback `Suspense` avec l'écran de chargement OpenCoach existant.
+- Les contextes Training/Race et le shell de navigation restent chargés au démarrage ; les pages ne sont téléchargées qu'à leur première ouverture.
+- Aucune bibliothèque graphique ajoutée, aucun changement de dépendances runtime.
+- Aucun découpage manuel Vite ajouté : les chunks seront mesurés avant toute optimisation supplémentaire.
+
+### Cohérence visuelle
+- Ajout de `PageHeader`, primitive commune pour surtitre, titre, description et actions.
+- Migration de Santé, Ressenti, Activités, Courses et Réglages vers `PageHeader`.
+- Ajout de primitives CSS partagées : `oc-app-shell`, `oc-page-content`, `oc-page-header`, `oc-page-eyebrow`, `oc-page-title`, `oc-page-description`, `oc-section`.
+- Harmonisation du fond de page pour Activités, Courses, Réglages et Planning ; le shell global utilise désormais les tokens Pulse.
+- Typographie globale reliée au token `--oc-font-sans`.
+
+### Périmètre et précautions
+- Aucun endpoint, modèle, calcul d'entraînement, donnée Santé, route ou flux de navigation modifié volontairement.
+- Le chargement différé peut déplacer le moment du téléchargement d'une page ; le fallback couvre cette attente.
+- Le mode système de thème et les pages non encore migrées restent à auditer dans les prochains sprints.
+- Les pages Coach, Dashboard, Météo, Profil et Planning nécessitent encore une harmonisation détaillée de leurs sections et composants internes.
+- La bibliothèque graphique reste différée jusqu'à validation de la refonte.
+
+### Validation
+- La CI du sprint précédent avait réussi sur les changements Santé.
+- Les contrôles des nouveaux commits sont en cours ; ne pas considérer cette série comme validée tant que lint, build et tests complets ne sont pas verts.
+- Pas de merge, pas de déploiement VM.

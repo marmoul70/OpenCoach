@@ -1,7 +1,7 @@
 """add persistent user notifications
 
 Revision ID: f6a91c2d4e80
-Revises: e7f8a9b0c1d2
+Revises: 3b7d9a1c5e20
 Create Date: 2026-11-05
 """
 

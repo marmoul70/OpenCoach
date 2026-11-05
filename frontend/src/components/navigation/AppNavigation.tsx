@@ -284,11 +284,7 @@ export function AppNavigation({
             className="
               mb-2
               px-3
-              text-[10px]
-              font-semibold
-              uppercase
-              tracking-[0.16em]
-              text-[var(--oc-muted)]
+              oc-type-label font-semibold uppercase tracking-[0.16em]
             "
           >
             Planning
@@ -384,9 +380,9 @@ export function AppNavigation({
                   className="
                     relative
                     border-t
-                    border-black/[0.06]
+                    border-[var(--oc-border)]
                     p-2
-                    dark:border-white/[0.07]
+                    dark:border-[var(--oc-border)]
                   "
                 >
 
@@ -413,11 +409,11 @@ export function AppNavigation({
                       desktopProfileOpen
                         ? (
                             'bg-slate-100 '
-                            + 'dark:bg-white/[0.06]'
+                            + 'dark:bg-[var(--oc-surface)]/[0.06]'
                           )
                         : (
                             'hover:bg-slate-50 '
-                            + 'dark:hover:bg-white/[0.045]'
+                            + 'dark:hover:bg-[var(--oc-surface)]/[0.045]'
                           ),
                     ].join(' ')}
                   >
@@ -492,12 +488,12 @@ export function AppNavigation({
                         overflow-hidden
                         rounded-[12px]
                         border
-                        border-black/[0.07]
-                        bg-white
+                        border-[var(--oc-border)]
+                        bg-[var(--oc-surface)]
                         p-1
                         shadow-[0_10px_28px_rgba(15,23,42,0.13)]
-                        dark:border-white/[0.08]
-                        dark:bg-[#171d21]
+                        dark:border-[var(--oc-border)]
+                        dark:bg-[var(--oc-surface)]
                         dark:shadow-[0_10px_30px_rgba(0,0,0,0.28)]
                       "
                     >
@@ -660,7 +656,7 @@ export function AppNavigation({
                           bg-slate-50
                           px-2
                           py-1.5
-                          dark:bg-white/[0.035]
+                          dark:bg-[var(--oc-surface)]/[0.035]
                         "
                       >
                         <div
@@ -734,13 +730,13 @@ export function AppNavigation({
           justify-between
           pt-[env(safe-area-inset-top)]
           border-b
-          border-black/[0.06]
-          bg-white/90
+          border-[var(--oc-border)]
+          bg-[color-mix(in_srgb,var(--oc-surface)_90%,transparent)]
           px-4
           backdrop-blur-xl
           lg:hidden
-          dark:border-white/[0.07]
-          dark:bg-[#101418]/90
+          dark:border-[var(--oc-border)]
+          dark:bg-[color-mix(in_srgb,var(--oc-surface)_90%,transparent)]
         "
       >
         <button
@@ -797,7 +793,7 @@ export function AppNavigation({
             rounded-full
             transition
             hover:bg-slate-100
-            dark:hover:bg-white/[0.06]
+            dark:hover:bg-[var(--oc-surface)]/[0.06]
           "
           aria-label="Ouvrir le menu"
         >
@@ -848,9 +844,9 @@ export function AppNavigation({
               rounded-[22px]
 
               border
-              border-black/[0.065]
+              border-[var(--oc-border)]
 
-              bg-white/95
+              bg-[color-mix(in_srgb,var(--oc-surface)_95%,transparent)]
 
               px-1
 
@@ -858,8 +854,8 @@ export function AppNavigation({
 
               backdrop-blur-xl
 
-              dark:border-white/[0.08]
-              dark:bg-[#101418]/95
+              dark:border-[var(--oc-border)]
+              dark:bg-[color-mix(in_srgb,var(--oc-surface)_95%,transparent)]
               dark:shadow-[0_12px_34px_rgba(0,0,0,0.38)]
             "
           >
@@ -927,12 +923,12 @@ export function AppNavigation({
               gap-3
               rounded-2xl
               border
-              border-black/[0.06]
-              bg-white
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface)]
               p-3
               shadow-sm
-              dark:border-white/[0.07]
-              dark:bg-white/[0.03]
+              dark:border-[var(--oc-border)]
+              dark:bg-[var(--oc-surface)]/[0.03]
             "
           >
             <Avatar
@@ -974,12 +970,7 @@ export function AppNavigation({
               className="
                 mb-2
                 px-1
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-[0.12em]
-                text-slate-400
-                dark:text-slate-500
+                oc-type-label font-bold uppercase tracking-[0.12em]
               "
             >
               Mon suivi
@@ -990,10 +981,10 @@ export function AppNavigation({
                 overflow-hidden
                 rounded-2xl
                 border
-                border-black/[0.06]
-                bg-white
-                dark:border-white/[0.07]
-                dark:bg-white/[0.025]
+                border-[var(--oc-border)]
+                bg-[var(--oc-surface)]
+                dark:border-[var(--oc-border)]
+                dark:bg-[var(--oc-surface)]/[0.025]
               "
             >
               <MobileDrawerItem
@@ -1024,12 +1015,7 @@ export function AppNavigation({
               className="
                 mb-2
                 px-1
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-[0.12em]
-                text-slate-400
-                dark:text-slate-500
+                oc-type-label font-bold uppercase tracking-[0.12em]
               "
             >
               Mon profil
@@ -1040,10 +1026,10 @@ export function AppNavigation({
                 overflow-hidden
                 rounded-2xl
                 border
-                border-black/[0.06]
-                bg-white
-                dark:border-white/[0.07]
-                dark:bg-white/[0.025]
+                border-[var(--oc-border)]
+                bg-[var(--oc-surface)]
+                dark:border-[var(--oc-border)]
+                dark:bg-[var(--oc-surface)]/[0.025]
               "
             >
               <MobileDrawerItem
@@ -1073,12 +1059,7 @@ export function AppNavigation({
               className="
                 mb-2
                 px-1
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-[0.12em]
-                text-slate-400
-                dark:text-slate-500
+                oc-type-label font-bold uppercase tracking-[0.12em]
               "
             >
               OpenCoach
@@ -1089,10 +1070,10 @@ export function AppNavigation({
                 overflow-hidden
                 rounded-2xl
                 border
-                border-black/[0.06]
-                bg-white
-                dark:border-white/[0.07]
-                dark:bg-white/[0.025]
+                border-[var(--oc-border)]
+                bg-[var(--oc-surface)]
+                dark:border-[var(--oc-border)]
+                dark:bg-[var(--oc-surface)]/[0.025]
               "
             >
               <MobileDrawerItem
@@ -1111,21 +1092,16 @@ export function AppNavigation({
             className="
               rounded-2xl
               border
-              border-black/[0.06]
-              bg-white
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface)]
               p-3
-              dark:border-white/[0.07]
-              dark:bg-white/[0.025]
+              dark:border-[var(--oc-border)]
+              dark:bg-[var(--oc-surface)]/[0.025]
             "
           >
             <p
               className="
-                text-[9px]
-                font-bold
-                uppercase
-                tracking-[0.12em]
-                text-slate-400
-                dark:text-slate-500
+                oc-type-label font-bold uppercase tracking-[0.12em]
               "
             >
               Apparence
@@ -1267,7 +1243,7 @@ export function AppNavigation({
                 my-1
                 h-px
                 bg-black/[0.055]
-                dark:bg-white/[0.07]
+                dark:bg-[var(--oc-surface)]/[0.07]
               "
             />
           )
@@ -1319,7 +1295,7 @@ export function AppNavigation({
                         + 'hover:bg-slate-50 '
                         + 'hover:text-slate-900 '
                         + 'dark:text-slate-300 '
-                        + 'dark:hover:bg-white/[0.045] '
+                        + 'dark:hover:bg-[var(--oc-surface)]/[0.045] '
                         + 'dark:hover:text-white'
                       ),
               ].join(' ')}
@@ -1384,12 +1360,12 @@ export function AppNavigation({
                     )
                   : (
                       'border-black/[0.055] '
-                      + 'bg-white '
+                      + 'bg-[var(--oc-surface)] '
                       + 'text-slate-400 '
                       + 'hover:bg-slate-50 '
-                      + 'dark:border-white/[0.07] '
-                      + 'dark:bg-white/[0.025] '
-                      + 'dark:hover:bg-white/[0.05]'
+                      + 'dark:border-[var(--oc-border)] '
+                      + 'dark:bg-[var(--oc-surface)]/[0.025] '
+                      + 'dark:hover:bg-[var(--oc-surface)]/[0.05]'
                     ),
               ].join(' ')}
             >
@@ -1436,7 +1412,7 @@ export function AppNavigation({
               + 'hover:bg-slate-50 '
               + 'hover:text-slate-900 '
               + 'dark:text-slate-400 '
-              + 'dark:hover:bg-white/[0.045] '
+              + 'dark:hover:bg-[var(--oc-surface)]/[0.045] '
               + 'dark:hover:text-slate-100'
             ),
       ].join(' ')}
@@ -1552,7 +1528,7 @@ function MobileDrawerItem({
           + 'gap-3 px-3 py-3 '
           + 'text-left transition '
           + 'hover:bg-slate-50 '
-          + 'dark:hover:bg-white/[0.04]'
+          + 'dark:hover:bg-[var(--oc-surface)]/[0.04]'
         ),
         divider
           ? (
@@ -1657,11 +1633,11 @@ function ThemeButton({
               + 'dark:text-emerald-400'
             )
           : (
-              'border-black/[0.06] '
-              + 'bg-white '
+              'border-[var(--oc-border)] '
+              + 'bg-[var(--oc-surface)] '
               + 'text-slate-500 '
-              + 'dark:border-white/[0.07] '
-              + 'dark:bg-white/[0.03] '
+              + 'dark:border-[var(--oc-border)] '
+              + 'dark:bg-[var(--oc-surface)]/[0.03] '
               + 'dark:text-slate-400'
             ),
       ].join(' ')}
@@ -1712,7 +1688,7 @@ function Avatar({
           + 'bg-slate-100 '
           + 'font-bold '
           + 'text-slate-600 '
-          + 'dark:bg-white/[0.07] '
+          + 'dark:bg-[var(--oc-surface)]/[0.07] '
           + 'dark:text-slate-300'
         ),
       ].join(' ')}

@@ -14,11 +14,11 @@
   gap: 12px;
 
   font-size: 13px;
-  color: rgb(51 65 85);
+  color: var(--oc-text-secondary);
 }
 
 [data-theme="dark"] .training-details-v3 {
-  color: rgb(203 213 225);
+  color: var(--oc-text-secondary);
 }
 
 
@@ -32,7 +32,7 @@
 
   padding: 16px;
 
-  border: 1px solid rgb(15 23 42 / 0.07);
+  border: 1px solid var(--oc-border);
   border-radius: 14px;
 
   background:
@@ -41,11 +41,11 @@
       rgb(16 185 129 / 0.055),
       transparent 42%
     ),
-    #ffffff;
+    var(--oc-surface);
 }
 
 [data-theme="dark"] .training-details-v3__hero {
-  border-color: rgb(255 255 255 / 0.075);
+  border-color: var(--oc-border);
 
   background:
     linear-gradient(
@@ -53,7 +53,7 @@
       rgb(16 185 129 / 0.07),
       transparent 45%
     ),
-    #11171b;
+    var(--oc-surface);
 }
 
 
@@ -75,12 +75,12 @@
 
   letter-spacing: -0.035em;
 
-  color: #0f172a !important;
+  color: var(--oc-text) !important;
 }
 
 [data-theme="dark"]
 .training-details-v3__hero h2 {
-  color: #f8fafc !important;
+  color: var(--oc-surface-muted) !important;
 }
 
 
@@ -103,16 +103,16 @@
 
   overflow: hidden;
 
-  border: 1px solid rgb(15 23 42 / 0.055);
+  border: 1px solid var(--oc-border);
   border-radius: 10px;
 
-  background: #f8fafc;
+  background: var(--oc-surface-muted);
 }
 
 [data-theme="dark"]
 .training-details-v3__hero > div:nth-child(2) {
-  border-color: rgb(255 255 255 / 0.06);
-  background: rgb(255 255 255 / 0.025);
+  border-color: var(--oc-border);
+  background: var(--oc-surface-muted);
 }
 
 
@@ -144,13 +144,13 @@
 
   white-space: normal;
 
-  color: #475569 !important;
+  color: var(--oc-text-secondary) !important;
 }
 
 [data-theme="dark"]
 .training-details-v3__hero > div:nth-child(2) > span {
   background: transparent !important;
-  color: #cbd5e1 !important;
+  color: var(--oc-text-secondary) !important;
 }
 
 
@@ -166,12 +166,12 @@
 
   width: 1px;
 
-  background: rgb(148 163 184 / 0.22);
+  background: var(--oc-border-strong);
 }
 
 [data-theme="dark"]
 .training-details-v3__hero > div:nth-child(2) > span:not(:last-child)::after {
-  background: rgb(255 255 255 / 0.07);
+  background: var(--oc-border);
 }
 
 
@@ -185,10 +185,10 @@
 
   margin: 0 !important;
 
-  border: 1px solid rgb(15 23 42 / 0.065) !important;
+  border: 1px solid var(--oc-border) !important;
   border-radius: 12px !important;
 
-  background: #fff !important;
+  background: var(--oc-surface) !important;
 
   box-shadow: none !important;
 }
@@ -197,8 +197,8 @@
 .training-details-v3 > details,
 [data-theme="dark"]
 .training-details-v3__section {
-  border-color: rgb(255 255 255 / 0.065) !important;
-  background: #151b1f !important;
+  border-color: var(--oc-border) !important;
+  background: var(--oc-surface) !important;
 }
 
 
@@ -230,19 +230,19 @@
   font-size: 13px !important;
   font-weight: 650 !important;
 
-  color: #0f172a !important;
+  color: var(--oc-text) !important;
 }
 
 [data-theme="dark"]
 .training-details-v3 details > summary span:first-child,
 [data-theme="dark"]
 .training-details-v3 details > summary p:first-child {
-  color: #f1f5f9 !important;
+  color: var(--oc-text) !important;
 }
 
 .training-details-v3 details > summary span:last-child {
   font-size: 10px !important;
-  color: #94a3b8 !important;
+  color: var(--oc-muted) !important;
 }
 
 
@@ -262,12 +262,12 @@
 /* Content */
 
 .training-details-v3 details > div {
-  border-color: rgb(15 23 42 / 0.055) !important;
+  border-color: var(--oc-border) !important;
 }
 
 [data-theme="dark"]
 .training-details-v3 details > div {
-  border-color: rgb(255 255 255 / 0.06) !important;
+  border-color: var(--oc-border) !important;
 }
 
 
@@ -381,12 +381,12 @@
   font-size: 13px !important;
   font-weight: 700 !important;
 
-  color: #0f172a !important;
+  color: var(--oc-text) !important;
 }
 
 [data-theme="dark"]
 .training-guidance-v3__stage h3 {
-  color: #f1f5f9 !important;
+  color: var(--oc-text) !important;
 }
 
 
@@ -399,17 +399,17 @@
 
   padding: 11px 12px !important;
 
-  border: 1px solid rgb(15 23 42 / 0.06) !important;
+  border: 1px solid var(--oc-border) !important;
   border-radius: 10px !important;
 
-  background: #f8fafc !important;
+  background: var(--oc-surface-muted) !important;
 }
 
 [data-theme="dark"]
 .training-guidance-v3__step {
-  border-color: rgb(255 255 255 / 0.06) !important;
+  border-color: var(--oc-border) !important;
 
-  background: rgb(255 255 255 / 0.025) !important;
+  background: var(--oc-surface-muted) !important;
 }
 
 .training-guidance-v3__step p {
@@ -421,12 +421,12 @@
   font-size: 12.5px !important;
   font-weight: 650 !important;
 
-  color: #0f172a !important;
+  color: var(--oc-text) !important;
 }
 
 [data-theme="dark"]
 .training-guidance-v3__step p:first-child {
-  color: #f1f5f9 !important;
+  color: var(--oc-text) !important;
 }
 
 
@@ -434,7 +434,7 @@
 .training-guidance-v3__step
 .rounded-xl.border {
   border-radius: 9px !important;
-  border-color: rgb(15 23 42 / 0.055) !important;
+  border-color: var(--oc-border) !important;
 
   background: white !important;
 }
@@ -442,7 +442,7 @@
 [data-theme="dark"]
 .training-guidance-v3__step
 .rounded-xl.border {
-  border-color: rgb(255 255 255 / 0.06) !important;
+  border-color: var(--oc-border) !important;
 
   background: rgb(0 0 0 / 0.12) !important;
 }
@@ -508,13 +508,13 @@ button.workout-activity-card--selected {
 
 .training-details-v3
 section[class*="border-t"] {
-  border-color: rgb(15 23 42 / 0.055) !important;
+  border-color: var(--oc-border) !important;
 }
 
 [data-theme="dark"]
 .training-details-v3
 section[class*="border-t"] {
-  border-color: rgb(255 255 255 / 0.06) !important;
+  border-color: var(--oc-border) !important;
 }
 
 
@@ -627,7 +627,7 @@ section[class*="border-t"] {
   z-index: 2;
 
   box-shadow:
-    0 0 0 4px #ffffff;
+    0 0 0 4px var(--oc-surface);
 }
 
 [data-theme="dark"]
@@ -635,7 +635,7 @@ section[class*="border-t"] {
 > div:first-child
 > span:first-child {
   box-shadow:
-    0 0 0 4px #151b1f;
+    0 0 0 4px var(--oc-surface);
 }
 
 
@@ -653,7 +653,7 @@ section[class*="border-t"] {
       rgb(16 185 129 / 0.06),
       transparent 60%
     ),
-    #f8fafc !important;
+    var(--oc-surface-muted) !important;
 }
 
 [data-theme="dark"]
@@ -665,7 +665,7 @@ section[class*="border-t"] {
       rgb(16 185 129 / 0.07),
       transparent 60%
     ),
-    rgb(255 255 255 / 0.025) !important;
+    var(--oc-surface-muted) !important;
 }
 
 
@@ -729,7 +729,7 @@ h3 {
   margin-top: 4px !important;
 
   border:
-    1px solid rgb(15 23 42 / 0.06) !important;
+    1px solid var(--oc-border) !important;
 
   border-radius: 11px !important;
 
@@ -739,7 +739,7 @@ h3 {
 [data-theme="dark"]
 .workout-coach-context {
   border-color:
-    rgb(255 255 255 / 0.06) !important;
+    var(--oc-border) !important;
 }
 
 
@@ -812,7 +812,7 @@ h3 {
     12px !important;
 
   border-bottom:
-    1px solid rgb(15 23 42 / 0.055) !important;
+    1px solid var(--oc-border) !important;
 }
 
 [data-theme="dark"]
@@ -820,7 +820,7 @@ h3 {
 > div
 > section:not(:last-child) {
   border-bottom-color:
-    rgb(255 255 255 / 0.06) !important;
+    var(--oc-border) !important;
 }
 
 
@@ -832,22 +832,22 @@ h3 {
   overflow: hidden;
 
   border:
-    1px solid rgb(15 23 42 / 0.065) !important;
+    1px solid var(--oc-border) !important;
 
   border-radius:
     12px !important;
 
   background:
-    #ffffff !important;
+    var(--oc-surface) !important;
 }
 
 [data-theme="dark"]
 .workout-activity-panel {
   border-color:
-    rgb(255 255 255 / 0.065) !important;
+    var(--oc-border) !important;
 
   background:
-    #151b1f !important;
+    var(--oc-surface) !important;
 }
 
 
@@ -876,10 +876,10 @@ h3 {
     10px !important;
 
   border-color:
-    rgb(15 23 42 / 0.065) !important;
+    var(--oc-border) !important;
 
   background:
-    #f8fafc !important;
+    var(--oc-surface-muted) !important;
 
   box-shadow:
     none !important;
@@ -888,10 +888,10 @@ h3 {
 [data-theme="dark"]
 .workout-activity-card {
   border-color:
-    rgb(255 255 255 / 0.065) !important;
+    var(--oc-border) !important;
 
   background:
-    rgb(255 255 255 / 0.025) !important;
+    var(--oc-surface-muted) !important;
 }
 
 
@@ -931,14 +931,14 @@ p.font-semibold {
     12.5px !important;
 
   color:
-    #0f172a !important;
+    var(--oc-text) !important;
 }
 
 [data-theme="dark"]
 .workout-activity-card
 p.font-semibold {
   color:
-    #f1f5f9 !important;
+    var(--oc-text) !important;
 }
 
 
@@ -976,7 +976,7 @@ p.font-semibold {
     #059669 !important;
 
   color:
-    #ffffff !important;
+    var(--oc-surface) !important;
 
   font-size:
     11.5px !important;
@@ -1027,7 +1027,7 @@ p.font-semibold {
       rgb(16 185 129 / 0.055),
       transparent 46%
     ),
-    #ffffff !important;
+    var(--oc-surface) !important;
 }
 
 [data-theme="dark"]
@@ -1038,7 +1038,7 @@ p.font-semibold {
       rgb(16 185 129 / 0.07),
       transparent 48%
     ),
-    rgb(255 255 255 / 0.02) !important;
+    var(--oc-surface-muted) !important;
 }
 
 
@@ -1072,13 +1072,13 @@ p.font-semibold {
     -0.015em;
 
   color:
-    #0f172a !important;
+    var(--oc-text) !important;
 }
 
 [data-theme="dark"]
 .workout-debrief-card h3 {
   color:
-    #f1f5f9 !important;
+    var(--oc-text) !important;
 }
 
 
@@ -1097,14 +1097,14 @@ p.font-semibold {
     1.6 !important;
 
   color:
-    #475569 !important;
+    var(--oc-text-secondary) !important;
 }
 
 [data-theme="dark"]
 .workout-debrief-card
 > p {
   color:
-    #cbd5e1 !important;
+    var(--oc-text-secondary) !important;
 }
 
 
@@ -1229,7 +1229,7 @@ ul {
 > div:nth-child(2)
 > span:hover {
   background:
-    rgb(255 255 255 / 0.025) !important;
+    var(--oc-surface-muted) !important;
 }
 
 
@@ -1317,7 +1317,7 @@ h3 {
 .training-guidance-v3__step
 > p {
   color:
-    #94a3b8 !important;
+    var(--oc-muted) !important;
 }
 
 
@@ -1467,7 +1467,7 @@ section p,
 .workout-coach-context
 section li {
   color:
-    #94a3b8 !important;
+    var(--oc-muted) !important;
 }
 
 
@@ -1541,7 +1541,7 @@ section[class*="border-amber-500"] {
 .workout-activity-card
 .text-slate-500 {
   color:
-    #94a3b8 !important;
+    var(--oc-muted) !important;
 }
 
 
@@ -1620,7 +1620,7 @@ svg {
 [data-theme="dark"]
 .workout-debrief-card li {
   color:
-    #94a3b8 !important;
+    var(--oc-muted) !important;
 }
 
 
@@ -1641,7 +1641,7 @@ svg {
 .training-details-v3
 .workout-empty-state {
   border-color:
-    rgb(255 255 255 / 0.07) !important;
+    var(--oc-border) !important;
 
   background:
     rgb(255 255 255 / 0.018) !important;

@@ -21,6 +21,7 @@ import {
 } from '../../core/wellness'
 
 import { LineChart } from '../../design-system/charts/LineChart'
+import { MetricCard } from '../../design-system/components/MetricCard'
 
 type WindowSize = 7 | 14 | 30
 
@@ -400,16 +401,7 @@ function StatusCard({
   detail: string
   icon: React.ReactNode
 }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141a1e]">
-      <div className="flex items-center justify-between text-slate-400">
-        <span className="text-xs font-medium">{label}</span>
-        {icon}
-      </div>
-      <p className="mt-3 truncate text-xl font-bold text-slate-950 dark:text-white">{value}</p>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{detail}</p>
-    </div>
-  )
+  return <MetricCard label={label} value={value} detail={detail} icon={icon} />
 }
 
 function MetricTile({
@@ -423,17 +415,16 @@ function MetricTile({
 }) {
   const value = metric?.current
   return (
-    <div className="rounded-xl border border-slate-200 p-3 dark:border-white/10">
-      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-1 text-xl font-bold tabular-nums text-slate-950 dark:text-white">
-        {value == null ? '—' : formatMetric(value, unit)}
-      </p>
-      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-400 dark:text-slate-500">
-        <span>Moy. {metric?.average == null ? '—' : formatMetric(metric.average, unit)}</span>
-        <span>{metric?.sample_count ?? 0} mesures</span>
-        <span>{metric?.coverage_days ?? 0} j couverts</span>
-      </div>
-    </div>
+    <MetricCard
+      label={label}
+      value={value == null ? '—' : formatMetric(value, unit)}
+      metadata={[
+        { label: 'Moyenne', value: metric?.average == null ? '—' : formatMetric(metric.average, unit) },
+        { label: 'Mesures', value: String(metric?.sample_count ?? 0) },
+        { label: 'Jours couverts', value: String(metric?.coverage_days ?? 0) },
+      ]}
+      compact
+    />
   )
 }
 

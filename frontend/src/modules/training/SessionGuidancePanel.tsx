@@ -384,7 +384,7 @@ function ExecutionStage({
           className={[
             (
               'training-guidance-v3__stage-title '
-              + 'text-[11.5px] 
+              + 'text-[11.5px] '
               + 'font-bold uppercase '
               + 'tracking-[0.055em]'
             ),

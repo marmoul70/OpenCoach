@@ -52,7 +52,8 @@ export function TrainingWidget({
           w-full items-center
           justify-center
           rounded-2xl
-          bg-[#141917]
+          border border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
         "
       >
         <span
@@ -78,9 +79,9 @@ export function TrainingWidget({
         className="
           rounded-2xl
           border border-red-500/20
-          bg-[#171313]
+          bg-[var(--oc-surface)]
           p-5
-          text-white
+          text-[var(--oc-text)]
         "
       >
         <p
@@ -104,7 +105,7 @@ export function TrainingWidget({
             mt-2
             text-sm
             leading-6
-            text-white/55
+            text-[var(--oc-muted)]
           "
         >
           {error}
@@ -125,16 +126,12 @@ export function TrainingWidget({
         overflow-hidden
         rounded-2xl
         border
-        border-white/[0.07]
-        bg-[#141917]
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
         p-0
         text-left
-        text-white
-        shadow-[0_14px_45px_rgba(4,12,8,0.13)]
-        transition
-        duration-200
-        hover:-translate-y-0.5
-        hover:bg-[#181e1b]
+        text-[var(--oc-text)]
+        oc-interactive-surface
         focus-visible:outline-none
         focus-visible:ring-2
         focus-visible:ring-emerald-500/40
@@ -209,7 +206,7 @@ export function TrainingWidget({
               className="
                 mt-1
                 text-sm
-                text-white/45
+                text-[var(--oc-muted)]
               "
             >
               {todaySessions.length > 0
@@ -230,7 +227,7 @@ export function TrainingWidget({
               justify-center
               rounded-xl
               bg-white/[0.06]
-              text-white/60
+              text-[var(--oc-muted)]
             "
           >
             {todaySessions.length > 0
@@ -299,9 +296,9 @@ export function TrainingWidget({
                 className="
                   mt-5
                   divide-y
-                  divide-white/[0.07]
+                  divide-[var(--oc-border)]
                   border-t
-                  border-white/[0.07]
+                  border-[var(--oc-border)]
                 "
               >
                 {todaySessions.map(
@@ -344,7 +341,7 @@ export function TrainingWidget({
                             mt-0.5
                             truncate
                             text-xs
-                            text-white/40
+                            text-[var(--oc-muted)]
                           "
                         >
                           {session.title}
@@ -355,7 +352,7 @@ export function TrainingWidget({
                         className="
                           text-xs
                           font-medium
-                          text-white/55
+                          text-[var(--oc-muted)]
                         "
                       >
                         {session.durationMinutes}
@@ -435,7 +432,7 @@ export function TrainingWidget({
             <ArrowRight
               className="
                 h-4 w-4
-                text-white/30
+                text-[var(--oc-muted-soft)]
                 transition-transform
                 group-hover:translate-x-1
               "
@@ -461,7 +458,7 @@ function TrainingMetric({
     <div
       className="
         rounded-xl
-        bg-white/[0.045]
+        bg-[var(--oc-surface-muted)]
         px-3.5
         py-3
       "
@@ -472,7 +469,7 @@ function TrainingMetric({
           items-center
           gap-1.5
           text-[11px]
-          text-white/35
+          text-[var(--oc-muted)]
         "
       >
         {icon}

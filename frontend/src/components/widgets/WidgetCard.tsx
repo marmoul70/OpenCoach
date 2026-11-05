@@ -42,7 +42,7 @@ const accentClasses:
       background:
         (
           'bg-[var(--oc-surface-muted)] '
-          + 'dark:bg-white/[0.06]'
+          + 'dark:bg-[var(--oc-surface-muted)]'
         ),
     },
 

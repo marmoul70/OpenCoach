@@ -74,6 +74,7 @@ def test_service_saves_intervals_connection() -> None:
 
     assert repository.encrypted_secret is not None
     assert repository.encrypted_secret != b"secret-api-key"
+    assert service.get_credentials(profile_id, "intervals").secret == "secret-api-key"
 
 
 def test_service_preserves_existing_secret() -> None:
@@ -87,8 +88,6 @@ def test_service_preserves_existing_secret() -> None:
         api_key="secret-api-key",
     )
 
-    encrypted_secret = repository.encrypted_secret
-
     service.save_intervals_connection(
         profile_id,
         athlete_id="i999999",
@@ -96,10 +95,10 @@ def test_service_preserves_existing_secret() -> None:
     )
 
     assert repository.connection.athlete_id == "i999999"
-    assert repository.encrypted_secret == encrypted_secret
+    assert service.get_credentials(profile_id, "intervals").secret == "secret-api-key"
 
 
-def test_service_returns_decrypted_credentials() -> None:
+def test_service_stores_and_returns_personal_web_cookie() -> None:
     service, _ = create_service()
 
     profile_id = uuid4()
@@ -108,6 +107,7 @@ def test_service_returns_decrypted_credentials() -> None:
         profile_id,
         athlete_id="i651743",
         api_key="secret-api-key",
+        web_cookie=" session-cookie ",
     )
 
     credentials = service.get_credentials(
@@ -118,6 +118,8 @@ def test_service_returns_decrypted_credentials() -> None:
     assert credentials.provider == "intervals"
     assert credentials.athlete_id == "i651743"
     assert credentials.secret == "secret-api-key"
+    assert credentials.web_cookie == "session-cookie"
+    assert service.has_intervals_web_cookie(profile_id) is True
 
 
 def test_service_requires_api_key_for_new_connection() -> None:

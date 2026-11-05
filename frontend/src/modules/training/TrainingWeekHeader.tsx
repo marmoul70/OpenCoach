@@ -127,7 +127,7 @@ export function TrainingWeekHeader({
               bg-[var(--oc-surface)]
               shadow-[0_1px_2px_rgba(15,23,42,0.025)]
               dark:border-[var(--oc-border)]
-              dark:bg-[var(--oc-surface)]
+              
               lg:col-span-7
             "
           >
@@ -158,7 +158,7 @@ export function TrainingWeekHeader({
                   : (
                       'text-[var(--oc-text-secondary)] '
                       + 'hover:text-emerald-600 '
-                      + 'dark:text-[var(--oc-text-secondary)] '
+                      + ' '
                       + 'dark:hover:text-emerald-400'
                     ),
               ].join(' ')}
@@ -224,8 +224,8 @@ export function TrainingWeekHeader({
                           py-1.5
                           text-left
                           transition
-                          hover:bg-[var(--oc-surface)]
-                          dark:hover:bg-[var(--oc-surface)]/[0.035]
+                          hover:bg-[var(--oc-surface-hover)]
+                          dark:hover:bg-[var(--oc-surface-hover)]/[0.035]
                         "
                       >
                         <p
@@ -274,7 +274,7 @@ export function TrainingWeekHeader({
                             transition
                             hover:bg-[var(--oc-surface-muted)]
                             hover:text-[var(--oc-text)]
-                            dark:hover:bg-[var(--oc-surface)]/[0.05]
+                            dark:hover:bg-[var(--oc-surface-hover)]/[0.05]
                             
                           "
                         >
@@ -306,7 +306,7 @@ export function TrainingWeekHeader({
                             transition
                             hover:bg-[var(--oc-surface-muted)]
                             hover:text-[var(--oc-text)]
-                            dark:hover:bg-[var(--oc-surface)]/[0.05]
+                            dark:hover:bg-[var(--oc-surface-hover)]/[0.05]
                             
                           "
                         >
@@ -340,8 +340,8 @@ export function TrainingWeekHeader({
                           rounded-[8px]
                           text-[var(--oc-text-secondary)]
                           transition
-                          active:bg-[var(--oc-surface)]
-                          dark:active:bg-[var(--oc-surface)]/[0.04]
+                          active:bg-[var(--oc-surface-hover)]
+                          dark:active:bg-[var(--oc-surface-hover)]/[0.04]
                         "
                       >
                         <ChevronLeft
@@ -392,8 +392,8 @@ export function TrainingWeekHeader({
                           rounded-[8px]
                           text-[var(--oc-text-secondary)]
                           transition
-                          active:bg-[var(--oc-surface)]
-                          dark:active:bg-[var(--oc-surface)]/[0.04]
+                          active:bg-[var(--oc-surface-hover)]
+                          dark:active:bg-[var(--oc-surface-hover)]/[0.04]
                         "
                       >
                         <ChevronRight
@@ -441,7 +441,7 @@ export function TrainingWeekHeader({
                   uppercase
                   tracking-[0.12em]
                   text-[var(--oc-text-secondary)]
-                  dark:text-[var(--oc-text-secondary)]
+                  
                 "
               >
                 Phase d'entraînement
@@ -466,7 +466,7 @@ export function TrainingWeekHeader({
                   text-[11px]
                   font-semibold
                   text-[var(--oc-text-secondary)]
-                  dark:text-[var(--oc-text-secondary)]
+                  
                 "
               >
                 Semaine {phaseWeekIndex}
@@ -545,7 +545,7 @@ export function TrainingWeekHeader({
                   uppercase
                   tracking-[0.12em]
                   text-[var(--oc-text-secondary)]
-                  dark:text-[var(--oc-text-secondary)]
+                  
                 "
               >
                 Cette semaine
@@ -607,7 +607,7 @@ export function TrainingWeekHeader({
                   uppercase
                   tracking-[0.12em]
                   text-[var(--oc-text-secondary)]
-                  dark:text-[var(--oc-text-secondary)]
+                  
                 "
               >
                 Charge
@@ -638,7 +638,7 @@ export function TrainingWeekHeader({
                   className="
                     text-[11px]
                     text-[var(--oc-text-secondary)]
-                    dark:text-[var(--oc-text-secondary)]
+                    
                   "
                 >
                   {mainLabel}
@@ -816,7 +816,7 @@ function PlanningMetric({
             uppercase
             tracking-[0.05em]
             text-[var(--oc-text-secondary)]
-            dark:text-[var(--oc-text-secondary)]
+            
           "
         >
           {label}

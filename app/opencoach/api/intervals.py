@@ -496,11 +496,16 @@ def test_saved_intervals_connection(
     client = IntervalsClient(
         api_key=credentials.secret,
         athlete_id=credentials.athlete_id,
+        web_cookie=(
+            payload.web_cookie
+            if payload is not None and payload.web_cookie is not None
+            else getattr(credentials, "web_cookie", None)
+        ),
     )
 
     try:
         client.get_athlete()
-        if getattr(credentials, "web_cookie", None):
+        if client.web_cookie:
             client.trigger_partner_sync()
 
     except IntervalsAuthenticationError as exc:

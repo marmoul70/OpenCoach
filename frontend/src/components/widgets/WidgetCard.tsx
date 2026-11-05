@@ -38,10 +38,10 @@ const accentClasses:
   > = {
     neutral: {
       foreground:
-        'text-slate-500',
+        'text-[var(--oc-muted)]',
       background:
         (
-          'bg-slate-100 '
+          'bg-[var(--oc-surface-muted)] '
           + 'dark:bg-white/[0.06]'
         ),
     },
@@ -220,11 +220,10 @@ export function WidgetCard({
       >
         <h3
           className="
-            text-base
+            oc-type-card-title
             font-bold
             tracking-[-0.02em]
-            text-slate-950
-            dark:text-white
+            text-[var(--oc-text)]
           "
         >
           {widget.title}
@@ -234,10 +233,9 @@ export function WidgetCard({
           <p
             className="
               mt-1.5
-              text-sm
+              oc-type-body
               leading-6
-              text-slate-500
-              dark:text-slate-400
+              text-[var(--oc-text-secondary)]
             "
           >
             {widget.description}
@@ -253,16 +251,16 @@ export function WidgetCard({
           items-center
           justify-between
           border-t
-          border-black/[0.06]
+          border-[var(--oc-border)]
           pt-4
           dark:border-white/[0.07]
         "
       >
         <span
           className="
-            text-[11px]
+            oc-type-caption
             font-medium
-            text-slate-400
+            text-[var(--oc-muted)]
           "
         >
           Détails
@@ -385,8 +383,8 @@ function Status({
         py-1
         text-[10px]
         font-semibold
-        text-slate-400
-        dark:bg-white/[0.05]
+        text-[var(--oc-muted)]
+        dark:bg-[var(--oc-surface-muted)]
       "
     >
       <Info

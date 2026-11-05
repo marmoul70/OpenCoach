@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Bell, CheckCheck, Inbox, Trash2 } from 'lucide-react'
+import { Bell, CheckCheck, Inbox } from 'lucide-react'
 
 import {
   fetchNotifications,
@@ -53,6 +53,11 @@ export function NotificationBell({
       await refresh()
       setLoading(false)
     }
+  }
+
+  function viewAll() {
+    setOpen(false)
+    onViewAll()
   }
 
   async function markRead(notification: AppNotification) {
@@ -130,7 +135,7 @@ export function NotificationBell({
               </div>
               <button
                 type="button"
-                onClick={onViewAll}
+                onClick={viewAll}
                 className="
                   text-[10px] font-semibold text-[var(--oc-accent)]
                   hover:underline

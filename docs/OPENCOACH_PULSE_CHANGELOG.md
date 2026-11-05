@@ -209,3 +209,10 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - La CI du commit précédent `47fefbe` est terminée avec succès ; les commits du présent sprint déclenchent une nouvelle exécution CI.
 - Le rendu navigateur et le build des nouveaux commits restent à confirmer.
 - Aucun merge, aucune PR de fusion et aucun déploiement VM.
+
+
+### Harmonisation visuelle de Santé
+- Les cinq surfaces principales de HealthPage (chargement, historique, tendances, séries physiologiques et ressenti) utilisent maintenant la classe partagée `.oc-surface`.
+- Les appels de données, états de chargement/erreur, filtres de période et données affichées sont inchangés.
+- Les cartes de métriques utilisent `MetricCard` et les courbes utilisent `LineChart` : la page Santé consomme désormais deux primitives communes du design system.
+- Les tuiles de séries horodatées restent locales pour le moment : leur contenu est plus spécifique (courant, moyenne, minimum, maximum, couverture et plage temporelle). Elles seront factorisées après définition d'un contrat de widget adapté, sans créer une abstraction trop générique.

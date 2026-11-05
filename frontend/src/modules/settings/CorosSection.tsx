@@ -266,7 +266,7 @@ export function CorosSection() {
             type="button"
             onClick={handleTestConnection}
             disabled={testing || connecting}
-            className="mt-4 ml-2 inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3.5 py-2.5 text-xs font-semibold text-[var(--oc-text-secondary)] hover:bg-slate-50 disabled:opacity-60 dark:border-white/15 dark:text-[var(--oc-text-secondary)] dark:hover:bg-white/5"
+            className="mt-4 ml-2 inline-flex items-center gap-2 rounded-lg border border-[var(--oc-border-strong)] px-3.5 py-2.5 text-xs font-semibold text-[var(--oc-text-secondary)] hover:bg-[var(--oc-surface-hover)] disabled:opacity-60 dark:border-[var(--oc-border-strong)] dark:text-[var(--oc-text-secondary)] dark:hover:bg-[var(--oc-surface-hover)]"
           >
             {testing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             {testing ? 'Test en cours…' : 'Tester la connexion MCP'}
@@ -299,7 +299,7 @@ export function CorosSection() {
                 type="checkbox"
                 checked={Boolean(connection.categories[key])}
                 onChange={event => updateCategory(key, event.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                className="h-4 w-4 rounded border-[var(--oc-border-strong)] text-emerald-600 focus:ring-emerald-500"
               />
               {label}
             </label>
@@ -313,7 +313,7 @@ export function CorosSection() {
           <select
             value={connection.sync_interval_hours}
             onChange={event => setConnection(current => current ? { ...current, sync_interval_hours: Number(event.target.value) } : current)}
-            className="w-full rounded-lg border border-[var(--oc-border)] bg-white px-3 py-2.5 text-xs text-[var(--oc-text-secondary)] dark:border-[var(--oc-border)] dark:bg-[#10171b] dark:text-white"
+            className="w-full rounded-lg border border-[var(--oc-border)] bg-[var(--oc-surface)] px-3 py-2.5 text-xs text-[var(--oc-text-secondary)] dark:border-[var(--oc-border)] dark:bg-[var(--oc-surface)] dark:text-white"
           >
             <option value={0}>Désactivée</option>
             <option value={6}>Toutes les 6 heures</option>
@@ -322,14 +322,14 @@ export function CorosSection() {
           </select>
           <span className="mt-1.5 block text-[11px] text-[var(--oc-muted)]">Le service vérifie les échéances toutes les 15 minutes et lance l’import lorsque la fréquence est atteinte.</span>
         </label>
-        <div className="rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-white/[0.04]">
+        <div className="rounded-lg bg-[var(--oc-surface-muted)] px-3 py-2.5 dark:bg-[var(--oc-surface)]/[0.04]">
           <span className="block text-xs font-medium text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]">Historique initial</span>
           <span className="mt-1 block text-sm font-semibold text-[var(--oc-text)] dark:text-white">6 derniers mois</span>
           <span className="mt-1 block text-[11px] text-[var(--oc-muted)]">Fenêtre cible du premier import.</span>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 dark:border-[var(--oc-border)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--oc-border)] pt-4 dark:border-[var(--oc-border)]">
         <p className="text-[11px] text-[var(--oc-muted)]">
           {connection.last_synced_at
             ? `Dernière synchronisation : ${new Date(connection.last_synced_at).toLocaleString('fr-FR')}`
@@ -362,7 +362,7 @@ export function CorosSection() {
                       {Object.entries(tool.input_schema.properties ?? {}).map(([name, definition]) => (
                         <li key={name} className="text-[11px] text-[var(--oc-text-secondary)] dark:text-[var(--oc-muted-soft)]">
                           <span className="font-mono font-medium">{name}</span>
-                          <span className="text-slate-400"> · {Array.isArray(definition.type) ? definition.type.join(' | ') : definition.type ?? 'type non précisé'}</span>
+                          <span className="text-[var(--oc-muted-soft)]"> · {Array.isArray(definition.type) ? definition.type.join(' | ') : definition.type ?? 'type non précisé'}</span>
                           {tool.input_schema.required?.includes(name) && <span className="ml-1 text-amber-600">obligatoire</span>}
                           {definition.description && <span className="block text-[var(--oc-muted)]">{definition.description}</span>}
                         </li>

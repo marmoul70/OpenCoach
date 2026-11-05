@@ -44,7 +44,7 @@ echo
 echo "Build terminé. Démarrage du frontend de test..."
 echo "Backend API proxifié vers http://127.0.0.1:8000 (configuration Vite existante)."
 echo "Pour tester depuis un autre appareil du réseau, ouvre :"
-echo "  http://$(hostname -I 2>/dev/null | awk '{print $1}') :5173"
+echo "  http://$(hostname -I 2>/dev/null | awk '{print $1}'):5173"
 echo "Arrêt du serveur : Ctrl+C"
 echo
-npm run dev -- --host 0.0.0.0
+npm run dev -- --host 0.0.0.0 --port 5173 --strictPort

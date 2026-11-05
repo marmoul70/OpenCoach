@@ -558,3 +558,21 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Migration limitée aux classes de présentation du composant existant.
 - Contrôle CI à confirmer sur le commit final.
 - Vérification visuelle responsive et clair/sombre à effectuer dans le navigateur.
+
+
+## 2026-11-05 — Sprint 23 : finitions des états de journée du planning
+
+### Livré
+- Ligne de repos : bordure et état de survol alignés sur les tokens de bordure Pulse.
+- Journée vide : bordure en pointillés raccordée au token sémantique.
+- Badge « Supplémentaire » : bordure harmonisée avec les autres éléments du planning.
+- Repère neutre de type de séance : bordure latérale basée sur le token renforcé.
+
+### Garde-fous
+- Les types de séance, statuts, couleurs fonctionnelles, données et interactions restent inchangés.
+- Aucun changement de logique, API, backend, stockage, synchronisation ou dépendance.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles
+- Modifications limitées aux bordures neutres du composant existant.
+- CI à confirmer sur les commits finaux ; vérification visuelle clair/sombre et responsive à effectuer.

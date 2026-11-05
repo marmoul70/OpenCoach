@@ -136,6 +136,23 @@ def test_service_requires_api_key_for_new_connection() -> None:
         )
 
 
+def test_service_reads_legacy_api_key_secret() -> None:
+    service, repository = create_service()
+    profile_id = uuid4()
+    repository.connection = IntegrationConnection(
+        provider="intervals",
+        enabled=True,
+        athlete_id="i651743",
+        secret_configured=True,
+    )
+    repository.encrypted_secret = service.cipher.encrypt("legacy-api-key")
+
+    credentials = service.get_credentials(profile_id, "intervals")
+
+    assert credentials.secret == "legacy-api-key"
+    assert credentials.web_cookie is None
+
+
 def test_service_rejects_missing_connection() -> None:
     service, _ = create_service()
 

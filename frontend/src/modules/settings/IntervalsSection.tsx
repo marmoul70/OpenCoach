@@ -193,7 +193,9 @@ export function IntervalsSection() {
           )
         }
 
-        await testSavedIntervalsConnection()
+        await testSavedIntervalsConnection(
+          webCookie.trim() || undefined,
+        )
       }
 
       setConnectionTested(true)

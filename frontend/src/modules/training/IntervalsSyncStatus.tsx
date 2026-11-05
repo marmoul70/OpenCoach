@@ -72,20 +72,13 @@ export function IntervalsSyncStatus({
         {presentation.detail && (
           <>
             <span
-              className="
-                text-slate-300
-                dark:text-slate-700
-              "
+              className="text-[var(--oc-border-strong)]"
             >
               ·
             </span>
 
             <span
-              className="
-                truncate
-                text-slate-400
-                dark:text-slate-500
-              "
+              className="oc-type-caption truncate text-[var(--oc-text-secondary)]"
             >
               {presentation.detail}
             </span>
@@ -120,10 +113,8 @@ export function IntervalsSyncStatus({
       className={[
         'mt-2.5 flex items-start gap-2.5 ',
         'rounded-[10px] border ',
-        'border-black/[0.06] ',
-        'bg-slate-50/70 px-3 py-2.5 ',
-        'dark:border-white/[0.065] ',
-        'dark:bg-white/[0.025]',
+        'border-[var(--oc-border)] ',
+        'bg-[var(--oc-surface-muted)] px-3 py-2.5 ',
       ].join(' ')}
     >
       <Icon
@@ -147,10 +138,9 @@ export function IntervalsSyncStatus({
           <p
             className="
               mt-0.5
-              text-[10.5px]
+              oc-type-caption
               leading-4
-              text-slate-400
-              dark:text-slate-500
+              text-[var(--oc-text-secondary)]
             "
           >
             {presentation.detail}

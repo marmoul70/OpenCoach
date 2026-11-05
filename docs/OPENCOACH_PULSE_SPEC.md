@@ -203,6 +203,7 @@ Règle : un même rôle conserve la même taille sur toutes les pages. Les KPI e
 - `PageHeader` : `title` obligatoire ; `eyebrow`, `description`, `actions` et `className` optionnels. Le module garde la responsabilité du contenu et des actions.
 - `WidgetCard` : reçoit une définition de widget et un callback ; l'accent et le statut sont présentés sans calcul métier dans le composant. Les états de statut restent sémantiquement distincts (neutre, succès, vigilance, alerte).
 - `MetricCard` : reste la primitive commune pour les mesures et résumés ; les valeurs sont préparées par le module appelant.
+- `SidePanel` : panneau partagé en pleine largeur sur mobile ; à partir du breakpoint tablette, largeur `max(36vw, 460px)` sans plafond fixe, soit au minimum un tiers de l'écran et davantage lorsque l'espace disponible le permet. Le contenu reste scrollable indépendamment de l'en-tête. `SidePanelSection` gère uniquement le regroupement/repli des sections.
 - `oc-interactive-surface` : feedback hover uniquement sur les dispositifs qui le prennent en charge, focus clavier visible et respect de `prefers-reduced-motion`.
 
 Les cartes de l'objectif de course et du résumé hebdomadaire réutilisent maintenant les surfaces interactives Pulse. Les éléments décoratifs (icônes, progressions, statuts) ne doivent pas être transformés en images de fond : l'interface privilégie les icônes vectorielles et les données réelles.

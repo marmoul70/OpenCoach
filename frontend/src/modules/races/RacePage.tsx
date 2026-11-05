@@ -1002,12 +1002,12 @@ function PreparationRace({
               + 'h-2.5 w-2.5 '
               + 'rounded-full '
               + 'ring-4 '
-              + 'ring-white '
-              + 'dark:ring-[#151b1f]'
+              + 'ring-[var(--oc-surface)] '
+              + 'dark:ring-[var(--oc-surface)]'
             ),
             primary
               ? 'bg-emerald-500'
-              : 'bg-slate-300 dark:bg-[var(--oc-muted-soft)]',
+              : 'bg-[var(--oc-muted-soft)] dark:bg-[var(--oc-muted-soft)]',
           ].join(' ')}
         />
 
@@ -1313,7 +1313,7 @@ function RaceTableRow({
         last:border-b-0
         hover:bg-[var(--oc-surface-hover)]
         dark:border-[var(--oc-border)]
-        dark:hover:bg-white/[0.018]
+        dark:hover:bg-[var(--oc-surface-hover)]
       "
     >
       <td
@@ -1744,7 +1744,7 @@ function PriorityPill({
               + 'dark:text-emerald-400'
             )
           : (
-              'bg-slate-500/[0.07] '
+              'bg-[var(--oc-surface-muted)] '
               + 'text-[var(--oc-muted)] '
               + 'dark:text-[var(--oc-muted-soft)]'
             ),
@@ -1981,7 +1981,7 @@ function EmptyState({
           mx-auto
           h-5
           w-5
-          text-slate-200
+          text-[var(--oc-muted-soft)]
           dark:text-[var(--oc-text-secondary)]
         "
       />

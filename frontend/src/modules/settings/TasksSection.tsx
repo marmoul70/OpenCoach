@@ -491,7 +491,7 @@ export function TasksSection() {
                   mx-auto
                   h-5
                   w-5
-                  text-slate-200
+                  text-[var(--oc-muted-soft)]
                   dark:text-[var(--oc-text-secondary)]
                 "
               />
@@ -1068,7 +1068,7 @@ function getStatusConfig(
       ),
 
     dotClassName:
-      'bg-slate-300',
+      'bg-[var(--oc-muted-soft)]',
 
     icon:
       Clock3,

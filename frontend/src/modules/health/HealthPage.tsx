@@ -359,20 +359,29 @@ function TrendChart({
     ? values.reduce((total, value) => total + value, 0) / values.length
     : null
   const latest = points[points.length - 1]
+  const pointByDate = new Map(points.map((point) => [point.date, point]))
+  const chartPoints = Array.from({ length: days }, (_, index) => {
+    const date = new Date(`${endDate}T12:00:00Z`)
+    date.setUTCDate(date.getUTCDate() - (days - 1 - index))
+    const dateKey = date.toISOString().slice(0, 10)
+    const point = pointByDate.get(dateKey)
+    return {
+      id: dateKey,
+      label: formatDate(dateKey),
+      value: point?.value ?? null,
+    }
+  })
+
 
   return (
     <LineChart
       title={title}
-      points={points.map((point) => ({
-        id: point.date,
-        label: formatDate(point.date),
-        value: point.value,
-      }))}
+      points={chartPoints}
       valueFormatter={(value) => formatMetric(value, unit)}
       latestValue={latest ? formatMetric(latest.value, unit) : '—'}
       averageValue={average == null ? '—' : formatMetric(average, unit)}
-      startLabel={points.length > 0 ? formatDate(points[0].date) : '—'}
-      endLabel={latest ? formatDate(latest.date) : '—'}
+      startLabel={chartPoints[0].label}
+      endLabel={chartPoints[chartPoints.length - 1].label}
       emptyMessage={`Aucune donnée sur ${days} jours`}
       ariaLabel={`Évolution de ${title} sur ${days} jours`}
       headerMeta={`${points.length} j`}

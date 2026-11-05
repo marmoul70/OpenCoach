@@ -385,3 +385,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Audit statique des règles de largeur et des principales couleurs neutres du cockpit.
 - Tests visuels tablette/desktop à effectuer aux largeurs 768, 1024, 1440 et 1920 px, puis contrôle mobile et thèmes clair/sombre.
 - CI à confirmer après les derniers commits.
+
+
+## 2026-11-05 — Sprint 14 : lisibilité du cockpit de séance
+
+### Livré
+- Résumé de séance : valeurs métriques renforcées, libellés plus lisibles et espacements adaptés à la largeur disponible.
+- Cartes d'activités : meilleure lecture des données de durée, distance, dénivelé et ressenti, avec une hiérarchie plus nette.
+- Débrief OpenCoach : carte structurée, objectif plus visible et texte/listes plus confortables à lire.
+- Ajustements dédiés au mobile pour conserver une densité adaptée aux petits écrans.
+
+### Garde-fous
+- La grille du résumé, les données affichées, les critères de correspondance, les statuts, les sélections et les interactions restent inchangés.
+- Aucun calcul, appel API, modèle, endpoint, synchronisation ou dépendance modifié.
+- Aucun merge, déploiement ou changement de VM.
+
+### Contrôles
+- Relecture ciblée des composants et sélecteurs CSS ajoutés ; les styles sont limités au cockpit de détail de séance.
+- Build et tests CI à confirmer après les commits du sprint.
+- Vérification visuelle claire/sombre sur mobile, tablette et desktop toujours nécessaire.

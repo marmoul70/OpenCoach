@@ -37,6 +37,14 @@
   --oc-text-lg: 1.125rem;
   --oc-text-xl: 1.25rem;
   --oc-text-2xl: 1.5rem;
+  /* Shared hierarchy: page / section / body / metadata / labels. */
+  --oc-type-page-title: clamp(1.5rem, 2.4vw, 1.875rem);
+  --oc-type-section-title: 1.125rem;
+  --oc-type-card-title: 1rem;
+  --oc-type-body: 0.8125rem;
+  --oc-type-secondary: 0.75rem;
+  --oc-type-label: 0.6875rem;
+  --oc-type-caption: 0.625rem;
   --oc-leading-tight: 1.25;
   --oc-leading-normal: 1.5;
 

@@ -339,7 +339,7 @@ function TodayTrainingSession({
               truncate
               text-[15px]
               font-semibold
-              text-white
+              text-[var(--oc-text)]
             "
           >
             {session.title}

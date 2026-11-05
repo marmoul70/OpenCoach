@@ -1,6 +1,9 @@
 import {
   Activity,
   CalendarDays,
+  ChevronRight,
+  Heart,
+  Moon,
   CircleAlert,
   HeartPulse,
   RefreshCw,
@@ -21,9 +24,17 @@ import {
 } from '../../core/wellness'
 
 import { LineChart } from '../../design-system/charts/LineChart'
+import { SidePanel } from '../../components/ui/SidePanel'
 import { PageHeader } from '../../design-system/components/PageHeader'
 
 type WindowSize = 7 | 14 | 30
+type HealthSectionKey = 'cardio' | 'recovery' | 'sleep'
+
+const HEALTH_SECTIONS = [
+  { key: 'cardio', title: 'Cardio', description: 'Fréquence cardiaque et santé cardiovasculaire', icon: Heart, metrics: ['resting_hr', 'avg_hr', 'min_hr', 'max_hr', 'avg_sleeping_hr'], trends: ['resting_hr'] },
+  { key: 'recovery', title: 'Récupération', description: 'HRV, stress et charge d’entraînement', icon: Activity, metrics: ['hrv', 'hrv_baseline', 'stress_avg', 'fitness_ctl', 'fatigue_atl'], trends: ['hrv', 'fitness_ctl', 'fatigue_atl', 'stress_avg'] },
+  { key: 'sleep', title: 'Sommeil', description: 'Qualité, durée et phases du sommeil', icon: Moon, metrics: ['sleep_score', 'sleep_seconds', 'sleep_deep_seconds', 'sleep_light_seconds', 'sleep_rem_seconds', 'sleep_awake_seconds'], trends: ['sleep_score', 'sleep_seconds'] },
+] as const
 
 const METRICS = [
   { key: 'hrv', label: 'HRV nocturne', unit: 'ms', group: 'Récupération' },
@@ -70,6 +81,7 @@ export function HealthPage() {
   const [error, setError] = useState<string | null>(null)
   const [windowSize, setWindowSize] = useState<WindowSize>(7)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [selectedSection, setSelectedSection] = useState<HealthSectionKey | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -177,134 +189,180 @@ export function HealthPage() {
               />
             </section>
 
-            <section className="oc-surface p-3 sm:p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="oc-type-section-title text-[var(--oc-text)]">
-                    Historique quotidien
-                  </h2>
-                  <p className="mt-1 oc-type-secondary">
-                    Valeur la plus récente disponible et statistiques sur la période.
-                  </p>
-                </div>
-                <div className="inline-flex w-fit rounded-xl bg-[var(--oc-surface-muted)] p-1" aria-label="Période d’historique">
-                  {([7, 14, 30] as const).map((days) => (
-                    <button
-                      key={days}
-                      type="button"
-                      onClick={() => setWindowSize(days)}
-                      aria-pressed={windowSize === days}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${windowSize === days ? 'bg-[var(--oc-surface)] text-emerald-700 shadow-sm ring-1 ring-[var(--oc-border)] dark:text-emerald-300' : 'text-[var(--oc-muted)] hover:text-[var(--oc-text)]'}`}
-                    >
-                      {days} j
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {selectedWindow && (
-                <>
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--oc-surface-muted)] px-3 py-3 oc-type-secondary">
-                    <span className="text-[var(--oc-text-secondary)]">
-                      {formatDate(selectedWindow.start_date)} – {formatDate(selectedWindow.end_date)}
-                    </span>
-                    <span className="font-semibold tabular-nums text-[var(--oc-text-secondary)]">
-                      {selectedWindow.recorded_days}/{selectedWindow.days} jours couverts · {Math.round(selectedWindow.coverage_ratio * 100)} %
-                    </span>
-                  </div>
-
-                  <div className="mt-3 space-y-4">
-                    {GROUPS.map((group) => {
-                      const items = METRICS.filter((metric) => metric.group === group)
-                      return (
-                        <section key={group} className="rounded-xl border border-[var(--oc-border)] bg-[var(--oc-surface-raised)] p-3 shadow-sm sm:p-3.5">
-                          <div className="mb-3 flex items-center justify-between gap-3">
-                            <h3 className="oc-type-section-title font-semibold text-[var(--oc-text)]">{group}</h3>
-                            <span className="rounded-full bg-[var(--oc-accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--oc-accent)]">{items.length} indicateurs</span>
-                          </div>
-                          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                            {items.map((metric) => (
-                              <MetricTile
-                                key={metric.key}
-                                label={metric.label}
-                                unit={metric.unit}
-                                metric={selectedWindow.metrics[metric.key]}
-                              />
-                            ))}
-                          </div>
-                        </section>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
-            </section>
-
-
-            <section className="oc-surface p-3 sm:p-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h2 className="oc-type-section-title text-[var(--oc-text)]">Évolution des indicateurs</h2>
-                  <p className="mt-1 oc-type-secondary">
-                    Tendances quotidiennes issues du même fournisseur que les données Wellness.
-                  </p>
-                </div>
-                <span className="text-xs text-[var(--oc-muted)]">
-                  Source : {trends.provider.toUpperCase()} · {windowSize} derniers jours
-                </span>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <TrendChart title="HRV nocturne" unit="ms" trend={trends.metrics.hrv} days={windowSize} endDate={trends.end_date} />
-                <TrendChart title="Fréquence cardiaque au repos" unit="bpm" trend={trends.metrics.resting_hr} days={windowSize} endDate={trends.end_date} />
-                <TrendChart title="Score de sommeil" unit="/100" trend={trends.metrics.sleep_score} days={windowSize} endDate={trends.end_date} />
-                <TrendChart title="Durée du sommeil" unit="duration" trend={trends.metrics.sleep_seconds} days={windowSize} endDate={trends.end_date} />
-                <TrendChart title="Charge chronique · CTL" unit="load" trend={trends.metrics.fitness_ctl} days={windowSize} endDate={trends.end_date} />
-                <TrendChart title="Charge aiguë · ATL" unit="load" trend={trends.metrics.fatigue_atl} days={windowSize} endDate={trends.end_date} />
-                <TrendChart title="Stress moyen" unit="score" trend={trends.metrics.stress_avg} days={windowSize} endDate={trends.end_date} />
-              </div>
-            </section>
-
-            <section className="oc-surface p-3 sm:p-4">
-              <div className="flex items-center gap-2">
-                <Waves className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-                <div>
-                  <h2 className="oc-type-section-title text-[var(--oc-text)]">Séries physiologiques COROS</h2>
-                  <p className="mt-1 oc-type-secondary">Statistiques calculées à partir des échantillons horodatés sur les 30 derniers jours.</p>
-                </div>
-              </div>
-
-              {assessment.time_series.length === 0 ? (
-                <p className="mt-4 rounded-xl p-4 oc-type-body text-[var(--oc-muted)] bg-[var(--oc-surface-muted)]">
-                  Aucune série détaillée disponible sur cette période. Les données quotidiennes restent consultables ci-dessus.
-                </p>
-              ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {assessment.time_series.map((series) => (
-                    <div key={`${series.metric}-${series.unit ?? 'none'}`} className="rounded-xl border border-[var(--oc-border)] p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="oc-type-card-title text-[var(--oc-text)]">
-                          {SERIES_LABELS[series.metric] ?? series.metric.replaceAll('_', ' ')}
-                        </h3>
-                        <span className="rounded-md bg-[var(--oc-surface-muted)] px-2 py-1 oc-type-caption font-semibold uppercase text-[var(--oc-muted)]">
-                          {series.sample_count} mesures
+            <section className="grid gap-3 lg:grid-cols-3">
+              {HEALTH_SECTIONS.map((section) => {
+                const Icon = section.icon
+                const available = section.metrics
+                  .map((key) => ({ key, metric: selectedWindow?.metrics[key] }))
+                  .filter((item) => item.metric?.current != null)
+                return (
+                  <button
+                    key={section.key}
+                    type="button"
+                    onClick={() => setSelectedSection(section.key)}
+                    className="group min-w-0 rounded-2xl border border-[var(--oc-border)] bg-[var(--oc-surface)] p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--oc-accent)] hover:shadow-md"
+                    aria-label={`Ouvrir le détail ${section.title}`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--oc-accent-soft)] text-[var(--oc-accent)]">
+                          <Icon className="h-[18px] w-[18px]" />
                         </span>
+                        <div>
+                          <h2 className="font-semibold text-[var(--oc-text)]">{section.title}</h2>
+                          <p className="text-xs text-[var(--oc-muted)]">{available.length} indicateurs disponibles</p>
+                        </div>
                       </div>
-                      <p className="mt-3 text-xl font-bold tabular-nums text-[var(--oc-text)]">
-                        {formatNumber(series.current)} <span className="oc-type-caption font-medium text-[var(--oc-muted)]">{series.unit ?? ''}</span>
-                      </p>
-                      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                        <MiniValue label="Moyenne" value={formatNumber(series.average)} />
-                        <MiniValue label="Minimum" value={formatNumber(series.minimum)} />
-                        <MiniValue label="Maximum" value={formatNumber(series.maximum)} />
-                      </div>
-                      <p className="mt-3 text-[11px] text-[var(--oc-muted)]">
-                        {series.coverage_days} jours couverts · {formatDateTime(series.first_measured_at)} au {formatDateTime(series.last_measured_at)}
-                      </p>
+                      <ChevronRight className="h-5 w-5 shrink-0 text-[var(--oc-muted)] transition group-hover:translate-x-0.5 group-hover:text-[var(--oc-accent)]" />
                     </div>
-                  ))}
-                </div>
-              )}
+                    <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
+                      {section.metrics.slice(0, 4).map((key) => {
+                        const metric = selectedWindow?.metrics[key]
+                        const definition = METRICS.find((item) => item.key === key)
+                        return (
+                          <div key={key} className="min-w-0">
+                            <p className="truncate text-[11px] text-[var(--oc-muted)]">{definition?.label ?? key}</p>
+                            <p className="mt-0.5 truncate text-base font-semibold tabular-nums text-[var(--oc-text)]">
+                              {metric?.current == null ? '—' : formatMetric(metric.current, definition?.unit ?? '')}
+                            </p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <p className="mt-3 border-t border-[var(--oc-border)] pt-2 text-xs text-[var(--oc-muted)]">
+                      {section.description}
+                    </p>
+                  </button>
+                )
+              })}
             </section>
+
+            <section className="oc-surface flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4">
+              <div>
+                <h2 className="text-sm font-semibold text-[var(--oc-text)]">Période d’analyse</h2>
+                <p className="mt-0.5 text-xs text-[var(--oc-muted)]">
+                  {selectedWindow ? `${selectedWindow.recorded_days}/${selectedWindow.days} jours couverts · ${Math.round(selectedWindow.coverage_ratio * 100)} %` : 'Données indisponibles'}
+                </p>
+              </div>
+              <div className="inline-flex w-fit rounded-xl bg-[var(--oc-surface-muted)] p-1" aria-label="Période d’historique">
+                {([7, 14, 30] as const).map((days) => (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => setWindowSize(days)}
+                    aria-pressed={windowSize === days}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${windowSize === days ? 'bg-[var(--oc-surface)] text-emerald-700 shadow-sm ring-1 ring-[var(--oc-border)] dark:text-emerald-300' : 'text-[var(--oc-muted)] hover:text-[var(--oc-text)]'}`}
+                  >
+                    {days} j
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <SidePanel
+              open={selectedSection !== null}
+              title={HEALTH_SECTIONS.find((section) => section.key === selectedSection)?.title ?? 'Détail santé'}
+              eyebrow="Suivi physiologique"
+              onClose={() => setSelectedSection(null)}
+            >
+              {selectedSection && selectedWindow && (() => {
+                const section = HEALTH_SECTIONS.find((item) => item.key === selectedSection)!
+                const sectionMetrics = section.metrics
+                const trendKeys = section.trends
+                return (
+                  <div className="space-y-5">
+                    <div>
+                      <p className="text-sm text-[var(--oc-text-secondary)]">{section.description}</p>
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-[var(--oc-muted)]">
+                        <span className="rounded-lg bg-[var(--oc-surface-muted)] px-2.5 py-1">{windowSize} derniers jours</span>
+                        <span className="rounded-lg bg-[var(--oc-surface-muted)] px-2.5 py-1">{selectedWindow.recorded_days}/{selectedWindow.days} jours couverts</span>
+                      </div>
+                    </div>
+
+                    <section>
+                      <h3 className="mb-2 text-sm font-semibold text-[var(--oc-text)]">Indicateurs détaillés</h3>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {sectionMetrics.map((key) => {
+                          const definition = METRICS.find((item) => item.key === key)!
+                          return (
+                            <MetricTile
+                              key={key}
+                              label={definition.label}
+                              unit={definition.unit}
+                              metric={selectedWindow.metrics[key]}
+                            />
+                          )
+                        })}
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="mb-2 text-sm font-semibold text-[var(--oc-text)]">Évolution</h3>
+                      <div className="space-y-3">
+                        {trendKeys.map((key) => {
+                          const trendTitle: Record<string, string> = {
+                            hrv: 'HRV nocturne',
+                            resting_hr: 'Fréquence cardiaque au repos',
+                            sleep_score: 'Score de sommeil',
+                            sleep_seconds: 'Durée du sommeil',
+                            fitness_ctl: 'Charge chronique · CTL',
+                            fatigue_atl: 'Charge aiguë · ATL',
+                            stress_avg: 'Stress moyen',
+                          }
+                          const trendUnit: Record<string, string> = {
+                            hrv: 'ms', resting_hr: 'bpm', sleep_score: '/100',
+                            sleep_seconds: 'duration', fitness_ctl: 'load',
+                            fatigue_atl: 'load', stress_avg: 'score',
+                          }
+                          const trend = trends.metrics[key as keyof typeof trends.metrics]
+                          if (!trend) return null
+                          return (
+                            <TrendChart
+                              key={key}
+                              title={trendTitle[key] ?? key}
+                              unit={trendUnit[key] ?? ''}
+                              trend={trend}
+                              days={windowSize}
+                              endDate={trends.end_date}
+                            />
+                          )
+                        })}
+                      </div>
+                    </section>
+
+                    {assessment.time_series.filter((series) => {
+                      if (selectedSection === 'cardio') return series.metric === 'heart_rate'
+                      if (selectedSection === 'recovery') return series.metric === 'sleep_hrv' || series.metric === 'stress'
+                      return series.metric === 'respiration_rate' || series.metric === 'temperature'
+                    }).length > 0 && (
+                      <section>
+                        <h3 className="mb-2 text-sm font-semibold text-[var(--oc-text)]">Mesures détaillées COROS</h3>
+                        <div className="space-y-2">
+                          {assessment.time_series.filter((series) => {
+                            if (selectedSection === 'cardio') return series.metric === 'heart_rate'
+                            if (selectedSection === 'recovery') return series.metric === 'sleep_hrv' || series.metric === 'stress'
+                            return series.metric === 'respiration_rate' || series.metric === 'temperature'
+                          }).map((series) => (
+                            <div key={series.metric} className="rounded-xl border border-[var(--oc-border)] p-3">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-[var(--oc-text)]">{SERIES_LABELS[series.metric] ?? series.metric}</p>
+                                <span className="text-xs text-[var(--oc-muted)]">{series.sample_count} mesures</span>
+                              </div>
+                              <p className="mt-2 text-xl font-bold text-[var(--oc-text)]">{formatNumber(series.current)} <span className="text-xs font-medium text-[var(--oc-muted)]">{series.unit ?? ''}</span></p>
+                              <div className="mt-2 grid grid-cols-3 gap-2">
+                                <MiniValue label="Moyenne" value={formatNumber(series.average)} />
+                                <MiniValue label="Minimum" value={formatNumber(series.minimum)} />
+                                <MiniValue label="Maximum" value={formatNumber(series.maximum)} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                  </div>
+                )
+              })()}
+            </SidePanel>
 
             {assessment.subjective && (
               <section className="oc-surface p-4">

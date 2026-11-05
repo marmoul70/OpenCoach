@@ -40,7 +40,7 @@ export function MetricCard({
       )}
     >
       <div className="flex items-center justify-between gap-3 text-[var(--oc-muted)]">
-        <span className="min-w-0 truncate text-xs font-medium">{label}</span>
+        <span className="min-w-0 truncate oc-type-label">{label}</span>
         {icon ? <span className="shrink-0">{icon}</span> : null}
       </div>
 
@@ -49,15 +49,15 @@ export function MetricCard({
       </div>
 
       {detail ? (
-        <p className="mt-1 text-xs text-[var(--oc-muted)]">{detail}</p>
+        <p className="mt-1 oc-type-secondary">{detail}</p>
       ) : null}
 
       {metadata.length > 0 ? (
         <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-[var(--oc-border)] pt-3">
           {metadata.map((item) => (
             <div key={item.label} className="min-w-0">
-              <dt className="truncate text-[10px] text-[var(--oc-muted)]">{item.label}</dt>
-              <dd className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--oc-text)]">{item.value}</dd>
+              <dt className="truncate oc-type-caption">{item.label}</dt>
+              <dd className="mt-1 truncate oc-type-secondary font-semibold tabular-nums text-[var(--oc-text)]">{item.value}</dd>
             </div>
           ))}
         </dl>

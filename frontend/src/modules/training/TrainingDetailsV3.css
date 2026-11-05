@@ -80,7 +80,7 @@
 
 [data-theme="dark"]
 .training-details-v3__hero h2 {
-  color: var(--oc-surface-muted) !important;
+  color: var(--oc-text) !important;
 }
 
 

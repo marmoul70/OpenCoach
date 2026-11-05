@@ -412,7 +412,7 @@ export function AppNavigation({
                             + 'dark:bg-[var(--oc-surface)]/[0.06]'
                           )
                         : (
-                            'hover:bg-[var(--oc-surface-muted)] '
+                            'hover:bg-[var(--oc-surface-hover)] '
                             + 'dark:hover:bg-[var(--oc-surface)]/[0.045]'
                           ),
                     ].join(' ')}
@@ -768,7 +768,7 @@ export function AppNavigation({
               text-lg
               font-bold
               tracking-[-0.035em]
-              text-slate-950
+              text-[var(--oc-text)]
               dark:text-white
             "
           >
@@ -792,7 +792,7 @@ export function AppNavigation({
             justify-center
             rounded-full
             transition
-            hover:bg-[var(--oc-surface-muted)]
+            hover:bg-[var(--oc-surface-hover)]
             dark:hover:bg-[var(--oc-surface)]/[0.06]
           "
           aria-label="Ouvrir le menu"
@@ -1292,7 +1292,7 @@ export function AppNavigation({
                       )
                     : (
                         'text-[var(--oc-text-secondary)] '
-                        + 'hover:bg-[var(--oc-surface-muted)] '
+                        + 'hover:bg-[var(--oc-surface-hover)] '
                         + 'hover:text-[var(--oc-text)] '
                         + 'dark:text-[var(--oc-text-secondary)] '
                         + 'dark:hover:bg-[var(--oc-surface)]/[0.045] '
@@ -1362,7 +1362,7 @@ export function AppNavigation({
                       'border-[var(--oc-border)] '
                       + 'bg-[var(--oc-surface)] '
                       + 'text-[var(--oc-muted)] '
-                      + 'hover:bg-[var(--oc-surface-muted)] '
+                      + 'hover:bg-[var(--oc-surface-hover)] '
                       + 'dark:border-[var(--oc-border)] '
                       + 'dark:bg-[var(--oc-surface)]/[0.025] '
                       + 'dark:hover:bg-[var(--oc-surface)]/[0.05]'
@@ -1409,7 +1409,7 @@ export function AppNavigation({
             )
           : (
               'text-[var(--oc-muted)] '
-              + 'hover:bg-[var(--oc-surface-muted)] '
+              + 'hover:bg-[var(--oc-surface-hover)] '
               + 'hover:text-[var(--oc-text)] '
               + 'dark:text-[var(--oc-muted)] '
               + 'dark:hover:bg-[var(--oc-surface)]/[0.045] '
@@ -1527,14 +1527,14 @@ function MobileDrawerItem({
           'flex w-full items-center '
           + 'gap-3 px-3 py-3 '
           + 'text-left transition '
-          + 'hover:bg-[var(--oc-surface-muted)] '
+          + 'hover:bg-[var(--oc-surface-hover)] '
           + 'dark:hover:bg-[var(--oc-surface)]/[0.04]'
         ),
         divider
           ? (
               'border-t '
               + 'border-[var(--oc-border)] '
-              + 'dark:border-white/[0.06]'
+              + 'dark:border-[var(--oc-border)]'
             )
           : '',
       ].join(' ')}

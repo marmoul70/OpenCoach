@@ -594,3 +594,21 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôles
 - CI lancée sur les commits de ce sprint ; validation finale à confirmer.
 - Vérification visuelle responsive et clair/sombre à effectuer dans le navigateur.
+
+
+## 2026-11-05 — Sprint 25 : panneau de détail des activités COROS
+
+### Livré
+- Cartes de métriques : surfaces et bordures raccordées aux tokens Pulse.
+- Libellés, valeurs, dates, états de chargement et métadonnées : rôles de texte sémantiques clair/sombre.
+- Bloc d'analyse de l'effort : surface, séparateurs et typographie harmonisés.
+- Accents de provenance COROS, erreur et avertissement conservés.
+
+### Garde-fous
+- Parsing du détail COROS, valeurs affichées, formatage, chargement, gestion d'erreur et appels API strictement inchangés.
+- Aucune modification de données, logique métier, synchronisation, dépendance ou backend.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles
+- Contrôle CI lancé sur les commits du sprint.
+- Vérification visuelle du panneau sur mobile/desktop et en clair/sombre à effectuer dans le navigateur.

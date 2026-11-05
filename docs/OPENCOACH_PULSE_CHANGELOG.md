@@ -740,3 +740,21 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôles
 - CI lancée sur les commits du sprint.
 - Vérification visuelle des permissions, états actifs/inactifs, responsive et clair/sombre à effectuer.
+
+
+## 2026-11-05 — Sprint 33 : section Sauvegardes
+
+### Livré
+- Cartes et panneaux de sauvegarde/restauration : surfaces, bordures et séparateurs raccordés aux tokens Pulse.
+- Titres, descriptions, dates, métadonnées et états neutres harmonisés en clair/sombre.
+- Contrôles, lignes d'historique et états vides : fonds et typographie sémantiques.
+- Accents d'alerte, de succès, de progression et actions destructives conservés.
+
+### Garde-fous
+- Création, téléchargement, sélection, restauration, validation, suppression et appels API strictement inchangés.
+- Aucun changement de format de backup, contenu, stockage, backend, logique métier ou dépendance.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles
+- CI lancée sur les commits du sprint.
+- Vérification visuelle des états backup disponible/absent, restauration et erreurs, responsive et clair/sombre à effectuer.

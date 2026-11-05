@@ -67,13 +67,13 @@
   --oc-transition-standard: 220ms ease;
 
   /* Subtle light surfaces */
-  --oc-page: #f4f6f5;
+  --oc-page: #eef2f0;
   --oc-surface: #ffffff;
   --oc-surface-raised: #ffffff;
   --oc-surface-muted: #f1f4f3;
   --oc-surface-hover: #f7f9f8;
-  --oc-border: rgba(15, 23, 42, 0.075);
-  --oc-border-strong: rgba(15, 23, 42, 0.13);
+  --oc-border: rgba(15, 23, 42, 0.105);
+  --oc-border-strong: rgba(15, 23, 42, 0.18);
   --oc-text: #121a18;
   --oc-text-secondary: #34423e;
   --oc-muted: #66756f;
@@ -81,8 +81,8 @@
   --oc-accent: var(--oc-brand-600);
   --oc-accent-hover: var(--oc-brand-700);
   --oc-accent-soft: rgba(16, 185, 129, 0.09);
-  --oc-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.025);
-  --oc-shadow-popover: 0 12px 32px rgba(15, 23, 42, 0.10);
+  --oc-shadow-card: 0 3px 12px rgba(15, 23, 42, 0.065), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --oc-shadow-popover: 0 16px 36px rgba(15, 23, 42, 0.14), 0 3px 8px rgba(15, 23, 42, 0.06);
 
   /* Chart palette */
   --oc-chart-grid: rgba(100, 116, 139, 0.18);

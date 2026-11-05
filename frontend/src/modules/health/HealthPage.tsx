@@ -57,13 +57,6 @@ const METRICS = [
   { key: 'fatigue_atl', label: 'ATL', unit: 'load', group: 'Charge' },
 ] as const
 
-const GROUPS = [
-  'Récupération',
-  'Cardiaque',
-  'Sommeil',
-  'Autres mesures',
-  'Charge',
-] as const
 
 const SERIES_LABELS: Record<string, string> = {
   sleep_hrv: 'HRV nocturne',
@@ -539,14 +532,6 @@ function formatDate(value: string): string {
   }).format(new Date(`${value}T12:00:00`))
 }
 
-function formatDateTime(value: string): string {
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value))
-}
 
 function statusLabel(status: string, age: number | null): string {
   if (status === 'fresh') return 'Données du jour disponibles'

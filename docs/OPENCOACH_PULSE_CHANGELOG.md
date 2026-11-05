@@ -112,3 +112,16 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Migrer SidePanel et ToastProvider sur les tokens sémantiques sans toucher à leurs comportements.
 - Compléter l'inventaire des primitives réellement utilisées avant de décider si un Badge/EmptyState/Skeleton partagé est nécessaire.
 - Vérifier le comportement de la navigation existante avant toute évolution responsive.
+
+
+## 2026-11-05 — Sprint 2 : migration de SidePanel
+
+### Livré
+- Ajout des classes sémantiques `.oc-panel-surface` et `.oc-panel-header`.
+- Migration du fond, de la bordure et de l'ombre du panneau vers les tokens clair/sombre.
+- Conservation de l'animation d'ouverture/fermeture, de la fermeture Escape, du backdrop, des dimensions responsive et des callbacks.
+- Pas de changement de l'API publique de `SidePanel`.
+
+### Contrôle
+- Vérification statique : les substitutions portent uniquement sur les classes de surface du panneau et de son en-tête.
+- Build/lint et vérification visuelle toujours à exécuter ; ne pas considérer le sprint comme validé visuellement.

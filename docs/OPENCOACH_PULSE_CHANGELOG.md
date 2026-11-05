@@ -264,3 +264,18 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Les changements portent sur la présentation uniquement ; aucune donnée, formule, API, navigation ou logique métier n'a été modifiée.
 - Les sous-sections internes de Coach, Dashboard, Planning et Météo restent à auditer pour appliquer les rôles typographiques aux libellés et descriptions sans écraser les tailles des KPI.
 - Validation visuelle multi-écrans et clair/sombre encore requise.
+
+
+## 2026-11-05 — Sprint 7 : cohérence navigation et planning
+
+### Livré
+- Navigation desktop et mobile : surfaces, bordures et fonds translucides raccordés aux tokens Pulse clair/sombre.
+- Libellés de navigation : rapprochement de l'échelle typographique commune.
+- Réglages : surfaces de navigation et panneau actif harmonisés ; groupe, titre et description du panneau utilisent les rôles typographiques partagés.
+- Ressenti : hiérarchie du bloc d'introduction alignée sur les tokens communs, avec contraste renforcé pour la lisibilité.
+- Planning : surfaces des cartes de navigation hebdomadaire et informations secondaires rapprochées du système Pulse.
+
+### À contrôler
+- Vérifier les menus de profil, le tiroir mobile et la barre de navigation sur iOS et desktop.
+- Contrôler les contrastes clair/sombre et les états actif, survol, focus et désactivé.
+- Les composants de navigation conservent leurs comportements et routes ; seules les classes de présentation ont été modifiées.

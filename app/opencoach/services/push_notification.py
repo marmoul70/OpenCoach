@@ -183,13 +183,23 @@ class PushNotificationService:
             for subscription in self.repository.list_for_user(user_id)
             if subscription.system_notifications_enabled
         ]
-        return self._send_to_subscriptions(
-            subscriptions=subscriptions,
-            title=title,
-            body=body,
-            url=url,
-            persisted=True,
-        )
+        try:
+            return self._send_to_subscriptions(
+                subscriptions=subscriptions,
+                title=title,
+                body=body,
+                url=url,
+                persisted=True,
+            )
+        except PushConfigurationError:
+            # L'événement est déjà en base : une configuration VAPID
+            # absente ne doit pas déclencher de doublons au prochain cron.
+            return PushDeliveryReport(
+                sent=0,
+                failed=len(subscriptions),
+                removed=0,
+                persisted=True,
+            )
 
     def send_training_reminder(
         self,

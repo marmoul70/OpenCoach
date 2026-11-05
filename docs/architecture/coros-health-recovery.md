@@ -212,3 +212,32 @@ Validation attendue sur VM après mise à jour de la branche :
 3. Contrôler les fenêtres 7/14/30 jours et la cohérence des compteurs avec la base locale.
 4. Vérifier le rendu des champs absents et des séries détaillées.
 5. Vérifier qu'Actualiser ne déclenche aucun import ni appel de synchronisation COROS.
+
+
+## Audit de fiabilité avant intégration sur main
+
+L'audit du pipeline a confirmé les points suivants :
+
+- Le timer `opencoach-coros-sync.timer` déclenche un contrôle toutes les 15 minutes ; la fréquence effective reste celle configurée sur chaque connexion COROS.
+- Le service systemd est de type `oneshot` et exécute `opencoach.commands.sync_coros`.
+- Les synchronisations API et planifiées utilisent le même worker `run_coros_sync_job`, avec verrou persistant par profil et checkpoints par catégorie/fenêtre.
+- Les snapshots bruts sont uniques par profil/date/catégorie. Les activités d'une journée sont regroupées dans un snapshot et remplacées par identifiant COROS lors d'une nouvelle lecture.
+- Les migrations COROS et leur point de fusion avec la branche équipement forment une chaîne Alembic à tête unique.
+
+### Correctifs apportés pendant l'audit
+
+1. **Synchronisation incrémentale sans nouvelle activité** : après un import initial réussi, une fenêtre incrémentale vide est un succès. `last_synced_at` doit avancer même si aucune nouvelle activité n'a été créée ; sinon le timer relance le même travail à chaque passage. Le premier import sans activité reste en erreur et réessayable.
+2. **Isolation des fournisseurs** : si l'API de récupération utilise Intervals en repli faute de journées COROS, les séries temporelles COROS ne sont plus ajoutées à cette réponse. Les mesures quotidiennes et les séries doivent toujours provenir du même fournisseur.
+3. **Horodatage de Santé** : l'interface lit `last_synced_at` depuis `GET /api/integrations/coros/connection`, qui représente la dernière synchronisation réussie, et non le dernier déclenchement du timer systemd. Les timestamps SQL naïfs sont interprétés comme UTC côté navigateur.
+
+### Tests de non-régression ajoutés
+
+- Import initial vide : le timestamp n'avance pas et l'historique reste réessayable.
+- Import incrémental vide après import initial : le timestamp avance.
+- Import avec nouvelles activités : le timestamp avance.
+- Catégorie activités désactivée : le timestamp avance après une synchronisation réussie.
+- Repli Intervals : aucune série temporelle COROS n'est mélangée à la réponse.
+
+### Limite de validation restante
+
+La CI valide les mappings, repositories, API, idempotence et frontend sur des fixtures synthétiques. Elle ne remplace pas la validation finale sur la base locale réelle : vérifier les compteurs avant/après un import, relancer le même import, comparer les snapshots et confirmer l'absence de doublons. Cette validation doit être faite avec une sauvegarde préalable et sans lancer deux synchronisations simultanément.

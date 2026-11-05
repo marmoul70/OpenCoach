@@ -131,3 +131,41 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Relecture du composant après le premier commit : l'en-tête conservait encore ses anciennes classes de thème.
 - Correction appliquée dans un commit distinct : l'en-tête utilise maintenant bien `.oc-panel-header`.
 - Le contrôle confirme que les deux surfaces du SidePanel consomment les tokens sémantiques.
+
+
+## 2026-11-05 — Sprint 2 : migration de ToastProvider
+
+### Audit et livraison
+- ToastProvider existait déjà ; aucune nouvelle infrastructure de notification créée.
+- Ajout des classes sémantiques `.oc-toast`, `.oc-toast-title`, `.oc-toast-message` et `.oc-toast-close`.
+- Migration de la surface, des textes et du bouton de fermeture vers les tokens clair/sombre.
+- Conservation des types success/info/warning/error, de la durée, des actions, du contexte React et des rôles ARIA.
+- Les couleurs de statut restent distinctes ; elles ne sont pas remplacées par une couleur neutre.
+
+### Contrôles
+- Vérification statique des substitutions de classes ; API `useToast` et `ToastInput` inchangées.
+- Build/lint et test navigateur non exécutés.
+
+## 2026-11-05 — Sprint 3 : première primitive graphique partagée
+
+### Audit et décision
+- La page Santé possédait un `TrendChart` local SVG, non réutilisable par les autres modules.
+- Le projet dispose déjà de SVG natif et n'a pas besoin d'une dépendance graphique supplémentaire pour cette primitive.
+- La préparation des données (filtrage par période, calcul de moyenne, formatage métier) reste dans le module Santé.
+
+### Livré
+- Création de `frontend/src/design-system/charts/LineChart.tsx`.
+- Contrat générique de présentation : titre, points identifiés, libellés, formatteur, valeur récente, moyenne, libellés de période, état vide et libellé accessible.
+- Affichage SVG avec grille, repères min/max, série, points et labels de dates.
+- Couleurs issues des tokens `--oc-chart-*`, surfaces Subtle et chiffres tabulaires.
+- Refactorisation du TrendChart local de Santé en adaptateur vers la primitive commune.
+
+### Garde-fous Santé
+- Les appels `fetchRecoveryAssessment` et `fetchWellnessTrends`, leurs paramètres, la sélection de fenêtre 7/14/30 jours et les types API restent inchangés.
+- Aucune métrique, valeur absente, unité, source, série ou calcul de récupération n'a été modifié.
+- Aucun calcul physiologique ou score Readiness n'a été ajouté.
+
+### Contrôles et limites
+- Relecture statique des fichiers modifiés et vérification des imports/contrats à partir du code existant.
+- Build TypeScript, lint et contrôle visuel non exécutés ; le rendu SVG reste à valider en navigateur.
+- Le graphique conserve la logique de tracé actuelle des points disponibles ; la gestion explicite des intervalles calendaires manquants reste un point à traiter avant d'utiliser ce composant pour des séries où la continuité temporelle doit être représentée strictement.

@@ -280,10 +280,16 @@ def get_recovery_assessment(
             athlete_profile_id,
             target_date,
         )
-        time_series_snapshots = time_series_repository.list_time_series_snapshots(
-            athlete_profile_id,
-            start_date,
-            target_date,
+        # Les séries temporelles sont exclusivement COROS. Ne jamais les
+        # mélanger avec un jeu Wellness Intervals utilisé en repli.
+        time_series_snapshots = (
+            time_series_repository.list_time_series_snapshots(
+                athlete_profile_id,
+                start_date,
+                target_date,
+            )
+            if provider == "coros"
+            else []
         )
     except (
         WellnessRepositoryError,

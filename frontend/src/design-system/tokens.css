@@ -147,3 +147,35 @@
     --oc-transition-standard: 0ms;
   }
 }
+
+
+/* Interactive card surface shared by dashboard widgets and selectors. */
+.oc-interactive-surface {
+  transition:
+    transform var(--oc-transition-fast),
+    border-color var(--oc-transition-fast),
+    box-shadow var(--oc-transition-fast);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .oc-interactive-surface:hover {
+    transform: translateY(-2px);
+    border-color: var(--oc-border-strong);
+    box-shadow: var(--oc-shadow-popover);
+  }
+}
+
+.oc-interactive-surface:focus-visible {
+  outline: 2px solid var(--oc-accent);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oc-interactive-surface {
+    transition: none;
+  }
+
+  .oc-interactive-surface:hover {
+    transform: none;
+  }
+}

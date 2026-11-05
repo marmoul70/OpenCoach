@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from alembic.config import Config
 from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from opencoach.database.base import Base

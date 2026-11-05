@@ -324,3 +324,8 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Relecture statique des composants après migration ; les derniers fonds et textes neutres codés en dur ont été éliminés des deux widgets ciblés.
 - CI à relancer sur les derniers commits avant de considérer le sprint techniquement validé.
 - Contrôle visuel iPhone/tablette/desktop et thèmes clair/sombre toujours requis.
+
+### Complément — carte de séance du planning
+- La carte « Aujourd’hui » du planning utilise désormais les surfaces, bordures et textes neutres Pulse en clair/sombre.
+- Les repères de type de séance (renforcement, sortie longue/trail, intensité, endurance) et les statuts réalisé/non réalisé/à faire restent distincts.
+- Les callbacks d'ouverture/ajout, les informations de séance et la synchronisation Intervals restent inchangés.

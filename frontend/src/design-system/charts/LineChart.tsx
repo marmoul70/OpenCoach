@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 export interface LineChartPoint {
   id: string
   label: string
-  value: number
+  value: number | null
 }
 
 interface LineChartProps {
@@ -45,9 +45,11 @@ export function LineChart({
     )
   }
 
-  const values = points.map((point) => point.value)
-  const minimum = Math.min(...values)
-  const maximum = Math.max(...values)
+  const values = points
+    .map((point) => point.value)
+    .filter((value): value is number => value !== null)
+  const minimum = values.length > 0 ? Math.min(...values) : 0
+  const maximum = values.length > 0 ? Math.max(...values) : 1
   const range = maximum - minimum || 1
   const plotTop = 12
   const plotBottom = 88
@@ -57,10 +59,23 @@ export function LineChart({
     const x = points.length === 1
       ? (plotLeft + plotRight) / 2
       : plotLeft + (index / (points.length - 1)) * (plotRight - plotLeft)
-    const y = plotBottom - ((point.value - minimum) / range) * (plotBottom - plotTop)
+    const y = point.value === null
+      ? null
+      : plotBottom - ((point.value - minimum) / range) * (plotBottom - plotTop)
     return { x, y, point }
   })
-  const polyline = coordinates.map(({ x, y }) => `${x},${y}`).join(' ')
+  const segments: typeof coordinates[] = []
+  let currentSegment: typeof coordinates = []
+  coordinates.forEach((coordinate) => {
+    if (coordinate.y === null) {
+      if (currentSegment.length > 0) segments.push(currentSegment)
+      currentSegment = []
+      return
+    }
+    currentSegment.push(coordinate)
+  })
+  if (currentSegment.length > 0) segments.push(currentSegment)
+
 
   return (
     <section className="oc-surface min-w-0 p-4" aria-label={title}>
@@ -81,7 +96,7 @@ export function LineChart({
         aria-label={ariaLabel}
         className="mt-2 h-28 w-full overflow-visible"
       >
-        {[0, 1, 2, 3].map((step) => {
+        {values.length > 0 && [0, 1, 2, 3].map((step) => {
           const y = plotTop + (step / 3) * (plotBottom - plotTop)
           const value = maximum - (step / 3) * (maximum - minimum)
           return (
@@ -107,16 +122,19 @@ export function LineChart({
           )
         })}
 
-        <polyline
-          points={polyline}
-          fill="none"
-          stroke="var(--oc-chart-series-1)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        {segments.map((segment, index) => (
+          <polyline
+            key={index}
+            points={segment.map(({ x, y }) => `${x},${y}`).join(' ')}
+            fill="none"
+            stroke="var(--oc-chart-series-1)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
 
-        {coordinates.map(({ x, y, point }) => (
+        {coordinates.map(({ x, y, point }) => point.value === null || y === null ? null : (
           <circle
             key={point.id}
             cx={x}

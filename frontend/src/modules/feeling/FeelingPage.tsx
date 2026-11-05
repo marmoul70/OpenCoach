@@ -105,7 +105,7 @@ export function FeelingPage() {
 
                 <span
                   className="
-                    text-[9px]
+                    text-[var(--oc-type-label)]
                     font-bold
                     uppercase
                     tracking-[0.12em]
@@ -119,11 +119,10 @@ export function FeelingPage() {
               <h2
                 className="
                   mt-4
-                  text-[22px]
+                  text-[var(--oc-type-section-title)]
                   font-bold
                   tracking-[-0.03em]
                   text-white
-                  sm:text-[24px]
                 "
               >
                 Comment tu te sens aujourd’hui ?
@@ -133,9 +132,9 @@ export function FeelingPage() {
                 className="
                   mt-2
                   max-w-xl
-                  text-[12px]
+                  text-[var(--oc-type-body)]
                   leading-5
-                  text-white/45
+                  text-white/65
                 "
               >
                 Ton énergie, ton confort et ta disponibilité
@@ -153,8 +152,8 @@ export function FeelingPage() {
                   border-t
                   border-white/[0.07]
                   pt-3
-                  text-[10px]
-                  text-white/40
+                  text-[var(--oc-type-secondary)]
+                  text-white/60
                 "
               >
                 <ShieldCheck

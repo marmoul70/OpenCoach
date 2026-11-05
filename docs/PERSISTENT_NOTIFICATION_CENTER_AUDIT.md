@@ -135,4 +135,4 @@ La première implémentation est présente sur la branche de fonctionnalité.
 
 ### Validation
 
-La CI GitHub Actions est déclenchée automatiquement sur la branche `feature/**`. Les résultats définitifs du dernier run doivent être vérifiés avant toute installation sur la VM. Aucun déploiement ni fusion dans `main` n'a été effectué.
+La CI GitHub Actions a validé le commit `a78e252` : Bash validation, frontend lint/build et tests Python sont tous verts. Résultat Python : **2664 tests réussis**, 2 avertissements non bloquants. Le graphe Alembic a également été testé : une seule tête, `f6a91c2d4e80`. Aucun déploiement ni fusion dans `main` n'a été effectué.

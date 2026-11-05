@@ -570,9 +570,9 @@ export function TrainingSessionActions({
                         animate-spin
                         rounded-full
                         border-2
-                        border-slate-200
+                        border-[var(--oc-border-strong)]
                         border-t-emerald-500
-                        dark:border-white/15
+                        
                         dark:border-t-emerald-400
                       "
                     />
@@ -722,7 +722,7 @@ export function TrainingSessionActions({
         rounded-[12px]
         border
         border-[var(--oc-border)]
-        bg-white
+        bg-[var(--oc-surface)]
         p-3
         
         
@@ -895,9 +895,9 @@ export function TrainingSessionActions({
                   animate-spin
                   rounded-full
                   border-2
-                  border-slate-200
+                  border-[var(--oc-border-strong)]
                   border-t-emerald-500
-                  dark:border-white/15
+                  
                   dark:border-t-emerald-400
                 "
               />

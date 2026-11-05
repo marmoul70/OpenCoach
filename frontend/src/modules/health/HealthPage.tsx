@@ -21,7 +21,6 @@ import {
 } from '../../core/wellness'
 
 import { LineChart } from '../../design-system/charts/LineChart'
-import { MetricCard } from '../../design-system/components/MetricCard'
 import { PageHeader } from '../../design-system/components/PageHeader'
 
 type WindowSize = 7 | 14 | 30

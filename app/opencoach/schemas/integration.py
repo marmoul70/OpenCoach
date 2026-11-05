@@ -57,3 +57,12 @@ class IntervalsConnectionTestResponse(BaseModel):
     provider: str = "intervals"
     connected: bool
     athlete_id: str
+
+
+class IntervalsWebCookieTest(BaseModel):
+    """Cookie temporaire utilisé pour tester la synchronisation partenaire."""
+
+    web_cookie: str | None = Field(
+        default=None,
+        max_length=4000,
+    )

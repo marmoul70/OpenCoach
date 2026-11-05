@@ -129,6 +129,7 @@ def _build_intervals_client(
     return IntervalsClient(
         api_key=credentials.secret,
         athlete_id=credentials.athlete_id,
+        web_cookie=credentials.web_cookie,
     )
 
 

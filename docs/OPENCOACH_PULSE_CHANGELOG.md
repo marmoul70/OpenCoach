@@ -520,3 +520,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Composant existant conservé ; modifications limitées aux classes visuelles des zones ciblées.
 - CI à confirmer sur le commit final.
 - Parcours interactif et contrôle visuel clair/sombre à réaliser dans le navigateur.
+
+
+## 2026-11-05 — Sprint 21 : calendrier de déplacement et actions de séance
+
+### Livré
+- Calendrier de déplacement : jours non sélectionnés, bordures et fonds neutres raccordés aux tokens de surface Pulse.
+- Libellés des jours, dates et scores non colorés par un statut : typographie sémantique partagée en clair/sombre.
+- Boutons Retour, Annuler et Fermer : texte secondaire Pulse et survol de surface cohérent.
+- Panneau d'actions non compact et boutons d'action : surfaces, bordures et textes neutres harmonisés.
+
+### Garde-fous
+- La sélection, les jours disponibles/indisponibles, les scores, le jour recommandé et les accents émeraude restent inchangés.
+- Les callbacks, validations, appels API, messages, chargements et règles de déplacement ne sont pas modifiés.
+- Aucun changement backend, stockage, synchronisation, dépendance, VM, merge ou déploiement.
+
+### Contrôles
+- Migration limitée aux classes de présentation neutres du composant existant.
+- CI à confirmer sur les commits finaux.
+- Parcours interactif du calendrier et vérification visuelle clair/sombre à effectuer dans le navigateur.

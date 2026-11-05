@@ -138,7 +138,7 @@ export function HealthPage() {
         </header>
 
         {loading && (
-          <div className="flex min-h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-[#141a1e]">
+          <div className="flex min-h-64 items-center justify-center oc-surface">
             <RefreshCw className="h-7 w-7 animate-spin text-emerald-500" />
           </div>
         )}
@@ -185,7 +185,7 @@ export function HealthPage() {
               />
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141a1e] sm:p-5">
+            <section className="oc-surface p-4 sm:p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -246,7 +246,7 @@ export function HealthPage() {
             </section>
 
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141a1e] sm:p-5">
+            <section className="oc-surface p-4 sm:p-5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Évolution des indicateurs</h2>
@@ -269,7 +269,7 @@ export function HealthPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141a1e] sm:p-5">
+            <section className="oc-surface p-4 sm:p-5">
               <div className="flex items-center gap-2">
                 <Waves className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                 <div>
@@ -312,7 +312,7 @@ export function HealthPage() {
             </section>
 
             {assessment.subjective && (
-              <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141a1e]">
+              <section className="oc-surface p-4">
                 <h2 className="text-base font-semibold text-slate-900 dark:text-white">Ressenti du jour</h2>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
                   <MiniValue label="Fatigue" value={String(assessment.subjective.fatigue) + '/5'} />

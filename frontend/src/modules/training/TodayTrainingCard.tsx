@@ -41,11 +41,11 @@ export function TodayTrainingCard({
         training-polish__today
         rounded-[14px]
         border
-        border-emerald-500/15
-        bg-[#111814]
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
         p-3.5
-        text-white
-        shadow-[0_8px_28px_rgba(15,23,42,0.08)]
+        text-[var(--oc-text)]
+        shadow-[var(--oc-shadow-card)]
       "
     >
       <div
@@ -73,7 +73,7 @@ export function TodayTrainingCard({
             className="
               mt-0.5
               text-[12px]
-              text-slate-500
+              text-[var(--oc-muted)]
             "
           >
             Séance prioritaire
@@ -113,8 +113,8 @@ export function TodayTrainingCard({
             className="
               rounded-[10px]
               border
-              border-white/[0.06]
-              bg-white/[0.035]
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface-muted)]
               px-3
               py-2.5
             "
@@ -123,7 +123,7 @@ export function TodayTrainingCard({
               className="
                 text-[14px]
                 font-semibold
-                text-slate-200
+                text-[var(--oc-text-secondary)]
               "
             >
               Repos
@@ -133,7 +133,7 @@ export function TodayTrainingCard({
               className="
                 mt-0.5
                 text-[12px]
-                text-slate-500
+                text-[var(--oc-muted)]
               "
             >
               Aucune séance prévue
@@ -289,7 +289,7 @@ function TodaySessionStatusBadge({
         py-0.5
         text-[10px]
         font-semibold
-        text-slate-400
+        text-[var(--oc-muted)]
       "
     >
       <Clock3 className="h-3 w-3" />
@@ -314,11 +314,11 @@ function TodayTrainingSession({
         (
           'group flex w-full items-center '
           + 'justify-between gap-4 rounded-[10px] '
-          + 'border border-white/[0.07] '
-          + 'bg-white/[0.04] px-3 py-2 '
+          + 'border border-[var(--oc-border)] '
+          + 'bg-[var(--oc-surface-muted)] px-3 py-2 '
           + 'text-left transition '
           + 'hover:border-emerald-500/20 '
-          + 'hover:bg-white/[0.055]'
+          + 'hover:bg-[var(--oc-surface-hover)]'
         ),
         todaySessionVisualClass(
           session,
@@ -355,7 +355,7 @@ function TodayTrainingSession({
             mt-0.5
             whitespace-nowrap
             text-[11.5px]
-            text-slate-400
+            text-[var(--oc-muted)]
           "
         >
           {session.type === 'rest'

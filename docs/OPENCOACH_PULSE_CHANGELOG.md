@@ -61,3 +61,29 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Suite
 - Sprint 1 : contrôler le socle CSS et les tokens sur les points d'entrée réels.
 - Sprint 2 : inventorier les primitives UI existantes avant de créer de nouveaux composants ; privilégier l'évolution de Card/WidgetCard/MetricTile si elles couvrent déjà le besoin.
+
+## 2026-11-05 — Sprint 2 : premières primitives migrées
+
+### Audit anti-doublon
+- Button.tsx existait déjà avec variantes primary/secondary/ghost.
+- Card.tsx existait déjà avec CardHeader et CardContent.
+- Aucun nouveau Button ou Card n'a donc été créé.
+- Badge, MetricCard, EmptyState et Skeleton ne sont pas présents aux chemins UI testés ; leur absence doit encore être confirmée par l'inventaire complet avant toute création.
+
+### Livré
+- Card consomme désormais les tokens sémantiques de surface, bordure, texte et ombre.
+- Button consomme les tokens d'accent, de surface, de texte et de rayon.
+- Hauteur minimale de Button portée à 44 px pour améliorer la cible tactile.
+- API publique de Button, Card, CardHeader et CardContent conservée.
+- Les classes passées via className restent disponibles pour les cas spécifiques.
+
+### À contrôler
+- Vérifier les usages de Card et Button pour repérer d'éventuelles dépendances aux couleurs implicites.
+- Vérifier les styles Tailwind compilés et l'ordre de priorité des tokens.
+- Migrer ensuite les composants existants (WidgetCard, SidePanel, ToastProvider) après analyse de leurs variantes et usages.
+- Ne pas créer MetricCard avant d'avoir vérifié les composants métriques locaux (MetricTile, StatusCard et widgets métier).
+
+### Validation
+- Les modifications ont été poussées sur la branche GitHub dédiée.
+- Aucun build/lint local exécuté ; validation CI/locale encore requise.
+- Aucun merge, déploiement ou changement sur la VM.

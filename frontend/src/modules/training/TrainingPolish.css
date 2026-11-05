@@ -537,3 +537,83 @@ button:has(svg[data-lucide="plus"]) svg {
   }
 }
 
+
+
+/* ==========================================================
+   OPENCOACH PULSE — CARTE « AUJOURD'HUI »
+   ========================================================== */
+
+.training-polish__today {
+  background: var(--oc-surface) !important;
+  border-color: var(--oc-border) !important;
+  color: var(--oc-text) !important;
+}
+
+.training-polish__today-session {
+  min-height: 64px;
+  border-color: var(--oc-border) !important;
+  background: var(--oc-surface-muted) !important;
+  color: var(--oc-text) !important;
+}
+
+.training-polish__today-session > div {
+  min-width: 0;
+}
+
+.training-polish__today-session p:first-child {
+  color: var(--oc-text) !important;
+  font-size: var(--oc-type-card-title) !important;
+  line-height: 1.35 !important;
+}
+
+.training-polish__today-session p:nth-child(2) {
+  color: var(--oc-muted) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.training-polish__today-status {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 10px !important;
+}
+
+.training-polish__today-status--completed {
+  background: var(--oc-success-soft) !important;
+  color: var(--oc-success) !important;
+}
+
+.training-polish__today-status--planned {
+  background: var(--oc-warning-soft) !important;
+  color: var(--oc-warning) !important;
+}
+
+.training-polish__today-status--skipped {
+  background: var(--oc-danger-soft) !important;
+  color: var(--oc-danger) !important;
+}
+
+.training-polish__today-empty {
+  border-color: var(--oc-border) !important;
+  background: var(--oc-surface-muted) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .training-polish__today-session:hover:not(:disabled) {
+    border-color: var(--oc-border-strong) !important;
+    background: var(--oc-surface-hover) !important;
+  }
+}
+
+@media (max-width: 639px) {
+  .training-polish__today-session {
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 11px !important;
+  }
+
+  .training-polish__today-session p:nth-child(2) {
+    white-space: normal;
+    line-height: 1.5;
+  }
+}
+

@@ -481,3 +481,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Composants existants réutilisés ; aucune duplication.
 - Vérification des noms de tokens effectuée avant correction des références.
 - CI à confirmer sur le dernier commit ; contrôle visuel navigateur à effectuer.
+
+
+## 2026-11-05 — Sprint 19 : statut de synchronisation Intervals.icu
+
+### Livré
+- Encadré détaillé : fond et bordure désormais pilotés par les tokens Pulse.
+- Métadonnées et détails : typographie secondaire harmonisée avec le système.
+- Séparateur de l'en-tête : couleur issue du token de bordure renforcée.
+- Variantes compacte et en-tête conservées ; seule la présentation neutre est ajustée.
+
+### Garde-fous
+- États synchronisé, en attente, mise à jour nécessaire, échec et supprimé inchangés.
+- Messages, horodatages, calcul du temps écoulé et règles de fuseau inchangés.
+- Aucun changement d'API, de synchronisation, de backend, de stockage, de dépendance, de VM, de merge ou de déploiement.
+
+### Contrôles
+- Composant existant conservé ; aucune duplication.
+- Contrôle CI à effectuer sur le commit final.
+- Contrôle visuel clair/sombre et responsive à réaliser dans le navigateur.

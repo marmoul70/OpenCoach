@@ -335,8 +335,8 @@ export function SidePanel({
                   truncate
                   text-[14px]
                   font-semibold
-                  text-slate-800
-                  dark:text-slate-100
+                  text-[var(--oc-text)]
+                  text-[var(--oc-text)]
                 "
               >
                 {title}
@@ -362,23 +362,23 @@ export function SidePanel({
               rounded-[9px]
 
               border
-              border-black/[0.07]
+              border-[var(--oc-border)]
 
-              bg-white
+              bg-[var(--oc-surface)]
 
-              text-slate-500
+              text-[var(--oc-muted)]
 
               transition
 
-              hover:border-black/[0.12]
-              hover:bg-slate-50
-              hover:text-slate-800
+              hover:border-[var(--oc-border-strong)]
+              hover:bg-[var(--oc-surface-hover)]
+              hover:text-[var(--oc-text)]
 
-              dark:border-white/[0.08]
-              dark:bg-white/[0.035]
-              dark:text-slate-400
-              dark:hover:bg-white/[0.06]
-              dark:hover:text-slate-200
+              border-[var(--oc-border)]
+              dark:bg-[var(--oc-surface)]/[0.035]
+              text-[var(--oc-muted)]
+              dark:hover:bg-[var(--oc-surface)]/[0.06]
+              hover:text-[var(--oc-text)]
             "
           >
             <X

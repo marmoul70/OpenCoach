@@ -202,12 +202,22 @@ def get_intervals_connection(
             last_synced_at=None,
         )
 
+    try:
+        web_cookie_configured = service.has_intervals_web_cookie(
+            athlete_profile_id
+        )
+    except (SecretCipherError, IntegrationConnectionRepositoryError) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible de lire les identifiants Intervals.icu chiffrés.",
+        ) from exc
+
     return IntervalsConnectionResponse(
         configured=True,
         enabled=connection.enabled,
         athlete_id=connection.athlete_id,
         api_key_configured=connection.secret_configured,
-        web_cookie_configured=service.has_intervals_web_cookie(athlete_profile_id),
+        web_cookie_configured=web_cookie_configured,
         last_synced_at=connection.last_synced_at,
     )
 
@@ -245,6 +255,12 @@ def save_intervals_connection(
         raise HTTPException(
             status_code=503,
             detail="Impossible d'enregistrer la connexion Intervals.icu.",
+        ) from exc
+
+    except SecretCipherError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible de lire les identifiants Intervals.icu chiffrés.",
         ) from exc
 
     return IntervalsConnectionResponse(

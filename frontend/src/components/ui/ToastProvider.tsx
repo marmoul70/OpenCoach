@@ -231,25 +231,15 @@ function ToastNotification({
           : 'status'
       }
       className="
+        oc-toast
         pointer-events-auto
         relative
         flex
         items-start
         gap-3
         overflow-hidden
-        rounded-[13px]
-        border
-        border-black/[0.07]
-        bg-white/[0.97]
         p-3.5
         pr-10
-        text-slate-800
-        shadow-[0_12px_35px_rgba(15,23,42,0.12)]
-        backdrop-blur-xl
-        dark:border-white/[0.08]
-        dark:bg-[#171d21]/[0.97]
-        dark:text-slate-100
-        dark:shadow-[0_16px_40px_rgba(0,0,0,0.30)]
       "
     >
       <div
@@ -277,8 +267,7 @@ function ToastNotification({
             font-semibold
             leading-[1.35]
             tracking-[-0.01em]
-            text-slate-800
-            dark:text-slate-100
+            oc-toast-title
           "
         >
           {toast.title}
@@ -339,17 +328,8 @@ function ToastNotification({
           items-center
           justify-center
           rounded-[7px]
-          text-slate-400
+          oc-toast-close
           outline-none
-          transition
-          hover:bg-slate-100
-          hover:text-slate-600
-          focus-visible:ring-2
-          focus-visible:ring-slate-300/60
-          dark:text-slate-500
-          dark:hover:bg-white/[0.06]
-          dark:hover:text-slate-300
-          dark:focus-visible:ring-white/10
         "
         onClick={onClose}
         aria-label="Fermer la notification"

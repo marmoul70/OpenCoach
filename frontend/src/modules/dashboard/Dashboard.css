@@ -19,25 +19,18 @@
    ========================================================== */
 
 .dashboard {
-  --dashboard-bg: #f5f7f6;
-
-  --dashboard-surface: #ffffff;
-  --dashboard-surface-soft: #f1f4f3;
-
-  --dashboard-border:
-    rgba(15, 23, 42, 0.07);
-
-  --dashboard-text: #12171a;
-  --dashboard-text-secondary: #344054;
-
-  --dashboard-muted: #667085;
-  --dashboard-muted-soft: #98a2b3;
-
-  --dashboard-accent: #059669;
-  --dashboard-accent-hover: #047857;
-
-  --dashboard-accent-soft:
-    rgba(16, 185, 129, 0.08);
+  /* Compatibilité des widgets historiques avec les tokens Pulse. */
+  --dashboard-bg: var(--oc-page);
+  --dashboard-surface: var(--oc-surface);
+  --dashboard-surface-soft: var(--oc-surface-muted);
+  --dashboard-border: var(--oc-border);
+  --dashboard-text: var(--oc-text);
+  --dashboard-text-secondary: var(--oc-text-secondary);
+  --dashboard-muted: var(--oc-muted);
+  --dashboard-muted-soft: var(--oc-muted-soft);
+  --dashboard-accent: var(--oc-accent);
+  --dashboard-accent-hover: var(--oc-accent-hover);
+  --dashboard-accent-soft: var(--oc-accent-soft);
 
   --dashboard-radius: 14px;
   --dashboard-radius-mobile: 12px;
@@ -293,49 +286,12 @@
 
 
 /* ==========================================================
-   12. LIGHT THEME
+   THÈME SOMBRE
+   Les couleurs proviennent des tokens globaux ; seul le halo
+   décoratif conserve une intensité adaptée au thème sombre.
    ========================================================== */
 
-[data-theme="light"]
-.dashboard {
-  --dashboard-bg: #f5f7f6;
-
-  --dashboard-surface: #ffffff;
-  --dashboard-surface-soft: #f1f4f3;
-
-  --dashboard-border:
-    rgba(15, 23, 42, 0.07);
-
-  --dashboard-text: #12171a;
-  --dashboard-text-secondary: #344054;
-
-  --dashboard-muted: #667085;
-  --dashboard-muted-soft: #98a2b3;
-}
-
-
-/* ==========================================================
-   13. DARK THEME
-   ========================================================== */
-
-[data-theme="dark"]
-.dashboard {
-  --dashboard-bg: #0b1014;
-
-  --dashboard-surface: #141a1e;
-  --dashboard-surface-soft: #192126;
-
-  --dashboard-border:
-    rgba(255, 255, 255, 0.075);
-
-  --dashboard-text: #eef2f3;
-  --dashboard-text-secondary: #cbd5e1;
-
-  --dashboard-muted: #91a0aa;
-  --dashboard-muted-soft: #74818a;
-
-  --dashboard-accent: #10b981;
-
+[data-theme="dark"] .dashboard {
   background:
     radial-gradient(
       circle at 45% -18%,

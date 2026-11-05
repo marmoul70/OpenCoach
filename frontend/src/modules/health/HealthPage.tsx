@@ -26,7 +26,7 @@ import {
 import { LineChart } from '../../design-system/charts/LineChart'
 import { SidePanel } from '../../components/ui/SidePanel'
 import { PageHeader } from '../../design-system/components/PageHeader'
-import { fetchAutomatedTasks } from '../settings/tasksApi'
+import { fetchCorosConnection } from '../../core/integrations/coros'
 
 type WindowSize = 7 | 14 | 30
 type HealthSectionKey = 'cardio' | 'recovery' | 'sleep'
@@ -91,19 +91,20 @@ export function HealthPage() {
 
     fetchRecoveryAssessment()
       .then(async (assessmentResult) => {
-        const [trendsResult, tasksResult] = await Promise.all([
+        const [trendsResult, corosConnection] = await Promise.all([
           fetchWellnessTrends(
             30,
             assessmentResult.provider === 'intervals' ? 'intervals' : 'coros',
           ),
-          fetchAutomatedTasks().catch(() => []),
+          fetchCorosConnection().catch(() => null),
         ])
         if (mounted) {
           setAssessment(assessmentResult)
           setTrends(trendsResult)
-          const corosTask = tasksResult.find((task) => task.unit.includes('coros-sync'))
           setLastCorosSyncAt(
-            corosTask?.last_run ? parseSystemdTimestamp(corosTask.last_run) : null,
+            corosConnection?.last_synced_at
+              ? parseUtcTimestamp(corosConnection.last_synced_at)
+              : null,
           )
         }
       })
@@ -553,11 +554,11 @@ function formatDate(value: string): string {
 }
 
 
-function parseSystemdTimestamp(value: string): Date | null {
-  const match = value.match(/(?:[A-Za-z]{3}\s+)?(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?/)
-  if (!match) return null
-  const [, year, month, day, hour, minute, second = '0'] = match
-  const parsed = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second))
+function parseUtcTimestamp(value: string): Date | null {
+  // SQLAlchemy stores this UTC timestamp without tzinfo; restore the UTC marker
+  // before parsing so browsers in another timezone display the right instant.
+  const normalized = /(?:Z|[+-]\\d{2}:?\\d{2})$/i.test(value) ? value : `${value}Z`
+  const parsed = new Date(normalized)
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 

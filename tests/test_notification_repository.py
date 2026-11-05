@@ -1,6 +1,8 @@
 from uuid import uuid4
 
-from sqlalchemy import create_engine
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from opencoach.database.base import Base
@@ -8,6 +10,7 @@ from opencoach.database.models import Notification, User
 from opencoach.database.repositories.sql_notification import (
     SqlNotificationRepository,
 )
+from opencoach.services.push_notification import PushNotificationService
 
 
 def create_session():
@@ -133,3 +136,30 @@ def test_unread_filter_and_pagination():
         assert len(page) == 2
     finally:
         session.close()
+
+
+
+def test_global_backup_notification_is_persisted_for_active_users_without_push_devices():
+    session = create_session()
+    try:
+        user_a = create_user(session, "a@example.test")
+        user_b = create_user(session, "b@example.test")
+        report = PushNotificationService(session).send_system_backup_error(
+            title="Sauvegarde OpenCoach",
+            body="La sauvegarde a échoué.",
+        )
+
+        assert report.sent == 0
+        assert report.persisted is True
+        repository = SqlNotificationRepository(session)
+        assert repository.list_for_user(user_a.id)[1] == 1
+        assert repository.list_for_user(user_b.id)[1] == 1
+    finally:
+        session.close()
+
+
+def test_notification_migration_keeps_a_single_alembic_head():
+    config = Config("alembic.ini")
+    script = ScriptDirectory.from_config(config)
+
+    assert script.get_heads() == ["f6a91c2d4e80"]

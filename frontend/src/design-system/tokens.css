@@ -179,3 +179,18 @@
     transform: none;
   }
 }
+
+
+/* Side panels use the same semantic surface without inheriting card geometry. */
+.oc-panel-surface {
+  color: var(--oc-text);
+  background: var(--oc-surface);
+  border-left: 1px solid var(--oc-border);
+  box-shadow: var(--oc-shadow-popover);
+}
+
+.oc-panel-header {
+  background: color-mix(in srgb, var(--oc-surface) 94%, transparent);
+  border-bottom: 1px solid var(--oc-border);
+  backdrop-filter: blur(16px);
+}

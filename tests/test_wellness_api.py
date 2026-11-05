@@ -293,3 +293,38 @@ def test_get_recovery_assessment_returns_unavailable_when_no_sensor_data() -> No
     assert payload["source_date"] is None
     assert payload["windows"][0]["metrics"]["hrv"]["current"] is None
     assert payload["subjective"] is None
+
+
+def test_recovery_intervals_fallback_does_not_mix_coros_time_series() -> None:
+    class IntervalsOnlyRepository:
+        def list_range(self, athlete_profile_id, start_date, end_date, *, provider=None):
+            if provider == "intervals":
+                return [WellnessDay(provider="intervals", date=end_date, hrv=52.0)]
+            return []
+
+    class SpyCorosDailyDataRepository:
+        called = False
+
+        def list_time_series_snapshots(self, athlete_profile_id, start_date, end_date):
+            self.called = True
+            return [{
+                "category": "hrv_timeseries",
+                "payload": {"samples": [{"metric": "sleep_hrv", "value": 99}]},
+            }]
+
+    client, _ = create_client(IntervalsOnlyRepository())
+    time_series_repository = SpyCorosDailyDataRepository()
+    client.app.dependency_overrides[
+        get_daily_context_repository
+    ] = lambda: FakeDailyContextRepository()
+    client.app.dependency_overrides[
+        get_coros_daily_data_repository
+    ] = lambda: time_series_repository
+
+    response = client.get("/api/wellness/recovery")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["provider"] == "intervals"
+    assert payload["time_series"] == []
+    assert time_series_repository.called is False

@@ -463,3 +463,21 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Le composant existant est conservé ; seules des classes de présentation et des règles CSS ciblées sont ajoutées.
 - Les surfaces et statuts utilisent les tokens Pulse clair/sombre.
 - CI à confirmer sur les derniers commits et contrôle visuel navigateur à effectuer.
+
+
+## 2026-11-05 — Sprint 18 : cartes de synthèse et objectif de course
+
+### Livré
+- Carte de synthèse d'entraînement : surface, bordure, ombre, typographie et valeur numérique alignées sur les tokens Pulse.
+- Carte de l'objectif principal : même langage visuel, hiérarchie du libellé, du nom et des détails harmonisée.
+- Les deux cartes utilisent les tokens de surface et de texte partagés pour rester cohérentes en thème clair et sombre.
+
+### Garde-fous
+- Props, données affichées, valeurs de métriques et comportement des composants inchangés.
+- Accent émeraude de l'objectif conservé.
+- Aucun changement API, backend, stockage, calcul, dépendance, VM, merge ou déploiement.
+
+### Contrôles
+- Composants existants réutilisés ; aucune duplication.
+- Vérification des noms de tokens effectuée avant correction des références.
+- CI à confirmer sur le dernier commit ; contrôle visuel navigateur à effectuer.

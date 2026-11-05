@@ -612,3 +612,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôles
 - Contrôle CI lancé sur les commits du sprint.
 - Vérification visuelle du panneau sur mobile/desktop et en clair/sombre à effectuer dans le navigateur.
+
+
+## 2026-11-05 — Sprint 26 : page Historique des activités
+
+### Livré
+- Barre de recherche et filtres : champs, fonds, bordures, placeholders et états de focus alignés sur les tokens Pulse.
+- Synthèse et tableau desktop : surfaces, en-têtes, séparateurs, lignes et états de survol harmonisés.
+- Cartes mobiles : surfaces secondaires, libellés, valeurs et badges de sport raccordés aux rôles sémantiques.
+- États vides, métadonnées et indicateurs de liaison avec une séance : typographie neutre harmonisée.
+- Accents fonctionnels émeraude et états d'action conservés.
+
+### Garde-fous
+- Filtres, tri, calculs de synthèse, dates, associations aux séances, navigation, callbacks, chargements et appels API inchangés.
+- Aucun changement de données, logique métier, backend, synchronisation ou dépendance.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles
+- CI lancée sur les commits du sprint.
+- Vérification visuelle responsive et clair/sombre à effectuer dans le navigateur.

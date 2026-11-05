@@ -722,3 +722,21 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôles
 - CI lancée sur les commits du sprint.
 - Vérification visuelle des états connecté/déconnecté et des erreurs, responsive et clair/sombre à effectuer.
+
+
+## 2026-11-05 — Sprint 32 : section Notifications
+
+### Livré
+- Cartes de configuration et panneaux de notifications : surfaces, bordures et séparateurs alignés sur Pulse.
+- Titres, libellés, descriptions et métadonnées : rôles typographiques et couleurs sémantiques.
+- Contrôles désactivés et états neutres harmonisés en clair/sombre.
+- Couleurs d'état, erreurs, succès, avertissements et activation des notifications préservés.
+
+### Garde-fous
+- Préférences, permissions, activation/désactivation, canaux, tests et callbacks inchangés.
+- Aucun changement de logique métier, API, données, backend, stockage ou dépendance.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles
+- CI lancée sur les commits du sprint.
+- Vérification visuelle des permissions, états actifs/inactifs, responsive et clair/sombre à effectuer.

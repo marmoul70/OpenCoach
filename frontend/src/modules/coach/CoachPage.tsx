@@ -1174,7 +1174,7 @@ function TrajectoryMetric({
 }) {
   return (
     <div className={align === 'right' ? 'text-right' : ''}>
-      <p className="text-[22px] font-bold tracking-[-0.035em] tabular-nums text-slate-850 dark:text-[var(--oc-text-secondary)]">
+      <p className="text-[22px] font-bold tracking-[-0.035em] tabular-nums text-[var(--oc-text)] dark:text-[var(--oc-text-secondary)]">
         {value}
       </p>
 
@@ -1205,7 +1205,7 @@ function CockpitTrajectory({
         />
 
         <span
-          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-emerald-500 shadow-sm dark:border-[#151b1f]"
+          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--oc-surface)] bg-emerald-500 shadow-sm dark:border-[var(--oc-surface)]"
           style={{ left: `${a}%` }}
         />
 
@@ -1214,7 +1214,7 @@ function CockpitTrajectory({
           style={{ left: `${p}%` }}
         />
 
-        <span className="absolute right-0 top-1/2 h-3.5 w-[2px] -translate-y-1/2 bg-slate-300 dark:bg-slate-600" />
+        <span className="absolute right-0 top-1/2 h-3.5 w-[2px] -translate-y-1/2 bg-[var(--oc-border-strong)] dark:bg-[var(--oc-muted)]" />
       </div>
 
       <div className="relative mt-2 h-3 text-[7px] font-medium text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]">
@@ -1842,7 +1842,7 @@ function SessionStatusBadge({
       label: 'Non réalisé',
       className: (
         'border-slate-400/20 '
-        + 'bg-slate-400/[0.08] '
+        + 'bg-[var(--oc-surface-muted)] '
         + 'text-[var(--oc-muted-soft)]'
       ),
     },

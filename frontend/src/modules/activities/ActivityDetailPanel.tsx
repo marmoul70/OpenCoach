@@ -63,12 +63,12 @@ function formatNumber(value: number | null | undefined, digits = 0): string {
 
 function DetailMetric({ label, value, icon }: Metric) {
   return (
-    <div className="rounded-xl border border-black/[0.06] bg-white p-3 dark:border-white/[0.07] dark:bg-white/[0.025]">
-      <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+    <div className="rounded-xl border border-[var(--oc-border)] bg-[var(--oc-surface)] p-3 dark:border-[var(--oc-border)] dark:bg-[var(--oc-surface)]/[0.025]">
+      <div className="flex items-center gap-2 text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted-soft)]">
         <span className="text-emerald-600 dark:text-emerald-400">{icon}</span>
         <span className="text-[9px] font-semibold uppercase tracking-[0.08em]">{label}</span>
       </div>
-      <p className="mt-2 text-[19px] font-bold tabular-nums text-slate-800 dark:text-slate-100">{value}</p>
+      <p className="mt-2 text-[19px] font-bold tabular-nums text-[var(--oc-text-secondary)] dark:text-[var(--oc-text)]">{value}</p>
     </div>
   )
 }
@@ -137,7 +137,7 @@ export function ActivityDetailPanel({ provider, providerActivityId }: Props) {
     }
   }, [detail])
 
-  if (loading) return <div className="flex min-h-48 items-center justify-center text-sm text-slate-400">Chargement des données COROS…</div>
+  if (loading) return <div className="flex min-h-48 items-center justify-center text-sm text-[var(--oc-muted-soft)]">Chargement des données COROS…</div>
   if (error) return <div className="rounded-xl border border-red-500/20 bg-red-500/[0.06] p-4 text-sm text-red-500">{error}</div>
   if (!detail) return null
 
@@ -163,13 +163,13 @@ export function ActivityDetailPanel({ provider, providerActivityId }: Props) {
     <div className="space-y-4 pb-6">
       <section className="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.045] p-4">
         <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-emerald-600 dark:text-emerald-400">{detail.provider.toUpperCase()} · {detail.sport_type}</p>
-        <h3 className="mt-1 text-xl font-bold text-slate-900 dark:text-white">{detail.name}</h3>
-        <p className="mt-1 text-xs text-slate-500">{new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeStyle: 'short' }).format(new Date(dateValue))}</p>
+        <h3 className="mt-1 text-xl font-bold text-[var(--oc-text)] dark:text-white">{detail.name}</h3>
+        <p className="mt-1 text-xs text-[var(--oc-muted)]">{new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeStyle: 'short' }).format(new Date(dateValue))}</p>
       </section>
 
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h4 className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Indicateurs de la séance</h4>
+          <h4 className="text-xs font-bold uppercase tracking-[0.1em] text-[var(--oc-muted)]">Indicateurs de la séance</h4>
           {detail.coros_detail != null && <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">Détail COROS</span>}
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -178,14 +178,14 @@ export function ActivityDetailPanel({ provider, providerActivityId }: Props) {
       </section>
 
       {(parsed?.movingPace || parsed?.aerobic || parsed?.anaerobic || parsed?.focus || parsed?.effort) && (
-        <section className="rounded-xl border border-black/[0.06] bg-white p-4 dark:border-white/[0.07] dark:bg-white/[0.025]">
-          <h4 className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Analyse de l'effort</h4>
+        <section className="rounded-xl border border-[var(--oc-border)] bg-[var(--oc-surface)] p-4 dark:border-[var(--oc-border)] dark:bg-[var(--oc-surface)]/[0.025]">
+          <h4 className="text-xs font-bold uppercase tracking-[0.1em] text-[var(--oc-muted)]">Analyse de l'effort</h4>
           <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
-            {parsed.movingPace && <div><p className="text-slate-400">Allure en mouvement</p><p className="mt-1 font-semibold text-slate-800 dark:text-slate-200">{parsed.movingPace}</p></div>}
-            {parsed.aerobic && <div><p className="text-slate-400">Effet aérobie</p><p className="mt-1 font-semibold text-slate-800 dark:text-slate-200">{parsed.aerobic}</p></div>}
-            {parsed.anaerobic && <div><p className="text-slate-400">Effet anaérobie</p><p className="mt-1 font-semibold text-slate-800 dark:text-slate-200">{parsed.anaerobic}</p></div>}
-            {parsed.focus && <div><p className="text-slate-400">Objectif physiologique</p><p className="mt-1 font-semibold text-slate-800 dark:text-slate-200">{parsed.focus}</p></div>}
-            {parsed.effort && <div><p className="text-slate-400">Effort perçu</p><p className="mt-1 font-semibold text-slate-800 dark:text-slate-200">{parsed.effort}</p></div>}
+            {parsed.movingPace && <div><p className="text-[var(--oc-muted-soft)]">Allure en mouvement</p><p className="mt-1 font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]">{parsed.movingPace}</p></div>}
+            {parsed.aerobic && <div><p className="text-[var(--oc-muted-soft)]">Effet aérobie</p><p className="mt-1 font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]">{parsed.aerobic}</p></div>}
+            {parsed.anaerobic && <div><p className="text-[var(--oc-muted-soft)]">Effet anaérobie</p><p className="mt-1 font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]">{parsed.anaerobic}</p></div>}
+            {parsed.focus && <div><p className="text-[var(--oc-muted-soft)]">Objectif physiologique</p><p className="mt-1 font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]">{parsed.focus}</p></div>}
+            {parsed.effort && <div><p className="text-[var(--oc-muted-soft)]">Effort perçu</p><p className="mt-1 font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]">{parsed.effort}</p></div>}
           </div>
         </section>
       )}

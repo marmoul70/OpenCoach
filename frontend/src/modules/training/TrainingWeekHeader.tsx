@@ -123,11 +123,11 @@ export function TrainingWeekHeader({
               overflow-hidden
               rounded-[14px]
               border
-              border-black/[0.07]
-              bg-white
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface)]
               shadow-[0_1px_2px_rgba(15,23,42,0.025)]
-              dark:border-white/[0.075]
-              dark:bg-[#151b1f]
+              dark:border-[var(--oc-border)]
+              
               lg:col-span-7
             "
           >
@@ -156,9 +156,9 @@ export function TrainingWeekHeader({
                       + 'dark:text-emerald-400'
                     )
                   : (
-                      'text-slate-400 '
+                      'text-[var(--oc-text-secondary)] '
                       + 'hover:text-emerald-600 '
-                      + 'dark:text-slate-500 '
+                      + ' '
                       + 'dark:hover:text-emerald-400'
                     ),
               ].join(' ')}
@@ -169,8 +169,8 @@ export function TrainingWeekHeader({
                   isCurrentWeek
                     ? 'bg-emerald-500'
                     : (
-                        'bg-slate-300 '
-                        + 'dark:bg-slate-600'
+                        'bg-[var(--oc-border-strong)] '
+                        + ''
                       ),
                 ].join(' ')}
               />
@@ -183,10 +183,7 @@ export function TrainingWeekHeader({
             {weekTypeLabel && (
               <span
                 className="
-                  text-[10.5px]
-                  font-medium
-                  text-slate-400
-                  dark:text-slate-500
+                  oc-type-secondary font-medium
                 "
               >
                 {weekTypeLabel}
@@ -200,11 +197,11 @@ export function TrainingWeekHeader({
                       mt-3
                       rounded-[11px]
                       border
-                      border-black/[0.055]
-                      bg-slate-50/80
+                      border-[var(--oc-border)]
+                      bg-[var(--oc-surface-muted)]
                       p-1.5
-                      dark:border-white/[0.06]
-                      dark:bg-white/[0.025]
+                      
+                      
                     "
                   >
                     {/* Desktop */}
@@ -227,8 +224,8 @@ export function TrainingWeekHeader({
                           py-1.5
                           text-left
                           transition
-                          hover:bg-white
-                          dark:hover:bg-white/[0.035]
+                          hover:bg-[var(--oc-surface-hover)]
+                          dark:hover:bg-[var(--oc-surface-hover)]/[0.035]
                         "
                       >
                         <p
@@ -237,8 +234,8 @@ export function TrainingWeekHeader({
                             text-[15px]
                             font-semibold
                             tracking-[-0.025em]
-                            text-slate-950
-                            dark:text-white
+                            text-[var(--oc-text)]
+                            
                           "
                         >
                           {cleanWeekRange(
@@ -256,11 +253,11 @@ export function TrainingWeekHeader({
                           overflow-hidden
                           rounded-[9px]
                           border
-                          border-black/[0.06]
-                          bg-white
+                          border-[var(--oc-border)]
+                          bg-[var(--oc-surface)]
                           shadow-[0_1px_2px_rgba(15,23,42,0.025)]
-                          dark:border-white/[0.07]
-                          dark:bg-white/[0.025]
+                          
+                          
                         "
                       >
                         <button
@@ -273,12 +270,12 @@ export function TrainingWeekHeader({
                             w-9
                             items-center
                             justify-center
-                            text-slate-400
+                            text-[var(--oc-text-secondary)]
                             transition
-                            hover:bg-slate-100
-                            hover:text-slate-900
-                            dark:hover:bg-white/[0.05]
-                            dark:hover:text-white
+                            hover:bg-[var(--oc-surface-muted)]
+                            hover:text-[var(--oc-text)]
+                            dark:hover:bg-[var(--oc-surface-hover)]/[0.05]
+                            
                           "
                         >
                           <ChevronLeft
@@ -290,8 +287,8 @@ export function TrainingWeekHeader({
                           className="
                             h-4
                             w-px
-                            bg-black/[0.06]
-                            dark:bg-white/[0.07]
+                            bg-[var(--oc-border)]
+                            
                           "
                         />
 
@@ -305,12 +302,12 @@ export function TrainingWeekHeader({
                             w-9
                             items-center
                             justify-center
-                            text-slate-400
+                            text-[var(--oc-text-secondary)]
                             transition
-                            hover:bg-slate-100
-                            hover:text-slate-900
-                            dark:hover:bg-white/[0.05]
-                            dark:hover:text-white
+                            hover:bg-[var(--oc-surface-muted)]
+                            hover:text-[var(--oc-text)]
+                            dark:hover:bg-[var(--oc-surface-hover)]/[0.05]
+                            
                           "
                         >
                           <ChevronRight
@@ -341,10 +338,10 @@ export function TrainingWeekHeader({
                           items-center
                           justify-center
                           rounded-[8px]
-                          text-slate-400
+                          text-[var(--oc-text-secondary)]
                           transition
-                          active:bg-white
-                          dark:active:bg-white/[0.04]
+                          active:bg-[var(--oc-surface-hover)]
+                          dark:active:bg-[var(--oc-surface-hover)]/[0.04]
                         "
                       >
                         <ChevronLeft
@@ -370,8 +367,8 @@ export function TrainingWeekHeader({
                             text-[14px]
                             font-semibold
                             tracking-[-0.02em]
-                            text-slate-950
-                            dark:text-white
+                            text-[var(--oc-text)]
+                            
                           "
                         >
                           {cleanWeekRange(
@@ -393,10 +390,10 @@ export function TrainingWeekHeader({
                           items-center
                           justify-center
                           rounded-[8px]
-                          text-slate-400
+                          text-[var(--oc-text-secondary)]
                           transition
-                          active:bg-white
-                          dark:active:bg-white/[0.04]
+                          active:bg-[var(--oc-surface-hover)]
+                          dark:active:bg-[var(--oc-surface-hover)]/[0.04]
                         "
                       >
                         <ChevronRight
@@ -414,17 +411,17 @@ export function TrainingWeekHeader({
             <div
               className="
                 border-t
-                border-black/[0.06]
-                dark:border-white/[0.07]
+                border-[var(--oc-border)]
+                
               "
             >
         <div
           className="
             border-t
-            border-black/[0.06]
+            border-[var(--oc-border)]
             px-3.5
             py-3
-            dark:border-white/[0.07]
+            
             sm:px-4
           "
         >
@@ -443,8 +440,8 @@ export function TrainingWeekHeader({
                   font-bold
                   uppercase
                   tracking-[0.12em]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-text-secondary)]
+                  
                 "
               >
                 Phase d'entraînement
@@ -468,8 +465,8 @@ export function TrainingWeekHeader({
                 className="
                   text-[11px]
                   font-semibold
-                  text-slate-500
-                  dark:text-slate-400
+                  text-[var(--oc-text-secondary)]
+                  
                 "
               >
                 Semaine {phaseWeekIndex}
@@ -484,8 +481,8 @@ export function TrainingWeekHeader({
               h-[3px]
               overflow-hidden
               rounded-full
-              bg-slate-100
-              dark:bg-white/[0.06]
+              bg-[var(--oc-surface-muted)]
+              
             "
           >
             <div
@@ -505,9 +502,7 @@ export function TrainingWeekHeader({
           <p
             className="
               mt-1.5
-              text-[10.5px]
-              text-slate-400
-              dark:text-slate-500
+              oc-type-secondary
             "
           >
             {phaseName}
@@ -524,11 +519,11 @@ export function TrainingWeekHeader({
               overflow-hidden
               rounded-[14px]
               border
-              border-black/[0.07]
-              bg-white
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface)]
               shadow-[0_1px_2px_rgba(15,23,42,0.025)]
-              dark:border-white/[0.075]
-              dark:bg-[#151b1f]
+              
+              
               lg:col-span-5
             "
           >
@@ -536,10 +531,10 @@ export function TrainingWeekHeader({
             <div
               className="
                 border-b
-                border-black/[0.06]
+                border-[var(--oc-border)]
                 px-3.5
                 py-3
-                dark:border-white/[0.07]
+                
                 sm:px-4
               "
             >
@@ -549,8 +544,8 @@ export function TrainingWeekHeader({
                   font-bold
                   uppercase
                   tracking-[0.12em]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-text-secondary)]
+                  
                 "
               >
                 Cette semaine
@@ -562,8 +557,8 @@ export function TrainingWeekHeader({
                   grid
                   grid-cols-3
                   divide-x
-                  divide-black/[0.06]
-                  dark:divide-white/[0.07]
+                  divide-[var(--oc-border)]
+                  
                 "
               >
                 <PlanningMetric
@@ -589,10 +584,10 @@ export function TrainingWeekHeader({
         <div
           className="
             border-t
-            border-black/[0.06]
+            border-[var(--oc-border)]
             px-3.5
             py-3
-            dark:border-white/[0.07]
+            
             sm:px-4
           "
         >
@@ -611,8 +606,8 @@ export function TrainingWeekHeader({
                   font-bold
                   uppercase
                   tracking-[0.12em]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-text-secondary)]
+                  
                 "
               >
                 Charge
@@ -632,8 +627,8 @@ export function TrainingWeekHeader({
                     font-bold
                     tabular-nums
                     tracking-[-0.04em]
-                    text-slate-950
-                    dark:text-white
+                    text-[var(--oc-text)]
+                    
                   "
                 >
                   {mainValue}
@@ -642,8 +637,8 @@ export function TrainingWeekHeader({
                 <span
                   className="
                     text-[11px]
-                    text-slate-400
-                    dark:text-slate-500
+                    text-[var(--oc-text-secondary)]
+                    
                   "
                 >
                   {mainLabel}
@@ -679,8 +674,8 @@ export function TrainingWeekHeader({
                 h-[4px]
                 overflow-hidden
                 rounded-full
-                bg-slate-100
-                dark:bg-white/[0.06]
+                bg-[var(--oc-surface-muted)]
+                
               "
             >
               <div
@@ -708,8 +703,8 @@ export function TrainingWeekHeader({
                 items-center
                 justify-items-center
                 divide-x
-                divide-black/[0.06]
-                dark:divide-white/[0.07]
+                divide-[var(--oc-border)]
+                
               "
             >
               <div className="
@@ -794,7 +789,7 @@ function PlanningMetric({
           hidden
           h-3.5
           w-3.5
-          text-slate-400
+          text-[var(--oc-text-secondary)]
           sm:block
         "
       />
@@ -802,12 +797,12 @@ function PlanningMetric({
       <div className="text-center sm:text-left">
         <p
           className="
-            text-[18px]
+            text-[var(--oc-type-section-title)]
             font-bold
             leading-none
             tabular-nums
-            text-slate-950
-            dark:text-white
+            text-[var(--oc-text)]
+            
           "
         >
           {value}
@@ -820,8 +815,8 @@ function PlanningMetric({
             font-medium
             uppercase
             tracking-[0.05em]
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-text-secondary)]
+            
           "
         >
           {label}
@@ -866,8 +861,8 @@ function OverviewItem({
           className="
             text-[12px]
             font-bold
-            text-slate-900
-            dark:text-white
+            text-[var(--oc-text)]
+            
           "
         >
           {value}
@@ -876,7 +871,7 @@ function OverviewItem({
         <p
           className="
             text-[9px]
-            text-slate-400
+            text-[var(--oc-text-secondary)]
           "
         >
           {label}

@@ -67,7 +67,7 @@ export function CoachPage() {
     return (
       <PageContainer>
         <div className="flex min-h-[420px] items-center justify-center">
-          <div className="flex items-center gap-2 text-[13px] text-slate-400">
+          <div className="flex items-center gap-2 text-[13px] text-[var(--oc-muted)]">
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-500" />
             Analyse de ta situation…
           </div>
@@ -81,11 +81,11 @@ export function CoachPage() {
       <PageContainer>
         <div className="flex min-h-[420px] items-center justify-center">
           <div className="max-w-md text-center">
-            <Brain className="mx-auto h-6 w-6 text-slate-300" />
-            <h2 className="mt-3 text-[15px] font-semibold text-slate-900 dark:text-white">
+            <Brain className="mx-auto h-6 w-6 text-[var(--oc-muted-soft)]" />
+            <h2 className="mt-3 text-[15px] font-semibold text-[var(--oc-text)] dark:text-white">
               Analyse indisponible
             </h2>
-            <p className="mt-1 text-[10.5px] leading-5 text-slate-400">
+            <p className="mt-1 text-[10.5px] leading-5 text-[var(--oc-muted)]">
               {error ?? 'OpenCoach prépare encore ton analyse.'}
             </p>
           </div>
@@ -146,15 +146,15 @@ export function CoachPage() {
     <PageContainer>
       <header className="mb-4 flex items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400">
+          <p className="oc-page-eyebrow">
             OpenCoach
           </p>
 
-          <h1 className="mt-0.5 text-[30px] font-bold tracking-[-0.04em] text-slate-950 dark:text-white">
+          <h1 className="oc-page-title">
             Coach
           </h1>
 
-          <p className="mt-1 text-[13px] text-slate-400 dark:text-slate-500">
+          <p className="oc-page-description">
             Ton briefing d'entraînement du jour.
           </p>
         </div>
@@ -194,8 +194,8 @@ export function CoachPage() {
               h-8
               w-px
               shrink-0
-              bg-slate-200
-              dark:bg-white/[0.10]
+              bg-[var(--oc-border-strong)]
+              dark:bg-[var(--oc-surface)]/[0.10]
             "
           />
 
@@ -211,8 +211,8 @@ export function CoachPage() {
                 text-[11px]
                 font-medium
                 leading-none
-                text-slate-400
-                dark:text-slate-500
+                text-[var(--oc-muted)]
+                dark:text-[var(--oc-muted)]
               "
             >
               Aujourd’hui
@@ -226,8 +226,8 @@ export function CoachPage() {
                 font-semibold
                 leading-none
                 tracking-[-0.015em]
-                text-slate-900
-                dark:text-slate-100
+                text-[var(--oc-text)]
+                dark:text-[var(--oc-text-secondary)]
               "
             >
               {formatTodayShort()}
@@ -243,7 +243,7 @@ export function CoachPage() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-[16px] border border-black/[0.07] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.03)] dark:border-white/[0.07] dark:bg-[#151b1f]">
+      <div className="overflow-hidden rounded-[16px] border border-[var(--oc-border)] bg-[var(--oc-surface)] shadow-[0_1px_3px_rgba(15,23,42,0.03)] dark:border-[var(--oc-border)] ">
 
         {/* ==================================================
             HERO / DECISION
@@ -268,12 +268,12 @@ export function CoachPage() {
                   ].join(' ')}
                 />
 
-                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--oc-muted)] dark:text-[var(--oc-muted)]">
                   Recommandation du jour
                 </span>
               </div>
 
-              <h2 className="mt-4 max-w-[720px] text-[27px] font-bold leading-[1.1] tracking-[-0.045em] text-slate-950 dark:text-white sm:text-[30px]">
+              <h2 className="mt-4 max-w-[720px] text-[27px] font-bold leading-[1.1] tracking-[-0.045em] text-[var(--oc-text)] dark:text-white sm:text-[30px]">
                 {buildDailyDecisionHeadline(
                   readiness.score,
                   readiness.criticalCount,
@@ -283,7 +283,7 @@ export function CoachPage() {
                 )}
               </h2>
 
-              <p className="mt-3 max-w-[680px] text-[14px] leading-[1.7] text-slate-500 dark:text-slate-400">
+              <p className="mt-3 max-w-[680px] text-[14px] leading-[1.7] text-[var(--oc-muted)] dark:text-[var(--oc-muted)]">
                 {readinessSummary(
                   readiness.score,
                   attentionSignals.length,
@@ -297,8 +297,8 @@ export function CoachPage() {
                     overflow-hidden
                     rounded-[13px]
                     border
-                    border-white/[0.07]
-                    bg-[#141917]
+                    border-[var(--oc-border)]
+                    bg-[var(--oc-surface-muted)]
                     shadow-[0_12px_35px_rgba(4,12,8,0.10)]
                   "
                 >
@@ -504,7 +504,7 @@ export function CoachPage() {
                           relative
                           mt-4
                           border-t
-                          border-white/[0.065]
+                          border-[var(--oc-border)]
                           pt-3
                         "
                       >
@@ -532,16 +532,16 @@ export function CoachPage() {
                   </div>
                 </div>
               ) : (
-                <div className="mt-6 border-t border-black/[0.06] pt-4 dark:border-white/[0.06]">
+                <div className="mt-6 border-t border-[var(--oc-border)] pt-4 dark:border-[var(--oc-border)]">
                   <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-600 dark:text-emerald-400">
                     Aujourd'hui
                   </p>
 
-                  <p className="mt-1.5 text-[15px] font-semibold text-slate-800 dark:text-slate-200">
+                  <p className="mt-1.5 text-[15px] font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]">
                     Journée de récupération
                   </p>
 
-                  <p className="mt-1 text-[9.5px] text-slate-400">
+                  <p className="mt-1 text-[9.5px] text-[var(--oc-muted)]">
                     Aucune séance prévue. La récupération fait partie du plan.
                   </p>
                 </div>
@@ -554,18 +554,18 @@ export function CoachPage() {
               RIGHT RAIL
               ================================================ */}
 
-          <aside className="border-t border-black/[0.06] bg-[#fafbfa] p-5 dark:border-white/[0.06] dark:bg-white/[0.018] lg:border-l lg:border-t-0">
+          <aside className="border-t border-[var(--oc-border)] bg-[var(--oc-surface-muted)] p-5 dark:border-[var(--oc-border)] dark:bg-[var(--oc-surface)]/[0.018] lg:border-l lg:border-t-0">
 
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--oc-muted)] dark:text-[var(--oc-muted)]">
               État du jour
             </p>
 
             <div className="mt-5 flex items-end gap-2">
-              <span className="text-[54px] font-bold leading-none tracking-[-0.07em] text-slate-950 dark:text-white">
+              <span className="text-[54px] font-bold leading-none tracking-[-0.07em] text-[var(--oc-text)] dark:text-white">
                 {Math.round(readiness.score)}
               </span>
 
-              <span className="mb-1 text-[11px] font-semibold text-slate-300 dark:text-slate-600">
+              <span className="mb-1 text-[11px] font-semibold text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]">
                 /100
               </span>
             </div>
@@ -639,10 +639,10 @@ export function CoachPage() {
               />
             </div>
 
-            <div className="mt-5 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+            <div className="mt-5 border-t border-[var(--oc-border)] pt-3 dark:border-[var(--oc-border)]">
               <div className="flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                <span className="text-[8.5px] font-medium text-slate-400">
+                <span className="text-[8.5px] font-medium text-[var(--oc-muted)]">
                   Données disponibles
                 </span>
               </div>
@@ -662,15 +662,15 @@ export function CoachPage() {
             WEEK TRAJECTORY
             ================================================== */}
 
-        <section className="border-t border-black/[0.06] px-5 py-5 dark:border-white/[0.06] sm:px-6 lg:px-7">
+        <section className="border-t border-[var(--oc-border)] px-5 py-5 dark:border-[var(--oc-border)] sm:px-6 lg:px-7">
 
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--oc-muted)] dark:text-[var(--oc-muted)]">
                 Cette semaine
               </p>
 
-              <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.02em] text-slate-800 dark:text-slate-200">
+              <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.02em] text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]">
                 Trajectoire d'entraînement
               </h3>
             </div>
@@ -705,7 +705,7 @@ export function CoachPage() {
             projected={projectedPercent}
           />
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[8.5px] font-medium text-slate-400 dark:text-slate-500">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[8.5px] font-medium text-[var(--oc-muted)] dark:text-[var(--oc-muted)]">
             <span>
               {weeklyPlan
                 ? `${humanizeTrainingPhaseV2(weeklyPlan.phase)} · semaine ${weeklyPlan.phaseWeekIndex}`
@@ -725,15 +725,15 @@ export function CoachPage() {
             DECISION FACTORS
             ================================================== */}
 
-        <section className="border-t border-black/[0.06] px-5 py-5 dark:border-white/[0.06] sm:px-6 lg:px-7">
+        <section className="border-t border-[var(--oc-border)] px-5 py-5 dark:border-[var(--oc-border)] sm:px-6 lg:px-7">
 
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--oc-muted)] dark:text-[var(--oc-muted)]">
                 Analyse
               </p>
 
-              <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.02em] text-slate-800 dark:text-slate-200">
+              <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.02em] text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]">
                 Pourquoi cette décision ?
               </h3>
             </div>
@@ -787,8 +787,8 @@ export function CoachPage() {
             )}
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.055] pt-3 dark:border-white/[0.06]">
-            <p className="max-w-2xl text-[11px] leading-5 text-slate-400 dark:text-slate-500">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--oc-border)] pt-3 dark:border-[var(--oc-border)]">
+            <p className="max-w-2xl text-[11px] leading-5 text-[var(--oc-muted)] dark:text-[var(--oc-muted)]">
               {weeklyAssessment.instruction}
             </p>
 
@@ -898,18 +898,18 @@ function WeeklyDebriefCard({
           : debrief.verdict
 
   return (
-    <section className="border-t border-black/[0.06] px-5 py-5 dark:border-white/[0.06] sm:px-6 lg:px-7">
+    <section className="border-t border-[var(--oc-border)] px-5 py-5 dark:border-[var(--oc-border)] sm:px-6 lg:px-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-600 dark:text-emerald-400">
             Bilan hebdomadaire
           </p>
 
-          <h3 className="mt-1 text-[18px] font-semibold tracking-[-0.025em] text-slate-900 dark:text-slate-100">
+          <h3 className="mt-1 text-[18px] font-semibold tracking-[-0.025em] text-[var(--oc-text)] dark:text-[var(--oc-text-secondary)]">
             {debrief.headline}
           </h3>
 
-          <p className="mt-1 text-[10px] font-medium text-slate-400 dark:text-slate-500">
+          <p className="mt-1 text-[10px] font-medium text-[var(--oc-muted)] dark:text-[var(--oc-muted)]">
             {formatDebriefPeriod(
               debrief.weekStart,
               debrief.weekEnd,
@@ -919,13 +919,13 @@ function WeeklyDebriefCard({
 
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="text-[8px] font-bold uppercase tracking-[0.08em] text-slate-400">
+            <p className="text-[8px] font-bold uppercase tracking-[0.08em] text-[var(--oc-muted)]">
               Score
             </p>
 
-            <p className="mt-0.5 text-[25px] font-bold leading-none tracking-[-0.04em] text-slate-900 dark:text-white">
+            <p className="mt-0.5 text-[25px] font-bold leading-none tracking-[-0.04em] text-[var(--oc-text)] dark:text-white">
               {Math.round(debrief.overallScore)}
-              <span className="ml-1 text-[10px] font-semibold text-slate-300">
+              <span className="ml-1 text-[10px] font-semibold text-[var(--oc-muted-soft)]">
                 /100
               </span>
             </p>
@@ -937,7 +937,7 @@ function WeeklyDebriefCard({
         </div>
       </div>
 
-      <p className="mt-4 max-w-4xl text-[12px] leading-[1.7] text-slate-500 dark:text-slate-400">
+      <p className="mt-4 max-w-4xl text-[12px] leading-[1.7] text-[var(--oc-muted)] dark:text-[var(--oc-muted)]">
         {buildWeeklyDebriefSummary(
           debrief,
         )}
@@ -981,7 +981,7 @@ function WeeklyDebriefCard({
                 (strength, index) => (
                   <p
                     key={`${strength}-${index}`}
-                    className="text-[11px] leading-5 text-slate-500 dark:text-slate-400"
+                    className="text-[11px] leading-5 text-[var(--oc-muted)] dark:text-[var(--oc-muted)]"
                   >
                     <span className="mr-2 text-emerald-500">
                       ✓
@@ -1005,7 +1005,7 @@ function WeeklyDebriefCard({
                 (warning, index) => (
                   <p
                     key={`${warning}-${index}`}
-                    className="text-[11px] leading-5 text-slate-500 dark:text-slate-400"
+                    className="text-[11px] leading-5 text-[var(--oc-muted)] dark:text-[var(--oc-muted)]"
                   >
                     <span className="mr-2 text-amber-500">
                       !
@@ -1019,8 +1019,8 @@ function WeeklyDebriefCard({
         )}
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.055] pt-3 dark:border-white/[0.06]">
-        <span className="text-[9px] font-medium text-slate-400">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--oc-border)] pt-3 dark:border-[var(--oc-border)]">
+        <span className="text-[9px] font-medium text-[var(--oc-muted)]">
           Décision OpenCoach pour la semaine suivante
         </span>
 
@@ -1043,16 +1043,16 @@ function DebriefMetric({
   detail: string
 }) {
   return (
-    <div className="rounded-[10px] bg-slate-50 px-3 py-3 dark:bg-white/[0.025]">
-      <p className="text-[8px] font-bold uppercase tracking-[0.08em] text-slate-400">
+    <div className="rounded-[10px] bg-[var(--oc-surface-muted)] px-3 py-3 dark:bg-[var(--oc-surface)]/[0.025]">
+      <p className="text-[8px] font-bold uppercase tracking-[0.08em] text-[var(--oc-muted)]">
         {label}
       </p>
 
-      <p className="mt-1 text-[17px] font-bold tracking-[-0.025em] text-slate-800 dark:text-slate-200">
+      <p className="mt-1 text-[17px] font-bold tracking-[-0.025em] text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]">
         {value}
       </p>
 
-      <p className="mt-0.5 text-[8.5px] text-slate-400 dark:text-slate-500">
+      <p className="mt-0.5 text-[8.5px] text-[var(--oc-muted)] dark:text-[var(--oc-muted)]">
         {detail}
       </p>
     </div>
@@ -1117,7 +1117,7 @@ function CockpitDecisionPill({
         ? ['Alléger', 'text-amber-600 bg-amber-500/[0.08] dark:text-amber-400']
         : action === 'rest'
           ? ['Récupération', 'text-sky-600 bg-sky-500/[0.08] dark:text-sky-400']
-          : ['Adapter', 'text-slate-500 bg-slate-500/[0.07]']
+          : ['Adapter', 'text-[var(--oc-muted)] bg-[var(--oc-surface-muted)]0/[0.07]']
 
   return (
     <span className={`rounded-full px-2 py-0.5 text-[7.5px] font-bold uppercase tracking-[0.06em] ${config[1]}`}>
@@ -1138,7 +1138,7 @@ function RailMetric({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-[11px] text-slate-400 dark:text-slate-500">
+      <span className="text-[11px] text-[var(--oc-muted)] dark:text-[var(--oc-muted)]">
         {label}
       </span>
 
@@ -1154,7 +1154,7 @@ function RailMetric({
           ].join(' ')}
         />
 
-        <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+        <span className="text-[11px] font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-muted-soft)]">
           {value}
         </span>
       </div>
@@ -1174,11 +1174,11 @@ function TrajectoryMetric({
 }) {
   return (
     <div className={align === 'right' ? 'text-right' : ''}>
-      <p className="text-[22px] font-bold tracking-[-0.035em] tabular-nums text-slate-850 dark:text-slate-200">
+      <p className="text-[22px] font-bold tracking-[-0.035em] tabular-nums text-[var(--oc-text)] dark:text-[var(--oc-text-secondary)]">
         {value}
       </p>
 
-      <p className="mt-0.5 text-[8px] font-medium uppercase tracking-[0.07em] text-slate-400">
+      <p className="mt-0.5 text-[8px] font-medium uppercase tracking-[0.07em] text-[var(--oc-muted)]">
         {label}
       </p>
     </div>
@@ -1198,26 +1198,26 @@ function CockpitTrajectory({
 
   return (
     <div className="mt-4">
-      <div className="relative h-[6px] rounded-full bg-slate-100 dark:bg-white/[0.055]">
+      <div className="relative h-[6px] rounded-full bg-[var(--oc-surface-muted)] dark:bg-[var(--oc-surface)]/[0.055]">
         <div
           className="absolute inset-y-0 left-0 rounded-full bg-emerald-500"
           style={{ width: `${a}%` }}
         />
 
         <span
-          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-emerald-500 shadow-sm dark:border-[#151b1f]"
+          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--oc-surface)] bg-emerald-500 shadow-sm dark:border-[var(--oc-surface)]"
           style={{ left: `${a}%` }}
         />
 
         <span
-          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-slate-500 bg-white dark:border-slate-300 dark:bg-[#151b1f]"
+          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-slate-500 bg-[var(--oc-surface)] dark:border-slate-300 "
           style={{ left: `${p}%` }}
         />
 
-        <span className="absolute right-0 top-1/2 h-3.5 w-[2px] -translate-y-1/2 bg-slate-300 dark:bg-slate-600" />
+        <span className="absolute right-0 top-1/2 h-3.5 w-[2px] -translate-y-1/2 bg-[var(--oc-border-strong)] dark:bg-[var(--oc-muted)]" />
       </div>
 
-      <div className="relative mt-2 h-3 text-[7px] font-medium text-slate-300 dark:text-slate-600">
+      <div className="relative mt-2 h-3 text-[7px] font-medium text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]">
         <span
           className="absolute -translate-x-1/2"
           style={{ left: `${a}%` }}
@@ -1247,7 +1247,7 @@ function DecisionFactor({
   const critical = level === 'critical'
 
   return (
-    <div className="grid grid-cols-[18px_105px_minmax(0,1fr)] items-start gap-2 border-b border-black/[0.045] py-2.5 last:border-b-0 dark:border-white/[0.045]">
+    <div className="grid grid-cols-[18px_105px_minmax(0,1fr)] items-start gap-2 border-b border-[var(--oc-border)] py-2.5 last:border-b-0 dark:border-[var(--oc-border)]">
       <div
         className={[
           'mt-[2px] flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold',
@@ -1261,11 +1261,11 @@ function DecisionFactor({
         {critical || warning ? '!' : '✓'}
       </div>
 
-      <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+      <span className="text-[11px] font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-muted-soft)]">
         {label}
       </span>
 
-      <span className="text-[11px] leading-5 text-slate-400 dark:text-slate-500">
+      <span className="text-[11px] leading-5 text-[var(--oc-muted)] dark:text-[var(--oc-muted)]">
         {detail}
       </span>
     </div>
@@ -1281,12 +1281,12 @@ function CockpitDetail({
   value: string
 }) {
   return (
-    <div className="rounded-[8px] bg-slate-50 px-3 py-2 dark:bg-white/[0.025]">
-      <p className="text-[7.5px] font-medium uppercase tracking-[0.06em] text-slate-400">
+    <div className="rounded-[8px] bg-[var(--oc-surface-muted)] px-3 py-2 dark:bg-[var(--oc-surface)]/[0.025]">
+      <p className="text-[7.5px] font-medium uppercase tracking-[0.06em] text-[var(--oc-muted)]">
         {label}
       </p>
 
-      <p className="mt-1 text-[10px] font-semibold tabular-nums text-slate-700 dark:text-slate-300">
+      <p className="mt-1 text-[10px] font-semibold tabular-nums text-[var(--oc-text-secondary)] dark:text-[var(--oc-muted-soft)]">
         {value}
       </p>
     </div>
@@ -1445,9 +1445,9 @@ function WeeklyStatusPill({
 
               className:
                 (
-                  'bg-slate-500/[0.07] '
-                  + 'text-slate-500 '
-                  + 'dark:text-slate-400'
+                  'bg-[var(--oc-surface-muted)]0/[0.07] '
+                  + 'text-[var(--oc-muted)] '
+                  + 'dark:text-[var(--oc-muted)]'
                 ),
             }
 
@@ -1563,7 +1563,7 @@ export function PageHeader() {
           text-[24px]
           font-bold
           tracking-[-0.035em]
-          text-slate-950
+          text-[var(--oc-text)]
           dark:text-white
         "
       >
@@ -1575,8 +1575,8 @@ export function PageHeader() {
           mt-1
           max-w-2xl
           text-[11.5px]
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-muted)]
+          dark:text-[var(--oc-muted)]
         "
       >
         Décision quotidienne basée sur ta
@@ -1842,8 +1842,8 @@ function SessionStatusBadge({
       label: 'Non réalisé',
       className: (
         'border-slate-400/20 '
-        + 'bg-slate-400/[0.08] '
-        + 'text-slate-300'
+        + 'bg-[var(--oc-surface-muted)] '
+        + 'text-[var(--oc-muted-soft)]'
       ),
     },
   }[status]

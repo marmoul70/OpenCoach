@@ -20,6 +20,9 @@ import {
   type WellnessTrends,
 } from '../../core/wellness'
 
+import { LineChart } from '../../design-system/charts/LineChart'
+import { PageHeader } from '../../design-system/components/PageHeader'
+
 type WindowSize = 7 | 14 | 30
 
 const METRICS = [
@@ -107,35 +110,27 @@ export function HealthPage() {
   )
 
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+    <main className="oc-app-shell min-h-screen px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-              <HeartPulse className="h-4 w-4" />
-              SANTÉ & RÉCUPÉRATION
-            </div>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
-              Suivi physiologique
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
-              Historique COROS, sommeil, fréquence cardiaque, HRV et charge d’entraînement.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setRefreshKey((value) => value + 1)}
-            disabled={loading}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-[#141a1e] dark:text-slate-200 dark:hover:bg-white/5"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
-          </button>
-        </header>
+        <PageHeader
+          eyebrow={<><HeartPulse className="h-4 w-4" /> Santé & récupération</>}
+          title="Suivi physiologique"
+          description="Historique COROS, sommeil, fréquence cardiaque, HRV et charge d’entraînement."
+          actions={
+            <button
+              type="button"
+              onClick={() => setRefreshKey((value) => value + 1)}
+              disabled={loading}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[var(--oc-border)] bg-[var(--oc-surface)] px-4 text-sm font-semibold text-[var(--oc-text-secondary)] transition hover:bg-[var(--oc-surface-hover)] disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </button>
+          }
+        />
 
         {loading && (
-          <div className="flex min-h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-[#141a1e]">
+          <div className="flex min-h-64 items-center justify-center oc-surface">
             <RefreshCw className="h-7 w-7 animate-spin text-emerald-500" />
           </div>
         )}
@@ -182,24 +177,24 @@ export function HealthPage() {
               />
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141a1e] sm:p-5">
+            <section className="oc-surface p-4 sm:p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  <h2 className="oc-type-section-title text-[var(--oc-text)]">
                     Historique quotidien
                   </h2>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 oc-type-secondary">
                     Valeur la plus récente disponible et statistiques sur la période.
                   </p>
                 </div>
-                <div className="inline-flex w-fit rounded-xl bg-slate-100 p-1 dark:bg-white/5" aria-label="Période d’historique">
+                <div className="inline-flex w-fit rounded-xl bg-[var(--oc-surface-muted)] p-1" aria-label="Période d’historique">
                   {([7, 14, 30] as const).map((days) => (
                     <button
                       key={days}
                       type="button"
                       onClick={() => setWindowSize(days)}
                       aria-pressed={windowSize === days}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${windowSize === days ? 'bg-white text-emerald-700 shadow-sm dark:bg-[#263238] dark:text-emerald-300' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`}
+                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${windowSize === days ? 'bg-[var(--oc-surface)] text-emerald-700 shadow-sm ring-1 ring-[var(--oc-border)] dark:text-emerald-300' : 'text-[var(--oc-muted)] hover:text-[var(--oc-text)]'}`}
                     >
                       {days} j
                     </button>
@@ -209,11 +204,11 @@ export function HealthPage() {
 
               {selectedWindow && (
                 <>
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-3 text-xs dark:bg-white/[0.035]">
-                    <span className="text-slate-600 dark:text-slate-300">
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--oc-surface-muted)] px-3 py-3 oc-type-secondary">
+                    <span className="text-[var(--oc-text-secondary)]">
                       {formatDate(selectedWindow.start_date)} – {formatDate(selectedWindow.end_date)}
                     </span>
-                    <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                    <span className="font-semibold tabular-nums text-[var(--oc-text-secondary)]">
                       {selectedWindow.recorded_days}/{selectedWindow.days} jours couverts · {Math.round(selectedWindow.coverage_ratio * 100)} %
                     </span>
                   </div>
@@ -222,9 +217,12 @@ export function HealthPage() {
                     {GROUPS.map((group) => {
                       const items = METRICS.filter((metric) => metric.group === group)
                       return (
-                        <div key={group}>
-                          <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{group}</h3>
-                          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                        <section key={group} className="rounded-2xl border border-[var(--oc-border)] bg-[var(--oc-surface-raised)] p-4 shadow-sm sm:p-5">
+                          <div className="mb-4 flex items-center justify-between gap-3">
+                            <h3 className="oc-type-section-title font-semibold text-[var(--oc-text)]">{group}</h3>
+                            <span className="rounded-full bg-[var(--oc-accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--oc-accent)]">{items.length} indicateurs</span>
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
                             {items.map((metric) => (
                               <MetricTile
                                 key={metric.key}
@@ -234,7 +232,7 @@ export function HealthPage() {
                               />
                             ))}
                           </div>
-                        </div>
+                        </section>
                       )
                     })}
                   </div>
@@ -243,15 +241,15 @@ export function HealthPage() {
             </section>
 
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141a1e] sm:p-5">
+            <section className="oc-surface p-4 sm:p-5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Évolution des indicateurs</h2>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <h2 className="oc-type-section-title text-[var(--oc-text)]">Évolution des indicateurs</h2>
+                  <p className="mt-1 oc-type-secondary">
                     Tendances quotidiennes issues du même fournisseur que les données Wellness.
                   </p>
                 </div>
-                <span className="text-xs text-slate-400 dark:text-slate-500">
+                <span className="text-xs text-[var(--oc-muted)]">
                   Source : {trends.provider.toUpperCase()} · {windowSize} derniers jours
                 </span>
               </div>
@@ -266,40 +264,40 @@ export function HealthPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141a1e] sm:p-5">
+            <section className="oc-surface p-4 sm:p-5">
               <div className="flex items-center gap-2">
                 <Waves className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Séries physiologiques COROS</h2>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Statistiques calculées à partir des échantillons horodatés sur les 30 derniers jours.</p>
+                  <h2 className="oc-type-section-title text-[var(--oc-text)]">Séries physiologiques COROS</h2>
+                  <p className="mt-1 oc-type-secondary">Statistiques calculées à partir des échantillons horodatés sur les 30 derniers jours.</p>
                 </div>
               </div>
 
               {assessment.time_series.length === 0 ? (
-                <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-white/[0.035] dark:text-slate-400">
+                <p className="mt-4 rounded-xl p-4 oc-type-body text-[var(--oc-muted)] bg-[var(--oc-surface-muted)]">
                   Aucune série détaillée disponible sur cette période. Les données quotidiennes restent consultables ci-dessus.
                 </p>
               ) : (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {assessment.time_series.map((series) => (
-                    <div key={`${series.metric}-${series.unit ?? 'none'}`} className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
+                    <div key={`${series.metric}-${series.unit ?? 'none'}`} className="rounded-xl border border-[var(--oc-border)] p-4">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        <h3 className="oc-type-card-title text-[var(--oc-text)]">
                           {SERIES_LABELS[series.metric] ?? series.metric.replaceAll('_', ' ')}
                         </h3>
-                        <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase text-slate-500 dark:bg-white/5 dark:text-slate-400">
+                        <span className="rounded-md bg-[var(--oc-surface-muted)] px-2 py-1 oc-type-caption font-semibold uppercase text-[var(--oc-muted)]">
                           {series.sample_count} mesures
                         </span>
                       </div>
-                      <p className="mt-3 text-2xl font-bold tabular-nums text-slate-950 dark:text-white">
-                        {formatNumber(series.current)} <span className="text-xs font-medium text-slate-400">{series.unit ?? ''}</span>
+                      <p className="mt-3 text-xl font-bold tabular-nums text-[var(--oc-text)]">
+                        {formatNumber(series.current)} <span className="oc-type-caption font-medium text-[var(--oc-muted)]">{series.unit ?? ''}</span>
                       </p>
                       <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                         <MiniValue label="Moyenne" value={formatNumber(series.average)} />
                         <MiniValue label="Minimum" value={formatNumber(series.minimum)} />
                         <MiniValue label="Maximum" value={formatNumber(series.maximum)} />
                       </div>
-                      <p className="mt-3 text-[11px] text-slate-400 dark:text-slate-500">
+                      <p className="mt-3 text-[11px] text-[var(--oc-muted)]">
                         {series.coverage_days} jours couverts · {formatDateTime(series.first_measured_at)} au {formatDateTime(series.last_measured_at)}
                       </p>
                     </div>
@@ -309,8 +307,8 @@ export function HealthPage() {
             </section>
 
             {assessment.subjective && (
-              <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141a1e]">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white">Ressenti du jour</h2>
+              <section className="oc-surface p-4">
+                <h2 className="oc-type-card-title text-[var(--oc-text)]">Ressenti du jour</h2>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
                   <MiniValue label="Fatigue" value={String(assessment.subjective.fatigue) + '/5'} />
                   <MiniValue label="Douleur" value={String(assessment.subjective.pain) + '/5'} />
@@ -321,7 +319,7 @@ export function HealthPage() {
               </section>
             )}
 
-            <p className="text-xs leading-relaxed text-slate-400 dark:text-slate-500">
+            <p className="text-xs leading-relaxed text-[var(--oc-muted)]">
               Les valeurs absentes sont affichées « — » et ne sont jamais remplacées par zéro. Ces indicateurs décrivent les mesures enregistrées ; ils ne constituent pas un diagnostic médical et ne modifient pas automatiquement le score Readiness.
             </p>
           </>
@@ -352,65 +350,38 @@ function TrendChart({
     return timestamp >= start && timestamp <= end
   })
 
-  if (points.length === 0) {
-    return (
-      <div className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
-        <p className="mt-8 text-center text-sm text-slate-400">Aucune donnée sur {days} jours</p>
-        <div className="mt-7 border-t border-slate-100 dark:border-white/5" />
-      </div>
-    )
-  }
-
   const values = points.map((point) => point.value)
-  const minimum = Math.min(...values)
-  const maximum = Math.max(...values)
-  const range = maximum - minimum || 1
-  const coordinates = points.map((point, index) => {
-    const x = points.length === 1 ? 160 : 8 + (index / (points.length - 1)) * 304
-    const y = 88 - ((point.value - minimum) / range) * 72
-    return { x, y, point }
-  })
-  const polyline = coordinates.map(({ x, y }) => `${x},${y}`).join(' ')
+  const average = values.length > 0
+    ? values.reduce((total, value) => total + value, 0) / values.length
+    : null
   const latest = points[points.length - 1]
-  const average = values.reduce((total, value) => total + value, 0) / values.length
+  const pointByDate = new Map(points.map((point) => [point.date, point]))
+  const chartPoints = Array.from({ length: days }, (_, index) => {
+    const date = new Date(`${endDate}T12:00:00Z`)
+    date.setUTCDate(date.getUTCDate() - (days - 1 - index))
+    const dateKey = date.toISOString().slice(0, 10)
+    const point = pointByDate.get(dateKey)
+    return {
+      id: dateKey,
+      label: formatDate(dateKey),
+      value: point?.value ?? null,
+    }
+  })
+
 
   return (
-    <div className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
-        <span className="text-[10px] text-slate-400">{points.length} j</span>
-      </div>
-      <p className="mt-2 text-xl font-bold tabular-nums text-slate-950 dark:text-white">
-        {formatMetric(latest.value, unit)}
-      </p>
-      <svg
-        viewBox="0 0 320 104"
-        role="img"
-        aria-label={`Évolution de ${title} sur ${days} jours`}
-        className="mt-2 h-28 w-full overflow-visible text-emerald-500"
-      >
-        <line x1="8" y1="88" x2="312" y2="88" stroke="currentColor" opacity="0.15" strokeDasharray="3 4" />
-        <polyline
-          points={polyline}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {coordinates.map(({ x, y, point }) => (
-          <circle key={point.date} cx={x} cy={y} r="2.8" fill="currentColor">
-            <title>{formatDate(point.date)} : {formatMetric(point.value, unit)}</title>
-          </circle>
-        ))}
-      </svg>
-      <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
-        <span>{formatDate(points[0].date)}</span>
-        <span>Moy. {formatMetric(average, unit)}</span>
-        <span>{formatDate(latest.date)}</span>
-      </div>
-    </div>
+    <LineChart
+      title={title}
+      points={chartPoints}
+      valueFormatter={(value) => formatMetric(value, unit)}
+      latestValue={latest ? formatMetric(latest.value, unit) : '—'}
+      averageValue={average == null ? '—' : formatMetric(average, unit)}
+      startLabel={chartPoints[0].label}
+      endLabel={chartPoints[chartPoints.length - 1].label}
+      emptyMessage={`Aucune donnée sur ${days} jours`}
+      ariaLabel={`Évolution de ${title} sur ${days} jours`}
+      headerMeta={`${points.length} j`}
+    />
   )
 }
 
@@ -426,13 +397,14 @@ function StatusCard({
   icon: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-[#141a1e]">
-      <div className="flex items-center justify-between text-slate-400">
-        <span className="text-xs font-medium">{label}</span>
-        {icon}
+    <div className="relative min-w-0 overflow-hidden rounded-2xl border border-[var(--oc-border)] bg-[var(--oc-surface-raised)] p-4 shadow-[var(--oc-shadow-card)]">
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500/80 via-teal-400/50 to-transparent" />
+      <div className="flex items-center justify-between gap-3">
+        <span className="oc-type-label font-semibold uppercase tracking-wide text-[var(--oc-muted)]">{label}</span>
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--oc-accent-soft)] text-[var(--oc-accent)]">{icon}</span>
       </div>
-      <p className="mt-3 truncate text-xl font-bold text-slate-950 dark:text-white">{value}</p>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{detail}</p>
+      <p className="mt-4 break-words text-2xl font-bold tracking-tight tabular-nums text-[var(--oc-text)]">{value}</p>
+      <p className="mt-1 oc-type-secondary leading-relaxed">{detail}</p>
     </div>
   )
 }
@@ -448,25 +420,37 @@ function MetricTile({
 }) {
   const value = metric?.current
   return (
-    <div className="rounded-xl border border-slate-200 p-3 dark:border-white/10">
-      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-1 text-xl font-bold tabular-nums text-slate-950 dark:text-white">
+    <article className="min-w-0 rounded-xl border border-[var(--oc-border)] bg-[var(--oc-page)]/70 p-3.5 transition-colors hover:border-[var(--oc-border-strong)] sm:p-4">
+      <div className="flex items-start justify-between gap-3">
+        <p className="oc-type-body font-semibold leading-snug text-[var(--oc-text-secondary)]">{label}</p>
+        <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[var(--oc-accent)]" aria-hidden="true" />
+      </div>
+      <p className="mt-2 text-2xl font-bold tracking-tight tabular-nums text-[var(--oc-text)]">
         {value == null ? '—' : formatMetric(value, unit)}
       </p>
-      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-400 dark:text-slate-500">
-        <span>Moy. {metric?.average == null ? '—' : formatMetric(metric.average, unit)}</span>
-        <span>{metric?.sample_count ?? 0} mesures</span>
-        <span>{metric?.coverage_days ?? 0} j couverts</span>
+      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[var(--oc-border)] pt-3">
+        <div className="min-w-0">
+          <p className="oc-type-caption">Moyenne</p>
+          <p className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--oc-text-secondary)]">{metric?.average == null ? '—' : formatMetric(metric.average, unit)}</p>
+        </div>
+        <div className="min-w-0">
+          <p className="oc-type-caption">Mesures</p>
+          <p className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--oc-text-secondary)]">{metric?.sample_count ?? 0}</p>
+        </div>
+        <div className="min-w-0">
+          <p className="oc-type-caption">Jours couverts</p>
+          <p className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--oc-text-secondary)]">{metric?.coverage_days ?? 0}</p>
+        </div>
       </div>
-    </div>
+    </article>
   )
 }
 
 function MiniValue({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[10px] text-slate-400 dark:text-slate-500">{label}</p>
-      <p className="mt-0.5 text-sm font-semibold text-slate-700 dark:text-slate-200">{value}</p>
+      <p className="text-[10px] text-[var(--oc-muted)]">{label}</p>
+      <p className="mt-0.5 oc-type-body font-semibold text-[var(--oc-text-secondary)]">{value}</p>
     </div>
   )
 }

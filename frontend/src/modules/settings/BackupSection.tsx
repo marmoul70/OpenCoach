@@ -378,10 +378,10 @@ export function BackupSection() {
             overflow-hidden
             rounded-[12px]
             border
-            border-black/[0.065]
-            bg-white
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface)]
             dark:border-white/[0.065]
-            dark:bg-[#151b1f]
+            dark:bg-[var(--oc-surface)]
           "
         >
           <div
@@ -460,7 +460,7 @@ export function BackupSection() {
                         text-[14px]
                         font-bold
                         tracking-[-0.02em]
-                        text-slate-950
+                        text-[var(--oc-text)]
                         dark:text-white
                       "
                     >
@@ -478,8 +478,8 @@ export function BackupSection() {
                     className="
                       mt-1
                       text-[10px]
-                      text-slate-400
-                      dark:text-slate-500
+                      text-[var(--oc-muted-soft)]
+                      dark:text-[var(--oc-muted)]
                     "
                   >
                     Sauvegarde automatique,
@@ -545,7 +545,7 @@ export function BackupSection() {
               grid
               grid-cols-3
               border-t
-              border-black/[0.055]
+              border-[var(--oc-border)]
               dark:border-white/[0.06]
             "
           >
@@ -714,10 +714,10 @@ export function BackupSection() {
             overflow-hidden
             rounded-[12px]
             border
-            border-black/[0.065]
-            bg-white
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface)]
             dark:border-white/[0.065]
-            dark:bg-[#151b1f]
+            dark:bg-[var(--oc-surface)]
           "
         >
           <div
@@ -727,7 +727,7 @@ export function BackupSection() {
               justify-between
               gap-3
               border-b
-              border-black/[0.055]
+              border-[var(--oc-border)]
               px-4
               py-3
               dark:border-white/[0.06]
@@ -740,8 +740,8 @@ export function BackupSection() {
                   font-bold
                   uppercase
                   tracking-[0.1em]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-muted-soft)]
+                  dark:text-[var(--oc-muted)]
                 "
               >
                 Archives
@@ -752,8 +752,8 @@ export function BackupSection() {
                   mt-1
                   text-[11.5px]
                   font-semibold
-                  text-slate-800
-                  dark:text-slate-200
+                  text-[var(--oc-text-secondary)]
+                  dark:text-[var(--oc-muted-soft)]
                 "
               >
                 Sauvegardes disponibles
@@ -830,8 +830,8 @@ export function BackupSection() {
                   mx-auto
                   h-5
                   w-5
-                  text-slate-200
-                  dark:text-slate-700
+                  text-[var(--oc-muted-soft)]
+                  dark:text-[var(--oc-text-secondary)]
                 "
               />
 
@@ -839,8 +839,8 @@ export function BackupSection() {
                 className="
                   mt-2
                   text-[10px]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-muted-soft)]
+                  dark:text-[var(--oc-muted)]
                 "
               >
                 Aucune sauvegarde disponible.
@@ -955,11 +955,11 @@ export function BackupSection() {
               className="
                 rounded-[10px]
                 border
-                border-black/[0.06]
-                bg-slate-50
+                border-[var(--oc-border)]
+                bg-[var(--oc-surface-muted)]
                 p-3
                 dark:border-white/[0.06]
-                dark:bg-white/[0.025]
+                dark:bg-[var(--oc-surface-muted)]
               "
             >
               <p
@@ -968,7 +968,7 @@ export function BackupSection() {
                   font-semibold
                   uppercase
                   tracking-[0.08em]
-                  text-slate-400
+                  text-[var(--oc-muted-soft)]
                 "
               >
                 Sauvegarde sélectionnée
@@ -980,8 +980,8 @@ export function BackupSection() {
                   break-all
                   text-[10.5px]
                   font-semibold
-                  text-slate-700
-                  dark:text-slate-300
+                  text-[var(--oc-text-secondary)]
+                  dark:text-[var(--oc-muted-soft)]
                 "
               >
                 {restoreFilename}
@@ -999,7 +999,7 @@ export function BackupSection() {
                   font-semibold
                   uppercase
                   tracking-[0.07em]
-                  text-slate-400
+                  text-[var(--oc-muted-soft)]
                 "
               >
                 Archive OpenCoach
@@ -1021,11 +1021,11 @@ export function BackupSection() {
                   w-full
                   rounded-[9px]
                   border
-                  border-black/[0.07]
-                  bg-slate-50
+                  border-[var(--oc-border)]
+                  bg-[var(--oc-surface-muted)]
                   p-2
                   text-[9.5px]
-                  text-slate-500
+                  text-[var(--oc-muted)]
                   file:mr-3
                   file:rounded-[7px]
                   file:border-0
@@ -1036,8 +1036,8 @@ export function BackupSection() {
                   file:font-semibold
                   file:text-emerald-700
                   dark:border-white/[0.07]
-                  dark:bg-white/[0.025]
-                  dark:text-slate-400
+                  dark:bg-[var(--oc-surface-muted)]
+                  dark:text-[var(--oc-muted-soft)]
                   dark:file:bg-emerald-500/[0.08]
                   dark:file:text-emerald-400
                 "
@@ -1047,7 +1047,7 @@ export function BackupSection() {
                 className="
                   mt-1.5
                   text-[9px]
-                  text-slate-400
+                  text-[var(--oc-muted-soft)]
                 "
               >
                 Archive ZIP créée par
@@ -1063,7 +1063,7 @@ export function BackupSection() {
               justify-end
               gap-2
               border-t
-              border-black/[0.055]
+              border-[var(--oc-border)]
               pt-3
               dark:border-white/[0.06]
             "
@@ -1078,10 +1078,10 @@ export function BackupSection() {
                 px-3
                 text-[10px]
                 font-semibold
-                text-slate-400
-                hover:bg-slate-50
-                hover:text-slate-700
-                dark:hover:bg-white/[0.04]
+                text-[var(--oc-muted-soft)]
+                hover:bg-[var(--oc-surface-muted)]
+                hover:text-[var(--oc-text-secondary)]
+                dark:hover:bg-[var(--oc-surface-hover)]
               "
             >
               Annuler
@@ -1113,9 +1113,9 @@ export function BackupSection() {
                 transition
                 hover:bg-amber-600
                 disabled:cursor-not-allowed
-                disabled:bg-slate-200
-                disabled:text-slate-400
-                dark:disabled:bg-white/[0.05]
+                disabled:bg-[var(--oc-surface-muted)]
+                disabled:text-[var(--oc-muted-soft)]
+                dark:disabled:bg-[var(--oc-surface-muted)]
               "
             >
               {restoring && (
@@ -1161,7 +1161,7 @@ function BackupRow({
         divided
           ? (
               'border-t '
-              + 'border-black/[0.055] '
+              + 'border-[var(--oc-border)] '
               + 'dark:border-white/[0.06]'
             )
           : '',
@@ -1201,8 +1201,8 @@ function BackupRow({
           className="
             text-[10.5px]
             font-semibold
-            text-slate-700
-            dark:text-slate-300
+            text-[var(--oc-text-secondary)]
+            dark:text-[var(--oc-muted-soft)]
           "
         >
           {
@@ -1216,8 +1216,8 @@ function BackupRow({
           className="
             mt-0.5
             text-[8.5px]
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-muted-soft)]
+            dark:text-[var(--oc-muted)]
           "
         >
           {
@@ -1251,7 +1251,7 @@ function BackupRow({
             items-center
             justify-center
             rounded-[8px]
-            text-slate-400
+            text-[var(--oc-muted-soft)]
             transition
             hover:bg-emerald-50
             hover:text-emerald-600
@@ -1278,7 +1278,7 @@ function BackupRow({
             items-center
             justify-center
             rounded-[8px]
-            text-slate-400
+            text-[var(--oc-muted-soft)]
             transition
             hover:bg-amber-50
             hover:text-amber-600
@@ -1306,7 +1306,7 @@ function BackupRow({
             items-center
             justify-center
             rounded-[8px]
-            text-slate-300
+            text-[var(--oc-muted-soft)]
             transition
             hover:bg-red-50
             hover:text-red-500
@@ -1378,10 +1378,10 @@ function BackupStatus({
                 + 'dark:text-red-400'
               )
             : (
-                'bg-slate-100 '
-                + 'text-slate-400 '
-                + 'dark:bg-white/[0.04] '
-                + 'dark:text-slate-500'
+                'bg-[var(--oc-surface-muted)] '
+                + 'text-[var(--oc-muted-soft)] '
+                + 'dark:bg-[var(--oc-surface-muted)] '
+                + 'dark:text-[var(--oc-muted)]'
               ),
       ].join(' ')}
     >
@@ -1395,7 +1395,7 @@ function BackupStatus({
             ? 'bg-emerald-500'
             : failed
               ? 'bg-red-500'
-              : 'bg-slate-300',
+              : 'bg-[var(--oc-muted-soft)]',
         ].join(' ')}
       />
 
@@ -1430,7 +1430,7 @@ function DataMetric({
         py-3
         text-center
         not-last:border-r
-        not-last:border-black/[0.055]
+        not-last:border-[var(--oc-border)]
         dark:not-last:border-white/[0.06]
       "
     >
@@ -1440,7 +1440,7 @@ function DataMetric({
           items-center
           justify-center
           gap-1
-          text-slate-400
+          text-[var(--oc-muted-soft)]
         "
       >
         {icon}
@@ -1463,8 +1463,8 @@ function DataMetric({
           truncate
           text-[10.5px]
           font-semibold
-          text-slate-700
-          dark:text-slate-300
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-muted-soft)]
         "
       >
         {value}
@@ -1475,7 +1475,7 @@ function DataMetric({
           className="
             mt-0.5
             text-[8.5px]
-            text-slate-400
+            text-[var(--oc-muted-soft)]
           "
         >
           {secondary}

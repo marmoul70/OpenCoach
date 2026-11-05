@@ -33,10 +33,10 @@ export function Button({
     <Component
       className={cn(
         [
-          'inline-flex h-10 items-center justify-center',
-          'gap-2 rounded-xl px-4',
+          'inline-flex min-h-11 items-center justify-center',
+          'gap-2 rounded-[var(--oc-radius-control)] px-4',
           'text-sm font-semibold',
-          'transition-colors',
+          'transition-colors duration-200',
           'focus-visible:outline-none',
           'focus-visible:ring-2',
           'focus-visible:ring-emerald-500/40',
@@ -44,26 +44,18 @@ export function Button({
           'disabled:opacity-50',
         ],
         variant === 'primary' && [
-          'bg-emerald-600 text-white',
-          'hover:bg-emerald-700',
-          'dark:bg-emerald-500',
-          'dark:hover:bg-emerald-400',
+          'bg-[var(--oc-accent)] text-white',
+          'hover:bg-[var(--oc-accent-hover)]',
         ],
         variant === 'secondary' && [
-          'border border-black/[0.08]',
-          'bg-white text-slate-900',
-          'hover:bg-slate-50',
-          'dark:border-white/[0.1]',
-          'dark:bg-[#181d22]',
-          'dark:text-slate-100',
-          'dark:hover:bg-[#20262c]',
+          'border border-[var(--oc-border)]',
+          'bg-[var(--oc-surface)] text-[var(--oc-text)]',
+          'hover:bg-[var(--oc-surface-hover)]',
         ],
         variant === 'ghost' && [
           'bg-transparent',
-          'text-slate-600',
-          'hover:bg-slate-100',
-          'dark:text-slate-300',
-          'dark:hover:bg-white/[0.06]',
+          'text-[var(--oc-text-secondary)]',
+          'hover:bg-[var(--oc-surface-muted)]',
         ],
         className,
       )}

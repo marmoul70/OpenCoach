@@ -15,12 +15,11 @@ export function Card({
     <div
       className={cn(
         [
-          'rounded-2xl',
-          'border border-black/[0.07]',
-          'bg-white',
-          'shadow-[0_1px_2px_rgba(15,23,42,0.03)]',
-          'dark:border-white/[0.08]',
-          'dark:bg-[#14181d]',
+          'rounded-[var(--oc-radius-card)]',
+          'border border-[var(--oc-border)]',
+          'bg-[var(--oc-surface)]',
+          'text-[var(--oc-text)]',
+          'shadow-[var(--oc-shadow-card)]',
         ],
         className,
       )}

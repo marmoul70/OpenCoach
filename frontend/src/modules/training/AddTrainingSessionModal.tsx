@@ -444,9 +444,9 @@ export function AddTrainingSessionModal({
         <section
           className="
             border-b
-            border-black/[0.06]
+            border-[var(--oc-border)]
             pb-3
-            dark:border-white/[0.07]
+            border-[var(--oc-border)]
           "
         >
           <p
@@ -455,8 +455,8 @@ export function AddTrainingSessionModal({
               font-bold
               uppercase
               tracking-[0.12em]
-              text-slate-400
-              dark:text-slate-500
+              text-[var(--oc-muted)]
+              text-[var(--oc-muted)]
             "
           >
             Date de la séance
@@ -467,8 +467,8 @@ export function AddTrainingSessionModal({
               mt-0.5
               text-[13px]
               font-semibold
-              text-slate-800
-              dark:text-slate-100
+              text-[var(--oc-text)]
+              text-[var(--oc-text)]
             "
           >
             {formatDisplayDate(
@@ -485,9 +485,9 @@ export function AddTrainingSessionModal({
             grid
             grid-cols-2
             rounded-[10px]
-            bg-slate-100
+            bg-[var(--oc-surface-muted)]
             p-1
-            dark:bg-white/[0.045]
+            bg-[var(--oc-surface)]/[0.045]
           "
         >
           <button
@@ -508,17 +508,17 @@ export function AddTrainingSessionModal({
               ),
               mode === 'intervals'
                 ? (
-                    'bg-white '
-                    + 'text-slate-900 '
+                    'bg-[var(--oc-surface)] '
+                    + 'text-[var(--oc-text)] '
                     + 'shadow-sm '
-                    + 'dark:bg-white/[0.09] '
-                    + 'dark:text-slate-100'
+                    + 'bg-[var(--oc-surface)]/[0.09] '
+                    + 'text-[var(--oc-text)]'
                   )
                 : (
-                    'text-slate-500 '
-                    + 'hover:text-slate-800 '
-                    + 'dark:text-slate-400 '
-                    + 'dark:hover:text-slate-200'
+                    'text-[var(--oc-muted)] '
+                    + 'hover:text-[var(--oc-text)] '
+                    + 'text-[var(--oc-muted)] '
+                    + 'dark:hover:text-[var(--oc-text-secondary)]'
                   ),
             ].join(' ')}
             onClick={() =>
@@ -551,17 +551,17 @@ export function AddTrainingSessionModal({
               ),
               mode === 'manual'
                 ? (
-                    'bg-white '
-                    + 'text-slate-900 '
+                    'bg-[var(--oc-surface)] '
+                    + 'text-[var(--oc-text)] '
                     + 'shadow-sm '
-                    + 'dark:bg-white/[0.09] '
-                    + 'dark:text-slate-100'
+                    + 'bg-[var(--oc-surface)]/[0.09] '
+                    + 'text-[var(--oc-text)]'
                   )
                 : (
-                    'text-slate-500 '
-                    + 'hover:text-slate-800 '
-                    + 'dark:text-slate-400 '
-                    + 'dark:hover:text-slate-200'
+                    'text-[var(--oc-muted)] '
+                    + 'hover:text-[var(--oc-text)] '
+                    + 'text-[var(--oc-muted)] '
+                    + 'dark:hover:text-[var(--oc-text-secondary)]'
                   ),
             ].join(' ')}
             onClick={() =>
@@ -701,8 +701,8 @@ function IntervalsPanel({
             className="
               text-[11.5px]
               font-semibold
-              text-slate-700
-              dark:text-slate-200
+              text-[var(--oc-text-secondary)]
+              text-[var(--oc-text-secondary)]
             "
           >
             Recherche des activités
@@ -712,8 +712,8 @@ function IntervalsPanel({
             className="
               mt-0.5
               text-[10px]
-              text-slate-400
-              dark:text-slate-500
+              text-[var(--oc-muted)]
+              text-[var(--oc-muted)]
             "
           >
             Synchronisation avec Intervals.icu
@@ -752,8 +752,8 @@ function IntervalsPanel({
             className="
               mt-0.5
               text-[11px]
-              text-slate-500
-              dark:text-slate-400
+              text-[var(--oc-muted)]
+              text-[var(--oc-muted)]
             "
           >
             Importer une activité déjà réalisée
@@ -773,21 +773,21 @@ function IntervalsPanel({
             gap-1.5
             rounded-[8px]
             border
-            border-black/[0.07]
-            bg-white
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface)]
             px-2.5
             text-[10px]
             font-semibold
-            text-slate-500
+            text-[var(--oc-muted)]
             transition
-            hover:border-black/[0.12]
-            hover:bg-slate-50
-            hover:text-slate-800
-            dark:border-white/[0.08]
-            dark:bg-white/[0.03]
-            dark:text-slate-400
-            dark:hover:bg-white/[0.06]
-            dark:hover:text-slate-200
+            hover:border-[var(--oc-border-strong)]
+            hover:bg-[var(--oc-surface-hover)]
+            hover:text-[var(--oc-text)]
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface)]/[0.03]
+            text-[var(--oc-muted)]
+            dark:hover:bg-[var(--oc-surface)]/[0.06]
+            dark:hover:text-[var(--oc-text-secondary)]
           "
         >
           <RefreshCw className="h-3 w-3" />
@@ -804,13 +804,13 @@ function IntervalsPanel({
             rounded-[11px]
             border
             border-dashed
-            border-black/[0.08]
-            bg-slate-50/70
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface-muted)]
             px-4
             py-7
             text-center
-            dark:border-white/[0.07]
-            dark:bg-white/[0.018]
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface)]/[0.018]
           "
         >
           <div
@@ -822,10 +822,10 @@ function IntervalsPanel({
               items-center
               justify-center
               rounded-full
-              bg-slate-100
-              text-slate-400
-              dark:bg-white/[0.04]
-              dark:text-slate-500
+              bg-[var(--oc-surface-muted)]
+              text-[var(--oc-muted)]
+              bg-[var(--oc-surface)]/[0.04]
+              text-[var(--oc-muted)]
             "
           >
             <Link2 className="h-4 w-4" />
@@ -836,8 +836,8 @@ function IntervalsPanel({
               mt-2
               text-[11.5px]
               font-semibold
-              text-slate-700
-              dark:text-slate-300
+              text-[var(--oc-text-secondary)]
+              text-[var(--oc-muted)]
             "
           >
             Aucune activité disponible
@@ -850,8 +850,8 @@ function IntervalsPanel({
               max-w-[300px]
               text-[10px]
               leading-4
-              text-slate-400
-              dark:text-slate-500
+              text-[var(--oc-muted)]
+              text-[var(--oc-muted)]
             "
           >
             Les activités déjà associées
@@ -907,15 +907,15 @@ function ActivityRow({
       className="
         rounded-[11px]
         border
-        border-black/[0.065]
-        bg-white
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
         px-3
         py-3
         transition
         hover:border-emerald-500/20
         hover:shadow-[0_3px_12px_rgba(15,23,42,0.035)]
-        dark:border-white/[0.065]
-        dark:bg-white/[0.025]
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]/[0.025]
       "
     >
       <div
@@ -958,8 +958,8 @@ function ActivityRow({
                 truncate
                 text-[12.5px]
                 font-semibold
-                text-slate-900
-                dark:text-slate-100
+                text-[var(--oc-text)]
+                text-[var(--oc-text)]
               "
             >
               {activity.name}
@@ -971,8 +971,8 @@ function ActivityRow({
                   mt-0.5
                   text-[9.5px]
                   font-medium
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-muted)]
+                  text-[var(--oc-muted)]
                 "
               >
                 {formatActivityTime(
@@ -1038,17 +1038,17 @@ function ActivityRow({
         className="
           mt-2
           border-t
-          border-black/[0.05]
+          border-[var(--oc-border)]
           pt-2
-          dark:border-white/[0.05]
+          border-[var(--oc-border)]
         "
       >
         <p
           className="
             text-[10.5px]
             leading-4
-            text-slate-500
-            dark:text-slate-400
+            text-[var(--oc-muted)]
+            text-[var(--oc-muted)]
           "
         >
           {formatActivitySummary(
@@ -1133,8 +1133,8 @@ function ManualPanel({
           className="
             mt-0.5
             text-[11px]
-            text-slate-500
-            dark:text-slate-400
+            text-[var(--oc-muted)]
+            text-[var(--oc-muted)]
           "
         >
           Ajouter une séance déjà réalisée
@@ -1194,15 +1194,15 @@ function ManualPanel({
                           + 'dark:text-emerald-400'
                         )
                       : (
-                          'border-black/[0.06] '
-                          + 'bg-white '
-                          + 'text-slate-500 '
-                          + 'hover:border-black/[0.11] '
-                          + 'hover:bg-slate-50 '
-                          + 'dark:border-white/[0.065] '
-                          + 'dark:bg-white/[0.025] '
-                          + 'dark:text-slate-400 '
-                          + 'dark:hover:bg-white/[0.045]'
+                          'border-[var(--oc-border)] '
+                          + 'bg-[var(--oc-surface)] '
+                          + 'text-[var(--oc-muted)] '
+                          + 'hover:border-[var(--oc-border-strong)] '
+                          + 'hover:bg-[var(--oc-surface-hover)] '
+                          + 'border-[var(--oc-border)] '
+                          + 'bg-[var(--oc-surface)]/[0.025] '
+                          + 'text-[var(--oc-muted)] '
+                          + 'dark:hover:bg-[var(--oc-surface)]/[0.045]'
                         ),
                   ].join(' ')}
                 >
@@ -1235,9 +1235,9 @@ function ManualPanel({
         className="
           mt-4
           border-t
-          border-black/[0.055]
+          border-[var(--oc-border)]
           pt-4
-          dark:border-white/[0.06]
+          border-[var(--oc-border)]
         "
       >
         <p
@@ -1247,8 +1247,8 @@ function ManualPanel({
             font-bold
             uppercase
             tracking-[0.10em]
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-muted)]
+            text-[var(--oc-muted)]
           "
         >
           Informations
@@ -1289,14 +1289,14 @@ function ManualPanel({
                 overflow-hidden
                 rounded-[9px]
                 border
-                border-black/[0.07]
-                bg-white
+                border-[var(--oc-border)]
+                bg-[var(--oc-surface)]
                 transition
                 focus-within:border-emerald-500/40
                 focus-within:ring-2
                 focus-within:ring-emerald-500/[0.07]
-                dark:border-white/[0.07]
-                dark:bg-white/[0.025]
+                border-[var(--oc-border)]
+                bg-[var(--oc-surface)]/[0.025]
               "
             >
               <button
@@ -1312,15 +1312,15 @@ function ManualPanel({
                   items-center
                   justify-center
                   border-r
-                  border-black/[0.05]
+                  border-[var(--oc-border)]
                   text-[17px]
-                  text-slate-400
+                  text-[var(--oc-muted)]
                   transition
-                  hover:bg-slate-50
-                  hover:text-slate-700
-                  dark:border-white/[0.05]
-                  dark:hover:bg-white/[0.04]
-                  dark:hover:text-slate-200
+                  hover:bg-[var(--oc-surface-hover)]
+                  hover:text-[var(--oc-text-secondary)]
+                  border-[var(--oc-border)]
+                  dark:hover:bg-[var(--oc-surface)]/[0.04]
+                  dark:hover:text-[var(--oc-text-secondary)]
                 "
               >
                 −
@@ -1345,9 +1345,9 @@ function ManualPanel({
                   text-center
                   text-[13px]
                   font-semibold
-                  text-slate-900
+                  text-[var(--oc-text)]
                   outline-none
-                  dark:text-white
+                  text-[var(--oc-text)]
                 "
               />
 
@@ -1356,7 +1356,7 @@ function ManualPanel({
                   pr-2
                   text-[9.5px]
                   font-medium
-                  text-slate-400
+                  text-[var(--oc-muted)]
                 "
               >
                 min
@@ -1375,15 +1375,15 @@ function ManualPanel({
                   items-center
                   justify-center
                   border-l
-                  border-black/[0.05]
+                  border-[var(--oc-border)]
                   text-[17px]
-                  text-slate-400
+                  text-[var(--oc-muted)]
                   transition
-                  hover:bg-slate-50
-                  hover:text-slate-700
-                  dark:border-white/[0.05]
-                  dark:hover:bg-white/[0.04]
-                  dark:hover:text-slate-200
+                  hover:bg-[var(--oc-surface-hover)]
+                  hover:text-[var(--oc-text-secondary)]
+                  border-[var(--oc-border)]
+                  dark:hover:bg-[var(--oc-surface)]/[0.04]
+                  dark:hover:text-[var(--oc-text-secondary)]
                 "
               >
                 +
@@ -1496,9 +1496,9 @@ function ManualPanel({
         className="
           mt-4
           border-t
-          border-black/[0.055]
+          border-[var(--oc-border)]
           pt-4
-          dark:border-white/[0.06]
+          border-[var(--oc-border)]
         "
       >
         <FieldLabel>
@@ -1520,23 +1520,23 @@ function ManualPanel({
             resize-y
             rounded-[9px]
             border
-            border-black/[0.07]
-            bg-white
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface)]
             px-3
             py-2.5
             text-[11.5px]
             leading-5
-            text-slate-800
+            text-[var(--oc-text)]
             outline-none
             transition
-            placeholder:text-slate-300
+            placeholder:text-[var(--oc-muted)]
             focus:border-emerald-500/45
             focus:ring-2
             focus:ring-emerald-500/[0.08]
-            dark:border-white/[0.07]
-            dark:bg-white/[0.025]
-            dark:text-slate-200
-            dark:placeholder:text-slate-600
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface)]/[0.025]
+            text-[var(--oc-text-secondary)]
+            dark:placeholder:text-[var(--oc-text-secondary)]
           "
         />
       </section>
@@ -1549,14 +1549,14 @@ function ManualPanel({
           -mx-1
           mt-4
           border-t
-          border-black/[0.06]
-          bg-[#f8faf9]/95
+          border-[var(--oc-border)]
+          bg-[var(--oc-page)]/95
           px-1
           pb-1
           pt-3
           backdrop-blur-lg
-          dark:border-white/[0.07]
-          dark:bg-[#0f1519]/95
+          border-[var(--oc-border)]
+          dark:bg-[var(--oc-page)]/95
         "
       >
         <button
@@ -1577,7 +1577,7 @@ function ManualPanel({
             px-4
             text-[11.5px]
             font-semibold
-            text-white
+            text-[var(--oc-text)]
             shadow-[0_4px_12px_rgba(5,150,105,0.14)]
             transition
             hover:bg-emerald-700
@@ -1622,8 +1622,8 @@ function FieldLabel({
         font-semibold
         uppercase
         tracking-[0.08em]
-        text-slate-400
-        dark:text-slate-500
+        text-[var(--oc-muted)]
+        text-[var(--oc-muted)]
       "
     >
       {children}
@@ -1665,21 +1665,21 @@ function TextField({
           w-full
           rounded-[9px]
           border
-          border-black/[0.07]
-          bg-white
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
           px-3
           text-[11.5px]
-          text-slate-800
+          text-[var(--oc-text)]
           outline-none
           transition
-          placeholder:text-slate-300
+          placeholder:text-[var(--oc-muted)]
           focus:border-emerald-500/45
           focus:ring-2
           focus:ring-emerald-500/[0.08]
-          dark:border-white/[0.07]
-          dark:bg-white/[0.025]
-          dark:text-slate-200
-          dark:placeholder:text-slate-600
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]/[0.025]
+          text-[var(--oc-text-secondary)]
+          dark:placeholder:text-[var(--oc-text-secondary)]
         "
       />
     </label>
@@ -1713,10 +1713,10 @@ function UnitField({
           items-center
           rounded-[9px]
           border
-          border-black/[0.07]
-          bg-white
-          dark:border-white/[0.07]
-          dark:bg-white/[0.025]
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]/[0.025]
         "
       >
         <input
@@ -1735,9 +1735,9 @@ function UnitField({
             bg-transparent
             px-3
             text-[11.5px]
-            text-slate-800
+            text-[var(--oc-text)]
             outline-none
-            dark:text-slate-200
+            text-[var(--oc-text-secondary)]
           "
         />
 
@@ -1745,7 +1745,7 @@ function UnitField({
           className="
             pr-3
             text-[10px]
-            text-slate-400
+            text-[var(--oc-muted)]
           "
         >
           {unit}
@@ -1787,18 +1787,18 @@ function SelectField({
           w-full
           rounded-[9px]
           border
-          border-black/[0.07]
-          bg-white
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
           px-3
           text-[11.5px]
-          text-slate-800
+          text-[var(--oc-text)]
           outline-none
           focus:border-emerald-500/45
           focus:ring-2
           focus:ring-emerald-500/[0.08]
-          dark:border-white/[0.07]
-          dark:bg-[#151b1f]
-          dark:text-slate-200
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
+          text-[var(--oc-text-secondary)]
         "
       >
         {children}

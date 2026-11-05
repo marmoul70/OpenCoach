@@ -287,15 +287,10 @@ export function SidePanel({
           (
             'absolute inset-y-0 right-0 '
             + 'flex w-full flex-col '
-            + 'border-l border-black/[0.07] '
-            + 'bg-[#f8faf9] '
-            + 'shadow-[-16px_0_45px_rgba(15,23,42,0.10)] '
-            + 'dark:border-white/[0.08] '
-            + 'dark:bg-[#0f1519] '
-            + 'md:w-[38vw] '
-            + 'md:min-w-[420px] '
-            + 'md:max-w-[560px] '
-            + 'lg:w-[34vw] '
+            + 'oc-panel-surface '
+            + 'md:w-[max(36vw,460px)] '
+            + 'md:min-w-[max(36vw,460px)] '
+            + 'md:max-w-none '
             + 'transform-gpu '
             + 'transition-transform '
             + 'duration-[280ms] '
@@ -308,25 +303,14 @@ export function SidePanel({
       >
         <header
           className="
+            oc-panel-header
             flex
             min-h-[58px]
             shrink-0
             items-center
             justify-between
             gap-3
-
-            border-b
-            border-black/[0.06]
-
-            bg-white/90
-
             px-4
-
-            backdrop-blur-xl
-
-            dark:border-white/[0.07]
-            dark:bg-[#141a1e]/95
-
             sm:px-5
           "
         >
@@ -351,8 +335,8 @@ export function SidePanel({
                   truncate
                   text-[14px]
                   font-semibold
-                  text-slate-800
-                  dark:text-slate-100
+                  text-[var(--oc-text)]
+                  text-[var(--oc-text)]
                 "
               >
                 {title}
@@ -378,23 +362,23 @@ export function SidePanel({
               rounded-[9px]
 
               border
-              border-black/[0.07]
+              border-[var(--oc-border)]
 
-              bg-white
+              bg-[var(--oc-surface)]
 
-              text-slate-500
+              text-[var(--oc-muted)]
 
               transition
 
-              hover:border-black/[0.12]
-              hover:bg-slate-50
-              hover:text-slate-800
+              hover:border-[var(--oc-border-strong)]
+              hover:bg-[var(--oc-surface-hover)]
+              hover:text-[var(--oc-text)]
 
-              dark:border-white/[0.08]
-              dark:bg-white/[0.035]
-              dark:text-slate-400
-              dark:hover:bg-white/[0.06]
-              dark:hover:text-slate-200
+              border-[var(--oc-border)]
+              dark:bg-[var(--oc-surface)]/[0.035]
+              text-[var(--oc-muted)]
+              dark:hover:bg-[var(--oc-surface)]/[0.06]
+              hover:text-[var(--oc-text)]
             "
           >
             <X

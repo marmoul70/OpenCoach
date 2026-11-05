@@ -758,3 +758,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôles
 - CI lancée sur les commits du sprint.
 - Vérification visuelle des états backup disponible/absent, restauration et erreurs, responsive et clair/sombre à effectuer.
+
+
+## 2026-11-05 — Sprint 34 : audit transversal des composants partagés et paramètres
+
+### Livré
+- Paramètres — LocationWidget : panneaux, titres, coordonnées, champs et actions harmonisés sur les tokens sémantiques.
+- Paramètres — TasksSection : cartes, chargement, états vides, libellés et statuts neutres alignés sur Pulse.
+- Composants partagés — ToastProvider : texte secondaire des notifications aligné sur les rôles typographiques sémantiques.
+- Composants partagés — WidgetCard : surface neutre des badges alignée sur le thème.
+- Audit ciblé : Settings, AppNavigation, Button, Card, SidePanelSection, index.css et tokens.css ne présentent pas de classes utilitaires neutres résiduelles dans le périmètre contrôlé. Le fond sombre de l'overlay SidePanel reste intentionnel.
+
+### Garde-fous
+- Aucune modification de comportement, d'API, d'état, de navigation ou de données.
+- Les couleurs fonctionnelles (succès, erreur, avertissement, accent de marque) sont conservées.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles et limites
+- CI lancée sur les commits du sprint.
+- Audit statique ciblé des composants listés ; ce contrôle ne remplace pas une revue visuelle navigateur sur les thèmes clair/sombre et les tailles mobile/tablette/desktop.

@@ -165,27 +165,15 @@ export function WidgetCard({
       type="button"
       onClick={onClick}
       className="
+        oc-surface
+        oc-interactive-surface
         group
         flex
         min-h-44
         w-full
         flex-col
-        rounded-2xl
-        border
-        border-black/[0.07]
-        bg-white
         p-5
         text-left
-        shadow-[0_1px_2px_rgba(15,23,42,0.025)]
-        transition
-        duration-200
-        hover:-translate-y-0.5
-        hover:shadow-[0_12px_35px_rgba(15,23,42,0.055)]
-        focus-visible:outline-none
-        focus-visible:ring-2
-        focus-visible:ring-emerald-500/40
-        dark:border-white/[0.08]
-        dark:bg-[#14181d]
       "
     >
       <div

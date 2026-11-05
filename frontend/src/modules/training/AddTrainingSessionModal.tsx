@@ -1550,13 +1550,13 @@ function ManualPanel({
           mt-4
           border-t
           border-[var(--oc-border)]
-          bg-[#f8faf9]/95
+          bg-[var(--oc-page)]/95
           px-1
           pb-1
           pt-3
           backdrop-blur-lg
           border-[var(--oc-border)]
-          dark:bg-[#0f1519]/95
+          dark:bg-[var(--oc-page)]/95
         "
       >
         <button

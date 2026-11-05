@@ -420,3 +420,120 @@ button:has(svg[data-lucide="plus"]) svg {
   }
 
 }
+
+
+/* ==========================================================
+   OPENCOACH PULSE — HIÉRARCHIE DU PLANNING HEBDOMADAIRE
+   Présentation uniquement : les statuts et charges restent calculés
+   par les composants métier existants.
+   ========================================================== */
+
+.training-polish__day {
+  background: var(--oc-surface);
+  border-color: var(--oc-border) !important;
+}
+
+.training-polish__day-name {
+  color: var(--oc-text-secondary) !important;
+  letter-spacing: 0.075em;
+}
+
+.training-polish__session {
+  min-height: 58px;
+  border-color: var(--oc-border) !important;
+  background: var(--oc-surface-raised) !important;
+}
+
+.training-polish__session h3 {
+  color: var(--oc-text) !important;
+  font-size: var(--oc-type-body) !important;
+  line-height: 1.4 !important;
+}
+
+.training-polish__session--planned {
+  border-color: var(--oc-border) !important;
+  background: var(--oc-surface-raised) !important;
+}
+
+.training-polish__session--completed {
+  border-color: color-mix(in srgb, var(--oc-success) 24%, var(--oc-border)) !important;
+  background: color-mix(in srgb, var(--oc-success-soft) 72%, var(--oc-surface)) !important;
+}
+
+.training-polish__session--skipped {
+  border-color: color-mix(in srgb, var(--oc-danger) 24%, var(--oc-border)) !important;
+  background: color-mix(in srgb, var(--oc-danger-soft) 72%, var(--oc-surface)) !important;
+}
+
+.training-polish__status {
+  flex: 0 0 auto;
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0.01em;
+}
+
+.training-polish__status--completed {
+  background: var(--oc-success-soft) !important;
+  color: var(--oc-success) !important;
+}
+
+.training-polish__status--planned {
+  background: var(--oc-warning-soft) !important;
+  color: var(--oc-warning) !important;
+}
+
+.training-polish__status--skipped {
+  background: var(--oc-danger-soft) !important;
+  color: var(--oc-danger) !important;
+}
+
+.training-polish__metric {
+  background: var(--oc-surface-muted) !important;
+  color: var(--oc-text-secondary) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.training-polish__rest-session {
+  border-color: var(--oc-border) !important;
+  background: var(--oc-surface-muted) !important;
+}
+
+.training-polish__rest-title {
+  color: var(--oc-text-secondary) !important;
+}
+
+.training-polish__empty-day {
+  border-color: var(--oc-border-strong) !important;
+  background: var(--oc-surface-muted) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .training-polish__session:hover:not(:disabled) {
+    border-color: var(--oc-border-strong) !important;
+    background: var(--oc-surface-hover) !important;
+  }
+
+  .training-polish__session--completed:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--oc-success-soft) 88%, var(--oc-surface)) !important;
+  }
+
+  .training-polish__session--skipped:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--oc-danger-soft) 88%, var(--oc-surface)) !important;
+  }
+}
+
+@media (max-width: 639px) {
+  .training-polish__session {
+    gap: 9px !important;
+    padding: 10px 11px !important;
+  }
+
+  .training-polish__session > div:last-child {
+    justify-content: flex-start;
+  }
+
+  .training-polish__status {
+    white-space: nowrap;
+  }
+}
+

@@ -194,3 +194,36 @@
   border-bottom: 1px solid var(--oc-border);
   backdrop-filter: blur(16px);
 }
+
+
+/* Toast notifications share the semantic surface and status tokens. */
+.oc-toast {
+  color: var(--oc-text);
+  background: var(--oc-surface-raised);
+  border: 1px solid var(--oc-border);
+  border-radius: 0.875rem;
+  box-shadow: var(--oc-shadow-popover);
+}
+
+.oc-toast-title {
+  color: var(--oc-text);
+}
+
+.oc-toast-message {
+  color: var(--oc-muted);
+}
+
+.oc-toast-close {
+  color: var(--oc-muted);
+  transition: color var(--oc-transition-fast), background var(--oc-transition-fast);
+}
+
+.oc-toast-close:hover {
+  color: var(--oc-text);
+  background: var(--oc-surface-hover);
+}
+
+.oc-toast-close:focus-visible {
+  outline: 2px solid var(--oc-accent);
+  outline-offset: 2px;
+}

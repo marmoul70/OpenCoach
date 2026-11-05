@@ -80,6 +80,12 @@ function App() {
     }
 
     if (
+      url.pathname === '/notifications'
+    ) {
+      return 'notifications'
+    }
+
+    if (
       url.pathname === '/weather'
     ) {
       return 'weather'
@@ -105,6 +111,19 @@ function App() {
       )
 
     if (
+      page === 'notifications'
+      && url.pathname !== '/notifications'
+    ) {
+      window.history.replaceState(
+        null,
+        '',
+        '/notifications',
+      )
+
+      return
+    }
+
+    if (
       page === 'health'
       && url.pathname !== '/health'
     ) {
@@ -125,6 +144,19 @@ function App() {
         null,
         '',
         '/weather',
+      )
+
+      return
+    }
+
+    if (
+      page !== 'notifications'
+      && url.pathname === '/notifications'
+    ) {
+      window.history.replaceState(
+        null,
+        '',
+        '/',
       )
 
       return

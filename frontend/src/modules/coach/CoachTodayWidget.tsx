@@ -41,10 +41,10 @@ export function CoachTodayWidget({
           justify-center
           rounded-2xl
           border
-          border-black/[0.07]
-          bg-white
-          dark:border-white/[0.08]
-          dark:bg-[#141a1e]
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
+          dark:border-[var(--oc-border)]
+          
         "
       >
         <span
@@ -56,7 +56,7 @@ export function CoachTodayWidget({
             border-2
             border-slate-200
             border-t-emerald-500
-            dark:border-white/[0.10]
+            dark:border-[var(--oc-border)]
             dark:border-t-emerald-400
           "
           aria-hidden="true"
@@ -74,9 +74,9 @@ export function CoachTodayWidget({
           rounded-2xl
           border
           border-red-500/20
-          bg-white
+          bg-[var(--oc-surface)]
           p-5
-          dark:bg-[#141a1e]
+          
         "
       >
         <div
@@ -101,8 +101,8 @@ export function CoachTodayWidget({
             mt-2
             text-sm
             leading-6
-            text-slate-500
-            dark:text-slate-400
+            text-[var(--oc-muted)]
+            dark:text-[var(--oc-muted)]
           "
         >
           {error}
@@ -125,14 +125,14 @@ export function CoachTodayWidget({
           w-full
           rounded-2xl
           border
-          border-black/[0.07]
-          bg-white
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
           p-5
           text-left
           transition
           hover:border-emerald-500/20
-          dark:border-white/[0.08]
-          dark:bg-[#141a1e]
+          dark:border-[var(--oc-border)]
+          
         "
       >
         <div
@@ -143,9 +143,9 @@ export function CoachTodayWidget({
             items-center
             justify-center
             rounded-xl
-            bg-slate-50
-            text-slate-400
-            dark:bg-white/[0.05]
+            bg-[var(--oc-surface-muted)]
+            text-[var(--oc-muted)]
+            dark:bg-[var(--oc-surface)]/[0.05]
           "
         >
           <Activity
@@ -159,7 +159,7 @@ export function CoachTodayWidget({
             text-lg
             font-bold
             tracking-[-0.02em]
-            text-slate-950
+            text-[var(--oc-text)]
             dark:text-white
           "
         >
@@ -171,8 +171,8 @@ export function CoachTodayWidget({
             mt-1
             text-sm
             leading-6
-            text-slate-500
-            dark:text-slate-400
+            text-[var(--oc-muted)]
+            dark:text-[var(--oc-muted)]
           "
         >
           Les données nécessaires ne
@@ -191,7 +191,7 @@ export function CoachTodayWidget({
             className="
               h-4
               w-4
-              text-slate-300
+              text-[var(--oc-muted-soft)]
               transition-transform
               group-hover:translate-x-1
             "
@@ -280,20 +280,16 @@ export function CoachTodayWidget({
         overflow-hidden
         rounded-2xl
         border
-        border-black/[0.07]
-        bg-white
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
         p-0
         text-left
-        shadow-[0_1px_2px_rgba(15,23,42,0.025)]
-        transition
-        duration-200
-        hover:-translate-y-0.5
-        hover:shadow-[0_12px_35px_rgba(15,23,42,0.055)]
+        oc-interactive-surface
         focus-visible:outline-none
         focus-visible:ring-2
         focus-visible:ring-emerald-500/40
-        dark:border-white/[0.08]
-        dark:bg-[#141a1e]
+        dark:border-[var(--oc-border)]
+        
       "
     >
       <div
@@ -362,7 +358,7 @@ export function CoachTodayWidget({
                 className="
                   text-[11px]
                   font-medium
-                  text-slate-400
+                  text-[var(--oc-muted)]
                 "
               >
                 Analyse du jour
@@ -381,7 +377,7 @@ export function CoachTodayWidget({
                 text-xl
                 font-bold
                 tracking-[-0.03em]
-                text-slate-950
+                text-[var(--oc-text)]
                 sm:text-2xl
                 dark:text-white
               "
@@ -395,8 +391,8 @@ export function CoachTodayWidget({
                 max-w-2xl
                 text-sm
                 leading-6
-                text-slate-500
-                dark:text-slate-400
+                text-[var(--oc-muted)]
+                dark:text-[var(--oc-muted)]
               "
             >
               {guidance.analysis}
@@ -436,10 +432,10 @@ export function CoachTodayWidget({
               items-center
               justify-between
               rounded-xl
-              bg-slate-50
+              bg-[var(--oc-surface-muted)]
               px-4
               py-3
-              dark:bg-white/[0.04]
+              dark:bg-[var(--oc-surface)]/[0.04]
             "
           >
             <div>
@@ -449,7 +445,7 @@ export function CoachTodayWidget({
                   font-semibold
                   uppercase
                   tracking-wide
-                  text-slate-400
+                  text-[var(--oc-muted)]
                 "
               >
                 Disponibilité
@@ -459,8 +455,8 @@ export function CoachTodayWidget({
                 className="
                   mt-0.5
                   text-xs
-                  text-slate-500
-                  dark:text-slate-400
+                  text-[var(--oc-muted)]
+                  dark:text-[var(--oc-muted)]
                 "
               >
                 Score du jour
@@ -479,7 +475,7 @@ export function CoachTodayWidget({
                   text-2xl
                   font-bold
                   tracking-[-0.04em]
-                  text-slate-950
+                  text-[var(--oc-text)]
                   dark:text-white
                 "
               >
@@ -491,7 +487,7 @@ export function CoachTodayWidget({
               <span
                 className="
                   text-xs
-                  text-slate-400
+                  text-[var(--oc-muted)]
                 "
               >
                 /100
@@ -511,11 +507,11 @@ export function CoachTodayWidget({
             grid
             grid-cols-3
             divide-x
-            divide-black/[0.06]
+            divide-[var(--oc-border)]
             border-y
-            border-black/[0.06]
+            border-[var(--oc-border)]
             py-4
-            dark:divide-white/[0.07]
+            dark:divide-[var(--oc-border)]
             dark:border-white/[0.07]
           "
         >
@@ -625,8 +621,8 @@ export function CoachTodayWidget({
                   text-sm
                   font-medium
                   leading-6
-                  text-slate-800
-                  dark:text-slate-200
+                  text-[var(--oc-text-secondary)]
+                  dark:text-[var(--oc-text-secondary)]
                 "
               >
                 {guidance.instruction}
@@ -743,7 +739,7 @@ function ReadinessScore({
           stroke="currentColor"
           strokeWidth="7"
           className="
-            text-slate-100
+            text-[var(--oc-surface-muted)]
             dark:text-white/[0.06]
           "
         />
@@ -771,7 +767,7 @@ function ReadinessScore({
             text-2xl
             font-bold
             tracking-[-0.05em]
-            text-slate-950
+            text-[var(--oc-text)]
             dark:text-white
           "
         >
@@ -784,7 +780,7 @@ function ReadinessScore({
             font-semibold
             uppercase
             tracking-wide
-            text-slate-400
+            text-[var(--oc-muted)]
           "
         >
           Forme
@@ -825,7 +821,7 @@ function Metric({
           font-semibold
           uppercase
           tracking-wide
-          text-slate-400
+          text-[var(--oc-muted)]
         "
       >
         {label}
@@ -864,7 +860,7 @@ function Metric({
                     'text-amber-500'
                   )
                 : (
-                    'text-slate-900 '
+                    'text-[var(--oc-text)] '
                     + 'dark:text-white'
                   ),
           ].join(' ')}
@@ -877,7 +873,7 @@ function Metric({
             className="
               hidden
               text-[10px]
-              text-slate-400
+              text-[var(--oc-muted)]
               sm:inline
             "
           >
@@ -930,7 +926,7 @@ function TrendIcon({
         h-4
         w-4
         shrink-0
-        text-slate-300
+        text-[var(--oc-muted-soft)]
       "
     />
   )
@@ -1392,8 +1388,8 @@ function SessionStatusBadge({
       className: (
         'border-slate-400/20 '
         + 'bg-slate-400/[0.08] '
-        + 'text-slate-500 '
-        + 'dark:text-slate-300'
+        + 'text-[var(--oc-muted)] '
+        + 'dark:text-[var(--oc-muted-soft)]'
       ),
     },
   }[status]

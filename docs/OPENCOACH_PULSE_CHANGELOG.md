@@ -177,3 +177,35 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - L'adaptateur Santé construit la fenêtre calendaire complète de 7/14/30 jours et injecte `null` pour les dates absentes.
 - La valeur récente et la moyenne restent calculées uniquement à partir des mesures réellement présentes.
 - Si aucune mesure n'existe sur la période, le composant affiche son état vide plutôt qu'un axe artificiel.
+
+
+## 2026-11-05 — Sprint 4 : widgets de données réutilisables
+
+### Audit anti-doublon
+- La page Santé possédait déjà deux présentations locales : `StatusCard` et `MetricTile`.
+- Le projet n'avait pas de `MetricCard` générique dans le design system.
+- La navigation adaptive est déjà présente dans `AppNavigation.tsx` : sidebar desktop, barre inférieure mobile, tiroir de navigation, profil et choix de thème. Le travail à venir porte sur l'harmonisation visuelle et l'accessibilité, pas sur une réécriture du routage.
+
+### Livré
+- Création de `frontend/src/design-system/components/MetricCard.tsx`.
+- Contrat réutilisable : libellé, valeur, détail, icône, métadonnées et densité compacte.
+- La carte utilise les tokens sémantiques et la primitive Card existante ; aucune palette locale ni nouvelle dépendance.
+- Refactorisation des présentations `StatusCard` et `MetricTile` de Santé en adaptateurs vers `MetricCard`.
+- Exports ajoutés au point d'entrée du design system.
+
+### Préservation fonctionnelle
+- Les valeurs, unités, moyennes, nombres d'échantillons et jours couverts restent préparés par HealthPage.
+- Aucun appel API, type Wellness/Recovery, calcul métier ou comportement de chargement n'a été modifié.
+- La carte ne calcule aucune statistique et n'interprète aucun statut.
+
+### Décision bibliothèque graphique
+- Recharts 3.x est retenu comme candidat pour les graphiques multi-séries, barres, aires et tooltips interactifs : API React composable, SVG, responsive et accessibilité clavier activée par défaut depuis la v3.
+- La primitive LineChart SVG existante reste préférable pour les séries simples et légères.
+- Aucune dépendance Recharts ajoutée à ce stade : on l'introduira au premier cas d'usage qui justifie réellement sa valeur, après contrôle du lockfile et du poids bundle.
+- Références : https://recharts.org/ et https://recharts.github.io/en-US/guide/sizes/.
+
+### Contrôles
+- Vérification statique des contrats et imports via les fichiers GitHub.
+- La CI du commit précédent `47fefbe` est terminée avec succès ; les commits du présent sprint déclenchent une nouvelle exécution CI.
+- Le rendu navigateur et le build des nouveaux commits restent à confirmer.
+- Aucun merge, aucune PR de fusion et aucun déploiement VM.

@@ -75,7 +75,13 @@ export function HealthPage() {
   const [windowSize, setWindowSize] = useState<WindowSize>(7)
   const [refreshKey, setRefreshKey] = useState(0)
   const [lastRefreshAt, setLastRefreshAt] = useState<Date | null>(null)
+  const [relativeTimeNow, setRelativeTimeNow] = useState(() => Date.now())
   const [selectedSection, setSelectedSection] = useState<HealthSectionKey | null>(null)
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setRelativeTimeNow(Date.now()), 30_000)
+    return () => window.clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -137,9 +143,8 @@ export function HealthPage() {
         />
         <p className="mt-1 text-right text-xs text-[var(--oc-muted)]" aria-live="polite">
           {lastRefreshAt
-            ? `Dernière actualisation : ${new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'medium' }).format(lastRefreshAt)}`
+            ? formatRelativeRefresh(lastRefreshAt, relativeTimeNow)
             : 'En attente de la première actualisation…'}
-          {' · Actualisation à l’ouverture et sur demande'}
         </p>
 
         {loading && (
@@ -540,6 +545,33 @@ function formatDate(value: string): string {
   }).format(new Date(`${value}T12:00:00`))
 }
 
+
+function formatRelativeRefresh(value: Date, nowTimestamp: number): string {
+  const elapsedMs = Math.max(0, nowTimestamp - value.getTime())
+  const elapsedMinutes = Math.floor(elapsedMs / 60_000)
+  const elapsedHours = Math.floor(elapsedMs / 3_600_000)
+
+  if (elapsedMinutes < 1) return 'À l’instant'
+  if (elapsedMinutes < 60) return `Il y a ${elapsedMinutes} min`
+  if (elapsedHours < 24) return `Il y a ${elapsedHours} h`
+
+  const yesterday = new Date(nowTimestamp)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const sameDay = value.getFullYear() === yesterday.getFullYear()
+    && value.getMonth() === yesterday.getMonth()
+    && value.getDate() === yesterday.getDate()
+
+  if (sameDay) {
+    return `Hier à ${new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(value)}`
+  }
+
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(value)
+}
 
 function statusLabel(status: string, age: number | null): string {
   if (status === 'fresh') return 'Données du jour disponibles'

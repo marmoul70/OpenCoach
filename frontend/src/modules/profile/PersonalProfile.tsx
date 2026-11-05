@@ -292,12 +292,7 @@ export function PersonalProfile() {
         >
           <p
             className="
-              text-[10px]
-              font-bold
-              uppercase
-              tracking-[0.13em]
-              text-emerald-600
-              dark:text-emerald-400
+              oc-page-eyebrow
             "
           >
             Compte
@@ -305,12 +300,7 @@ export function PersonalProfile() {
 
           <h1
             className="
-              mt-1
-              text-[24px]
-              font-bold
-              tracking-[-0.035em]
-              text-slate-950
-              dark:text-white
+              oc-page-title
             "
           >
             Profil personnel
@@ -318,10 +308,7 @@ export function PersonalProfile() {
 
           <p
             className="
-              mt-1
-              text-[11.5px]
-              text-slate-400
-              dark:text-slate-500
+              oc-page-description
             "
           >
             Ton identité et ta photo

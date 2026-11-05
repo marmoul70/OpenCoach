@@ -407,8 +407,8 @@ export function Profile() {
     <main
       className="
         min-h-screen
-        bg-[#f5f7f6]
-        dark:bg-[#0b1014]
+        bg-[var(--oc-page)]
+        dark:bg-[var(--oc-page)]
       "
     >
       <div

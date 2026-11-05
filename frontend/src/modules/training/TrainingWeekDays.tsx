@@ -419,6 +419,7 @@ function RestSessionRow({
       type="button"
       onClick={onOpen}
       className="
+        training-polish__rest-session
         flex
         w-full
         items-center
@@ -503,6 +504,7 @@ function EmptyDay() {
   return (
     <div
       className="
+        training-polish__empty-day
         rounded-[10px]
         border
         border-dashed
@@ -566,7 +568,7 @@ function SessionRow({
           session,
         ),
         (
-          'flex w-full flex-col gap-2.5 '
+          'training-polish__session flex w-full flex-col gap-2.5 '
           + 'rounded-[10px] border '
           + 'px-3 py-2.5 text-left '
           + 'transition '
@@ -576,6 +578,7 @@ function SessionRow({
 
         session.status === 'completed'
           ? (
+              'training-polish__session--completed '
               'border-emerald-500/15 '
               + 'bg-emerald-50/60 '
               + 'hover:bg-emerald-50 '
@@ -586,6 +589,7 @@ function SessionRow({
 
         session.status === 'skipped'
           ? (
+              'training-polish__session--skipped '
               'border-red-500/12 '
               + 'bg-red-50/50 '
               + 'hover:bg-red-50 '
@@ -599,6 +603,7 @@ function SessionRow({
           && session.status !== 'skipped'
         )
           ? (
+              'training-polish__session--planned '
               'border-[var(--oc-border)] '
               + 'bg-[var(--oc-surface)] '
               + 'hover:border-[var(--oc-border-strong)] '
@@ -864,6 +869,7 @@ function SessionStatusLabel({
     return (
       <span
         className="
+          training-polish__status training-polish__status--completed
           inline-flex
           items-center
           gap-1
@@ -897,6 +903,7 @@ function SessionStatusLabel({
     return (
       <span
         className="
+          training-polish__status training-polish__status--skipped
           inline-flex
           items-center
           gap-1
@@ -927,6 +934,7 @@ function SessionStatusLabel({
   return (
     <span
       className="
+        training-polish__status training-polish__status--planned
         inline-flex
         items-center
         gap-1
@@ -962,6 +970,7 @@ function MetricPill({
   return (
     <span
       className="
+        training-polish__metric
         rounded-[7px]
         bg-[var(--oc-surface-muted)]
         px-2

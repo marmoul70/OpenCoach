@@ -404,3 +404,24 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Relecture ciblée des composants et sélecteurs CSS ajoutés ; les styles sont limités au cockpit de détail de séance.
 - Build et tests CI à confirmer après les commits du sprint.
 - Vérification visuelle claire/sombre sur mobile, tablette et desktop toujours nécessaire.
+
+
+## 2026-11-05 — Sprint 15 : guidage et consignes du coach
+
+### Livré
+- Étapes échauffement, cœur de séance et retour au calme : titres plus visibles et hiérarchie renforcée.
+- Cartes de consignes : titres, descriptions et durées plus faciles à distinguer.
+- Blocs d'intervalles : valeurs d'effort et durées de répétition mises en avant, avec chiffres alignés pour une lecture rapide.
+- Cibles d'intensité : FC, VMA, vitesse, allure et effort mieux hiérarchisés sans changer les valeurs affichées.
+- Panneau « Conseils & contexte » : objectif, justification, terrain, préparation, conseils et avertissements plus confortables à lire.
+- Ajustements mobiles conservés pour éviter une densité excessive.
+
+### Garde-fous
+- Aucun contenu, ordre des étapes, cible d'intensité, formatage, calcul ou règle métier modifié.
+- Aucun changement API, backend, stockage, synchronisation ou dépendance.
+- Aucun merge, déploiement ou changement de VM.
+
+### Contrôles
+- Classes de présentation ciblées ajoutées aux éléments existants ; aucune duplication de composant.
+- Audit des tokens : accent et couleurs neutres s'appuient sur les variables Pulse.
+- CI à confirmer ; contrôle visuel clair/sombre et responsive à réaliser dans le navigateur.

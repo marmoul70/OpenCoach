@@ -99,12 +99,19 @@ export function testIntervalsConnection(
   )
 }
 
-export function testSavedIntervalsConnection():
-Promise<IntervalsConnectionTestResult> {
+export function testSavedIntervalsConnection(
+  webCookie?: string,
+): Promise<IntervalsConnectionTestResult> {
   return request<IntervalsConnectionTestResult>(
     '/api/integrations/intervals/connection/test-saved',
     {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        web_cookie: webCookie?.trim() || null,
+      }),
     },
   )
 }

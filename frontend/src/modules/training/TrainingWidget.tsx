@@ -63,7 +63,7 @@ export function TrainingWidget({
             animate-spin
             rounded-full
             border-2
-            border-white/[0.10]
+            border-[var(--oc-border)]
             border-t-emerald-400
           "
           aria-hidden="true"
@@ -226,7 +226,7 @@ export function TrainingWidget({
               items-center
               justify-center
               rounded-xl
-              bg-white/[0.06]
+              bg-[var(--oc-surface-muted)]
               text-[var(--oc-muted)]
             "
           >

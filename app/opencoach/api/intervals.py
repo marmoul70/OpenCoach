@@ -54,6 +54,7 @@ from opencoach.schemas.integration import (
     IntervalsConnectionTest,
     IntervalsConnectionTestResponse,
     IntervalsConnectionUpdate,
+    IntervalsWebCookieTest,
 )
 from opencoach.security import (
     SecretCipher,
@@ -458,6 +459,7 @@ def test_intervals_connection(
     response_model=IntervalsConnectionTestResponse,
 )
 def test_saved_intervals_connection(
+    payload: IntervalsWebCookieTest | None = None,
     athlete_profile_id: UUID = Depends(
         get_current_athlete_profile_id,
     ),

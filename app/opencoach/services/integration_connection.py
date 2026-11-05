@@ -96,10 +96,6 @@ class IntegrationConnectionService:
                 "L'identifiant athlète Intervals.icu est obligatoire."
             )
 
-        current = self.repository.get_connection(
-            athlete_profile_id,
-            "intervals",
-        )
         current_secret = self.repository.get_encrypted_secret(
             athlete_profile_id,
             "intervals",

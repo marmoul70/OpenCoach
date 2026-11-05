@@ -135,10 +135,10 @@ export function LocationWidget({
         overflow-hidden
         rounded-[12px]
         border
-        border-black/[0.065]
-        bg-white
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
         dark:border-white/[0.065]
-        dark:bg-[#151b1f]
+        dark:bg-[var(--oc-surface)]
       "
     >
 
@@ -213,8 +213,8 @@ export function LocationWidget({
                   font-bold
                   uppercase
                   tracking-[0.1em]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-muted-soft)]
+                  dark:text-[var(--oc-muted)]
                 "
               >
                 Lieu principal
@@ -227,8 +227,8 @@ export function LocationWidget({
                   text-[18px]
                   font-bold
                   tracking-[-0.025em]
-                  text-slate-950
-                  dark:text-white
+                  text-[var(--oc-text)]
+                  dark:text-[var(--oc-text)]
                 "
               >
                 {
@@ -242,8 +242,8 @@ export function LocationWidget({
                   className="
                     mt-1
                     text-[10px]
-                    text-slate-400
-                    dark:text-slate-500
+                    text-[var(--oc-muted-soft)]
+                    dark:text-[var(--oc-muted)]
                   "
                 >
                   {
@@ -272,17 +272,17 @@ export function LocationWidget({
                 gap-1.5
                 rounded-[8px]
                 border
-                border-black/[0.06]
+                border-[var(--oc-border)]
                 px-2.5
                 text-[10px]
                 font-semibold
-                text-slate-500
+                text-[var(--oc-muted)]
                 transition
-                hover:bg-slate-50
-                hover:text-slate-900
+                hover:bg-[var(--oc-surface-muted)]
+                hover:text-[var(--oc-text)]
                 dark:border-white/[0.065]
-                dark:text-slate-400
-                dark:hover:bg-white/[0.04]
+                dark:text-[var(--oc-muted-soft)]
+                dark:hover:bg-[var(--oc-surface-hover)]
                 dark:hover:text-white
               "
             >
@@ -307,7 +307,7 @@ export function LocationWidget({
         <div
           className="
             border-t
-            border-black/[0.055]
+            border-[var(--oc-border)]
             px-4
             py-4
             dark:border-white/[0.06]
@@ -353,7 +353,7 @@ export function LocationWidget({
               justify-end
               gap-2
               border-t
-              border-black/[0.055]
+              border-[var(--oc-border)]
               pt-3
               dark:border-white/[0.06]
             "
@@ -367,10 +367,10 @@ export function LocationWidget({
                 px-3
                 text-[10.5px]
                 font-semibold
-                text-slate-400
-                hover:bg-slate-50
-                hover:text-slate-700
-                dark:hover:bg-white/[0.04]
+                text-[var(--oc-muted-soft)]
+                hover:bg-[var(--oc-surface-muted)]
+                hover:text-[var(--oc-text-secondary)]
+                dark:hover:bg-[var(--oc-surface-hover)]
                 dark:hover:text-slate-200
               "
             >
@@ -408,7 +408,7 @@ export function LocationWidget({
             grid
             grid-cols-2
             border-t
-            border-black/[0.055]
+            border-[var(--oc-border)]
             dark:border-white/[0.06]
           "
         >
@@ -439,12 +439,12 @@ export function LocationWidget({
           items-center
           gap-2
           border-t
-          border-black/[0.055]
-          bg-slate-50/60
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface-muted)]/60
           px-4
           py-2.5
           dark:border-white/[0.06]
-          dark:bg-white/[0.018]
+          dark:bg-[var(--oc-surface-muted)]
         "
       >
         <div
@@ -463,9 +463,9 @@ export function LocationWidget({
                   + 'dark:text-emerald-400'
                 )
               : (
-                  'bg-slate-100 '
-                  + 'text-slate-400 '
-                  + 'dark:bg-white/[0.04]'
+                  'bg-[var(--oc-surface-muted)] '
+                  + 'text-[var(--oc-muted-soft)] '
+                  + 'dark:bg-[var(--oc-surface-muted)]'
                 ),
           ].join(' ')}
         >
@@ -494,8 +494,8 @@ export function LocationWidget({
           className="
             flex-1
             text-[9.5px]
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-muted-soft)]
+            dark:text-[var(--oc-muted)]
           "
         >
           {
@@ -552,7 +552,7 @@ function LocationMetric({
         px-4
         py-3
         first:border-r
-        first:border-black/[0.055]
+        first:border-[var(--oc-border)]
         dark:first:border-white/[0.06]
       "
     >
@@ -562,8 +562,8 @@ function LocationMetric({
           font-semibold
           uppercase
           tracking-[0.08em]
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-muted)]
         "
       >
         {label}
@@ -575,8 +575,8 @@ function LocationMetric({
           text-[12px]
           font-semibold
           tabular-nums
-          text-slate-800
-          dark:text-slate-200
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-text-secondary)]
         "
       >
         {value}
@@ -612,8 +612,8 @@ function LocationField({
           font-semibold
           uppercase
           tracking-[0.07em]
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-muted)]
         "
       >
         {label}
@@ -634,12 +634,12 @@ function LocationField({
           w-full
           rounded-[9px]
           border
-          border-black/[0.07]
-          bg-slate-50/60
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface-muted)]/60
           px-3
           text-[11.5px]
           font-medium
-          text-slate-900
+          text-[var(--oc-text)]
           outline-none
           transition
           placeholder:text-slate-300
@@ -647,9 +647,9 @@ function LocationField({
           focus:ring-2
           focus:ring-emerald-500/[0.08]
           dark:border-white/[0.07]
-          dark:bg-white/[0.025]
-          dark:text-slate-100
-          dark:placeholder:text-slate-600
+          dark:bg-[var(--oc-surface-muted)]
+          dark:text-[var(--oc-text)]
+          dark:placeholder:text-[var(--oc-text-secondary)]
         "
       />
     </label>

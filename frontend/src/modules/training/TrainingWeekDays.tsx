@@ -579,7 +579,7 @@ function SessionRow({
         session.status === 'completed'
           ? (
               'training-polish__session--completed '
-              'border-emerald-500/15 '
+              + 'border-emerald-500/15 '
               + 'bg-emerald-50/60 '
               + 'hover:bg-emerald-50 '
               + 'dark:bg-emerald-500/[0.045] '
@@ -590,7 +590,7 @@ function SessionRow({
         session.status === 'skipped'
           ? (
               'training-polish__session--skipped '
-              'border-red-500/12 '
+              + 'border-red-500/12 '
               + 'bg-red-50/50 '
               + 'hover:bg-red-50 '
               + 'dark:bg-red-500/[0.035] '
@@ -604,7 +604,7 @@ function SessionRow({
         )
           ? (
               'training-polish__session--planned '
-              'border-[var(--oc-border)] '
+              + 'border-[var(--oc-border)] '
               + 'bg-[var(--oc-surface)] '
               + 'hover:border-[var(--oc-border-strong)] '
               + 'hover:bg-[var(--oc-surface-muted)] '

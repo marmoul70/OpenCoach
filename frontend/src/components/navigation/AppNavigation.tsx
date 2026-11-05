@@ -327,8 +327,8 @@ export function AppNavigation({
               font-semibold
               uppercase
               tracking-[0.16em]
-              text-slate-400
-              dark:text-slate-600
+              text-[var(--oc-muted)]
+              dark:text-[var(--oc-muted-soft)]
             "
           >
             Suivi
@@ -408,11 +408,11 @@ export function AppNavigation({
                       ),
                       desktopProfileOpen
                         ? (
-                            'bg-slate-100 '
+                            'bg-[var(--oc-surface-muted)] '
                             + 'dark:bg-[var(--oc-surface)]/[0.06]'
                           )
                         : (
-                            'hover:bg-slate-50 '
+                            'hover:bg-[var(--oc-surface-muted)] '
                             + 'dark:hover:bg-[var(--oc-surface)]/[0.045]'
                           ),
                     ].join(' ')}
@@ -434,8 +434,8 @@ export function AppNavigation({
                           truncate
                           text-[12.5px]
                           font-semibold
-                          text-slate-900
-                          dark:text-slate-100
+                          text-[var(--oc-text)]
+                          dark:text-[var(--oc-text)]
                         "
                       >
                         {formatName(
@@ -449,8 +449,8 @@ export function AppNavigation({
                           mt-0.5
                           truncate
                           text-[9.5px]
-                          text-slate-400
-                          dark:text-slate-500
+                          text-[var(--oc-muted)]
+                          dark:text-[var(--oc-muted)]
                         "
                       >
                         Profil athlète
@@ -462,9 +462,9 @@ export function AppNavigation({
                         (
                           'h-3.5 w-3.5 '
                           + 'shrink-0 '
-                          + 'text-slate-300 '
+                          + 'text-[var(--oc-muted-soft)] '
                           + 'transition-transform '
-                          + 'dark:text-slate-600'
+                          + 'dark:text-[var(--oc-muted-soft)]'
                         ),
                         desktopProfileOpen
                           ? '-rotate-90'
@@ -653,7 +653,7 @@ export function AppNavigation({
                         className="
                           mt-1
                           rounded-[9px]
-                          bg-slate-50
+                          bg-[var(--oc-surface-muted)]
                           px-2
                           py-1.5
                           dark:bg-[var(--oc-surface)]/[0.035]
@@ -670,8 +670,8 @@ export function AppNavigation({
                           <span
                             className="
                               text-[8px]
-                              text-slate-400
-                              dark:text-slate-500
+                              text-[var(--oc-muted)]
+                              dark:text-[var(--oc-muted)]
                             "
                           >
                             Version
@@ -681,8 +681,8 @@ export function AppNavigation({
                             className="
                               text-[7.5px]
                               font-semibold
-                              text-slate-600
-                              dark:text-slate-300
+                              text-[var(--oc-text-secondary)]
+                              dark:text-[var(--oc-text-secondary)]
                             "
                           >
                             {version
@@ -699,8 +699,8 @@ export function AppNavigation({
                               text-right
                               font-mono
                               text-[7.5px]
-                              text-slate-300
-                              dark:text-slate-600
+                              text-[var(--oc-muted-soft)]
+                              dark:text-[var(--oc-muted-soft)]
                             "
                           >
                             {commit}
@@ -792,7 +792,7 @@ export function AppNavigation({
             justify-center
             rounded-full
             transition
-            hover:bg-slate-100
+            hover:bg-[var(--oc-surface-muted)]
             dark:hover:bg-[var(--oc-surface)]/[0.06]
           "
           aria-label="Ouvrir le menu"
@@ -942,8 +942,8 @@ export function AppNavigation({
                   truncate
                   text-[13px]
                   font-semibold
-                  text-slate-900
-                  dark:text-slate-100
+                  text-[var(--oc-text)]
+                  dark:text-[var(--oc-text)]
                 "
               >
                 {formatName(
@@ -956,7 +956,7 @@ export function AppNavigation({
                 className="
                   mt-0.5
                   text-[10px]
-                  text-slate-400
+                  text-[var(--oc-muted)]
                 "
               >
                 Athlète OpenCoach
@@ -1189,8 +1189,8 @@ export function AppNavigation({
               pb-2
               text-center
               text-[9px]
-              text-slate-300
-              dark:text-slate-700
+              text-[var(--oc-muted-soft)]
+              dark:text-[var(--oc-muted-soft)]
             "
           >
             {version
@@ -1226,8 +1226,8 @@ export function AppNavigation({
                 font-semibold
                 uppercase
                 tracking-[0.14em]
-                text-slate-400
-                dark:text-slate-600
+                text-[var(--oc-muted)]
+                dark:text-[var(--oc-muted-soft)]
               "
             >
               {children}
@@ -1291,10 +1291,10 @@ export function AppNavigation({
                         + 'dark:text-emerald-400'
                       )
                     : (
-                        'text-slate-600 '
-                        + 'hover:bg-slate-50 '
-                        + 'hover:text-slate-900 '
-                        + 'dark:text-slate-300 '
+                        'text-[var(--oc-text-secondary)] '
+                        + 'hover:bg-[var(--oc-surface-muted)] '
+                        + 'hover:text-[var(--oc-text)] '
+                        + 'dark:text-[var(--oc-text-secondary)] '
                         + 'dark:hover:bg-[var(--oc-surface)]/[0.045] '
                         + 'dark:hover:text-white'
                       ),
@@ -1310,7 +1310,7 @@ export function AppNavigation({
                           'text-emerald-600 '
                           + 'dark:text-emerald-400'
                         )
-                      : 'text-slate-400',
+                      : 'text-[var(--oc-muted)]',
                 ].join(' ')}
               >
                 {icon}
@@ -1359,10 +1359,10 @@ export function AppNavigation({
                       + 'dark:text-emerald-400'
                     )
                   : (
-                      'border-black/[0.055] '
+                      'border-[var(--oc-border)] '
                       + 'bg-[var(--oc-surface)] '
-                      + 'text-slate-400 '
-                      + 'hover:bg-slate-50 '
+                      + 'text-[var(--oc-muted)] '
+                      + 'hover:bg-[var(--oc-surface-muted)] '
                       + 'dark:border-[var(--oc-border)] '
                       + 'dark:bg-[var(--oc-surface)]/[0.025] '
                       + 'dark:hover:bg-[var(--oc-surface)]/[0.05]'
@@ -1408,12 +1408,12 @@ export function AppNavigation({
               + 'dark:text-emerald-400'
             )
           : (
-              'text-slate-500 '
-              + 'hover:bg-slate-50 '
-              + 'hover:text-slate-900 '
-              + 'dark:text-slate-400 '
+              'text-[var(--oc-muted)] '
+              + 'hover:bg-[var(--oc-surface-muted)] '
+              + 'hover:text-[var(--oc-text)] '
+              + 'dark:text-[var(--oc-muted)] '
               + 'dark:hover:bg-[var(--oc-surface)]/[0.045] '
-              + 'dark:hover:text-slate-100'
+              + 'dark:hover:text-[var(--oc-text)]'
             ),
       ].join(' ')}
     >
@@ -1424,7 +1424,7 @@ export function AppNavigation({
                 'text-emerald-600 '
                 + 'dark:text-emerald-400'
               )
-            : 'text-slate-400'
+            : 'text-[var(--oc-muted)]'
         }
       >
         {icon}
@@ -1469,8 +1469,8 @@ function MobileNavigationItem({
               + 'dark:text-emerald-400'
             )
           : (
-              'text-slate-400 '
-              + 'dark:text-slate-500'
+              'text-[var(--oc-muted)] '
+              + 'dark:text-[var(--oc-muted)]'
             ),
       ].join(' ')}
     >
@@ -1527,13 +1527,13 @@ function MobileDrawerItem({
           'flex w-full items-center '
           + 'gap-3 px-3 py-3 '
           + 'text-left transition '
-          + 'hover:bg-slate-50 '
+          + 'hover:bg-[var(--oc-surface-muted)] '
           + 'dark:hover:bg-[var(--oc-surface)]/[0.04]'
         ),
         divider
           ? (
               'border-t '
-              + 'border-black/[0.055] '
+              + 'border-[var(--oc-border)] '
               + 'dark:border-white/[0.06]'
             )
           : '',
@@ -1565,8 +1565,8 @@ function MobileDrawerItem({
             block
             text-[11.5px]
             font-semibold
-            text-slate-800
-            dark:text-slate-100
+            text-[var(--oc-text)]
+            dark:text-[var(--oc-text)]
           "
         >
           {title}
@@ -1577,8 +1577,8 @@ function MobileDrawerItem({
             mt-0.5
             block
             text-[9px]
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-muted)]
+            dark:text-[var(--oc-muted)]
           "
         >
           {description}
@@ -1589,8 +1589,8 @@ function MobileDrawerItem({
         className="
           text-lg
           leading-none
-          text-slate-300
-          dark:text-slate-600
+          text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-muted-soft)]
         "
       >
         ›
@@ -1635,10 +1635,10 @@ function ThemeButton({
           : (
               'border-[var(--oc-border)] '
               + 'bg-[var(--oc-surface)] '
-              + 'text-slate-500 '
+              + 'text-[var(--oc-muted)] '
               + 'dark:border-[var(--oc-border)] '
               + 'dark:bg-[var(--oc-surface)]/[0.03] '
-              + 'dark:text-slate-400'
+              + 'dark:text-[var(--oc-muted)]'
             ),
       ].join(' ')}
     >
@@ -1685,11 +1685,11 @@ function Avatar({
           'flex shrink-0 '
           + 'items-center justify-center '
           + 'rounded-full '
-          + 'bg-slate-100 '
+          + 'bg-[var(--oc-surface-muted)] '
           + 'font-bold '
-          + 'text-slate-600 '
+          + 'text-[var(--oc-text-secondary)] '
           + 'dark:bg-[var(--oc-surface)]/[0.07] '
-          + 'dark:text-slate-300'
+          + 'dark:text-[var(--oc-text-secondary)]'
         ),
       ].join(' ')}
     >

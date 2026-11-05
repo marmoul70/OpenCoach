@@ -386,8 +386,7 @@ export function Dashboard({
                   h-8
                   w-px
                   shrink-0
-                  bg-slate-200
-                  dark:bg-white/[0.10]
+                  bg-[var(--oc-border-strong)]
                 "
               />
 
@@ -403,8 +402,7 @@ export function Dashboard({
                     text-[11px]
                     font-medium
                     leading-none
-                    text-slate-400
-                    dark:text-slate-500
+                    text-[var(--oc-muted-soft)]
                   "
                 >
                   Aujourd’hui
@@ -418,8 +416,7 @@ export function Dashboard({
                     font-semibold
                     leading-none
                     tracking-[-0.015em]
-                    text-slate-900
-                    dark:text-slate-100
+                    text-[var(--oc-text)]
                   "
                 >
                   {formatTodayShort()}
@@ -654,8 +651,7 @@ export function Dashboard({
                     text-lg
                     font-bold
                     tracking-[-0.025em]
-                    text-slate-950
-                    dark:text-white
+                    text-[var(--oc-text)]
                   "
                 >
                   Tes indicateurs
@@ -665,8 +661,7 @@ export function Dashboard({
                   className="
                     mt-1
                     text-sm
-                    text-slate-500
-                    dark:text-slate-400
+                    text-[var(--oc-muted)]
                   "
                 >
                   Les autres données utiles

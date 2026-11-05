@@ -241,8 +241,8 @@ export function TrainingSection({
                 block
                 text-[12px]
                 font-medium
-                text-slate-600
-                dark:text-slate-300
+                text-[var(--oc-text-secondary)]
+                dark:text-[var(--oc-muted-soft)]
               "
             >
               Niveau d'expérience
@@ -265,20 +265,20 @@ export function TrainingSection({
                 w-full
                 rounded-[10px]
                 border
-                border-slate-200
-                bg-white
+                border-[var(--oc-border)]
+                bg-[var(--oc-surface)]
                 px-3
                 text-sm
-                text-slate-800
+                text-[var(--oc-text-secondary)]
                 outline-none
                 transition
-                hover:border-slate-300
+                hover:border-[var(--oc-border-strong)]
                 focus:border-emerald-500
                 focus:ring-2
                 focus:ring-emerald-500/10
-                dark:border-white/[0.08]
-                dark:bg-[#141a1e]
-                dark:text-slate-100
+                dark:border-[var(--oc-border)]
+                dark:bg-[var(--oc-surface)]
+                dark:text-[var(--oc-text)]
                 dark:hover:border-white/[0.13]
               "
             >
@@ -292,11 +292,11 @@ export function TrainingSection({
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+          <p className="text-sm font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-text)]">
             Disciplines pratiquées
           </p>
 
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm text-[var(--oc-muted)] dark:text-[var(--oc-muted-soft)]">
             Sélectionnez toutes les disciplines que vous pratiquez.
             OpenCoach pourra adapter les séances et les tests proposés.
           </p>
@@ -335,12 +335,12 @@ export function TrainingSection({
                             + 'dark:bg-emerald-400/[0.06]'
                           )
                         : (
-                            'border-slate-200 '
-                            + 'bg-white '
-                            + 'hover:bg-slate-50 '
-                            + 'dark:border-white/[0.08] '
-                            + 'dark:bg-[#141a1e] '
-                            + 'dark:hover:bg-white/[0.03]'
+                            'border-[var(--oc-border)] '
+                            + 'bg-[var(--oc-surface)] '
+                            + 'hover:bg-[var(--oc-surface-muted)] '
+                            + 'dark:border-[var(--oc-border)] '
+                            + 'dark:bg-[var(--oc-surface)] '
+                            + 'dark:hover:bg-[var(--oc-surface-hover)]'
                           ),
                     ].join(' ')}
                   >
@@ -360,13 +360,13 @@ export function TrainingSection({
                     />
 
                     <span>
-                      <span className="block font-semibold text-slate-800 dark:text-slate-100">
+                      <span className="block font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-text)]">
                         {
                           discipline.label
                         }
                       </span>
 
-                      <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">
+                      <span className="mt-1 block text-sm text-[var(--oc-muted)] dark:text-[var(--oc-muted-soft)]">
                         {
                           discipline.description
                         }
@@ -381,7 +381,7 @@ export function TrainingSection({
 
 
         <div>
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+          <p className="text-sm font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-text)]">
             Jours disponibles
           </p>
 
@@ -415,14 +415,14 @@ export function TrainingSection({
                           + 'hover:bg-emerald-600'
                         )
                       : (
-                          'border-slate-200 '
-                          + 'bg-white '
-                          + 'text-slate-600 '
-                          + 'hover:bg-slate-50 '
-                          + 'dark:border-white/[0.08] '
-                          + 'dark:bg-[#141a1e] '
-                          + 'dark:text-slate-300 '
-                          + 'dark:hover:bg-white/[0.03]'
+                          'border-[var(--oc-border)] '
+                          + 'bg-[var(--oc-surface)] '
+                          + 'text-[var(--oc-text-secondary)] '
+                          + 'hover:bg-[var(--oc-surface-muted)] '
+                          + 'dark:border-[var(--oc-border)] '
+                          + 'dark:bg-[var(--oc-surface)] '
+                          + 'dark:text-[var(--oc-muted-soft)] '
+                          + 'dark:hover:bg-[var(--oc-surface-hover)]'
                         ),
                   ].join(' ')}
                 >
@@ -432,7 +432,7 @@ export function TrainingSection({
             })}
           </div>
 
-          <p className="mt-2 text-xs text-slate-400">
+          <p className="mt-2 text-xs text-[var(--oc-muted-soft)]">
             Sélectionnez les jours pendant lesquels vous pouvez
             habituellement vous entraîner.
           </p>
@@ -547,18 +547,18 @@ export function LocationSection({
           className="
             rounded-[12px]
             border
-            border-slate-200
-            bg-slate-50
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface-muted)]
             p-4
-            dark:border-white/[0.07]
-            dark:bg-white/[0.025]
+            dark:border-[var(--oc-border)]
+            dark:bg-[var(--oc-surface-muted)]
           "
         >
-          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+          <p className="text-sm font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-text)]">
             Utilisation
           </p>
 
-          <p className="mt-1 text-sm leading-6 text-slate-500">
+          <p className="mt-1 text-sm leading-6 text-[var(--oc-muted)]">
             Ces coordonnées seront utilisées par OpenCoach pour
             récupérer les données météo correspondant à votre lieu
             d'entraînement.
@@ -803,7 +803,7 @@ export function EquipmentSection({
             </EquipmentItemCard>
           ))}
 
-          <div className="grid gap-3 rounded-xl border border-dashed border-slate-200 p-4 sm:grid-cols-2">
+          <div className="grid gap-3 rounded-xl border border-dashed border-[var(--oc-border)] p-4 sm:grid-cols-2">
             <FormField
               label="Marque"
               value={newShoeBrand}
@@ -844,19 +844,19 @@ export function EquipmentSection({
                 h-10
                 rounded-[10px]
                 border
-                border-slate-200
-                bg-white
+                border-[var(--oc-border)]
+                bg-[var(--oc-surface)]
                 px-4
                 text-sm
                 font-semibold
-                text-slate-700
+                text-[var(--oc-text-secondary)]
                 transition
-                hover:bg-slate-50
+                hover:bg-[var(--oc-surface-muted)]
                 sm:col-span-2
-                dark:border-white/[0.08]
-                dark:bg-[#141a1e]
-                dark:text-slate-200
-                dark:hover:bg-white/[0.03]
+                dark:border-[var(--oc-border)]
+                dark:bg-[var(--oc-surface)]
+                dark:text-[var(--oc-muted-soft)]
+                dark:hover:bg-[var(--oc-surface-hover)]
               "
             >
               + Ajouter une chaussure
@@ -881,7 +881,7 @@ export function EquipmentSection({
             </EquipmentItemCard>
           ))}
 
-          <div className="grid gap-3 rounded-xl border border-dashed border-slate-200 p-4 sm:grid-cols-2">
+          <div className="grid gap-3 rounded-xl border border-dashed border-[var(--oc-border)] p-4 sm:grid-cols-2">
             <FormField
               label="Marque"
               value={newBikeBrand}
@@ -903,19 +903,19 @@ export function EquipmentSection({
                 h-10
                 rounded-[10px]
                 border
-                border-slate-200
-                bg-white
+                border-[var(--oc-border)]
+                bg-[var(--oc-surface)]
                 px-4
                 text-sm
                 font-semibold
-                text-slate-700
+                text-[var(--oc-text-secondary)]
                 transition
-                hover:bg-slate-50
+                hover:bg-[var(--oc-surface-muted)]
                 sm:col-span-2
-                dark:border-white/[0.08]
-                dark:bg-[#141a1e]
-                dark:text-slate-200
-                dark:hover:bg-white/[0.03]
+                dark:border-[var(--oc-border)]
+                dark:bg-[var(--oc-surface)]
+                dark:text-[var(--oc-muted-soft)]
+                dark:hover:bg-[var(--oc-surface-hover)]
               "
             >
               + Ajouter un vélo
@@ -940,7 +940,7 @@ export function EquipmentSection({
             </EquipmentItemCard>
           ))}
 
-          <div className="grid gap-3 rounded-xl border border-dashed border-slate-200 p-4 sm:grid-cols-2">
+          <div className="grid gap-3 rounded-xl border border-dashed border-[var(--oc-border)] p-4 sm:grid-cols-2">
             <FormField
               label="Marque"
               value={newWatchBrand}
@@ -962,19 +962,19 @@ export function EquipmentSection({
                 h-10
                 rounded-[10px]
                 border
-                border-slate-200
-                bg-white
+                border-[var(--oc-border)]
+                bg-[var(--oc-surface)]
                 px-4
                 text-sm
                 font-semibold
-                text-slate-700
+                text-[var(--oc-text-secondary)]
                 transition
-                hover:bg-slate-50
+                hover:bg-[var(--oc-surface-muted)]
                 sm:col-span-2
-                dark:border-white/[0.08]
-                dark:bg-[#141a1e]
-                dark:text-slate-200
-                dark:hover:bg-white/[0.03]
+                dark:border-[var(--oc-border)]
+                dark:bg-[var(--oc-surface)]
+                dark:text-[var(--oc-muted-soft)]
+                dark:hover:bg-[var(--oc-surface-hover)]
               "
             >
               + Ajouter une montre
@@ -1001,7 +1001,7 @@ function EquipmentGroup({
 }) {
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-slate-900">
+      <h3 className="text-sm font-semibold text-[var(--oc-text)]">
         {title}
       </h3>
 
@@ -1024,11 +1024,11 @@ function EquipmentItemCard({
         gap-4
         rounded-[12px]
         border
-        border-slate-200
-        bg-white
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
         p-4
-        dark:border-white/[0.08]
-        dark:bg-[#141a1e]
+        dark:border-[var(--oc-border)]
+        dark:bg-[var(--oc-surface)]
       "
     >
       {children}
@@ -1047,11 +1047,11 @@ function EquipmentInfo({
 }) {
   return (
     <div className="min-w-0">
-      <p className="truncate font-medium text-slate-800 dark:text-slate-100">
+      <p className="truncate font-medium text-[var(--oc-text-secondary)] dark:text-[var(--oc-text)]">
         {title}
       </p>
 
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      <p className="mt-1 text-sm text-[var(--oc-muted)] dark:text-[var(--oc-muted-soft)]">
         {details}
       </p>
 
@@ -1071,12 +1071,12 @@ function EquipmentInfo({
                 + 'dark:text-emerald-400'
               )
             : (
-                'border-slate-200 '
-                + 'bg-slate-100 '
-                + 'text-slate-500 '
-                + 'dark:border-white/[0.08] '
-                + 'dark:bg-white/[0.04] '
-                + 'dark:text-slate-400'
+                'border-[var(--oc-border)] '
+                + 'bg-[var(--oc-surface-muted)] '
+                + 'text-[var(--oc-muted)] '
+                + 'dark:border-[var(--oc-border)] '
+                + 'dark:bg-[var(--oc-surface-muted)] '
+                + 'dark:text-[var(--oc-muted-soft)]'
               ),
         ].join(' ')}
       >
@@ -1106,11 +1106,11 @@ function EquipmentActions({
           py-1.5
           text-[12px]
           font-medium
-          text-slate-600
+          text-[var(--oc-text-secondary)]
           transition
-          hover:bg-slate-100
-          dark:text-slate-300
-          dark:hover:bg-white/[0.05]
+          hover:bg-[var(--oc-surface-muted)]
+          dark:text-[var(--oc-muted-soft)]
+          dark:hover:bg-[var(--oc-surface-hover)]
         "
       >
         {active ? 'Désactiver' : 'Activer'}
@@ -1264,11 +1264,11 @@ export function NutritionSection({
           className="
             rounded-[12px]
             border
-            border-slate-200
-            bg-slate-50
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface-muted)]
             p-4
-            dark:border-white/[0.07]
-            dark:bg-white/[0.025]
+            dark:border-[var(--oc-border)]
+            dark:bg-[var(--oc-surface-muted)]
           "
         >
           <div>
@@ -1276,7 +1276,7 @@ export function NutritionSection({
               Utilisation par OpenCoach
             </p>
 
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-sm text-[var(--oc-muted)] dark:text-[var(--oc-muted-soft)]">
               Ces valeurs pourront être utilisées pour générer
               automatiquement les recommandations nutritionnelles
               pendant les sorties longues et les compétitions.
@@ -1307,21 +1307,21 @@ function NutritionInfo({
     <div className="
       rounded-[12px]
       border
-      border-slate-200
-      bg-slate-50
-      dark:border-white/[0.07]
-      dark:bg-white/[0.025]
+      border-[var(--oc-border)]
+      bg-[var(--oc-surface-muted)]
+      dark:border-[var(--oc-border)]
+      dark:bg-[var(--oc-surface-muted)]
     ">
       <div className="p-4">
-        <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+        <p className="text-sm font-medium text-[var(--oc-text-secondary)] dark:text-[var(--oc-muted-soft)]">
           {label}
         </p>
 
-        <p className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+        <p className="text-lg font-semibold text-[var(--oc-text-secondary)] dark:text-[var(--oc-text)]">
           {unit}
         </p>
 
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-[var(--oc-muted)] dark:text-[var(--oc-muted-soft)]">
           {description}
         </p>
       </div>

@@ -539,3 +539,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Migration limitée aux classes de présentation neutres du composant existant.
 - CI à confirmer sur les commits finaux.
 - Parcours interactif du calendrier et vérification visuelle clair/sombre à effectuer dans le navigateur.
+
+
+## 2026-11-05 — Sprint 22 : en-tête et synthèse du planning hebdomadaire
+
+### Livré
+- Navigation des semaines : surfaces, états de survol/activation, bordures et textes neutres alignés sur les tokens Pulse.
+- En-tête de phase : libellés, progression et séparateurs harmonisés en clair/sombre.
+- Synthèse hebdomadaire : fond de carte, bordures, séparateurs et métadonnées raccordés aux surfaces sémantiques.
+- Indicateurs de charge, séances, repos, renforcement et statistiques générales : typographie neutre harmonisée ; valeurs et accents fonctionnels conservés.
+
+### Garde-fous
+- Les dates, navigation entre semaines, métriques, valeurs, progression, calculs et statuts restent inchangés.
+- Aucun changement d'API, de logique métier, de stockage, de synchronisation ou de dépendance.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles
+- Migration limitée aux classes de présentation du composant existant.
+- Contrôle CI à confirmer sur le commit final.
+- Vérification visuelle responsive et clair/sombre à effectuer dans le navigateur.

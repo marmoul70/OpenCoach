@@ -292,3 +292,16 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôles
 - Vérifier les états actif, focus et survol ainsi que les contrastes sur iPhone et desktop, en thèmes clair et sombre.
 - Aucun changement de logique métier, d'API, de stockage ou de navigation.
+
+## 2026-11-05 — Sprint 9 : cohérence des widgets principaux et navigation
+
+### Livré
+- Carte « objectif principal » et résumé hebdomadaire : surfaces, bordures, ombres, états interactifs et informations secondaires alignés sur les tokens Pulse.
+- États de chargement des deux widgets raccordés aux surfaces et bordures sémantiques.
+- Navigation desktop, menu profil et tiroir mobile : neutralisation des dernières couleurs fixes gris/blanc au profit des tokens de surface, texte, bordure et survol.
+- Cahier des charges complété avec les contrats réellement utilisés pour Card, Button, PageHeader, WidgetCard, MetricCard et les surfaces interactives.
+- Les couleurs de statut et d'accent métier sont préservées ; aucune donnée ou règle de calcul n'a été modifiée.
+
+### À contrôler
+- Vérification visuelle réelle sur iPhone, tablette et desktop, avec thèmes clair/sombre/système.
+- Contrôle des états focus clavier, menu ouvert/fermé, tiroir mobile et zones tactiles.

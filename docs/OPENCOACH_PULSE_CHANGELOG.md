@@ -245,3 +245,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - La CI du sprint précédent avait réussi sur les changements Santé.
 - Les contrôles des nouveaux commits sont en cours ; ne pas considérer cette série comme validée tant que lint, build et tests complets ne sont pas verts.
 - Pas de merge, pas de déploiement VM.
+
+
+## 2026-11-05 — Sprint 6 : échelle typographique unifiée
+
+### Décision de design
+- Les pages doivent partager les mêmes tailles de texte par rôle, plutôt que définir chacune leur propre taille.
+- Les exceptions sont limitées aux données de performance qui nécessitent une emphase fonctionnelle (valeur principale d'un indicateur, score ou KPI).
+
+### Livré
+- Ajout de tokens typographiques sémantiques : titre de page, titre de section, titre de carte, texte courant, texte secondaire, libellé et légende.
+- Ajout de classes réutilisables `.oc-type-section-title`, `.oc-type-card-title`, `.oc-type-body`, `.oc-type-secondary`, `.oc-type-label` et `.oc-type-caption`.
+- Harmonisation des titres de page Coach, Profil sportif, Profil personnel et Météo sur la même classe `.oc-page-title`.
+- Alignement du titre et du sous-titre du Dashboard sur les mêmes tokens.
+- Harmonisation des fonds de page Profil sportif, Profil personnel et Météo avec les surfaces Pulse.
+
+### Contrôles et limites
+- Les changements portent sur la présentation uniquement ; aucune donnée, formule, API, navigation ou logique métier n'a été modifiée.
+- Les sous-sections internes de Coach, Dashboard, Planning et Météo restent à auditer pour appliquer les rôles typographiques aux libellés et descriptions sans écraser les tailles des KPI.
+- Validation visuelle multi-écrans et clair/sombre encore requise.

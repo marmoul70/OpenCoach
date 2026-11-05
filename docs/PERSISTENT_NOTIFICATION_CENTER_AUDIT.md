@@ -104,3 +104,35 @@ Toutes les opérations doivent inclure le filtre `user_id` côté SQL, y compris
 - Une notification enregistrée doit rester consultable même si le navigateur/iOS supprime sa notification système.
 - Toutes les dates persistées et renvoyées par l'API doivent être cohérentes en UTC.
 - Conserver les conventions de migrations et les tests existants du dépôt.
+
+
+## État de réalisation — 2026-11-05
+
+La première implémentation est présente sur la branche de fonctionnalité.
+
+### Backend livré sur la branche
+
+- Modèle `Notification` et migration Alembic `f6a91c2d4e80`, rattachée à la tête de migration actuelle `3b7d9a1c5e20`.
+- Repository SQL avec pagination, filtre non lues, compteur, lecture idempotente et suppressions limitées au propriétaire.
+- API `/api/notifications` protégée par l'utilisateur authentifié.
+- Persistance centralisée dans `PushNotificationService` pour les alertes système, sauvegardes, programmes hebdomadaires et rappels d'entraînement.
+- Les notifications système globales ciblent les comptes actifs, même sans appareil Push.
+- Le rapport de livraison distingue désormais la persistance interne (`persisted`) de l'envoi Push.
+- Le finaliseur de débrief hebdomadaire ne recrée plus un événement déjà conservé dans la boîte de réception en cas d'échec ou d'absence de Push.
+
+### Frontend livré sur la branche
+
+- Cloche avec badge du nombre de notifications non lues, actualisé périodiquement et après les actions de lecture/suppression.
+- Menu déroulant avec les dernières notifications.
+- Page `/notifications` avec filtres toutes / non lues, pagination, lecture individuelle, lecture globale, suppression individuelle et suppression globale avec confirmation.
+- Affichage responsive pour le menu mobile et la navigation desktop.
+
+### Tests ajoutés
+
+- `tests/test_notification_repository.py` : isolation par utilisateur, compteurs, lecture, pagination et suppression.
+- `tests/test_system_push_notifications.py` : persistance indépendante de la livraison Push et déduplication par utilisateur avec plusieurs appareils.
+- `tests/test_weekly_debrief_notification.py` : le workflow ne recrée pas une notification déjà persistée dans l'inbox.
+
+### Validation
+
+La CI GitHub Actions est déclenchée automatiquement sur la branche `feature/**`. Les résultats définitifs du dernier run doivent être vérifiés avant toute installation sur la VM. Aucun déploiement ni fusion dans `main` n'a été effectué.

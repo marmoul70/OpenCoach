@@ -6,9 +6,10 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from pywebpush import WebPushException, webpush
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from opencoach.database.models import PushSubscription
+from opencoach.database.models import PushSubscription, User
 from opencoach.database.repositories.sql_notification import (
     SqlNotificationRepository,
 )
@@ -32,8 +33,20 @@ class PushNotificationService:
     """Persiste les événements puis tente leur livraison Web Push."""
 
     def __init__(self, session: Session) -> None:
+        self.session = session
         self.repository = SqlPushSubscriptionRepository(session)
         self.notification_repository = SqlNotificationRepository(session)
+
+    def _active_user_ids(self, fallback: set[UUID]) -> set[UUID]:
+        # Les notifications système globales doivent aussi exister pour
+        # les comptes actifs qui n'ont pas encore enregistré d'appareil Push.
+        if not hasattr(self.session, "scalars"):
+            return fallback
+        return set(
+            self.session.scalars(
+                select(User.id).where(User.active.is_(True))
+            )
+        )
 
     def _persist_for_users(
         self,
@@ -65,7 +78,9 @@ class PushNotificationService:
     ) -> PushDeliveryReport:
         subscriptions = self.repository.list_all()
         self._persist_for_users(
-            user_ids={subscription.user_id for subscription in subscriptions},
+            user_ids=self._active_user_ids(
+                {subscription.user_id for subscription in subscriptions}
+            ),
             title=title,
             body=body,
             url=url,
@@ -118,7 +133,9 @@ class PushNotificationService:
     ) -> PushDeliveryReport:
         all_subscriptions = self.repository.list_all()
         self._persist_for_users(
-            user_ids={subscription.user_id for subscription in all_subscriptions},
+            user_ids=self._active_user_ids(
+                {subscription.user_id for subscription in all_subscriptions}
+            ),
             title=title,
             body=body,
             url=url,

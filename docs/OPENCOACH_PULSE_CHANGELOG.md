@@ -367,3 +367,21 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Audit statique des deux composants après migration : les classes neutres Tailwind restantes ont été remplacées par les variables sémantiques ; les accents fonctionnels sont conservés.
 - Les états de formulaire, import, chargement, erreur, vide et saisie restent à vérifier en navigateur en clair/sombre et sur mobile.
 - Build, lint et tests CI des derniers commits à confirmer avant validation technique.
+
+
+## 2026-11-05 — Sprint 13 : largeur des panneaux et cockpit de séance
+
+### Livré
+- SidePanel partagé : suppression du plafond desktop de 560 px ; à partir du breakpoint tablette, largeur minimale `max(36vw, 460px)`, sans maximum fixe. Le panneau dépasse donc le tiers de l'écran et gagne encore en largeur sur les grands écrans.
+- Mobile conservé en pleine largeur pour ne pas comprimer le contenu.
+- En-tête, bouton de fermeture et sections repliables alignés sur les tokens sémantiques Pulse.
+- Cockpit de détail de séance V3 : surfaces, bordures, textes neutres et séparateurs migrés vers les tokens clair/sombre. Les accents de charge, d'intensité, de réussite et d'alerte restent fonctionnels.
+
+### Garde-fous
+- Aucun changement aux données de séance, à la validation, aux appels API, au guidage, au débrief ou aux interactions de repli.
+- Aucun nouveau composant, aucune dépendance ajoutée, aucune modification VM, aucun merge ou déploiement.
+
+### Contrôles
+- Audit statique des règles de largeur et des principales couleurs neutres du cockpit.
+- Tests visuels tablette/desktop à effectuer aux largeurs 768, 1024, 1440 et 1920 px, puis contrôle mobile et thèmes clair/sombre.
+- CI à confirmer après les derniers commits.

@@ -143,9 +143,8 @@ export function Settings() {
   return (
     <main
       className="
+        oc-app-shell
         min-h-screen
-        bg-[#f5f7f6]
-        dark:bg-[#0b1014]
       "
     >
       <div

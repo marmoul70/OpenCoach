@@ -378,7 +378,7 @@ function Status({
         items-center
         gap-1
         rounded-full
-        bg-slate-50
+        bg-[var(--oc-surface-muted)]
         px-2
         py-1
         text-[10px]

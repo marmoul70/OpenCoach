@@ -1,0 +1,237 @@
+/*
+ * OpenCoach Pulse — design tokens
+ *
+ * Tokens sémantiques communs. Les composants consomment ces variables
+ * plutôt que de redéfinir leurs propres palettes.
+ * Les styles existants ne sont pas remplacés tant que les composants
+ * ne sont pas migrés sprint par sprint.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Brand */
+  --oc-brand-50: #ecfdf5;
+  --oc-brand-100: #d1fae5;
+  --oc-brand-500: #10b981;
+  --oc-brand-600: #059669;
+  --oc-brand-700: #047857;
+
+  /* Semantic status */
+  --oc-success: #15803d;
+  --oc-success-soft: #f0fdf4;
+  --oc-warning: #b45309;
+  --oc-warning-soft: #fffbeb;
+  --oc-danger: #b91c1c;
+  --oc-danger-soft: #fef2f2;
+  --oc-info: #0369a1;
+  --oc-info-soft: #f0f9ff;
+
+  /* Typography */
+  --oc-font-sans: Inter, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --oc-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --oc-text-xs: 0.75rem;
+  --oc-text-sm: 0.875rem;
+  --oc-text-base: 1rem;
+  --oc-text-lg: 1.125rem;
+  --oc-text-xl: 1.25rem;
+  --oc-text-2xl: 1.5rem;
+  /* Shared hierarchy: page / section / body / metadata / labels. */
+  --oc-type-page-title: clamp(1.5rem, 2.4vw, 1.875rem);
+  --oc-type-section-title: 1.125rem;
+  --oc-type-card-title: 1rem;
+  --oc-type-body: 0.8125rem;
+  --oc-type-secondary: 0.75rem;
+  --oc-type-label: 0.6875rem;
+  --oc-type-caption: 0.625rem;
+  --oc-leading-tight: 1.25;
+  --oc-leading-normal: 1.5;
+
+  /* Spacing scale (4px base) */
+  --oc-space-1: 0.25rem;
+  --oc-space-2: 0.5rem;
+  --oc-space-3: 0.75rem;
+  --oc-space-4: 1rem;
+  --oc-space-5: 1.25rem;
+  --oc-space-6: 1.5rem;
+  --oc-space-8: 2rem;
+  --oc-space-10: 2.5rem;
+  --oc-space-12: 3rem;
+
+  /* Shape and motion */
+  --oc-radius-control: 0.625rem;
+  --oc-radius-card: 1rem;
+  --oc-radius-panel: 1.25rem;
+  --oc-transition-fast: 160ms ease;
+  --oc-transition-standard: 220ms ease;
+
+  /* Subtle light surfaces */
+  --oc-page: #eef2f0;
+  --oc-surface: #ffffff;
+  --oc-surface-raised: #ffffff;
+  --oc-surface-muted: #f1f4f3;
+  --oc-surface-hover: #f7f9f8;
+  --oc-border: rgba(15, 23, 42, 0.105);
+  --oc-border-strong: rgba(15, 23, 42, 0.18);
+  --oc-text: #121a18;
+  --oc-text-secondary: #34423e;
+  --oc-muted: #66756f;
+  --oc-muted-soft: #94a19c;
+  --oc-accent: var(--oc-brand-600);
+  --oc-accent-hover: var(--oc-brand-700);
+  --oc-accent-soft: rgba(16, 185, 129, 0.09);
+  --oc-shadow-card: 0 3px 12px rgba(15, 23, 42, 0.065), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --oc-shadow-popover: 0 16px 36px rgba(15, 23, 42, 0.14), 0 3px 8px rgba(15, 23, 42, 0.06);
+
+  /* Chart palette */
+  --oc-chart-grid: rgba(100, 116, 139, 0.18);
+  --oc-chart-axis: #84918b;
+  --oc-chart-series-1: #059669;
+  --oc-chart-series-2: #0284c7;
+  --oc-chart-series-3: #d97706;
+  --oc-chart-series-4: #7c3aed;
+  --oc-chart-series-5: #db2777;
+}
+
+:root[data-theme="light"],
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --oc-page: #0b1014;
+  --oc-surface: #12191d;
+  --oc-surface-raised: #172025;
+  --oc-surface-muted: #1a2429;
+  --oc-surface-hover: #202b30;
+  --oc-border: rgba(255, 255, 255, 0.075);
+  --oc-border-strong: rgba(255, 255, 255, 0.13);
+  --oc-text: #edf3f1;
+  --oc-text-secondary: #c7d2ce;
+  --oc-muted: #91a19a;
+  --oc-muted-soft: #718079;
+  --oc-accent: #10b981;
+  --oc-accent-hover: #34d399;
+  --oc-accent-soft: rgba(16, 185, 129, 0.12);
+  --oc-success: #4ade80;
+  --oc-success-soft: rgba(34, 197, 94, 0.12);
+  --oc-warning: #fbbf24;
+  --oc-warning-soft: rgba(245, 158, 11, 0.12);
+  --oc-danger: #f87171;
+  --oc-danger-soft: rgba(239, 68, 68, 0.12);
+  --oc-info: #38bdf8;
+  --oc-info-soft: rgba(14, 165, 233, 0.12);
+  --oc-chart-grid: rgba(148, 163, 184, 0.17);
+  --oc-chart-axis: #8b9a94;
+  --oc-chart-series-1: #34d399;
+  --oc-chart-series-2: #38bdf8;
+  --oc-chart-series-3: #fbbf24;
+  --oc-chart-series-4: #a78bfa;
+  --oc-chart-series-5: #f472b6;
+  --oc-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --oc-shadow-popover: 0 16px 40px rgba(0, 0, 0, 0.32);
+}
+
+/* Alias class for components migrated to the shared surface contract. */
+.oc-surface {
+  color: var(--oc-text);
+  background: var(--oc-surface);
+  border: 1px solid var(--oc-border);
+  border-radius: var(--oc-radius-card);
+  box-shadow: var(--oc-shadow-card);
+}
+
+.oc-tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --oc-transition-fast: 0ms;
+    --oc-transition-standard: 0ms;
+  }
+}
+
+
+/* Interactive card surface shared by dashboard widgets and selectors. */
+.oc-interactive-surface {
+  transition:
+    transform var(--oc-transition-fast),
+    border-color var(--oc-transition-fast),
+    box-shadow var(--oc-transition-fast);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .oc-interactive-surface:hover {
+    transform: translateY(-2px);
+    border-color: var(--oc-border-strong);
+    box-shadow: var(--oc-shadow-popover);
+  }
+}
+
+.oc-interactive-surface:focus-visible {
+  outline: 2px solid var(--oc-accent);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oc-interactive-surface {
+    transition: none;
+  }
+
+  .oc-interactive-surface:hover {
+    transform: none;
+  }
+}
+
+
+/* Side panels use the same semantic surface without inheriting card geometry. */
+.oc-panel-surface {
+  color: var(--oc-text);
+  background: var(--oc-surface);
+  border-left: 1px solid var(--oc-border);
+  box-shadow: var(--oc-shadow-popover);
+}
+
+.oc-panel-header {
+  background: color-mix(in srgb, var(--oc-surface) 94%, transparent);
+  border-bottom: 1px solid var(--oc-border);
+  backdrop-filter: blur(16px);
+}
+
+
+/* Toast notifications share the semantic surface and status tokens. */
+.oc-toast {
+  color: var(--oc-text);
+  background: var(--oc-surface-raised);
+  border: 1px solid var(--oc-border);
+  border-radius: 0.875rem;
+  box-shadow: var(--oc-shadow-popover);
+}
+
+.oc-toast-title {
+  color: var(--oc-text);
+}
+
+.oc-toast-message {
+  color: var(--oc-muted);
+}
+
+.oc-toast-close {
+  color: var(--oc-muted);
+  transition: color var(--oc-transition-fast), background var(--oc-transition-fast);
+}
+
+.oc-toast-close:hover {
+  color: var(--oc-text);
+  background: var(--oc-surface-hover);
+}
+
+.oc-toast-close:focus-visible {
+  outline: 2px solid var(--oc-accent);
+  outline-offset: 2px;
+}

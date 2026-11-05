@@ -14,12 +14,23 @@ class WellnessDay:
     ramp_rate: float | None = None
 
     resting_hr: int | None = None
+    avg_hr: float | None = None
+    min_hr: float | None = None
+    max_hr: float | None = None
     hrv: float | None = None
+    hrv_baseline: float | None = None
+    stress_avg: float | None = None
 
     sleep_seconds: int | None = None
     sleep_score: float | None = None
     sleep_quality: int | None = None
+    sleep_deep_seconds: int | None = None
+    sleep_light_seconds: int | None = None
+    sleep_rem_seconds: int | None = None
+    sleep_awake_seconds: int | None = None
     avg_sleeping_hr: float | None = None
+    min_sleeping_hr: float | None = None
+    max_sleeping_hr: float | None = None
 
     spo2: float | None = None
     steps: int | None = None

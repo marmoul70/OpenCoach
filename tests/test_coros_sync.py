@@ -38,6 +38,9 @@ class FakeDb:
     def flush(self):
         pass
 
+    def refresh(self, row):
+        pass
+
     def commit(self):
         pass
 
@@ -63,12 +66,14 @@ def test_importer_stores_each_sleep_day_idempotently_by_upsert_key():
     assert result["start_date"] == "2025-12-02"
     assert result["end_date"] == "2026-06-02"
     assert result["imported_snapshots"]["sleep"] == 54
-    assert len(db.added) == 54
-    assert {row.metric_date for row in db.added} == {
+    from opencoach.database.models import CorosDailyData
+    snapshots = [row for row in db.added if isinstance(row, CorosDailyData)]
+    assert len(snapshots) == 54
+    assert {row.metric_date for row in snapshots} == {
         date(2026, 6, 1),
         date(2026, 6, 2),
     }
-    assert all(row.category == "sleep" for row in db.added)
+    assert all(row.category == "sleep" for row in snapshots)
     assert all(name == "querySleepOverview" for name, _ in client.calls)
 
 
@@ -615,3 +620,208 @@ def test_activity_snapshot_migrates_legacy_single_activity_payload():
             {"labelId": "new-1", "name": "Strength"},
         ]
     }
+
+
+
+def test_importer_normalizes_each_date_from_a_multiday_coros_sleep_report():
+    from opencoach.database.models import CorosDailyData, WellnessDaily
+
+    class MultiDaySleepClient(FakeClient):
+        def call_tool(self, name, arguments):
+            self.calls.append((name, arguments))
+            return {"content": [{
+                "type": "text",
+                "text": """Sleep Overview
+2026-06-01
+Sleep Score: 82
+Main Sleep (asleep): 7h 30min
+2026-06-02
+Sleep Score: 90
+Main Sleep (asleep): 8h 10min
+""",
+            }]}
+
+    db = FakeDb()
+    service = CorosImportService(
+        MultiDaySleepClient(),
+        db,
+        profile_id="00000000-0000-0000-0000-000000000001",
+    )
+    result = service.import_history(
+        {"activities": False, "sleep": True},
+        start_date=date(2026, 6, 2),
+        today=date(2026, 6, 2),
+    )
+
+    snapshots = [row for row in db.added if isinstance(row, CorosDailyData)]
+    wellness = [row for row in db.added if isinstance(row, WellnessDaily)]
+    assert result["imported_snapshots"]["sleep"] == 1
+    assert len(snapshots) == 1
+    assert {(row.date, row.sleep_seconds, row.sleep_score) for row in wellness} == {
+        (date(2026, 6, 1), 27_000, 82),
+        (date(2026, 6, 2), 29_400, 90),
+    }
+
+
+def test_hrv_import_persists_normalized_time_series_alongside_raw_report() -> None:
+    from opencoach.database.models import CorosDailyData
+
+    class HrvClient(FakeClient):
+        def list_tools(self):
+            return [{"name": "querySleepHrv"}]
+
+        def call_tool(self, name, arguments):
+            self.calls.append((name, arguments))
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": """Sleep HRV — Last 1 day
+2026-10-29:
+  HRV Avg: 46 ms — Normal
+  Normal Range: 35 - 49 ms
+  Baseline: 42 ms
+
+Sleep HRV Time Series — Last 1 day
+2026-10-29:
+  timestamp=1793228990, timezone=4, hrv=99 ms, status=4, confidence=95833
+  timestamp=1793229590, timezone=4, hrv=36 ms, status=4, confidence=100000
+2026-10-30:
+  timestamp=1793315690, timezone=4, hrv=37 ms, status=4, confidence=100000
+""",
+                }]
+            }
+
+    db = FakeDb()
+    service = CorosImportService(
+        HrvClient(),
+        db,
+        profile_id="00000000-0000-0000-0000-000000000001",
+    )
+
+    result = service.import_history(
+        {"activities": False, "hrv": True},
+        start_date=date(2026, 10, 29),
+        today=date(2026, 10, 30),
+    )
+
+    snapshots = [row for row in db.added if isinstance(row, CorosDailyData)]
+    raw_snapshot = next(row for row in snapshots if row.category == "hrv")
+    series_snapshots = [
+        row for row in snapshots if row.category == "hrv_timeseries"
+    ]
+
+    assert result["imported_snapshots"]["hrv"] == 1
+    assert raw_snapshot.payload["data"]["text"].startswith("Sleep HRV")
+    assert len(series_snapshots) == 2
+    samples_by_date = {
+        row.metric_date: row.payload["samples"]
+        for row in series_snapshots
+    }
+    assert set(samples_by_date) == {date(2026, 10, 29), date(2026, 10, 30)}
+    assert samples_by_date[date(2026, 10, 29)] == [
+        {
+            "metric": "sleep_hrv",
+            "measured_at": "2026-10-28T23:09:50+00:00",
+            "source_date": "2026-10-29",
+            "value": 99.0,
+            "unit": "ms",
+            "source_timezone": 4,
+            "status": 4,
+            "confidence": 95833,
+            "score": None,
+            "metadata": None,
+        },
+        {
+            "metric": "sleep_hrv",
+            "measured_at": "2026-10-28T23:19:50+00:00",
+            "source_date": "2026-10-29",
+            "value": 36.0,
+            "unit": "ms",
+            "source_timezone": 4,
+            "status": 4,
+            "confidence": 100000,
+            "score": None,
+            "metadata": None,
+        },
+    ]
+    assert samples_by_date[date(2026, 10, 30)][0]["source_date"] == "2026-10-30"
+    assert samples_by_date[date(2026, 10, 30)][0]["value"] == 37.0
+
+
+def test_stress_and_health_check_imports_persist_typed_time_series() -> None:
+    from opencoach.database.models import CorosDailyData
+
+    class TimeSeriesClient(FakeClient):
+        def list_tools(self):
+            return [
+                {"name": "queryStressTimeSeries"},
+                {"name": "queryHealthCheckTimeSeries"},
+            ]
+
+        def call_tool(self, name, arguments):
+            self.calls.append((name, arguments))
+            if name == "queryStressTimeSeries":
+                report = """Stress Time Series — 2026-11-02
+2026-11-02:
+  timestamp=1793636665, timezone=4, stress=22, score=1, stressHrv=0, stressHr=0
+  timestamp=1793636965, timezone=4, stress=68, score=3, stressHrv=0, stressHr=0
+"""
+            else:
+                report = """Health Check Time Series
+Date: 2026-11-02
+timestamp=1793636665, timezone=4, source=dailyRhmList, device=COROS PACE 4 Pro 44E703, dataSource=COROS PACE 4 Pro
+Heart Rate List: [1793636665=54 bpm]
+HRV List: [1793636665=59 ms]
+Stress List: [1793636665=19]
+Respiration Rate List: [1793636665=18/min]
+SpO2 List: [1793636665=98%]
+Stress Level: 1
+Resting Heart Rate: 47 bpm
+"""
+            return {"content": [{"type": "text", "text": report}]}
+
+    db = FakeDb()
+    service = CorosImportService(
+        TimeSeriesClient(),
+        db,
+        profile_id="00000000-0000-0000-0000-000000000001",
+    )
+
+    result = service.import_history(
+        {
+            "activities": False,
+            "stress_timeseries": True,
+            "health_check": True,
+        },
+        start_date=date(2026, 11, 2),
+        today=date(2026, 11, 2),
+    )
+
+    snapshots = [row for row in db.added if isinstance(row, CorosDailyData)]
+    stress = next(row for row in snapshots if row.category == "stress_points")
+    health = next(
+        row for row in snapshots if row.category == "health_check_points"
+    )
+
+    assert result["imported_snapshots"] == {
+        "stress_timeseries": 1,
+        "health_check": 1,
+    }
+    assert stress.payload["source_category"] == "stress_timeseries"
+    assert len(stress.payload["samples"]) == 2
+    assert stress.payload["samples"][0]["metric"] == "stress"
+    assert stress.payload["samples"][0]["value"] == 22
+    assert stress.payload["samples"][0]["score"] == 1
+    assert stress.payload["samples"][0]["source_date"] == "2026-11-02"
+
+    health_by_metric = {
+        sample["metric"]: sample for sample in health.payload["samples"]
+    }
+    assert health.payload["source_category"] == "health_check"
+    assert health_by_metric["heart_rate"]["value"] == 54
+    assert health_by_metric["heart_rate"]["source_date"] == "2026-11-02"
+    assert health_by_metric["hrv"]["value"] == 59
+    assert health_by_metric["stress"]["value"] == 19
+    assert health_by_metric["respiration_rate"]["value"] == 18
+    assert health_by_metric["spo2"]["value"] == 98
+    assert health_by_metric["resting_hr"]["value"] == 47

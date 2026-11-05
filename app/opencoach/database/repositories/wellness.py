@@ -21,6 +21,8 @@ class WellnessRepository(ABC):
     def get_latest(
         self,
         athlete_profile_id: UUID,
+        *,
+        provider: str | None = None,
     ) -> WellnessDay | None:
         """Retourne la dernière journée Wellness disponible."""
         raise NotImplementedError

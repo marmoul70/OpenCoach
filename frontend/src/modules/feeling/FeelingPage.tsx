@@ -7,14 +7,15 @@ import {
   FeelingWidgets,
 } from './FeelingWidgets'
 
+import { PageHeader } from '../../design-system/components/PageHeader'
+
 
 export function FeelingPage() {
   return (
     <main
       className="
+        oc-app-shell
         min-h-screen
-        bg-[#f5f7f6]
-        dark:bg-[#0b1014]
       "
     >
       <div
@@ -27,45 +28,11 @@ export function FeelingPage() {
           lg:py-5
         "
       >
-        <header className="mb-4">
-          <p
-            className="
-              text-[10px]
-              font-bold
-              uppercase
-              tracking-[0.13em]
-              text-emerald-600
-              dark:text-emerald-400
-            "
-          >
-            Check-in quotidien
-          </p>
-
-          <h1
-            className="
-              mt-1
-              text-[30px]
-              font-bold
-              tracking-[-0.04em]
-              text-slate-950
-              dark:text-white
-            "
-          >
-            Ressenti
-          </h1>
-
-          <p
-            className="
-              mt-1
-              text-[13px]
-              text-slate-400
-              dark:text-slate-500
-            "
-          >
-            Quelques secondes pour aider OpenCoach
-            à adapter intelligemment ta journée.
-          </p>
-        </header>
+        <PageHeader
+          eyebrow="Check-in quotidien"
+          title="Ressenti"
+          description="Quelques secondes pour aider OpenCoach à adapter intelligemment ta journée."
+        />
 
 
         <section
@@ -138,7 +105,7 @@ export function FeelingPage() {
 
                 <span
                   className="
-                    text-[9px]
+                    text-[var(--oc-type-label)]
                     font-bold
                     uppercase
                     tracking-[0.12em]
@@ -152,11 +119,10 @@ export function FeelingPage() {
               <h2
                 className="
                   mt-4
-                  text-[22px]
+                  text-[var(--oc-type-section-title)]
                   font-bold
                   tracking-[-0.03em]
                   text-white
-                  sm:text-[24px]
                 "
               >
                 Comment tu te sens aujourd’hui ?
@@ -166,9 +132,9 @@ export function FeelingPage() {
                 className="
                   mt-2
                   max-w-xl
-                  text-[12px]
+                  text-[var(--oc-type-body)]
                   leading-5
-                  text-white/45
+                  text-white/65
                 "
               >
                 Ton énergie, ton confort et ta disponibilité
@@ -186,8 +152,8 @@ export function FeelingPage() {
                   border-t
                   border-white/[0.07]
                   pt-3
-                  text-[10px]
-                  text-white/40
+                  text-[var(--oc-type-secondary)]
+                  text-white/60
                 "
               >
                 <ShieldCheck

@@ -38,11 +38,11 @@ const accentClasses:
   > = {
     neutral: {
       foreground:
-        'text-slate-500',
+        'text-[var(--oc-muted)]',
       background:
         (
-          'bg-slate-100 '
-          + 'dark:bg-white/[0.06]'
+          'bg-[var(--oc-surface-muted)] '
+          + 'dark:bg-[var(--oc-surface-muted)]'
         ),
     },
 
@@ -165,27 +165,15 @@ export function WidgetCard({
       type="button"
       onClick={onClick}
       className="
+        oc-surface
+        oc-interactive-surface
         group
         flex
         min-h-44
         w-full
         flex-col
-        rounded-2xl
-        border
-        border-black/[0.07]
-        bg-white
         p-5
         text-left
-        shadow-[0_1px_2px_rgba(15,23,42,0.025)]
-        transition
-        duration-200
-        hover:-translate-y-0.5
-        hover:shadow-[0_12px_35px_rgba(15,23,42,0.055)]
-        focus-visible:outline-none
-        focus-visible:ring-2
-        focus-visible:ring-emerald-500/40
-        dark:border-white/[0.08]
-        dark:bg-[#14181d]
       "
     >
       <div
@@ -232,11 +220,10 @@ export function WidgetCard({
       >
         <h3
           className="
-            text-base
+            oc-type-card-title
             font-bold
             tracking-[-0.02em]
-            text-slate-950
-            dark:text-white
+            text-[var(--oc-text)]
           "
         >
           {widget.title}
@@ -246,10 +233,9 @@ export function WidgetCard({
           <p
             className="
               mt-1.5
-              text-sm
+              oc-type-body
               leading-6
-              text-slate-500
-              dark:text-slate-400
+              text-[var(--oc-text-secondary)]
             "
           >
             {widget.description}
@@ -265,16 +251,16 @@ export function WidgetCard({
           items-center
           justify-between
           border-t
-          border-black/[0.06]
+          border-[var(--oc-border)]
           pt-4
           dark:border-white/[0.07]
         "
       >
         <span
           className="
-            text-[11px]
+            oc-type-caption
             font-medium
-            text-slate-400
+            text-[var(--oc-muted)]
           "
         >
           Détails
@@ -392,13 +378,13 @@ function Status({
         items-center
         gap-1
         rounded-full
-        bg-slate-50
+        bg-[var(--oc-surface-muted)]
         px-2
         py-1
         text-[10px]
         font-semibold
-        text-slate-400
-        dark:bg-white/[0.05]
+        text-[var(--oc-muted)]
+        dark:bg-[var(--oc-surface-muted)]
       "
     >
       <Info

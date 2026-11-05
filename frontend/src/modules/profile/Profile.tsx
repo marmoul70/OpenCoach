@@ -407,8 +407,8 @@ export function Profile() {
     <main
       className="
         min-h-screen
-        bg-[#f5f7f6]
-        dark:bg-[#0b1014]
+        bg-[var(--oc-page)]
+        dark:bg-[var(--oc-page)]
       "
     >
       <div
@@ -450,12 +450,7 @@ export function Profile() {
 
             <h1
               className="
-                mt-1
-                text-[24px]
-                font-bold
-                tracking-[-0.035em]
-                text-slate-950
-                dark:text-white
+                oc-page-title
               "
             >
               Profil sportif

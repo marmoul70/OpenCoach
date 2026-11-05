@@ -94,7 +94,7 @@ export function TrainingWeekDays({
               text-[17px]
               font-semibold
               tracking-[-0.02em]
-              text-slate-950
+              text-[var(--oc-text)]
               dark:text-white
             "
           >
@@ -105,8 +105,8 @@ export function TrainingWeekDays({
             className="
               mt-0.5
               text-[12px]
-              text-slate-400
-              dark:text-slate-500
+              text-[var(--oc-muted)]
+              dark:text-[var(--oc-muted)]
             "
           >
             Les autres séances du planning
@@ -201,9 +201,9 @@ function DayRow({
       className={[
         (
           'training-polish__day relative overflow-hidden rounded-[14px] '
-          + 'border bg-white '
+          + 'border bg-[var(--oc-surface)] '
           + 'shadow-[0_1px_2px_rgba(15,23,42,0.025)] '
-          + 'dark:bg-[#151b1f]'
+          + ''
         ),
         isToday
           ? (
@@ -211,8 +211,8 @@ function DayRow({
               + 'dark:border-emerald-500/20'
             )
           : (
-              'border-black/[0.07] '
-              + 'dark:border-white/[0.075]'
+              'border-[var(--oc-border)] '
+              + 'dark:border-[var(--oc-border)]'
             ),
       ].join(' ')}
     >
@@ -293,9 +293,9 @@ function DayRow({
             md:items-center
             md:justify-center
             md:border-l
-            md:border-black/[0.06]
+            md:border-[var(--oc-border)]
             md:pl-3
-            md:dark:border-white/[0.06]
+            md:dark:border-[var(--oc-border)]
           "
         >
           <button
@@ -364,8 +364,8 @@ function DayHeading({
             font-bold
             uppercase
             tracking-[0.08em]
-            text-slate-800
-            dark:text-slate-200
+            text-[var(--oc-text-secondary)]
+            dark:text-[var(--oc-text-secondary)]
           "
         >
           {label}
@@ -394,8 +394,8 @@ function DayHeading({
         className="
           mt-1
           text-[11.5px]
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-muted)]
+          dark:text-[var(--oc-muted)]
         "
       >
         {formatLongDate(
@@ -419,6 +419,7 @@ function RestSessionRow({
       type="button"
       onClick={onOpen}
       className="
+        training-polish__rest-session
         flex
         w-full
         items-center
@@ -426,18 +427,18 @@ function RestSessionRow({
         gap-3
         rounded-[10px]
         border
-        border-slate-200/70
-        bg-slate-50
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface-muted)]
         px-3
         py-2.5
         text-left
         transition
-        hover:border-slate-300
-        hover:bg-slate-100
-        dark:border-white/[0.055]
-        dark:bg-white/[0.025]
-        dark:hover:border-white/[0.08]
-        dark:hover:bg-white/[0.04]
+        hover:border-[var(--oc-border-strong)]
+        hover:bg-[var(--oc-surface-muted)]
+        dark:border-[var(--oc-border)]
+        dark:bg-[var(--oc-surface)]/[0.025]
+        dark:hover:border-[var(--oc-border-strong)]
+        dark:hover:bg-[var(--oc-surface)]/[0.04]
       "
     >
       <div className="min-w-0">
@@ -453,8 +454,8 @@ function RestSessionRow({
             className="
               text-[13.5px]
               font-semibold
-              text-slate-700
-              dark:text-slate-300
+              text-[var(--oc-text-secondary)]
+              dark:text-[var(--oc-muted-soft)]
             "
           >
             Repos
@@ -463,14 +464,14 @@ function RestSessionRow({
           <span
             className="
               rounded-full
-              bg-slate-200/70
+              bg-[var(--oc-border-strong)]
               px-1.5
               py-0.5
               text-[10px]
               font-semibold
-              text-slate-500
-              dark:bg-white/[0.05]
-              dark:text-slate-500
+              text-[var(--oc-muted)]
+              dark:bg-[var(--oc-surface)]/[0.05]
+              dark:text-[var(--oc-muted)]
             "
           >
             OpenCoach
@@ -481,8 +482,8 @@ function RestSessionRow({
           className="
             mt-0.5
             text-[11.5px]
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-muted)]
+            dark:text-[var(--oc-muted)]
           "
         >
           Récupération recommandée
@@ -503,23 +504,24 @@ function EmptyDay() {
   return (
     <div
       className="
+        training-polish__empty-day
         rounded-[10px]
         border
         border-dashed
-        border-slate-200
-        bg-slate-50/60
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface-muted)]
         px-3
         py-2.5
-        dark:border-white/[0.055]
-        dark:bg-white/[0.018]
+        dark:border-[var(--oc-border)]
+        dark:bg-[var(--oc-surface)]/[0.018]
       "
     >
       <p
         className="
           text-[13px]
           font-medium
-          text-slate-500
-          dark:text-slate-400
+          text-[var(--oc-muted)]
+          dark:text-[var(--oc-muted)]
         "
       >
         Repos
@@ -529,8 +531,8 @@ function EmptyDay() {
         className="
           mt-0.5
           text-[11.5px]
-          text-slate-400
-          dark:text-slate-600
+          text-[var(--oc-muted)]
+          dark:text-[var(--oc-muted-soft)]
         "
       >
         Aucune séance prévue
@@ -566,7 +568,7 @@ function SessionRow({
           session,
         ),
         (
-          'flex w-full flex-col gap-2.5 '
+          'training-polish__session flex w-full flex-col gap-2.5 '
           + 'rounded-[10px] border '
           + 'px-3 py-2.5 text-left '
           + 'transition '
@@ -576,7 +578,8 @@ function SessionRow({
 
         session.status === 'completed'
           ? (
-              'border-emerald-500/15 '
+              'training-polish__session--completed '
+              + 'border-emerald-500/15 '
               + 'bg-emerald-50/60 '
               + 'hover:bg-emerald-50 '
               + 'dark:bg-emerald-500/[0.045] '
@@ -586,7 +589,8 @@ function SessionRow({
 
         session.status === 'skipped'
           ? (
-              'border-red-500/12 '
+              'training-polish__session--skipped '
+              + 'border-red-500/12 '
               + 'bg-red-50/50 '
               + 'hover:bg-red-50 '
               + 'dark:bg-red-500/[0.035] '
@@ -599,14 +603,15 @@ function SessionRow({
           && session.status !== 'skipped'
         )
           ? (
-              'border-black/[0.065] '
-              + 'bg-white '
-              + 'hover:border-black/[0.10] '
-              + 'hover:bg-slate-50 '
-              + 'dark:border-white/[0.065] '
-              + 'dark:bg-white/[0.02] '
-              + 'dark:hover:border-white/[0.09] '
-              + 'dark:hover:bg-white/[0.035]'
+              'training-polish__session--planned '
+              + 'border-[var(--oc-border)] '
+              + 'bg-[var(--oc-surface)] '
+              + 'hover:border-[var(--oc-border-strong)] '
+              + 'hover:bg-[var(--oc-surface-muted)] '
+              + 'dark:border-[var(--oc-border)] '
+              + 'dark:bg-[var(--oc-surface)]/[0.02] '
+              + 'dark:hover:border-[var(--oc-border-strong)] '
+              + 'dark:hover:bg-[var(--oc-surface)]/[0.035]'
             )
           : '',
       ].join(' ')}
@@ -630,8 +635,8 @@ function SessionRow({
               truncate
               text-[13.5px]
               font-semibold
-              text-slate-900
-              dark:text-slate-100
+              text-[var(--oc-text)]
+              dark:text-[var(--oc-text)]
             "
           >
             {session.title}
@@ -648,14 +653,14 @@ function SessionRow({
               className="
                 rounded-full
                 border
-                border-slate-200
+                border-[var(--oc-border)]
                 px-1.5
                 py-0.5
                 text-[10px]
                 font-semibold
-                text-slate-500
-                dark:border-white/[0.07]
-                dark:text-slate-500
+                text-[var(--oc-muted)]
+                dark:border-[var(--oc-border)]
+                dark:text-[var(--oc-muted)]
               "
             >
               Supplémentaire
@@ -667,8 +672,8 @@ function SessionRow({
           className="
             mt-0.5
             text-[11.5px]
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-muted)]
+            dark:text-[var(--oc-muted)]
           "
         >
           {formatSportType(
@@ -733,8 +738,8 @@ function SessionRow({
           gap-x-2
           gap-y-1
           text-[11px]
-          text-slate-500
-          dark:text-slate-400
+          text-[var(--oc-muted)]
+          dark:text-[var(--oc-muted)]
           sm:justify-end
         "
       >
@@ -847,8 +852,8 @@ function sessionVisualClass(
 
   return (
     'border-l-[3px] '
-    + 'border-l-slate-300/80 '
-    + 'dark:border-l-slate-600'
+    + 'border-l-[var(--oc-border-strong)] '
+    + ''
   )
 }
 
@@ -864,6 +869,7 @@ function SessionStatusLabel({
     return (
       <span
         className="
+          training-polish__status training-polish__status--completed
           inline-flex
           items-center
           gap-1
@@ -897,6 +903,7 @@ function SessionStatusLabel({
     return (
       <span
         className="
+          training-polish__status training-polish__status--skipped
           inline-flex
           items-center
           gap-1
@@ -927,6 +934,7 @@ function SessionStatusLabel({
   return (
     <span
       className="
+        training-polish__status training-polish__status--planned
         inline-flex
         items-center
         gap-1
@@ -962,15 +970,16 @@ function MetricPill({
   return (
     <span
       className="
+        training-polish__metric
         rounded-[7px]
-        bg-slate-100
+        bg-[var(--oc-surface-muted)]
         px-2
         py-1
         text-[11px]
         font-medium
-        text-slate-500
-        dark:bg-white/[0.045]
-        dark:text-slate-400
+        text-[var(--oc-muted)]
+        dark:bg-[var(--oc-surface)]/[0.045]
+        dark:text-[var(--oc-muted)]
       "
     >
       {value}

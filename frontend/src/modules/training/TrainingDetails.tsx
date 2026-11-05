@@ -962,6 +962,7 @@ function SessionSummary({
         grid
         grid-cols-2
         overflow-hidden
+        training-session-summary
         rounded-[12px]
         border
         border-black/[0.065]
@@ -1055,7 +1056,8 @@ function SessionMetric({
     <div
       className={[
         (
-          'flex min-h-[58px] flex-col '
+          'training-session-metric '
+          + 'flex min-h-[58px] flex-col '
           + 'items-center justify-center '
           + 'px-2.5 py-2 text-center'
         ),
@@ -1075,6 +1077,7 @@ function SessionMetric({
     >
       <p
         className="
+          training-session-metric__value
           text-[14px]
           font-semibold
           leading-tight
@@ -1087,6 +1090,7 @@ function SessionMetric({
 
       <p
         className="
+          training-session-metric__label
           mt-0.5
           text-[9px]
           font-semibold
@@ -2168,6 +2172,7 @@ function DebriefSection({
   return (
     <div
       className="
+        workout-debrief-card
         space-y-3
       "
     >

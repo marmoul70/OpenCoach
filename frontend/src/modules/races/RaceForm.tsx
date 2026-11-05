@@ -259,19 +259,19 @@ export function RaceForm({
                   w-full
                   rounded-[9px]
                   border
-                  border-black/[0.08]
-                  bg-slate-50
+                  border-[var(--oc-border)]
+                  bg-[var(--oc-surface-muted)]
                   px-3
                   text-[12px]
                   font-medium
-                  text-slate-700
+                  text-[var(--oc-text-secondary)]
                   outline-none
                   transition
                   focus:border-emerald-500/35
-                  focus:bg-white
+                  focus:bg-[var(--oc-surface)]
                   dark:border-white/[0.08]
-                  dark:bg-white/[0.025]
-                  dark:text-slate-200
+                  dark:bg-[var(--oc-surface-muted)]
+                  dark:text-[var(--oc-text-secondary)]
                 "
                 required
               />
@@ -312,19 +312,19 @@ export function RaceForm({
                   w-full
                   rounded-[9px]
                   border
-                  border-black/[0.08]
-                  bg-slate-50
+                  border-[var(--oc-border)]
+                  bg-[var(--oc-surface-muted)]
                   px-3
                   text-[12px]
                   font-medium
-                  text-slate-700
+                  text-[var(--oc-text-secondary)]
                   outline-none
                   transition
                   focus:border-emerald-500/35
-                  focus:bg-white
+                  focus:bg-[var(--oc-surface)]
                   dark:border-white/[0.08]
-                  dark:bg-white/[0.025]
-                  dark:text-slate-200
+                  dark:bg-[var(--oc-surface-muted)]
+                  dark:text-[var(--oc-text-secondary)]
                 "
               >
                 <option value="trail">
@@ -494,8 +494,8 @@ export function RaceForm({
                   items-center
                   gap-1.5
                   text-[9.5px]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-muted-soft)]
+                  dark:text-[var(--oc-muted-soft)]
                 "
               >
                 <Sparkles
@@ -525,7 +525,7 @@ export function RaceForm({
             justify-end
             gap-2
             border-t
-            border-black/[0.055]
+            border-[var(--oc-border)]
             pt-3
             dark:border-white/[0.055]
           "
@@ -542,13 +542,13 @@ export function RaceForm({
               px-3
               text-[10.5px]
               font-semibold
-              text-slate-400
+              text-[var(--oc-muted-soft)]
               transition
-              hover:bg-slate-50
-              hover:text-slate-700
+              hover:bg-[var(--oc-surface-muted)]
+              hover:text-[var(--oc-text-secondary)]
               disabled:opacity-40
-              dark:hover:bg-white/[0.035]
-              dark:hover:text-slate-200
+              dark:hover:bg-[var(--oc-surface-hover)]
+              dark:hover:text-[var(--oc-text-secondary)]
             "
           >
             Annuler
@@ -625,8 +625,8 @@ function FormSection({
       className="
         rounded-[12px]
         border
-        border-black/[0.065]
-        bg-white
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
         p-4
         dark:border-white/[0.065]
         dark:bg-[#151b1f]
@@ -639,8 +639,8 @@ function FormSection({
             font-bold
             uppercase
             tracking-[0.10em]
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-muted-soft)]
+            dark:text-[var(--oc-muted-soft)]
           "
         >
           {eyebrow}
@@ -651,8 +651,8 @@ function FormSection({
             mt-0.5
             text-[13px]
             font-semibold
-            text-slate-800
-            dark:text-slate-200
+            text-[var(--oc-text-secondary)]
+            dark:text-[var(--oc-text-secondary)]
           "
         >
           {title}
@@ -705,8 +705,8 @@ function Field({
           font-semibold
           uppercase
           tracking-[0.055em]
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-muted-soft)]
         "
       >
         <Icon
@@ -769,20 +769,20 @@ function TextInput({
         w-full
         rounded-[9px]
         border
-        border-black/[0.08]
-        bg-slate-50
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface-muted)]
         px-3
         text-[12px]
         font-medium
-        text-slate-700
+        text-[var(--oc-text-secondary)]
         outline-none
         transition
-        placeholder:text-slate-300
+        placeholder:text-[var(--oc-muted-soft)]
         focus:border-emerald-500/35
-        focus:bg-white
+        focus:bg-[var(--oc-surface)]
         dark:border-white/[0.08]
-        dark:bg-white/[0.025]
-        dark:text-slate-200
+        dark:bg-[var(--oc-surface-muted)]
+        dark:text-[var(--oc-text-secondary)]
       "
     />
   )
@@ -822,13 +822,13 @@ function UnitInput({
         overflow-hidden
         rounded-[9px]
         border
-        border-black/[0.08]
-        bg-slate-50
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface-muted)]
         transition
         focus-within:border-emerald-500/35
-        focus-within:bg-white
+        focus-within:bg-[var(--oc-surface)]
         dark:border-white/[0.08]
-        dark:bg-white/[0.025]
+        dark:bg-[var(--oc-surface-muted)]
       "
     >
       <input
@@ -851,10 +851,10 @@ function UnitInput({
           px-3
           text-[12px]
           font-medium
-          text-slate-700
+          text-[var(--oc-text-secondary)]
           outline-none
-          placeholder:text-slate-300
-          dark:text-slate-200
+          placeholder:text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-text-secondary)]
         "
       />
 
@@ -863,13 +863,13 @@ function UnitInput({
           flex
           items-center
           border-l
-          border-black/[0.06]
+          border-[var(--oc-border)]
           px-3
           text-[10px]
           font-semibold
-          text-slate-400
+          text-[var(--oc-muted-soft)]
           dark:border-white/[0.06]
-          dark:text-slate-500
+          dark:text-[var(--oc-muted-soft)]
         "
       >
         {unit}
@@ -916,11 +916,11 @@ function PriorityCard({
               + 'shadow-[inset_0_0_0_1px_rgba(16,185,129,0.06)]'
             )
           : (
-              'border-black/[0.065] '
-              + 'bg-slate-50/60 '
-              + 'hover:border-black/[0.11] '
+              'border-[var(--oc-border)] '
+              + 'bg-[var(--oc-surface-muted)] '
+              + 'hover:border-[var(--oc-border)] '
               + 'dark:border-white/[0.065] '
-              + 'dark:bg-white/[0.018] '
+              + 'dark:bg-[var(--oc-surface-muted)] '
               + 'dark:hover:border-white/[0.11]'
             ),
       ].join(' ')}
@@ -947,9 +947,9 @@ function PriorityCard({
                   + 'dark:text-emerald-400'
                 )
               : (
-                  'bg-slate-100 '
-                  + 'text-slate-400 '
-                  + 'dark:bg-white/[0.04]'
+                  'bg-[var(--oc-surface-muted)] '
+                  + 'text-[var(--oc-muted-soft)] '
+                  + 'dark:bg-[var(--oc-surface-muted)]'
                 ),
           ].join(' ')}
         >
@@ -973,9 +973,9 @@ function PriorityCard({
                   + 'dark:text-emerald-400'
                 )
               : (
-                  'bg-slate-100 '
-                  + 'text-slate-400 '
-                  + 'dark:bg-white/[0.04]'
+                  'bg-[var(--oc-surface-muted)] '
+                  + 'text-[var(--oc-muted-soft)] '
+                  + 'dark:bg-[var(--oc-surface-muted)]'
                 ),
           ].join(' ')}
         >
@@ -988,8 +988,8 @@ function PriorityCard({
           mt-3
           text-[12px]
           font-semibold
-          text-slate-800
-          dark:text-slate-200
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-text-secondary)]
         "
       >
         {title}
@@ -1000,8 +1000,8 @@ function PriorityCard({
           mt-1
           text-[10px]
           leading-[1.6]
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-muted-soft)]
         "
       >
         {description}

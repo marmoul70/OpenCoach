@@ -61,6 +61,52 @@ interface CoachTodayApiResponse {
     }
   }>
 
+  recovery: {
+    date: string
+    provider: string
+    source_date: string | null
+    data_age_days: number | null
+    data_status: 'fresh' | 'stale' | 'unavailable'
+    windows: Array<{
+      days: number
+      start_date: string
+      end_date: string
+      recorded_days: number
+      coverage_ratio: number
+      metrics: Record<string, {
+        current: number | null
+        average: number | null
+        median: number | null
+        sample_count: number
+        coverage_days: number
+        expected_days: number
+      }>
+    }>
+    time_series: Array<{
+      metric: string
+      unit: string | null
+      current: number
+      average: number
+      median: number
+      minimum: number
+      maximum: number
+      sample_count: number
+      coverage_days: number
+      first_measured_at: string
+      last_measured_at: string
+      statuses: string[]
+      source_categories: string[]
+    }>
+    subjective: {
+      date: string
+      fatigue: number
+      pain: number
+      illness_status: string
+      treatment_impact: string
+      motivation: number
+    } | null
+  }
+
   readiness: {
     score: number
     level: string
@@ -370,6 +416,59 @@ Promise<CoachToday> {
           },
         }),
       ),
+
+    recovery: {
+      date: data.recovery.date,
+      provider: data.recovery.provider,
+      sourceDate: data.recovery.source_date,
+      dataAgeDays: data.recovery.data_age_days,
+      dataStatus: data.recovery.data_status,
+      windows: data.recovery.windows.map((window) => ({
+        days: window.days,
+        startDate: window.start_date,
+        endDate: window.end_date,
+        recordedDays: window.recorded_days,
+        coverageRatio: window.coverage_ratio,
+        metrics: Object.fromEntries(
+          Object.entries(window.metrics).map(([name, metric]) => [
+            name,
+            {
+              current: metric.current,
+              average: metric.average,
+              median: metric.median,
+              sampleCount: metric.sample_count,
+              coverageDays: metric.coverage_days,
+              expectedDays: metric.expected_days,
+            },
+          ]),
+        ),
+      })),
+      timeSeries: data.recovery.time_series.map((metric) => ({
+        metric: metric.metric,
+        unit: metric.unit,
+        current: metric.current,
+        average: metric.average,
+        median: metric.median,
+        minimum: metric.minimum,
+        maximum: metric.maximum,
+        sampleCount: metric.sample_count,
+        coverageDays: metric.coverage_days,
+        firstMeasuredAt: metric.first_measured_at,
+        lastMeasuredAt: metric.last_measured_at,
+        statuses: metric.statuses,
+        sourceCategories: metric.source_categories,
+      })),
+      subjective: data.recovery.subjective
+        ? {
+            date: data.recovery.subjective.date,
+            fatigue: data.recovery.subjective.fatigue,
+            pain: data.recovery.subjective.pain,
+            illnessStatus: data.recovery.subjective.illness_status,
+            treatmentImpact: data.recovery.subjective.treatment_impact,
+            motivation: data.recovery.subjective.motivation,
+          }
+        : null,
+    },
 
     readiness: {
       score:

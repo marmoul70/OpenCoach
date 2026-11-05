@@ -80,3 +80,43 @@ def test_completed_initial_import_preserves_activity_checkpoint_marker():
         checkpoint,
         initial_import_completed=True,
     ) == checkpoint
+
+
+def test_initial_import_without_activities_remains_retryable():
+    from opencoach.services.coros_sync_job import should_advance_last_synced_at
+
+    assert should_advance_last_synced_at(
+        activities_enabled=True,
+        imported_activities=0,
+        initial_import_completed=False,
+    ) is False
+
+
+def test_incremental_sync_without_new_activities_advances_timestamp():
+    from opencoach.services.coros_sync_job import should_advance_last_synced_at
+
+    assert should_advance_last_synced_at(
+        activities_enabled=True,
+        imported_activities=0,
+        initial_import_completed=True,
+    ) is True
+
+
+def test_sync_with_new_activities_advances_timestamp():
+    from opencoach.services.coros_sync_job import should_advance_last_synced_at
+
+    assert should_advance_last_synced_at(
+        activities_enabled=True,
+        imported_activities=2,
+        initial_import_completed=False,
+    ) is True
+
+
+def test_sync_without_activity_category_advances_timestamp():
+    from opencoach.services.coros_sync_job import should_advance_last_synced_at
+
+    assert should_advance_last_synced_at(
+        activities_enabled=False,
+        imported_activities=0,
+        initial_import_completed=False,
+    ) is True

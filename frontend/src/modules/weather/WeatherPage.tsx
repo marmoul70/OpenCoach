@@ -279,13 +279,13 @@ function WeatherPageShell({
     <main
       className="
         min-h-screen
-        bg-slate-50
+        bg-[var(--oc-page)]
         px-4
         py-5
         sm:px-6
         lg:px-8
         lg:py-7
-        dark:bg-[#0f1417]
+        dark:bg-[var(--oc-page)]
       "
     >
       <div
@@ -391,13 +391,7 @@ function WeatherContent({
 
           <h1
             className="
-              mt-1
-              text-[23px]
-              font-semibold
-              tracking-[-0.035em]
-              text-slate-900
-              sm:text-[26px]
-              dark:text-white
+              oc-page-title
             "
           >
             Météo

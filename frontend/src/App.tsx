@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 
 import {
   useToast,
@@ -17,18 +17,25 @@ import {
   useAthleteProfile,
 } from './core/profile'
 
-import { Dashboard } from './modules/dashboard/Dashboard'
-import { CoachPage } from './modules/coach/CoachPage'
-import { Profile } from './modules/profile/Profile'
-import { PersonalProfile } from './modules/profile/PersonalProfile'
-import { TrainingWeek } from './modules/training/TrainingWeek'
 import { TrainingProvider } from './modules/training/trainingStore'
-import { RacePage } from './modules/races/RacePage'
 import { RaceProvider } from './modules/races/raceStore'
-import { ActivityPage } from './modules/activities/ActivityPage'
-import { FeelingPage } from './modules/feeling/FeelingPage'
-import { Settings } from './modules/settings'
 import { logout as logoutOpenCoach } from './modules/auth'
+
+/**
+ * Les pages sont chargées à la demande : le premier écran ne télécharge
+ * pas les modules non visités (activités, météo, santé, réglages, etc.).
+ */
+const Dashboard = lazy(() => import('./modules/dashboard/Dashboard').then(module => ({ default: module.Dashboard })))
+const CoachPage = lazy(() => import('./modules/coach/CoachPage').then(module => ({ default: module.CoachPage })))
+const Profile = lazy(() => import('./modules/profile/Profile').then(module => ({ default: module.Profile })))
+const PersonalProfile = lazy(() => import('./modules/profile/PersonalProfile').then(module => ({ default: module.PersonalProfile })))
+const TrainingWeek = lazy(() => import('./modules/training/TrainingWeek').then(module => ({ default: module.TrainingWeek })))
+const RacePage = lazy(() => import('./modules/races/RacePage').then(module => ({ default: module.RacePage })))
+const ActivityPage = lazy(() => import('./modules/activities/ActivityPage').then(module => ({ default: module.ActivityPage })))
+const FeelingPage = lazy(() => import('./modules/feeling/FeelingPage').then(module => ({ default: module.FeelingPage })))
+const Settings = lazy(() => import('./modules/settings').then(module => ({ default: module.Settings })))
+const WeatherPage = lazy(() => import('./modules/weather/WeatherPage').then(module => ({ default: module.WeatherPage })))
+const HealthPage = lazy(() => import('./modules/health/HealthPage').then(module => ({ default: module.HealthPage })))
 
 type Page =
   | 'dashboard'
@@ -41,6 +48,7 @@ type Page =
   | 'races'
   | 'activities'
   | 'weather'
+  | 'health'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -51,7 +59,6 @@ interface BuildInfo {
   built_at: string
 }
 
-import { WeatherPage } from './modules/weather/WeatherPage'
 
 function App() {
   const {
@@ -63,6 +70,12 @@ function App() {
       new URL(
         window.location.href,
       )
+
+    if (
+      url.pathname === '/health'
+    ) {
+      return 'health'
+    }
 
     if (
       url.pathname === '/weather'
@@ -90,6 +103,19 @@ function App() {
       )
 
     if (
+      page === 'health'
+      && url.pathname !== '/health'
+    ) {
+      window.history.replaceState(
+        null,
+        '',
+        '/health',
+      )
+
+      return
+    }
+
+    if (
       page === 'weather'
       && url.pathname !== '/weather'
     ) {
@@ -97,6 +123,19 @@ function App() {
         null,
         '',
         '/weather',
+      )
+
+      return
+    }
+
+    if (
+      page !== 'health'
+      && url.pathname === '/health'
+    ) {
+      window.history.replaceState(
+        null,
+        '',
+        '/',
       )
 
       return
@@ -461,25 +500,27 @@ function App() {
           />
 
 
-          {page === 'dashboard' && (
-            <Dashboard
-              onOpenTraining={() => setPage('training')}
-              onOpenCoach={() => setPage('coach')}
-              onOpenFeeling={() => setPage('feeling')}
-              onOpenRaces={() => setPage('races')}
-              onOpenWeather={() => setPage('weather')}
-            />
-          )}
-
-          {page === 'coach' && <CoachPage />}
-          {page === 'training' && <TrainingWeek />}
-          {page === 'feeling' && <FeelingPage />}
-          {page === 'activities' && <ActivityPage />}
-          {page === 'races' && <RacePage />}
-          {page === 'weather' && <WeatherPage />}
-          {page === 'profile-personal' && <PersonalProfile />}
-          {page === 'profile-sport' && <Profile />}
-          {page === 'settings' && <Settings />}
+          <Suspense fallback={<OpenCoachLoadingScreen message="Chargement de la page…" />}>
+            {page === 'dashboard' && (
+              <Dashboard
+                onOpenTraining={() => setPage('training')}
+                onOpenCoach={() => setPage('coach')}
+                onOpenFeeling={() => setPage('feeling')}
+                onOpenRaces={() => setPage('races')}
+                onOpenWeather={() => setPage('weather')}
+              />
+            )}
+            {page === 'coach' && <CoachPage />}
+            {page === 'training' && <TrainingWeek />}
+            {page === 'feeling' && <FeelingPage />}
+            {page === 'activities' && <ActivityPage />}
+            {page === 'races' && <RacePage />}
+            {page === 'weather' && <WeatherPage />}
+            {page === 'health' && <HealthPage />}
+            {page === 'profile-personal' && <PersonalProfile />}
+            {page === 'profile-sport' && <Profile />}
+            {page === 'settings' && <Settings />}
+          </Suspense>
         </div>
       </TrainingProvider>
     </RaceProvider>

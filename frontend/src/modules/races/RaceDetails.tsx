@@ -277,11 +277,11 @@ export function RaceDetails({
             space-y-4
             rounded-[12px]
             border
-            border-black/[0.065]
-            bg-white
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface)]
             p-4
-            dark:border-white/[0.065]
-            dark:bg-[#151b1f]
+            dark:border-[var(--oc-border)]
+            dark:bg-[var(--oc-surface)]
           "
         >
           <section>
@@ -289,8 +289,8 @@ export function RaceDetails({
               className="
                 text-[13px]
                 font-semibold
-                text-slate-800
-                dark:text-slate-200
+                text-[var(--oc-text-secondary)]
+                dark:text-[var(--oc-text-secondary)]
               "
             >
               Résultat de la course
@@ -300,8 +300,8 @@ export function RaceDetails({
               className="
                 mt-1
                 text-[10px]
-                text-slate-400
-                dark:text-slate-500
+                text-[var(--oc-muted-soft)]
+                dark:text-[var(--oc-muted)]
               "
             >
               À compléter une fois
@@ -337,8 +337,8 @@ export function RaceDetails({
                 font-semibold
                 uppercase
                 tracking-[0.07em]
-                text-slate-400
-                dark:text-slate-500
+                text-[var(--oc-muted-soft)]
+                dark:text-[var(--oc-muted)]
               "
             >
               Statut
@@ -477,8 +477,8 @@ export function RaceDetails({
                   font-semibold
                   uppercase
                   tracking-[0.07em]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-muted-soft)]
+                  dark:text-[var(--oc-muted)]
                 "
               >
                 Notes
@@ -498,20 +498,20 @@ export function RaceDetails({
                   resize-y
                   rounded-[9px]
                   border
-                  border-black/[0.08]
-                  bg-slate-50
+                  border-[var(--oc-border)]
+                  bg-[var(--oc-surface-muted)]
                   px-3
                   py-2.5
                   text-[11px]
-                  text-slate-700
+                  text-[var(--oc-text-secondary)]
                   outline-none
                   transition
-                  placeholder:text-slate-400
+                  placeholder:text-[var(--oc-muted-soft)]
                   focus:border-emerald-500/35
-                  focus:bg-white
-                  dark:border-white/[0.08]
-                  dark:bg-white/[0.025]
-                  dark:text-slate-200
+                  focus:bg-[var(--oc-surface)]
+                  dark:border-[var(--oc-border)]
+                  dark:bg-[var(--oc-surface-muted)]
+                  dark:text-[var(--oc-text-secondary)]
                 "
                 placeholder={
                   'Sensations, difficultés, '
@@ -529,9 +529,9 @@ export function RaceDetails({
               justify-between
               gap-3
               border-t
-              border-black/[0.055]
+              border-[var(--oc-border)]
               pt-3
-              dark:border-white/[0.055]
+              dark:border-[var(--oc-border)]
             "
           >
             <button
@@ -581,12 +581,12 @@ export function RaceDetails({
                   px-3
                   text-[10px]
                   font-semibold
-                  text-slate-400
+                  text-[var(--oc-muted-soft)]
                   transition
-                  hover:bg-slate-50
-                  hover:text-slate-700
-                  dark:hover:bg-white/[0.035]
-                  dark:hover:text-slate-200
+                  hover:bg-[var(--oc-surface-muted)]
+                  hover:text-[var(--oc-text-secondary)]
+                  dark:hover:bg-[var(--oc-surface-hover)]
+                  dark:hover:text-[var(--oc-text-secondary)]
                 "
                 onClick={
                   onClose
@@ -679,12 +679,12 @@ export function RaceDetails({
               max-w-[400px]
               rounded-[14px]
               border
-              border-black/[0.08]
-              bg-white
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface)]
               p-5
               shadow-2xl
-              dark:border-white/[0.08]
-              dark:bg-[#151b1f]
+              dark:border-[var(--oc-border)]
+              dark:bg-[var(--oc-surface)]
             "
           >
             <div
@@ -710,8 +710,8 @@ export function RaceDetails({
                 mt-4
                 text-[15px]
                 font-semibold
-                text-slate-900
-                dark:text-slate-100
+                text-[var(--oc-text)]
+                dark:text-[var(--oc-text)]
               "
             >
               Supprimer cette course ?
@@ -722,8 +722,8 @@ export function RaceDetails({
                 mt-2
                 text-[11px]
                 leading-5
-                text-slate-500
-                dark:text-slate-400
+                text-[var(--oc-muted)]
+                dark:text-[var(--oc-muted-soft)]
               "
             >
               La course « {race.name} » sera
@@ -768,11 +768,11 @@ export function RaceDetails({
                   px-3
                   text-[10px]
                   font-semibold
-                  text-slate-500
+                  text-[var(--oc-muted)]
                   transition
-                  hover:bg-slate-100
-                  dark:text-slate-400
-                  dark:hover:bg-white/[0.04]
+                  hover:bg-[var(--oc-surface-muted)]
+                  dark:text-[var(--oc-muted-soft)]
+                  dark:hover:bg-[var(--oc-surface-hover)]
                 "
                 onClick={() =>
                   setDeleteOpen(false)
@@ -1200,7 +1200,7 @@ function RaceActivitySection({
         space-y-4
         rounded-xl
         border
-        border-black/[0.065] dark:border-white/[0.065]
+        border-[var(--oc-border)] dark:border-[var(--oc-border)]
         p-4
       "
     >
@@ -1224,8 +1224,8 @@ function RaceActivitySection({
               items-center
               justify-center
               rounded-xl
-              bg-slate-50 dark:bg-white/[0.025]
-              text-slate-400 dark:text-slate-500
+              bg-[var(--oc-surface-muted)] dark:bg-[var(--oc-surface-muted)]
+              text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]
             "
           >
             <Activity
@@ -1237,7 +1237,7 @@ function RaceActivitySection({
             <h3
               className="
                 font-semibold
-                text-slate-800 dark:text-slate-200
+                text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]
               "
             >
               Activité réelle
@@ -1247,7 +1247,7 @@ function RaceActivitySection({
               className="
                 mt-1
                 text-sm
-                text-slate-400 dark:text-slate-500
+                text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]
               "
             >
               Une activité Intervals.icu
@@ -1323,7 +1323,7 @@ function RaceActivitySection({
               <p
                 className="
                   font-medium
-                  text-slate-800 dark:text-slate-200
+                  text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]
                 "
               >
                 {linkedActivity?.name
@@ -1335,7 +1335,7 @@ function RaceActivitySection({
                   className="
                     mt-1
                     text-sm
-                    text-slate-400 dark:text-slate-500
+                    text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]
                   "
                 >
                   {formatActivityCandidate(
@@ -1347,7 +1347,7 @@ function RaceActivitySection({
                   className="
                     mt-1
                     text-sm
-                    text-slate-400 dark:text-slate-500
+                    text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]
                   "
                 >
                   Les données de cette activité
@@ -1366,16 +1366,16 @@ function RaceActivitySection({
                 gap-1.5
                 rounded-[8px]
                 border
-                border-black/[0.08]
+                border-[var(--oc-border)]
                 px-2.5
                 text-[9.5px]
                 font-semibold
-                text-slate-500
+                text-[var(--oc-muted)]
                 transition
-                hover:bg-slate-50
-                dark:border-white/[0.08]
-                dark:text-slate-400
-                dark:hover:bg-white/[0.035]
+                hover:bg-[var(--oc-surface-muted)]
+                dark:border-[var(--oc-border)]
+                dark:text-[var(--oc-muted-soft)]
+                dark:hover:bg-[var(--oc-surface-hover)]
               "
               disabled={saving}
               onClick={() =>
@@ -1407,7 +1407,7 @@ function RaceActivitySection({
                 gap-2
                 py-5
                 text-sm
-                text-slate-400 dark:text-slate-500
+                text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]
               "
             >
               <LoaderCircle
@@ -1423,11 +1423,11 @@ function RaceActivitySection({
                 rounded-xl
                 border
                 border-dashed
-                border-black/[0.065] dark:border-white/[0.065]
+                border-[var(--oc-border)] dark:border-[var(--oc-border)]
                 px-4 py-5
                 text-center
                 text-sm
-                text-slate-400 dark:text-slate-500
+                text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]
               "
             >
               Aucune activité enregistrée
@@ -1446,7 +1446,7 @@ function RaceActivitySection({
                       gap-3
                       rounded-xl
                       border
-                      border-black/[0.065] dark:border-white/[0.065]
+                      border-[var(--oc-border)] dark:border-[var(--oc-border)]
                       p-3
                       sm:flex-row
                       sm:items-center
@@ -1458,7 +1458,7 @@ function RaceActivitySection({
                         className="
                           truncate
                           font-medium
-                          text-slate-800 dark:text-slate-200
+                          text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]
                         "
                       >
                         {activity.name}
@@ -1468,7 +1468,7 @@ function RaceActivitySection({
                         className="
                           mt-1
                           text-sm
-                          text-slate-400 dark:text-slate-500
+                          text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]
                         "
                       >
                         {formatActivityCandidate(
@@ -1564,7 +1564,7 @@ function RaceActualResultPanel({
         overflow-hidden
         rounded-xl
         border
-        border-black/[0.065] dark:border-white/[0.065]
+        border-[var(--oc-border)] dark:border-[var(--oc-border)]
       "
     >
       <div
@@ -1573,7 +1573,7 @@ function RaceActualResultPanel({
           justify-between
           gap-3
           border-b
-          border-black/[0.065] dark:border-white/[0.065]
+          border-[var(--oc-border)] dark:border-[var(--oc-border)]
           px-4 py-3
         "
       >
@@ -1581,7 +1581,7 @@ function RaceActualResultPanel({
           <h3
             className="
               font-semibold
-              text-slate-800 dark:text-slate-200
+              text-[var(--oc-text-secondary)] dark:text-[var(--oc-text-secondary)]
             "
           >
             Résultat utilisé par OpenCoach
@@ -1591,7 +1591,7 @@ function RaceActualResultPanel({
             className="
               mt-0.5
               text-xs
-              text-slate-400 dark:text-slate-500
+              text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]
             "
           >
             Source : {sourceLabel}
@@ -1622,7 +1622,7 @@ function RaceActualResultPanel({
           grid-cols-2
           divide-x
           divide-y
-          divide-slate-200 dark:divide-white/[0.08]
+          divide-slate-200 dark:divide-[var(--oc-border)]
           sm:grid-cols-4
           sm:divide-y-0
         "
@@ -1712,23 +1712,23 @@ function StatusButton({
             + 'dark:text-red-400'
           )
         : (
-            'border-slate-400/20 '
-            + 'bg-slate-500/[0.07] '
-            + 'text-slate-600 '
-            + 'dark:text-slate-300'
+            'border-[var(--oc-border-strong)] '
+            + 'bg-[var(--oc-surface-muted)] '
+            + 'text-[var(--oc-text-secondary)] '
+            + 'dark:text-[var(--oc-muted-soft)]'
           )
 
   const inactiveClass =
     (
-      'border-black/[0.07] '
-      + 'bg-slate-50 '
-      + 'text-slate-400 '
-      + 'hover:border-black/[0.12] '
-      + 'hover:text-slate-600 '
-      + 'dark:border-white/[0.07] '
-      + 'dark:bg-white/[0.025] '
-      + 'dark:text-slate-500 '
-      + 'dark:hover:text-slate-300'
+      'border-[var(--oc-border)] '
+      + 'bg-[var(--oc-surface-muted)] '
+      + 'text-[var(--oc-muted-soft)] '
+      + 'hover:border-[var(--oc-border)] '
+      + 'hover:text-[var(--oc-text-secondary)] '
+      + 'dark:border-[var(--oc-border)] '
+      + 'dark:bg-[var(--oc-surface-muted)] '
+      + 'dark:text-[var(--oc-muted)] '
+      + 'dark:hover:text-[var(--oc-muted-soft)]'
     )
 
   return (
@@ -1794,8 +1794,8 @@ function NumberField({
           font-semibold
           uppercase
           tracking-[0.06em]
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-muted)]
         "
       >
         <Icon
@@ -1816,13 +1816,13 @@ function NumberField({
           overflow-hidden
           rounded-[9px]
           border
-          border-black/[0.08]
-          bg-slate-50
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface-muted)]
           transition
           focus-within:border-emerald-500/35
-          focus-within:bg-white
-          dark:border-white/[0.08]
-          dark:bg-white/[0.025]
+          focus-within:bg-[var(--oc-surface)]
+          dark:border-[var(--oc-border)]
+          dark:bg-[var(--oc-surface-muted)]
         "
       >
         <input
@@ -1844,10 +1844,10 @@ function NumberField({
             px-3
             text-[12px]
             font-medium
-            text-slate-700
+            text-[var(--oc-text-secondary)]
             outline-none
-            placeholder:text-slate-300
-            dark:text-slate-200
+            placeholder:text-[var(--oc-muted-soft)]
+            dark:text-[var(--oc-text-secondary)]
           "
         />
 
@@ -1857,13 +1857,13 @@ function NumberField({
               flex
               items-center
               border-l
-              border-black/[0.06]
+              border-[var(--oc-border)]
               px-3
               text-[10px]
               font-semibold
-              text-slate-400
-              dark:border-white/[0.06]
-              dark:text-slate-500
+              text-[var(--oc-muted-soft)]
+              dark:border-[var(--oc-border)]
+              dark:text-[var(--oc-muted)]
             "
           >
             {unit}
@@ -1902,10 +1902,10 @@ function CompletedRace({
         overflow-hidden
         rounded-[12px]
         border
-        border-black/[0.065]
-        bg-white
-        dark:border-white/[0.065]
-        dark:bg-[#151b1f]
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
+        dark:border-[var(--oc-border)]
+        dark:bg-[var(--oc-surface)]
       "
     >
       <div
@@ -1915,10 +1915,10 @@ function CompletedRace({
           justify-between
           gap-3
           border-b
-          border-black/[0.055]
+          border-[var(--oc-border)]
           px-4
           py-3
-          dark:border-white/[0.055]
+          dark:border-[var(--oc-border)]
         "
       >
         <div>
@@ -1928,7 +1928,7 @@ function CompletedRace({
               font-bold
               uppercase
               tracking-[0.08em]
-              text-slate-400
+              text-[var(--oc-muted-soft)]
             "
           >
             Résultat
@@ -1938,8 +1938,8 @@ function CompletedRace({
             className="
               mt-1
               text-[11px]
-              text-slate-500
-              dark:text-slate-400
+              text-[var(--oc-muted)]
+              dark:text-[var(--oc-muted-soft)]
             "
           >
             {sourceDescription}
@@ -2003,10 +2003,10 @@ function CompletedRace({
           <div
             className="
               border-t
-              border-black/[0.055]
+              border-[var(--oc-border)]
               px-4
               py-3
-              dark:border-white/[0.055]
+              dark:border-[var(--oc-border)]
             "
           >
             <p
@@ -2015,7 +2015,7 @@ function CompletedRace({
                 font-bold
                 uppercase
                 tracking-[0.07em]
-                text-slate-400
+                text-[var(--oc-muted-soft)]
               "
             >
               Classement
@@ -2026,8 +2026,8 @@ function CompletedRace({
                 mt-1
                 text-[15px]
                 font-bold
-                text-slate-800
-                dark:text-slate-200
+                text-[var(--oc-text-secondary)]
+                dark:text-[var(--oc-text-secondary)]
               "
             >
               {race.ranking}e
@@ -2040,12 +2040,12 @@ function CompletedRace({
         <div
           className="
             border-t
-            border-black/[0.055]
-            bg-slate-50/60
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface-hover)]
             px-4
             py-3
-            dark:border-white/[0.055]
-            dark:bg-white/[0.018]
+            dark:border-[var(--oc-border)]
+            dark:bg-[var(--oc-surface-muted)]
           "
         >
           <p
@@ -2054,7 +2054,7 @@ function CompletedRace({
               font-bold
               uppercase
               tracking-[0.07em]
-              text-slate-400
+              text-[var(--oc-muted-soft)]
             "
           >
             Notes
@@ -2066,8 +2066,8 @@ function CompletedRace({
               whitespace-pre-wrap
               text-[12px]
               leading-5
-              text-slate-600
-              dark:text-slate-400
+              text-[var(--oc-text-secondary)]
+              dark:text-[var(--oc-muted-soft)]
             "
           >
             {race.notes}
@@ -2092,11 +2092,11 @@ function ResultItem({
       className="
         border-r
         border-b
-        border-black/[0.055]
+        border-[var(--oc-border)]
         px-4
         py-3
         even:border-r-0
-        dark:border-white/[0.055]
+        dark:border-[var(--oc-border)]
         sm:border-b-0
         sm:even:border-r
         sm:last:border-r-0
@@ -2108,7 +2108,7 @@ function ResultItem({
           font-bold
           uppercase
           tracking-[0.07em]
-          text-slate-400
+          text-[var(--oc-muted-soft)]
         "
       >
         {label}
@@ -2120,8 +2120,8 @@ function ResultItem({
           text-[14px]
           font-semibold
           tabular-nums
-          text-slate-800
-          dark:text-slate-200
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-text-secondary)]
         "
       >
         {value}

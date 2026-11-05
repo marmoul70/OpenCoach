@@ -42,9 +42,18 @@ class WellnessTrends:
     days: int
 
     hrv: WellnessMetricTrend
+    hrv_baseline: WellnessMetricTrend
     resting_hr: WellnessMetricTrend
+    avg_hr: WellnessMetricTrend
+    min_hr: WellnessMetricTrend
+    max_hr: WellnessMetricTrend
+    stress_avg: WellnessMetricTrend
     sleep_score: WellnessMetricTrend
     sleep_seconds: WellnessMetricTrend
+    sleep_deep_seconds: WellnessMetricTrend
+    sleep_light_seconds: WellnessMetricTrend
+    sleep_rem_seconds: WellnessMetricTrend
+    sleep_awake_seconds: WellnessMetricTrend
     fitness_ctl: WellnessMetricTrend
     fatigue_atl: WellnessMetricTrend
 
@@ -62,22 +71,22 @@ def build_wellness_trends(
         start_date=start_date,
         end_date=end_date,
         days=days,
-        hrv=_metric_trend(
-            wellness_days,
-            "hrv",
-        ),
-        resting_hr=_metric_trend(
-            wellness_days,
-            "resting_hr",
-        ),
+        hrv=_metric_trend(wellness_days, "hrv"),
+        hrv_baseline=_metric_trend(wellness_days, "hrv_baseline"),
+        resting_hr=_metric_trend(wellness_days, "resting_hr"),
+        avg_hr=_metric_trend(wellness_days, "avg_hr"),
+        min_hr=_metric_trend(wellness_days, "min_hr"),
+        max_hr=_metric_trend(wellness_days, "max_hr"),
+        stress_avg=_metric_trend(wellness_days, "stress_avg"),
         sleep_score=_metric_trend(
             wellness_days,
             "sleep_score",
         ),
-        sleep_seconds=_metric_trend(
-            wellness_days,
-            "sleep_seconds",
-        ),
+        sleep_seconds=_metric_trend(wellness_days, "sleep_seconds"),
+        sleep_deep_seconds=_metric_trend(wellness_days, "sleep_deep_seconds"),
+        sleep_light_seconds=_metric_trend(wellness_days, "sleep_light_seconds"),
+        sleep_rem_seconds=_metric_trend(wellness_days, "sleep_rem_seconds"),
+        sleep_awake_seconds=_metric_trend(wellness_days, "sleep_awake_seconds"),
         fitness_ctl=_metric_trend(
             wellness_days,
             "fitness_ctl",

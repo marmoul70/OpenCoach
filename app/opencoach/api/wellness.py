@@ -8,11 +8,20 @@ from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
 )
 from opencoach.database.repositories import (
+    CorosDailyDataRepositoryError,
+    SqlCorosDailyDataRepository,
+    DailyContextRepositoryError,
+    SqlDailyContextRepository,
     SqlWellnessRepository,
     WellnessRepositoryError,
 )
 from opencoach.database.session import get_db
 from opencoach.models import WellnessDay
+from opencoach.recovery_assessment import (
+    RecoveryAssessment,
+    build_recovery_assessment,
+    recovery_assessment_to_dict,
+)
 from opencoach.wellness_trends import (
     WellnessMetricTrend,
     WellnessTrends,
@@ -32,6 +41,18 @@ def get_wellness_repository(
     return SqlWellnessRepository(db)
 
 
+def get_daily_context_repository(
+    db: Session = Depends(get_db),
+) -> SqlDailyContextRepository:
+    return SqlDailyContextRepository(db)
+
+
+def get_coros_daily_data_repository(
+    db: Session = Depends(get_db),
+) -> SqlCorosDailyDataRepository:
+    return SqlCorosDailyDataRepository(db)
+
+
 @router.get("/latest")
 def get_latest_wellness(
     athlete_profile_id: UUID = Depends(
@@ -42,8 +63,22 @@ def get_latest_wellness(
     ),
 ) -> WellnessDay:
     try:
-        wellness = repository.get_latest(
+        coros_latest = repository.get_latest(
             athlete_profile_id,
+            provider="coros",
+        )
+        intervals_latest = repository.get_latest(
+            athlete_profile_id,
+            provider="intervals",
+        )
+        available = [
+            item for item in (coros_latest, intervals_latest)
+            if item is not None
+        ]
+        wellness = max(
+            available,
+            key=lambda item: (item.date, item.provider == "coros"),
+            default=None,
         )
 
     except WellnessRepositoryError as exc:
@@ -63,6 +98,7 @@ def get_latest_wellness(
 @router.get("/trends")
 def get_wellness_trends(
     days: int = 7,
+    provider: str = "coros",
     athlete_profile_id: UUID = Depends(
         get_current_athlete_profile_id,
     ),
@@ -71,6 +107,12 @@ def get_wellness_trends(
     ),
 ) -> dict:
     """Retourne les tendances Wellness récentes."""
+
+    if provider not in {"coros", "intervals"}:
+        raise HTTPException(
+            status_code=422,
+            detail="Le fournisseur doit être coros ou intervals.",
+        )
 
     if not 2 <= days <= 30:
         raise HTTPException(
@@ -96,9 +138,18 @@ def get_wellness_trends(
                 athlete_profile_id,
                 start_date,
                 end_date,
-                provider="intervals",
+                provider=provider,
             )
         )
+        if not wellness_days and provider == "coros":
+            wellness_days = repository.list_range(
+                athlete_profile_id,
+                start_date,
+                end_date,
+                provider="intervals",
+            )
+            if wellness_days:
+                provider = "intervals"
 
     except WellnessRepositoryError as exc:
         raise HTTPException(
@@ -116,15 +167,16 @@ def get_wellness_trends(
         days=days,
     )
 
-    return _trends_response(
-        trends
-    )
+    return _trends_response(trends, provider=provider)
 
 
 def _trends_response(
     trends: WellnessTrends,
+    *,
+    provider: str,
 ) -> dict:
     return {
+        "provider": provider,
         "start_date": (
             trends.start_date.isoformat()
         ),
@@ -133,18 +185,21 @@ def _trends_response(
         ),
         "days": trends.days,
         "metrics": {
-            "hrv": _metric_trend_response(
-                trends.hrv
-            ),
-            "resting_hr": _metric_trend_response(
-                trends.resting_hr
-            ),
+            "hrv": _metric_trend_response(trends.hrv),
+            "hrv_baseline": _metric_trend_response(trends.hrv_baseline),
+            "resting_hr": _metric_trend_response(trends.resting_hr),
+            "avg_hr": _metric_trend_response(trends.avg_hr),
+            "min_hr": _metric_trend_response(trends.min_hr),
+            "max_hr": _metric_trend_response(trends.max_hr),
+            "stress_avg": _metric_trend_response(trends.stress_avg),
             "sleep_score": _metric_trend_response(
                 trends.sleep_score
             ),
-            "sleep_seconds": _metric_trend_response(
-                trends.sleep_seconds
-            ),
+            "sleep_seconds": _metric_trend_response(trends.sleep_seconds),
+            "sleep_deep_seconds": _metric_trend_response(trends.sleep_deep_seconds),
+            "sleep_light_seconds": _metric_trend_response(trends.sleep_light_seconds),
+            "sleep_rem_seconds": _metric_trend_response(trends.sleep_rem_seconds),
+            "sleep_awake_seconds": _metric_trend_response(trends.sleep_awake_seconds),
             "fitness_ctl": _metric_trend_response(
                 trends.fitness_ctl
             ),
@@ -180,3 +235,77 @@ def _metric_trend_response(
             for point in trend.points
         ],
     }
+
+
+
+@router.get("/recovery")
+def get_recovery_assessment(
+    athlete_profile_id: UUID = Depends(
+        get_current_athlete_profile_id,
+    ),
+    repository: SqlWellnessRepository = Depends(
+        get_wellness_repository,
+    ),
+    context_repository: SqlDailyContextRepository = Depends(
+        get_daily_context_repository,
+    ),
+    time_series_repository: SqlCorosDailyDataRepository = Depends(
+        get_coros_daily_data_repository,
+    ),
+) -> dict:
+    """Expose la synthèse descriptive 7/14/30 jours au coach."""
+
+    target_date = date.today()
+    start_date = target_date - timedelta(days=29)
+    provider = "coros"
+
+    try:
+        wellness_days = repository.list_range(
+            athlete_profile_id,
+            start_date,
+            target_date,
+            provider=provider,
+        )
+        if not wellness_days:
+            wellness_days = repository.list_range(
+                athlete_profile_id,
+                start_date,
+                target_date,
+                provider="intervals",
+            )
+            if wellness_days:
+                provider = "intervals"
+
+        subjective_context = context_repository.get_by_date(
+            athlete_profile_id,
+            target_date,
+        )
+        # Les séries temporelles sont exclusivement COROS. Ne jamais les
+        # mélanger avec un jeu Wellness Intervals utilisé en repli.
+        time_series_snapshots = (
+            time_series_repository.list_time_series_snapshots(
+                athlete_profile_id,
+                start_date,
+                target_date,
+            )
+            if provider == "coros"
+            else []
+        )
+    except (
+        WellnessRepositoryError,
+        DailyContextRepositoryError,
+        CorosDailyDataRepositoryError,
+    ) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible de charger la synthèse de récupération.",
+        ) from exc
+
+    assessment = build_recovery_assessment(
+        wellness_days=wellness_days,
+        target_date=target_date,
+        provider=provider,
+        subjective_context=subjective_context,
+        time_series_snapshots=time_series_snapshots,
+    )
+    return recovery_assessment_to_dict(assessment)

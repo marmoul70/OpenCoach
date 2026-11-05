@@ -129,10 +129,10 @@ export function TasksSection() {
           justify-center
           rounded-[12px]
           border
-          border-black/[0.065]
-          bg-white
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
           dark:border-white/[0.065]
-          dark:bg-[#151b1f]
+          dark:bg-[var(--oc-surface)]
         "
       >
         <div
@@ -141,7 +141,7 @@ export function TasksSection() {
             items-center
             gap-2
             text-[10.5px]
-            text-slate-400
+            text-[var(--oc-muted-soft)]
           "
         >
           <LoaderCircle
@@ -172,10 +172,10 @@ export function TasksSection() {
           overflow-hidden
           rounded-[12px]
           border
-          border-black/[0.065]
-          bg-white
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
           dark:border-white/[0.065]
-          dark:bg-[#151b1f]
+          dark:bg-[var(--oc-surface)]
         "
       >
         <div
@@ -254,8 +254,8 @@ export function TasksSection() {
                       text-[14px]
                       font-bold
                       tracking-[-0.02em]
-                      text-slate-950
-                      dark:text-white
+                      text-[var(--oc-text)]
+                      dark:text-[var(--oc-text)]
                     "
                   >
                     Automatisations
@@ -275,8 +275,8 @@ export function TasksSection() {
                   className="
                     mt-1
                     text-[10px]
-                    text-slate-400
-                    dark:text-slate-500
+                    text-[var(--oc-muted-soft)]
+                    dark:text-[var(--oc-muted)]
                   "
                 >
                   Tâches système exécutées
@@ -346,7 +346,7 @@ export function TasksSection() {
             grid
             grid-cols-3
             border-t
-            border-black/[0.055]
+            border-[var(--oc-border)]
             dark:border-white/[0.06]
           "
         >
@@ -420,10 +420,10 @@ export function TasksSection() {
             overflow-hidden
             rounded-[12px]
             border
-            border-black/[0.065]
-            bg-white
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface)]
             dark:border-white/[0.065]
-            dark:bg-[#151b1f]
+            dark:bg-[var(--oc-surface)]
           "
         >
           <div
@@ -433,7 +433,7 @@ export function TasksSection() {
               justify-between
               gap-3
               border-b
-              border-black/[0.055]
+              border-[var(--oc-border)]
               px-4
               py-3
               dark:border-white/[0.06]
@@ -446,8 +446,8 @@ export function TasksSection() {
                   font-bold
                   uppercase
                   tracking-[0.1em]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-muted-soft)]
+                  dark:text-[var(--oc-muted)]
                 "
               >
                 Planification
@@ -458,8 +458,8 @@ export function TasksSection() {
                   mt-1
                   text-[11.5px]
                   font-semibold
-                  text-slate-800
-                  dark:text-slate-200
+                  text-[var(--oc-text-secondary)]
+                  dark:text-[var(--oc-text-secondary)]
                 "
               >
                 Tâches programmées
@@ -469,8 +469,8 @@ export function TasksSection() {
             <span
               className="
                 text-[9px]
-                text-slate-400
-                dark:text-slate-500
+                text-[var(--oc-muted-soft)]
+                dark:text-[var(--oc-muted)]
               "
             >
               {tasks.length}
@@ -491,8 +491,8 @@ export function TasksSection() {
                   mx-auto
                   h-5
                   w-5
-                  text-slate-200
-                  dark:text-slate-700
+                  text-[var(--oc-muted-soft)]
+                  dark:text-[var(--oc-text-secondary)]
                 "
               />
 
@@ -500,8 +500,8 @@ export function TasksSection() {
                 className="
                   mt-2
                   text-[10px]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-muted-soft)]
+                  dark:text-[var(--oc-muted)]
                 "
               >
                 Aucune tâche OpenCoach détectée.
@@ -560,7 +560,7 @@ function TaskRow({
         divided
           ? (
               'border-t '
-              + 'border-black/[0.055] '
+              + 'border-[var(--oc-border)] '
               + 'dark:border-white/[0.06]'
             )
           : '',
@@ -613,8 +613,8 @@ function TaskRow({
                 truncate
                 text-[11px]
                 font-semibold
-                text-slate-800
-                dark:text-slate-200
+                text-[var(--oc-text-secondary)]
+                dark:text-[var(--oc-text-secondary)]
               "
             >
               {task.label}
@@ -634,8 +634,8 @@ function TaskRow({
               items-center
               gap-1.5
               text-[9px]
-              text-slate-400
-              dark:text-slate-500
+              text-[var(--oc-muted-soft)]
+              dark:text-[var(--oc-muted)]
             "
           >
             <Activity
@@ -650,8 +650,8 @@ function TaskRow({
             <span
               className="
                 font-medium
-                text-slate-500
-                dark:text-slate-400
+                text-[var(--oc-muted)]
+                dark:text-[var(--oc-muted-soft)]
               "
             >
               {
@@ -668,10 +668,10 @@ function TaskRow({
       <div
         className="
           rounded-[9px]
-          bg-slate-50
+          bg-[var(--oc-surface-muted)]
           px-3
           py-2
-          dark:bg-white/[0.025]
+          dark:bg-[var(--oc-surface-muted)]
         "
       >
         <div
@@ -695,8 +695,8 @@ function TaskRow({
               font-bold
               uppercase
               tracking-[0.08em]
-              text-slate-400
-              dark:text-slate-500
+              text-[var(--oc-muted-soft)]
+              dark:text-[var(--oc-muted)]
             "
           >
             Prochaine exécution
@@ -709,8 +709,8 @@ function TaskRow({
             text-[10.5px]
             font-semibold
             tabular-nums
-            text-slate-700
-            dark:text-slate-300
+            text-[var(--oc-text-secondary)]
+            dark:text-[var(--oc-text-secondary)]
           "
         >
           {
@@ -739,7 +739,7 @@ function SummaryMetric({
         py-3
         text-center
         not-last:border-r
-        not-last:border-black/[0.055]
+        not-last:border-[var(--oc-border)]
         dark:not-last:border-white/[0.06]
       "
     >
@@ -748,8 +748,8 @@ function SummaryMetric({
           text-[14px]
           font-bold
           tabular-nums
-          text-slate-800
-          dark:text-slate-200
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-text-secondary)]
         "
       >
         {value}
@@ -762,8 +762,8 @@ function SummaryMetric({
           font-semibold
           uppercase
           tracking-[0.07em]
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-muted)]
         "
       >
         {label}
@@ -843,10 +843,10 @@ function SummaryStatus({
               + 'dark:text-amber-400'
             )
           : (
-              'bg-slate-100 '
-              + 'text-slate-400 '
-              + 'dark:bg-white/[0.04] '
-              + 'dark:text-slate-500'
+              'bg-[var(--oc-surface-muted)] '
+              + 'text-[var(--oc-muted-soft)] '
+              + 'dark:bg-[var(--oc-surface-muted)] '
+              + 'dark:text-[var(--oc-muted)]'
             )
 
   return (
@@ -1053,22 +1053,22 @@ function getStatusConfig(
 
     badgeClassName:
       (
-        'bg-slate-100 '
-        + 'text-slate-400 '
-        + 'dark:bg-white/[0.04] '
-        + 'dark:text-slate-500'
+        'bg-[var(--oc-surface-muted)] '
+        + 'text-[var(--oc-muted-soft)] '
+        + 'dark:bg-[var(--oc-surface-muted)] '
+        + 'dark:text-[var(--oc-muted)]'
       ),
 
     iconClassName:
       (
-        'bg-slate-50 '
-        + 'text-slate-400 '
-        + 'dark:bg-white/[0.025] '
-        + 'dark:text-slate-500'
+        'bg-[var(--oc-surface-muted)] '
+        + 'text-[var(--oc-muted-soft)] '
+        + 'dark:bg-[var(--oc-surface-muted)] '
+        + 'dark:text-[var(--oc-muted)]'
       ),
 
     dotClassName:
-      'bg-slate-300',
+      'bg-[var(--oc-muted-soft)]',
 
     icon:
       Clock3,

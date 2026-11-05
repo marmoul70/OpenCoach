@@ -17,74 +17,36 @@ export function RaceGoalCard({
     <section
       aria-label="Objectif principal"
       className="
-        rounded-2xl
-        border
-        border-slate-200 dark:border-white/[0.08]
-        bg-white dark:bg-[#141a1e]
+        rounded-[var(--oc-radius-card)]
+        border border-[var(--oc-border)]
+        bg-[var(--oc-surface-raised)]
         px-4 py-4
+        shadow-[var(--oc-shadow-card)]
         sm:px-5
       "
     >
-      <div
-        className="
-          flex
-          items-center
-          gap-3
-        "
-      >
+      <div className="flex items-center gap-3">
         <div
           className="
-            flex
-            size-10
-            shrink-0
-            items-center
-            justify-center
-            rounded-xl
-            bg-emerald-500/10 dark:bg-emerald-400/10
+            flex size-10 shrink-0 items-center justify-center
+            rounded-xl bg-emerald-500/10
             text-emerald-600 dark:text-emerald-400
           "
         >
-          <Trophy
-            size={19}
-            strokeWidth={2}
-          />
+          <Trophy size={19} strokeWidth={2} />
         </div>
 
         <div className="min-w-0 flex-1">
-          <p
-            className="
-              text-xs
-              font-semibold
-              uppercase
-              tracking-wide
-              text-slate-400 dark:text-slate-500
-            "
-          >
+          <p className="oc-type-label font-semibold uppercase tracking-wide text-[var(--oc-text-secondary)]">
             Objectif
           </p>
 
-          <p
-            className="
-              mt-0.5
-              truncate
-              font-semibold
-              text-slate-800 dark:text-slate-100
-            "
-          >
-            {
-              name
-              ?? 'Aucun objectif prioritaire'
-            }
+          <p className="mt-0.5 truncate font-semibold text-[var(--oc-text)]">
+            {name ?? 'Aucun objectif prioritaire'}
           </p>
 
           {details && (
-            <p
-              className="
-                mt-0.5
-                text-sm
-                text-slate-500 dark:text-slate-400
-              "
-            >
+            <p className="oc-type-body mt-0.5 text-[var(--oc-text-secondary)]">
               {details}
             </p>
           )}

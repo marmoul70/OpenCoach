@@ -54,7 +54,8 @@ def get_readiness_service(
         daily_context_repository=(
             daily_context_repository
         ),
-        provider="intervals",
+        provider="coros",
+        fallback_providers=("intervals",),
     )
 
 

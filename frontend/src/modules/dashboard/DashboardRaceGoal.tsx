@@ -39,13 +39,7 @@ export function DashboardRaceGoal({
     return (
       <div
         className="
-          flex min-h-52
-          items-center justify-center
-          rounded-2xl
-          border border-black/[0.07]
-          bg-white
-          dark:border-white/[0.08]
-          dark:bg-[#141a1e]
+          flex min-h-52 items-center justify-center oc-surface
         "
       >
         <span
@@ -55,10 +49,7 @@ export function DashboardRaceGoal({
             animate-spin
             rounded-full
             border-2
-            border-slate-200
-            border-t-emerald-500
-            dark:border-white/[0.10]
-            dark:border-t-emerald-400
+            border-[var(--oc-border)] border-t-[var(--oc-accent)]
           "
           aria-hidden="true"
         />
@@ -71,10 +62,7 @@ export function DashboardRaceGoal({
     return (
       <div
         className="
-          rounded-2xl
-          border border-red-500/20
-          bg-white p-5
-          dark:bg-[#141a1e]
+          oc-surface rounded-2xl p-5
         "
       >
         <p className="font-semibold text-red-500">
@@ -91,18 +79,7 @@ export function DashboardRaceGoal({
         type="button"
         onClick={onOpenRaces}
         className="
-          group
-          flex min-h-52 w-full
-          flex-col justify-between
-          rounded-2xl
-          border border-dashed
-          border-black/10
-          bg-white p-5
-          text-left
-          transition
-          hover:border-emerald-500/30
-          dark:border-white/10
-          dark:bg-[#141a1e]
+          oc-surface oc-interactive-surface group flex min-h-52 w-full flex-col justify-between border-dashed p-5 text-left hover:border-emerald-500/40
         "
       >
         <div>
@@ -122,10 +99,7 @@ export function DashboardRaceGoal({
 
           <h3
             className="
-              mt-4 text-lg font-bold
-              tracking-[-0.02em]
-              text-slate-950
-              dark:text-white
+              mt-4 oc-type-card-title font-bold tracking-[-0.02em]
             "
           >
             Aucun objectif principal
@@ -133,9 +107,7 @@ export function DashboardRaceGoal({
 
           <p
             className="
-              mt-1 text-sm leading-6
-              text-slate-500
-              dark:text-slate-400
+              mt-1 oc-type-body leading-6
             "
           >
             Ajoute une course prioritaire
@@ -175,18 +147,7 @@ export function DashboardRaceGoal({
       type="button"
       onClick={onOpenRaces}
       className="
-        group
-        w-full
-        rounded-2xl
-        border border-black/[0.07]
-        bg-white p-5
-        text-left
-        shadow-[0_1px_2px_rgba(15,23,42,0.025)]
-        transition duration-200
-        hover:-translate-y-0.5
-        hover:shadow-[0_12px_35px_rgba(15,23,42,0.055)]
-        dark:border-white/[0.08]
-        dark:bg-[#141a1e]
+        oc-surface oc-interactive-surface group w-full p-5 text-left
       "
     >
       <div
@@ -211,10 +172,7 @@ export function DashboardRaceGoal({
           <h3
             className="
               mt-2 truncate
-              text-xl font-bold
-              tracking-[-0.03em]
-              text-slate-950
-              dark:text-white
+              text-xl font-bold tracking-[-0.03em] text-[var(--oc-text)]
             "
           >
             {race.name}
@@ -222,9 +180,7 @@ export function DashboardRaceGoal({
 
           <div
             className="
-              mt-1 flex items-center
-              gap-1.5 text-xs
-              text-slate-400
+              mt-1 flex items-center gap-1.5 oc-type-secondary
             "
           >
             <MapPin className="h-3.5 w-3.5" />
@@ -245,7 +201,7 @@ export function DashboardRaceGoal({
         >
           <p
             className="
-              text-[10px]
+              oc-type-caption
               font-semibold uppercase
               tracking-wide
               text-emerald-600
@@ -258,10 +214,7 @@ export function DashboardRaceGoal({
           <p
             className="
               mt-0.5
-              text-xl font-bold
-              tabular-nums
-              text-slate-950
-              dark:text-white
+              text-xl font-bold tabular-nums text-[var(--oc-text)]
             "
           >
             J-{days}
@@ -275,8 +228,7 @@ export function DashboardRaceGoal({
           mt-5 grid
           grid-cols-3
           divide-x
-          divide-black/[0.06]
-          dark:divide-white/[0.07]
+          divide-[var(--oc-border)]
         "
       >
         <Metric
@@ -307,15 +259,12 @@ export function DashboardRaceGoal({
         <div
           className="
             mb-2 flex items-center
-            justify-between
-            text-xs
+            justify-between oc-type-secondary
           "
         >
           <span
             className="
-              font-medium
-              text-slate-500
-              dark:text-slate-400
+              font-medium text-[var(--oc-muted)]
             "
           >
             Préparation
@@ -323,10 +272,7 @@ export function DashboardRaceGoal({
 
           <span
             className="
-              font-semibold
-              tabular-nums
-              text-slate-700
-              dark:text-slate-200
+              font-semibold tabular-nums text-[var(--oc-text-secondary)]
             "
           >
             {progress} %
@@ -337,8 +283,7 @@ export function DashboardRaceGoal({
           className="
             h-1.5 overflow-hidden
             rounded-full
-            bg-slate-100
-            dark:bg-white/[0.07]
+            bg-[var(--oc-surface-muted)]
           "
         >
           <div
@@ -363,7 +308,7 @@ export function DashboardRaceGoal({
         <span
           className="
             flex items-center gap-2
-            text-xs font-semibold
+            oc-type-body font-semibold
             text-emerald-600
             dark:text-emerald-400
           "
@@ -406,10 +351,7 @@ function Metric({
 
         <span
           className="
-            truncate text-sm
-            font-bold
-            text-slate-900
-            dark:text-white
+            truncate text-sm font-bold text-[var(--oc-text)]
           "
         >
           {value}
@@ -418,10 +360,7 @@ function Metric({
 
       <p
         className="
-          mt-1 text-[10px]
-          font-medium uppercase
-          tracking-wide
-          text-slate-400
+          mt-1 oc-type-caption font-medium uppercase tracking-wide
         "
       >
         {label}

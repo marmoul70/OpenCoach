@@ -4,6 +4,7 @@ import {
   useState,
 } from 'react'
 
+import { PageHeader } from '../../design-system/components/PageHeader'
 import {
   Activity,
   ArrowDownUp,
@@ -452,9 +453,8 @@ export function ActivityPage() {
   return (
     <main
       className="
+        oc-app-shell
         min-h-screen
-        bg-[#f5f7f6]
-        dark:bg-[#0b1014]
       "
     >
       <div
@@ -467,49 +467,7 @@ export function ActivityPage() {
           lg:py-5
         "
       >
-        <header
-          className="
-            mb-4
-          "
-        >
-          <p
-            className="
-              text-[10px]
-              font-bold
-              uppercase
-              tracking-[0.13em]
-              text-emerald-600
-              dark:text-emerald-400
-            "
-          >
-            Historique
-          </p>
-
-          <h1
-            className="
-              mt-1
-              text-[30px]
-              font-bold
-              tracking-[-0.04em]
-              text-slate-950
-              dark:text-white
-            "
-          >
-            Activités
-          </h1>
-
-          <p
-            className="
-              mt-1
-              text-[13px]
-              text-slate-400
-              dark:text-slate-500
-            "
-          >
-            Historique des activités synchronisées
-            et séances associées.
-          </p>
-        </header>
+        <PageHeader eyebrow="Historique" title="Activités" description="Historique des activités synchronisées et séances associées." />
 
 
         {!loading && !error && (
@@ -540,11 +498,11 @@ export function ActivityPage() {
               mt-3
               rounded-[13px]
               border
-              border-black/[0.065]
-              bg-white
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface)]
               p-3
-              dark:border-white/[0.065]
-              dark:bg-[#151b1f]
+              dark:border-[var(--oc-border)]
+              dark:bg-[var(--oc-surface)]
             "
           >
             <div
@@ -566,15 +524,15 @@ export function ActivityPage() {
                   gap-2.5
                   rounded-[9px]
                   border
-                  border-black/[0.07]
-                  bg-slate-50
+                  border-[var(--oc-border)]
+                  bg-[var(--oc-surface-muted)]
                   px-3
                   transition
                   focus-within:border-emerald-500/35
-                  focus-within:bg-white
-                  dark:border-white/[0.07]
-                  dark:bg-white/[0.025]
-                  dark:focus-within:bg-white/[0.035]
+                  focus-within:bg-[var(--oc-surface-hover)]
+                  dark:border-[var(--oc-border)]
+                  dark:bg-[var(--oc-surface)]/[0.025]
+                  dark:focus-within:bg-[var(--oc-surface-hover)]/[0.035]
                 "
               >
                 <Search
@@ -582,7 +540,7 @@ export function ActivityPage() {
                     h-4
                     w-4
                     shrink-0
-                    text-slate-400
+                    text-[var(--oc-muted-soft)]
                   "
                 />
 
@@ -600,10 +558,10 @@ export function ActivityPage() {
                     flex-1
                     bg-transparent
                     text-[12px]
-                    text-slate-700
+                    text-[var(--oc-text-secondary)]
                     outline-none
-                    placeholder:text-slate-400
-                    dark:text-slate-200
+                    placeholder:text-[var(--oc-muted-soft)]
+                    dark:text-[var(--oc-muted-soft)]
                   "
                 />
               </label>
@@ -630,18 +588,18 @@ export function ActivityPage() {
                     h-10
                     rounded-[9px]
                     border
-                    border-black/[0.07]
-                    bg-slate-50
+                    border-[var(--oc-border)]
+                    bg-[var(--oc-surface-muted)]
                     px-3
                     text-[11px]
                     font-medium
-                    text-slate-600
+                    text-[var(--oc-text-secondary)]
                     outline-none
                     transition
                     focus:border-emerald-500/35
-                    dark:border-white/[0.07]
-                    dark:bg-white/[0.025]
-                    dark:text-slate-300
+                    dark:border-[var(--oc-border)]
+                    dark:bg-[var(--oc-surface)]/[0.025]
+                    dark:text-[var(--oc-muted-soft)]
                   "
                   aria-label="Période"
                 >
@@ -679,18 +637,18 @@ export function ActivityPage() {
                     min-w-0
                     rounded-[9px]
                     border
-                    border-black/[0.07]
-                    bg-slate-50
+                    border-[var(--oc-border)]
+                    bg-[var(--oc-surface-muted)]
                     px-3
                     text-[11px]
                     font-medium
-                    text-slate-600
+                    text-[var(--oc-text-secondary)]
                     outline-none
                     transition
                     focus:border-emerald-500/35
-                    dark:border-white/[0.07]
-                    dark:bg-white/[0.025]
-                    dark:text-slate-300
+                    dark:border-[var(--oc-border)]
+                    dark:bg-[var(--oc-surface)]/[0.025]
+                    dark:text-[var(--oc-muted-soft)]
                   "
                   aria-label="Sport"
                 >
@@ -728,19 +686,19 @@ export function ActivityPage() {
                     h-10
                     rounded-[9px]
                     border
-                    border-black/[0.07]
-                    bg-slate-50
+                    border-[var(--oc-border)]
+                    bg-[var(--oc-surface-muted)]
                     px-3
                     text-[11px]
                     font-medium
-                    text-slate-600
+                    text-[var(--oc-text-secondary)]
                     outline-none
                     transition
                     focus:border-emerald-500/35
                     sm:col-span-1
-                    dark:border-white/[0.07]
-                    dark:bg-white/[0.025]
-                    dark:text-slate-300
+                    dark:border-[var(--oc-border)]
+                    dark:bg-[var(--oc-surface)]/[0.025]
+                    dark:text-[var(--oc-muted-soft)]
                   "
                   aria-label="Tri"
                 >
@@ -782,17 +740,17 @@ export function ActivityPage() {
                     gap-1.5
                     rounded-[9px]
                     border
-                    border-black/[0.06]
+                    border-[var(--oc-border)]
                     px-3
                     text-[10px]
                     font-semibold
-                    text-slate-400
+                    text-[var(--oc-muted-soft)]
                     transition
-                    hover:bg-slate-50
-                    hover:text-slate-700
-                    dark:border-white/[0.06]
-                    dark:hover:bg-white/[0.035]
-                    dark:hover:text-slate-200
+                    hover:bg-[var(--oc-surface-muted)]
+                    hover:text-[var(--oc-text-secondary)]
+                    dark:border-[var(--oc-border)]
+                    dark:hover:bg-[var(--oc-surface)]/[0.035]
+                    dark:hover:text-[var(--oc-muted-soft)]
                   "
                 >
                   <FilterX
@@ -817,12 +775,12 @@ export function ActivityPage() {
                 justify-between
                 gap-2
                 border-t
-                border-black/[0.055]
+                border-[var(--oc-border)]
                 pt-2.5
                 text-[10px]
-                text-slate-400
-                dark:border-white/[0.055]
-                dark:text-slate-500
+                text-[var(--oc-muted-soft)]
+                dark:border-[var(--oc-border)]
+                dark:text-[var(--oc-muted)]
               "
             >
               <span>
@@ -882,10 +840,10 @@ export function ActivityPage() {
             overflow-hidden
             rounded-[13px]
             border
-            border-black/[0.065]
-            bg-white
-            dark:border-white/[0.065]
-            dark:bg-[#151b1f]
+            border-[var(--oc-border)]
+            bg-[var(--oc-surface)]
+            dark:border-[var(--oc-border)]
+            dark:bg-[var(--oc-surface)]
           "
         >
           {loading && (
@@ -963,8 +921,8 @@ export function ActivityPage() {
                   className="
                     text-[12px]
                     font-semibold
-                    text-slate-700
-                    dark:text-slate-300
+                    text-[var(--oc-text-secondary)]
+                    dark:text-[var(--oc-muted-soft)]
                   "
                 >
                   Aucun résultat
@@ -974,7 +932,7 @@ export function ActivityPage() {
                   className="
                     mt-1
                     text-[10px]
-                    text-slate-400
+                    text-[var(--oc-muted-soft)]
                   "
                 >
                   Aucune activité ne correspond
@@ -1029,15 +987,15 @@ export function ActivityPage() {
                   >
                     <thead
                       className="
-                        bg-slate-50/70
-                        dark:bg-white/[0.018]
+                        bg-[var(--oc-surface-muted)]
+                        dark:bg-[var(--oc-surface)]/[0.018]
                       "
                     >
                       <tr
                         className="
                           border-b
-                          border-black/[0.055]
-                          dark:border-white/[0.055]
+                          border-[var(--oc-border)]
+                          dark:border-[var(--oc-border)]
                         "
                       >
                         <ActivityTableHeader>
@@ -1248,10 +1206,10 @@ function ActivitySummaryCard({
         overflow-hidden
         rounded-[13px]
         border
-        border-black/[0.065]
-        bg-white
-        dark:border-white/[0.065]
-        dark:bg-[#151b1f]
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
+        dark:border-[var(--oc-border)]
+        dark:bg-[var(--oc-surface)]
       "
     >
       <div
@@ -1374,9 +1332,9 @@ function SummaryMetric({
         (
           'flex min-w-0 '
           + 'items-center gap-2.5 '
-          + 'border-black/[0.055] '
+          + 'border-[var(--oc-border)] '
           + 'px-3 py-3 '
-          + 'dark:border-white/[0.055] '
+          + 'dark:border-[var(--oc-border)] '
           + 'sm:border-r '
           + 'sm:last:border-r-0'
         ),
@@ -1420,8 +1378,8 @@ function SummaryMetric({
             font-bold
             tracking-[-0.02em]
             tabular-nums
-            text-slate-850
-            dark:text-slate-200
+            text-[var(--oc-text)]
+            dark:text-[var(--oc-muted-soft)]
           "
         >
           {value}
@@ -1434,8 +1392,8 @@ function SummaryMetric({
             font-semibold
             uppercase
             tracking-[0.07em]
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-muted-soft)]
+            dark:text-[var(--oc-muted)]
           "
         >
           {label}
@@ -1464,8 +1422,8 @@ function ActivityTableHeader({
           + 'font-bold '
           + 'uppercase '
           + 'tracking-[0.08em] '
-          + 'text-slate-400 '
-          + 'dark:text-slate-500'
+          + 'text-[var(--oc-muted-soft)] '
+          + 'dark:text-[var(--oc-muted)]'
         ),
         align === 'right'
           ? 'text-right'
@@ -1502,12 +1460,12 @@ function ActivityDesktopRow({
         group
         cursor-pointer
         border-b
-        border-black/[0.045]
+        border-[var(--oc-border)]
         transition-colors
         last:border-b-0
-        hover:bg-slate-50/80
-        dark:border-white/[0.045]
-        dark:hover:bg-white/[0.018]
+        hover:bg-[var(--oc-surface-hover)]
+        dark:border-[var(--oc-border)]
+        dark:hover:bg-[var(--oc-surface)]/[0.018]
       "
     >
       <td
@@ -1521,8 +1479,8 @@ function ActivityDesktopRow({
           className="
             text-[11px]
             font-semibold
-            text-slate-700
-            dark:text-slate-300
+            text-[var(--oc-text-secondary)]
+            dark:text-[var(--oc-muted-soft)]
           "
         >
           {
@@ -1537,8 +1495,8 @@ function ActivityDesktopRow({
           className="
             mt-0.5
             text-[9px]
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-muted-soft)]
+            dark:text-[var(--oc-muted)]
           "
         >
           {
@@ -1563,8 +1521,8 @@ function ActivityDesktopRow({
             truncate
             text-[12px]
             font-semibold
-            text-slate-800
-            dark:text-slate-200
+            text-[var(--oc-text-secondary)]
+            dark:text-[var(--oc-muted-soft)]
           "
           title={activity.name}
         >
@@ -1575,8 +1533,8 @@ function ActivityDesktopRow({
           className="
             mt-0.5
             text-[9px]
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-muted-soft)]
+            dark:text-[var(--oc-muted)]
           "
         >
           {activity.provider}
@@ -1684,8 +1642,8 @@ function ActivityDesktopRow({
             className="
               text-[9px]
               font-medium
-              text-slate-300
-              dark:text-slate-600
+              text-[var(--oc-muted-soft)]
+              dark:text-[var(--oc-text-secondary)]
             "
           >
             Non associée
@@ -1714,8 +1672,8 @@ function ActivityNumberCell({
           + 'text-[11px] '
           + 'font-medium '
           + 'tabular-nums '
-          + 'text-slate-600 '
-          + 'dark:text-slate-400'
+          + 'text-[var(--oc-text-secondary)] '
+          + 'dark:text-[var(--oc-muted-soft)]'
         ),
         hiddenOnTablet
           ? 'hidden lg:table-cell'
@@ -1771,8 +1729,8 @@ function ActivityMobileCard({
                 font-bold
                 uppercase
                 tracking-[0.08em]
-                text-slate-400
-                dark:text-slate-500
+                text-[var(--oc-muted-soft)]
+                dark:text-[var(--oc-muted)]
               "
             >
               {
@@ -1804,8 +1762,8 @@ function ActivityMobileCard({
               text-[15px]
               font-semibold
               tracking-[-0.02em]
-              text-slate-850
-              dark:text-slate-200
+              text-[var(--oc-text)]
+              dark:text-[var(--oc-muted-soft)]
             "
           >
             {activity.name}
@@ -1815,7 +1773,7 @@ function ActivityMobileCard({
             className="
               mt-0.5
               text-[9.5px]
-              text-slate-400
+              text-[var(--oc-muted-soft)]
             "
           >
             {activity.provider}
@@ -1832,10 +1790,10 @@ function ActivityMobileCard({
           gap-x-5
           gap-y-3
           rounded-[10px]
-          bg-slate-50
+          bg-[var(--oc-surface-muted)]
           px-3
           py-3
-          dark:bg-white/[0.022]
+          dark:bg-[var(--oc-surface)]/[0.022]
         "
       >
         <MobileMetric
@@ -1901,7 +1859,7 @@ function ActivityMobileCard({
               font-semibold
               uppercase
               tracking-[0.07em]
-              text-slate-400
+              text-[var(--oc-muted-soft)]
             "
           >
             Séance Coach
@@ -1919,8 +1877,8 @@ function ActivityMobileCard({
                     + 'dark:text-emerald-400'
                   )
                 : (
-                    'text-slate-400 '
-                    + 'dark:text-slate-500'
+                    'text-[var(--oc-muted-soft)] '
+                    + 'dark:text-[var(--oc-muted)]'
                   ),
             ].join(' ')}
           >
@@ -1986,8 +1944,8 @@ function MobileMetric({
           font-semibold
           uppercase
           tracking-[0.07em]
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-muted)]
         "
       >
         {label}
@@ -1999,8 +1957,8 @@ function MobileMetric({
           text-[12px]
           font-semibold
           tabular-nums
-          text-slate-700
-          dark:text-slate-300
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-muted-soft)]
         "
       >
         {value}
@@ -2021,14 +1979,14 @@ function SportPill({
         inline-flex
         whitespace-nowrap
         rounded-full
-        bg-slate-100
+        bg-[var(--oc-surface-muted)]
         px-2
         py-0.5
         text-[8px]
         font-semibold
-        text-slate-500
-        dark:bg-white/[0.045]
-        dark:text-slate-400
+        text-[var(--oc-muted)]
+        dark:bg-[var(--oc-surface)]/[0.045]
+        dark:text-[var(--oc-muted-soft)]
       "
     >
       {
@@ -2061,8 +2019,8 @@ function EmptyActivityState({
           mx-auto
           h-5
           w-5
-          text-slate-200
-          dark:text-slate-700
+          text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-text-secondary)]
         "
       />
 
@@ -2071,8 +2029,8 @@ function EmptyActivityState({
           mt-2
           text-[12px]
           font-semibold
-          text-slate-600
-          dark:text-slate-300
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-muted-soft)]
         "
       >
         {title}
@@ -2082,7 +2040,7 @@ function EmptyActivityState({
         className="
           mt-1
           text-[10px]
-          text-slate-400
+          text-[var(--oc-muted-soft)]
         "
       >
         {description}

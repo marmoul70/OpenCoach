@@ -66,9 +66,12 @@ class SqlWellnessRepository(WellnessRepository):
             database_wellness.resting_hr = (
                 wellness.resting_hr
             )
-            database_wellness.hrv = (
-                wellness.hrv
-            )
+            database_wellness.avg_hr = wellness.avg_hr
+            database_wellness.min_hr = wellness.min_hr
+            database_wellness.max_hr = wellness.max_hr
+            database_wellness.hrv = wellness.hrv
+            database_wellness.hrv_baseline = wellness.hrv_baseline
+            database_wellness.stress_avg = wellness.stress_avg
 
             database_wellness.sleep_seconds = (
                 wellness.sleep_seconds
@@ -76,12 +79,14 @@ class SqlWellnessRepository(WellnessRepository):
             database_wellness.sleep_score = (
                 wellness.sleep_score
             )
-            database_wellness.sleep_quality = (
-                wellness.sleep_quality
-            )
-            database_wellness.avg_sleeping_hr = (
-                wellness.avg_sleeping_hr
-            )
+            database_wellness.sleep_quality = wellness.sleep_quality
+            database_wellness.sleep_deep_seconds = wellness.sleep_deep_seconds
+            database_wellness.sleep_light_seconds = wellness.sleep_light_seconds
+            database_wellness.sleep_rem_seconds = wellness.sleep_rem_seconds
+            database_wellness.sleep_awake_seconds = wellness.sleep_awake_seconds
+            database_wellness.avg_sleeping_hr = wellness.avg_sleeping_hr
+            database_wellness.min_sleeping_hr = wellness.min_sleeping_hr
+            database_wellness.max_sleeping_hr = wellness.max_sleeping_hr
 
             database_wellness.spo2 = (
                 wellness.spo2
@@ -113,19 +118,22 @@ class SqlWellnessRepository(WellnessRepository):
     def get_latest(
         self,
         athlete_profile_id: UUID,
+        *,
+        provider: str | None = None,
     ) -> WellnessDay | None:
         """Retourne la dernière journée Wellness disponible."""
 
         try:
+            conditions = [
+                WellnessDaily.athlete_profile_id == athlete_profile_id,
+            ]
+            if provider is not None:
+                conditions.append(WellnessDaily.provider == provider)
+
             statement = (
                 select(WellnessDaily)
-                .where(
-                    WellnessDaily.athlete_profile_id
-                    == athlete_profile_id,
-                )
-                .order_by(
-                    WellnessDaily.date.desc(),
-                )
+                .where(*conditions)
+                .order_by(WellnessDaily.date.desc())
                 .limit(1)
             )
 
@@ -359,13 +367,22 @@ class SqlWellnessRepository(WellnessRepository):
             fatigue_atl=wellness.fatigue_atl,
             ramp_rate=wellness.ramp_rate,
             resting_hr=wellness.resting_hr,
+            avg_hr=wellness.avg_hr,
+            min_hr=wellness.min_hr,
+            max_hr=wellness.max_hr,
             hrv=wellness.hrv,
+            hrv_baseline=wellness.hrv_baseline,
+            stress_avg=wellness.stress_avg,
             sleep_seconds=wellness.sleep_seconds,
             sleep_score=wellness.sleep_score,
             sleep_quality=wellness.sleep_quality,
-            avg_sleeping_hr=(
-                wellness.avg_sleeping_hr
-            ),
+            sleep_deep_seconds=wellness.sleep_deep_seconds,
+            sleep_light_seconds=wellness.sleep_light_seconds,
+            sleep_rem_seconds=wellness.sleep_rem_seconds,
+            sleep_awake_seconds=wellness.sleep_awake_seconds,
+            avg_sleeping_hr=wellness.avg_sleeping_hr,
+            min_sleeping_hr=wellness.min_sleeping_hr,
+            max_sleeping_hr=wellness.max_sleeping_hr,
             spo2=wellness.spo2,
             steps=wellness.steps,
             provider_updated_at=(

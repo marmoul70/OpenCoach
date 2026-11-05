@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import { PageHeader } from '../../design-system/components/PageHeader'
 import {
   useState,
 } from 'react'
@@ -142,9 +143,8 @@ export function Settings() {
   return (
     <main
       className="
+        oc-app-shell
         min-h-screen
-        bg-[#f5f7f6]
-        dark:bg-[#0b1014]
       "
     >
       <div
@@ -163,47 +163,7 @@ export function Settings() {
             PAGE HEADER
             ================================================= */}
 
-        <header className="mb-4">
-          <p
-            className="
-              text-[10px]
-              font-bold
-              uppercase
-              tracking-[0.13em]
-              text-emerald-600
-              dark:text-emerald-400
-            "
-          >
-            Configuration
-          </p>
-
-          <h1
-            className="
-              mt-1
-              text-[24px]
-              font-bold
-              tracking-[-0.035em]
-              text-slate-950
-              dark:text-white
-            "
-          >
-            Réglages
-          </h1>
-
-          <p
-            className="
-              mt-1
-              max-w-2xl
-              text-[11.5px]
-              text-slate-400
-              dark:text-slate-500
-            "
-          >
-            Configure les services,
-            automatisations et données
-            utilisés par OpenCoach.
-          </p>
-        </header>
+        <PageHeader eyebrow="Configuration" title="Réglages" description="Configure les services, automatisations et données OpenCoach." />
 
 
         {/* =================================================
@@ -274,12 +234,12 @@ export function Settings() {
               overflow-hidden
               rounded-[14px]
               border
-              border-black/[0.07]
-              bg-white
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface)]
               p-2
               shadow-[0_1px_2px_rgba(15,23,42,0.025)]
-              dark:border-white/[0.075]
-              dark:bg-[#151b1f]
+              dark:border-[var(--oc-border)]
+              dark:bg-[var(--oc-surface)]
               lg:block
             "
           >
@@ -302,11 +262,11 @@ export function Settings() {
               overflow-hidden
               rounded-[14px]
               border
-              border-black/[0.07]
-              bg-white
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface)]
               shadow-[0_1px_2px_rgba(15,23,42,0.025)]
-              dark:border-white/[0.075]
-              dark:bg-[#151b1f]
+              dark:border-[var(--oc-border)]
+              dark:bg-[var(--oc-surface)]
             "
           >
 
@@ -315,10 +275,10 @@ export function Settings() {
             <div
               className="
                 border-b
-                border-black/[0.06]
+                border-[var(--oc-border)]
                 px-4
                 py-3.5
-                dark:border-white/[0.065]
+                dark:border-[var(--oc-border)]
                 sm:px-5
               "
             >
@@ -355,12 +315,7 @@ export function Settings() {
                 <div>
                   <p
                     className="
-                      text-[9px]
-                      font-bold
-                      uppercase
-                      tracking-[0.1em]
-                      text-emerald-600
-                      dark:text-emerald-400
+                      oc-page-eyebrow
                     "
                   >
                     {activeItem.group}
@@ -369,11 +324,7 @@ export function Settings() {
                   <h2
                     className="
                       mt-0.5
-                      text-[15px]
-                      font-semibold
-                      tracking-[-0.02em]
-                      text-slate-950
-                      dark:text-white
+                      oc-type-card-title
                     "
                   >
                     {activeItem.label}
@@ -382,9 +333,7 @@ export function Settings() {
                   <p
                     className="
                       mt-1
-                      text-[10px]
-                      text-slate-400
-                      dark:text-slate-500
+                      oc-type-secondary
                     "
                   >
                     {
@@ -465,9 +414,9 @@ function SettingsNavigation({
                     font-bold
                     uppercase
                     tracking-[0.11em]
-                    text-slate-300
+                    text-[var(--oc-muted-soft)]
                     first:mt-1
-                    dark:text-slate-600
+                    dark:text-[var(--oc-text-secondary)]
                   "
                 >
                   {item.group}
@@ -500,11 +449,11 @@ function SettingsNavigation({
                         + 'dark:text-emerald-400'
                       )
                     : (
-                        'text-slate-500 '
-                        + 'hover:bg-slate-50 '
-                        + 'hover:text-slate-900 '
-                        + 'dark:text-slate-400 '
-                        + 'dark:hover:bg-white/[0.035] '
+                        'text-[var(--oc-muted)] '
+                        + 'hover:bg-[var(--oc-surface-muted)] '
+                        + 'hover:text-[var(--oc-text)] '
+                        + 'dark:text-[var(--oc-muted-soft)] '
+                        + 'dark:hover:bg-[var(--oc-surface-hover)] '
                         + 'dark:hover:text-white'
                       ),
                 ].join(' ')}
@@ -550,9 +499,9 @@ function SettingsNavigation({
                           'text-emerald-500'
                         )
                       : (
-                          'text-slate-200 '
-                          + 'group-hover:text-slate-400 '
-                          + 'dark:text-slate-700'
+                          'text-[var(--oc-muted-soft)] '
+                          + 'group-hover:text-[var(--oc-muted-soft)] '
+                          + 'dark:text-[var(--oc-text-secondary)]'
                         ),
                   ].join(' ')}
                 />
@@ -601,12 +550,12 @@ function MobileNavigationButton({
               + 'dark:text-emerald-400'
             )
           : (
-              'border-black/[0.06] '
-              + 'bg-white '
-              + 'text-slate-400 '
-              + 'dark:border-white/[0.06] '
-              + 'dark:bg-[#151b1f] '
-              + 'dark:text-slate-500'
+              'border-[var(--oc-border)] '
+              + 'bg-[var(--oc-surface)] '
+              + 'text-[var(--oc-muted-soft)] '
+              + 'dark:border-[var(--oc-border)] '
+              + 'dark:bg-[var(--oc-surface)] '
+              + 'dark:text-[var(--oc-muted)]'
             ),
       ].join(' ')}
     >

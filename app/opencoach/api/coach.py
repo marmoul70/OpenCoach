@@ -47,6 +47,8 @@ from opencoach.api.coaching.dependencies import (
     get_coach_weekly_assessment_service,
 )
 from opencoach.database.repositories import (
+    CorosDailyDataRepositoryError,
+    SqlCorosDailyDataRepository,
     ActivityRepositoryError,
     DailyContextRepositoryError,
     SqlActivityRepository,
@@ -61,6 +63,10 @@ from opencoach.readiness import (
     ReadinessAssessment,
     ReadinessDataUnavailableError,
     ReadinessService,
+)
+from opencoach.recovery_assessment import (
+    build_recovery_assessment,
+    recovery_assessment_to_dict,
 )
 from opencoach.training import (
     DailyTrainingLoadService,
@@ -141,7 +147,8 @@ def get_coach_decision_service(
         daily_context_repository=(
             daily_context_repository
         ),
-        provider="intervals",
+        provider="coros",
+        fallback_providers=("intervals",),
     )
 
     daily_training_load_service = (
@@ -487,6 +494,29 @@ def get_today_coach_decision(
                 )
             )
 
+        recovery_provider = assessment.readiness.provider
+        recovery_wellness_days = SqlWellnessRepository(db).list_range(
+            athlete_profile_id,
+            reference_date - timedelta(days=29),
+            reference_date,
+            provider=recovery_provider,
+        )
+        recovery_time_series = SqlCorosDailyDataRepository(db).list_time_series_snapshots(
+            athlete_profile_id,
+            reference_date - timedelta(days=29),
+            reference_date,
+        )
+        recovery_assessment = build_recovery_assessment(
+            wellness_days=recovery_wellness_days,
+            target_date=reference_date,
+            provider=recovery_provider,
+            subjective_context=assessment.readiness.context,
+            time_series_snapshots=recovery_time_series,
+        )
+        recovery_payload = recovery_assessment_to_dict(
+            recovery_assessment
+        )
+
     except PlannedSessionUnavailableError as exc:
         raise HTTPException(
             status_code=404,
@@ -510,6 +540,7 @@ def get_today_coach_decision(
         TrainingSessionRepositoryError,
         WellnessRepositoryError,
         DailyContextRepositoryError,
+        CorosDailyDataRepositoryError,
     ) as exc:
         raise HTTPException(
             status_code=503,
@@ -524,6 +555,7 @@ def get_today_coach_decision(
         weekly_assessment,
         weekly_plan,
         weekly_debrief,
+        recovery_payload,
     )
 
 
@@ -532,6 +564,7 @@ def _to_response(
     weekly_assessment: CoachWeeklyAssessment,
     weekly_plan,
     weekly_debrief,
+    recovery_payload: dict,
 ) -> CoachTodayResponse:
     readiness = assessment.readiness.readiness
 
@@ -904,6 +937,7 @@ def _to_response(
         ),
 
         data_warning=data_warning,
+        recovery=recovery_payload,
     )
 
 def _build_data_warning(

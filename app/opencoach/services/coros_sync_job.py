@@ -67,6 +67,25 @@ class CorosSyncJobStore:
 
 
 COROS_SYNC_JOBS = CorosSyncJobStore()
+def should_advance_last_synced_at(
+    *,
+    activities_enabled: bool,
+    imported_activities: int,
+    initial_import_completed: bool,
+) -> bool:
+    """Advance the successful-sync timestamp after a valid incremental no-op.
+
+    A first import with no activities must remain retryable. Once the initial
+    history exists, however, an empty incremental window is still a successful
+    sync and must not cause the scheduler to retry every 15 minutes.
+    """
+    return (
+        not activities_enabled
+        or imported_activities > 0
+        or initial_import_completed
+    )
+
+
 def should_use_incremental_coros_sync(config: dict[str, Any], has_coros_activities: bool) -> bool:
     """Only use the seven-day window after activities exist in the canonical table."""
     return bool(config.get("coros_initial_import_completed")) and has_coros_activities
@@ -235,7 +254,11 @@ def run_coros_sync_job(*, job_id: UUID, athlete_profile_id: UUID) -> None:
             "progress": {"category": None, "next_date": None},
         })
         connection.config = {**(connection.config or {}), "coros_sync_job": state}
-        if not activities_enabled or imported_activities > 0:
+        if should_advance_last_synced_at(
+            activities_enabled=activities_enabled,
+            imported_activities=imported_activities,
+            initial_import_completed=initial_import_completed,
+        ):
             connection.last_synced_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db.commit()
         if no_activities_error:

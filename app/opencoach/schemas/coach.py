@@ -246,3 +246,5 @@ class CoachTodayResponse(BaseModel):
     weekly_debrief: CoachWeeklyDebriefResponse | None
 
     data_warning: str | None
+
+    recovery: dict | None = None

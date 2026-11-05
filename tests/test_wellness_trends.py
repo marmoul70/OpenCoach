@@ -152,3 +152,50 @@ def test_empty_metric_returns_unknown() -> None:
         result.hrv.direction
         == "unknown"
     )
+
+
+def test_wellness_trends_include_coros_recovery_metrics() -> None:
+    days = [
+        WellnessDay(
+            provider="coros",
+            date=date(2026, 11, 3),
+            hrv=42,
+            hrv_baseline=40,
+            avg_hr=62,
+            min_hr=41,
+            max_hr=154,
+            stress_avg=31,
+            sleep_deep_seconds=5400,
+            sleep_light_seconds=14400,
+            sleep_rem_seconds=6000,
+            sleep_awake_seconds=900,
+        ),
+        WellnessDay(
+            provider="coros",
+            date=date(2026, 11, 4),
+            hrv=46,
+            hrv_baseline=41,
+            stress_avg=24,
+            sleep_deep_seconds=7200,
+            sleep_light_seconds=16200,
+            sleep_rem_seconds=6300,
+            sleep_awake_seconds=600,
+        ),
+    ]
+
+    result = build_wellness_trends(
+        wellness_days=days,
+        start_date=date(2026, 11, 3),
+        end_date=date(2026, 11, 4),
+        days=2,
+    )
+
+    assert result.hrv_baseline.current == 41
+    assert result.avg_hr.current == 62
+    assert result.min_hr.current == 41
+    assert result.max_hr.current == 154
+    assert result.stress_avg.current == 24
+    assert result.sleep_deep_seconds.current == 7200
+    assert result.sleep_light_seconds.current == 16200
+    assert result.sleep_rem_seconds.current == 6300
+    assert result.sleep_awake_seconds.current == 600

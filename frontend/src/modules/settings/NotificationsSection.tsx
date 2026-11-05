@@ -464,10 +464,10 @@ export function NotificationsSection() {
           justify-center
           rounded-[12px]
           border
-          border-black/[0.065]
-          bg-white
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
           dark:border-white/[0.065]
-          dark:bg-[#151b1f]
+          dark:bg-[var(--oc-surface)]
         "
       >
         <div
@@ -476,7 +476,7 @@ export function NotificationsSection() {
             items-center
             gap-2
             text-[10.5px]
-            text-slate-400
+            text-[var(--oc-muted-soft)]
           "
         >
           <LoaderCircle
@@ -511,10 +511,10 @@ export function NotificationsSection() {
           overflow-hidden
           rounded-[12px]
           border
-          border-black/[0.065]
-          bg-white
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
           dark:border-white/[0.065]
-          dark:bg-[#151b1f]
+          dark:bg-[var(--oc-surface)]
         "
       >
         <div
@@ -593,7 +593,7 @@ export function NotificationsSection() {
                       text-[14px]
                       font-bold
                       tracking-[-0.02em]
-                      text-slate-950
+                      text-[var(--oc-text)]
                       dark:text-white
                     "
                   >
@@ -609,8 +609,8 @@ export function NotificationsSection() {
                   className="
                     mt-1
                     text-[10px]
-                    text-slate-400
-                    dark:text-slate-500
+                    text-[var(--oc-muted-soft)]
+                    dark:text-[var(--oc-muted)]
                   "
                 >
                   Notifications Web / PWA
@@ -682,10 +682,10 @@ export function NotificationsSection() {
                   transition
                   hover:bg-emerald-700
                   disabled:cursor-not-allowed
-                  disabled:bg-slate-200
-                  disabled:text-slate-400
-                  dark:disabled:bg-white/[0.05]
-                  dark:disabled:text-slate-600
+                  disabled:bg-[var(--oc-surface-muted)]
+                  disabled:text-[var(--oc-muted-soft)]
+                  dark:disabled:bg-[var(--oc-surface-muted)]
+                  dark:disabled:text-[var(--oc-text-secondary)]
                 "
               >
                 <Bell
@@ -707,7 +707,7 @@ export function NotificationsSection() {
             grid
             grid-cols-2
             border-t
-            border-black/[0.055]
+            border-[var(--oc-border)]
             dark:border-white/[0.06]
           "
         >
@@ -780,16 +780,16 @@ export function NotificationsSection() {
           overflow-hidden
           rounded-[12px]
           border
-          border-black/[0.065]
-          bg-white
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
           dark:border-white/[0.065]
-          dark:bg-[#151b1f]
+          dark:bg-[var(--oc-surface)]
         "
       >
         <div
           className="
             border-b
-            border-black/[0.055]
+            border-[var(--oc-border)]
             px-4
             py-3
             dark:border-white/[0.06]
@@ -801,8 +801,8 @@ export function NotificationsSection() {
               font-bold
               uppercase
               tracking-[0.1em]
-              text-slate-400
-              dark:text-slate-500
+              text-[var(--oc-muted-soft)]
+              dark:text-[var(--oc-muted)]
             "
           >
             Événements
@@ -813,8 +813,8 @@ export function NotificationsSection() {
               mt-1
               text-[11.5px]
               font-semibold
-              text-slate-800
-              dark:text-slate-200
+              text-[var(--oc-text-secondary)]
+              dark:text-[var(--oc-text-secondary)]
             "
           >
             Notifications automatiques
@@ -884,12 +884,12 @@ export function NotificationsSection() {
           <div
             className="
               border-t
-              border-black/[0.055]
-              bg-slate-50/50
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface-muted)]
               px-4
               py-2
               dark:border-white/[0.06]
-              dark:bg-white/[0.015]
+              dark:bg-[var(--oc-surface-muted)]
             "
           >
             <SubPreference
@@ -982,16 +982,16 @@ export function NotificationsSection() {
           overflow-hidden
           rounded-[12px]
           border
-          border-black/[0.065]
-          bg-white
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
           dark:border-white/[0.065]
-          dark:bg-[#151b1f]
+          dark:bg-[var(--oc-surface)]
         "
       >
         <div
           className="
             border-b
-            border-black/[0.055]
+            border-[var(--oc-border)]
             px-4
             py-3
             dark:border-white/[0.06]
@@ -1003,8 +1003,8 @@ export function NotificationsSection() {
               font-bold
               uppercase
               tracking-[0.1em]
-              text-slate-400
-              dark:text-slate-500
+              text-[var(--oc-muted-soft)]
+              dark:text-[var(--oc-muted)]
             "
           >
             Appareils
@@ -1015,8 +1015,8 @@ export function NotificationsSection() {
               mt-1
               text-[11.5px]
               font-semibold
-              text-slate-800
-              dark:text-slate-200
+              text-[var(--oc-text-secondary)]
+              dark:text-[var(--oc-text-secondary)]
             "
           >
             Appareils connectés
@@ -1037,8 +1037,8 @@ export function NotificationsSection() {
                 mx-auto
                 h-5
                 w-5
-                text-slate-200
-                dark:text-slate-700
+                text-[var(--oc-muted-soft)]
+                dark:text-[var(--oc-text-secondary)]
               "
             />
 
@@ -1046,8 +1046,8 @@ export function NotificationsSection() {
               className="
                 mt-2
                 text-[10px]
-                text-slate-400
-                dark:text-slate-500
+                text-[var(--oc-muted-soft)]
+                dark:text-[var(--oc-muted)]
               "
             >
               Aucun appareil connecté.
@@ -1106,12 +1106,12 @@ export function NotificationsSection() {
               max-w-[380px]
               rounded-[14px]
               border
-              border-black/[0.07]
-              bg-white
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface)]
               p-5
               shadow-2xl
               dark:border-white/[0.08]
-              dark:bg-[#151b1f]
+              dark:bg-[var(--oc-surface)]
             "
             onClick={event => {
               event.stopPropagation()
@@ -1144,7 +1144,7 @@ export function NotificationsSection() {
                 mt-4
                 text-[15px]
                 font-bold
-                text-slate-950
+                text-[var(--oc-text)]
                 dark:text-white
               "
             >
@@ -1156,8 +1156,8 @@ export function NotificationsSection() {
                 mt-2
                 text-[11px]
                 leading-relaxed
-                text-slate-500
-                dark:text-slate-400
+                text-[var(--oc-muted)]
+                dark:text-[var(--oc-muted-soft)]
               "
             >
               {deviceToDelete.device_name}
@@ -1185,17 +1185,17 @@ export function NotificationsSection() {
                   h-9
                   rounded-[8px]
                   border
-                  border-black/[0.08]
+                  border-[var(--oc-border)]
                   px-3
                   text-[10px]
                   font-semibold
-                  text-slate-600
+                  text-[var(--oc-text-secondary)]
                   transition
-                  hover:bg-slate-50
+                  hover:bg-[var(--oc-surface-muted)]
                   disabled:opacity-40
                   dark:border-white/[0.08]
-                  dark:text-slate-300
-                  dark:hover:bg-white/[0.04]
+                  dark:text-[var(--oc-muted-soft)]
+                  dark:hover:bg-[var(--oc-surface-hover)]
                 "
               >
                 Annuler
@@ -1275,7 +1275,7 @@ function NotificationPreference({
         items-center
         gap-3
         border-b
-        border-black/[0.055]
+        border-[var(--oc-border)]
         px-4
         py-3
         last:border-b-0
@@ -1299,9 +1299,9 @@ function NotificationPreference({
                 + 'dark:text-emerald-400'
               )
             : (
-                'bg-slate-50 '
-                + 'text-slate-400 '
-                + 'dark:bg-white/[0.025]'
+                'bg-[var(--oc-surface-muted)] '
+                + 'text-[var(--oc-muted-soft)] '
+                + 'dark:bg-[var(--oc-surface-muted)]'
               ),
         ].join(' ')}
       >
@@ -1318,8 +1318,8 @@ function NotificationPreference({
           className="
             text-[10.5px]
             font-semibold
-            text-slate-700
-            dark:text-slate-300
+            text-[var(--oc-text-secondary)]
+            dark:text-[var(--oc-muted-soft)]
           "
         >
           {title}
@@ -1330,8 +1330,8 @@ function NotificationPreference({
             mt-0.5
             text-[9px]
             leading-4
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-muted-soft)]
+            dark:text-[var(--oc-muted)]
           "
         >
           {description}
@@ -1374,8 +1374,8 @@ function SubPreference({
     >
       <div
         className="
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-muted)]
         "
       >
         {icon}
@@ -1386,8 +1386,8 @@ function SubPreference({
           flex-1
           text-[9.5px]
           font-medium
-          text-slate-500
-          dark:text-slate-400
+          text-[var(--oc-muted)]
+          dark:text-[var(--oc-muted-soft)]
         "
       >
         {title}
@@ -1418,7 +1418,7 @@ function FutureNotification({
         items-center
         gap-3
         border-t
-        border-black/[0.055]
+        border-[var(--oc-border)]
         px-4
         py-3
         opacity-55
@@ -1433,9 +1433,9 @@ function FutureNotification({
           items-center
           justify-center
           rounded-[9px]
-          bg-slate-50
-          text-slate-400
-          dark:bg-white/[0.025]
+          bg-[var(--oc-surface-muted)]
+          text-[var(--oc-muted-soft)]
+          dark:bg-[var(--oc-surface-muted)]
         "
       >
         {icon}
@@ -1446,8 +1446,8 @@ function FutureNotification({
           className="
             text-[10px]
             font-semibold
-            text-slate-500
-            dark:text-slate-400
+            text-[var(--oc-muted)]
+            dark:text-[var(--oc-muted-soft)]
           "
         >
           {title}
@@ -1457,7 +1457,7 @@ function FutureNotification({
           className="
             mt-0.5
             text-[8.5px]
-            text-slate-400
+            text-[var(--oc-muted-soft)]
           "
         >
           Bientôt disponible
@@ -1529,10 +1529,10 @@ function ModernToggle({
               + 'bg-emerald-600'
             )
           : (
-              'border-slate-200 '
-              + 'bg-slate-100 '
+              'border-[var(--oc-border)] '
+              + 'bg-[var(--oc-surface-muted)] '
               + 'dark:border-white/[0.08] '
-              + 'dark:bg-white/[0.055]'
+              + 'dark:bg-[var(--oc-surface-muted)]'
             ),
       ].join(' ')}
     >
@@ -1542,7 +1542,7 @@ function ModernToggle({
             'absolute left-[3px] '
             + `${knob} `
             + 'rounded-full '
-            + 'bg-white '
+            + 'bg-[var(--oc-surface)] '
             + 'shadow-[0_1px_3px_rgba(15,23,42,0.20)] '
             + 'transition-transform '
             + 'duration-200'
@@ -1576,7 +1576,7 @@ function DeviceRow({
         divided
           ? (
               'border-t '
-              + 'border-black/[0.055] '
+              + 'border-[var(--oc-border)] '
               + 'dark:border-white/[0.06]'
             )
           : '',
@@ -1591,10 +1591,10 @@ function DeviceRow({
           items-center
           justify-center
           rounded-[9px]
-          bg-slate-50
-          text-slate-400
-          dark:bg-white/[0.025]
-          dark:text-slate-500
+          bg-[var(--oc-surface-muted)]
+          text-[var(--oc-muted-soft)]
+          dark:bg-[var(--oc-surface-muted)]
+          dark:text-[var(--oc-muted)]
         "
       >
         <MonitorSmartphone
@@ -1623,8 +1623,8 @@ function DeviceRow({
               truncate
               text-[10.5px]
               font-semibold
-              text-slate-700
-              dark:text-slate-300
+              text-[var(--oc-text-secondary)]
+              dark:text-[var(--oc-muted-soft)]
             "
           >
             {device.device_name}
@@ -1665,8 +1665,8 @@ function DeviceRow({
           className="
             mt-0.5
             text-[9px]
-            text-slate-400
-            dark:text-slate-500
+            text-[var(--oc-muted-soft)]
+            dark:text-[var(--oc-muted)]
           "
         >
           {device.browser}
@@ -1696,11 +1696,11 @@ function DeviceRow({
             items-center
             justify-center
             rounded-[8px]
-            text-slate-300
+            text-[var(--oc-muted-soft)]
             transition
             hover:bg-red-50
             hover:text-red-500
-            dark:text-slate-600
+            dark:text-[var(--oc-text-secondary)]
             dark:hover:bg-red-500/[0.08]
             dark:hover:text-red-400
           "
@@ -1731,7 +1731,7 @@ function SummaryMetric({
         px-4
         py-3
         first:border-r
-        first:border-black/[0.055]
+        first:border-[var(--oc-border)]
         dark:first:border-white/[0.06]
       "
     >
@@ -1741,8 +1741,8 @@ function SummaryMetric({
           font-semibold
           uppercase
           tracking-[0.08em]
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-muted)]
         "
       >
         {label}
@@ -1754,8 +1754,8 @@ function SummaryMetric({
           text-[13px]
           font-bold
           tabular-nums
-          text-slate-800
-          dark:text-slate-200
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-text-secondary)]
         "
       >
         {value}
@@ -1791,10 +1791,10 @@ function NotificationStatus({
               + 'dark:text-emerald-400'
             )
           : (
-              'bg-slate-100 '
-              + 'text-slate-400 '
-              + 'dark:bg-white/[0.04] '
-              + 'dark:text-slate-500'
+              'bg-[var(--oc-surface-muted)] '
+              + 'text-[var(--oc-muted-soft)] '
+              + 'dark:bg-[var(--oc-surface-muted)] '
+              + 'dark:text-[var(--oc-muted)]'
             ),
       ].join(' ')}
     >
@@ -1806,7 +1806,7 @@ function NotificationStatus({
           ),
           enabled
             ? 'bg-emerald-500'
-            : 'bg-slate-300',
+            : 'bg-[var(--oc-muted-soft)]',
         ].join(' ')}
       />
 
@@ -1852,11 +1852,11 @@ function StateMessage({
               + 'dark:text-amber-400'
             )
           : (
-              'border-black/[0.055] '
-              + 'bg-slate-50 '
-              + 'text-slate-400 '
+              'border-[var(--oc-border)] '
+              + 'bg-[var(--oc-surface-muted)] '
+              + 'text-[var(--oc-muted-soft)] '
               + 'dark:border-white/[0.06] '
-              + 'dark:bg-white/[0.018]'
+              + 'dark:bg-[var(--oc-surface-muted)]'
             ),
       ].join(' ')}
     >

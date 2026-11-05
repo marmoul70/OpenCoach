@@ -78,6 +78,7 @@ class ReadinessService:
         ) = None,
         thresholds: ThresholdSettings | None = None,
         provider: str = "intervals",
+        fallback_providers: tuple[str, ...] = (),
     ) -> None:
         self.repository = repository
 
@@ -92,6 +93,9 @@ class ReadinessService:
         )
 
         self.provider = provider
+        self.fallback_providers = tuple(
+            item for item in fallback_providers if item != provider
+        )
 
     def calculate(
         self,
@@ -100,29 +104,42 @@ class ReadinessService:
     ) -> ReadinessAssessment:
         """Calcule le Daily Readiness pour une date donnée."""
 
-        current = self.repository.get_by_date(
-            athlete_profile_id,
-            target_date,
-            provider=self.provider,
-        )
+        provider_order = (self.provider, *self.fallback_providers)
+        candidates: list[tuple[int, str, WellnessDay]] = []
 
-        if current is None:
-            current = (
-                self.repository
-                .get_latest_on_or_before(
+        # Chaque source est évaluée indépendamment. On retient la plus fraîche ;
+        # à date identique, l'ordre configuré donne la priorité à COROS.
+        for priority, candidate_provider in enumerate(provider_order):
+            candidate = self.repository.get_by_date(
+                athlete_profile_id,
+                target_date,
+                provider=candidate_provider,
+            )
+            if candidate is None:
+                candidate = self.repository.get_latest_on_or_before(
                     athlete_profile_id,
                     target_date,
-                    provider=self.provider,
+                    provider=candidate_provider,
                 )
+            if candidate is not None:
+                candidates.append((priority, candidate_provider, candidate))
+
+        selected_provider: str | None = None
+        current: WellnessDay | None = None
+        if candidates:
+            _, selected_provider, current = max(
+                candidates,
+                key=lambda item: (item[2].date, -item[0]),
             )
 
-        if current is None:
+        if current is None or selected_provider is None:
+            providers = ", ".join(provider_order)
             raise ReadinessDataUnavailableError(
                 (
                     "Aucune donnée Wellness exploitable "
                     f"n'est disponible avant ou pour "
                     f"le {target_date.isoformat()} "
-                    f"avec le fournisseur {self.provider}."
+                    f"avec les fournisseurs : {providers}."
                 )
             )
 
@@ -138,15 +155,6 @@ class ReadinessService:
             if data_age_days == 0
             else "stale"
         )
-
-        if current is None:
-            raise ReadinessDataUnavailableError(
-                (
-                    "Aucune donnée Wellness disponible "
-                    f"pour le {target_date.isoformat()} "
-                    f"avec le fournisseur {self.provider}."
-                )
-            )
 
         baseline_thresholds = (
             self.thresholds
@@ -173,7 +181,7 @@ class ReadinessService:
             athlete_profile_id,
             history_start,
             history_end,
-            provider=self.provider,
+            provider=selected_provider,
         )
 
         baseline = calculate_readiness_baseline(
@@ -211,7 +219,7 @@ class ReadinessService:
 
         return ReadinessAssessment(
             date=target_date,
-            provider=self.provider,
+            provider=selected_provider,
             current=current,
             baseline=baseline,
             comparison=comparison,

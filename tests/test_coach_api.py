@@ -552,6 +552,16 @@ def test_coach_api_returns_today_decision() -> None:
 
     assert payload["data_warning"] is None
 
+    # La synthèse multi-période est fournie au coach, sans réutiliser
+    # une source différente de celle sélectionnée par Readiness.
+    assert payload["recovery"]["provider"] == "intervals"
+    assert payload["recovery"]["data_status"] == "unavailable"
+    assert [
+        window["days"]
+        for window in payload["recovery"]["windows"]
+    ] == [7, 14, 30]
+    assert payload["recovery"]["subjective"] is None
+
     assert payload["session_decisions"][0]["decision"]["action"] == "reduce"
     assert payload["recent_load"] is None
 

@@ -32,6 +32,7 @@ export function NotificationsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -58,6 +59,25 @@ export function NotificationsPage() {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  async function loadMore() {
+    if (loadingMore || items.length >= total) return
+    setLoadingMore(true)
+    try {
+      const data = await fetchNotifications({
+        unreadOnly: filter === 'unread',
+        limit: 100,
+        offset: items.length,
+      })
+      setItems((current) => [...current, ...data.items])
+      setUnreadCount(data.unread_count)
+      setTotal(data.total)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Chargement impossible.')
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   async function markRead(item: AppNotification) {
     if (item.read_at) return
@@ -246,6 +266,18 @@ export function NotificationsPage() {
                 onDelete={() => void remove(item)}
               />
             ))}
+            {items.length < total && (
+              <div className="border-t border-[var(--oc-border)] px-4 py-3 text-center">
+                <button
+                  type="button"
+                  disabled={loadingMore || busy}
+                  onClick={() => void loadMore()}
+                  className="text-[11px] font-semibold text-[var(--oc-accent)] hover:underline disabled:opacity-50"
+                >
+                  {loadingMore ? 'Chargement…' : 'Charger les notifications suivantes'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </section>

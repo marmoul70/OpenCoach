@@ -142,6 +142,7 @@ def get_intervals_application_service(
     client = IntervalsClient(
         api_key=credentials.secret,
         athlete_id=credentials.athlete_id,
+        web_cookie=getattr(credentials, "web_cookie", None),
     )
 
     activity_repository = SqlActivityRepository(db)
@@ -196,6 +197,7 @@ def get_intervals_connection(
             enabled=False,
             athlete_id=None,
             api_key_configured=False,
+            web_cookie_configured=False,
             last_synced_at=None,
         )
 
@@ -204,6 +206,7 @@ def get_intervals_connection(
         enabled=connection.enabled,
         athlete_id=connection.athlete_id,
         api_key_configured=connection.secret_configured,
+        web_cookie_configured=service.has_intervals_web_cookie(athlete_profile_id),
         last_synced_at=connection.last_synced_at,
     )
 
@@ -227,6 +230,7 @@ def save_intervals_connection(
             athlete_profile_id=athlete_profile_id,
             athlete_id=payload.athlete_id,
             api_key=payload.api_key,
+            web_cookie=payload.web_cookie,
             enabled=payload.enabled,
         )
 
@@ -247,6 +251,7 @@ def save_intervals_connection(
         enabled=connection.enabled,
         athlete_id=connection.athlete_id,
         api_key_configured=connection.secret_configured,
+        web_cookie_configured=service.has_intervals_web_cookie(athlete_profile_id),
         last_synced_at=connection.last_synced_at,
     )
 
@@ -423,10 +428,13 @@ def test_intervals_connection(
     client = IntervalsClient(
         api_key=payload.api_key.strip(),
         athlete_id=payload.athlete_id.strip(),
+        web_cookie=payload.web_cookie,
     )
 
     try:
         client.get_athlete()
+        if payload.web_cookie:
+            client.trigger_partner_sync()
 
     except IntervalsAuthenticationError as exc:
         raise HTTPException(
@@ -490,6 +498,8 @@ def test_saved_intervals_connection(
 
     try:
         client.get_athlete()
+        if getattr(credentials, "web_cookie", None):
+            client.trigger_partner_sync()
 
     except IntervalsAuthenticationError as exc:
         raise HTTPException(

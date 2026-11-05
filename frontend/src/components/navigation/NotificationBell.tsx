@@ -200,7 +200,7 @@ export function NotificationBell({
             <div className="border-t border-[var(--oc-border)] p-2">
               <button
                 type="button"
-                onClick={onViewAll}
+                onClick={viewAll}
                 className="
                   flex w-full items-center justify-center gap-2
                   rounded-xl bg-[var(--oc-surface-muted)] px-3 py-2.5

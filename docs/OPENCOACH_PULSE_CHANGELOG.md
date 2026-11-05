@@ -87,3 +87,28 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Les modifications ont été poussées sur la branche GitHub dédiée.
 - Aucun build/lint local exécuté ; validation CI/locale encore requise.
 - Aucun merge, déploiement ou changement sur la VM.
+
+
+## 2026-11-05 — Sprint 2 : migration de WidgetCard
+
+### Audit ciblé
+- Le composant métier générique existant est `frontend/src/components/widgets/WidgetCard.tsx` (et non dans `components/ui`).
+- Il est utilisé pour les widgets du tableau de bord ; son contrat repose sur `WidgetDefinition` et ses statuts/accents existants.
+- Aucun nouveau composant MetricCard ou Badge n'a été créé : le besoin ne justifie pas encore une duplication.
+
+### Livré
+- Ajout de la classe partagée `.oc-interactive-surface` aux tokens : élévation discrète au survol, bordure sémantique, focus clavier visible.
+- Respect de `prefers-reduced-motion` : suppression de la translation et de la transition.
+- Migration de la surface racine de `WidgetCard` vers `.oc-surface` et `.oc-interactive-surface`.
+- Conservation des accents, statuts, libellés, icônes, interaction de détail et du contrat `WidgetDefinition`.
+
+### Contrôles et limites
+- Contrôle statique du diff : seul le style de la surface racine de WidgetCard a été remplacé.
+- Build TypeScript, lint et rendu navigateur non exécutés depuis cette intervention GitHub.
+- La page Santé et ses fonctions `fetchRecoveryAssessment` / `fetchWellnessTrends` restent inchangées.
+- Aucun backend, schéma, API, calcul physiologique ou planning modifié.
+
+### Suite
+- Migrer SidePanel et ToastProvider sur les tokens sémantiques sans toucher à leurs comportements.
+- Compléter l'inventaire des primitives réellement utilisées avant de décider si un Badge/EmptyState/Skeleton partagé est nécessaire.
+- Vérifier le comportement de la navigation existante avant toute évolution responsive.

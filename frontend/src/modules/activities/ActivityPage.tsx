@@ -4,6 +4,7 @@ import {
   useState,
 } from 'react'
 
+import { PageHeader } from '../../design-system/components/PageHeader'
 import {
   Activity,
   ArrowDownUp,
@@ -467,49 +468,7 @@ export function ActivityPage() {
           lg:py-5
         "
       >
-        <header
-          className="
-            mb-4
-          "
-        >
-          <p
-            className="
-              text-[10px]
-              font-bold
-              uppercase
-              tracking-[0.13em]
-              text-emerald-600
-              dark:text-emerald-400
-            "
-          >
-            Historique
-          </p>
-
-          <h1
-            className="
-              mt-1
-              text-[30px]
-              font-bold
-              tracking-[-0.04em]
-              text-slate-950
-              dark:text-white
-            "
-          >
-            Activités
-          </h1>
-
-          <p
-            className="
-              mt-1
-              text-[13px]
-              text-slate-400
-              dark:text-slate-500
-            "
-          >
-            Historique des activités synchronisées
-            et séances associées.
-          </p>
-        </header>
+        <PageHeader eyebrow="Historique" title="Activités" description="Historique des activités synchronisées et séances associées." />
 
 
         {!loading && !error && (

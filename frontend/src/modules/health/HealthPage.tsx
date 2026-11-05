@@ -22,6 +22,7 @@ import {
 
 import { LineChart } from '../../design-system/charts/LineChart'
 import { MetricCard } from '../../design-system/components/MetricCard'
+import { PageHeader } from '../../design-system/components/PageHeader'
 
 type WindowSize = 7 | 14 | 30
 
@@ -110,32 +111,24 @@ export function HealthPage() {
   )
 
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+    <main className="oc-app-shell min-h-screen px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-              <HeartPulse className="h-4 w-4" />
-              SANTÉ & RÉCUPÉRATION
-            </div>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
-              Suivi physiologique
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
-              Historique COROS, sommeil, fréquence cardiaque, HRV et charge d’entraînement.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setRefreshKey((value) => value + 1)}
-            disabled={loading}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:bg-[#141a1e] dark:text-slate-200 dark:hover:bg-white/5"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
-          </button>
-        </header>
+        <PageHeader
+          eyebrow={<><HeartPulse className="h-4 w-4" /> Santé & récupération</>}
+          title="Suivi physiologique"
+          description="Historique COROS, sommeil, fréquence cardiaque, HRV et charge d’entraînement."
+          actions={
+            <button
+              type="button"
+              onClick={() => setRefreshKey((value) => value + 1)}
+              disabled={loading}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[var(--oc-border)] bg-[var(--oc-surface)] px-4 text-sm font-semibold text-[var(--oc-text-secondary)] transition hover:bg-[var(--oc-surface-hover)] disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </button>
+          }
+        />
 
         {loading && (
           <div className="flex min-h-64 items-center justify-center oc-surface">

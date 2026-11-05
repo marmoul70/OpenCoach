@@ -615,6 +615,7 @@ def test_intervals_connection_test_rejects_bad_credentials(
             self,
             api_key,
             athlete_id,
+            web_cookie=None,
         ) -> None:
             pass
 

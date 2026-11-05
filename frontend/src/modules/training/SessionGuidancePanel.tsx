@@ -67,8 +67,8 @@ export function SessionGuidancePanel({
           overflow-hidden
           rounded-xl
           border
-          border-black/[0.06] dark:border-white/[0.07]
-          bg-white dark:bg-[#141a1e]
+          border-[var(--oc-border)] border-[var(--oc-border)]
+          bg-[var(--oc-surface)] bg-[var(--oc-surface)]
         "
       >
         <summary
@@ -77,7 +77,7 @@ export function SessionGuidancePanel({
             list-none
             px-4 py-3
             font-semibold
-            text-slate-900 dark:text-slate-100
+            text-[var(--oc-text)] text-[var(--oc-text)]
           "
         >
           <div
@@ -96,7 +96,7 @@ export function SessionGuidancePanel({
               className="
                 text-xs
                 font-normal
-                text-slate-400 dark:text-slate-500
+                text-[var(--oc-muted)] text-[var(--oc-muted)]
               "
             >
               Objectif, terrain, conseils
@@ -108,7 +108,7 @@ export function SessionGuidancePanel({
           className="
             space-y-5
             border-t
-            border-black/[0.06] dark:border-white/[0.07]
+            border-[var(--oc-border)] border-[var(--oc-border)]
             p-4
           "
         >
@@ -157,7 +157,7 @@ export function SessionGuidancePanel({
                     text-sm
                     font-semibold
                     leading-6
-                    text-slate-900 dark:text-slate-100
+                    text-[var(--oc-text)] text-[var(--oc-text)]
                   "
                 >
                   {guidance.objective}
@@ -251,7 +251,7 @@ export function SessionGuidancePanel({
                 <h3
                   className="
                     font-bold
-                    text-slate-900 dark:text-slate-100
+                    text-[var(--oc-text)] text-[var(--oc-text)]
                   "
                 >
                   À éviter
@@ -263,7 +263,7 @@ export function SessionGuidancePanel({
                   mt-3
                   text-sm
                   leading-6
-                  text-slate-600 dark:text-slate-300
+                  text-[var(--oc-text-secondary)] text-[var(--oc-muted)]
                 "
               >
                 <BulletList
@@ -295,16 +295,16 @@ export function SessionGuidancePanel({
                           items-center
                           rounded-full
                           border
-                          border-black/[0.08]
-                          bg-white
+                          border-[var(--oc-border)]
+                          bg-[var(--oc-surface)]
                           px-2.5
                           py-1
                           text-[10.5px]
                           font-medium
-                          text-slate-500
-                          dark:border-white/[0.09]
-                          dark:bg-white/[0.025]
-                          dark:text-slate-400
+                          text-[var(--oc-muted)]
+                          border-[var(--oc-border)]
+                          bg-[var(--oc-surface)]/[0.025]
+                          text-[var(--oc-muted)]
                         "
                       >
                         {
@@ -365,15 +365,15 @@ function ExecutionStage({
               ? (
                   'border-emerald-500 '
                   + 'bg-emerald-500 '
-                  + 'text-white'
+                  + 'text-[var(--oc-text)]'
                 )
               : (
-                  'border-slate-200 '
-                  + 'bg-white '
-                  + 'text-slate-500 '
-                  + 'dark:border-white/[0.10] '
-                  + 'dark:bg-[#151b1f] '
-                  + 'dark:text-slate-400'
+                  'border-[var(--oc-border)] '
+                  + 'bg-[var(--oc-surface)] '
+                  + 'text-[var(--oc-muted)] '
+                  + 'border-[var(--oc-border)] '
+                  + 'bg-[var(--oc-surface)] '
+                  + 'text-[var(--oc-muted)]'
                 ),
           ].join(' ')}
         >
@@ -393,8 +393,8 @@ function ExecutionStage({
                   + 'dark:text-emerald-400'
                 )
               : (
-                  'text-slate-800 '
-                  + 'dark:text-slate-200'
+                  'text-[var(--oc-text)] '
+                  + 'text-[var(--oc-text-secondary)]'
                 ),
           ].join(' ')}
         >
@@ -411,8 +411,8 @@ function ExecutionStage({
           left-[11.5px]
           top-7
           w-px
-          bg-slate-200
-          dark:bg-white/[0.07]
+          bg-[var(--oc-border-strong)]
+          bg-[var(--oc-surface)]/[0.07]
         "
       />
 
@@ -447,8 +447,8 @@ function ExecutionStage({
           <p
             className="
               text-[11px]
-              text-slate-400
-              dark:text-slate-500
+              text-[var(--oc-muted)]
+              text-[var(--oc-muted)]
             "
           >
             Aucune consigne spécifique.
@@ -490,7 +490,7 @@ function GuidanceSection({
         <h3
           className="
             font-bold
-            text-slate-900 dark:text-slate-100
+            text-[var(--oc-text)] text-[var(--oc-text)]
           "
         >
           {title}
@@ -501,7 +501,7 @@ function GuidanceSection({
         className="
           text-sm
           leading-6
-          text-slate-600 dark:text-slate-300
+          text-[var(--oc-text-secondary)] text-[var(--oc-muted)]
         "
       >
         {children}
@@ -573,8 +573,8 @@ function GuidanceStepCard({
                 text-[12px]
                 font-semibold
                 leading-5
-                text-slate-900
-                dark:text-slate-100
+                text-[var(--oc-text)]
+                text-[var(--oc-text)]
               "
             >
               {step.title}
@@ -586,8 +586,8 @@ function GuidanceStepCard({
               className={[
                 (
                   'text-[10.5px] leading-[1.5] '
-                  + 'text-slate-500 '
-                  + 'dark:text-slate-400'
+                  + 'text-[var(--oc-muted)] '
+                  + 'text-[var(--oc-muted)]'
                 ),
                 showTitle
                   ? 'mt-1'
@@ -608,14 +608,14 @@ function GuidanceStepCard({
               items-center
               gap-1
               rounded-[6px]
-              bg-slate-100
+              bg-[var(--oc-surface-muted)]
               px-1.5
               py-0.5
               text-[9px]
               font-semibold
-              text-slate-500
-              dark:bg-white/[0.055]
-              dark:text-slate-400
+              text-[var(--oc-muted)]
+              bg-[var(--oc-surface)]/[0.055]
+              text-[var(--oc-muted)]
             "
           >
             <Clock3
@@ -633,9 +633,9 @@ function GuidanceStepCard({
           className="
             mt-2.5
             border-t
-            border-black/[0.055]
+            border-[var(--oc-border)]
             pt-2.5
-            dark:border-white/[0.06]
+            border-[var(--oc-border)]
           "
         >
           <div
@@ -667,8 +667,8 @@ function GuidanceStepCard({
                   mt-0.5
                   text-[12px]
                   font-semibold
-                  text-slate-900
-                  dark:text-slate-100
+                  text-[var(--oc-text)]
+                  text-[var(--oc-text)]
                 "
               >
                 {step.work_distance_meters} m
@@ -683,8 +683,8 @@ function GuidanceStepCard({
                 className="
                   text-[11px]
                   font-semibold
-                  text-slate-500
-                  dark:text-slate-400
+                  text-[var(--oc-muted)]
+                  text-[var(--oc-muted)]
                 "
               >
                 {
@@ -760,9 +760,9 @@ function GuidanceStepCard({
                 items-center
                 gap-1.5
                 border-t
-                border-black/[0.055]
+                border-[var(--oc-border)]
                 pt-2
-                dark:border-white/[0.06]
+                border-[var(--oc-border)]
               "
             >
               <span
@@ -787,8 +787,8 @@ function GuidanceStepCard({
                 className="
                   text-[10.5px]
                   font-semibold
-                  text-slate-700
-                  dark:text-slate-200
+                  text-[var(--oc-text-secondary)]
+                  text-[var(--oc-text-secondary)]
                 "
               >
                 {step.recovery_description}
@@ -811,9 +811,9 @@ function GuidanceStepCard({
             justify-between
             gap-3
             border-t
-            border-black/[0.055]
+            border-[var(--oc-border)]
             pt-2
-            dark:border-white/[0.06]
+            border-[var(--oc-border)]
           "
         >
           <span
@@ -822,7 +822,7 @@ function GuidanceStepCard({
               font-semibold
               uppercase
               tracking-[0.06em]
-              text-slate-400
+              text-[var(--oc-muted)]
             "
           >
             Cible
@@ -832,8 +832,8 @@ function GuidanceStepCard({
             className="
               text-[11.5px]
               font-semibold
-              text-slate-800
-              dark:text-slate-200
+              text-[var(--oc-text)]
+              text-[var(--oc-text-secondary)]
             "
           >
             {
@@ -928,15 +928,15 @@ function CompactTarget({
     <span
       className="
         text-[10px]
-        text-slate-500
-        dark:text-slate-400
+        text-[var(--oc-muted)]
+        text-[var(--oc-muted)]
       "
     >
       <span
         className="
           font-semibold
-          text-slate-700
-          dark:text-slate-300
+          text-[var(--oc-text-secondary)]
+          text-[var(--oc-muted)]
         "
       >
         {label}
@@ -1119,9 +1119,9 @@ function IntensityTargets({
         gap-x-2
         gap-y-1.5
         border-t
-        border-black/[0.055]
+        border-[var(--oc-border)]
         pt-2.5
-        dark:border-white/[0.06]
+        border-[var(--oc-border)]
       "
     >
       {values.map(
@@ -1145,9 +1145,9 @@ function IntensityTargets({
                 className="
                   hidden
                   text-[9px]
-                  text-slate-300
+                  text-[var(--oc-muted)]
                   sm:inline
-                  dark:text-slate-600
+                  text-[var(--oc-text-secondary)]
                 "
               >
                 •
@@ -1188,16 +1188,16 @@ function IntensityValue({
       <span
         className="
           rounded-[5px]
-          bg-slate-100
+          bg-[var(--oc-surface-muted)]
           px-1.5
           py-0.5
           text-[8.5px]
           font-bold
           uppercase
           tracking-[0.035em]
-          text-slate-500
-          dark:bg-white/[0.055]
-          dark:text-slate-400
+          text-[var(--oc-muted)]
+          bg-[var(--oc-surface)]/[0.055]
+          text-[var(--oc-muted)]
         "
       >
         {title}
@@ -1207,8 +1207,8 @@ function IntensityValue({
         className="
           text-[10.5px]
           font-semibold
-          text-slate-700
-          dark:text-slate-200
+          text-[var(--oc-text-secondary)]
+          text-[var(--oc-text-secondary)]
         "
       >
         {value}

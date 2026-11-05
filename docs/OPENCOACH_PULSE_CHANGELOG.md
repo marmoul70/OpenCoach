@@ -348,3 +348,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Relecture statique des composants après migration et audit ciblé des classes neutres résiduelles.
 - CI en cours sur la branche ; le sprint ne sera considéré comme validé qu'après réussite des contrôles complets.
 - Contrôle visuel clair/sombre et responsive à réaliser dans un navigateur réel.
+
+
+## 2026-11-05 — Sprint 12 : formulaires et panneaux de séance
+
+### Livré
+- Formulaire d'ajout de séance : surfaces, bordures, textes neutres, onglets, états vides et contrôles de saisie raccordés aux tokens Pulse clair/sombre.
+- Import Intervals.icu et saisie manuelle : présentation harmonisée sans modifier les champs, validations, messages métier, appels API ou payloads.
+- Panneau de guidage de séance : cartes, séparateurs, fonds secondaires, libellés et textes neutres alignés sur les tokens sémantiques.
+- Le composant SidePanel partagé déjà existant est réutilisé ; aucune nouvelle primitive de panneau n'a été créée.
+
+### Garde-fous
+- Conservation des statuts, accents d'intensité, couleurs d'erreur et d'avertissement, icônes, callbacks et comportements de soumission.
+- Aucun changement de schéma, endpoint, synchronisation Intervals/COROS, calcul d'entraînement ou dépendance.
+- Aucun changement de la VM, aucun merge et aucun déploiement.
+
+### Contrôles
+- Audit statique des deux composants après migration : les classes neutres Tailwind restantes ont été remplacées par les variables sémantiques ; les accents fonctionnels sont conservés.
+- Les états de formulaire, import, chargement, erreur, vide et saisie restent à vérifier en navigateur en clair/sombre et sur mobile.
+- Build, lint et tests CI des derniers commits à confirmer avant validation technique.

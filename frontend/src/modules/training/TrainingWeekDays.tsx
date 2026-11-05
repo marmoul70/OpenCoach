@@ -427,13 +427,13 @@ function RestSessionRow({
         gap-3
         rounded-[10px]
         border
-        border-slate-200/70
+        border-[var(--oc-border)]
         bg-[var(--oc-surface-muted)]
         px-3
         py-2.5
         text-left
         transition
-        hover:border-slate-300
+        hover:border-[var(--oc-border-strong)]
         hover:bg-[var(--oc-surface-muted)]
         dark:border-[var(--oc-border)]
         dark:bg-[var(--oc-surface)]/[0.025]
@@ -508,7 +508,7 @@ function EmptyDay() {
         rounded-[10px]
         border
         border-dashed
-        border-slate-200
+        border-[var(--oc-border)]
         bg-[var(--oc-surface-muted)]
         px-3
         py-2.5
@@ -653,7 +653,7 @@ function SessionRow({
               className="
                 rounded-full
                 border
-                border-slate-200
+                border-[var(--oc-border)]
                 px-1.5
                 py-0.5
                 text-[10px]
@@ -852,8 +852,8 @@ function sessionVisualClass(
 
   return (
     'border-l-[3px] '
-    + 'border-l-slate-300/80 '
-    + 'dark:border-l-slate-600'
+    + 'border-l-[var(--oc-border-strong)] '
+    + ''
   )
 }
 

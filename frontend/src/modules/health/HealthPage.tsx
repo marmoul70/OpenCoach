@@ -218,9 +218,12 @@ export function HealthPage() {
                     {GROUPS.map((group) => {
                       const items = METRICS.filter((metric) => metric.group === group)
                       return (
-                        <div key={group}>
-                          <h3 className="mb-3 oc-type-body font-semibold text-[var(--oc-text-secondary)]">{group}</h3>
-                          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                        <section key={group} className="rounded-2xl border border-[var(--oc-border)] bg-[var(--oc-surface-raised)] p-4 shadow-sm sm:p-5">
+                          <div className="mb-4 flex items-center justify-between gap-3">
+                            <h3 className="oc-type-section-title font-semibold text-[var(--oc-text)]">{group}</h3>
+                            <span className="rounded-full bg-[var(--oc-accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--oc-accent)]">{items.length} indicateurs</span>
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
                             {items.map((metric) => (
                               <MetricTile
                                 key={metric.key}
@@ -230,7 +233,7 @@ export function HealthPage() {
                               />
                             ))}
                           </div>
-                        </div>
+                        </section>
                       )
                     })}
                   </div>
@@ -394,7 +397,17 @@ function StatusCard({
   detail: string
   icon: React.ReactNode
 }) {
-  return <MetricCard label={label} value={value} detail={detail} icon={icon} />
+  return (
+    <div className="relative min-w-0 overflow-hidden rounded-2xl border border-[var(--oc-border)] bg-[var(--oc-surface-raised)] p-4 shadow-[var(--oc-shadow-card)]">
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500/80 via-teal-400/50 to-transparent" />
+      <div className="flex items-center justify-between gap-3">
+        <span className="oc-type-label font-semibold uppercase tracking-wide text-[var(--oc-muted)]">{label}</span>
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--oc-accent-soft)] text-[var(--oc-accent)]">{icon}</span>
+      </div>
+      <p className="mt-4 break-words text-2xl font-bold tracking-tight tabular-nums text-[var(--oc-text)]">{value}</p>
+      <p className="mt-1 oc-type-secondary leading-relaxed">{detail}</p>
+    </div>
+  )
 }
 
 function MetricTile({
@@ -408,16 +421,29 @@ function MetricTile({
 }) {
   const value = metric?.current
   return (
-    <MetricCard
-      label={label}
-      value={value == null ? '—' : formatMetric(value, unit)}
-      metadata={[
-        { label: 'Moyenne', value: metric?.average == null ? '—' : formatMetric(metric.average, unit) },
-        { label: 'Mesures', value: String(metric?.sample_count ?? 0) },
-        { label: 'Jours couverts', value: String(metric?.coverage_days ?? 0) },
-      ]}
-      compact
-    />
+    <article className="min-w-0 rounded-xl border border-[var(--oc-border)] bg-[var(--oc-page)]/70 p-3.5 transition-colors hover:border-[var(--oc-border-strong)] sm:p-4">
+      <div className="flex items-start justify-between gap-3">
+        <p className="oc-type-body font-semibold leading-snug text-[var(--oc-text-secondary)]">{label}</p>
+        <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-[var(--oc-accent)]" aria-hidden="true" />
+      </div>
+      <p className="mt-2 text-2xl font-bold tracking-tight tabular-nums text-[var(--oc-text)]">
+        {value == null ? '—' : formatMetric(value, unit)}
+      </p>
+      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[var(--oc-border)] pt-3">
+        <div className="min-w-0">
+          <p className="oc-type-caption">Moyenne</p>
+          <p className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--oc-text-secondary)]">{metric?.average == null ? '—' : formatMetric(metric.average, unit)}</p>
+        </div>
+        <div className="min-w-0">
+          <p className="oc-type-caption">Mesures</p>
+          <p className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--oc-text-secondary)]">{metric?.sample_count ?? 0}</p>
+        </div>
+        <div className="min-w-0">
+          <p className="oc-type-caption">Jours couverts</p>
+          <p className="mt-1 truncate text-xs font-semibold tabular-nums text-[var(--oc-text-secondary)]">{metric?.coverage_days ?? 0}</p>
+        </div>
+      </div>
+    </article>
   )
 }
 

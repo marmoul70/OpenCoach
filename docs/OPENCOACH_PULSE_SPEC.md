@@ -93,7 +93,7 @@ Cette arborescence est une cible évolutive, pas une obligation de déplacer imm
 | Button | Action utilisateur | variant, size, disabled, loading, icon, children |
 | Card | Surface de contenu | variant, padding, interactive, children |
 | Badge | État / catégorie | tone, label, icon optionnelle |
-| MetricCard | Mesure synthétique | label, value, unit, delta optionnel, status, freshness |
+| MetricCard | Mesure synthétique ou résumé compact | label, value, detail optionnel, icon optionnelle, metadata[], compact |
 | ProgressRing | Progression | value, max, label, valueText, tone |
 | PageHeader | En-tête de page | title, description, actions, eyebrow optionnel |
 | EmptyState | Absence de contenu | title, description, action optionnelle |
@@ -114,6 +114,18 @@ Les composants visuels ne font pas d'appels réseau, ne calculent pas de scores 
 - Le module appelant reste responsable du filtrage temporel, des agrégats métier et de la fraîcheur des données.
 - La grille, les repères, les séries et les surfaces utilisent les tokens sémantiques du design system.
 - Chaque graphique expose un nom accessible et des détails de points via les éléments SVG.
+
+### 4.2 Widgets de données — contrat partagé
+
+`MetricCard` est la primitive de départ :
+- `label` et `value` obligatoires ; `value` accepte un contenu React déjà formaté.
+- `detail` et `icon` facultatifs pour une mesure synthétique.
+- `metadata[]` permet d'afficher des compléments alignés (moyenne, échantillons, jours couverts, etc.).
+- `compact` adapte la densité pour les grilles de métriques.
+- `className` permet une adaptation locale sans dupliquer le composant.
+- Aucun formatage métier, calcul de delta ou interprétation de statut n'est réalisé dans la carte.
+
+Les widgets de graphiques suivent le même principe : les modules préparent les séries, les unités, les fenêtres et les libellés ; le design system assure uniquement le rendu.
 
 ## 5. Règles de données et santé
 
@@ -156,4 +168,4 @@ Les composants visuels ne font pas d'appels réseau, ne calculent pas de scores 
 
 ## 9. Décisions techniques ouvertes
 
-Les choix d'implémentation (bibliothèque de graphiques, conventions de tests, éventuels déplacements de fichiers) doivent être pris après vérification du code et des dépendances existants. Ne pas ajouter de dépendance si le SVG natif couvre proprement le besoin.
+La primitive `LineChart` reste en SVG natif pour les séries simples. Pour les graphiques multi-séries, aires, barres, comparaisons et tooltips interactifs, Recharts 3.x est la bibliothèque candidate : composants React composables, SVG, redimensionnement responsive et couche d'accessibilité clavier activée par défaut. La dépendance ne sera ajoutée qu'au premier besoin fonctionnel réel de ces graphiques, après vérification du lockfile et du bundle. Référence : https://recharts.org/.

@@ -22,6 +22,7 @@ class IntervalsClient:
         *,
         timeout: float = 20.0,
         transport: httpx.BaseTransport | None = None,
+        web_cookie: str | None = None,
     ) -> None:
         if not api_key:
             raise ValueError(
@@ -37,6 +38,7 @@ class IntervalsClient:
         self.athlete_id = athlete_id
         self.timeout = timeout
         self.transport = transport
+        self.web_cookie = web_cookie.strip() if web_cookie else None
 
     def get_athlete(
         self,
@@ -155,16 +157,9 @@ class IntervalsClient:
         """
 
         try:
-            import os
-
-            web_cookie = os.environ.get(
-                "OPENCOACH_INTERVALS_WEB_COOKIE"
-            )
-
-            if not web_cookie:
+            if not self.web_cookie:
                 raise IntervalsAuthenticationError(
-                    "OPENCOACH_INTERVALS_WEB_COOKIE "
-                    "n'est pas configurée."
+                    "Le cookie de session Intervals.icu n'est pas configuré pour cet utilisateur."
                 )
 
             with httpx.Client(
@@ -186,7 +181,7 @@ class IntervalsClient:
                             "https://intervals.icu/",
                     },
                     cookies={
-                        "athlete_id": web_cookie,
+                        "athlete_id": self.web_cookie,
                         "locale": "fr",
                     },
                 )

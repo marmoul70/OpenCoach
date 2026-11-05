@@ -14,6 +14,11 @@ class IntervalsConnectionUpdate(BaseModel):
         max_length=1000,
     )
 
+    web_cookie: str | None = Field(
+        default=None,
+        max_length=4000,
+    )
+
     enabled: bool = True
 
 
@@ -25,6 +30,7 @@ class IntervalsConnectionResponse(BaseModel):
     enabled: bool
     athlete_id: str | None
     api_key_configured: bool
+    web_cookie_configured: bool = False
     last_synced_at: datetime | None = None
 
 
@@ -39,6 +45,11 @@ class IntervalsConnectionTest(BaseModel):
     api_key: str = Field(
         min_length=1,
         max_length=1000,
+    )
+
+    web_cookie: str | None = Field(
+        default=None,
+        max_length=4000,
     )
 
 

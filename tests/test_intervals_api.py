@@ -679,6 +679,7 @@ def test_saved_intervals_connection_succeeds(
             self,
             api_key,
             athlete_id,
+            web_cookie=None,
         ) -> None:
             assert api_key == "secret-api-key"
             assert athlete_id == "i651743"

@@ -279,3 +279,16 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Vérifier les menus de profil, le tiroir mobile et la barre de navigation sur iOS et desktop.
 - Contrôler les contrastes clair/sombre et les états actif, survol, focus et désactivé.
 - Les composants de navigation conservent leurs comportements et routes ; seules les classes de présentation ont été modifiées.
+
+## 2026-11-05 — Sprint 8 : harmonisation Dashboard et Santé
+
+### Livré
+- Page Santé : titres de sections et de cartes alignés sur les rôles typographiques Pulse.
+- Page Santé : surfaces secondaires, bordures, périodes sélectionnées et textes de métadonnées raccordés aux tokens sémantiques clair/sombre.
+- Page Santé : maintien des valeurs, calculs, périodes, sources COROS/Intervals et comportements de chargement/erreur ; seules les classes de présentation ont été ajustées.
+- Cartes de widgets du Dashboard : titres, descriptions, métadonnées, bordures et surfaces neutres alignés sur le système Pulse.
+- Les accents fonctionnels (succès, vigilance, alerte et couleurs métier) sont conservés pour garder une lecture immédiate des statuts.
+
+### Contrôles
+- Vérifier les états actif, focus et survol ainsi que les contrastes sur iPhone et desktop, en thèmes clair et sombre.
+- Aucun changement de logique métier, d'API, de stockage ou de navigation.

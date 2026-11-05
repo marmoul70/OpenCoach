@@ -668,3 +668,21 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôles
 - CI lancée sur les commits du sprint.
 - Vérification visuelle du formulaire en création/édition, responsive et clair/sombre à effectuer dans le navigateur.
+
+
+## 2026-11-05 — Sprint 29 : navigation et sections principales des Réglages
+
+### Livré
+- Conteneurs, navigation des sections et panneaux : surfaces, bordures, séparateurs et survols alignés sur les tokens Pulse.
+- Titres, descriptions, libellés et métadonnées neutres raccordés aux rôles de texte sémantiques.
+- Thèmes clair/sombre unifiés pour les zones de navigation et de présentation générale.
+- Accents fonctionnels, états actifs, erreurs et indicateurs de statut préservés.
+
+### Garde-fous
+- Sélection des sections, états actifs, callbacks, formulaires, valeurs et comportements de réglages inchangés.
+- Aucun changement d'API, logique métier, stockage, backend, synchronisation ou dépendance.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles
+- CI lancée sur les commits du sprint.
+- Vérification visuelle responsive et clair/sombre à effectuer dans le navigateur.

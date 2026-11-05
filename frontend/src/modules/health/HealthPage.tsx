@@ -74,6 +74,7 @@ export function HealthPage() {
   const [error, setError] = useState<string | null>(null)
   const [windowSize, setWindowSize] = useState<WindowSize>(7)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [lastRefreshAt, setLastRefreshAt] = useState<Date | null>(null)
   const [selectedSection, setSelectedSection] = useState<HealthSectionKey | null>(null)
 
   useEffect(() => {
@@ -90,6 +91,7 @@ export function HealthPage() {
         if (mounted) {
           setAssessment(assessmentResult)
           setTrends(trendsResult)
+          setLastRefreshAt(new Date())
         }
       })
       .catch((reason: unknown) => {
@@ -133,6 +135,12 @@ export function HealthPage() {
             </button>
           }
         />
+        <p className="mt-1 text-right text-xs text-[var(--oc-muted)]" aria-live="polite">
+          {lastRefreshAt
+            ? `Dernière actualisation : ${new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'medium' }).format(lastRefreshAt)}`
+            : 'En attente de la première actualisation…'}
+          {' · Actualisation à l’ouverture et sur demande'}
+        </p>
 
         {loading && (
           <div className="flex min-h-64 items-center justify-center oc-surface">

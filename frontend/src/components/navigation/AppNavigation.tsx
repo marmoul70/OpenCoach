@@ -839,7 +839,7 @@ export function AppNavigation({
 
               grid
               h-[68px]
-              grid-cols-6
+              grid-cols-5
 
               rounded-[22px]
 
@@ -883,20 +883,6 @@ export function AppNavigation({
               ),
             )}
 
-            <MobileNavigationItem
-              active={
-                activePage === 'races'
-              }
-              label="Courses"
-              icon={
-                <Flag
-                  className="h-5 w-5"
-                />
-              }
-              onClick={() =>
-                navigate('races')
-              }
-            />
           </div>
         </div>
       </nav>
@@ -1003,6 +989,16 @@ export function AppNavigation({
                 divider
                 onClick={() =>
                   navigate('weather')
+                }
+              />
+
+              <MobileDrawerItem
+                icon={<Flag />}
+                title="Courses"
+                description="Objectifs et calendrier des courses"
+                divider
+                onClick={() =>
+                  navigate('races')
                 }
               />
 

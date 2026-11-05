@@ -911,9 +911,9 @@ export function IntervalsSection() {
                 transition
                 hover:bg-emerald-700
                 disabled:cursor-not-allowed
-                disabled:bg-slate-200
+                disabled:bg-[var(--oc-surface-muted)]
                 disabled:text-[var(--oc-muted-soft)]
-                dark:disabled:bg-white/[0.05]
+                dark:disabled:bg-[var(--oc-surface-muted)]
                 dark:disabled:text-[var(--oc-text-secondary)]
               "
             >
@@ -1184,7 +1184,7 @@ function ConnectionStatus({
           ),
           connected
             ? 'bg-emerald-500'
-            : 'bg-slate-300',
+            : 'bg-[var(--oc-muted-soft)]',
         ].join(' ')}
       />
 
@@ -1321,7 +1321,7 @@ function ConnectionField({
             h-3.5
             w-3.5
             shrink-0
-            text-slate-300
+            text-[var(--oc-muted-soft)]
             dark:text-[var(--oc-text-secondary)]
           "
         />
@@ -1345,8 +1345,8 @@ function ConnectionField({
             font-medium
             text-[var(--oc-text)]
             outline-none
-            placeholder:text-slate-300
-            dark:text-slate-100
+            placeholder:text-[var(--oc-muted-soft)]
+            dark:text-[var(--oc-text)]
             dark:placeholder:text-[var(--oc-text-secondary)]
           "
         />

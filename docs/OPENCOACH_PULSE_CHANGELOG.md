@@ -329,3 +329,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - La carte « Aujourd’hui » du planning utilise désormais les surfaces, bordures et textes neutres Pulse en clair/sombre.
 - Les repères de type de séance (renforcement, sortie longue/trail, intensité, endurance) et les statuts réalisé/non réalisé/à faire restent distincts.
 - Les callbacks d'ouverture/ajout, les informations de séance et la synchronisation Intervals restent inchangés.
+
+
+## 2026-11-05 — Sprint 11 : briefing Coach et calendrier hebdomadaire
+
+### Livré
+- Page Coach : conteneur principal, séance recommandée, rail de disponibilité, séparateurs, indicateurs et surfaces secondaires migrés vers les tokens Pulse.
+- États neutres de la page Coach (titres, métadonnées, textes secondaires, fonds et bordures) harmonisés en clair/sombre.
+- Calendrier hebdomadaire : cartes de jours, sélecteurs, séparateurs et textes neutres alignés sur les surfaces et la typographie sémantiques.
+- Les états de statut (charge, disponibilité, séance réalisée/à faire, intensité) conservent leurs accents fonctionnels.
+
+### Garde-fous
+- Les calculs de disponibilité, charge, projections hebdomadaires, décisions du coach, données de séances, callbacks et navigation restent inchangés.
+- Aucun endpoint, modèle, synchronisation COROS/Intervals ou dépendance modifié.
+- Les composants et fonctions de présentation existants sont réutilisés ; aucune duplication de composant n'a été introduite.
+
+### Contrôles
+- Relecture statique des composants après migration et audit ciblé des classes neutres résiduelles.
+- CI en cours sur la branche ; le sprint ne sera considéré comme validé qu'après réussite des contrôles complets.
+- Contrôle visuel clair/sombre et responsive à réaliser dans un navigateur réel.

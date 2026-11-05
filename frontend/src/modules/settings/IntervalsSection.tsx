@@ -55,6 +55,11 @@ export function IntervalsSection() {
   ] = useState('')
 
   const [
+    webCookie,
+    setWebCookie,
+  ] = useState('')
+
+  const [
     enabled,
     setEnabled,
   ] = useState(true)
@@ -175,6 +180,7 @@ export function IntervalsSection() {
         await testIntervalsConnection(
           normalizedAthleteId,
           normalizedApiKey,
+          webCookie.trim(),
         )
       } else {
         if (
@@ -282,11 +288,16 @@ export function IntervalsSection() {
             apiKey.trim()
             || null,
 
+          web_cookie:
+            webCookie.trim()
+            || null,
+
           enabled,
         })
 
       setConnection(result)
       setApiKey('')
+      setWebCookie('')
       setConnectionTested(false)
       setEditing(false)
 
@@ -466,6 +477,7 @@ export function IntervalsSection() {
     )
 
     setApiKey('')
+    setWebCookie('')
     setError(null)
     setMessage(null)
     setConnectionTested(false)
@@ -732,8 +744,31 @@ export function IntervalsSection() {
                 setMessage(null)
               }}
             />
+
+            <ConnectionField
+              icon={KeyRound}
+              label="Cookie de session partenaire"
+              value={webCookie}
+              type="password"
+              placeholder={
+                connection?.web_cookie_configured
+                  ? 'Cookie déjà configuré'
+                  : 'Cookie de session Intervals.icu'
+              }
+              onChange={value => {
+                setWebCookie(value)
+                setConnectionTested(false)
+                setMessage(null)
+              }}
+            />
           </div>
 
+
+          <p
+            className="mt-2 text-[9px] text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]"
+          >
+            Le cookie est stocké chiffré pour ce profil. Il sert à déclencher la synchronisation des fournisseurs connectés (ex. Suunto) avant la collecte santé matinale. Il n'est jamais renvoyé au navigateur.
+          </p>
 
           {connection
             ?.api_key_configured

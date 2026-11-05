@@ -631,3 +631,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôles
 - CI lancée sur les commits du sprint.
 - Vérification visuelle responsive et clair/sombre à effectuer dans le navigateur.
+
+
+## 2026-11-05 — Sprint 27 : page Courses et détail des courses
+
+### Livré
+- Sections de préparation, courses à venir et historique : surfaces et bordures raccordées aux tokens Pulse.
+- Synthèse des courses, timeline et tableaux desktop : séparateurs, fonds, survols et typographie neutre harmonisés.
+- Cartes mobiles et indicateurs : surfaces secondaires et rôles de texte alignés sur les thèmes clair/sombre.
+- Détail d'une course : cartes, libellés, valeurs, champs et métadonnées neutres migrés vers les tokens globaux.
+- Le panneau visuel de l'objectif principal conserve volontairement son traitement sombre dédié ; les accents de priorité et d'état sont préservés.
+
+### Garde-fous
+- Priorités, statuts, dates, tris, calculs, résultats, formulaires, navigation et interactions inchangés.
+- Aucun changement de logique métier, API, données, stockage, backend, synchronisation ou dépendance.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles
+- CI lancée sur les commits du sprint.
+- Vérification visuelle responsive et clair/sombre à effectuer dans le navigateur.

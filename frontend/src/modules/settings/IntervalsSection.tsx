@@ -483,10 +483,10 @@ export function IntervalsSection() {
           justify-center
           rounded-[12px]
           border
-          border-black/[0.065]
-          bg-white
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
           dark:border-white/[0.065]
-          dark:bg-[#151b1f]
+          dark:bg-[var(--oc-surface)]
         "
       >
         <div
@@ -495,7 +495,7 @@ export function IntervalsSection() {
             items-center
             gap-2
             text-[10.5px]
-            text-slate-400
+            text-[var(--oc-muted-soft)]
           "
         >
           <LoaderCircle
@@ -526,10 +526,10 @@ export function IntervalsSection() {
         overflow-hidden
         rounded-[12px]
         border
-        border-black/[0.065]
-        bg-white
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface)]
         dark:border-white/[0.065]
-        dark:bg-[#151b1f]
+        dark:bg-[var(--oc-surface)]
       "
     >
 
@@ -610,7 +610,7 @@ export function IntervalsSection() {
                     text-[15px]
                     font-bold
                     tracking-[-0.02em]
-                    text-slate-950
+                    text-[var(--oc-text)]
                     dark:text-white
                   "
                 >
@@ -628,8 +628,8 @@ export function IntervalsSection() {
                 className="
                   mt-1
                   text-[10px]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-muted-soft)]
+                  dark:text-[var(--oc-muted)]
                 "
               >
                 Activités, récupération
@@ -653,17 +653,17 @@ export function IntervalsSection() {
                 gap-1.5
                 rounded-[8px]
                 border
-                border-black/[0.06]
+                border-[var(--oc-border)]
                 px-2.5
                 text-[10px]
                 font-semibold
-                text-slate-500
+                text-[var(--oc-muted)]
                 transition
-                hover:bg-slate-50
-                hover:text-slate-900
+                hover:bg-[var(--oc-surface-muted)]
+                hover:text-[var(--oc-text)]
                 dark:border-white/[0.065]
-                dark:text-slate-400
-                dark:hover:bg-white/[0.04]
+                dark:text-[var(--oc-muted-soft)]
+                dark:hover:bg-[var(--oc-surface-hover)]
                 dark:hover:text-white
               "
             >
@@ -690,7 +690,7 @@ export function IntervalsSection() {
         <div
           className="
             border-t
-            border-black/[0.055]
+            border-[var(--oc-border)]
             px-4
             py-4
             dark:border-white/[0.06]
@@ -742,8 +742,8 @@ export function IntervalsSection() {
                 className="
                   mt-2
                   text-[9px]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-muted-soft)]
+                  dark:text-[var(--oc-muted)]
                 "
               >
                 Laisse la clé vide pour
@@ -760,10 +760,10 @@ export function IntervalsSection() {
               justify-between
               gap-4
               rounded-[10px]
-              bg-slate-50
+              bg-[var(--oc-surface-muted)]
               px-3
               py-2.5
-              dark:bg-white/[0.025]
+              dark:bg-[var(--oc-surface-muted)]
             "
           >
             <div>
@@ -771,8 +771,8 @@ export function IntervalsSection() {
                 className="
                   text-[10.5px]
                   font-semibold
-                  text-slate-700
-                  dark:text-slate-300
+                  text-[var(--oc-text-secondary)]
+                  dark:text-[var(--oc-text-secondary)]
                 "
               >
                 Intégration active
@@ -782,7 +782,7 @@ export function IntervalsSection() {
                 className="
                   mt-0.5
                   text-[9px]
-                  text-slate-400
+                  text-[var(--oc-muted-soft)]
                 "
               >
                 Autorise OpenCoach à
@@ -820,7 +820,7 @@ export function IntervalsSection() {
               justify-end
               gap-2
               border-t
-              border-black/[0.055]
+              border-[var(--oc-border)]
               pt-3
               dark:border-white/[0.06]
             "
@@ -834,10 +834,10 @@ export function IntervalsSection() {
                 px-3
                 text-[10px]
                 font-semibold
-                text-slate-400
-                hover:bg-slate-50
-                hover:text-slate-700
-                dark:hover:bg-white/[0.04]
+                text-[var(--oc-muted-soft)]
+                hover:bg-[var(--oc-surface-muted)]
+                hover:text-[var(--oc-text-secondary)]
+                dark:hover:bg-[var(--oc-surface-hover)]
               "
             >
               Annuler
@@ -860,17 +860,17 @@ export function IntervalsSection() {
                 gap-1.5
                 rounded-[8px]
                 border
-                border-black/[0.07]
+                border-[var(--oc-border)]
                 px-3
                 text-[10px]
                 font-semibold
-                text-slate-600
+                text-[var(--oc-text-secondary)]
                 transition
-                hover:bg-slate-50
+                hover:bg-[var(--oc-surface-muted)]
                 disabled:opacity-40
                 dark:border-white/[0.07]
-                dark:text-slate-300
-                dark:hover:bg-white/[0.04]
+                dark:text-[var(--oc-text-secondary)]
+                dark:hover:bg-[var(--oc-surface-hover)]
               "
             >
               {testing && (
@@ -912,9 +912,9 @@ export function IntervalsSection() {
                 hover:bg-emerald-700
                 disabled:cursor-not-allowed
                 disabled:bg-slate-200
-                disabled:text-slate-400
+                disabled:text-[var(--oc-muted-soft)]
                 dark:disabled:bg-white/[0.05]
-                dark:disabled:text-slate-600
+                dark:disabled:text-[var(--oc-text-secondary)]
               "
             >
               {saving && (
@@ -940,7 +940,7 @@ export function IntervalsSection() {
                   mt-2
                   text-right
                   text-[9px]
-                  text-slate-400
+                  text-[var(--oc-muted-soft)]
                 "
               >
                 Teste la connexion avant
@@ -959,7 +959,7 @@ export function IntervalsSection() {
               grid
               grid-cols-2
               border-t
-              border-black/[0.055]
+              border-[var(--oc-border)]
               dark:border-white/[0.06]
               sm:grid-cols-3
             "
@@ -1001,7 +1001,7 @@ export function IntervalsSection() {
               className="
                 col-span-2
                 border-t
-                border-black/[0.055]
+                border-[var(--oc-border)]
                 dark:border-white/[0.06]
                 sm:col-span-1
                 sm:border-t-0
@@ -1016,12 +1016,12 @@ export function IntervalsSection() {
               flex-col
               gap-3
               border-t
-              border-black/[0.055]
-              bg-slate-50/55
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface-muted)]
               px-4
               py-3
               dark:border-white/[0.06]
-              dark:bg-white/[0.018]
+              dark:bg-[var(--oc-surface-muted)]
               sm:flex-row
               sm:items-center
               sm:justify-between
@@ -1034,8 +1034,8 @@ export function IntervalsSection() {
                   font-semibold
                   uppercase
                   tracking-[0.08em]
-                  text-slate-400
-                  dark:text-slate-500
+                  text-[var(--oc-muted-soft)]
+                  dark:text-[var(--oc-muted)]
                 "
               >
                 Dernière synchronisation
@@ -1046,8 +1046,8 @@ export function IntervalsSection() {
                   mt-1
                   text-[11px]
                   font-semibold
-                  text-slate-700
-                  dark:text-slate-300
+                  text-[var(--oc-text-secondary)]
+                  dark:text-[var(--oc-text-secondary)]
                 "
               >
                 {
@@ -1086,20 +1086,20 @@ export function IntervalsSection() {
                 gap-1.5
                 rounded-[8px]
                 border
-                border-black/[0.07]
-                bg-white
+                border-[var(--oc-border)]
+                bg-[var(--oc-surface)]
                 px-3
                 text-[10px]
                 font-semibold
-                text-slate-600
+                text-[var(--oc-text-secondary)]
                 transition
                 hover:border-emerald-500/20
                 hover:text-emerald-700
                 disabled:cursor-not-allowed
                 disabled:opacity-40
                 dark:border-white/[0.07]
-                dark:bg-white/[0.025]
-                dark:text-slate-300
+                dark:bg-[var(--oc-surface-muted)]
+                dark:text-[var(--oc-text-secondary)]
               "
             >
               {
@@ -1169,10 +1169,10 @@ function ConnectionStatus({
               + 'dark:text-emerald-400'
             )
           : (
-              'bg-slate-100 '
-              + 'text-slate-400 '
-              + 'dark:bg-white/[0.04] '
-              + 'dark:text-slate-500'
+              'bg-[var(--oc-surface-muted)] '
+              + 'text-[var(--oc-muted-soft)] '
+              + 'dark:bg-[var(--oc-surface-muted)] '
+              + 'dark:text-[var(--oc-muted)]'
             ),
       ].join(' ')}
     >
@@ -1215,7 +1215,7 @@ function ServiceMetric({
         (
           'px-4 py-3 '
           + 'sm:not-last:border-r '
-          + 'sm:not-last:border-black/[0.055] '
+          + 'sm:not-last:border-[var(--oc-border)] '
           + 'dark:sm:not-last:border-white/[0.06]'
         ),
         className,
@@ -1226,7 +1226,7 @@ function ServiceMetric({
           flex
           items-center
           gap-1.5
-          text-slate-400
+          text-[var(--oc-muted-soft)]
         "
       >
         <Icon
@@ -1254,8 +1254,8 @@ function ServiceMetric({
           truncate
           text-[11px]
           font-semibold
-          text-slate-700
-          dark:text-slate-300
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-text-secondary)]
         "
       >
         {value}
@@ -1291,8 +1291,8 @@ function ConnectionField({
           font-semibold
           uppercase
           tracking-[0.07em]
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-muted-soft)]
+          dark:text-[var(--oc-muted)]
         "
       >
         {label}
@@ -1305,14 +1305,14 @@ function ConnectionField({
           items-center
           rounded-[9px]
           border
-          border-black/[0.07]
-          bg-slate-50/60
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface-muted)]
           px-3
           focus-within:border-emerald-500/40
           focus-within:ring-2
           focus-within:ring-emerald-500/[0.08]
           dark:border-white/[0.07]
-          dark:bg-white/[0.025]
+          dark:bg-[var(--oc-surface-muted)]
         "
       >
         <Icon
@@ -1322,7 +1322,7 @@ function ConnectionField({
             w-3.5
             shrink-0
             text-slate-300
-            dark:text-slate-600
+            dark:text-[var(--oc-text-secondary)]
           "
         />
 
@@ -1343,11 +1343,11 @@ function ConnectionField({
             bg-transparent
             text-[11px]
             font-medium
-            text-slate-900
+            text-[var(--oc-text)]
             outline-none
             placeholder:text-slate-300
             dark:text-slate-100
-            dark:placeholder:text-slate-600
+            dark:placeholder:text-[var(--oc-text-secondary)]
           "
         />
       </div>
@@ -1395,10 +1395,10 @@ function ModernToggle({
               + 'shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]'
             )
           : (
-              'border-slate-200 '
-              + 'bg-slate-100 '
+              'border-[var(--oc-border)] '
+              + 'bg-[var(--oc-surface-muted)] '
               + 'dark:border-white/[0.08] '
-              + 'dark:bg-white/[0.055]'
+              + 'dark:bg-[var(--oc-surface-muted)]'
             ),
       ].join(' ')}
     >
@@ -1407,7 +1407,7 @@ function ModernToggle({
           (
             'absolute left-[3px] '
             + 'h-[16px] w-[16px] '
-            + 'rounded-full bg-white '
+            + 'rounded-full bg-[var(--oc-surface)] '
             + 'shadow-[0_1px_3px_rgba(15,23,42,0.20)] '
             + 'transition-transform duration-200'
           ),

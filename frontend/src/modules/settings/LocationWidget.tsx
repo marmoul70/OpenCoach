@@ -371,7 +371,7 @@ export function LocationWidget({
                 hover:bg-[var(--oc-surface-muted)]
                 hover:text-[var(--oc-text-secondary)]
                 dark:hover:bg-[var(--oc-surface-hover)]
-                dark:hover:text-slate-200
+                dark:hover:text-[var(--oc-text-secondary)]
               "
             >
               Annuler
@@ -642,7 +642,7 @@ function LocationField({
           text-[var(--oc-text)]
           outline-none
           transition
-          placeholder:text-slate-300
+          placeholder:text-[var(--oc-muted-soft)]
           focus:border-emerald-500/40
           focus:ring-2
           focus:ring-emerald-500/[0.08]

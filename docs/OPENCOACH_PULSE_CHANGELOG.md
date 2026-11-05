@@ -650,3 +650,21 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôles
 - CI lancée sur les commits du sprint.
 - Vérification visuelle responsive et clair/sombre à effectuer dans le navigateur.
+
+
+## 2026-11-05 — Sprint 28 : formulaire de création et modification des courses
+
+### Livré
+- Champs texte et sélecteurs : surfaces, bordures, placeholders et états de focus alignés sur les tokens Pulse.
+- Sections et cartes du formulaire : fonds secondaires, séparateurs et métadonnées harmonisés.
+- États neutres des actions et éléments de formulaire : contrastes cohérents en clair/sombre.
+- Accents de validation, erreurs et actions destructives conservés.
+
+### Garde-fous
+- Champs, valeurs, validations, soumission, règles de priorité, dates, callbacks et appels API strictement inchangés.
+- Aucun changement de logique métier, données, stockage, backend, synchronisation ou dépendance.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles
+- CI lancée sur les commits du sprint.
+- Vérification visuelle du formulaire en création/édition, responsive et clair/sombre à effectuer dans le navigateur.

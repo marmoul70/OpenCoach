@@ -123,11 +123,11 @@ export function TrainingWeekHeader({
               overflow-hidden
               rounded-[14px]
               border
-              border-black/[0.07]
-              bg-white
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface)]
               shadow-[0_1px_2px_rgba(15,23,42,0.025)]
-              dark:border-white/[0.075]
-              dark:bg-[#151b1f]
+              dark:border-[var(--oc-border)]
+              dark:bg-[var(--oc-surface)]
               lg:col-span-7
             "
           >
@@ -183,10 +183,7 @@ export function TrainingWeekHeader({
             {weekTypeLabel && (
               <span
                 className="
-                  text-[10.5px]
-                  font-medium
-                  text-slate-400
-                  dark:text-slate-500
+                  oc-type-secondary font-medium
                 "
               >
                 {weekTypeLabel}
@@ -505,9 +502,7 @@ export function TrainingWeekHeader({
           <p
             className="
               mt-1.5
-              text-[10.5px]
-              text-slate-400
-              dark:text-slate-500
+              oc-type-secondary
             "
           >
             {phaseName}
@@ -802,7 +797,7 @@ function PlanningMetric({
       <div className="text-center sm:text-left">
         <p
           className="
-            text-[18px]
+            text-[var(--oc-type-section-title)]
             font-bold
             leading-none
             tabular-nums

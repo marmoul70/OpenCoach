@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import { PageHeader } from '../../design-system/components/PageHeader'
 import {
   useState,
 } from 'react'
@@ -163,47 +164,7 @@ export function Settings() {
             PAGE HEADER
             ================================================= */}
 
-        <header className="mb-4">
-          <p
-            className="
-              text-[10px]
-              font-bold
-              uppercase
-              tracking-[0.13em]
-              text-emerald-600
-              dark:text-emerald-400
-            "
-          >
-            Configuration
-          </p>
-
-          <h1
-            className="
-              mt-1
-              text-[24px]
-              font-bold
-              tracking-[-0.035em]
-              text-slate-950
-              dark:text-white
-            "
-          >
-            Réglages
-          </h1>
-
-          <p
-            className="
-              mt-1
-              max-w-2xl
-              text-[11.5px]
-              text-slate-400
-              dark:text-slate-500
-            "
-          >
-            Configure les services,
-            automatisations et données
-            utilisés par OpenCoach.
-          </p>
-        </header>
+        <PageHeader eyebrow="Configuration" title="Réglages" description="Configure les services, automatisations et données OpenCoach." />
 
 
         {/* =================================================

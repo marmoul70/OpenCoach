@@ -601,7 +601,7 @@ function SessionRow({
           ? (
               'border-[var(--oc-border)] '
               + 'bg-[var(--oc-surface)] '
-              + 'hover:border-black/[0.10] '
+              + 'hover:border-[var(--oc-border-strong)] '
               + 'hover:bg-[var(--oc-surface-muted)] '
               + 'dark:border-[var(--oc-border)] '
               + 'dark:bg-[var(--oc-surface)]/[0.02] '
@@ -654,7 +654,7 @@ function SessionRow({
                 text-[10px]
                 font-semibold
                 text-[var(--oc-muted)]
-                dark:border-white/[0.07]
+                dark:border-[var(--oc-border)]
                 dark:text-[var(--oc-muted)]
               "
             >

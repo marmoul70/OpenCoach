@@ -105,17 +105,20 @@ class SqlNotificationRepository:
 
     def mark_read(self, notification_id: UUID, user_id: UUID) -> bool:
         try:
-            result = self.session.execute(
-                update(Notification)
-                .where(
+            notification = self.session.scalar(
+                select(Notification).where(
                     Notification.id == notification_id,
                     Notification.user_id == user_id,
-                    Notification.read_at.is_(None),
                 )
-                .values(read_at=self._storage_datetime(datetime.now(timezone.utc)))
             )
-            self.session.commit()
-            return bool(result.rowcount)
+            if notification is None:
+                return False
+            if notification.read_at is None:
+                notification.read_at = self._storage_datetime(
+                    datetime.now(timezone.utc)
+                )
+                self.session.commit()
+            return True
         except SQLAlchemyError as exc:
             self.session.rollback()
             raise NotificationRepositoryError(

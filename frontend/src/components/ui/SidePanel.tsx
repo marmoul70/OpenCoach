@@ -287,11 +287,7 @@ export function SidePanel({
           (
             'absolute inset-y-0 right-0 '
             + 'flex w-full flex-col '
-            + 'border-l border-black/[0.07] '
-            + 'bg-[#f8faf9] '
-            + 'shadow-[-16px_0_45px_rgba(15,23,42,0.10)] '
-            + 'dark:border-white/[0.08] '
-            + 'dark:bg-[#0f1519] '
+            + 'oc-panel-surface '
             + 'md:w-[38vw] '
             + 'md:min-w-[420px] '
             + 'md:max-w-[560px] '

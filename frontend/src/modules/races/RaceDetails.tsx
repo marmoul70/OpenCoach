@@ -585,8 +585,8 @@ export function RaceDetails({
                   transition
                   hover:bg-[var(--oc-surface-muted)]
                   hover:text-[var(--oc-text-secondary)]
-                  dark:hover:bg-white/[0.035]
-                  dark:hover:text-slate-200
+                  dark:hover:bg-[var(--oc-surface-hover)]
+                  dark:hover:text-[var(--oc-text-secondary)]
                 "
                 onClick={
                   onClose
@@ -711,7 +711,7 @@ export function RaceDetails({
                 text-[15px]
                 font-semibold
                 text-[var(--oc-text)]
-                dark:text-slate-100
+                dark:text-[var(--oc-text)]
               "
             >
               Supprimer cette course ?
@@ -772,7 +772,7 @@ export function RaceDetails({
                   transition
                   hover:bg-[var(--oc-surface-muted)]
                   dark:text-[var(--oc-muted-soft)]
-                  dark:hover:bg-white/[0.04]
+                  dark:hover:bg-[var(--oc-surface-hover)]
                 "
                 onClick={() =>
                   setDeleteOpen(false)
@@ -1375,7 +1375,7 @@ function RaceActivitySection({
                 hover:bg-[var(--oc-surface-muted)]
                 dark:border-[var(--oc-border)]
                 dark:text-[var(--oc-muted-soft)]
-                dark:hover:bg-white/[0.035]
+                dark:hover:bg-[var(--oc-surface-hover)]
               "
               disabled={saving}
               onClick={() =>
@@ -1712,8 +1712,8 @@ function StatusButton({
             + 'dark:text-red-400'
           )
         : (
-            'border-slate-400/20 '
-            + 'bg-slate-500/[0.07] '
+            'border-[var(--oc-border-strong)] '
+            + 'bg-[var(--oc-surface-muted)] '
             + 'text-[var(--oc-text-secondary)] '
             + 'dark:text-[var(--oc-muted-soft)]'
           )

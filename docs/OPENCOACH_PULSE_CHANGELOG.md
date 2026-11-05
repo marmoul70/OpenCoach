@@ -686,3 +686,21 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôles
 - CI lancée sur les commits du sprint.
 - Vérification visuelle responsive et clair/sombre à effectuer dans le navigateur.
+
+
+## 2026-11-05 — Sprint 30 : section de connexion COROS
+
+### Livré
+- Carte de connexion, états neutres de connexion, champs et options : surfaces et bordures raccordées aux tokens Pulse.
+- Titres, descriptions, métadonnées et aides : rôles de texte sémantiques harmonisés.
+- État déconnecté et fonds secondaires : cohérence clair/sombre améliorée.
+- Accents de connexion, succès/erreur et bouton d'action principal conservés.
+
+### Garde-fous
+- OAuth/connexion, import, options, valeurs, callbacks, états et appels API inchangés.
+- Aucun changement de synchronisation COROS, données, backend, stockage ou dépendance.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles
+- CI lancée sur les commits du sprint.
+- Vérification visuelle des états connecté/déconnecté, responsive et clair/sombre à effectuer.

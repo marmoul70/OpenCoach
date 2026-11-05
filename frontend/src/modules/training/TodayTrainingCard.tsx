@@ -111,6 +111,7 @@ export function TodayTrainingCard({
         {sessions.length === 0 && (
           <div
             className="
+              training-polish__today-empty
               rounded-[10px]
               border
               border-[var(--oc-border)]
@@ -237,6 +238,7 @@ function TodaySessionStatusBadge({
     return (
       <span
         className="
+          training-polish__today-status training-polish__today-status--completed
           inline-flex
           items-center
           gap-1
@@ -259,6 +261,7 @@ function TodaySessionStatusBadge({
     return (
       <span
         className="
+          training-polish__today-status training-polish__today-status--skipped
           inline-flex
           items-center
           gap-1
@@ -280,6 +283,7 @@ function TodaySessionStatusBadge({
   return (
     <span
       className="
+        training-polish__today-status training-polish__today-status--planned
         inline-flex
         items-center
         gap-1
@@ -312,7 +316,7 @@ function TodayTrainingSession({
       onClick={onOpen}
       className={[
         (
-          'group flex w-full items-center '
+          'training-polish__today-session group flex w-full items-center '
           + 'justify-between gap-4 rounded-[10px] '
           + 'border border-[var(--oc-border)] '
           + 'bg-[var(--oc-surface-muted)] px-3 py-2 '

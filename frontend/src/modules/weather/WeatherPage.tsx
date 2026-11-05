@@ -391,13 +391,7 @@ function WeatherContent({
 
           <h1
             className="
-              mt-1
-              text-[23px]
-              font-semibold
-              tracking-[-0.035em]
-              text-slate-900
-              sm:text-[26px]
-              dark:text-white
+              oc-page-title
             "
           >
             Météo

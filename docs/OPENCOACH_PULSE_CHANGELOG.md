@@ -425,3 +425,22 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Classes de présentation ciblées ajoutées aux éléments existants ; aucune duplication de composant.
 - Audit des tokens : accent et couleurs neutres s'appuient sur les variables Pulse.
 - CI à confirmer ; contrôle visuel clair/sombre et responsive à réaliser dans le navigateur.
+
+
+## 2026-11-05 — Sprint 16 : hiérarchie du planning hebdomadaire
+
+### Livré
+- Cartes de séances prévues, réalisées et non réalisées : distinction visuelle renforcée par des surfaces et badges sémantiques cohérents avec les thèmes clair et sombre.
+- Métadonnées de séance : lisibilité des métriques et des libellés harmonisée, avec chiffres tabulaires pour les valeurs.
+- Repos et journées sans séance : états visuellement distincts des séances planifiées, sans ajouter de faux statut.
+- Repères de type de séance existants (endurance, intensité, sortie longue/trail, renforcement) conservés.
+
+### Garde-fous
+- Aucun statut, calcul de charge, ordre, date, donnée de séance ou règle de planification modifié.
+- Les callbacks, la navigation, les propositions de tests physiologiques et le statut de synchronisation Intervals restent inchangés.
+- Aucun changement API, backend, stockage, dépendance, VM, merge ou déploiement.
+
+### Contrôles
+- Classes visuelles ciblées ajoutées aux composants existants ; aucune duplication de logique ou de composant.
+- Les couleurs d'état utilisent les tokens sémantiques Pulse (success, warning, danger) et les surfaces neutres utilisent les tokens de thème.
+- CI à confirmer sur les derniers commits ; contrôle visuel clair/sombre et responsive à effectuer dans le navigateur réel.

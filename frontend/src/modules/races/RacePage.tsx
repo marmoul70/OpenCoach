@@ -2,6 +2,7 @@ import {
   useState,
 } from 'react'
 
+import { PageHeader } from '../../design-system/components/PageHeader'
 import {
   CalendarDays,
   Check,
@@ -158,90 +159,7 @@ export function RacePage() {
           lg:py-5
         "
       >
-        <header
-          className="
-            mb-4
-            flex
-            items-end
-            justify-between
-            gap-4
-          "
-        >
-          <div>
-            <p
-              className="
-                text-[10px]
-                font-bold
-                uppercase
-                tracking-[0.13em]
-                text-emerald-600
-                dark:text-emerald-400
-              "
-            >
-              Objectifs
-            </p>
-
-            <h1
-              className="
-                mt-1
-                text-[30px]
-                font-bold
-                tracking-[-0.04em]
-                text-slate-950
-                dark:text-white
-              "
-            >
-              Courses
-            </h1>
-
-            <p
-              className="
-                mt-1
-                text-[13px]
-                text-slate-400
-                dark:text-slate-500
-              "
-            >
-              Tes objectifs, courses de préparation
-              et résultats.
-            </p>
-          </div>
-
-
-          <button
-            type="button"
-            aria-label="Ajouter une course"
-            title="Ajouter une course"
-            onClick={() =>
-              setIsAddModalOpen(
-                true,
-              )
-            }
-            className="
-              flex
-              h-9
-              w-9
-              shrink-0
-              items-center
-              justify-center
-              rounded-[9px]
-              border
-              border-emerald-500/25
-              bg-emerald-500/[0.07]
-              text-emerald-700
-              transition
-              hover:bg-emerald-500/[0.12]
-              dark:text-emerald-400
-            "
-          >
-            <Plus
-              className="
-                h-4
-                w-4
-              "
-            />
-          </button>
-        </header>
+        <PageHeader eyebrow="Objectifs" title="Courses" description="Organise tes courses et tes objectifs sportifs." />
 
 
         {loading && (

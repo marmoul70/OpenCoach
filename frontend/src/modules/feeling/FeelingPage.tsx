@@ -7,14 +7,15 @@ import {
   FeelingWidgets,
 } from './FeelingWidgets'
 
+import { PageHeader } from '../../design-system/components/PageHeader'
+
 
 export function FeelingPage() {
   return (
     <main
       className="
+        oc-app-shell
         min-h-screen
-        bg-[#f5f7f6]
-        dark:bg-[#0b1014]
       "
     >
       <div
@@ -27,45 +28,11 @@ export function FeelingPage() {
           lg:py-5
         "
       >
-        <header className="mb-4">
-          <p
-            className="
-              text-[10px]
-              font-bold
-              uppercase
-              tracking-[0.13em]
-              text-emerald-600
-              dark:text-emerald-400
-            "
-          >
-            Check-in quotidien
-          </p>
-
-          <h1
-            className="
-              mt-1
-              text-[30px]
-              font-bold
-              tracking-[-0.04em]
-              text-slate-950
-              dark:text-white
-            "
-          >
-            Ressenti
-          </h1>
-
-          <p
-            className="
-              mt-1
-              text-[13px]
-              text-slate-400
-              dark:text-slate-500
-            "
-          >
-            Quelques secondes pour aider OpenCoach
-            à adapter intelligemment ta journée.
-          </p>
-        </header>
+        <PageHeader
+          eyebrow="Check-in quotidien"
+          title="Ressenti"
+          description="Quelques secondes pour aider OpenCoach à adapter intelligemment ta journée."
+        />
 
 
         <section

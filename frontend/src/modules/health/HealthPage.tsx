@@ -20,6 +20,8 @@ import {
   type WellnessTrends,
 } from '../../core/wellness'
 
+import { LineChart } from '../../design-system/charts/LineChart'
+
 type WindowSize = 7 | 14 | 30
 
 const METRICS = [
@@ -352,65 +354,29 @@ function TrendChart({
     return timestamp >= start && timestamp <= end
   })
 
-  if (points.length === 0) {
-    return (
-      <div className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
-        <p className="mt-8 text-center text-sm text-slate-400">Aucune donnée sur {days} jours</p>
-        <div className="mt-7 border-t border-slate-100 dark:border-white/5" />
-      </div>
-    )
-  }
-
   const values = points.map((point) => point.value)
-  const minimum = Math.min(...values)
-  const maximum = Math.max(...values)
-  const range = maximum - minimum || 1
-  const coordinates = points.map((point, index) => {
-    const x = points.length === 1 ? 160 : 8 + (index / (points.length - 1)) * 304
-    const y = 88 - ((point.value - minimum) / range) * 72
-    return { x, y, point }
-  })
-  const polyline = coordinates.map(({ x, y }) => `${x},${y}`).join(' ')
+  const average = values.length > 0
+    ? values.reduce((total, value) => total + value, 0) / values.length
+    : null
   const latest = points[points.length - 1]
-  const average = values.reduce((total, value) => total + value, 0) / values.length
 
   return (
-    <div className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
-        <span className="text-[10px] text-slate-400">{points.length} j</span>
-      </div>
-      <p className="mt-2 text-xl font-bold tabular-nums text-slate-950 dark:text-white">
-        {formatMetric(latest.value, unit)}
-      </p>
-      <svg
-        viewBox="0 0 320 104"
-        role="img"
-        aria-label={`Évolution de ${title} sur ${days} jours`}
-        className="mt-2 h-28 w-full overflow-visible text-emerald-500"
-      >
-        <line x1="8" y1="88" x2="312" y2="88" stroke="currentColor" opacity="0.15" strokeDasharray="3 4" />
-        <polyline
-          points={polyline}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {coordinates.map(({ x, y, point }) => (
-          <circle key={point.date} cx={x} cy={y} r="2.8" fill="currentColor">
-            <title>{formatDate(point.date)} : {formatMetric(point.value, unit)}</title>
-          </circle>
-        ))}
-      </svg>
-      <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
-        <span>{formatDate(points[0].date)}</span>
-        <span>Moy. {formatMetric(average, unit)}</span>
-        <span>{formatDate(latest.date)}</span>
-      </div>
-    </div>
+    <LineChart
+      title={title}
+      points={points.map((point) => ({
+        id: point.date,
+        label: formatDate(point.date),
+        value: point.value,
+      }))}
+      valueFormatter={(value) => formatMetric(value, unit)}
+      latestValue={latest ? formatMetric(latest.value, unit) : '—'}
+      averageValue={average == null ? '—' : formatMetric(average, unit)}
+      startLabel={points.length > 0 ? formatDate(points[0].date) : '—'}
+      endLabel={latest ? formatDate(latest.date) : '—'}
+      emptyMessage={`Aucune donnée sur ${days} jours`}
+      ariaLabel={`Évolution de ${title} sur ${days} jours`}
+      headerMeta={`${points.length} j`}
+    />
   )
 }
 

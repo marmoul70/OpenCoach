@@ -181,21 +181,21 @@ export function HealthPage() {
             <section className="oc-surface p-4 sm:p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  <h2 className="oc-type-section-title text-[var(--oc-text)]">
                     Historique quotidien
                   </h2>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 oc-type-secondary">
                     Valeur la plus récente disponible et statistiques sur la période.
                   </p>
                 </div>
-                <div className="inline-flex w-fit rounded-xl bg-slate-100 p-1 dark:bg-white/5" aria-label="Période d’historique">
+                <div className="inline-flex w-fit rounded-xl bg-[var(--oc-surface-muted)] p-1" aria-label="Période d’historique">
                   {([7, 14, 30] as const).map((days) => (
                     <button
                       key={days}
                       type="button"
                       onClick={() => setWindowSize(days)}
                       aria-pressed={windowSize === days}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${windowSize === days ? 'bg-white text-emerald-700 shadow-sm dark:bg-[#263238] dark:text-emerald-300' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`}
+                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${windowSize === days ? 'bg-[var(--oc-surface)] text-emerald-700 shadow-sm ring-1 ring-[var(--oc-border)] dark:text-emerald-300' : 'text-[var(--oc-muted)] hover:text-[var(--oc-text)]'}`}
                     >
                       {days} j
                     </button>
@@ -205,11 +205,11 @@ export function HealthPage() {
 
               {selectedWindow && (
                 <>
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-3 text-xs dark:bg-white/[0.035]">
-                    <span className="text-slate-600 dark:text-slate-300">
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--oc-surface-muted)] px-3 py-3 oc-type-secondary">
+                    <span className="text-[var(--oc-text-secondary)]">
                       {formatDate(selectedWindow.start_date)} – {formatDate(selectedWindow.end_date)}
                     </span>
-                    <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                    <span className="font-semibold tabular-nums text-[var(--oc-text-secondary)]">
                       {selectedWindow.recorded_days}/{selectedWindow.days} jours couverts · {Math.round(selectedWindow.coverage_ratio * 100)} %
                     </span>
                   </div>
@@ -219,7 +219,7 @@ export function HealthPage() {
                       const items = METRICS.filter((metric) => metric.group === group)
                       return (
                         <div key={group}>
-                          <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{group}</h3>
+                          <h3 className="mb-3 oc-type-body font-semibold text-[var(--oc-text-secondary)]">{group}</h3>
                           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                             {items.map((metric) => (
                               <MetricTile
@@ -242,12 +242,12 @@ export function HealthPage() {
             <section className="oc-surface p-4 sm:p-5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Évolution des indicateurs</h2>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <h2 className="oc-type-section-title text-[var(--oc-text)]">Évolution des indicateurs</h2>
+                  <p className="mt-1 oc-type-secondary">
                     Tendances quotidiennes issues du même fournisseur que les données Wellness.
                   </p>
                 </div>
-                <span className="text-xs text-slate-400 dark:text-slate-500">
+                <span className="text-xs text-[var(--oc-muted)]">
                   Source : {trends.provider.toUpperCase()} · {windowSize} derniers jours
                 </span>
               </div>
@@ -266,28 +266,28 @@ export function HealthPage() {
               <div className="flex items-center gap-2">
                 <Waves className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Séries physiologiques COROS</h2>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Statistiques calculées à partir des échantillons horodatés sur les 30 derniers jours.</p>
+                  <h2 className="oc-type-section-title text-[var(--oc-text)]">Séries physiologiques COROS</h2>
+                  <p className="mt-1 oc-type-secondary">Statistiques calculées à partir des échantillons horodatés sur les 30 derniers jours.</p>
                 </div>
               </div>
 
               {assessment.time_series.length === 0 ? (
-                <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-white/[0.035] dark:text-slate-400">
+                <p className="mt-4 rounded-xl bg-slate-50 p-4 oc-type-body text-[var(--oc-muted)] bg-[var(--oc-surface-muted)]">
                   Aucune série détaillée disponible sur cette période. Les données quotidiennes restent consultables ci-dessus.
                 </p>
               ) : (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {assessment.time_series.map((series) => (
-                    <div key={`${series.metric}-${series.unit ?? 'none'}`} className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
+                    <div key={`${series.metric}-${series.unit ?? 'none'}`} className="rounded-xl border border-[var(--oc-border)] p-4">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        <h3 className="oc-type-card-title text-[var(--oc-text)]">
                           {SERIES_LABELS[series.metric] ?? series.metric.replaceAll('_', ' ')}
                         </h3>
-                        <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase text-slate-500 dark:bg-white/5 dark:text-slate-400">
+                        <span className="rounded-md bg-[var(--oc-surface-muted)] px-2 py-1 oc-type-caption font-semibold uppercase text-[var(--oc-muted)]">
                           {series.sample_count} mesures
                         </span>
                       </div>
-                      <p className="mt-3 text-2xl font-bold tabular-nums text-slate-950 dark:text-white">
+                      <p className="mt-3 text-xl font-bold tabular-nums text-[var(--oc-text)]">
                         {formatNumber(series.current)} <span className="text-xs font-medium text-slate-400">{series.unit ?? ''}</span>
                       </p>
                       <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
@@ -295,7 +295,7 @@ export function HealthPage() {
                         <MiniValue label="Minimum" value={formatNumber(series.minimum)} />
                         <MiniValue label="Maximum" value={formatNumber(series.maximum)} />
                       </div>
-                      <p className="mt-3 text-[11px] text-slate-400 dark:text-slate-500">
+                      <p className="mt-3 text-[11px] text-[var(--oc-muted)]">
                         {series.coverage_days} jours couverts · {formatDateTime(series.first_measured_at)} au {formatDateTime(series.last_measured_at)}
                       </p>
                     </div>
@@ -306,7 +306,7 @@ export function HealthPage() {
 
             {assessment.subjective && (
               <section className="oc-surface p-4">
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white">Ressenti du jour</h2>
+                <h2 className="oc-type-card-title text-[var(--oc-text)]">Ressenti du jour</h2>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
                   <MiniValue label="Fatigue" value={String(assessment.subjective.fatigue) + '/5'} />
                   <MiniValue label="Douleur" value={String(assessment.subjective.pain) + '/5'} />
@@ -317,7 +317,7 @@ export function HealthPage() {
               </section>
             )}
 
-            <p className="text-xs leading-relaxed text-slate-400 dark:text-slate-500">
+            <p className="text-xs leading-relaxed text-[var(--oc-muted)]">
               Les valeurs absentes sont affichées « — » et ne sont jamais remplacées par zéro. Ces indicateurs décrivent les mesures enregistrées ; ils ne constituent pas un diagnostic médical et ne modifient pas automatiquement le score Readiness.
             </p>
           </>
@@ -424,8 +424,8 @@ function MetricTile({
 function MiniValue({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[10px] text-slate-400 dark:text-slate-500">{label}</p>
-      <p className="mt-0.5 text-sm font-semibold text-slate-700 dark:text-slate-200">{value}</p>
+      <p className="text-[10px] text-[var(--oc-muted)]">{label}</p>
+      <p className="mt-0.5 oc-type-body font-semibold text-[var(--oc-text-secondary)]">{value}</p>
     </div>
   )
 }

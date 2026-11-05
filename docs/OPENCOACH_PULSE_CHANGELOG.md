@@ -37,3 +37,27 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Aucun build ni lint local n'a été exécuté à cette étape.
 - Aucun fichier de la VM n'a été modifié.
 - Aucun changement API, backend, base de données ou COROS n'a été effectué.
+
+## 2026-11-05 — Sprint 1 : première couche de tokens
+
+### Livré
+- Ajout de frontend/src/design-system/tokens.css.
+- Définition des tokens sémantiques de marque, statuts, typographie, espacements, rayons, transitions, surfaces Subtle et palette de graphiques Technical.
+- Déclinaison clair/sombre pilotée par data-theme.
+- Ajout des classes utilitaires .oc-surface et .oc-tabular pour les composants migrés.
+- Respect de prefers-reduced-motion via les tokens de transition.
+- Import global du fichier de tokens depuis frontend/src/index.css.
+
+### Garde-fous
+- Les styles existants ne sont pas remplacés en masse : les tokens sont introduits en parallèle afin de permettre une migration progressive.
+- Aucun changement aux API, au backend, aux schémas, aux données COROS ou à la logique Santé.
+- Aucun composant existant n'a encore été migré vers les nouvelles classes.
+
+### Contrôles
+- Vérification statique des fichiers modifiés et correction du sélecteur du thème clair.
+- Build et lint non exécutés : aucune exécution locale du dépôt n'est disponible dans cette étape.
+- Validation visuelle clair/sombre à faire avant adoption plus large.
+
+### Suite
+- Sprint 1 : contrôler le socle CSS et les tokens sur les points d'entrée réels.
+- Sprint 2 : inventorier les primitives UI existantes avant de créer de nouveaux composants ; privilégier l'évolution de Card/WidgetCard/MetricTile si elles couvrent déjà le besoin.

@@ -39,9 +39,9 @@ export function SidePanelSection({
     <section
       className="
         border-b
-        border-black/[0.06]
+        border-[var(--oc-border)]
         pb-3
-        dark:border-white/[0.07]
+        border-[var(--oc-border)]
       "
     >
       <button
@@ -84,8 +84,8 @@ export function SidePanelSection({
               truncate
               text-[13px]
               font-semibold
-              text-slate-900
-              dark:text-slate-100
+              text-[var(--oc-text)]
+              text-[var(--oc-text)]
             "
           >
             {title}
@@ -111,12 +111,12 @@ export function SidePanelSection({
                 ),
                 sectionId === 'training'
                   ? (
-                      'border-black/[0.07] '
-                      + 'bg-slate-50 '
-                      + 'text-slate-500 '
-                      + 'dark:border-white/[0.08] '
-                      + 'dark:bg-white/[0.04] '
-                      + 'dark:text-slate-400'
+                      'border-[var(--oc-border)] '
+                      + 'bg-[var(--oc-surface-muted)] '
+                      + 'text-[var(--oc-muted)] '
+                      + 'border-[var(--oc-border)] '
+                      + 'bg-[var(--oc-surface-muted)] '
+                      + 'text-[var(--oc-muted)]'
                     )
                   : (
                       'border-emerald-500/20 '
@@ -136,7 +136,7 @@ export function SidePanelSection({
             className={[
               (
                 'h-4 w-4 shrink-0 '
-                + 'text-slate-400 '
+                + 'text-[var(--oc-muted)] '
                 + 'transition-transform '
                 + 'duration-200'
               ),

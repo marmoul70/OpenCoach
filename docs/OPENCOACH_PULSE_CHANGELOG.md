@@ -125,3 +125,9 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôle
 - Vérification statique : les substitutions portent uniquement sur les classes de surface du panneau et de son en-tête.
 - Build/lint et vérification visuelle toujours à exécuter ; ne pas considérer le sprint comme validé visuellement.
+
+
+### Vérification complémentaire
+- Relecture du composant après le premier commit : l'en-tête conservait encore ses anciennes classes de thème.
+- Correction appliquée dans un commit distinct : l'en-tête utilise maintenant bien `.oc-panel-header`.
+- Le contrôle confirme que les deux surfaces du SidePanel consomment les tokens sémantiques.

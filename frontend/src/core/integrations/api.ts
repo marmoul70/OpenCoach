@@ -4,12 +4,14 @@ export interface IntervalsConnection {
   enabled: boolean
   athlete_id: string | null
   api_key_configured: boolean
+  web_cookie_configured: boolean
   last_synced_at: string | null
 }
 
 export interface IntervalsConnectionUpdate {
   athlete_id: string
   api_key: string | null
+  web_cookie: string | null
   enabled: boolean
 }
 
@@ -79,6 +81,7 @@ export function saveIntervalsConnection(
 export function testIntervalsConnection(
   athleteId: string,
   apiKey: string,
+  webCookie?: string,
 ): Promise<IntervalsConnectionTestResult> {
   return request<IntervalsConnectionTestResult>(
     '/api/integrations/intervals/connection/test',
@@ -90,6 +93,7 @@ export function testIntervalsConnection(
       body: JSON.stringify({
         athlete_id: athleteId,
         api_key: apiKey,
+        web_cookie: webCookie?.trim() || null,
       }),
     },
   )

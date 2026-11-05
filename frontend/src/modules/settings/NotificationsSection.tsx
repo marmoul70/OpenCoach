@@ -684,7 +684,7 @@ export function NotificationsSection() {
                   disabled:cursor-not-allowed
                   disabled:bg-[var(--oc-surface-muted)]
                   disabled:text-[var(--oc-muted-soft)]
-                  dark:disabled:bg-white/[0.05]
+                  dark:disabled:bg-[var(--oc-surface-muted)]
                   dark:disabled:text-[var(--oc-text-secondary)]
                 "
               >
@@ -1037,7 +1037,7 @@ export function NotificationsSection() {
                 mx-auto
                 h-5
                 w-5
-                text-slate-200
+                text-[var(--oc-muted-soft)]
                 dark:text-[var(--oc-text-secondary)]
               "
             />
@@ -1806,7 +1806,7 @@ function NotificationStatus({
           ),
           enabled
             ? 'bg-emerald-500'
-            : 'bg-slate-300',
+            : 'bg-[var(--oc-muted-soft)]',
         ].join(' ')}
       />
 

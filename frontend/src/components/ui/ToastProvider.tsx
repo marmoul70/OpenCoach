@@ -279,8 +279,8 @@ function ToastNotification({
               mt-1
               text-[10.5px]
               leading-[1.55]
-              text-slate-500
-              dark:text-slate-400
+              text-[var(--oc-muted)]
+              dark:text-[var(--oc-muted-soft)]
             "
           >
             {toast.message}

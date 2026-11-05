@@ -17,6 +17,10 @@ export interface NotificationListResponse {
   offset: number
 }
 
+function emitNotificationsChanged(): void {
+  window.dispatchEvent(new Event('opencoach:notifications-updated'))
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -73,6 +77,7 @@ export async function markNotificationRead(
     `/api/notifications/${encodeURIComponent(id)}/read`,
     { method: 'POST' },
   )
+  emitNotificationsChanged()
 }
 
 export async function markAllNotificationsRead(): Promise<void> {
@@ -80,6 +85,7 @@ export async function markAllNotificationsRead(): Promise<void> {
     '/api/notifications/read-all',
     { method: 'POST' },
   )
+  emitNotificationsChanged()
 }
 
 export async function deleteNotification(
@@ -89,6 +95,7 @@ export async function deleteNotification(
     `/api/notifications/${encodeURIComponent(id)}`,
     { method: 'DELETE' },
   )
+  emitNotificationsChanged()
 }
 
 export async function deleteAllNotifications(): Promise<void> {
@@ -96,6 +103,7 @@ export async function deleteAllNotifications(): Promise<void> {
     '/api/notifications/all',
     { method: 'DELETE' },
   )
+  emitNotificationsChanged()
 }
 
 export function formatNotificationDate(value: string): string {

@@ -38,10 +38,19 @@ export function NotificationBell({
       void refresh()
     }, 60_000)
     const onFocus = () => void refresh()
+    const onNotificationsChanged = () => void refresh()
     window.addEventListener('focus', onFocus)
+    window.addEventListener(
+      'opencoach:notifications-updated',
+      onNotificationsChanged,
+    )
     return () => {
       window.clearInterval(interval)
       window.removeEventListener('focus', onFocus)
+      window.removeEventListener(
+        'opencoach:notifications-updated',
+        onNotificationsChanged,
+      )
     }
   }, [refresh])
 

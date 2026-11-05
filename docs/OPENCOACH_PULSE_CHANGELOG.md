@@ -169,3 +169,11 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 - Relecture statique des fichiers modifiés et vérification des imports/contrats à partir du code existant.
 - Build TypeScript, lint et contrôle visuel non exécutés ; le rendu SVG reste à valider en navigateur.
 - Le graphique conserve la logique de tracé actuelle des points disponibles ; la gestion explicite des intervalles calendaires manquants reste un point à traiter avant d'utiliser ce composant pour des séries où la continuité temporelle doit être représentée strictement.
+
+
+### Correction — continuité temporelle des séries
+- Le contrat de `LineChartPoint.value` accepte désormais `number | null`.
+- Le graphique découpe la ligne aux dates sans mesure : aucun zéro artificiel et aucune liaison visuelle à travers un jour manquant.
+- L'adaptateur Santé construit la fenêtre calendaire complète de 7/14/30 jours et injecte `null` pour les dates absentes.
+- La valeur récente et la moyenne restent calculées uniquement à partir des mesures réellement présentes.
+- Si aucune mesure n'existe sur la période, le composant affiche son état vide plutôt qu'un axe artificiel.

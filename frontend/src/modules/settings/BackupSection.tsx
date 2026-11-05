@@ -1113,9 +1113,9 @@ export function BackupSection() {
                 transition
                 hover:bg-amber-600
                 disabled:cursor-not-allowed
-                disabled:bg-slate-200
+                disabled:bg-[var(--oc-surface-muted)]
                 disabled:text-[var(--oc-muted-soft)]
-                dark:disabled:bg-white/[0.05]
+                dark:disabled:bg-[var(--oc-surface-muted)]
               "
             >
               {restoring && (
@@ -1395,7 +1395,7 @@ function BackupStatus({
             ? 'bg-emerald-500'
             : failed
               ? 'bg-red-500'
-              : 'bg-slate-300',
+              : 'bg-[var(--oc-muted-soft)]',
         ].join(' ')}
       />
 

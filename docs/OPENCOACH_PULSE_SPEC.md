@@ -169,3 +169,15 @@ Les widgets de graphiques suivent le même principe : les modules préparent les
 ## 9. Décisions techniques ouvertes
 
 La primitive `LineChart` reste en SVG natif pour les séries simples. Pour les graphiques multi-séries, aires, barres, comparaisons et tooltips interactifs, Recharts 3.x est la bibliothèque candidate : composants React composables, SVG, redimensionnement responsive et couche d'accessibilité clavier activée par défaut. La dépendance ne sera ajoutée qu'au premier besoin fonctionnel réel de ces graphiques, après vérification du lockfile et du bundle. Référence : https://recharts.org/.
+
+
+## 8. Cohérence inter-pages et performance frontend
+
+- Les pages partagent les primitives de structure `oc-app-shell`, `oc-page-content`, `oc-page-header`, `oc-page-eyebrow`, `oc-page-title`, `oc-page-description` et `oc-section`.
+- Le composant `PageHeader` standardise le titre, le surtitre, la description et les actions sans imposer le contenu métier.
+- Les pages fonctionnelles sont chargées à la demande avec `React.lazy` et `Suspense`. Le shell, les fournisseurs de contexte nécessaires et la navigation restent dans le bundle initial.
+- Ne pas ajouter de bibliothèque graphique avant validation explicite de la refonte.
+- Préférer les imports ciblés, éviter les barrels qui chargent des modules lourds et ne pas ajouter de dépendance runtime sans cas d'usage démontré.
+- Laisser Vite produire les chunks à partir des imports dynamiques. Ne pas fixer de découpage manuel avant d'avoir mesuré les bundles réels.
+- Toute évolution doit préserver les routes, les données, les appels API et les règles métier.
+- La validation de performance doit suivre les tailles des chunks gzip/brotli, le poids du bundle initial et les temps de build. Les budgets chiffrés seront fixés après une mesure de référence CI, pas inventés.

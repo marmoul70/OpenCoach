@@ -450,12 +450,7 @@ export function Profile() {
 
             <h1
               className="
-                mt-1
-                text-[24px]
-                font-bold
-                tracking-[-0.035em]
-                text-slate-950
-                dark:text-white
+                oc-page-title
               "
             >
               Profil sportif

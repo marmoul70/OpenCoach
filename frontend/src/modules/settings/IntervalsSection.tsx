@@ -3,6 +3,7 @@ import {
   Check,
   CircleAlert,
   KeyRound,
+  Info,
   Link2,
   LoaderCircle,
   Pencil,
@@ -763,6 +764,77 @@ export function IntervalsSection() {
                 setMessage(null)
               }}
             />
+
+            <div
+              className="
+                flex
+                items-start
+                gap-2.5
+                rounded-[9px]
+                border
+                border-sky-500/15
+                bg-sky-500/[0.045]
+                px-3
+                py-3
+                sm:col-span-2
+                dark:border-sky-400/15
+                dark:bg-sky-400/[0.045]
+              "
+            >
+              <Info
+                className="
+                  mt-0.5
+                  h-4
+                  w-4
+                  shrink-0
+                  text-sky-600
+                  dark:text-sky-400
+                "
+              />
+
+              <div className="min-w-0">
+                <p
+                  className="
+                    text-[10px]
+                    font-semibold
+                    text-[var(--oc-text-secondary)]
+                    dark:text-[var(--oc-text-secondary)]
+                  "
+                >
+                  Où récupérer le cookie ?
+                </p>
+
+                <ol
+                  className="
+                    mt-1.5
+                    list-decimal
+                    space-y-1
+                    pl-3.5
+                    text-[9px]
+                    leading-relaxed
+                    text-[var(--oc-muted-soft)]
+                    dark:text-[var(--oc-muted)]
+                  "
+                >
+                  <li>Connecte-toi à Intervals.icu dans ton navigateur.</li>
+                  <li>Ouvre les outils de développement du navigateur, puis l’onglet <strong>Sources</strong>.</li>
+                  <li>Dans les fichiers JavaScript chargés par Intervals.icu, repère le <code>console.log</code> qui affiche les cookies.</li>
+                  <li>Copie uniquement la valeur du cookie de session attendue par la requête partenaire, puis colle-la dans le champ ci-dessus.</li>
+                </ol>
+
+                <p
+                  className="
+                    mt-2
+                    text-[9px]
+                    font-medium
+                    text-amber-700
+                    dark:text-amber-400
+                  "
+                >
+                  Attention : ce cookie donne accès à ta session Intervals.icu. Ne le partage jamais, ne le publie pas et ne l’ajoute jamais à un dépôt Git. OpenCoach le stocke chiffré pour ton profil.
+                </p>
+              </div>
+            </div>
           </div>
 
 

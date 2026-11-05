@@ -512,7 +512,7 @@ export function CoachTodayWidget({
             border-[var(--oc-border)]
             py-4
             dark:divide-[var(--oc-border)]
-            dark:border-white/[0.07]
+            dark:border-[var(--oc-border)]
           "
         >
           <Metric
@@ -1387,7 +1387,7 @@ function SessionStatusBadge({
       label: 'Non réalisé',
       className: (
         'border-slate-400/20 '
-        + 'bg-slate-400/[0.08] '
+        + 'bg-[var(--oc-surface-muted)] '
         + 'text-[var(--oc-muted)] '
         + 'dark:text-[var(--oc-muted-soft)]'
       ),

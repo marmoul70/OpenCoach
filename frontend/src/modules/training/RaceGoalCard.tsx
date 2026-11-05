@@ -37,7 +37,7 @@ export function RaceGoalCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="oc-type-label font-semibold uppercase tracking-wide text-[var(--oc-text-muted)]">
+          <p className="oc-type-label font-semibold uppercase tracking-wide text-[var(--oc-text-secondary)]">
             Objectif
           </p>
 

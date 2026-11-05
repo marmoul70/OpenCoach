@@ -576,3 +576,21 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôles
 - Modifications limitées aux bordures neutres du composant existant.
 - CI à confirmer sur les commits finaux ; vérification visuelle clair/sombre et responsive à effectuer.
+
+
+## 2026-11-05 — Sprint 24 : dashboard principal et tokens globaux
+
+### Livré
+- Variables historiques du Dashboard raccordées aux tokens sémantiques Pulse (page, surfaces, bordures, textes et accent) afin d'avoir une seule source de vérité pour les thèmes clair/sombre.
+- Suppression des palettes clair/sombre redéfinies localement ; le Dashboard consomme désormais le thème global, en conservant uniquement son halo décoratif sombre.
+- En-tête du Dashboard et section « Tes indicateurs » : séparateur, date, titres et métadonnées migrés vers les rôles typographiques/couleurs Pulse.
+- Vue de détail du Dashboard : textes et surface secondaire raccordés aux tokens globaux.
+
+### Garde-fous
+- Structure, widgets, métriques, données, navigation, effets React, interactions et appels API inchangés.
+- Aucun changement backend, schéma, calcul, stockage, synchronisation ou dépendance.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles
+- CI lancée sur les commits de ce sprint ; validation finale à confirmer.
+- Vérification visuelle responsive et clair/sombre à effectuer dans le navigateur.

@@ -193,7 +193,7 @@ function WeekDay({
       <p
         className={[
           (
-            'text-[10px] font-semibold '
+            'oc-type-caption font-semibold '
             + 'uppercase tracking-wide'
           ),
           isToday
@@ -221,9 +221,7 @@ function WeekDay({
                 + 'dark:bg-emerald-500'
               )
             : (
-                'bg-[var(--oc-surface-muted)] text-[var(--oc-text-secondary)] '
-                + ''
-                + ''
+                'bg-[var(--oc-surface-muted)] text-[var(--oc-text-secondary)]'
               ),
         ].join(' ')}
       >

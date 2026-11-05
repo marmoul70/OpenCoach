@@ -146,15 +146,15 @@ export function CoachPage() {
     <PageContainer>
       <header className="mb-4 flex items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-400">
+          <p className="oc-page-eyebrow">
             OpenCoach
           </p>
 
-          <h1 className="mt-0.5 text-[30px] font-bold tracking-[-0.04em] text-slate-950 dark:text-white">
+          <h1 className="oc-page-title">
             Coach
           </h1>
 
-          <p className="mt-1 text-[13px] text-slate-400 dark:text-slate-500">
+          <p className="oc-page-description">
             Ton briefing d'entraînement du jour.
           </p>
         </div>

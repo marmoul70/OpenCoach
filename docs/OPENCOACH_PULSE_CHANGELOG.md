@@ -704,3 +704,21 @@ Ce fichier est le journal append-only des décisions et livraisons du chantier. 
 ### Contrôles
 - CI lancée sur les commits du sprint.
 - Vérification visuelle des états connecté/déconnecté, responsive et clair/sombre à effectuer.
+
+
+## 2026-11-05 — Sprint 31 : section Intervals.icu
+
+### Livré
+- Cartes de statut et panneaux Intervals.icu : fonds, bordures et séparateurs alignés sur les tokens Pulse.
+- Titres, libellés, métadonnées et textes secondaires harmonisés en clair/sombre.
+- États neutres des contrôles et actions : surfaces et survols cohérents.
+- Accents fonctionnels de synchronisation, erreurs, avertissements et succès conservés.
+
+### Garde-fous
+- Connexion, synchronisation, statut, compteurs, historique, dates, actions et appels API inchangés.
+- Aucun changement de logique métier, données, backend, stockage ou dépendance.
+- Aucun changement VM, merge ou déploiement.
+
+### Contrôles
+- CI lancée sur les commits du sprint.
+- Vérification visuelle des états connecté/déconnecté et des erreurs, responsive et clair/sombre à effectuer.

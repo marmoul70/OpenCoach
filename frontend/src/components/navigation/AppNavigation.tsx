@@ -3,6 +3,10 @@ import {
 } from '../ui/SidePanel'
 
 import {
+  NotificationBell,
+} from './NotificationBell'
+
+import {
   Activity,
   Bot,
   CalendarDays,
@@ -38,6 +42,7 @@ export type NavigationPage =
   | 'activities'
   | 'weather'
   | 'health'
+  | 'notifications'
 
 
 export type NavigationTheme =
@@ -269,6 +274,9 @@ export function AppNavigation({
               </p>
             </div>
           </button>
+          <NotificationBell
+            onViewAll={() => navigate('notifications')}
+          />
         </div>
 
 
@@ -776,6 +784,10 @@ export function AppNavigation({
           </span>
         </button>
 
+
+        <NotificationBell
+          onViewAll={() => navigate('notifications')}
+        />
 
         <button
           type="button"

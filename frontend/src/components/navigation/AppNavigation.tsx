@@ -203,11 +203,11 @@ export function AppNavigation({
           w-56
           flex-col
           border-r
-          border-black/[0.065]
-          bg-white
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]
           lg:flex
-          dark:border-white/[0.07]
-          dark:bg-[#101418]
+          dark:border-[var(--oc-border)]
+          dark:bg-[var(--oc-surface)]
         "
       >
         <div
@@ -249,8 +249,7 @@ export function AppNavigation({
                   text-lg
                   font-bold
                   tracking-[-0.035em]
-                  text-slate-950
-                  dark:text-white
+                  text-[var(--oc-text)]
                 "
               >
                 OpenCoach
@@ -263,8 +262,7 @@ export function AppNavigation({
                   font-semibold
                   uppercase
                   tracking-[0.16em]
-                  text-emerald-600
-                  dark:text-emerald-400
+                  text-[var(--oc-accent)]
                 "
               >
                 Performance
@@ -290,8 +288,7 @@ export function AppNavigation({
               font-semibold
               uppercase
               tracking-[0.16em]
-              text-slate-400
-              dark:text-slate-600
+              text-[var(--oc-muted)]
             "
           >
             Planning

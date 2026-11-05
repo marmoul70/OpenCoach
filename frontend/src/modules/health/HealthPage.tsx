@@ -26,6 +26,7 @@ import {
 import { LineChart } from '../../design-system/charts/LineChart'
 import { SidePanel } from '../../components/ui/SidePanel'
 import { PageHeader } from '../../design-system/components/PageHeader'
+import { fetchAutomatedTasks } from '../settings/tasksApi'
 
 type WindowSize = 7 | 14 | 30
 type HealthSectionKey = 'cardio' | 'recovery' | 'sleep'
@@ -74,7 +75,7 @@ export function HealthPage() {
   const [error, setError] = useState<string | null>(null)
   const [windowSize, setWindowSize] = useState<WindowSize>(7)
   const [refreshKey, setRefreshKey] = useState(0)
-  const [lastRefreshAt, setLastRefreshAt] = useState<Date | null>(null)
+  const [lastCorosSyncAt, setLastCorosSyncAt] = useState<Date | null>(null)
   const [relativeTimeNow, setRelativeTimeNow] = useState(() => Date.now())
   const [selectedSection, setSelectedSection] = useState<HealthSectionKey | null>(null)
 
@@ -90,14 +91,20 @@ export function HealthPage() {
 
     fetchRecoveryAssessment()
       .then(async (assessmentResult) => {
-        const trendsResult = await fetchWellnessTrends(
-          30,
-          assessmentResult.provider === 'intervals' ? 'intervals' : 'coros',
-        )
+        const [trendsResult, tasksResult] = await Promise.all([
+          fetchWellnessTrends(
+            30,
+            assessmentResult.provider === 'intervals' ? 'intervals' : 'coros',
+          ),
+          fetchAutomatedTasks().catch(() => []),
+        ])
         if (mounted) {
           setAssessment(assessmentResult)
           setTrends(trendsResult)
-          setLastRefreshAt(new Date())
+          const corosTask = tasksResult.find((task) => task.unit.includes('coros-sync'))
+          setLastCorosSyncAt(
+            corosTask?.last_run ? parseSystemdTimestamp(corosTask.last_run) : null,
+          )
         }
       })
       .catch((reason: unknown) => {
@@ -142,9 +149,9 @@ export function HealthPage() {
           }
         />
         <p className="mt-1 text-right text-xs text-[var(--oc-muted)]" aria-live="polite">
-          {lastRefreshAt
-            ? formatRelativeRefresh(lastRefreshAt, relativeTimeNow)
-            : 'En attente de la première actualisation…'}
+          {lastCorosSyncAt
+            ? `Dernière synchro COROS : ${formatRelativeRefresh(lastCorosSyncAt, relativeTimeNow)}`
+            : 'Dernière synchro COROS : inconnue'}
         </p>
 
         {loading && (
@@ -545,6 +552,14 @@ function formatDate(value: string): string {
   }).format(new Date(`${value}T12:00:00`))
 }
 
+
+function parseSystemdTimestamp(value: string): Date | null {
+  const match = value.match(/(?:[A-Za-z]{3}\s+)?(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?/)
+  if (!match) return null
+  const [, year, month, day, hour, minute, second = '0'] = match
+  const parsed = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second))
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
 
 function formatRelativeRefresh(value: Date, nowTimestamp: number): string {
   const elapsedMs = Math.max(0, nowTimestamp - value.getTime())

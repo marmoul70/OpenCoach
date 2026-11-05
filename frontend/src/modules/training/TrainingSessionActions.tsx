@@ -444,7 +444,7 @@ export function TrainingSessionActions({
                     transition
                     hover:bg-[var(--oc-surface-hover)]
                     disabled:opacity-40
-                     dark:hover:bg-white/[0.05]
+                     
                   "
                 >
                   <span
@@ -506,10 +506,10 @@ export function TrainingSessionActions({
                 className="
                   mt-1
                   border-t
-                  border-black/[0.06]
+                  border-[var(--oc-border)]
                   px-1
                   pt-2.5
-                  dark:border-white/[0.06]
+                  
                 "
               >
                 <div
@@ -646,11 +646,11 @@ export function TrainingSessionActions({
                             py-1.5
                             text-[10.5px]
                             font-medium
-                            text-slate-500
+                            text-[var(--oc-text-secondary)]
                             transition
                             hover:bg-[var(--oc-surface-hover)]
-                            dark:text-slate-400
-                            dark:hover:bg-white/[0.05]
+                            
+                            
                           "
                         >
                           Retour
@@ -698,8 +698,8 @@ export function TrainingSessionActions({
                         px-2.5
                         py-2
                         text-[10.5px]
-                        text-slate-500
-                        dark:text-slate-400
+                        text-[var(--oc-text-secondary)]
+                        
                       "
                     >
                       Aucun autre jour disponible.
@@ -721,11 +721,11 @@ export function TrainingSessionActions({
         mt-1
         rounded-[12px]
         border
-        border-black/[0.065]
+        border-[var(--oc-border)]
         bg-white
         p-3
-        dark:border-white/[0.065]
-        dark:bg-white/[0.02]
+        
+        
       "
     >
       <div
@@ -755,8 +755,8 @@ export function TrainingSessionActions({
               mt-0.5
               text-[12px]
               font-medium
-              text-slate-700
-              dark:text-slate-300
+              text-[var(--oc-text)]
+              
             "
           >
             Que souhaitez-vous faire ?
@@ -830,9 +830,9 @@ export function TrainingSessionActions({
           className="
             mt-3
             border-t
-            border-black/[0.06]
+            border-[var(--oc-border)]
             pt-3
-            dark:border-white/[0.06]
+            
           "
         >
           <div
@@ -858,8 +858,8 @@ export function TrainingSessionActions({
                 className="
                   text-[12px]
                   font-semibold
-                  text-slate-800
-                  dark:text-slate-200
+                  text-[var(--oc-text)]
+                  
                 "
               >
                 Choisir un nouveau jour
@@ -971,11 +971,11 @@ export function TrainingSessionActions({
                     py-2
                     text-[11.5px]
                     font-medium
-                    text-slate-500
+                    text-[var(--oc-text-secondary)]
                     transition
                     hover:bg-[var(--oc-surface-hover)]
-                    dark:text-slate-400
-                    dark:hover:bg-white/[0.05]
+                    
+                    
                   "
                 >
                   Annuler
@@ -1032,8 +1032,8 @@ export function TrainingSessionActions({
                   className="
                     text-[12px]
                     font-semibold
-                    text-slate-800
-                    dark:text-slate-200
+                    text-[var(--oc-text)]
+                    
                   "
                 >
                   Déplacement impossible
@@ -1044,8 +1044,8 @@ export function TrainingSessionActions({
                     mt-1
                     text-[10.5px]
                     leading-4
-                    text-slate-500
-                    dark:text-slate-400
+                    text-[var(--oc-text-secondary)]
+                    
                   "
                 >
                   Cette séance ne peut plus être
@@ -1070,11 +1070,11 @@ export function TrainingSessionActions({
                       py-2
                       text-[11.5px]
                       font-medium
-                      text-slate-500
+                      text-[var(--oc-text-secondary)]
                       transition
                       hover:bg-[var(--oc-surface-hover)]
-                      dark:text-slate-400
-                      dark:hover:bg-white/[0.05]
+                      
+                      
                     "
                   >
                     Fermer
@@ -1114,21 +1114,21 @@ function ActionButton({
         gap-1.5
         rounded-[9px]
         border
-        border-black/[0.07]
-        bg-slate-50
+        border-[var(--oc-border)]
+        bg-[var(--oc-surface-muted)]
         px-3
         text-[11.5px]
         font-semibold
-        text-slate-700
+        text-[var(--oc-text)]
         transition
         hover:border-emerald-500/25
         hover:bg-emerald-50/60
         hover:text-emerald-700
         disabled:cursor-not-allowed
         disabled:opacity-40
-        dark:border-white/[0.07]
-        dark:bg-white/[0.025]
-        dark:text-slate-300
+        
+        
+        
         dark:hover:bg-emerald-500/[0.06]
         dark:hover:text-emerald-400
       "
@@ -1191,10 +1191,10 @@ function MoveDayButton({
               + 'dark:bg-emerald-500/[0.08]'
             )
           : (
-              'border-black/[0.06] '
-              + 'bg-slate-50 '
-              + 'dark:border-white/[0.06] '
-              + 'dark:bg-white/[0.02]'
+              'border-[var(--oc-border)] '
+              + 'bg-[var(--oc-surface-muted)] '
+              + ' '
+              + ''
             ),
 
         !day.selectable
@@ -1232,8 +1232,8 @@ function MoveDayButton({
           text-[9.5px]
           font-semibold
           uppercase
-          text-slate-400
-          dark:text-slate-500
+          text-[var(--oc-text-secondary)]
+          dark:text-[var(--oc-text-secondary)]
         "
       >
         {weekday}
@@ -1244,8 +1244,8 @@ function MoveDayButton({
           mt-0.5
           text-[13px]
           font-bold
-          text-slate-800
-          dark:text-slate-200
+          text-[var(--oc-text)]
+          
         "
       >
         {dayNumber}

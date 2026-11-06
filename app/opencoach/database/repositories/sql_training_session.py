@@ -105,6 +105,21 @@ class SqlTrainingSessionRepository(
             database_session.intervals_sync_error = (
                 session.intervals_sync_error
             )
+            database_session.coros_workout_id = (
+                session.coros_workout_id
+            )
+            database_session.coros_sync_status = (
+                session.coros_sync_status
+            )
+            database_session.coros_last_synced_at = (
+                session.coros_last_synced_at
+            )
+            database_session.coros_payload_hash = (
+                session.coros_payload_hash
+            )
+            database_session.coros_sync_error = (
+                session.coros_sync_error
+            )
             self.session.commit()
             self.session.refresh(database_session)
 
@@ -467,6 +482,11 @@ class SqlTrainingSessionRepository(
             intervals_last_synced_at=session.intervals_last_synced_at,
             intervals_payload_hash=session.intervals_payload_hash,
             intervals_sync_error=session.intervals_sync_error,
+            coros_workout_id=session.coros_workout_id,
+            coros_sync_status=session.coros_sync_status,
+            coros_last_synced_at=session.coros_last_synced_at,
+            coros_payload_hash=session.coros_payload_hash,
+            coros_sync_error=session.coros_sync_error,
         )
 
     @staticmethod

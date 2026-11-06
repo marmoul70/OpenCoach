@@ -137,6 +137,10 @@ class WorkInterval:
 
     work_distance_meters: int | None = None
 
+    # Cibles secondaires de relief : elles coexistent avec la durée
+    # nécessaire au calcul de charge et au budget temporel.
+    work_elevation_gain_meters: int | None = None
+
     repetition_target: (
         DistanceRepetitionTarget
         | None
@@ -144,6 +148,8 @@ class WorkInterval:
 
     recovery_duration: int | None = None
     recovery_unit: WorkDurationUnit | None = None
+    recovery_distance_meters: int | None = None
+    recovery_elevation_gain_meters: int | None = None
 
     def __post_init__(
         self,
@@ -220,12 +226,36 @@ class WorkInterval:
                 "à la distance de travail."
             )
 
+        for label, value in (
+            ("distance de travail", self.work_distance_meters),
+            ("dénivelé de travail", self.work_elevation_gain_meters),
+            ("distance de récupération", self.recovery_distance_meters),
+            ("dénivelé de récupération", self.recovery_elevation_gain_meters),
+        ):
+            if value is not None and (
+                isinstance(value, bool)
+                or not isinstance(value, int)
+                or value <= 0
+            ):
+                raise ValueError(
+                    f"Le {label} doit être un entier strictement positif."
+                )
+
         if (
-            self.work_distance_meters is not None
-            and self.work_distance_meters <= 0
+            self.recovery_distance_meters is not None
+            and self.recovery_elevation_gain_meters is not None
         ):
             raise ValueError(
-                "La distance de travail doit être positive."
+                "Une récupération ne peut pas cibler simultanément une distance et un dénivelé."
+            )
+
+        if (
+            (self.recovery_distance_meters is not None
+             or self.recovery_elevation_gain_meters is not None)
+            and self.recovery_duration is None
+        ):
+            raise ValueError(
+                "Une cible de récupération distance/D+ doit conserver une durée pour le calcul du planning."
             )
 
         if (
@@ -1331,6 +1361,16 @@ def _format_interval_description(
         interval.work_unit,
     )
 
+    if interval.work_distance_meters is not None:
+        work = f"{interval.work_distance_meters} m"
+    elif interval.work_elevation_gain_meters is not None:
+        work = f"{interval.work_duration} {interval.work_unit.value} / {interval.work_elevation_gain_meters} m D+"
+    else:
+        work = _format_duration(
+            interval.work_duration,
+            interval.work_unit,
+        )
+
     recovery = ""
 
     if interval.recovery_duration is not None:
@@ -1343,6 +1383,10 @@ def _format_interval_description(
                 interval.recovery_unit,
             )
         )
+        if interval.recovery_distance_meters is not None:
+            recovery += f" / {interval.recovery_distance_meters} m"
+        if interval.recovery_elevation_gain_meters is not None:
+            recovery += f" / {interval.recovery_elevation_gain_meters} m D+"
 
     return (
         f"{interval.repetitions} × "

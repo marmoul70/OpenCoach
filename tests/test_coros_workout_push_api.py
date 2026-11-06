@@ -10,6 +10,7 @@ from opencoach.api.coros import get_current_athlete_profile_id
 from opencoach.database.session import get_db
 from opencoach.models import TrainingSession
 from opencoach.integrations.coros.errors import CorosMcpToolError
+from opencoach.integrations.coros.workout_mapper import map_training_session_to_coros
 
 
 class FakeConnection:
@@ -417,7 +418,9 @@ def test_moving_session_updates_existing_coros_workout_from_previous_date(monkey
     session.coros_sync_status = "synced"
     session.coros_workout_id = "existing-workout-id"
     session.coros_scheduled_date = date(2026, 11, 12)
-    session.coros_payload_hash = "old-payload-hash"
+    session.coros_payload_hash = map_training_session_to_coros(
+        session
+    ).payload_hash
     session.date = date(2026, 11, 13)
     client, repository, _ = make_client(monkeypatch, session)
 

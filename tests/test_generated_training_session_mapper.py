@@ -352,3 +352,27 @@ def test_mapper_persists_phase_metadata_and_block_level_intensity() -> None:
     warmup_block = next(block for block in blocks if block["phase"] == "warmup")
     assert warmup_block["intensity"] is not None
     assert warmup_block["intensity"]["targets"][0]["reference"] == "rpe"
+
+
+def test_serializes_work_and_recovery_elevation_targets() -> None:
+    from opencoach.coaching.generation.mapper import _serialize_work_interval
+    from opencoach.planning.sessions.prescription import (
+        WorkDurationUnit,
+        WorkInterval,
+    )
+
+    interval = WorkInterval(
+        repetitions=4,
+        work_duration=120,
+        work_unit=WorkDurationUnit.SECONDS,
+        work_elevation_gain_meters=80,
+        recovery_duration=60,
+        recovery_unit=WorkDurationUnit.SECONDS,
+        recovery_distance_meters=100,
+    )
+
+    payload = _serialize_work_interval(interval)
+
+    assert payload["work_elevation_gain_meters"] == 80
+    assert payload["recovery_distance_meters"] == 100
+    assert payload["recovery_elevation_gain_meters"] is None

@@ -205,7 +205,7 @@ main() {
         log_info \
             "Installation optionnelle du moteur IA local"
 
-        if ! "$BOOTSTRAP_DIR/install-ai.sh"; then
+        if ! bash "$BOOTSTRAP_DIR/install-ai.sh"; then
             log_error \
                 "L'installation du moteur IA local a échoué. OpenCoach classique reste installé."
             return 1

@@ -256,14 +256,10 @@ def _build_phase_section(
     sport_type: int,
     phase_label: str,
 ) -> dict[str, Any]:
-    seconds = _block_seconds(block)
-    if seconds <= 0:
-        raise CorosWorkoutMappingError(
-            f"La durée de {phase_label} est absente ou invalide."
-        )
     distance = block.get("target_distance_meters")
     elevation = block.get("target_elevation_gain_meters")
     explicit_seconds = block.get("target_duration_seconds")
+
     if sport_type == 5:
         if distance is not None:
             target_type = 1
@@ -280,12 +276,18 @@ def _build_phase_section(
         target_type = 1
         target_value = _positive_integer(distance, "distance de phase")
     else:
-        target_type = 2
-        target_value = (
+        seconds = (
             _positive_integer(explicit_seconds, "durée de phase")
             if explicit_seconds is not None
-            else seconds
+            else _block_seconds(block)
         )
+        if seconds <= 0:
+            raise CorosWorkoutMappingError(
+                f"La durée de {phase_label} est absente ou invalide."
+            )
+        target_type = 2
+        target_value = seconds
+
     section = {
         "sectionType": section_type,
         "targetType": target_type,
@@ -749,6 +751,9 @@ def _build_course_description(
             target_parts = []
             if duration is not None:
                 target_parts.append(f"{duration} min")
+            target_seconds = block.get("target_duration_seconds")
+            if target_seconds is not None:
+                target_parts.append(f"{target_seconds} s")
             distance = block.get("target_distance_meters")
             if distance is not None:
                 target_parts.append(f"{distance} m")

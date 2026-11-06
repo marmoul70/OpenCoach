@@ -441,7 +441,7 @@ def push_training_session_to_coros(
     athlete_profile_id: UUID = Depends(get_current_athlete_profile_id),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Ajoute une séance OpenCoach planifiée au calendrier COROS."""
+    """Crée ou actualise la séance OpenCoach planifiée dans le calendrier COROS."""
     repository = SqlTrainingSessionRepository(db)
     training_session = repository.get_session(
         athlete_profile_id,

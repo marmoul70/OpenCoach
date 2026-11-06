@@ -467,6 +467,32 @@ def test_definitive_update_error_keeps_existing_coros_identity_and_old_hash(monk
     ]
 
 
+
+def test_update_error_does_not_overwrite_opencoach_edit_made_while_pending(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "synced"
+    session.coros_workout_id = "existing-workout-id"
+    session.coros_payload_hash = "old-payload-hash"
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.update_error = True
+    FakeCorosClient.on_update = lambda: setattr(
+        repository.session,
+        "title",
+        "Titre modifié pendant erreur COROS",
+    )
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 422
+    assert repository.session.title == "Titre modifié pendant erreur COROS"
+    assert repository.session.coros_sync_status == "synced"
+    assert repository.session.coros_workout_id == "existing-workout-id"
+    assert repository.session.coros_payload_hash == "old-payload-hash"
+
+
 def test_session_changed_during_update_is_not_reported_as_synced_and_retries_as_update(monkeypatch):
     session = make_session()
     session.coros_sync_status = "synced"

@@ -64,6 +64,39 @@ def map_training_session_to_coros(
     easy_blocks = _matching_blocks(prescription, "easy")
     recovery_blocks = _matching_blocks(prescription, "recovery")
     cooldown_blocks = _matching_blocks(prescription, "cooldown")
+
+    unsupported_phase_blocks = [
+        block
+        for phase in ("technique", "strength", "transition")
+        for block in _matching_blocks(prescription, phase)
+    ]
+    if unsupported_phase_blocks:
+        unsupported_names = ", ".join(
+            str(block.get("name") or block.get("phase") or "phase")
+            for block in unsupported_phase_blocks
+        )
+        raise CorosWorkoutMappingError(
+            "La séance contient des phases que le guidage COROS actuel ne sait "
+            f"pas représenter fidèlement : {unsupported_names}. "
+            "Aucune phase ne sera ignorée."
+        )
+    if len(main_blocks) > 1:
+        raise CorosWorkoutMappingError(
+            "La séance contient plusieurs phases principales, mais sa structure "
+            "COROS ne peut en représenter qu'une seule sans perte."
+        )
+    if len(recovery_blocks) > 1:
+        raise CorosWorkoutMappingError(
+            "La séance contient plusieurs phases de récupération distinctes. "
+            "Le guidage COROS actuel ne peut pas appliquer leurs intensités "
+            "indépendamment à chaque récupération."
+        )
+    if recovery_blocks and structure_type == "continuous":
+        raise CorosWorkoutMappingError(
+            "Une phase recovery isolée ne peut pas être rattachée à une séance "
+            "continue COROS sans structure de récupération explicite."
+        )
+
     sport_type, trail_mode_fallback = _resolve_sport_type(
         requested_sport_type=requested_sport_type,
         session=session,

@@ -118,14 +118,23 @@ class DeterministicSessionGenerator:
             )
         )
 
-        # La prescription physiologique générale décrit le bloc principal,
-        # pas automatiquement l'échauffement ou le retour au calme.
+        # Chaque phase reçoit sa propre prescription. Les phases de mise en
+        # route et de récupération utilisent une cible facile, sans hériter
+        # artificiellement de l'intensité du travail principal.
+        easy_intensity = build_intensity_prescription(
+            stimulus=TrainingStimulus.AEROBIC_EASY,
+            physiology=request.physiology,
+        )
         blocks = tuple(
             replace(
                 block,
-                intensity_prescription=intensity_prescription,
+                intensity_prescription=(
+                    intensity_prescription
+                    if block.phase == "main"
+                    else easy_intensity
+                ),
             )
-            if block.phase == "main" and intensity_prescription is not None
+            if block.phase in {"main", "warmup", "easy", "cooldown"}
             else block
             for block in blocks
         )

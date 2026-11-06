@@ -269,7 +269,11 @@ def _build_continuous_section(
                 - round(warmup_seconds / 60)
                 - round(cooldown_seconds / 60)
             )
-        seconds = round(float(minutes) * 60)
+        duration_minutes = _positive_integer(
+            minutes,
+            "durée du bloc principal",
+        )
+        seconds = duration_minutes * 60
         if seconds <= 0:
             raise CorosWorkoutMappingError(
                 "La durée du bloc principal est invalide."
@@ -531,7 +535,13 @@ def _bounded_integer(
     maximum: int,
     label: str,
 ) -> int:
-    result = _positive_integer(value, label)
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError) as exc:
+        raise CorosWorkoutMappingError(
+            f"La {label} est invalide."
+        ) from exc
+    result = round(numeric)
     if not minimum <= result <= maximum:
         raise CorosWorkoutMappingError(
             f"{label.capitalize()} doit être comprise entre {minimum} et {maximum}."

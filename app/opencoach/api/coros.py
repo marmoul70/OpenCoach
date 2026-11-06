@@ -612,38 +612,17 @@ def push_training_session_to_coros(
             training_session.coros_scheduled_date
             or training_session.date
         )
-        try:
-            details_result = client.call_tool(
-                "queryScheduledWorkoutDetails",
-                {
-                    "date": coros_existing_date.strftime("%Y%m%d"),
-                    "idInPlan": training_session.coros_workout_id,
-                },
-            )
-        except CorosMcpAuthenticationError as exc:
-            raise HTTPException(
-                status_code=401,
-                detail="La connexion COROS a expiré. Reconnecte ton compte.",
-            ) from exc
-        except CorosMcpError as exc:
-            raise HTTPException(
-                status_code=502,
-                detail=(
-                    "Impossible de vérifier la séance déjà planifiée dans COROS. "
-                    "Aucune modification n'a été effectuée."
-                ),
-            ) from exc
+        lookup_dates = [coros_existing_date]
+        if training_session.date != coros_existing_date:
+            lookup_dates.append(training_session.date)
 
-        details = _extract_coros_scheduled_details(details_result)
-        if details is None and coros_existing_date != training_session.date:
-            # Une mise à jour précédente a pu déplacer la séance avant de
-            # perdre sa réponse. En état incertain, elle peut donc déjà être
-            # à la nouvelle date : tenter les deux emplacements connus.
+        details = None
+        for lookup_index, lookup_date in enumerate(lookup_dates):
             try:
                 details_result = client.call_tool(
                     "queryScheduledWorkoutDetails",
                     {
-                        "date": training_session.date.strftime("%Y%m%d"),
+                        "date": lookup_date.strftime("%Y%m%d"),
                         "idInPlan": training_session.coros_workout_id,
                     },
                 )
@@ -652,15 +631,31 @@ def push_training_session_to_coros(
                     status_code=401,
                     detail="La connexion COROS a expiré. Reconnecte ton compte.",
                 ) from exc
+            except CorosMcpToolError as exc:
+                # COROS peut signaler « introuvable » comme erreur outil
+                # lorsque la séance a déjà été déplacée par une requête dont
+                # la réponse a été perdue. Essayer alors la date cible connue.
+                if lookup_index < len(lookup_dates) - 1:
+                    continue
+                raise HTTPException(
+                    status_code=502,
+                    detail=(
+                        "Impossible de retrouver la séance COROS aux dates "
+                        "connues. Aucune modification n'a été effectuée."
+                    ),
+                ) from exc
             except CorosMcpError as exc:
                 raise HTTPException(
                     status_code=502,
                     detail=(
-                        "Impossible de vérifier la séance COROS à sa nouvelle "
-                        "date. Aucune modification n'a été effectuée."
+                        "Impossible de vérifier la séance déjà planifiée dans COROS. "
+                        "Aucune modification n'a été effectuée."
                     ),
                 ) from exc
+
             details = _extract_coros_scheduled_details(details_result)
+            if details is not None:
+                break
 
         if details is None:
             raise HTTPException(

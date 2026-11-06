@@ -425,13 +425,13 @@ export function AppNavigation({
         title="Compte et notifications"
         onClose={() => setDesktopProfileOpen(false)}
       >
-        <div className="space-y-5">
+        <div className="space-y-4">
           <section className="
-            flex items-center gap-3 rounded-2xl
-            bg-[var(--oc-surface-muted)]/55 p-3
+            flex items-center gap-3 border-b border-[var(--oc-border)]
+            px-1 pb-4
           ">
             <Avatar avatar={avatar} initials={initials} />
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-semibold text-[var(--oc-text)]">
                 {formatName(firstName, lastName)}
               </p>
@@ -439,23 +439,24 @@ export function AppNavigation({
                 Profil athlète
               </p>
             </div>
+            <span className="
+              rounded-full bg-[var(--oc-surface-muted)]
+              px-2 py-1 text-[9px] font-medium text-[var(--oc-muted)]
+            ">
+              Mon compte
+            </span>
           </section>
 
           <section>
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--oc-muted)]">
-                Notifications
-              </h3>
-            </div>
             <NotificationBell
               embedded
               onViewAll={() => navigate('notifications')}
             />
           </section>
 
-          <section>
-            <DropdownLabel>Compte</DropdownLabel>
-            <div className="mt-1 space-y-1">
+          <section className="border-t border-[var(--oc-border)] pt-3">
+            <DropdownLabel>Mon compte</DropdownLabel>
+            <div className="mt-1 space-y-0.5">
               <DropdownItem
                 icon={<UserRound className="h-4 w-4" />}
                 label="Profil personnel"
@@ -477,9 +478,14 @@ export function AppNavigation({
             </div>
           </section>
 
-          <section>
-            <DropdownLabel>Apparence</DropdownLabel>
-            <div className="mt-2 grid grid-cols-3 gap-2">
+          <section className="border-t border-[var(--oc-border)] pt-3">
+            <div className="mb-2 flex items-center justify-between">
+              <DropdownLabel>Apparence</DropdownLabel>
+              <span className="text-[9px] text-[var(--oc-muted)]">
+                {theme === 'system' ? 'Automatique' : theme === 'light' ? 'Clair' : 'Sombre'}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
               <DropdownThemeButton
                 active={theme === 'light'}
                 icon={<Sun className="h-4 w-4" />}
@@ -501,26 +507,31 @@ export function AppNavigation({
             </div>
           </section>
 
-          <section className="border-t border-[var(--oc-border)] pt-3">
-            <DropdownItem
-              icon={<LogOut className="h-4 w-4" />}
-              label="Se déconnecter"
-              danger
+          <section className="
+            flex items-center justify-between gap-3
+            border-t border-[var(--oc-border)] pt-3
+          ">
+            <button
+              type="button"
               onClick={() => {
                 setDesktopProfileOpen(false)
                 onLogout()
               }}
-            />
+              className="
+                inline-flex items-center gap-2 rounded-lg px-2 py-2
+                text-[11px] font-medium text-rose-600
+                transition-colors hover:bg-rose-500/[0.07]
+                dark:text-rose-400
+              "
+            >
+              <LogOut className="h-4 w-4" />
+              Se déconnecter
+            </button>
+            <span className="text-right text-[8px] text-[var(--oc-muted-soft)]">
+              {version ? `v${version}` : 'dev'}
+              {commit ? ` · ${commit}` : ''}
+            </span>
           </section>
-
-          <div className="
-            flex items-center justify-between gap-2
-            border-t border-[var(--oc-border)] pt-3
-            text-[9px] text-[var(--oc-muted)]
-          ">
-            <span>{version ? `OpenCoach v${version}` : 'OpenCoach développement'}</span>
-            {commit && <span className="font-mono">{commit}</span>}
-          </div>
         </div>
       </SidePanel>
 

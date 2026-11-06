@@ -37,19 +37,20 @@ export function CorosWorkoutAction({
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
 
+  const normalizedSport = session.sportType
+    .trim()
+    .toLowerCase()
+    .replace(/[\\s_-]/g, '')
+
   const supportedSport = [
     'run',
     'running',
     'trailrun',
     'trailrunning',
-    'trail_run',
-    'trail_running',
     'ride',
     'cycling',
     'bike',
-  ].includes(
-    session.sportType.trim().toLowerCase(),
-  )
+  ].includes(normalizedSport)
 
   if (
     session.status !== 'planned'

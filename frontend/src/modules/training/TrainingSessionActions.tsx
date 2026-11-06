@@ -22,6 +22,10 @@ import {
   useToast,
 } from '../../components/ui/ToastProvider'
 
+import {
+  CorosWorkoutAction,
+} from './CorosWorkoutAction'
+
 import type {
   TrainingSession,
 } from './types'
@@ -475,6 +479,8 @@ export function TrainingSessionActions({
                     "
                   />
                 </button>
+
+                <CorosWorkoutAction session={session} />
               </div>
             )}
 
@@ -803,6 +809,7 @@ export function TrainingSessionActions({
         />
       </div>
 
+      <CorosWorkoutAction session={session} />
 
       {error && (
         <div

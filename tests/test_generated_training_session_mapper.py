@@ -1,5 +1,6 @@
 from dataclasses import replace
 from datetime import date
+from uuid import uuid4
 
 from opencoach.planning.sessions.prescription import (
     IntensityRange,
@@ -7,6 +8,12 @@ from opencoach.planning.sessions.prescription import (
     SessionIntensityPrescription,
 )
 
+from opencoach.integrations.coros.workout_mapper import (
+    map_training_session_to_coros,
+)
+from opencoach.planning.sessions.prescription.integrity import (
+    validate_training_session_prescription,
+)
 from opencoach.coaching.generation.mapper import (
     generated_session_to_training_session,
 )
@@ -41,12 +48,12 @@ from opencoach.planning.weekly.training_envelope import (
 )
 
 
-def create_generated_session():
+def create_generated_session(*, secondary_stimuli=()):
     intent = SessionIntent(
         primary_stimulus=(
             TrainingStimulus.THRESHOLD
         ),
-        secondary_stimuli=(),
+        secondary_stimuli=secondary_stimuli,
         importance=(
             SessionIntentImportance.IMPORTANT
         ),
@@ -352,6 +359,54 @@ def test_mapper_persists_phase_metadata_and_block_level_intensity() -> None:
     warmup_block = next(block for block in blocks if block["phase"] == "warmup")
     assert warmup_block["intensity"] is not None
     assert warmup_block["intensity"]["targets"][0]["reference"] == "rpe"
+
+
+
+def test_secondary_stimuli_survive_generation_persistence_validation_and_coros_mapping() -> None:
+    generated = create_generated_session(
+        secondary_stimuli=(
+            TrainingStimulus.UPHILL_THRESHOLD,
+            TrainingStimulus.VO2MAX,
+        ),
+    )
+    persisted = generated_session_to_training_session(
+        generated,
+        planning_key="secondary-stimuli-e2e",
+    )
+
+    assert "seuil en montée" in persisted.description.lower()
+    assert "puissance aérobie" in persisted.description.lower()
+
+    # Le scénario valide la chaîne de transport du texte secondaire.
+    # On fournit une cible FC absolue explicite pour rendre la séance
+    # exécutable dans COROS sans convertir arbitrairement le RPE.
+    heart_rate_intensity = {
+        "targets": [
+            {
+                "reference": "heart_rate",
+                "minimum": 140,
+                "maximum": 155,
+                "unit": "bpm",
+                "label": "Fréquence cardiaque",
+            }
+        ],
+        "guidance": [],
+    }
+    assert persisted.prescription is not None
+    persisted.prescription["intensity"] = heart_rate_intensity
+    persisted.prescription["recovery_intensity"] = heart_rate_intensity
+    for block in persisted.prescription["blocks"]:
+        block["intensity"] = heart_rate_intensity
+
+    validate_training_session_prescription(persisted)
+    coros_payload = map_training_session_to_coros(
+        replace(persisted, id=uuid4())
+    )
+
+    description = coros_payload.course["courseDescription"].lower()
+    assert "seuil en montée" in description
+    assert "puissance aérobie" in description
+    assert coros_payload.course["sections"]
 
 
 def test_serializes_work_and_recovery_elevation_targets() -> None:

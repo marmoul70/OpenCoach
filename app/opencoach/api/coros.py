@@ -634,6 +634,22 @@ def push_training_session_to_coros(
         athlete_profile_id,
         training_session,
     )
+    other_workouts = _extract_other_coros_workouts(
+        result,
+        created_id=saved_session.coros_workout_id,
+        current_name=saved_session.title,
+    )
+    message = (
+        f"« {saved_session.title} » a été ajoutée au calendrier COROS "
+        f"du {saved_session.date.strftime('%d/%m/%Y')}. "
+        "Synchronise ensuite ta montre avec l'application COROS."
+    )
+    if other_workouts:
+        message += (
+            " Autres séances déjà présentes ce jour : "
+            + ", ".join(other_workouts)
+            + "."
+        )
 
     return {
         "status": "synced",
@@ -642,11 +658,8 @@ def push_training_session_to_coros(
             if saved_session.coros_last_synced_at
             else now.isoformat()
         ),
-        "message": (
-            f"« {saved_session.title} » a été ajoutée au calendrier COROS "
-            f"du {saved_session.date.strftime('%d/%m/%Y')}. "
-            "Synchronise ensuite ta montre avec l'application COROS."
-        ),
+        "message": message,
+        "other_workouts": other_workouts,
     }
 
 
@@ -678,6 +691,63 @@ def _extract_coros_scheduled_id(result: dict[str, Any]) -> str | None:
         if found:
             return found
     return None
+
+
+def _extract_other_coros_workouts(
+    result: dict[str, Any],
+    *,
+    created_id: str | None,
+    current_name: str,
+) -> list[str]:
+    """Retourne les autres séances du jour éventuellement incluses dans le résultat."""
+    candidates: list[Any] = []
+    structured = result.get("structuredContent")
+    if structured is not None:
+        candidates.append(structured)
+    for item in result.get("content", []):
+        if not isinstance(item, dict) or item.get("type") != "text":
+            continue
+        raw_text = item.get("text")
+        if not isinstance(raw_text, str):
+            continue
+        try:
+            candidates.append(json.loads(raw_text))
+        except ValueError:
+            continue
+
+    found: list[str] = []
+    current_normalized = current_name.strip().casefold()
+    for candidate in candidates:
+        for workout_id, name in _collect_coros_workout_names(candidate):
+            if created_id is not None and workout_id == created_id:
+                continue
+            if name.strip().casefold() == current_normalized:
+                continue
+            if name not in found:
+                found.append(name)
+    return found
+
+
+def _collect_coros_workout_names(value: Any) -> list[tuple[str | None, str]]:
+    collected: list[tuple[str | None, str]] = []
+    if isinstance(value, dict):
+        workout_id = value.get("idInPlan", value.get("id_in_plan"))
+        name = (
+            value.get("courseName")
+            or value.get("workoutName")
+            or value.get("name")
+            or value.get("title")
+        )
+        if isinstance(name, str) and name.strip():
+            collected.append(
+                (str(workout_id) if workout_id is not None else None, name.strip())
+            )
+        for item in value.values():
+            collected.extend(_collect_coros_workout_names(item))
+    elif isinstance(value, list):
+        for item in value:
+            collected.extend(_collect_coros_workout_names(item))
+    return collected
 
 
 def _find_coros_id(value: Any) -> str | None:

@@ -167,6 +167,33 @@ def test_generator_covers_secondary_stimuli() -> None:
     )
 
 
+
+def test_every_secondary_stimulus_produces_explicit_coach_guidance() -> None:
+    secondary_stimuli = tuple(
+        stimulus
+        for stimulus in TrainingStimulus
+        if stimulus is not TrainingStimulus.LONG_ENDURANCE
+    )
+
+    proposal = DeterministicSessionGenerator().generate_session(
+        request=create_request(
+            secondary_stimuli=secondary_stimuli,
+        ),
+    )
+
+    guidance = tuple(
+        note
+        for note in proposal.coach_notes
+        if note.startswith("Stimulus complémentaire")
+    )
+
+    assert len(guidance) == len(secondary_stimuli)
+    assert len(set(guidance)) == len(secondary_stimuli)
+    assert any("seuil en montée" in note.lower() for note in guidance)
+    assert any("puissance aérobie" in note.lower() for note in guidance)
+    assert any("activation pré-course" in note.lower() for note in guidance)
+
+
 def test_required_modality_has_priority() -> None:
     generator = (
         DeterministicSessionGenerator()

@@ -1,7 +1,7 @@
 """persist the last known COROS scheduled workout date
 
 Revision ID: b7c9e1a4d2f6
-Revises: e7f8a9b0c1d2
+Revises: a4d6f8b2c1e3
 Create Date: 2026-11-06
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 revision: str = "b7c9e1a4d2f6"
-down_revision: Union[str, Sequence[str], None] = "e7f8a9b0c1d2"
+down_revision: Union[str, Sequence[str], None] = "a4d6f8b2c1e3"
 branch_labels = None
 depends_on = None
 

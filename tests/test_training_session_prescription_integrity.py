@@ -9,6 +9,9 @@ from opencoach.planning.sessions.prescription.integrity import (
     validate_training_session_prescription,
 )
 from opencoach.planning.sessions.prescription.intervals import (
+    CircuitStep,
+    CircuitStepType,
+    WorkCircuit,
     WorkDurationUnit,
     WorkInterval,
 )
@@ -601,3 +604,28 @@ def test_work_interval_rejects_boolean_counts_and_durations(overrides: dict) -> 
 
     with pytest.raises(ValueError):
         WorkInterval(**values)
+
+
+@pytest.mark.parametrize("invalid_value", [True, 1.5])
+def test_circuit_step_rejects_non_integer_durations(invalid_value) -> None:
+    with pytest.raises(ValueError, match="entier strictement positif"):
+        CircuitStep(
+            step_type=CircuitStepType.WORK,
+            duration_seconds=invalid_value,
+            description="Travail.",
+        )
+
+
+@pytest.mark.parametrize("invalid_value", [True, 2.5])
+def test_work_circuit_rejects_non_integer_repetition_counts(invalid_value) -> None:
+    step = CircuitStep(
+        step_type=CircuitStepType.WORK,
+        duration_seconds=30,
+        description="Travail.",
+    )
+
+    with pytest.raises(ValueError, match="entier strictement positif"):
+        WorkCircuit(
+            repetitions=invalid_value,
+            steps=(step,),
+        )

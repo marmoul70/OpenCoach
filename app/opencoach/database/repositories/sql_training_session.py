@@ -108,6 +108,9 @@ class SqlTrainingSessionRepository(
             database_session.coros_workout_id = (
                 session.coros_workout_id
             )
+            database_session.coros_scheduled_date = (
+                session.coros_scheduled_date
+            )
             database_session.coros_sync_status = (
                 session.coros_sync_status
             )
@@ -552,6 +555,7 @@ class SqlTrainingSessionRepository(
             intervals_payload_hash=session.intervals_payload_hash,
             intervals_sync_error=session.intervals_sync_error,
             coros_workout_id=session.coros_workout_id,
+            coros_scheduled_date=session.coros_scheduled_date,
             coros_sync_status=session.coros_sync_status,
             coros_sync_started_at=session.coros_sync_started_at,
             coros_last_synced_at=session.coros_last_synced_at,

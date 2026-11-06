@@ -252,6 +252,9 @@ def save_intervals_connection(
         web_cookie_configured = service.has_intervals_web_cookie(
             athlete_profile_id
         )
+        web_cookie_hint = service.get_intervals_web_cookie_hint(
+            athlete_profile_id
+        )
 
     except IntegrationConnectionServiceError as exc:
         raise HTTPException(
@@ -277,6 +280,7 @@ def save_intervals_connection(
         athlete_id=connection.athlete_id,
         api_key_configured=connection.secret_configured,
         web_cookie_configured=web_cookie_configured,
+        web_cookie_hint=web_cookie_hint,
         last_synced_at=connection.last_synced_at,
     )
 

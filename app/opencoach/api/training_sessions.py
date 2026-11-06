@@ -134,6 +134,7 @@ def to_response(
         heart_rate_zone=session.heart_rate_zone,
         status=session.status,
         activity_id=session.activity_id,
+        prescription=session.prescription,
         intervals_external_id=(
             session.intervals_external_id
         ),
@@ -152,6 +153,9 @@ def to_response(
         intervals_sync_error=(
             session.intervals_sync_error
         ),
+        coros_sync_status=session.coros_sync_status,
+        coros_last_synced_at=session.coros_last_synced_at,
+        coros_sync_error=session.coros_sync_error,
     )
 
 

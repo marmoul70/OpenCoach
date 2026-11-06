@@ -91,6 +91,19 @@ def _connection(
     )
 
 
+def _reload_coros_training_session(
+    db: Session,
+    repository: SqlTrainingSessionRepository,
+    athlete_profile_id: UUID,
+    session_id: UUID,
+):
+    """Relit une séance après un appel externe sans réécrire un état périmé."""
+    expire_all = getattr(db, "expire_all", None)
+    if callable(expire_all):
+        expire_all()
+    return repository.get_session(athlete_profile_id, session_id)
+
+
 def _recover_interrupted_coros_sync(
     db: Session,
     athlete_profile_id: UUID,
@@ -739,10 +752,9 @@ def push_training_session_to_coros(
                 "Actualise la page avant de réessayer."
             ),
         )
-    expire_all = getattr(db, "expire_all", None)
-    if callable(expire_all):
-        expire_all()
-    training_session = repository.get_session(
+    training_session = _reload_coros_training_session(
+        db,
+        repository,
         athlete_profile_id,
         session_id,
     )
@@ -800,6 +812,14 @@ def push_training_session_to_coros(
                 workout_payload.as_tool_arguments(),
             )
     except CorosMcpAuthenticationError as exc:
+        training_session = _reload_coros_training_session(
+            db,
+            repository,
+            athlete_profile_id,
+            session_id,
+        )
+        if training_session is None:
+            raise HTTPException(status_code=404, detail="Séance introuvable après l'appel COROS.")
         training_session.coros_sync_status = "synced" if is_update else "failed"
         training_session.coros_sync_started_at = None
         if is_update:
@@ -819,6 +839,14 @@ def push_training_session_to_coros(
             detail=training_session.coros_sync_error,
         ) from exc
     except CorosMcpToolError as exc:
+        training_session = _reload_coros_training_session(
+            db,
+            repository,
+            athlete_profile_id,
+            session_id,
+        )
+        if training_session is None:
+            raise HTTPException(status_code=404, detail="Séance introuvable après l'appel COROS.")
         training_session.coros_sync_status = "synced" if is_update else "failed"
         training_session.coros_sync_started_at = None
         if is_update:
@@ -830,6 +858,14 @@ def push_training_session_to_coros(
             detail=training_session.coros_sync_error,
         ) from exc
     except CorosMcpProtocolError as exc:
+        training_session = _reload_coros_training_session(
+            db,
+            repository,
+            athlete_profile_id,
+            session_id,
+        )
+        if training_session is None:
+            raise HTTPException(status_code=404, detail="Séance introuvable après l'appel COROS.")
         training_session.coros_sync_status = "unknown"
         training_session.coros_sync_started_at = None
         training_session.coros_sync_error = (
@@ -842,6 +878,14 @@ def push_training_session_to_coros(
             detail=training_session.coros_sync_error,
         ) from exc
     except CorosMcpError as exc:
+        training_session = _reload_coros_training_session(
+            db,
+            repository,
+            athlete_profile_id,
+            session_id,
+        )
+        if training_session is None:
+            raise HTTPException(status_code=404, detail="Séance introuvable après l'appel COROS.")
         training_session.coros_sync_status = "unknown"
         training_session.coros_sync_started_at = None
         training_session.coros_sync_error = (
@@ -857,6 +901,14 @@ def push_training_session_to_coros(
     now = datetime.now(timezone.utc)
     returned_workout_id = _extract_coros_scheduled_id(result)
     if not is_update and not returned_workout_id:
+        training_session = _reload_coros_training_session(
+            db,
+            repository,
+            athlete_profile_id,
+            session_id,
+        )
+        if training_session is None:
+            raise HTTPException(status_code=404, detail="Séance introuvable après l'appel COROS.")
         # La création peut avoir réussi côté COROS, mais sans idInPlan
         # OpenCoach ne peut ni prouver la synchronisation ni mettre à jour
         # cette séance ensuite. Conserver un état incertain impose une
@@ -875,10 +927,9 @@ def push_training_session_to_coros(
 
     # Relire la séance après l'appel distant : une modification OpenCoach
     # pendant l'attente ne doit pas être présentée comme déjà synchronisée.
-    expire_all = getattr(db, "expire_all", None)
-    if callable(expire_all):
-        expire_all()
-    latest_session = repository.get_session(
+    latest_session = _reload_coros_training_session(
+        db,
+        repository,
         athlete_profile_id,
         session_id,
     )

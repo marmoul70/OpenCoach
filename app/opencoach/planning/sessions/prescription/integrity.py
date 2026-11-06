@@ -59,6 +59,16 @@ def validate_training_session_prescription(
             "warmup", "main", "easy", "recovery",
             "cooldown", "technique", "strength", "transition",
         }
+        recovery_intensity = prescription.get("recovery_intensity")
+        if recovery_intensity is not None and (
+            not isinstance(recovery_intensity, dict)
+            or not isinstance(recovery_intensity.get("targets"), list)
+            or not recovery_intensity["targets"]
+        ):
+            raise TrainingSessionPrescriptionIntegrityError(
+                "La prescription de récupération doit contenir au moins une cible."
+            )
+
         for block in blocks:
             if not isinstance(block, dict):
                 raise TrainingSessionPrescriptionIntegrityError(

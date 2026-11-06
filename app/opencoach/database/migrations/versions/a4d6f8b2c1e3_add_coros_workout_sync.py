@@ -24,6 +24,10 @@ def upgrade() -> None:
     )
     op.add_column(
         "training_sessions",
+        sa.Column("coros_scheduled_date", sa.Date(), nullable=True),
+    )
+    op.add_column(
+        "training_sessions",
         sa.Column("coros_sync_status", sa.String(length=30), nullable=True),
     )
     op.add_column(
@@ -46,6 +50,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_column("training_sessions", "coros_sync_error")
+    op.drop_column("training_sessions", "coros_scheduled_date")
     op.drop_column("training_sessions", "coros_payload_hash")
     op.drop_column("training_sessions", "coros_last_synced_at")
     op.drop_column("training_sessions", "coros_sync_started_at")

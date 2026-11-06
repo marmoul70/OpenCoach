@@ -730,3 +730,27 @@ def test_work_interval_rejects_two_recovery_targets() -> None:
             recovery_distance_meters=100,
             recovery_elevation_gain_meters=30,
         )
+
+
+def test_interval_description_keeps_duration_distance_and_elevation_targets() -> None:
+    from opencoach.planning.sessions.prescription.intervals import (
+        _format_interval_description,
+    )
+
+    interval = WorkInterval(
+        repetitions=4,
+        work_duration=60,
+        work_unit=WorkDurationUnit.SECONDS,
+        work_elevation_gain_meters=100,
+        recovery_duration=30,
+        recovery_unit=WorkDurationUnit.SECONDS,
+        recovery_elevation_gain_meters=20,
+    )
+
+    description = _format_interval_description(interval)
+
+    assert "4 ×" in description
+    assert "60 s" in description
+    assert "100 m D+" in description
+    assert "30 s" in description
+    assert "20 m D+" in description

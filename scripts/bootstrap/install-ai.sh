@@ -103,18 +103,42 @@ for line in lines:
     key, value = line.split("=", 1)
     values[key.strip()] = value.strip().strip("'").strip('"')
 
+updated = []
+seen = set()
+for line in lines:
+    if "=" not in line or line.lstrip().startswith("#"):
+        updated.append(line)
+        continue
+
+    key, current = line.split("=", 1)
+    key = key.strip()
+    if key not in defaults:
+        updated.append(line)
+        continue
+
+    if key in seen:
+        continue
+    seen.add(key)
+
+    if current.strip().strip("'").strip('"'):
+        updated.append(line)
+    else:
+        updated.append(f"{key}={defaults[key]}")
+
 missing = {
     key: value
     for key, value in defaults.items()
-    if not values.get(key)
+    if key not in seen
 }
 
 if missing:
-    if lines and lines[-1].strip():
-        lines.append("")
-    lines.append("# OpenCoach - IA locale (désactivée jusqu'à validation)")
-    lines.extend(f"{key}={value}" for key, value in missing.items())
-    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    if updated and updated[-1].strip():
+        updated.append("")
+    updated.append("# OpenCoach - IA locale (désactivée jusqu'à validation)")
+    updated.extend(f"{key}={value}" for key, value in missing.items())
+
+if updated != lines:
+    env_path.write_text("\n".join(updated) + "\n", encoding="utf-8")
 PYTHON
 
     chmod 600 "$ENV_FILE"

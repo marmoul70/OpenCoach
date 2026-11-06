@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -204,4 +204,48 @@ def test_uncertain_previous_push_requires_explicit_no_duplicate_confirmation(
     )
     assert confirmed.status_code == 200
     assert repository.session.coros_sync_status == "synced"
+    assert len(FakeCorosClient.calls) == 1
+
+
+
+def test_pending_push_cannot_be_retried_while_original_request_is_active(
+    monkeypatch,
+):
+    session = make_session()
+    session.coros_sync_status = "pending"
+    session.coros_sync_started_at = datetime.now(timezone.utc)
+    client, _, _ = make_client(monkeypatch, session)
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={"confirmed_no_duplicate": True},
+    )
+
+    assert response.status_code == 409
+    assert "encore en cours" in response.json()["detail"]
+    assert FakeCorosClient.calls == []
+
+
+def test_stale_pending_push_requires_confirmation_then_can_retry(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "pending"
+    session.coros_sync_started_at = (
+        datetime.now(timezone.utc) - timedelta(minutes=10)
+    )
+    client, repository, _ = make_client(monkeypatch, session)
+
+    blocked = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+    assert blocked.status_code == 409
+    assert FakeCorosClient.calls == []
+
+    confirmed = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={"confirmed_no_duplicate": True},
+    )
+    assert confirmed.status_code == 200
+    assert repository.session.coros_sync_status == "synced"
+    assert repository.session.coros_sync_started_at is None
     assert len(FakeCorosClient.calls) == 1

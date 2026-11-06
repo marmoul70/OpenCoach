@@ -138,23 +138,26 @@ export function NotificationBell({
                   'dark:shadow-[0_18px_50px_rgba(0,0,0,0.42)]',
                 ].join(' ')}
           >
-            <div className="
-              flex items-center justify-between border-b
-              border-[var(--oc-border)] px-4 py-3
-            ">
-              <div>
-                <h2 className="text-[13px] font-bold text-[var(--oc-text)]">
-                  Notifications
-                </h2>
-                <p className="mt-0.5 text-[10px] text-[var(--oc-muted)]">
-                  {unreadCount} non lue(s)
-                </p>
+            <div className={embedded
+              ? "mb-2 flex items-center justify-between gap-3"
+              : "flex items-center justify-between border-b border-[var(--oc-border)] px-4 py-3"
+            }>
+              <div className="flex min-w-0 items-center gap-2">
+                {embedded && <Bell className="h-4 w-4 shrink-0 text-[var(--oc-muted)]" />}
+                <div className="min-w-0">
+                  <h2 className="text-[12px] font-semibold text-[var(--oc-text)]">
+                    Notifications
+                  </h2>
+                  <p className="mt-0.5 text-[10px] text-[var(--oc-muted)]">
+                    {unreadCount} non lue(s)
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={viewAll}
                 className="
-                  text-[10px] font-semibold text-[var(--oc-accent)]
+                  shrink-0 text-[10px] font-semibold text-[var(--oc-accent)]
                   hover:underline
                 "
               >
@@ -162,13 +165,13 @@ export function NotificationBell({
               </button>
             </div>
 
-            <div className={embedded ? "max-h-[30vh] overflow-y-auto" : "max-h-[min(420px,65vh)] overflow-y-auto"}>
+            <div className={embedded ? "max-h-[26vh] overflow-y-auto rounded-xl bg-[var(--oc-surface-muted)]/45" : "max-h-[min(420px,65vh)] overflow-y-auto"}>
               {loading && items.length === 0 ? (
                 <p className="px-4 py-8 text-center text-xs text-[var(--oc-muted)]">
                   Chargement…
                 </p>
               ) : items.length === 0 ? (
-                <div className="flex flex-col items-center px-5 py-9 text-center">
+                <div className={embedded ? "flex flex-col items-center px-4 py-5 text-center" : "flex flex-col items-center px-5 py-9 text-center"}>
                   <Inbox className="h-7 w-7 text-[var(--oc-muted-soft)]" />
                   <p className="mt-2 text-xs font-semibold text-[var(--oc-text)]">
                     Aucune notification
@@ -182,7 +185,7 @@ export function NotificationBell({
                   <article
                     key={item.id}
                     className={[
-                      'border-b border-[var(--oc-border)] px-4 py-3 last:border-b-0',
+                      'border-b border-[var(--oc-border)]/70 px-3 py-2.5 last:border-b-0',
                       item.read_at ? 'opacity-70' : 'bg-[var(--oc-surface-muted)]/45',
                     ].join(' ')}
                   >
@@ -214,21 +217,7 @@ export function NotificationBell({
               )}
             </div>
 
-            <div className="border-t border-[var(--oc-border)] p-2">
-              <button
-                type="button"
-                onClick={viewAll}
-                className="
-                  flex w-full items-center justify-center gap-2
-                  rounded-xl bg-[var(--oc-surface-muted)] px-3 py-2.5
-                  text-[10px] font-semibold text-[var(--oc-text-secondary)]
-                  transition hover:bg-[var(--oc-surface-hover)]
-                "
-              >
-                <CheckCheck className="h-3.5 w-3.5" />
-                Ouvrir le centre de notifications
-              </button>
-            </div>
+            {!embedded && <div className="border-t border-[var(--oc-border)] p-2">\n              <button\n                type="button"\n                onClick={viewAll}\n                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--oc-surface-muted)] px-3 py-2.5 text-[10px] font-semibold text-[var(--oc-text-secondary)] transition hover:bg-[var(--oc-surface-hover)]"\n              >\n                <CheckCheck className="h-3.5 w-3.5" />\n                Ouvrir le centre de notifications\n              </button>\n            </div>}
           </section>
         </>
       )}

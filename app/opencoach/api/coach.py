@@ -296,7 +296,6 @@ def get_coach_trajectory(
             ),
             target_elevation_gain_m=(
                 race.elevation_gain_m
-                or 0.0
             ),
             history_metrics=(
                 history_metrics

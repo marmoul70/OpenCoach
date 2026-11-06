@@ -62,8 +62,9 @@ def test_reports_other_workouts_but_not_the_new_workout() -> None:
 
 def test_training_session_coros_timestamps_are_exposed_as_explicit_utc() -> None:
     naive = datetime(2026, 11, 6, 12, 30)
-    aware = datetime(2026, 11, 6, 13, 30, tzinfo=timezone.utc)
+    expected_utc = datetime(2026, 11, 6, 12, 30, tzinfo=timezone.utc)
+    aware_offset = datetime.fromisoformat("2026-11-06T13:30:00+01:00")
 
-    assert _as_utc(naive) == aware
-    assert _as_utc(aware) is aware
+    assert _as_utc(naive) == expected_utc
+    assert _as_utc(aware_offset) == expected_utc
     assert _as_utc(None) is None

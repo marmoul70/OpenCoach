@@ -43,7 +43,7 @@ Pour une mise à jour, OpenCoach appelle d'abord `queryScheduledWorkoutDetails` 
 - le nom et la description destinés à l'athlète ;
 - les phases et répétitions converties depuis la prescription OpenCoach.
 
-Les stimuli secondaires regroupés dans une intention de séance ne restent pas de simples métadonnées : le générateur ajoute des consignes qualitatives dédiées (montées, descentes, spécificité course ou renforcement complémentaire) dans les notes de coach, qui sont reprises dans la description persistée puis transmise à COROS. Ces consignes ne fabriquent ni distance, ni durée, ni cible de D+ absente de la prescription.
+Les stimuli secondaires regroupés dans une intention de séance ne restent pas de simples métadonnées : chaque stimulus secondaire reconnu par le catalogue possède une consigne qualitative dédiée (endurance, seuil, vitesse, VO2max, montée, descente, spécificité course, renforcement, récupération ou activation pré-course). Ces consignes sont reprises dans la description persistée puis transmise à COROS. Elles ne fabriquent ni répétition, ni distance, ni durée, ni cible de D+ absente de la prescription.
 
 Le contenu transmis est le cours complet ; les sections d'un entraînement peuvent utiliser des cibles différentes selon le sport : temps, distance ou dénivelé.
 
@@ -125,6 +125,8 @@ Les colonnes suivantes sont ajoutées à `training_sessions` :
 - `coros_sync_error` : dernier message d'erreur exploitable.
 
 L'intention d'envoi est enregistrée avant l'appel distant. Ainsi, si le processus s'arrête pendant la requête, un second clic n'envoie pas aveuglément une copie supplémentaire.
+
+La prescription est revérifiée après la réservation atomique et après le retour de COROS. Si le contenu OpenCoach change pendant la préparation ou pendant l'appel distant, la requête ne présente pas l'ancienne version comme synchronisée avec la nouvelle. Si COROS a déjà accepté l'ancienne version et retourné son identifiant, cet identifiant est conservé et la prochaine tentative met à jour la même séance au lieu d'en créer une seconde. Un état `failed` avec identifiant COROS est donc repris comme une mise à jour.
 
 - `synced` : le même contenu ne peut pas être envoyé une seconde fois ; si le contenu OpenCoach change, l'élément existant est mis à jour via son identifiant COROS ;
 - `failed` : le serveur COROS a explicitement refusé la requête, une nouvelle tentative est autorisée ;

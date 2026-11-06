@@ -95,14 +95,6 @@ defaults = {
 }
 
 lines = env_path.read_text(encoding="utf-8").splitlines()
-values = {}
-for line in lines:
-    stripped = line.strip()
-    if not stripped or stripped.startswith("#") or "=" not in line:
-        continue
-    key, value = line.split("=", 1)
-    values[key.strip()] = value.strip().strip("'").strip('"')
-
 updated = []
 seen = set()
 for line in lines:
@@ -181,20 +173,30 @@ install_ollama_if_missing() {
     local installer_file
     installer_file="$(mktemp)"
 
-    trap 'rm -f "$installer_file"' RETURN
-
     log_info "Téléchargement de l'installateur officiel Ollama"
 
-    curl         --fail         --location         --silent         --show-error         "$OLLAMA_INSTALL_URL"         --output "$installer_file"
+    if ! curl --fail --location --silent --show-error \
+        "$OLLAMA_INSTALL_URL" --output "$installer_file"; then
+        rm -f "$installer_file"
+        log_error "Téléchargement de l'installateur Ollama impossible."
+        return 1
+    fi
 
     if [[ ! -s "$installer_file" ]]; then
+        rm -f "$installer_file"
         log_error "L'installateur Ollama téléchargé est vide."
         return 1
     fi
 
     log_info "Installation d'Ollama depuis l'installateur officiel"
 
-    bash "$installer_file"
+    if ! bash "$installer_file"; then
+        rm -f "$installer_file"
+        log_error "L'installateur officiel Ollama a échoué."
+        return 1
+    fi
+
+    rm -f "$installer_file"
 
     if ! command -v ollama >/dev/null 2>&1; then
         log_error "Ollama reste introuvable après son installation."
@@ -219,7 +221,7 @@ start_ollama_service() {
     local attempt
 
     for attempt in {1..30}; do
-        if curl             --fail             --silent             --show-error             "$OLLAMA_API_URL"             >/dev/null 2>&1; then
+        if curl --fail --silent "$OLLAMA_API_URL" >/dev/null 2>&1; then
             log_success "API Ollama disponible sur 127.0.0.1:11434."
             return 0
         fi

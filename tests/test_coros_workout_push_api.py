@@ -44,10 +44,13 @@ class FakeRepository:
         started_at,
         *,
         allow_uncertain=False,
+        allow_synced_update=False,
     ):
         status = self.session.coros_sync_status
         eligible = status in {None, "failed"}
         if allow_uncertain and status in {"pending", "unknown"}:
+            eligible = True
+        if allow_synced_update and status == "synced":
             eligible = True
         if not eligible:
             return False
@@ -61,6 +64,7 @@ class FakeRepository:
 class FakeCorosClient:
     calls = []
     scheduled_names = ["Renforcement"]
+    editable = True
 
     def __init__(self, access_token):
         self.access_token = access_token
@@ -83,10 +87,35 @@ class FakeCorosClient:
                     "required": ["date", "course"],
                 },
             },
+            {
+                "name": "queryScheduledWorkoutDetails",
+                "inputSchema": {
+                    "required": ["date", "idInPlan"],
+                },
+            },
+            {
+                "name": "updateScheduledWorkout",
+                "inputSchema": {
+                    "required": ["date", "idInPlan", "course"],
+                },
+            },
         ]
 
     def call_tool(self, name, arguments):
         self.calls.append((name, arguments))
+        if name == "queryScheduledWorkoutDetails":
+            return {
+                "structuredContent": {
+                    "editable": self.editable,
+                    "reason": None if self.editable else "Séance déjà terminée.",
+                    "course": {
+                        "courseName": "Ancien titre",
+                        "courseDescription": "Ancienne description",
+                        "sportType": 1,
+                        "sections": [],
+                    },
+                }
+            }
         if name == "queryTrainingSchedule":
             return {
                 "structuredContent": {
@@ -110,7 +139,11 @@ class FakeCorosClient:
             }
         return {
             "structuredContent": {
-                "idInPlan": "new-workout-id",
+                "idInPlan": (
+                    "updated-workout-id"
+                    if name == "updateScheduledWorkout"
+                    else "new-workout-id"
+                ),
             }
         }
 
@@ -183,6 +216,7 @@ def make_client(monkeypatch, session):
     monkeypatch.setattr(coros_api, "_oauth", lambda: object())
     FakeCorosClient.calls = []
     FakeCorosClient.scheduled_names = ["Renforcement"]
+    FakeCorosClient.editable = True
     monkeypatch.setattr(coros_api, "CorosMcpClient", FakeCorosClient)
 
     return TestClient(app), repository, profile_id
@@ -323,3 +357,49 @@ def test_uncertain_retry_is_blocked_when_same_title_is_already_on_coros(
     assert [name for name, _ in FakeCorosClient.calls] == [
         "queryTrainingSchedule"
     ]
+
+
+def test_updates_existing_coros_workout_instead_of_creating_a_duplicate(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "synced"
+    session.coros_workout_id = "existing-workout-id"
+    session.coros_payload_hash = "old-payload-hash"
+    client, repository, _ = make_client(monkeypatch, session)
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "synced"
+    assert "mise à jour" in response.json()["message"]
+    assert repository.session.coros_workout_id == "updated-workout-id"
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryScheduledWorkoutDetails",
+        "updateScheduledWorkout",
+    ]
+    _, arguments = FakeCorosClient.calls[1]
+    assert arguments["idInPlan"] == "existing-workout-id"
+    assert arguments["course"]["courseName"] == "Séance test OpenCoach"
+
+
+def test_refuses_to_update_a_coros_workout_that_is_not_editable(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "synced"
+    session.coros_workout_id = "completed-workout-id"
+    session.coros_payload_hash = "old-payload-hash"
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.editable = False
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 409
+    assert "déjà terminée" in response.json()["detail"]
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryScheduledWorkoutDetails"
+    ]
+    assert repository.session.coros_workout_id == "completed-workout-id"

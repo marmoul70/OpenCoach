@@ -105,47 +105,25 @@ class SqlTrainingSessionRepository(
             database_session.intervals_sync_error = (
                 session.intervals_sync_error
             )
-            # Les objets de séance reconstruits par le planificateur ne
-            # transportent pas les métadonnées COROS. Une absence dans un
-            # objet métier ordinaire ne doit jamais effacer une identité
-            # distante ; seules les valeurs explicitement fournies les
-            # remplacent. Les transitions de synchronisation continuent
-            # d'être écrites par le service COROS, qui relit l'objet courant.
-            if (
-                session.coros_workout_id is not None
-                or database_session.coros_workout_id is None
-            ):
-                database_session.coros_workout_id = session.coros_workout_id
-            if (
-                session.coros_scheduled_date is not None
-                or database_session.coros_workout_id is None
-            ):
-                database_session.coros_scheduled_date = session.coros_scheduled_date
-            if (
-                session.coros_sync_status is not None
-                or database_session.coros_workout_id is None
-            ):
-                database_session.coros_sync_status = session.coros_sync_status
-            if (
-                session.coros_sync_started_at is not None
-                or database_session.coros_workout_id is None
-            ):
-                database_session.coros_sync_started_at = session.coros_sync_started_at
-            if (
-                session.coros_last_synced_at is not None
-                or database_session.coros_workout_id is None
-            ):
-                database_session.coros_last_synced_at = session.coros_last_synced_at
-            if (
-                session.coros_payload_hash is not None
-                or database_session.coros_workout_id is None
-            ):
-                database_session.coros_payload_hash = session.coros_payload_hash
-            if (
-                session.coros_sync_error is not None
-                or database_session.coros_workout_id is None
-            ):
-                database_session.coros_sync_error = session.coros_sync_error
+            # Les objets reconstruits par le planificateur ne transportent
+            # pas les métadonnées COROS. Préserver l'identité et les états
+            # distants tant qu'une opération COROS dédiée ne les modifie pas.
+            # Les écritures explicitement renseignées (notamment depuis le
+            # service COROS) restent prioritaires.
+            coros_metadata = (
+                "coros_workout_id",
+                "coros_scheduled_date",
+                "coros_sync_status",
+                "coros_sync_started_at",
+                "coros_last_synced_at",
+                "coros_payload_hash",
+                "coros_sync_error",
+            )
+            for field_name in coros_metadata:
+                incoming_value = getattr(session, field_name)
+                current_value = getattr(database_session, field_name)
+                if incoming_value is not None or current_value is None:
+                    setattr(database_session, field_name, incoming_value)
             self.session.commit()
             self.session.refresh(database_session)
 

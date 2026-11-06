@@ -80,6 +80,22 @@ class IntegrationConnectionService:
             self._decode_intervals_secret(encrypted_secret).get("web_cookie")
         )
 
+    def get_intervals_web_cookie_hint(
+        self,
+        athlete_profile_id: UUID,
+    ) -> str | None:
+        """Retourne uniquement les 4 derniers caractères du cookie."""
+        encrypted_secret = self.repository.get_encrypted_secret(
+            athlete_profile_id,
+            "intervals",
+        )
+        cookie = self._decode_intervals_secret(
+            encrypted_secret,
+        ).get("web_cookie")
+        if not cookie:
+            return None
+        return cookie[-4:]
+
     def save_intervals_connection(
         self,
         athlete_profile_id: UUID,

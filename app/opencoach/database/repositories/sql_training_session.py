@@ -111,6 +111,9 @@ class SqlTrainingSessionRepository(
             database_session.coros_sync_status = (
                 session.coros_sync_status
             )
+            database_session.coros_sync_started_at = (
+                session.coros_sync_started_at
+            )
             database_session.coros_last_synced_at = (
                 session.coros_last_synced_at
             )

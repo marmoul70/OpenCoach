@@ -973,6 +973,38 @@ def _build_course_description(
             "Allure des répétitions pilotée par les temps de passage "
             "calculés dans la prescription."
         )
+        for index, interval in enumerate(intervals, start=1):
+            if not isinstance(interval, dict):
+                continue
+            target = interval.get("repetition_target")
+            if not isinstance(target, dict):
+                continue
+            try:
+                distance = float(target.get("distance_meters"))
+                fast_seconds = float(target.get("fast_seconds"))
+                slow_seconds = float(target.get("slow_seconds"))
+                vma_min = float(target.get("vma_percent_min"))
+                vma_max = float(target.get("vma_percent_max"))
+            except (TypeError, ValueError):
+                continue
+            if (
+                not all(math.isfinite(value) for value in (
+                    distance, fast_seconds, slow_seconds, vma_min, vma_max
+                ))
+                or distance <= 0
+                or fast_seconds <= 0
+                or slow_seconds <= 0
+            ):
+                continue
+            fastest_pace = fast_seconds * 1000 / distance
+            slowest_pace = slow_seconds * 1000 / distance
+            parts.append(
+                f"Série {index} : {distance:g} m en "
+                f"{_format_elapsed(fast_seconds)}–{_format_elapsed(slow_seconds)}, "
+                f"soit {_format_pace(fastest_pace)}–"
+                f"{_format_pace(slowest_pace)}/km à "
+                f"{vma_min:g}–{vma_max:g} % VMA."
+            )
 
     intensity = prescription.get("intensity")
     targets = (
@@ -1043,6 +1075,15 @@ def _build_course_description(
         parts.append("Suivre les étapes, répétitions et récupérations affichées sur la montre.")
     description = " ".join(part for part in parts if part)
     return description[:1000] or "Séance planifiée par OpenCoach."
+
+
+def _format_elapsed(value: Any) -> str:
+    try:
+        seconds = round(float(value))
+    except (TypeError, ValueError):
+        return "—"
+    minutes, remainder = divmod(seconds, 60)
+    return f"{minutes}:{remainder:02d}"
 
 
 def _format_pace(value: Any) -> str:

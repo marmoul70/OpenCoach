@@ -53,6 +53,7 @@ export interface TrainingSession {
 
   prescription?: Record<string, unknown>
   corosSyncStatus?: 'pending' | 'synced' | 'failed' | 'unknown'
+  corosScheduledDate?: string
   corosSyncStartedAt?: string
   corosLastSyncedAt?: string
   corosSyncError?: string

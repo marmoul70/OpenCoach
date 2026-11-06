@@ -90,6 +90,10 @@ Les prescriptions version 1 restent acceptées avec les règles historiques. Une
 
 La cible d'allure calculée pour une répétition métrique est prioritaire sur la cible générale lorsque cette donnée est explicitement présente dans la prescription. Une cible en réserve de fréquence cardiaque (HRR) n'est jamais assimilée à des bpm : elle est refusée si aucune cible absolue compatible n'est disponible.
 
+## Données de course incomplètes
+
+Le D+ d'une course est une donnée optionnelle. Une valeur absente reste `None` de la saisie jusqu'au profil de demande ; elle n'est jamais remplacée par zéro. Le profil utilise alors `ElevationDemand.UNKNOWN`, avec des demandes de montée et descente non renseignées. La demande de volume peut être estimée sur la distance seule et expose `elevation_data_available=false` pour signaler qu'elle est partielle. Un D+ explicitement égal à zéro reste, lui, une course classée plate.
+
 ## Limites explicites
 
 Le convertisseur refuse une séance lorsqu'une conversion fidèle n'est pas possible. Il ne fabrique pas de cible ou de durée manquante.

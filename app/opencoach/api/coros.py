@@ -608,11 +608,15 @@ def push_training_session_to_coros(
             )
 
     if is_update:
+        coros_existing_date = (
+            training_session.coros_scheduled_date
+            or training_session.date
+        )
         try:
             details_result = client.call_tool(
                 "queryScheduledWorkoutDetails",
                 {
-                    "date": training_session.date.strftime("%Y%m%d"),
+                    "date": coros_existing_date.strftime("%Y%m%d"),
                     "idInPlan": training_session.coros_workout_id,
                 },
             )
@@ -631,6 +635,33 @@ def push_training_session_to_coros(
             ) from exc
 
         details = _extract_coros_scheduled_details(details_result)
+        if details is None and coros_existing_date != training_session.date:
+            # Une mise à jour précédente a pu déplacer la séance avant de
+            # perdre sa réponse. En état incertain, elle peut donc déjà être
+            # à la nouvelle date : tenter les deux emplacements connus.
+            try:
+                details_result = client.call_tool(
+                    "queryScheduledWorkoutDetails",
+                    {
+                        "date": training_session.date.strftime("%Y%m%d"),
+                        "idInPlan": training_session.coros_workout_id,
+                    },
+                )
+            except CorosMcpAuthenticationError as exc:
+                raise HTTPException(
+                    status_code=401,
+                    detail="La connexion COROS a expiré. Reconnecte ton compte.",
+                ) from exc
+            except CorosMcpError as exc:
+                raise HTTPException(
+                    status_code=502,
+                    detail=(
+                        "Impossible de vérifier la séance COROS à sa nouvelle "
+                        "date. Aucune modification n'a été effectuée."
+                    ),
+                ) from exc
+            details = _extract_coros_scheduled_details(details_result)
+
         if details is None:
             raise HTTPException(
                 status_code=502,
@@ -948,6 +979,10 @@ def push_training_session_to_coros(
         returned_workout_id
         or latest_session.coros_workout_id
     )
+    latest_session.coros_scheduled_date = datetime.strptime(
+        workout_payload.date,
+        "%Y%m%d",
+    ).date()
     try:
         latest_payload = map_training_session_to_coros(latest_session)
     except CorosWorkoutMappingError:

@@ -405,13 +405,8 @@ export function AppNavigation({
                 dark:hover:bg-[var(--oc-surface)]/[0.06]
               "
             >
-              <span className="relative shrink-0">
+              <span className="shrink-0 rounded-full ring-2 ring-[var(--oc-surface)]">
                 <Avatar avatar={avatar} initials={initials} size="small" />
-                <span className="
-                  absolute bottom-0 right-0 h-2.5 w-2.5
-                  rounded-full border-2 border-[var(--oc-surface)]
-                  bg-emerald-500
-                " />
               </span>
 
               <span className="min-w-0 flex-1">

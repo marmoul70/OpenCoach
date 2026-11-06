@@ -62,6 +62,7 @@ def map_training_session_to_coros(
     warmup_blocks = _matching_blocks(prescription, "warmup")
     main_blocks = _matching_blocks(prescription, "main")
     easy_blocks = _matching_blocks(prescription, "easy")
+    recovery_blocks = _matching_blocks(prescription, "recovery")
     cooldown_blocks = _matching_blocks(prescription, "cooldown")
     sport_type, trail_mode_fallback = _resolve_sport_type(
         requested_sport_type=requested_sport_type,
@@ -113,7 +114,11 @@ def map_training_session_to_coros(
                 prescription=prescription,
                 sport_type=sport_type,
                 main_block=main_blocks[0] if main_blocks else None,
-                recovery_block=easy_blocks[0] if easy_blocks else None,
+                recovery_block=(
+                    recovery_blocks[0]
+                    if recovery_blocks
+                    else easy_blocks[0] if easy_blocks else None
+                ),
             )
         )
     else:

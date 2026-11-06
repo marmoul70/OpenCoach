@@ -32,7 +32,9 @@ Aucun second compte COROS ni nouveau secret d'API n'est nécessaire.
 
 Le bouton **Envoyer vers COROS** est proposé sur les séances planifiées éligibles depuis les actions de séance du calendrier.
 
-L'API appelle l'outil MCP officiel `createScheduledWorkout` avec :
+Avant l'écriture, OpenCoach interroge si disponible le calendrier COROS sur la date exacte avec `queryTrainingSchedule`. Les séances déjà présentes sont remontées dans le message de confirmation final ; elles n'empêchent pas l'ajout d'une séance supplémentaire.
+
+L'API appelle ensuite l'outil MCP officiel `createScheduledWorkout` avec :
 
 - la date de la séance au format `yyyyMMdd` ;
 - le sport COROS ;
@@ -107,6 +109,7 @@ Les tests couvrent :
 - la conversion des répétitions, distances, allures et récupérations ;
 - les plages de fréquence cardiaque et les allures issues de la VMA ;
 - le refus des cibles RPE seules, des séances terminées et des sports/structures non compatibles ;
+- la lecture préalable du calendrier à la date cible et l'extraction des séances déjà présentes ;
 - l'extraction de l'identifiant de la séance planifiée et le filtrage des autres séances du jour ;
 - la distinction entre refus explicite de l'outil COROS et résultat réseau incertain ;
 - l'unicité de la tête Alembic après migration.

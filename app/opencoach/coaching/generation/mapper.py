@@ -223,6 +223,14 @@ def _serialize_prescription(
             is not None
             else None
         ),
+        "recovery_intensity": (
+            _serialize_intensity_prescription(
+                proposal.recovery_intensity_prescription,
+                vma_kmh=vma_kmh,
+            )
+            if proposal.recovery_intensity_prescription is not None
+            else None
+        ),
     }
 
 

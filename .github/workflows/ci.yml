@@ -35,6 +35,7 @@ jobs:
           bash -n scripts/deploy-frontend.sh
           bash -n scripts/maintenance/shellcheck.sh
           bash -n tests/test-libraries.sh
+          bash -n tests/test-install-ai.sh
 
       - name: ShellCheck
         run: |

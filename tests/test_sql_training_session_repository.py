@@ -506,3 +506,37 @@ def test_coros_workout_push_claim_is_atomic_and_stale_claim_requires_reconciliat
 
     finally:
         db.close()
+
+
+def test_coros_push_claim_allows_atomic_update_of_synced_workout() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+        repository = SqlTrainingSessionRepository(db)
+        saved = repository.save_session(
+            profile.id,
+            create_training_session(),
+        )
+        saved.coros_sync_status = "synced"
+        saved.coros_workout_id = "coros-existing-id"
+        saved.coros_payload_hash = "old-payload"
+        repository.save_session(profile.id, saved)
+
+        claimed = repository.claim_coros_workout_push(
+            profile.id,
+            saved.id,
+            "new-payload",
+            datetime(2026, 11, 6, 12, 0, tzinfo=timezone.utc),
+            allow_synced_update=True,
+        )
+
+        assert claimed is True
+        updated = repository.get_session(profile.id, saved.id)
+        assert updated is not None
+        assert updated.coros_sync_status == "pending"
+        assert updated.coros_workout_id == "coros-existing-id"
+        assert updated.coros_payload_hash == "new-payload"
+
+    finally:
+        db.close()

@@ -1,3 +1,5 @@
+import pytest
+
 from opencoach.planning.physiology.snapshot import (
     PhysiologicalCalibrationMetric,
     PhysiologicalCalibrationSnapshot,
@@ -492,8 +494,6 @@ def test_intensity_range_rejects_non_finite_or_boolean_bounds(
     minimum: float,
     maximum: float,
 ) -> None:
-    import pytest
-
     with pytest.raises(ValueError, match="nombre fini"):
         IntensityRange(
             reference=IntensityReference.RPE,

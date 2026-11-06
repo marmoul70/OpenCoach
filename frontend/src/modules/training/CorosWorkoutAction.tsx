@@ -153,7 +153,12 @@ export function CorosWorkoutAction({
         "
       >
         <CheckCircle2 className="h-3.5 w-3.5" />
-        Séance envoyée à COROS
+        <span>
+          <span className="block">Séance envoyée à COROS</span>
+          <span className="mt-0.5 block font-normal text-[10px] opacity-80">
+            Toute modification ou annulation doit aussi être faite dans COROS.
+          </span>
+        </span>
       </div>
     )
   }

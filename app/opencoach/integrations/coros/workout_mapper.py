@@ -89,7 +89,7 @@ def map_training_session_to_coros(
                 ),
                 main_seconds=(
                     _block_seconds(main_blocks[0])
-                    if main_blocks
+                    if main_blocks and main_blocks[0].get("duration_minutes") is not None
                     else None
                 ),
                 main_block=main_blocks[0] if main_blocks else None,

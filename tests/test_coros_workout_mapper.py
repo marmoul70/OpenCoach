@@ -770,3 +770,56 @@ def test_explicit_recovery_phase_overrides_legacy_global_recovery_intensity() ->
     assert recovery["intensityType"] == 1
     assert recovery["intensityValueStart"] == 118
     assert recovery["intensityValueEnd"] == 132
+
+
+def test_recovery_phase_rpe_falls_back_to_compatible_global_recovery_target() -> None:
+    prescription = heart_rate_prescription(
+        {
+            "type": "repeats",
+            "intervals": [
+                {
+                    "repetitions": 3,
+                    "work_distance_meters": 400,
+                    "recovery_duration": 60,
+                    "recovery_unit": "seconds",
+                    "repetition_target": None,
+                }
+            ],
+        },
+        blocks=[
+            {
+                "phase": "recovery",
+                "name": "Récupération",
+                "intensity": {
+                    "targets": [
+                        {
+                            "reference": "rpe",
+                            "minimum": 1,
+                            "maximum": 2,
+                            "unit": "/10",
+                        }
+                    ],
+                    "guidance": ["Rester relâché."],
+                },
+            }
+        ],
+    )
+    prescription["recovery_intensity"] = {
+        "targets": [
+            {
+                "reference": "heart_rate",
+                "minimum": 115,
+                "maximum": 130,
+                "unit": "bpm",
+            }
+        ],
+        "guidance": ["Récupération facile."],
+    }
+    session = make_session(prescription=prescription)
+
+    sections = map_training_session_to_coros(session).course["sections"]
+    recovery = sections[0]["sets"][1]
+
+    assert recovery["intensityType"] == 1
+    assert recovery["intensityValueStart"] == 115
+    assert recovery["intensityValueEnd"] == 130

@@ -42,7 +42,7 @@ def map_training_session_to_coros(
             "Seules les séances planifiées peuvent être envoyées à COROS."
         )
 
-    sport_type = _map_sport_type(session.sport_type)
+    requested_sport_type = _map_sport_type(session.sport_type)
     prescription = session.prescription
     if not isinstance(prescription, dict):
         raise CorosWorkoutMappingError(
@@ -63,6 +63,17 @@ def map_training_session_to_coros(
     main_blocks = _matching_blocks(prescription, "main")
     easy_blocks = _matching_blocks(prescription, "easy")
     cooldown_blocks = _matching_blocks(prescription, "cooldown")
+    sport_type, trail_mode_fallback = _resolve_sport_type(
+        requested_sport_type=requested_sport_type,
+        session=session,
+        work_structure=work_structure,
+        main_blocks=main_blocks,
+        phase_blocks=(
+            *warmup_blocks,
+            *easy_blocks,
+            *cooldown_blocks,
+        ),
+    )
 
     for block in warmup_blocks:
         sections.append(
@@ -144,6 +155,12 @@ def map_training_session_to_coros(
         work_structure=work_structure,
         sport_type=sport_type,
     )
+    if trail_mode_fallback:
+        description = (
+            description
+            + " Séance configurée comme course à pied pour conserver les étapes "
+            "chronométrées ; sur la montre, démarre-la en mode Trail Run."
+        )[:1000]
     course_name = session.title.strip()
     if not course_name:
         raise CorosWorkoutMappingError(
@@ -191,6 +208,76 @@ def _map_sport_type(value: str) -> int:
             "ne peuvent pas être envoyés par cette fonction."
         )
     return sport_type
+
+
+def _resolve_sport_type(
+    *,
+    requested_sport_type: int,
+    session: TrainingSession,
+    work_structure: dict[str, Any],
+    main_blocks: list[dict[str, Any]],
+    phase_blocks: tuple[dict[str, Any], ...],
+) -> tuple[int, bool]:
+    """Choisit Trail uniquement si toutes les étapes ont une cible Trail.
+
+    COROS autorise l'exécution d'un entraînement de course à pied en mode
+    Trail Run sur la montre. Ce mode conserve les cibles chronométrées que
+    le type Trail du calendrier ne sait pas représenter. Le type Trail n'est
+    retenu que lorsque chaque phase dispose d'une cible distance ou D+.
+    """
+    if requested_sport_type != 5:
+        return requested_sport_type, False
+
+    if any(
+        block.get("target_distance_meters") is None
+        and block.get("target_elevation_gain_meters") is None
+        for block in phase_blocks
+    ):
+        return 1, True
+
+    structure_type = str(work_structure.get("type") or "").strip().lower()
+    if structure_type == "continuous":
+        main_block = main_blocks[0] if main_blocks else {}
+        has_main_target = any(
+            value is not None
+            for value in (
+                work_structure.get("work_distance_meters"),
+                main_block.get("target_distance_meters"),
+                main_block.get("target_elevation_gain_meters"),
+                session.distance_km,
+                session.elevation_gain_m,
+            )
+        )
+        return (5, False) if has_main_target else (1, True)
+
+    if structure_type in {"repeats", "intervals"}:
+        intervals = work_structure.get("intervals")
+        if not isinstance(intervals, list) or not intervals:
+            return 1, True
+        for interval in intervals:
+            if not isinstance(interval, dict):
+                return 1, True
+            if (
+                interval.get("work_distance_meters") is None
+                and interval.get("work_elevation_gain_meters") is None
+            ):
+                return 1, True
+            has_recovery = any(
+                interval.get(key) is not None
+                for key in (
+                    "recovery_duration",
+                    "recovery_distance_meters",
+                    "recovery_elevation_gain_meters",
+                )
+            )
+            if has_recovery and (
+                interval.get("recovery_distance_meters") is None
+                and interval.get("recovery_elevation_gain_meters") is None
+            ):
+                return 1, True
+        return 5, False
+
+    return 1, True
 
 
 def _matching_blocks(

@@ -23,7 +23,6 @@ import {
   Settings,
   Sun,
   UserRound,
-  X,
 } from 'lucide-react'
 
 import {

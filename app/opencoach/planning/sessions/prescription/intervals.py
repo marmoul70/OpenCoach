@@ -154,9 +154,13 @@ class WorkInterval:
     def __post_init__(
         self,
     ) -> None:
-        if self.repetitions <= 0:
+        if (
+            isinstance(self.repetitions, bool)
+            or not isinstance(self.repetitions, int)
+            or self.repetitions <= 0
+        ):
             raise ValueError(
-                "Le nombre de répétitions doit être positif."
+                "Le nombre de répétitions doit être un entier strictement positif."
             )
 
         has_duration = (
@@ -199,10 +203,14 @@ class WorkInterval:
 
         if (
             self.work_duration is not None
-            and self.work_duration <= 0
+            and (
+                isinstance(self.work_duration, bool)
+                or not isinstance(self.work_duration, int)
+                or self.work_duration <= 0
+            )
         ):
             raise ValueError(
-                "La durée de travail doit être positive."
+                "La durée de travail doit être un entier strictement positif."
             )
 
         if (
@@ -269,10 +277,14 @@ class WorkInterval:
 
         if (
             self.recovery_duration is not None
-            and self.recovery_duration <= 0
+            and (
+                isinstance(self.recovery_duration, bool)
+                or not isinstance(self.recovery_duration, int)
+                or self.recovery_duration <= 0
+            )
         ):
             raise ValueError(
-                "La durée de récupération doit être positive."
+                "La durée de récupération doit être un entier strictement positif."
             )
 
         if (

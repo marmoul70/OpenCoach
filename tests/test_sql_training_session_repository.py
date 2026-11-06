@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -442,6 +442,67 @@ def test_training_session_repository_persists_prescription() -> None:
             loaded.prescription
             == prescription
         )
+
+    finally:
+        db.close()
+
+
+
+def test_coros_workout_push_claim_is_atomic_and_stale_claim_requires_reconciliation():
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+        repository = SqlTrainingSessionRepository(db)
+        saved = repository.save_session(
+            profile.id,
+            create_training_session(),
+        )
+        first_started_at = datetime(
+            2026,
+            11,
+            6,
+            12,
+            0,
+            tzinfo=timezone.utc,
+        )
+
+        first_claim = repository.claim_coros_workout_push(
+            profile.id,
+            saved.id,
+            "first-payload",
+            first_started_at,
+        )
+        duplicate_claim = repository.claim_coros_workout_push(
+            profile.id,
+            saved.id,
+            "second-payload",
+            first_started_at,
+        )
+
+        assert first_claim is True
+        assert duplicate_claim is False
+
+        pending = repository.get_session(profile.id, saved.id)
+        assert pending is not None
+        assert pending.coros_sync_status == "pending"
+        assert pending.coros_payload_hash == "first-payload"
+        assert pending.coros_sync_started_at is not None
+
+        stale_retry_started_at = first_started_at + timedelta(minutes=10)
+        stale_claim = repository.claim_coros_workout_push(
+            profile.id,
+            saved.id,
+            "retry-payload",
+            stale_retry_started_at,
+            allow_uncertain=True,
+        )
+
+        assert stale_claim is True
+        retried = repository.get_session(profile.id, saved.id)
+        assert retried is not None
+        assert retried.coros_sync_status == "pending"
+        assert retried.coros_payload_hash == "retry-payload"
 
     finally:
         db.close()

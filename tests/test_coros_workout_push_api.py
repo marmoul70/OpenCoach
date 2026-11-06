@@ -381,7 +381,7 @@ def test_updates_existing_coros_workout_instead_of_creating_a_duplicate(monkeypa
     ]
     _, arguments = FakeCorosClient.calls[1]
     assert arguments["idInPlan"] == "existing-workout-id"
-    assert arguments["course"]["courseName"] == "Séance test OpenCoach"
+    assert arguments["course"]["courseName"] == "Footing aérobie"
 
 
 def test_refuses_to_update_a_coros_workout_that_is_not_editable(monkeypatch):

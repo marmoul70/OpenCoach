@@ -739,6 +739,9 @@ def push_training_session_to_coros(
                 "Actualise la page avant de réessayer."
             ),
         )
+    expire_all = getattr(db, "expire_all", None)
+    if callable(expire_all):
+        expire_all()
     training_session = repository.get_session(
         athlete_profile_id,
         session_id,

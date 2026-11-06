@@ -54,6 +54,7 @@ from opencoach.schemas.integration import (
     IntervalsConnectionTest,
     IntervalsConnectionTestResponse,
     IntervalsConnectionUpdate,
+    IntervalsWebCookieTest,
 )
 from opencoach.security import (
     SecretCipher,
@@ -142,6 +143,7 @@ def get_intervals_application_service(
     client = IntervalsClient(
         api_key=credentials.secret,
         athlete_id=credentials.athlete_id,
+        web_cookie=getattr(credentials, "web_cookie", None),
     )
 
     activity_repository = SqlActivityRepository(db)
@@ -196,14 +198,26 @@ def get_intervals_connection(
             enabled=False,
             athlete_id=None,
             api_key_configured=False,
+            web_cookie_configured=False,
             last_synced_at=None,
         )
+
+    try:
+        web_cookie_configured = service.has_intervals_web_cookie(
+            athlete_profile_id
+        )
+    except (SecretCipherError, IntegrationConnectionRepositoryError) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible de lire les identifiants Intervals.icu chiffrés.",
+        ) from exc
 
     return IntervalsConnectionResponse(
         configured=True,
         enabled=connection.enabled,
         athlete_id=connection.athlete_id,
         api_key_configured=connection.secret_configured,
+        web_cookie_configured=web_cookie_configured,
         last_synced_at=connection.last_synced_at,
     )
 
@@ -227,7 +241,11 @@ def save_intervals_connection(
             athlete_profile_id=athlete_profile_id,
             athlete_id=payload.athlete_id,
             api_key=payload.api_key,
+            web_cookie=payload.web_cookie,
             enabled=payload.enabled,
+        )
+        web_cookie_configured = service.has_intervals_web_cookie(
+            athlete_profile_id
         )
 
     except IntegrationConnectionServiceError as exc:
@@ -242,11 +260,18 @@ def save_intervals_connection(
             detail="Impossible d'enregistrer la connexion Intervals.icu.",
         ) from exc
 
+    except SecretCipherError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Impossible de lire les identifiants Intervals.icu chiffrés.",
+        ) from exc
+
     return IntervalsConnectionResponse(
         configured=True,
         enabled=connection.enabled,
         athlete_id=connection.athlete_id,
         api_key_configured=connection.secret_configured,
+        web_cookie_configured=web_cookie_configured,
         last_synced_at=connection.last_synced_at,
     )
 
@@ -423,10 +448,13 @@ def test_intervals_connection(
     client = IntervalsClient(
         api_key=payload.api_key.strip(),
         athlete_id=payload.athlete_id.strip(),
+        web_cookie=payload.web_cookie,
     )
 
     try:
         client.get_athlete()
+        if payload.web_cookie:
+            client.trigger_partner_sync()
 
     except IntervalsAuthenticationError as exc:
         raise HTTPException(
@@ -450,6 +478,7 @@ def test_intervals_connection(
     response_model=IntervalsConnectionTestResponse,
 )
 def test_saved_intervals_connection(
+    payload: IntervalsWebCookieTest | None = None,
     athlete_profile_id: UUID = Depends(
         get_current_athlete_profile_id,
     ),
@@ -486,10 +515,17 @@ def test_saved_intervals_connection(
     client = IntervalsClient(
         api_key=credentials.secret,
         athlete_id=credentials.athlete_id,
+        web_cookie=(
+            payload.web_cookie
+            if payload is not None and payload.web_cookie is not None
+            else getattr(credentials, "web_cookie", None)
+        ),
     )
 
     try:
         client.get_athlete()
+        if client.web_cookie:
+            client.trigger_partner_sync()
 
     except IntervalsAuthenticationError as exc:
         raise HTTPException(

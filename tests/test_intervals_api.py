@@ -122,6 +122,7 @@ class FakeIntegrationConnectionService:
         athlete_id,
         api_key,
         *,
+        web_cookie=None,
         enabled=True,
     ):
         if self.error is not None:
@@ -134,6 +135,8 @@ class FakeIntegrationConnectionService:
                 athlete_id,
             "api_key":
                 api_key,
+            "web_cookie":
+                web_cookie,
             "enabled":
                 enabled,
         }
@@ -149,6 +152,9 @@ class FakeIntegrationConnectionService:
         self.connection = connection
 
         return connection
+
+    def has_intervals_web_cookie(self, athlete_profile_id):
+        return bool(self.saved and self.saved.get("web_cookie"))
 
     def mark_synced(
         self,
@@ -442,6 +448,7 @@ def test_get_intervals_connection_returns_configured() -> None:
         "enabled": True,
         "athlete_id": "i651743",
         "api_key_configured": True,
+        "web_cookie_configured": False,
         "last_synced_at": "2026-08-19T18:30:00",
     }
 
@@ -471,6 +478,7 @@ def test_get_intervals_connection_returns_unconfigured() -> None:
         "enabled": False,
         "athlete_id": None,
         "api_key_configured": False,
+        "web_cookie_configured": False,
         "last_synced_at": None,
     }
 
@@ -496,6 +504,7 @@ def test_put_intervals_connection() -> None:
         json={
             "athlete_id": "i651743",
             "api_key": "secret-api-key",
+            "web_cookie": "personal-cookie",
             "enabled": True,
         },
     )
@@ -506,6 +515,7 @@ def test_put_intervals_connection() -> None:
         "athlete_profile_id": profile_id,
         "athlete_id": "i651743",
         "api_key": "secret-api-key",
+        "web_cookie": "personal-cookie",
         "enabled": True,
     }
 
@@ -515,6 +525,7 @@ def test_put_intervals_connection() -> None:
         "enabled": True,
         "athlete_id": "i651743",
         "api_key_configured": True,
+        "web_cookie_configured": True,
         "last_synced_at": None,
     }
 
@@ -557,6 +568,7 @@ def test_intervals_connection_test_succeeds(
             self,
             api_key,
             athlete_id,
+            web_cookie=None,
         ) -> None:
             self.api_key = api_key
             self.athlete_id = athlete_id
@@ -603,6 +615,7 @@ def test_intervals_connection_test_rejects_bad_credentials(
             self,
             api_key,
             athlete_id,
+            web_cookie=None,
         ) -> None:
             pass
 
@@ -648,6 +661,7 @@ def test_saved_intervals_connection_succeeds(
         provider = "intervals"
         athlete_id = "i651743"
         secret = "secret-api-key"
+        web_cookie = "stored-personal-cookie"
 
     class FakeConnectionService:
         def get_credentials(
@@ -665,9 +679,15 @@ def test_saved_intervals_connection_succeeds(
             self,
             api_key,
             athlete_id,
+            web_cookie=None,
         ) -> None:
             assert api_key == "secret-api-key"
             assert athlete_id == "i651743"
+            assert web_cookie == "stored-personal-cookie"
+            self.web_cookie = web_cookie
+
+        def trigger_partner_sync(self):
+            assert self.web_cookie == "stored-personal-cookie"
 
         def get_athlete(
             self,
@@ -728,6 +748,8 @@ def test_saved_intervals_connection_rejects_bad_credentials(
             self,
             api_key,
             athlete_id,
+            *,
+            web_cookie=None,
         ) -> None:
             pass
 

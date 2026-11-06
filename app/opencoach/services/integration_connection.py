@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from uuid import UUID
 from datetime import datetime
@@ -20,6 +21,7 @@ class IntegrationCredentials:
     provider: str
     athlete_id: str
     secret: str
+    web_cookie: str | None = None
 
 
 class IntegrationConnectionService:
@@ -43,12 +45,48 @@ class IntegrationConnectionService:
             provider,
         )
 
+    def _decode_intervals_secret(
+        self,
+        encrypted_secret: bytes | None,
+    ) -> dict[str, str | None]:
+        if encrypted_secret is None:
+            return {"api_key": None, "web_cookie": None}
+
+        decrypted = self.cipher.decrypt(encrypted_secret)
+        try:
+            payload = json.loads(decrypted)
+        except (TypeError, ValueError):
+            # Compatibilité avec les anciennes connexions qui stockaient
+            # directement la clé API, sans enveloppe JSON.
+            return {"api_key": decrypted, "web_cookie": None}
+
+        if not isinstance(payload, dict):
+            return {"api_key": decrypted, "web_cookie": None}
+
+        return {
+            "api_key": payload.get("api_key"),
+            "web_cookie": payload.get("web_cookie"),
+        }
+
+    def has_intervals_web_cookie(
+        self,
+        athlete_profile_id: UUID,
+    ) -> bool:
+        encrypted_secret = self.repository.get_encrypted_secret(
+            athlete_profile_id,
+            "intervals",
+        )
+        return bool(
+            self._decode_intervals_secret(encrypted_secret).get("web_cookie")
+        )
+
     def save_intervals_connection(
         self,
         athlete_profile_id: UUID,
         athlete_id: str,
         api_key: str | None,
         *,
+        web_cookie: str | None = None,
         enabled: bool = True,
     ) -> IntegrationConnection:
         normalized_athlete_id = athlete_id.strip()
@@ -58,41 +96,38 @@ class IntegrationConnectionService:
                 "L'identifiant athlète Intervals.icu est obligatoire."
             )
 
-        encrypted_secret: bytes | None = None
+        current_secret = self.repository.get_encrypted_secret(
+            athlete_profile_id,
+            "intervals",
+        )
+        secrets = self._decode_intervals_secret(current_secret)
 
         if api_key is not None:
             normalized_api_key = api_key.strip()
-
             if not normalized_api_key:
                 raise IntegrationConnectionServiceError(
                     "La clé API Intervals.icu ne peut pas être vide."
                 )
+            secrets["api_key"] = normalized_api_key
 
-            encrypted_secret = self.cipher.encrypt(
-                normalized_api_key,
-            )
+        if web_cookie is not None:
+            normalized_cookie = web_cookie.strip()
+            secrets["web_cookie"] = normalized_cookie or None
 
-        current = self.repository.get_connection(
-            athlete_profile_id,
-            "intervals",
-        )
-
-        if current is None and encrypted_secret is None:
+        if not secrets.get("api_key"):
             raise IntegrationConnectionServiceError(
                 "La clé API Intervals.icu est obligatoire."
             )
+
+        encrypted_secret = self.cipher.encrypt(
+            json.dumps(secrets, separators=(",", ":")),
+        )
 
         connection = IntegrationConnection(
             provider="intervals",
             enabled=enabled,
             athlete_id=normalized_athlete_id,
-            secret_configured=(
-                encrypted_secret is not None
-                or (
-                    current is not None
-                    and current.secret_configured
-                )
-            ),
+            secret_configured=True,
         )
 
         self.repository.save_connection(
@@ -138,14 +173,18 @@ class IntegrationConnectionService:
                 f"Le secret de l'intégration '{provider}' est absent."
             )
 
-        secret = self.cipher.decrypt(
-            encrypted_secret,
-        )
+        secrets = self._decode_intervals_secret(encrypted_secret)
+        secret = secrets.get("api_key")
+        if not secret:
+            raise IntegrationConnectionServiceError(
+                f"La clé API de l'intégration '{provider}' est absente."
+            )
 
         return IntegrationCredentials(
             provider=provider,
             athlete_id=connection.athlete_id,
             secret=secret,
+            web_cookie=secrets.get("web_cookie"),
         )
 
     def mark_synced(

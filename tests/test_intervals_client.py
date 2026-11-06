@@ -12,6 +12,8 @@ from opencoach.integrations.intervals import (
 
 def create_client(
     handler,
+    *,
+    web_cookie=None,
 ) -> IntervalsClient:
     transport = httpx.MockTransport(handler)
 
@@ -19,6 +21,7 @@ def create_client(
         api_key="test-api-key",
         athlete_id="i123456",
         transport=transport,
+        web_cookie=web_cookie,
     )
 
 
@@ -226,13 +229,7 @@ def test_athlete_id_is_required() -> None:
             athlete_id="",
         )
 
-def test_trigger_partner_sync_uses_web_session_cookie(
-    monkeypatch,
-) -> None:
-    monkeypatch.setenv(
-        "OPENCOACH_INTERVALS_WEB_COOKIE",
-        "test-web-cookie",
-    )
+def test_trigger_partner_sync_uses_web_session_cookie() -> None:
 
     def handler(
         request: httpx.Request,
@@ -265,18 +262,15 @@ def test_trigger_partner_sync_uses_web_session_cookie(
             request=request,
         )
 
-    client = create_client(handler)
+    client = create_client(
+        handler,
+        web_cookie="test-web-cookie",
+    )
 
     client.trigger_partner_sync()
 
 
-def test_trigger_partner_sync_requires_web_cookie(
-    monkeypatch,
-) -> None:
-    monkeypatch.delenv(
-        "OPENCOACH_INTERVALS_WEB_COOKIE",
-        raising=False,
-    )
+def test_trigger_partner_sync_requires_web_cookie() -> None:
 
     def handler(
         request: httpx.Request,
@@ -290,7 +284,7 @@ def test_trigger_partner_sync_requires_web_cookie(
 
     with pytest.raises(
         IntervalsAuthenticationError,
-        match="OPENCOACH_INTERVALS_WEB_COOKIE",
+        match="cookie de session Intervals.icu",
     ):
         client.trigger_partner_sync()
 

@@ -342,6 +342,10 @@ def test_mapper_persists_phase_metadata_and_block_level_intensity() -> None:
     assert "main" in phases
     assert "cooldown" in phases
 
+    recovery_intensity = mapped.prescription["recovery_intensity"]
+    assert recovery_intensity is not None
+    assert recovery_intensity["targets"]
+
     main_block = next(block for block in blocks if block["phase"] == "main")
     assert main_block["intensity"] is not None
     assert main_block["intensity"]["targets"]

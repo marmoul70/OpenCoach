@@ -12,12 +12,14 @@ import {
 interface NotificationBellProps {
   onViewAll: () => void
   placement?: 'default' | 'sidebar'
+  embedded?: boolean
 }
 
 
 export function NotificationBell({
   onViewAll,
   placement = 'default',
+  embedded = false,
 }: NotificationBellProps) {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<AppNotification[]>([])
@@ -82,8 +84,8 @@ export function NotificationBell({
   }
 
   return (
-    <div className="relative">
-      <button
+    <div className={embedded ? "w-full min-w-0" : "relative"}>
+      {!embedded && <button
         type="button"
         onClick={() => void toggle()}
         aria-label={
@@ -111,28 +113,30 @@ export function NotificationBell({
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
-      </button>
+      </button>}
 
-      {open && (
+      {(open || embedded) && (
         <>
-          <button
+          {!embedded && <button
             type="button"
             aria-label="Fermer les notifications"
             className="fixed inset-0 z-[40] cursor-default"
             onClick={() => setOpen(false)}
-          />
+          />}
           <section
             role="dialog"
             aria-label="Notifications récentes"
-            className={[
-              placement === 'sidebar'
-                ? 'fixed bottom-20 left-3'
-                : 'absolute right-0 top-[calc(100%+10px)]',
-              'z-[80] w-[min(360px,calc(100vw-24px))] overflow-hidden',
-              'rounded-2xl border border-[var(--oc-border)]',
-              'bg-[var(--oc-surface)] shadow-[0_18px_50px_rgba(15,23,42,0.18)]',
-              'dark:shadow-[0_18px_50px_rgba(0,0,0,0.42)]',
-            ].join(' ')}
+            className={embedded
+              ? 'w-full overflow-hidden'
+              : [
+                  placement === 'sidebar'
+                    ? 'fixed bottom-20 left-3'
+                    : 'absolute right-0 top-[calc(100%+10px)]',
+                  'z-[80] w-[min(360px,calc(100vw-24px))] overflow-hidden',
+                  'rounded-2xl border border-[var(--oc-border)]',
+                  'bg-[var(--oc-surface)] shadow-[0_18px_50px_rgba(15,23,42,0.18)]',
+                  'dark:shadow-[0_18px_50px_rgba(0,0,0,0.42)]',
+                ].join(' ')}
           >
             <div className="
               flex items-center justify-between border-b
@@ -158,7 +162,7 @@ export function NotificationBell({
               </button>
             </div>
 
-            <div className="max-h-[min(420px,65vh)] overflow-y-auto">
+            <div className={embedded ? "max-h-[30vh] overflow-y-auto" : "max-h-[min(420px,65vh)] overflow-y-auto"}>
               {loading && items.length === 0 ? (
                 <p className="px-4 py-8 text-center text-xs text-[var(--oc-muted)]">
                   Chargement…

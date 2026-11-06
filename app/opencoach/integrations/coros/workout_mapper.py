@@ -102,6 +102,7 @@ def map_training_session_to_coros(
                 prescription=prescription,
                 sport_type=sport_type,
                 main_block=main_blocks[0] if main_blocks else None,
+                recovery_block=easy_blocks[0] if easy_blocks else None,
             )
         )
     else:
@@ -387,6 +388,7 @@ def _build_interval_groups(
     prescription: dict[str, Any],
     sport_type: int,
     main_block: dict[str, Any] | None = None,
+    recovery_block: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Convertit les séries en respectant les récupérations entre répétitions."""
     intervals = work_structure.get("intervals")
@@ -415,12 +417,6 @@ def _build_interval_groups(
             interval.get("repetitions"),
             "nombre de répétitions",
         )
-        if repetitions > 20:
-            raise CorosWorkoutMappingError(
-                "COROS limite un groupe à 20 répétitions. "
-                "Cette série doit être découpée dans OpenCoach."
-            )
-
         work_section = _build_work_section(
             interval=interval,
             prescription=intensity_source,
@@ -429,14 +425,18 @@ def _build_interval_groups(
         recovery_duration = interval.get("recovery_duration")
 
         if recovery_duration is None or repetitions == 1:
-            if repetitions == 1:
-                sections.append(work_section)
-            else:
-                sections.append({
-                    "intervalGroup": True,
-                    "repeats": repetitions,
-                    "sets": [work_section],
-                })
+            remaining = repetitions
+            while remaining > 0:
+                chunk = min(remaining, 20)
+                if chunk == 1:
+                    sections.append(work_section)
+                else:
+                    sections.append({
+                        "intervalGroup": True,
+                        "repeats": chunk,
+                        "sets": [work_section],
+                    })
+                remaining -= chunk
             continue
 
         if sport_type == 5:
@@ -457,14 +457,32 @@ def _build_interval_groups(
             "targetValue": recovery_seconds,
         }
 
-        # OpenCoach compte les récupérations entre les répétitions :
-        # il n'y en a donc pas après la dernière répétition.
-        sections.append({
-            "intervalGroup": True,
-            "repeats": repetitions - 1,
-            "sets": [work_section, recovery_section],
-        })
-        sections.append(work_section)
+        recovery_intensity = (
+            recovery_block.get("intensity")
+            if isinstance(recovery_block, dict)
+            else None
+        )
+        if isinstance(recovery_intensity, dict):
+            recovery_section.update(_intensity_fields(
+                {"intensity": recovery_intensity},
+                sport_type,
+            ))
+
+        # Chaque groupe COROS est limité à 20 répétitions. Le découpage
+        # conserve exactement les répétitions et les récupérations inter-reps,
+        # sans ajouter de récupération après la dernière répétition.
+        remaining = repetitions
+        while remaining > 0:
+            chunk = min(remaining, 20)
+            sections.append({
+                "intervalGroup": True,
+                "repeats": chunk - 1,
+                "sets": [work_section, recovery_section],
+            })
+            sections.append(work_section)
+            remaining -= chunk
+            if remaining > 0:
+                sections.append(recovery_section)
 
     return sections
 
@@ -700,6 +718,14 @@ def _build_course_description(
     sport_type: int,
 ) -> str:
     parts = [session.description.strip() or session.title.strip()]
+    parts.append(f"Durée totale prévue : {session.duration_minutes} min.")
+    if session.distance_km is not None:
+        parts.append(f"Distance prévue : {session.distance_km:g} km.")
+    if session.elevation_gain_m is not None:
+        parts.append(f"Dénivelé positif prévu : {session.elevation_gain_m} m.")
+    structure_description = str(work_structure.get("description") or "").strip()
+    if structure_description:
+        parts.append(f"Structure : {structure_description}")
     blocks = prescription.get("blocks")
     if isinstance(blocks, list):
         for block in blocks:
@@ -783,7 +809,29 @@ def _build_course_description(
                     break
     structure_type = str(work_structure.get("type") or "")
     if structure_type in {"repeats", "intervals"}:
-        parts.append("Respecter les répétitions et les récupérations indiquées sur la montre.")
+        if isinstance(intervals, list):
+            for index, interval in enumerate(intervals, start=1):
+                if not isinstance(interval, dict):
+                    continue
+                repetitions = interval.get("repetitions")
+                distance = interval.get("work_distance_meters")
+                duration = interval.get("work_duration")
+                unit = str(interval.get("work_unit") or "minutes")
+                work = (
+                    f"{distance} m"
+                    if distance is not None
+                    else f"{duration} {unit}" if duration is not None
+                    else "travail non quantifié"
+                )
+                recovery = interval.get("recovery_duration")
+                recovery_unit = str(interval.get("recovery_unit") or "seconds")
+                suffix = (
+                    f", récupération {recovery} {recovery_unit}"
+                    if recovery is not None
+                    else ""
+                )
+                parts.append(f"Série {index} : {repetitions} × {work}{suffix}.")
+        parts.append("Suivre les étapes, répétitions et récupérations affichées sur la montre.")
     description = " ".join(part for part in parts if part)
     return description[:1000] or "Séance planifiée par OpenCoach."
 

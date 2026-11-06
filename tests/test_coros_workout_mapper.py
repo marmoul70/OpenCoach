@@ -334,3 +334,87 @@ def test_rejects_heart_rate_reserve_when_no_absolute_bpm_target_exists() -> None
 
     with pytest.raises(CorosWorkoutMappingError, match="uniquement exprimée en RPE"):
         map_training_session_to_coros(session)
+
+
+def test_maps_easy_complement_as_a_distinct_watch_phase() -> None:
+    session = make_session(
+        prescription=heart_rate_prescription(
+            {
+                "type": "continuous",
+                "available_minutes": 25,
+                "continuous_minutes": 25,
+                "intervals": [],
+            },
+            blocks=[
+                {"name": "Échauffement", "phase": "warmup", "duration_minutes": 10,
+                 "description": "Mise en route progressive."},
+                {"name": "Bloc principal", "phase": "main", "duration_minutes": 25,
+                 "description": "Endurance aérobie."},
+                {"name": "Complément facile", "phase": "easy", "duration_minutes": 5,
+                 "description": "Finir sans ajouter d'intensité."},
+                {"name": "Retour au calme", "phase": "cooldown", "duration_minutes": 10,
+                 "description": "Relâcher progressivement."},
+            ],
+        )
+    )
+
+    payload = map_training_session_to_coros(session)
+
+    assert [section["sectionType"] for section in payload.course["sections"]] == [
+        1, 2, 2, 4
+    ]
+    assert payload.course["sections"][2] == {
+        "sectionType": 2,
+        "targetType": 2,
+        "targetValue": 300,
+    }
+    description = payload.course["courseDescription"]
+    assert "Mise en route progressive" in description
+    assert "Finir sans ajouter d'intensité" in description
+    assert "Relâcher progressivement" in description
+
+
+def test_maps_explicit_running_distance_target_instead_of_time() -> None:
+    session = make_session(
+        prescription=heart_rate_prescription(
+            {
+                "type": "continuous",
+                "work_distance_meters": 10000,
+                "continuous_minutes": 60,
+            }
+        )
+    )
+
+    payload = map_training_session_to_coros(session)
+
+    assert payload.course["sections"][0]["targetType"] == 1
+    assert payload.course["sections"][0]["targetValue"] == 10000
+
+
+def test_maps_trail_warmup_when_an_explicit_distance_is_available() -> None:
+    session = make_session(
+        sport_type="TrailRun",
+        prescription=heart_rate_prescription(
+            {
+                "type": "continuous",
+                "work_distance_meters": 8000,
+                "continuous_minutes": 90,
+            },
+            blocks=[
+                {
+                    "name": "Échauffement",
+                    "phase": "warmup",
+                    "duration_minutes": 10,
+                    "target_distance_meters": 1200,
+                }
+            ],
+        )
+    )
+
+    payload = map_training_session_to_coros(session)
+
+    assert payload.course["sections"][0] == {
+        "sectionType": 1,
+        "targetType": 1,
+        "targetValue": 1200,
+    }

@@ -28,6 +28,11 @@ interface TrainingSessionApiResponse {
   intervals_last_synced_at: string | null
   intervals_payload_hash: string | null
   intervals_sync_error: string | null
+
+  prescription: Record<string, unknown> | null
+  coros_sync_status: TrainingSession['corosSyncStatus'] | null
+  coros_last_synced_at: string | null
+  coros_sync_error: string | null
 }
 
 interface TrainingAvailableActivityApiResponse {
@@ -79,8 +84,68 @@ function mapTrainingSession(
 
     intervalsSyncError:
       data.intervals_sync_error ?? undefined,
+
+    prescription:
+      data.prescription ?? undefined,
+
+    corosSyncStatus:
+      data.coros_sync_status ?? undefined,
+
+    corosLastSyncedAt:
+      data.coros_last_synced_at ?? undefined,
+
+    corosSyncError:
+      data.coros_sync_error ?? undefined,
   }
 }
+
+export interface CorosWorkoutPushResult {
+  status: 'synced'
+  lastSyncedAt?: string
+  message: string
+}
+
+interface CorosWorkoutPushApiResponse {
+  status: 'synced'
+  last_synced_at: string | null
+  message: string
+}
+
+export async function pushTrainingSessionToCoros(
+  sessionId: string,
+  confirmedNoDuplicate = false,
+): Promise<CorosWorkoutPushResult> {
+  const response = await fetch(
+    `/api/integrations/coros/workouts/${sessionId}/push`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        confirmed_no_duplicate: confirmedNoDuplicate,
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    throw await readApiError(
+      response,
+      `Impossible d'envoyer la séance à COROS (${response.status}).`,
+    )
+  }
+
+  const data = (
+    await response.json()
+  ) as CorosWorkoutPushApiResponse
+
+  return {
+    status: data.status,
+    lastSyncedAt: data.last_synced_at ?? undefined,
+    message: data.message,
+  }
+}
+
 
 export async function fetchTrainingSessions(
   start: string,

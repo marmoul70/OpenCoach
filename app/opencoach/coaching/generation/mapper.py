@@ -181,7 +181,7 @@ def _serialize_prescription(
     """
 
     return {
-        "version": 1,
+        "version": 2,
         "blocks": [
             {
                 "name": block.name,
@@ -190,6 +190,18 @@ def _serialize_prescription(
                 ),
                 "duration_minutes": (
                     block.duration_minutes
+                ),
+                "phase": block.phase,
+                "target_distance_meters": block.target_distance_meters,
+                "target_elevation_gain_meters": block.target_elevation_gain_meters,
+                "target_duration_seconds": block.target_duration_seconds,
+                "intensity": (
+                    _serialize_intensity_prescription(
+                        block.intensity_prescription,
+                        vma_kmh=vma_kmh,
+                    )
+                    if block.intensity_prescription is not None
+                    else None
                 ),
             }
             for block in proposal.blocks

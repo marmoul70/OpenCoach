@@ -641,6 +641,22 @@ def push_training_session_to_coros(
                 training_session.date,
             )
 
+    if current_status in {"pending", "unknown"}:
+        current_title = training_session.title.strip().casefold()
+        matching_workouts = [
+            name for name in existing_workouts
+            if name.strip().casefold() == current_title
+        ]
+        if matching_workouts:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Une séance portant déjà ce titre est présente dans le "
+                    "calendrier COROS à cette date. Par sécurité, aucun nouvel "
+                    "envoi n'a été effectué. Vérifie cette séance dans COROS."
+                ),
+            )
+
     # Réservation atomique : deux requêtes simultanées ne peuvent pas
     # toutes les deux passer de l'état libre à pending.
     started_at = datetime.now(timezone.utc)

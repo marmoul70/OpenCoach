@@ -249,11 +249,16 @@ class SqlTrainingSessionRepository(
                 "Séance introuvable."
             )
 
-        if database_session.coros_workout_id is not None or database_session.coros_sync_status in {
-            "pending",
-            "synced",
-            "unknown",
-        }:
+        # Ne jamais supprimer une référence distante sans suppression COROS
+        # confirmée. La fonction de suppression distante sera distincte.
+        if (
+            database_session.coros_workout_id is not None
+            or database_session.coros_sync_status in {
+                "pending",
+                "synced",
+                "unknown",
+            }
+        ):
             raise TrainingSessionRepositoryError(
                 "Une séance liée au calendrier COROS ne peut pas être supprimée automatiquement."
             )

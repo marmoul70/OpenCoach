@@ -43,6 +43,18 @@ class SessionBlock:
 
     duration_minutes: int | None = None
 
+    # Métadonnées de phase et prescription propres au bloc. Elles restent
+    # optionnelles pour relire sans migration les anciennes propositions.
+    phase: str | None = None
+
+    intensity_prescription: SessionIntensityPrescription | None = None
+
+    target_distance_meters: int | None = None
+
+    target_elevation_gain_meters: int | None = None
+
+    target_duration_seconds: int | None = None
+
     def __post_init__(
         self,
     ) -> None:
@@ -64,6 +76,19 @@ class SessionBlock:
                 "La durée d'un bloc doit être "
                 "strictement positive."
             )
+
+        if self.phase is not None and not self.phase.strip():
+            raise ValueError("La phase d'un bloc ne peut pas être vide.")
+
+        for label, value in (
+            ("distance", self.target_distance_meters),
+            ("dénivelé", self.target_elevation_gain_meters),
+            ("durée cible", self.target_duration_seconds),
+        ):
+            if value is not None and value <= 0:
+                raise ValueError(
+                    f"La {label} cible d'un bloc doit être strictement positive."
+                )
 
 
 @dataclass(frozen=True, slots=True)

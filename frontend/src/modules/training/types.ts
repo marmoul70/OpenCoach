@@ -50,6 +50,11 @@ export interface TrainingSession {
   intervalsLastSyncedAt?: string
   intervalsPayloadHash?: string
   intervalsSyncError?: string
+
+  prescription?: Record<string, unknown>
+  corosSyncStatus?: 'pending' | 'synced' | 'failed' | 'unknown'
+  corosLastSyncedAt?: string
+  corosSyncError?: string
 }
 
 export interface TrainingSessionCreate {

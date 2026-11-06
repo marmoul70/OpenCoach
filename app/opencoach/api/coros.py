@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID, uuid4
@@ -679,12 +678,15 @@ def _extract_coros_scheduled_id(result: dict[str, Any]) -> str | None:
         try:
             candidates.append(json.loads(raw_text))
         except ValueError:
-            match = re.search(
-                r"idInPlan\\s*[:=]\\s*[\"']?(\\d+)",
-                raw_text,
-            )
-            if match:
-                return match.group(1)
+            object_start = raw_text.find("{")
+            object_end = raw_text.rfind("}")
+            if object_start >= 0 and object_end > object_start:
+                try:
+                    candidates.append(
+                        json.loads(raw_text[object_start:object_end + 1])
+                    )
+                except ValueError:
+                    pass
 
     for candidate in candidates:
         found = _find_coros_id(candidate)

@@ -8,6 +8,10 @@ from opencoach.planning.sessions.prescription.integrity import (
     _validate_intensity_targets,
     validate_training_session_prescription,
 )
+from opencoach.planning.sessions.prescription.intervals import (
+    WorkDurationUnit,
+    WorkInterval,
+)
 
 
 def session(
@@ -575,3 +579,25 @@ def test_version_two_rejects_non_finite_intensity_bounds(invalid_bound: float) -
             },
             context="de test",
         )
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"repetitions": True},
+        {"work_duration": True},
+        {"recovery_duration": True},
+    ],
+)
+def test_work_interval_rejects_boolean_counts_and_durations(overrides: dict) -> None:
+    values = {
+        "repetitions": 4,
+        "work_duration": 30,
+        "work_unit": WorkDurationUnit.SECONDS,
+        "recovery_duration": 15,
+        "recovery_unit": WorkDurationUnit.SECONDS,
+    }
+    values.update(overrides)
+
+    with pytest.raises(ValueError):
+        WorkInterval(**values)

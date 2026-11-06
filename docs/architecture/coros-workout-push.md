@@ -49,6 +49,21 @@ Cette opération ajoute directement une séance autonome à une date du calendri
 
 Après confirmation du serveur COROS, OpenCoach indique que la séance est ajoutée au calendrier. L'utilisateur doit ensuite synchroniser la montre avec l'application COROS pour récupérer le programme.
 
+## Contrat de prescription version 2
+
+Avant toute conversion, OpenCoach vérifie l'intégrité de la prescription persistée :
+
+- chaque phase possède un nom, des consignes, un type de phase reconnu et une intensité structurée ;
+- les durées des phases, lorsqu'elles sont toutes renseignées, doivent totaliser exactement la durée de séance ;
+- les cibles de distance, de dénivelé et de durée doivent être des entiers strictement positifs ;
+- les séances continues doivent porter une durée valide ; les séances fractionnées doivent contenir au moins une série ;
+- chaque série définit exactement une cible de travail primaire (durée ou distance), avec ses unités et son nombre de répétitions ;
+- les cibles secondaires de dénivelé peuvent être conservées sans remplacer la cible primaire de durée ou de distance ;
+- les récupérations valident séparément durée, unité, distance et dénivelé ;
+- les bornes d'intensité doivent être numériques, positives ou nulles et cohérentes.
+
+Les prescriptions version 1 restent acceptées avec les règles historiques. Une prescription version 2 incomplète ou incohérente est refusée avant l'appel COROS, afin d'éviter une séance guidée partiellement ou incorrectement définie.
+
 ## Correspondances prises en charge
 
 | Donnée OpenCoach | COROS |

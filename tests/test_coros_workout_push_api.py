@@ -250,6 +250,36 @@ def make_client(monkeypatch, session):
     return TestClient(app), repository, profile_id
 
 
+def test_rejects_incompatible_coros_tool_schema_before_sending(monkeypatch):
+    session = make_session()
+    client, repository, _ = make_client(monkeypatch, session)
+
+    original_list_tools = FakeCorosClient.list_tools
+
+    def incompatible_tools(self):
+        tools = original_list_tools(self)
+        create_tool = next(
+            tool for tool in tools
+            if tool["name"] == "createScheduledWorkout"
+        )
+        create_tool["inputSchema"]["properties"] = {
+            "date": {"type": "integer"},
+            "course": {"type": "object"},
+        }
+        return tools
+
+    monkeypatch.setattr(FakeCorosClient, "list_tools", incompatible_tools)
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 502
+    assert "types d'arguments incompatibles" in response.json()["detail"]
+    assert FakeCorosClient.calls == []
+    assert repository.session.coros_sync_status is None
+
+
 def test_pushes_planned_session_to_coros_and_reports_other_workouts(monkeypatch):
     session = make_session()
     client, repository, _ = make_client(monkeypatch, session)

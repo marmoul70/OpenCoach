@@ -255,8 +255,13 @@ def test_uses_run_workout_for_trail_intervals_with_timed_recovery() -> None:
         )
     )
 
-    with pytest.raises(CorosWorkoutMappingError, match="récupération chronométrée"):
-        map_training_session_to_coros(session)
+    payload = map_training_session_to_coros(session)
+
+    assert payload.course["sportType"] == 1
+    assert payload.course["sections"][0]["intervalGroup"] is True
+    assert payload.course["sections"][0]["sets"][1]["targetType"] == 2
+    assert payload.course["sections"][0]["sets"][1]["targetValue"] == 60
+    assert "mode Trail Run" in payload.course["courseDescription"]
 
 
 def test_rejects_strength_and_completed_sessions() -> None:

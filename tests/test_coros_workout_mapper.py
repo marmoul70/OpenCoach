@@ -540,10 +540,12 @@ def test_maps_trail_repetitions_and_recovery_with_explicit_elevation_targets() -
                         "repetitions": 5,
                         "work_elevation_gain_meters": 100,
                         "work_distance_meters": None,
-                        "work_duration": None,
+                        "work_duration": 90,
+                        "work_unit": "seconds",
                         "recovery_elevation_gain_meters": 30,
                         "recovery_distance_meters": None,
-                        "recovery_duration": None,
+                        "recovery_duration": 60,
+                        "recovery_unit": "seconds",
                         "repetition_target": None,
                     }
                 ],
@@ -562,6 +564,11 @@ def test_maps_trail_repetitions_and_recovery_with_explicit_elevation_targets() -
     ]
     assert sections[1]["targetType"] == 3
     assert sections[1]["targetValue"] == 100
+    description = map_training_session_to_coros(session).course["courseDescription"]
+    assert "100 m D+" in description
+    assert "90 seconds" in description
+    assert "60 seconds" in description
+    assert "30 m D+" in description
 
 
 def test_maps_easy_intensity_on_recovery_sections() -> None:

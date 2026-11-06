@@ -1388,6 +1388,29 @@ def get_training_session_move_options(
     Elle ne déplace aucune séance et ne modifie aucun statut.
     """
 
+    current_session = repository.get_session(
+        athlete_profile_id,
+        session_id,
+    )
+    if current_session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Séance introuvable.",
+        )
+    if current_session.coros_sync_status in {
+        "synced",
+        "pending",
+        "unknown",
+    }:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Cette séance a été envoyée à COROS ou son envoi est incertain. "
+                "Son déplacement doit être effectué dans l'application COROS "
+                "et l'état OpenCoach doit rester cohérent."
+            ),
+        )
+
     service = ManualSessionMoveService(
         training_session_repository=(
             repository

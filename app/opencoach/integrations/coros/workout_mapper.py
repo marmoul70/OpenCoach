@@ -474,12 +474,15 @@ def _build_interval_groups(
         remaining = repetitions
         while remaining > 0:
             chunk = min(remaining, 20)
-            sections.append({
-                "intervalGroup": True,
-                "repeats": chunk - 1,
-                "sets": [work_section, recovery_section],
-            })
-            sections.append(work_section)
+            if chunk == 1:
+                sections.append(work_section)
+            else:
+                sections.append({
+                    "intervalGroup": True,
+                    "repeats": chunk - 1,
+                    "sets": [work_section, recovery_section],
+                })
+                sections.append(work_section)
             remaining -= chunk
             if remaining > 0:
                 sections.append(recovery_section)

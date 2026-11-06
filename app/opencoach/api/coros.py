@@ -825,12 +825,30 @@ def push_training_session_to_coros(
         ) from exc
 
     now = datetime.now(timezone.utc)
+    returned_workout_id = _extract_coros_scheduled_id(result)
+    if not is_update and not returned_workout_id:
+        # La création peut avoir réussi côté COROS, mais sans idInPlan
+        # OpenCoach ne peut ni prouver la synchronisation ni mettre à jour
+        # cette séance ensuite. Conserver un état incertain impose une
+        # vérification du calendrier avant toute nouvelle création.
+        training_session.coros_sync_status = "unknown"
+        training_session.coros_sync_started_at = None
+        training_session.coros_sync_error = (
+            "COROS n'a pas retourné l'identifiant de la séance créée. "
+            "Vérifie le calendrier COROS avant toute nouvelle tentative."
+        )
+        repository.save_session(athlete_profile_id, training_session)
+        raise HTTPException(
+            status_code=502,
+            detail=training_session.coros_sync_error,
+        )
+
     training_session.coros_sync_status = "synced"
     training_session.coros_sync_started_at = None
     training_session.coros_last_synced_at = now
     training_session.coros_sync_error = None
     training_session.coros_workout_id = (
-        _extract_coros_scheduled_id(result)
+        returned_workout_id
         or training_session.coros_workout_id
     )
     saved_session = repository.save_session(

@@ -274,9 +274,6 @@ export function AppNavigation({
               </p>
             </div>
           </button>
-          <NotificationBell
-            onViewAll={() => navigate('notifications')}
-          />
         </div>
 
 
@@ -411,7 +408,7 @@ export function AppNavigation({
                       (
                         'flex w-full items-center '
                         + 'gap-2.5 rounded-[10px] '
-                        + 'px-2 py-[7px] '
+                        + 'pl-2 pr-14 py-[7px] '
                         + 'text-left transition-colors'
                       ),
                       desktopProfileOpen
@@ -481,6 +478,13 @@ export function AppNavigation({
                     />
                   </button>
 
+
+                  <div className="absolute right-8 top-1/2 z-[60] -translate-y-1/2">
+                    <NotificationBell
+                      placement="sidebar"
+                      onViewAll={() => navigate('notifications')}
+                    />
+                  </div>
 
                   {/* Dropdown */}
 

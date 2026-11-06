@@ -65,6 +65,7 @@ class FakeCorosClient:
     calls = []
     scheduled_names = ["Renforcement"]
     editable = True
+    created_id = "new-workout-id"
 
     def __init__(self, access_token):
         self.access_token = access_token
@@ -142,7 +143,7 @@ class FakeCorosClient:
                 "idInPlan": (
                     "updated-workout-id"
                     if name == "updateScheduledWorkout"
-                    else "new-workout-id"
+                    else self.created_id
                 ),
             }
         }
@@ -217,6 +218,7 @@ def make_client(monkeypatch, session):
     FakeCorosClient.calls = []
     FakeCorosClient.scheduled_names = ["Renforcement"]
     FakeCorosClient.editable = True
+    FakeCorosClient.created_id = "new-workout-id"
     monkeypatch.setattr(coros_api, "CorosMcpClient", FakeCorosClient)
 
     return TestClient(app), repository, profile_id
@@ -447,3 +449,40 @@ def test_synced_session_without_coros_id_never_falls_back_to_creation(monkeypatc
     assert response.status_code == 409
     assert "identifiant COROS est absent" in response.json()["detail"]
     assert FakeCorosClient.calls == []
+
+
+def test_create_without_coros_id_remains_uncertain_and_can_be_reconciled(monkeypatch):
+    session = make_session()
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.created_id = None
+
+    uncertain = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert uncertain.status_code == 502
+    assert repository.session.coros_sync_status == "unknown"
+    assert repository.session.coros_workout_id is None
+    assert repository.session.coros_last_synced_at is None
+    assert "identifiant" in repository.session.coros_sync_error
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+        "createScheduledWorkout",
+    ]
+
+    FakeCorosClient.created_id = "reconciled-workout-id"
+    retried = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={"confirmed_no_duplicate": True},
+    )
+
+    assert retried.status_code == 200
+    assert repository.session.coros_sync_status == "synced"
+    assert repository.session.coros_workout_id == "reconciled-workout-id"
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+        "createScheduledWorkout",
+        "queryTrainingSchedule",
+        "createScheduledWorkout",
+    ]

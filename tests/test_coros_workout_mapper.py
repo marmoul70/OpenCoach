@@ -418,3 +418,44 @@ def test_maps_trail_warmup_when_an_explicit_distance_is_available() -> None:
         "targetType": 1,
         "targetValue": 1200,
     }
+
+
+def test_splits_more_than_twenty_repetitions_without_losing_recovery_count() -> None:
+    session = make_session(
+        prescription=heart_rate_prescription(
+            {
+                "type": "repeats",
+                "available_minutes": 50,
+                "intervals": [
+                    {
+                        "repetitions": 25,
+                        "work_distance_meters": 200,
+                        "work_duration": None,
+                        "work_unit": None,
+                        "repetition_target": None,
+                        "recovery_duration": 60,
+                        "recovery_unit": "seconds",
+                    }
+                ],
+            }
+        )
+    )
+
+    sections = map_training_session_to_coros(session).course["sections"]
+
+    assert [section.get("repeats") for section in sections if section.get("intervalGroup")] == [
+        19, 4
+    ]
+    # 19 récupérations dans le premier groupe, une entre les groupes,
+    # puis 4 dans le second : exactement 24 pour 25 répétitions.
+    grouped_recoveries = sum(
+        section["repeats"]
+        for section in sections
+        if section.get("intervalGroup")
+    )
+    between_group_recoveries = sum(
+        1
+        for section in sections
+        if section.get("sectionType") == 3
+    )
+    assert grouped_recoveries + between_group_recoveries == 24

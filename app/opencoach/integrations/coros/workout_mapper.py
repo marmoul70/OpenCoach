@@ -60,6 +60,7 @@ def map_training_session_to_coros(
     structure_type = str(work_structure.get("type") or "").strip().lower()
     sections: list[dict[str, Any]] = []
     warmup_blocks = _matching_blocks(prescription, "warmup")
+    main_blocks = _matching_blocks(prescription, "main")
     easy_blocks = _matching_blocks(prescription, "easy")
     cooldown_blocks = _matching_blocks(prescription, "cooldown")
 
@@ -85,6 +86,11 @@ def map_training_session_to_coros(
                 ),
                 cooldown_seconds=sum(
                     _block_seconds(block) for block in cooldown_blocks
+                ),
+                main_seconds=(
+                    _block_seconds(main_blocks[0])
+                    if main_blocks
+                    else None
                 ),
             )
         )
@@ -252,15 +258,35 @@ def _build_phase_section(
         raise CorosWorkoutMappingError(
             f"La durée de {phase_label} est absente ou invalide."
         )
+    distance = block.get("target_distance_meters")
+    elevation = block.get("target_elevation_gain_meters")
+    explicit_seconds = block.get("target_duration_seconds")
     if sport_type == 5:
-        raise CorosWorkoutMappingError(
-            f"COROS impose une cible en distance pour le {phase_label} en trail. "
-            "La prescription OpenCoach ne contient ici qu'une durée."
+        if distance is not None:
+            target_type = 1
+            target_value = _positive_integer(distance, "distance de phase")
+        elif elevation is not None:
+            target_type = 3
+            target_value = _positive_integer(elevation, "dénivelé de phase")
+        else:
+            raise CorosWorkoutMappingError(
+                f"COROS exige une cible en distance ou en dénivelé pour le {phase_label}. "
+                "La prescription ne fournit pas de cible trail convertible."
+            )
+    elif distance is not None:
+        target_type = 1
+        target_value = _positive_integer(distance, "distance de phase")
+    else:
+        target_type = 2
+        target_value = (
+            _positive_integer(explicit_seconds, "durée de phase")
+            if explicit_seconds is not None
+            else seconds
         )
     section = {
         "sectionType": section_type,
-        "targetType": 2,
-        "targetValue": seconds,
+        "targetType": target_type,
+        "targetValue": target_value,
     }
     block_intensity = block.get("intensity")
     if isinstance(block_intensity, dict):
@@ -279,6 +305,7 @@ def _build_continuous_section(
     sport_type: int,
     warmup_seconds: int,
     cooldown_seconds: int,
+    main_seconds: int | None = None,
 ) -> dict[str, Any]:
     distance = work_structure.get("work_distance_meters")
     if distance is None and session.distance_km is not None:
@@ -309,8 +336,12 @@ def _build_continuous_section(
         )
     else:
         minutes = (
-            work_structure.get("continuous_minutes")
-            or work_structure.get("available_minutes")
+            round(main_seconds / 60)
+            if main_seconds is not None
+            else (
+                work_structure.get("continuous_minutes")
+                or work_structure.get("available_minutes")
+            )
         )
         if minutes is None:
             minutes = (

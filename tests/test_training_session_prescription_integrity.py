@@ -357,3 +357,56 @@ def test_version_two_rejects_invalid_interval_work_and_recovery_targets() -> Non
         match="exactement une durée ou une distance",
     ):
         validate_training_session_prescription(value)
+
+
+def test_version_two_accepts_work_and_recovery_elevation_with_time_budgets() -> None:
+    intensity = {
+        "targets": [
+            {
+                "reference": "rpe",
+                "minimum": 3,
+                "maximum": 4,
+                "unit": "/10",
+            }
+        ],
+        "guidance": [],
+    }
+    value = session(
+        prescription={
+            "version": 2,
+            "blocks": [
+                {
+                    "name": "Répétitions en côte",
+                    "description": "Effort régulier en montée.",
+                    "duration_minutes": 45,
+                    "phase": "main",
+                    "intensity": intensity,
+                }
+            ],
+            "work_structure": {
+                "type": "repeats",
+                "stimulus": "aerobic_easy",
+                "available_minutes": 45,
+                "continuous_minutes": None,
+                "description": "5 montées avec récupération.",
+                "circuit": None,
+                "intervals": [
+                    {
+                        "repetitions": 5,
+                        "work_duration": 90,
+                        "work_unit": "seconds",
+                        "work_distance_meters": None,
+                        "work_elevation_gain_meters": 100,
+                        "recovery_duration": 60,
+                        "recovery_unit": "seconds",
+                        "recovery_distance_meters": None,
+                        "recovery_elevation_gain_meters": 30,
+                    }
+                ],
+            },
+            "intensity": intensity,
+            "recovery_intensity": intensity,
+        }
+    )
+
+    validate_training_session_prescription(value)

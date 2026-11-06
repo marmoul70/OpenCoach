@@ -60,6 +60,7 @@ class FakeRepository:
 
 class FakeCorosClient:
     calls = []
+    scheduled_names = ["Renforcement"]
 
     def __init__(self, access_token):
         self.access_token = access_token
@@ -95,9 +96,12 @@ class FakeCorosClient:
                                 "date": "2026-11-12",
                                 "courses": [
                                     {
-                                        "idInPlan": "existing-workout-id",
-                                        "courseName": "Renforcement",
+                                        "idInPlan": f"existing-{index}",
+                                        "courseName": name,
                                     }
+                                    for index, name in enumerate(
+                                        self.scheduled_names
+                                    )
                                 ],
                             }
                         ]
@@ -178,6 +182,7 @@ def make_client(monkeypatch, session):
     )
     monkeypatch.setattr(coros_api, "_oauth", lambda: object())
     FakeCorosClient.calls = []
+    FakeCorosClient.scheduled_names = ["Renforcement"]
     monkeypatch.setattr(coros_api, "CorosMcpClient", FakeCorosClient)
 
     return TestClient(app), repository, profile_id
@@ -296,3 +301,25 @@ def test_stale_pending_push_requires_confirmation_then_can_retry(monkeypatch):
     assert repository.session.coros_sync_status == "synced"
     assert repository.session.coros_sync_started_at is None
     assert len(FakeCorosClient.calls) == 2
+
+
+
+def test_uncertain_retry_is_blocked_when_same_title_is_already_on_coros(
+    monkeypatch,
+):
+    session = make_session()
+    session.coros_sync_status = "unknown"
+    session.coros_payload_hash = "previous-payload-hash"
+    client, _, _ = make_client(monkeypatch, session)
+    FakeCorosClient.scheduled_names = ["Footing aérobie"]
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={"confirmed_no_duplicate": True},
+    )
+
+    assert response.status_code == 409
+    assert "portant déjà ce titre" in response.json()["detail"]
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule"
+    ]

@@ -964,39 +964,37 @@ def _extract_coros_scheduled_details(
                     return found
         return None
 
-    def visit(value: Any) -> dict[str, Any] | None:
+    def find_editability(value: Any) -> tuple[bool, str | None] | None:
         if isinstance(value, dict):
             editable = value.get("editable")
             if isinstance(editable, bool):
-                reason = (
-                    value.get("reason")
-                    or value.get("reasons")
-                    or value.get("message")
+                reason = value.get("reason") or value.get("reasons") or value.get("message")
+                normalized_reason = (
+                    "; ".join(str(item) for item in reason)
+                    if isinstance(reason, list)
+                    else str(reason) if reason else None
                 )
-                return {
-                    "editable": editable,
-                    "reason": (
-                        "; ".join(str(item) for item in reason)
-                        if isinstance(reason, list)
-                        else str(reason) if reason else None
-                    ),
-                    "course": find_course(value),
-                }
+                return editable, normalized_reason
             for child in value.values():
-                found = visit(child)
+                found = find_editability(child)
                 if found is not None:
                     return found
         elif isinstance(value, list):
             for child in value:
-                found = visit(child)
+                found = find_editability(child)
                 if found is not None:
                     return found
         return None
 
     for candidate in candidates:
-        found = visit(candidate)
-        if found is not None:
-            return found
+        editability = find_editability(candidate)
+        if editability is not None:
+            editable, reason = editability
+            return {
+                "editable": editable,
+                "reason": reason,
+                "course": find_course(candidate),
+            }
     return None
 
 

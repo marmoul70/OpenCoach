@@ -143,8 +143,9 @@ class SqlTrainingSessionRepository(
         started_at: datetime,
         *,
         allow_uncertain: bool = False,
+        allow_synced_update: bool = False,
     ) -> bool:
-        """Réserve atomiquement l'envoi COROS pour empêcher deux créations."""
+        """Réserve atomiquement une création ou la mise à jour d'une copie COROS."""
         started_at_utc = (
             started_at.replace(tzinfo=None)
             if started_at.tzinfo is not None
@@ -154,6 +155,14 @@ class SqlTrainingSessionRepository(
             TrainingSessionModel.coros_sync_status.is_(None),
             TrainingSessionModel.coros_sync_status == "failed",
         ]
+        if allow_synced_update:
+            eligible_statuses.append(
+                and_(
+                    TrainingSessionModel.coros_sync_status == "synced",
+                    TrainingSessionModel.coros_workout_id.is_not(None),
+                    TrainingSessionModel.coros_payload_hash != payload_hash,
+                )
+            )
         if allow_uncertain:
             stale_before = started_at_utc - timedelta(minutes=5)
             eligible_statuses.extend([

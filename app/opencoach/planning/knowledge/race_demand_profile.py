@@ -24,6 +24,7 @@ class ElevationDemand(StrEnum):
     MODERATE = "moderate"
     HIGH = "high"
     VERY_HIGH = "very_high"
+    UNKNOWN = "unknown"
 
 
 class RaceSpecificityDemand(StrEnum):
@@ -39,20 +40,22 @@ class RaceDemandProfile:
 
     distance_km: float
 
-    elevation_gain_m: float
+    elevation_gain_m: float | None
 
     distance_category: RaceDistanceCategory
     elevation_demand: ElevationDemand
 
     endurance_demand: RaceSpecificityDemand
     long_endurance_demand: RaceSpecificityDemand
-    uphill_demand: RaceSpecificityDemand
-    downhill_demand: RaceSpecificityDemand
+    uphill_demand: RaceSpecificityDemand | None
+    downhill_demand: RaceSpecificityDemand | None
     threshold_demand: RaceSpecificityDemand
     race_specific_demand: RaceSpecificityDemand
 
     @property
-    def elevation_ratio_m_per_km(self) -> float:
+    def elevation_ratio_m_per_km(self) -> float | None:
+        if self.elevation_gain_m is None:
+            return None
         if self.distance_km == 0:
             return 0.0
 
@@ -85,12 +88,15 @@ def classify_distance(
 def classify_elevation(
     *,
     distance_km: float,
-    elevation_gain_m: float,
+    elevation_gain_m: float | None,
 ) -> ElevationDemand:
     if distance_km <= 0:
         raise ValueError(
             "La distance de course doit être strictement positive."
         )
+
+    if elevation_gain_m is None:
+        return ElevationDemand.UNKNOWN
 
     if elevation_gain_m < 0:
         raise ValueError(
@@ -117,7 +123,7 @@ def classify_elevation(
 def build_race_demand_profile(
     *,
     distance_km: float,
-    elevation_gain_m: float,
+    elevation_gain_m: float | None,
 ) -> RaceDemandProfile:
     """Construit le profil de demande d'une course."""
 
@@ -138,12 +144,16 @@ def build_race_demand_profile(
         distance_category
     )
 
-    uphill_demand = _elevation_specific_demand(
-        elevation_demand
+    uphill_demand = (
+        None
+        if elevation_demand is ElevationDemand.UNKNOWN
+        else _elevation_specific_demand(elevation_demand)
     )
 
-    downhill_demand = _elevation_specific_demand(
-        elevation_demand
+    downhill_demand = (
+        None
+        if elevation_demand is ElevationDemand.UNKNOWN
+        else _elevation_specific_demand(elevation_demand)
     )
 
     threshold_demand = _threshold_demand(

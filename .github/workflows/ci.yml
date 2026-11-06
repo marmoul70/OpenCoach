@@ -30,6 +30,7 @@ jobs:
       - name: Bash syntax check
         run: |
           bash -n scripts/bootstrap/install.sh
+          bash -n scripts/bootstrap/install-ai.sh
           bash -n scripts/bootstrap/check-environment.sh
           bash -n scripts/deploy-frontend.sh
           bash -n scripts/maintenance/shellcheck.sh
@@ -49,9 +50,10 @@ jobs:
               set -Eeuo pipefail
 
               apt-get update
-              apt-get install -y bash git
+              apt-get install -y bash git curl ca-certificates
 
               ./tests/test-libraries.sh
+              bash ./tests/test-install-ai.sh
             '
 
 

@@ -869,6 +869,10 @@ def test_primary_race_activates_on_preparation_horizon_boundary(
         prepared.planning_input.target_distance_km
         == race.distance_km
     )
+    assert (
+        prepared.planning_input.target_elevation_gain_m
+        == race.elevation_gain_m
+    )
 
     result = build_current_week_coaching(
         input_data=prepared.planning_input,

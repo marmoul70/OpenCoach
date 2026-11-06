@@ -1,6 +1,5 @@
 import {
   AlertTriangle,
-  CheckCircle2,
   CloudUpload,
   RefreshCw,
 } from 'lucide-react'
@@ -104,7 +103,7 @@ export function CorosWorkoutAction({
   )
 
   async function sendToCoros(): Promise<void> {
-    if (saving || alreadySynced || pendingInProgress) {
+    if (saving || pendingInProgress) {
       return
     }
 
@@ -113,6 +112,16 @@ export function CorosWorkoutAction({
         'Le résultat du précédent envoi est incertain. '
         + 'Vérifie d’abord dans le calendrier COROS que cette séance '
         + 'n’existe pas déjà. Confirme uniquement si elle est absente.',
+      )
+      if (!confirmed) {
+        return
+      }
+    } else if (alreadySynced) {
+      const confirmed = window.confirm(
+        `Envoyer la version OpenCoach actuelle de « ${session.title} » `
+        + `le ${formatDate(session.date)} vers COROS ? `
+        + 'Si la séance n’a pas changé, OpenCoach détectera automatiquement '
+        + 'qu’aucune mise à jour n’est nécessaire.',
       )
       if (!confirmed) {
         return
@@ -139,7 +148,9 @@ export function CorosWorkoutAction({
       )
       toast({
         type: 'success',
-        title: 'Séance envoyée à COROS',
+        title: alreadySynced
+          ? 'Vérification COROS terminée'
+          : 'Séance envoyée à COROS',
         message: result.message,
       })
     } catch (error) {
@@ -153,37 +164,6 @@ export function CorosWorkoutAction({
     } finally {
       setSaving(false)
     }
-  }
-
-  if (alreadySynced) {
-    return (
-      <div
-        className="
-          mt-2
-          flex
-          items-center
-          gap-2
-          rounded-[9px]
-          border
-          border-emerald-500/20
-          bg-emerald-500/[0.055]
-          px-3
-          py-2
-          text-[11px]
-          font-semibold
-          text-emerald-700
-          dark:text-emerald-400
-        "
-      >
-        <CheckCircle2 className="h-3.5 w-3.5" />
-        <span>
-          <span className="block">Séance envoyée à COROS</span>
-          <span className="mt-0.5 block font-normal text-[10px] opacity-80">
-            Toute modification ou annulation doit aussi être faite dans COROS.
-          </span>
-        </span>
-      </div>
-    )
   }
 
   return (
@@ -220,7 +200,7 @@ export function CorosWorkoutAction({
           <RefreshCw className="h-3.5 w-3.5 animate-spin" />
         ) : needsConfirmation ? (
           <AlertTriangle className="h-3.5 w-3.5" />
-        ) : session.corosSyncStatus === 'failed' ? (
+        ) : session.corosSyncStatus === 'failed' || alreadySynced ? (
           <RefreshCw className="h-3.5 w-3.5" />
         ) : (
           <CloudUpload className="h-3.5 w-3.5" />
@@ -229,9 +209,11 @@ export function CorosWorkoutAction({
           ? 'Envoi COROS en cours…'
           : needsConfirmation
             ? 'Vérifier COROS puis réessayer'
-            : session.corosSyncStatus === 'failed'
-              ? 'Réessayer l’envoi COROS'
-              : 'Envoyer vers COROS'}
+            : alreadySynced
+              ? 'Mettre à jour dans COROS'
+              : session.corosSyncStatus === 'failed'
+                ? 'Réessayer l’envoi COROS'
+                : 'Envoyer vers COROS'}
       </button>
       {session.corosSyncError && (
         <p

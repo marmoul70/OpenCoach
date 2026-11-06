@@ -621,9 +621,10 @@ def _build_interval_groups(
             fallback_recovery,
             sport_type,
         )
-        recovery_section.update(
-            _intensity_fields(recovery_intensity_source, sport_type)
-        )
+        if isinstance(recovery_intensity_source.get("intensity"), dict):
+            recovery_section.update(
+                _intensity_fields(recovery_intensity_source, sport_type)
+            )
 
         # Chaque groupe COROS est limité à 20 répétitions. Le découpage
         # conserve exactement les répétitions et les récupérations inter-reps,

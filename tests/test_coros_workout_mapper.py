@@ -513,3 +513,38 @@ def test_maps_distance_only_phase_without_inventing_a_duration() -> None:
         "targetType": 1,
         "targetValue": 1500,
     }
+
+
+def test_maps_trail_repetitions_and_recovery_with_explicit_elevation_targets() -> None:
+    session = make_session(
+        sport_type="TrailRun",
+        prescription=heart_rate_prescription(
+            {
+                "type": "repeats",
+                "intervals": [
+                    {
+                        "repetitions": 5,
+                        "work_elevation_gain_meters": 100,
+                        "work_distance_meters": None,
+                        "work_duration": None,
+                        "recovery_elevation_gain_meters": 30,
+                        "recovery_distance_meters": None,
+                        "recovery_duration": None,
+                        "repetition_target": None,
+                    }
+                ],
+            }
+        )
+    )
+
+    sections = map_training_session_to_coros(session).course["sections"]
+
+    assert sections[0]["intervalGroup"] is True
+    assert sections[0]["repeats"] == 4
+    assert sections[0]["sets"] == [
+        {"sectionType": 2, "targetType": 3, "targetValue": 100,
+         "intensityType": 1, "intensityValueStart": 140, "intensityValueEnd": 155},
+        {"sectionType": 3, "targetType": 3, "targetValue": 30},
+    ]
+    assert sections[1]["targetType"] == 3
+    assert sections[1]["targetValue"] == 100

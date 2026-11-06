@@ -34,14 +34,16 @@ Aucun second compte COROS ni nouveau secret d'API n'est nécessaire.
 
 Le bouton **Envoyer vers COROS** est proposé sur les séances planifiées éligibles depuis les actions de séance du calendrier.
 
-Avant l'écriture, OpenCoach interroge si disponible le calendrier COROS sur la date exacte avec `queryTrainingSchedule`. Les séances déjà présentes sont remontées dans le message de confirmation final ; elles n'empêchent pas l'ajout d'une séance supplémentaire.
+Pour une création, OpenCoach interroge si disponible le calendrier COROS sur la date exacte avec `queryTrainingSchedule`. Les séances déjà présentes sont remontées dans le message de confirmation final ; elles n'empêchent pas l'ajout d'une séance supplémentaire.
 
-L'API appelle ensuite l'outil MCP officiel `createScheduledWorkout` avec :
+Pour une mise à jour, OpenCoach appelle d'abord `queryScheduledWorkoutDetails` avec la date et l'identifiant COROS mémorisé. Le service exige `editable=true`, conserve le cours retourné comme base, remplace les champs pilotés par OpenCoach, puis appelle `updateScheduledWorkout` avec le même identifiant.
 
 - la date de la séance au format `yyyyMMdd` ;
 - le sport COROS ;
 - le nom et la description destinés à l'athlète ;
 - les phases et répétitions converties depuis la prescription OpenCoach.
+
+Le contenu transmis est le cours complet ; les sections d'un entraînement peuvent utiliser des cibles différentes selon le sport : temps, distance ou dénivelé.
 
 Cette opération ajoute directement une séance autonome à une date du calendrier COROS. Elle ne crée pas de modèle réutilisable dans la bibliothèque COROS et ne modifie pas un plan d'entraînement COROS existant.
 
@@ -66,6 +68,9 @@ Après confirmation du serveur COROS, OpenCoach indique que la séance est ajout
 | Intensité par phase | Cible propre à la section, jamais héritée automatiquement d'une autre phase |
 | Répétitions | Groupes d'intervalles COROS (20 répétitions maximum par groupe) |
 | Dénivelé positif | Cible trail en mètres si la prescription fournit explicitement un D+ |
+| Fraction trail en montée | Cible de dénivelé par répétition si elle est fournie |
+| Récupération trail | Cible distance ou dénivelé ; jamais une durée |
+| Intensité de récupération | Prescription facile de la phase périphérique, si COROS peut la piloter |
 | Consignes non pilotables | Description de la séance, sans conversion arbitraire |
 
 La cible d'allure calculée pour une répétition métrique est prioritaire sur la cible générale lorsque cette donnée est explicitement présente dans la prescription. Une cible en réserve de fréquence cardiaque (HRR) n'est jamais assimilée à des bpm : elle est refusée si aucune cible absolue compatible n'est disponible.
@@ -102,7 +107,7 @@ L'intention d'envoi est enregistrée avant l'appel distant. Ainsi, si le process
 - `synced` : le même contenu ne peut pas être envoyé une seconde fois ; si le contenu OpenCoach change, l'élément existant est mis à jour via son identifiant COROS ;
 - `failed` : le serveur COROS a explicitement refusé la requête, une nouvelle tentative est autorisée ;
 - `pending` : un envoi est en cours. Une seconde requête est bloquée pendant cinq minutes.
-- `unknown` ou `pending` bloqué depuis plus de cinq minutes : le résultat est incertain. L'utilisateur doit vérifier le calendrier COROS et confirmer que la séance est absente avant d'autoriser une nouvelle tentative. Si le calendrier contient déjà une séance au même titre à cette date, OpenCoach bloque également la nouvelle tentative.
+- `unknown` ou `pending` bloqué depuis plus de cinq minutes : le résultat est incertain. Pour une création sans identifiant COROS, l'utilisateur doit vérifier le calendrier et confirmer l'absence avant de retenter. Pour une mise à jour disposant déjà d'un identifiant, OpenCoach relit les détails de cette même séance et reprend par `updateScheduledWorkout`, jamais par une nouvelle création.
 
 Les identifiants COROS ne sont jamais affichés dans l'interface.
 
@@ -111,7 +116,9 @@ Les identifiants COROS ne sont jamais affichés dans l'interface.
 - `POST /api/integrations/coros/workouts/{session_id}/push`
 - Le corps accepte `confirmed_no_duplicate: true` uniquement pour autoriser une nouvelle tentative après un résultat incertain et vérification manuelle.
 
-Le serveur vérifie dynamiquement que l'outil `createScheduledWorkout` est disponible dans le catalogue MCP connecté et que son schéma expose les arguments requis.
+Le serveur vérifie dynamiquement les outils MCP et leurs schémas :
+- création : `createScheduledWorkout` ;
+- mise à jour : `queryScheduledWorkoutDetails` puis `updateScheduledWorkout`.
 
 ## Validation
 

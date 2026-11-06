@@ -581,12 +581,18 @@ export function AppNavigation({
             </span>
           </button>
 
+
+        </div>
+
+
+
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
             onClick={() => setMobileNavigationOpen(true)}
             className="
-              flex h-9 w-9 shrink-0 items-center justify-center
-              rounded-full text-[var(--oc-muted)]
+              flex h-9 w-9 items-center justify-center
+              rounded-xl text-[var(--oc-muted)]
               transition-colors hover:bg-[var(--oc-surface-hover)]
               hover:text-[var(--oc-text)]
               dark:hover:bg-[var(--oc-surface)]/[0.06]
@@ -597,9 +603,6 @@ export function AppNavigation({
           >
             <MoreHorizontal className="h-5 w-5" />
           </button>
-        </div>
-
-
 
         <button
           type="button"
@@ -627,6 +630,7 @@ export function AppNavigation({
             size="small"
           />
         </button>
+        </div>
       </header>
 
 

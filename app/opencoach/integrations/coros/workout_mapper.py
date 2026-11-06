@@ -902,25 +902,28 @@ def _build_course_description(
                 elevation = interval.get("work_elevation_gain_meters")
                 duration = interval.get("work_duration")
                 unit = str(interval.get("work_unit") or "minutes")
-                work = (
-                    f"{distance} m"
-                    if distance is not None
-                    else f"{elevation} m D+"
-                    if elevation is not None
-                    else f"{duration} {unit}" if duration is not None
-                    else "travail non quantifié"
-                )
+                work_details = []
+                if distance is not None:
+                    work_details.append(f"{distance} m")
+                if elevation is not None:
+                    work_details.append(f"{elevation} m D+")
+                if duration is not None:
+                    work_details.append(f"{duration} {unit}")
+                work = " / ".join(work_details) or "travail non quantifié"
                 recovery = interval.get("recovery_duration")
                 recovery_distance = interval.get("recovery_distance_meters")
                 recovery_elevation = interval.get("recovery_elevation_gain_meters")
                 recovery_unit = str(interval.get("recovery_unit") or "seconds")
+                recovery_details = []
+                if recovery is not None:
+                    recovery_details.append(f"{recovery} {recovery_unit}")
+                if recovery_distance is not None:
+                    recovery_details.append(f"{recovery_distance} m")
+                if recovery_elevation is not None:
+                    recovery_details.append(f"{recovery_elevation} m D+")
                 suffix = (
-                    f", récupération {recovery} {recovery_unit}"
-                    if recovery is not None
-                    else f", récupération {recovery_distance} m"
-                    if recovery_distance is not None
-                    else f", récupération {recovery_elevation} m D+"
-                    if recovery_elevation is not None
+                    f", récupération {' / '.join(recovery_details)}"
+                    if recovery_details
                     else ""
                 )
                 parts.append(f"Série {index} : {repetitions} × {work}{suffix}.")

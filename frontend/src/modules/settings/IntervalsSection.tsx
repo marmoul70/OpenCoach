@@ -1423,7 +1423,7 @@ function ConnectionField({
   const [visible, setVisible] = useState(false)
 
   return (
-    <label>
+    <div>
       <span
         className="
           mb-1.5
@@ -1468,6 +1468,7 @@ function ConnectionField({
         />
 
         <input
+          aria-label={label}
           type={type === 'password' && showVisibilityToggle && visible ? 'text' : type}
           value={value}
           placeholder={placeholder}
@@ -1504,7 +1505,7 @@ function ConnectionField({
           </button>
         )}
       </div>
-    </label>
+    </div>
   )
 }
 

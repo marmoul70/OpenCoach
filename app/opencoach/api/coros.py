@@ -611,6 +611,13 @@ def push_training_session_to_coros(
             status_code=404,
             detail="Séance introuvable après réservation de l'envoi COROS.",
         )
+    # La réservation SQL est une mise à jour atomique avec
+    # synchronize_session=False : réconcilier explicitement l'objet ORM
+    # chargé avant la réservation pour ne pas réécrire un ancien hash.
+    training_session.coros_sync_status = "pending"
+    training_session.coros_sync_started_at = started_at
+    training_session.coros_payload_hash = workout_payload.payload_hash
+    training_session.coros_sync_error = None
 
     try:
         result = client.call_tool(
@@ -636,6 +643,7 @@ def push_training_session_to_coros(
         ) from exc
     except CorosMcpToolError as exc:
         training_session.coros_sync_status = "failed"
+        training_session.coros_sync_started_at = None
         training_session.coros_sync_error = str(exc)[:2000]
         repository.save_session(athlete_profile_id, training_session)
         raise HTTPException(

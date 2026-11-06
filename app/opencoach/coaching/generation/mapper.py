@@ -294,6 +294,9 @@ def _serialize_work_interval(
         "work_distance_meters": (
             interval.work_distance_meters
         ),
+        "work_elevation_gain_meters": (
+            interval.work_elevation_gain_meters
+        ),
         "repetition_target": (
             _to_json_value(
                 interval.repetition_target
@@ -310,6 +313,12 @@ def _serialize_work_interval(
             if interval.recovery_unit
             is not None
             else None
+        ),
+        "recovery_distance_meters": (
+            interval.recovery_distance_meters
+        ),
+        "recovery_elevation_gain_meters": (
+            interval.recovery_elevation_gain_meters
         ),
     }
 

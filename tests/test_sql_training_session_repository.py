@@ -50,6 +50,3 @@ def test_sql_training_session_repository_refuses_delete_when_coros_copy_exists()
         assert repository.get_session(profile.id, saved.id) is not None
     finally:
         db.close()
-
-
-def test_sql_training_session_repository_updates_status() -> None:

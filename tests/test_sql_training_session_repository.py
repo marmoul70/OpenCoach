@@ -31,4 +31,25 @@ def test_sql_training_session_repository_save_preserves_coros_metadata_when_plan
         db.close()
 
 
+def test_sql_training_session_repository_refuses_delete_when_coros_copy_exists() -> None:
+    import pytest
+    from opencoach.database.repositories import TrainingSessionRepositoryError
+
+    db = create_session()
+    try:
+        profile = create_profile(db)
+        repository = SqlTrainingSessionRepository(db)
+        session = create_training_session()
+        session.coros_workout_id = "remote-plan-id"
+        session.coros_sync_status = "synced"
+        saved = repository.save_session(profile.id, session)
+
+        with pytest.raises(TrainingSessionRepositoryError, match="liée au calendrier COROS"):
+            repository.delete_session(profile.id, saved.id)
+
+        assert repository.get_session(profile.id, saved.id) is not None
+    finally:
+        db.close()
+
+
 def test_sql_training_session_repository_updates_status() -> None:

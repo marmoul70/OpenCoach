@@ -84,6 +84,48 @@ sudo ./scripts/bootstrap/install.sh --dev
 
 Le mode `--dev` installe également les dépendances de développement.
 
+### Installation optionnelle de l'IA locale
+
+L'installation du moteur IA local est facultative et ne fait pas partie des prérequis
+du backend ou de la planification classique.
+
+Pour installer OpenCoach avec Ollama et le modèle local configuré :
+
+```bash
+sudo ./scripts/bootstrap/install.sh --with-ai
+```
+
+Pour combiner les outils de développement et l'IA :
+
+```bash
+sudo ./scripts/bootstrap/install.sh --dev --with-ai
+```
+
+Sans `--with-ai`, le bootstrap n'installe ni Ollama ni modèle de langage.
+Le service Ollama est indépendant de `opencoach-backend.service` : aucune
+directive systemd `Requires=` ou `After=ollama.service` n'est ajoutée au backend.
+
+Le bootstrap IA :
+- réutilise Ollama s'il est déjà installé ;
+- sinon télécharge et exécute l'installateur officiel Ollama ;
+- active le service Ollama local ;
+- vérifie son API sur `127.0.0.1:11434` ;
+- installe le modèle défini par `OPENCOACH_AI_MODEL` s'il manque ;
+- conserve `OPENCOACH_AI_ENABLED=false` par défaut.
+
+L'IA reste donc désactivée dans OpenCoach jusqu'à l'intégration et la validation
+du moteur applicatif. Si Ollama est indisponible, les tâches classiques Python
+et les timers systemd continuent de fonctionner.
+
+### Dépendance Python
+
+OpenCoach possède déjà `httpx` dans ses dépendances applicatives verrouillées.
+Le futur adaptateur local utilisera cette bibliothèque pour appeler l'API HTTP
+locale d'Ollama avec des délais d'attente et une gestion d'erreurs explicites.
+Aucun SDK Python Ollama supplémentaire n'est nécessaire à ce stade : cela évite
+une dépendance redondante et garde le client IA découplé du moteur de planification.
+
+
 ### Mise à niveau
 
 ```bash

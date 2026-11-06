@@ -614,3 +614,37 @@ def test_maps_distance_only_main_block_without_requiring_duration() -> None:
 
     assert payload.course["sections"][0]["targetType"] == 1
     assert payload.course["sections"][0]["targetValue"] == 12000
+
+
+def test_uses_compatible_session_target_when_main_block_only_has_rpe() -> None:
+    prescription = heart_rate_prescription(
+        {
+            "type": "continuous",
+            "continuous_minutes": 30,
+        },
+        blocks=[
+            {
+                "name": "Bloc principal",
+                "phase": "main",
+                "duration_minutes": 30,
+                "intensity": {
+                    "targets": [
+                        {
+                            "reference": "rpe",
+                            "minimum": 7,
+                            "maximum": 8,
+                            "unit": "/10",
+                        }
+                    ],
+                    "guidance": [],
+                },
+            }
+        ],
+    )
+    session = make_session(prescription=prescription)
+
+    payload = map_training_session_to_coros(session)
+
+    assert payload.course["sections"][0]["intensityType"] == 1
+    assert payload.course["sections"][0]["intensityValueStart"] == 140
+    assert payload.course["sections"][0]["intensityValueEnd"] == 155

@@ -28,6 +28,7 @@ class FakeRepository:
     def __init__(self, session):
         self.session = session
         self.saved = []
+        self.on_claim = None
 
     def get_session(self, profile_id, session_id):
         return self.session if self.session.id == session_id else None
@@ -59,6 +60,8 @@ class FakeRepository:
         self.session.coros_sync_started_at = started_at.replace(tzinfo=None)
         self.session.coros_payload_hash = payload_hash
         self.session.coros_sync_error = None
+        if self.on_claim is not None:
+            self.on_claim()
         return True
 
 
@@ -416,6 +419,28 @@ def test_refuses_to_update_a_coros_workout_that_is_not_editable(monkeypatch):
     ]
     assert repository.session.coros_workout_id == "completed-workout-id"
 
+
+
+
+def test_session_changed_between_mapping_and_claim_is_not_sent_to_coros(monkeypatch):
+    session = make_session()
+    client, repository, _ = make_client(monkeypatch, session)
+    repository.on_claim = lambda: setattr(
+        repository.session,
+        "title",
+        "Footing modifié avant envoi",
+    )
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 409
+    assert "modifiée pendant la préparation" in response.json()["detail"]
+    assert repository.session.coros_sync_status == "failed"
+    assert repository.session.title == "Footing modifié avant envoi"
+    assert FakeCorosClient.calls == []
 
 
 def test_definitive_update_error_keeps_existing_coros_identity_and_old_hash(monkeypatch):

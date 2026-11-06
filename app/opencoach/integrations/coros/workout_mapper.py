@@ -1090,6 +1090,17 @@ def _build_course_description(
                         f"{_format_pace(pace.get('slowest'))}/km."
                     )
                     break
+    if isinstance(intervals, list):
+        for index, interval in enumerate(intervals, start=1):
+            if not isinstance(interval, dict):
+                continue
+            work_elevation = interval.get("work_elevation_gain_meters")
+            recovery_elevation = interval.get("recovery_elevation_gain_meters")
+            if work_elevation is not None:
+                parts.append(f"Série {index} : {work_elevation} m D+.")
+            if recovery_elevation is not None:
+                parts.append(f"Récupération série {index} : {recovery_elevation} m D+.")
+
     description = " ".join(part for part in parts if part)
     if len(description) > 1000:
         raise CorosWorkoutMappingError(

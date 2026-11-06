@@ -603,20 +603,27 @@ def _build_interval_groups(
                 "Une récupération en dénivelé n'est disponible que pour le trail."
             )
 
-        # Une phase recovery explicitement prescrite est la source
-        # prioritaire. La cible globale reste un fallback de compatibilité.
-        recovery_intensity = (
-            recovery_block.get("intensity")
-            if isinstance(recovery_block, dict)
-            else None
+        # Une phase recovery explicitement prescrite est prioritaire.
+        # Si elle n'offre qu'une cible non pilotable (ex. RPE), on conserve
+        # le fallback global historique lorsqu'il est compatible COROS.
+        fallback_recovery_intensity = prescription.get("recovery_intensity")
+        fallback_recovery = (
+            {"intensity": fallback_recovery_intensity}
+            if isinstance(fallback_recovery_intensity, dict)
+            else {}
         )
-        if not isinstance(recovery_intensity, dict):
-            recovery_intensity = prescription.get("recovery_intensity")
-        if isinstance(recovery_intensity, dict):
-            recovery_section.update(_intensity_fields(
-                {"intensity": recovery_intensity},
-                sport_type,
-            ))
+        recovery_intensity_source = _select_intensity_source(
+            (
+                recovery_block.get("intensity")
+                if isinstance(recovery_block, dict)
+                else None
+            ),
+            fallback_recovery,
+            sport_type,
+        )
+        recovery_section.update(
+            _intensity_fields(recovery_intensity_source, sport_type)
+        )
 
         # Chaque groupe COROS est limité à 20 répétitions. Le découpage
         # conserve exactement les répétitions et les récupérations inter-reps,

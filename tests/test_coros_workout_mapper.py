@@ -215,7 +215,7 @@ def test_rejects_rpe_only_prescription_instead_of_inventing_watch_target() -> No
         map_training_session_to_coros(session)
 
 
-def test_rejects_time_target_for_trail() -> None:
+def test_uses_run_workout_for_timed_trail_session() -> None:
     session = make_session(
         sport_type="TrailRun",
         prescription=heart_rate_prescription(
@@ -229,11 +229,14 @@ def test_rejects_time_target_for_trail() -> None:
         )
     )
 
-    with pytest.raises(CorosWorkoutMappingError, match="cible en distance"):
-        map_training_session_to_coros(session)
+    payload = map_training_session_to_coros(session)
+
+    assert payload.course["sportType"] == 1
+    assert payload.course["sections"][0]["targetType"] == 2
+    assert "mode Trail Run" in payload.course["courseDescription"]
 
 
-def test_rejects_trail_intervals_with_time_based_recovery() -> None:
+def test_uses_run_workout_for_trail_intervals_with_timed_recovery() -> None:
     session = make_session(
         sport_type="TrailRun",
         prescription=heart_rate_prescription(

@@ -154,12 +154,21 @@ def to_response(
             session.intervals_sync_error
         ),
         coros_sync_status=session.coros_sync_status,
-        coros_sync_started_at=session.coros_sync_started_at,
-        coros_last_synced_at=session.coros_last_synced_at,
+        coros_sync_started_at=_as_utc(session.coros_sync_started_at),
+        coros_last_synced_at=_as_utc(session.coros_last_synced_at),
         coros_sync_error=session.coros_sync_error,
     )
 
 
+
+
+def _as_utc(value: datetime | None) -> datetime | None:
+    """Expose les dates COROS en UTC explicite, même si SQLite les rend naïves."""
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def _debrief_response(

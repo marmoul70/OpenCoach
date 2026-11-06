@@ -312,6 +312,8 @@ def _build_continuous_section(
     main_block: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     distance = work_structure.get("work_distance_meters")
+    if distance is None and isinstance(main_block, dict):
+        distance = main_block.get("target_distance_meters")
     if distance is None and session.distance_km is not None:
         distance = _positive_integer(
             session.distance_km * 1000,
@@ -324,15 +326,22 @@ def _build_continuous_section(
             "targetType": 1,
             "targetValue": _positive_integer(distance, "distance"),
         }
-    elif sport_type == 5 and session.elevation_gain_m is not None:
-            section = {
-                "sectionType": 2,
-                "targetType": 3,
-                "targetValue": _positive_integer(
-                    session.elevation_gain_m,
-                    "dénivelé",
-                ),
-            }
+    elif sport_type == 5 and (
+        (isinstance(main_block, dict) and main_block.get("target_elevation_gain_meters") is not None)
+        or session.elevation_gain_m is not None
+    ):
+        elevation = (
+            main_block.get("target_elevation_gain_meters")
+            if isinstance(main_block, dict)
+            else None
+        )
+        if elevation is None:
+            elevation = session.elevation_gain_m
+        section = {
+            "sectionType": 2,
+            "targetType": 3,
+            "targetValue": _positive_integer(elevation, "dénivelé"),
+        }
     elif sport_type == 5:
         raise CorosWorkoutMappingError(
             "COROS exige une cible en distance ou en dénivelé pour le trail. "

@@ -31,6 +31,7 @@ interface TrainingSessionApiResponse {
 
   prescription: Record<string, unknown> | null
   coros_sync_status: TrainingSession['corosSyncStatus'] | null
+  coros_sync_started_at: string | null
   coros_last_synced_at: string | null
   coros_sync_error: string | null
 }
@@ -90,6 +91,9 @@ function mapTrainingSession(
 
     corosSyncStatus:
       data.coros_sync_status ?? undefined,
+
+    corosSyncStartedAt:
+      data.coros_sync_started_at ?? undefined,
 
     corosLastSyncedAt:
       data.coros_last_synced_at ?? undefined,

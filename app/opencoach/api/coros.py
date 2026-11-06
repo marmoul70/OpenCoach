@@ -695,7 +695,7 @@ def _coros_push_is_stale(
 ) -> bool:
     """Autorise une réconciliation manuelle seulement après un délai de sécurité."""
     if started_at is None:
-        return False
+        return True
     current_time = now or datetime.now(timezone.utc)
     normalized_start = (
         started_at.replace(tzinfo=timezone.utc)

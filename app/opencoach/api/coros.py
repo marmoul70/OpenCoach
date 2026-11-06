@@ -944,6 +944,24 @@ def _extract_coros_scheduled_details(
                 except ValueError:
                     pass
 
+    def find_course(value: Any) -> dict[str, Any] | None:
+        if isinstance(value, dict):
+            course = value.get("course")
+            if isinstance(course, dict):
+                return course
+            if "courseName" in value and isinstance(value.get("sections"), list):
+                return value
+            for child in value.values():
+                found = find_course(child)
+                if found is not None:
+                    return found
+        elif isinstance(value, list):
+            for child in value:
+                found = find_course(child)
+                if found is not None:
+                    return found
+        return None
+
     def visit(value: Any) -> dict[str, Any] | None:
         if isinstance(value, dict):
             editable = value.get("editable")
@@ -960,7 +978,7 @@ def _extract_coros_scheduled_details(
                         if isinstance(reason, list)
                         else str(reason) if reason else None
                     ),
-                    "course": value.get("course"),
+                    "course": find_course(value),
                 }
             for child in value.values():
                 found = visit(child)

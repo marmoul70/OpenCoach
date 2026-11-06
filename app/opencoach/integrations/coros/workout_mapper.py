@@ -384,10 +384,10 @@ def _build_continuous_section(
         if isinstance(main_block, dict)
         else None
     )
-    intensity_source = (
-        {"intensity": block_intensity}
-        if isinstance(block_intensity, dict)
-        else prescription
+    intensity_source = _select_intensity_source(
+        block_intensity,
+        prescription,
+        sport_type,
     )
     section.update(_intensity_fields(intensity_source, sport_type))
     return section
@@ -594,6 +594,27 @@ def _build_work_section(
     else:
         section.update(_intensity_fields(prescription, sport_type))
     return section
+
+
+def _select_intensity_source(
+    block_intensity: Any,
+    fallback_prescription: dict[str, Any],
+    sport_type: int,
+) -> dict[str, Any]:
+    """Privilégie la cible du bloc, avec repli sur la prescription principale.
+
+    Un bloc peut conserver un RPE historique alors que la prescription globale
+    a depuis été enrichie avec une cible COROS-compatible (FC ou allure VMA).
+    Le repli ne s'applique qu'au travail principal, jamais aux phases faciles.
+    """
+    if isinstance(block_intensity, dict):
+        candidate = {"intensity": block_intensity}
+        try:
+            _intensity_fields(candidate, sport_type)
+        except CorosWorkoutMappingError:
+            return fallback_prescription
+        return candidate
+    return fallback_prescription
 
 
 def _intensity_fields(

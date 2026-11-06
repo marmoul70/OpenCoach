@@ -459,3 +459,30 @@ def test_splits_more_than_twenty_repetitions_without_losing_recovery_count() -> 
         if section.get("sectionType") == 3
     )
     assert grouped_recoveries + between_group_recoveries == 24
+
+
+def test_maps_explicit_trail_elevation_target_from_main_phase() -> None:
+    session = make_session(
+        sport_type="TrailRun",
+        prescription=heart_rate_prescription(
+            {
+                "type": "continuous",
+                "continuous_minutes": 90,
+            },
+            blocks=[
+                {
+                    "name": "Travail en montée",
+                    "phase": "main",
+                    "duration_minutes": 90,
+                    "target_elevation_gain_meters": 700,
+                    "description": "Montées régulières à effort maîtrisé.",
+                }
+            ],
+        )
+    )
+
+    payload = map_training_session_to_coros(session)
+
+    assert payload.course["sections"][0]["targetType"] == 3
+    assert payload.course["sections"][0]["targetValue"] == 700
+    assert "700 m D+" in payload.course["courseDescription"]

@@ -76,14 +76,14 @@ def test_extracts_editability_and_course_from_scheduled_workout_details() -> Non
     details = _extract_coros_scheduled_details(
         {
             "structuredContent": {
+                "metadata": {"editable": True},
                 "workoutDetails": {
-                    "editable": True,
                     "course": {
                         "courseName": "Footing",
                         "sportType": 1,
                         "sections": [{"sectionType": 2, "targetType": 2, "targetValue": 1800}],
                     },
-                }
+                },
             }
         }
     )

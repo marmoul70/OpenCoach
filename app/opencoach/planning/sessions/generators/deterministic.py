@@ -636,6 +636,10 @@ def _build_coach_notes(
             request.slot.notes
         )
 
+    notes.extend(
+        _build_secondary_stimulus_guidance(request)
+    )
+
     return tuple(
         notes
     )
@@ -654,4 +658,52 @@ def _round_to_five(
                 value / 5
             )
         ),
+    )
+
+
+def _build_secondary_stimulus_guidance(
+    request: SessionCoachRequest,
+) -> tuple[str, ...]:
+    """Rend explicites les stimuli secondaires regroupés dans l'intention.
+
+    Ces consignes restent qualitatives lorsque le parcours ou le matériel
+    ne fournit pas de cible chiffrée fiable.
+    """
+    guidance_by_stimulus = {
+        TrainingStimulus.UPHILL_STRENGTH: (
+            "Stimulus complémentaire — montée : sur les côtes naturelles "
+            "du parcours, privilégier une foulée dynamique, des appuis "
+            "efficaces et une intensité maîtrisée."
+        ),
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE: (
+            "Stimulus complémentaire — force-endurance en côte : intégrer "
+            "les montées disponibles en conservant une posture stable et "
+            "une poussée régulière, sans ajouter de cible de D+ non prescrite."
+        ),
+        TrainingStimulus.DOWNHILL_SPECIFICITY: (
+            "Stimulus complémentaire — descente : travailler le contrôle "
+            "des appuis, la cadence et le relâchement sur des portions "
+            "adaptées et sûres."
+        ),
+        TrainingStimulus.RACE_SPECIFIC: (
+            "Stimulus complémentaire — spécificité course : choisir un "
+            "terrain cohérent avec les contraintes connues de l'objectif. "
+            "Aucune distance ni cible de D+ supplémentaire n'est supposée."
+        ),
+        TrainingStimulus.STRENGTH_CORE: (
+            "Stimulus complémentaire — tronc : intégrer le travail de "
+            "gainage et de stabilité prévu dans la séance, sans dépasser "
+            "le temps alloué."
+        ),
+        TrainingStimulus.STRENGTH_LOWER_BODY: (
+            "Stimulus complémentaire — membres inférieurs : intégrer le "
+            "travail de force prévu dans la séance en conservant une "
+            "exécution contrôlée."
+        ),
+    }
+
+    return tuple(
+        guidance_by_stimulus[stimulus]
+        for stimulus in request.slot.intent.secondary_stimuli
+        if stimulus in guidance_by_stimulus
     )

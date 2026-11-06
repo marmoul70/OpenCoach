@@ -784,7 +784,10 @@ def push_training_session_to_coros(
             "Corrige ou actualise la séance avant de réessayer."
         )
         repository.save_session(athlete_profile_id, training_session)
-        raise HTTPException(status_code=409, detail=training_session.coros_sync_error) from exc
+        raise HTTPException(
+            status_code=409,
+            detail=training_session.coros_sync_error,
+        ) from exc
 
     if claimed_payload.payload_hash != workout_payload.payload_hash:
         training_session.coros_sync_status = "failed"
@@ -819,7 +822,10 @@ def push_training_session_to_coros(
             session_id,
         )
         if training_session is None:
-            raise HTTPException(status_code=404, detail="Séance introuvable après l'appel COROS.")
+            raise HTTPException(
+                status_code=404,
+                detail="Séance introuvable après l'appel COROS.",
+            )
         training_session.coros_sync_status = "synced" if is_update else "failed"
         training_session.coros_sync_started_at = None
         if is_update:

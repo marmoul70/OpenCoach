@@ -199,11 +199,15 @@ def get_intervals_connection(
             athlete_id=None,
             api_key_configured=False,
             web_cookie_configured=False,
+            web_cookie_hint=None,
             last_synced_at=None,
         )
 
     try:
         web_cookie_configured = service.has_intervals_web_cookie(
+            athlete_profile_id
+        )
+        web_cookie_hint = service.get_intervals_web_cookie_hint(
             athlete_profile_id
         )
     except (SecretCipherError, IntegrationConnectionRepositoryError) as exc:
@@ -218,6 +222,7 @@ def get_intervals_connection(
         athlete_id=connection.athlete_id,
         api_key_configured=connection.secret_configured,
         web_cookie_configured=web_cookie_configured,
+        web_cookie_hint=web_cookie_hint,
         last_synced_at=connection.last_synced_at,
     )
 

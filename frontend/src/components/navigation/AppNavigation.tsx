@@ -8,6 +8,7 @@ import {
 
 import {
   Activity,
+  Bell,
   Bot,
   CalendarDays,
   ChevronRight,
@@ -23,6 +24,7 @@ import {
   Settings,
   Sun,
   UserRound,
+  X,
 } from 'lucide-react'
 
 import {
@@ -379,145 +381,167 @@ export function AppNavigation({
         </nav>
 
 
-        {/* Desktop account and notification dock */}
+        {/* Unified account and notifications panel */}
         <div className="
-          border-t border-[var(--oc-border)]
-          px-3 py-2.5
-          dark:border-[var(--oc-border)]
+          relative border-t border-[var(--oc-border)]
+          px-3 py-2.5 dark:border-[var(--oc-border)]
         ">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setDesktopProfileOpen((current) => !current)}
-              aria-haspopup="menu"
-              aria-expanded={desktopProfileOpen}
-              className="
-                flex min-w-0 flex-1 items-center gap-2.5
-                rounded-xl px-1.5 py-2 text-left
-                transition-colors hover:bg-[var(--oc-surface-hover)]
-                dark:hover:bg-[var(--oc-surface)]/[0.06]
-              "
-            >
-              <Avatar avatar={avatar} initials={initials} size="small" />
-
-              <span className="min-w-0 flex-1">
-                <span className="
-                  block truncate text-[11.5px] font-semibold
-                  leading-4 text-[var(--oc-text)]
-                ">
-                  {formatName(firstName, lastName)}
-                </span>
-                <span className="
-                  mt-0.5 block truncate text-[9px] leading-3
-                  text-[var(--oc-muted)]
-                ">
-                  Profil athlète
-                </span>
+          <button
+            type="button"
+            onClick={() => setDesktopProfileOpen((current) => !current)}
+            aria-haspopup="dialog"
+            aria-expanded={desktopProfileOpen}
+            className="
+              flex w-full min-w-0 items-center gap-2.5
+              rounded-xl px-1.5 py-2 text-left
+              transition-colors hover:bg-[var(--oc-surface-hover)]
+              dark:hover:bg-[var(--oc-surface)]/[0.06]
+            "
+          >
+            <Avatar avatar={avatar} initials={initials} size="small" />
+            <span className="min-w-0 flex-1">
+              <span className="
+                block truncate text-[11.5px] font-semibold
+                leading-4 text-[var(--oc-text)]
+              ">
+                {formatName(firstName, lastName)}
               </span>
+              <span className="
+                mt-0.5 block truncate text-[9px] leading-3
+                text-[var(--oc-muted)]
+              ">
+                Profil athlète
+              </span>
+            </span>
+            <ChevronRight className={[
+              'h-3.5 w-3.5 shrink-0 text-[var(--oc-muted-soft)] transition-transform',
+              desktopProfileOpen ? '-rotate-90' : '',
+            ].join(' ')} />
+          </button>
 
-              <ChevronRight className={[
-                'h-3.5 w-3.5 shrink-0 text-[var(--oc-muted-soft)] transition-transform',
-                desktopProfileOpen ? '-rotate-90' : '',
-              ].join(' ')} />
-            </button>
-
-            <NotificationBell
-              placement="sidebar"
-              onViewAll={() => navigate('notifications')}
-            />
-          </div>
-
-          {/* Account menu */}
           {desktopProfileOpen && (
-            <div
-              role="menu"
+            <section
+              role="dialog"
+              aria-label="Compte et notifications"
               className="
-                absolute bottom-[76px] left-[calc(100%+8px)] z-[90]
-                w-[210px] overflow-hidden rounded-xl
-                border border-[var(--oc-border)]
-                bg-[var(--oc-surface)] p-1
-                shadow-[0_10px_28px_rgba(15,23,42,0.13)]
-                dark:shadow-[0_10px_30px_rgba(0,0,0,0.28)]
+                absolute bottom-[calc(100%+10px)] left-[calc(100%+10px)]
+                z-[100] flex max-h-[calc(100vh-32px)] w-[360px]
+                max-w-[calc(100vw-250px)] flex-col overflow-hidden
+                rounded-2xl border border-[var(--oc-border)]
+                bg-[var(--oc-surface)]
+                shadow-[0_18px_50px_rgba(15,23,42,0.18)]
+                dark:shadow-[0_18px_50px_rgba(0,0,0,0.42)]
               "
             >
-              <DropdownLabel>Compte</DropdownLabel>
-
-              <DropdownItem
-                icon={<UserRound className="h-3 w-3" />}
-                label="Profil personnel"
-                active={activePage === 'profile-personal'}
-                onClick={() => navigate('profile-personal')}
-              />
-
-              <DropdownItem
-                icon={<CircleUserRound className="h-3 w-3" />}
-                label="Profil sportif"
-                active={activePage === 'profile-sport'}
-                onClick={() => navigate('profile-sport')}
-              />
-
-              <DropdownItem
-                icon={<Settings className="h-3 w-3" />}
-                label="Réglages"
-                active={activePage === 'settings'}
-                onClick={() => navigate('settings')}
-              />
-
-              <DropdownSeparator />
-              <DropdownLabel>Apparence</DropdownLabel>
-
-              <div className="grid grid-cols-3 gap-1 px-0.5 pb-1">
-                <DropdownThemeButton
-                  active={theme === 'light'}
-                  icon={<Sun className="h-3 w-3" />}
-                  label="Clair"
-                  onClick={() => onThemeChange('light')}
-                />
-                <DropdownThemeButton
-                  active={theme === 'dark'}
-                  icon={<Moon className="h-3 w-3" />}
-                  label="Sombre"
-                  onClick={() => onThemeChange('dark')}
-                />
-                <DropdownThemeButton
-                  active={theme === 'system'}
-                  icon={<Monitor className="h-3 w-3" />}
-                  label="Auto"
-                  onClick={() => onThemeChange('system')}
-                />
+              <div className="
+                flex items-center gap-3 border-b border-[var(--oc-border)]
+                px-4 py-3
+              ">
+                <Avatar avatar={avatar} initials={initials} size="small" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[12px] font-semibold text-[var(--oc-text)]">
+                    {formatName(firstName, lastName)}
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-[var(--oc-muted)]">
+                    Espace personnel
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDesktopProfileOpen(false)}
+                  aria-label="Fermer le panneau"
+                  className="
+                    flex h-8 w-8 items-center justify-center rounded-lg
+                    text-[var(--oc-muted)] transition-colors
+                    hover:bg-[var(--oc-surface-hover)]
+                  "
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
-              <DropdownSeparator />
-              <DropdownItem
-                icon={<LogOut className="h-3 w-3" />}
-                label="Se déconnecter"
-                danger
-                onClick={() => {
-                  setDesktopProfileOpen(false)
-                  onLogout()
-                }}
-              />
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="px-3 pt-2">
+                  <NotificationBell
+                    embedded
+                    onViewAll={() => navigate('notifications')}
+                  />
+                </div>
+
+                <div className="mx-4 my-2 h-px bg-[var(--oc-border)]" />
+
+                <div className="px-2 pb-1">
+                  <DropdownLabel>Compte</DropdownLabel>
+                  <DropdownItem
+                    icon={<UserRound className="h-3.5 w-3.5" />}
+                    label="Profil personnel"
+                    active={activePage === 'profile-personal'}
+                    onClick={() => navigate('profile-personal')}
+                  />
+                  <DropdownItem
+                    icon={<CircleUserRound className="h-3.5 w-3.5" />}
+                    label="Profil sportif"
+                    active={activePage === 'profile-sport'}
+                    onClick={() => navigate('profile-sport')}
+                  />
+                  <DropdownItem
+                    icon={<Settings className="h-3.5 w-3.5" />}
+                    label="Réglages"
+                    active={activePage === 'settings'}
+                    onClick={() => navigate('settings')}
+                  />
+                </div>
+
+                <div className="mx-4 my-2 h-px bg-[var(--oc-border)]" />
+
+                <div className="px-3 pb-2">
+                  <DropdownLabel>Apparence</DropdownLabel>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <DropdownThemeButton
+                      active={theme === 'light'}
+                      icon={<Sun className="h-3.5 w-3.5" />}
+                      label="Clair"
+                      onClick={() => onThemeChange('light')}
+                    />
+                    <DropdownThemeButton
+                      active={theme === 'dark'}
+                      icon={<Moon className="h-3.5 w-3.5" />}
+                      label="Sombre"
+                      onClick={() => onThemeChange('dark')}
+                    />
+                    <DropdownThemeButton
+                      active={theme === 'system'}
+                      icon={<Monitor className="h-3.5 w-3.5" />}
+                      label="Auto"
+                      onClick={() => onThemeChange('system')}
+                    />
+                  </div>
+                </div>
+
+                <div className="mx-4 my-1 h-px bg-[var(--oc-border)]" />
+
+                <div className="px-2 pb-2">
+                  <DropdownItem
+                    icon={<LogOut className="h-3.5 w-3.5" />}
+                    label="Se déconnecter"
+                    danger
+                    onClick={() => {
+                      setDesktopProfileOpen(false)
+                      onLogout()
+                    }}
+                  />
+                </div>
+              </div>
 
               <div className="
-                mt-1 rounded-lg bg-[var(--oc-surface-muted)]
-                px-2 py-1.5 dark:bg-[var(--oc-surface)]/[0.035]
+                flex items-center justify-between border-t
+                border-[var(--oc-border)] bg-[var(--oc-surface-muted)]/55
+                px-4 py-2 text-[9px] text-[var(--oc-muted)]
               ">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[8px] text-[var(--oc-muted)]">Version</span>
-                  <span className="text-[7.5px] font-semibold text-[var(--oc-text-secondary)]">
-                    {version ? `v${version}` : 'dev'}
-                  </span>
-                </div>
-                {commit && (
-                  <p className="
-                    mt-0.5 truncate text-right font-mono text-[7.5px]
-                    text-[var(--oc-muted-soft)]
-                  ">
-                    {commit}
-                  </p>
-                )}
+                <span>OpenCoach {version ? `v${version}` : 'développement'}</span>
+                {commit && <span className="font-mono">{commit}</span>}
               </div>
-            </div>
+            </section>
           )}
         </div>
 

@@ -58,11 +58,11 @@ Après confirmation du serveur COROS, OpenCoach indique que la séance est ajout
 | Retour au calme | Section 4 |
 | Durée | Cible en secondes |
 | Distance | Cible en mètres |
-| Fréquence cardiaque en bpm | Intensité type 1, plage absolue |
+| Fréquence cardiaque absolue en bpm | Intensité type 1, plage absolue |
 | VMA avec allure dérivée | Intensité type 2, allure absolue en secondes/km |
 | Répétitions | Groupe d'intervalles COROS |
 
-La cible d'allure calculée pour une répétition métrique est prioritaire sur la cible générale lorsque cette donnée est explicitement présente dans la prescription.
+La cible d'allure calculée pour une répétition métrique est prioritaire sur la cible générale lorsque cette donnée est explicitement présente dans la prescription. Une cible en réserve de fréquence cardiaque (HRR) n'est jamais assimilée à des bpm : elle est refusée si aucune cible absolue compatible n'est disponible.
 
 ## Limites explicites
 
@@ -73,6 +73,7 @@ Le convertisseur refuse une séance lorsqu'une conversion fidèle n'est pas poss
 - Une séance uniquement prescrite en RPE ne peut pas devenir une cible automatique COROS : le RPE n'est pas converti arbitrairement en fréquence cardiaque ou en allure.
 - COROS impose des cibles en distance ou en dénivelé pour le trail, pas des cibles en temps. Les phases trail chronométrées et les récupérations trail chronométrées sont donc refusées.
 - Les structures techniques, circuits et renforcement ne sont pas aplaties en une séance continue.
+- COROS limite la création aux dates comprises entre aujourd'hui et les 90 prochains jours, dans le fuseau du compte COROS ; la validation finale de cette fenêtre est effectuée par le service COROS.
 - La mise à jour et la suppression d'une séance déjà envoyée ne sont pas incluses dans cette première version. Le déplacement d'une séance envoyée ou dont le résultat est incertain est bloqué dans OpenCoach ; il doit être géré dans l'application COROS. Une séance envoyée puis modifiée dans OpenCoach ne peut pas être renvoyée comme une nouvelle séance sans créer un risque de doublon.
 
 ## Protection contre les doublons
@@ -81,6 +82,7 @@ Les colonnes suivantes sont ajoutées à `training_sessions` :
 
 - `coros_workout_id` : identifiant de la copie planifiée COROS (`idInPlan`), conservé en interne ;
 - `coros_sync_status` : `pending`, `synced`, `failed` ou `unknown` ;
+- `coros_sync_started_at` : date UTC de début de la requête en cours ;
 - `coros_last_synced_at` : date de confirmation ;
 - `coros_payload_hash` : empreinte du contenu envoyé ;
 - `coros_sync_error` : dernier message d'erreur exploitable.

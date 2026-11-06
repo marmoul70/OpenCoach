@@ -37,7 +37,7 @@ Le bouton **Envoyer vers COROS** est proposé sur les séances planifiées élig
 
 Pour une création, OpenCoach interroge si disponible le calendrier COROS sur la date exacte avec `queryTrainingSchedule`. Les séances déjà présentes sont remontées dans le message de confirmation final ; elles n'empêchent pas l'ajout d'une séance supplémentaire.
 
-Pour une mise à jour, OpenCoach appelle d'abord `queryScheduledWorkoutDetails` avec la date et l'identifiant COROS mémorisé. Le service exige `editable=true`, conserve le cours retourné comme base, remplace les champs pilotés par OpenCoach, puis appelle `updateScheduledWorkout` avec le même identifiant.
+Pour une mise à jour, OpenCoach appelle d'abord `queryScheduledWorkoutDetails` avec la dernière date connue de la copie COROS (`coros_scheduled_date`) et l'identifiant COROS mémorisé. Le service exige `editable=true`, conserve le cours retourné comme base, remplace les champs pilotés par OpenCoach, puis appelle `updateScheduledWorkout` avec le même identifiant et la date cible OpenCoach. Après confirmation, la date COROS mémorisée est actualisée. Si le résultat d'une précédente mise à jour est incertain et que la séance n'est plus retrouvée à l'ancienne date, OpenCoach tente aussi la date cible.
 
 - la date de la séance au format `yyyyMMdd` ;
 - le sport COROS ;
@@ -112,13 +112,14 @@ Le convertisseur refuse une séance lorsqu'une conversion fidèle n'est pas poss
 - Une cible D+ et une cible distance ne peuvent pas être simultanément des cibles automatiques d'une même section COROS. La cible structurée prioritaire est transmise et l'autre donnée est conservée dans la description.
 - Le profil de demande de course sert à qualifier les besoins relatifs (montées, descentes, endurance), mais ne fournit pas une répartition de terrain par séance. Aucune cible D+ n'est donc calculée automatiquement à partir du seul D+ de la course ; elle doit provenir d'une prescription explicite ou d'une future source de parcours/terrain fiable.
 - La mise à jour d'une séance autonome déjà envoyée utilise obligatoirement `queryScheduledWorkoutDetails`, vérifie `editable=true`, puis appelle `updateScheduledWorkout` avec le même `idInPlan` et le cours complet. Elle ne crée jamais une seconde séance. Si la mise à jour a un résultat réseau incertain, l'identifiant existant est conservé et la reprise reste une mise à jour, après confirmation.
-- Le déplacement et la suppression d'une séance envoyée ne sont pas pris en charge par MCP ; ils doivent être gérés dans l'application COROS.
+- Le déplacement d'une séance existante est traité comme une mise à jour du même `idInPlan` : OpenCoach conserve séparément la date de dernière présence confirmée dans COROS et la date cible du calendrier OpenCoach. La suppression distante n'est pas incluse dans ce flux.
 
 ## Protection contre les doublons
 
 Les colonnes suivantes sont ajoutées à `training_sessions` :
 
 - `coros_workout_id` : identifiant de la copie planifiée COROS (`idInPlan`), conservé en interne ;
+- `coros_scheduled_date` : dernière date confirmée de cette copie dans le calendrier COROS, distincte de la date de séance OpenCoach ;
 - `coros_sync_status` : `pending`, `synced`, `failed` ou `unknown` ;
 - `coros_sync_started_at` : date UTC de début de la requête en cours ;
 - `coros_last_synced_at` : date de confirmation ;
@@ -159,6 +160,7 @@ Les tests couvrent :
 - l'extraction de l'identifiant de la séance planifiée et le filtrage des autres séances du jour ;
 - la distinction entre refus explicite de l'outil COROS et résultat réseau incertain ;
 - la lecture de l'éditabilité d'une séance existante, la mise à jour sans création d'un doublon et la réservation SQL atomique ;
+- le déplacement d'une séance déjà envoyée, la recherche par ancienne date et la réconciliation d'une mise à jour incertaine à la nouvelle date ;
 - l'unicité de la tête Alembic après migration.
 
 Aucun envoi réel à COROS n'est exécuté par les tests automatisés.

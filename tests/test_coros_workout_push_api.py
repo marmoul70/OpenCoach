@@ -403,3 +403,47 @@ def test_refuses_to_update_a_coros_workout_that_is_not_editable(monkeypatch):
         "queryScheduledWorkoutDetails"
     ]
     assert repository.session.coros_workout_id == "completed-workout-id"
+
+
+def test_uncertain_update_retry_keeps_existing_coros_identity(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "unknown"
+    session.coros_workout_id = "existing-workout-id"
+    session.coros_payload_hash = "uncertain-new-payload"
+    client, repository, _ = make_client(monkeypatch, session)
+
+    blocked = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+    assert blocked.status_code == 409
+    assert FakeCorosClient.calls == []
+
+    retried = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={"confirmed_no_duplicate": True},
+    )
+
+    assert retried.status_code == 200
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryScheduledWorkoutDetails",
+        "updateScheduledWorkout",
+    ]
+    assert repository.session.coros_workout_id == "updated-workout-id"
+
+
+def test_synced_session_without_coros_id_never_falls_back_to_creation(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "synced"
+    session.coros_payload_hash = "old-payload-hash"
+    session.coros_workout_id = None
+    client, _, _ = make_client(monkeypatch, session)
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 409
+    assert "identifiant COROS est absent" in response.json()["detail"]
+    assert FakeCorosClient.calls == []

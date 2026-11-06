@@ -202,25 +202,35 @@ class WeeklyDebriefNotificationService:
                 error=f"{type(exc).__name__}: {exc}",
             )
 
-        if report.failed:
-            return WeeklyDebriefNotificationResult(
-                athlete_profile_id=athlete_profile_id,
-                status=WeeklyDebriefNotificationStatus.FAILED,
-                sync_incomplete=sync_incomplete,
-                error=(
-                    "push_delivery_failed:"
-                    f"{report.failed}"
-                ),
-            )
+        # Le centre OpenCoach est désormais la destination durable.
+        # Une livraison Push absente ou en échec ne doit pas provoquer
+        # la recréation du même événement à chaque exécution du workflow.
+        persisted = getattr(
+            report,
+            "persisted",
+            report.sent > 0,
+        )
 
-        if report.sent == 0:
-            return WeeklyDebriefNotificationResult(
-                athlete_profile_id=athlete_profile_id,
-                status=(
-                    WeeklyDebriefNotificationStatus.NO_RECIPIENT
-                ),
-                sync_incomplete=sync_incomplete,
-            )
+        if not persisted:
+            if report.failed:
+                return WeeklyDebriefNotificationResult(
+                    athlete_profile_id=athlete_profile_id,
+                    status=WeeklyDebriefNotificationStatus.FAILED,
+                    sync_incomplete=sync_incomplete,
+                    error=(
+                        "push_delivery_failed:"
+                        f"{report.failed}"
+                    ),
+                )
+
+            if report.sent == 0:
+                return WeeklyDebriefNotificationResult(
+                    athlete_profile_id=athlete_profile_id,
+                    status=(
+                        WeeklyDebriefNotificationStatus.NO_RECIPIENT
+                    ),
+                    sync_incomplete=sync_incomplete,
+                )
 
         marked = (
             self._debrief_repository
@@ -243,4 +253,9 @@ class WeeklyDebriefNotificationService:
             athlete_profile_id=athlete_profile_id,
             status=WeeklyDebriefNotificationStatus.SENT,
             sync_incomplete=sync_incomplete,
+            error=(
+                f"push_delivery_failed:{report.failed}"
+                if report.failed
+                else None
+            ),
         )

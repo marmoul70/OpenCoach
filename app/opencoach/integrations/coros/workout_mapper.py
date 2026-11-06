@@ -92,6 +92,7 @@ def map_training_session_to_coros(
                     if main_blocks
                     else None
                 ),
+                main_block=main_blocks[0] if main_blocks else None,
             )
         )
     elif structure_type in {"repeats", "intervals"}:
@@ -100,6 +101,7 @@ def map_training_session_to_coros(
                 work_structure=work_structure,
                 prescription=prescription,
                 sport_type=sport_type,
+                main_block=main_blocks[0] if main_blocks else None,
             )
         )
     else:
@@ -306,6 +308,7 @@ def _build_continuous_section(
     warmup_seconds: int,
     cooldown_seconds: int,
     main_seconds: int | None = None,
+    main_block: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     distance = work_structure.get("work_distance_meters")
     if distance is None and session.distance_km is not None:
@@ -364,7 +367,17 @@ def _build_continuous_section(
             "targetValue": seconds,
         }
 
-    section.update(_intensity_fields(prescription, sport_type))
+    block_intensity = (
+        main_block.get("intensity")
+        if isinstance(main_block, dict)
+        else None
+    )
+    intensity_source = (
+        {"intensity": block_intensity}
+        if isinstance(block_intensity, dict)
+        else prescription
+    )
+    section.update(_intensity_fields(intensity_source, sport_type))
     return section
 
 
@@ -373,6 +386,7 @@ def _build_interval_groups(
     work_structure: dict[str, Any],
     prescription: dict[str, Any],
     sport_type: int,
+    main_block: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Convertit les séries en respectant les récupérations entre répétitions."""
     intervals = work_structure.get("intervals")
@@ -381,6 +395,16 @@ def _build_interval_groups(
             "La structure fractionnée ne contient aucun intervalle."
         )
 
+    block_intensity = (
+        main_block.get("intensity")
+        if isinstance(main_block, dict)
+        else None
+    )
+    intensity_source = (
+        {"intensity": block_intensity}
+        if isinstance(block_intensity, dict)
+        else prescription
+    )
     sections: list[dict[str, Any]] = []
     for interval in intervals:
         if not isinstance(interval, dict):
@@ -399,7 +423,7 @@ def _build_interval_groups(
 
         work_section = _build_work_section(
             interval=interval,
-            prescription=prescription,
+            prescription=intensity_source,
             sport_type=sport_type,
         )
         recovery_duration = interval.get("recovery_duration")

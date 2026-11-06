@@ -274,6 +274,30 @@ def test_recipe_default_modality_is_fallback() -> None:
     )
 
 
+
+def test_pre_race_activation_preserves_easy_time_around_short_repetitions() -> None:
+    proposal = DeterministicSessionGenerator().generate_session(
+        request=create_request(
+            primary_stimulus=TrainingStimulus.PRE_RACE_ACTIVATION,
+            importance=SessionIntentImportance.SUPPORT,
+            minimum=45,
+            maximum=45,
+            available=45,
+            required_modalities=(),
+            preferred_modalities=(TrainingModality.RUNNING,),
+        ),
+    )
+
+    phases = [block.phase for block in proposal.blocks]
+    assert phases == ["warmup", "main", "easy", "cooldown"]
+    assert sum(block.duration_minutes or 0 for block in proposal.blocks) == 45
+    assert proposal.work_structure is not None
+    assert proposal.work_structure.intervals
+    assert proposal.work_structure.planned_minutes < 30
+    assert proposal.blocks[2].duration_minutes is not None
+    assert proposal.blocks[2].duration_minutes > 0
+
+
 def test_recovery_session_uses_single_block() -> None:
     generator = (
         DeterministicSessionGenerator()

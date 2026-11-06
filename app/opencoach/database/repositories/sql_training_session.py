@@ -105,27 +105,47 @@ class SqlTrainingSessionRepository(
             database_session.intervals_sync_error = (
                 session.intervals_sync_error
             )
-            database_session.coros_workout_id = (
-                session.coros_workout_id
-            )
-            database_session.coros_scheduled_date = (
-                session.coros_scheduled_date
-            )
-            database_session.coros_sync_status = (
-                session.coros_sync_status
-            )
-            database_session.coros_sync_started_at = (
-                session.coros_sync_started_at
-            )
-            database_session.coros_last_synced_at = (
-                session.coros_last_synced_at
-            )
-            database_session.coros_payload_hash = (
-                session.coros_payload_hash
-            )
-            database_session.coros_sync_error = (
-                session.coros_sync_error
-            )
+            # Les objets de séance reconstruits par le planificateur ne
+            # transportent pas les métadonnées COROS. Une absence dans un
+            # objet métier ordinaire ne doit jamais effacer une identité
+            # distante ; seules les valeurs explicitement fournies les
+            # remplacent. Les transitions de synchronisation continuent
+            # d'être écrites par le service COROS, qui relit l'objet courant.
+            if (
+                session.coros_workout_id is not None
+                or database_session.coros_workout_id is None
+            ):
+                database_session.coros_workout_id = session.coros_workout_id
+            if (
+                session.coros_scheduled_date is not None
+                or database_session.coros_workout_id is None
+            ):
+                database_session.coros_scheduled_date = session.coros_scheduled_date
+            if (
+                session.coros_sync_status is not None
+                or database_session.coros_workout_id is None
+            ):
+                database_session.coros_sync_status = session.coros_sync_status
+            if (
+                session.coros_sync_started_at is not None
+                or database_session.coros_workout_id is None
+            ):
+                database_session.coros_sync_started_at = session.coros_sync_started_at
+            if (
+                session.coros_last_synced_at is not None
+                or database_session.coros_workout_id is None
+            ):
+                database_session.coros_last_synced_at = session.coros_last_synced_at
+            if (
+                session.coros_payload_hash is not None
+                or database_session.coros_workout_id is None
+            ):
+                database_session.coros_payload_hash = session.coros_payload_hash
+            if (
+                session.coros_sync_error is not None
+                or database_session.coros_workout_id is None
+            ):
+                database_session.coros_sync_error = session.coros_sync_error
             self.session.commit()
             self.session.refresh(database_session)
 
@@ -227,6 +247,15 @@ class SqlTrainingSessionRepository(
         if database_session is None:
             raise TrainingSessionRepositoryError(
                 "Séance introuvable."
+            )
+
+        if database_session.coros_workout_id is not None or database_session.coros_sync_status in {
+            "pending",
+            "synced",
+            "unknown",
+        }:
+            raise TrainingSessionRepositoryError(
+                "Une séance liée au calendrier COROS ne peut pas être supprimée automatiquement."
             )
 
         try:

@@ -87,7 +87,8 @@ L'intention d'envoi est enregistrée avant l'appel distant. Ainsi, si le process
 
 - `synced` : le même contenu ne peut pas être envoyé une seconde fois ;
 - `failed` : le serveur COROS a explicitement refusé la requête, une nouvelle tentative est autorisée ;
-- `pending` ou `unknown` : le résultat est incertain. L'utilisateur doit vérifier le calendrier COROS et confirmer que la séance est absente avant d'autoriser une nouvelle tentative.
+- `pending` : un envoi est en cours. Une seconde requête est bloquée pendant cinq minutes.
+- `unknown` ou `pending` bloqué depuis plus de cinq minutes : le résultat est incertain. L'utilisateur doit vérifier le calendrier COROS et confirmer que la séance est absente avant d'autoriser une nouvelle tentative.
 
 Les identifiants COROS ne sont jamais affichés dans l'interface.
 

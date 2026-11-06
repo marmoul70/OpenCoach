@@ -93,12 +93,14 @@ export function NotificationBell({
         }
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="
-          relative flex h-10 w-10 items-center justify-center
-          rounded-full text-[var(--oc-text-secondary)] transition
-          hover:bg-[var(--oc-surface-hover)]
-          dark:hover:bg-[var(--oc-surface)]/[0.06]
-        "
+        className={[
+          'relative flex h-9 w-9 shrink-0 items-center justify-center',
+          'rounded-xl text-[var(--oc-text-secondary)] transition-colors',
+          placement === 'sidebar'
+            ? 'bg-[var(--oc-surface)] shadow-sm ring-1 ring-[var(--oc-border)] hover:bg-[var(--oc-surface-hover)]'
+            : 'rounded-full hover:bg-[var(--oc-surface-hover)]',
+          'dark:hover:bg-[var(--oc-surface)]/[0.08]',
+        ].join(' ')}
       >
         <Bell className="h-[18px] w-[18px]" />
         {unreadCount > 0 && (

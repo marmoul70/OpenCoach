@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import json
+import math
+import unicodedata
 from dataclasses import dataclass
 from hashlib import sha256
-import math
-import json
-import unicodedata
 from typing import Any
 
 from opencoach.models import TrainingSession

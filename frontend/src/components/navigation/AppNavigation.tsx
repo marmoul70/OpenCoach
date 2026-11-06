@@ -380,14 +380,14 @@ export function AppNavigation({
         </nav>
 
 
-        {/* Unified account and notifications panel */}
+        {/* Desktop profile trigger */}
         <div className="
-          relative border-t border-[var(--oc-border)]
+          border-t border-[var(--oc-border)]
           px-3 py-2.5 dark:border-[var(--oc-border)]
         ">
           <button
             type="button"
-            onClick={() => setDesktopProfileOpen((current) => !current)}
+            onClick={() => setDesktopProfileOpen(true)}
             aria-haspopup="dialog"
             aria-expanded={desktopProfileOpen}
             className="
@@ -412,140 +412,118 @@ export function AppNavigation({
                 Profil athlète
               </span>
             </span>
-            <ChevronRight className={[
-              'h-3.5 w-3.5 shrink-0 text-[var(--oc-muted-soft)] transition-transform',
-              desktopProfileOpen ? '-rotate-90' : '',
-            ].join(' ')} />
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[var(--oc-muted-soft)]" />
           </button>
-
-          {desktopProfileOpen && (
-            <section
-              role="dialog"
-              aria-label="Compte et notifications"
-              className="
-                absolute bottom-[calc(100%+10px)] left-[calc(100%+10px)]
-                z-[100] flex max-h-[calc(100vh-32px)] w-[360px]
-                max-w-[calc(100vw-250px)] flex-col overflow-hidden
-                rounded-2xl border border-[var(--oc-border)]
-                bg-[var(--oc-surface)]
-                shadow-[0_18px_50px_rgba(15,23,42,0.18)]
-                dark:shadow-[0_18px_50px_rgba(0,0,0,0.42)]
-              "
-            >
-              <div className="
-                flex items-center gap-3 border-b border-[var(--oc-border)]
-                px-4 py-3
-              ">
-                <Avatar avatar={avatar} initials={initials} size="small" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12px] font-semibold text-[var(--oc-text)]">
-                    {formatName(firstName, lastName)}
-                  </p>
-                  <p className="mt-0.5 text-[10px] text-[var(--oc-muted)]">
-                    Espace personnel
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setDesktopProfileOpen(false)}
-                  aria-label="Fermer le panneau"
-                  className="
-                    flex h-8 w-8 items-center justify-center rounded-lg
-                    text-[var(--oc-muted)] transition-colors
-                    hover:bg-[var(--oc-surface-hover)]
-                  "
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto">
-                <div className="px-3 pt-2">
-                  <NotificationBell
-                    embedded
-                    onViewAll={() => navigate('notifications')}
-                  />
-                </div>
-
-                <div className="mx-4 my-2 h-px bg-[var(--oc-border)]" />
-
-                <div className="px-2 pb-1">
-                  <DropdownLabel>Compte</DropdownLabel>
-                  <DropdownItem
-                    icon={<UserRound className="h-3.5 w-3.5" />}
-                    label="Profil personnel"
-                    active={activePage === 'profile-personal'}
-                    onClick={() => navigate('profile-personal')}
-                  />
-                  <DropdownItem
-                    icon={<CircleUserRound className="h-3.5 w-3.5" />}
-                    label="Profil sportif"
-                    active={activePage === 'profile-sport'}
-                    onClick={() => navigate('profile-sport')}
-                  />
-                  <DropdownItem
-                    icon={<Settings className="h-3.5 w-3.5" />}
-                    label="Réglages"
-                    active={activePage === 'settings'}
-                    onClick={() => navigate('settings')}
-                  />
-                </div>
-
-                <div className="mx-4 my-2 h-px bg-[var(--oc-border)]" />
-
-                <div className="px-3 pb-2">
-                  <DropdownLabel>Apparence</DropdownLabel>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <DropdownThemeButton
-                      active={theme === 'light'}
-                      icon={<Sun className="h-3.5 w-3.5" />}
-                      label="Clair"
-                      onClick={() => onThemeChange('light')}
-                    />
-                    <DropdownThemeButton
-                      active={theme === 'dark'}
-                      icon={<Moon className="h-3.5 w-3.5" />}
-                      label="Sombre"
-                      onClick={() => onThemeChange('dark')}
-                    />
-                    <DropdownThemeButton
-                      active={theme === 'system'}
-                      icon={<Monitor className="h-3.5 w-3.5" />}
-                      label="Auto"
-                      onClick={() => onThemeChange('system')}
-                    />
-                  </div>
-                </div>
-
-                <div className="mx-4 my-1 h-px bg-[var(--oc-border)]" />
-
-                <div className="px-2 pb-2">
-                  <DropdownItem
-                    icon={<LogOut className="h-3.5 w-3.5" />}
-                    label="Se déconnecter"
-                    danger
-                    onClick={() => {
-                      setDesktopProfileOpen(false)
-                      onLogout()
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="
-                flex items-center justify-between border-t
-                border-[var(--oc-border)] bg-[var(--oc-surface-muted)]/55
-                px-4 py-2 text-[9px] text-[var(--oc-muted)]
-              ">
-                <span>OpenCoach {version ? `v${version}` : 'développement'}</span>
-                {commit && <span className="font-mono">{commit}</span>}
-              </div>
-            </section>
-          )}
         </div>
 
               </aside>
 
+
+      {/* Desktop account and notifications in the shared SidePanel */}
+      <SidePanel
+        open={desktopProfileOpen}
+        eyebrow="Mon espace"
+        title="Compte et notifications"
+        onClose={() => setDesktopProfileOpen(false)}
+      >
+        <div className="space-y-5">
+          <section className="
+            flex items-center gap-3 rounded-2xl
+            bg-[var(--oc-surface-muted)]/55 p-3
+          ">
+            <Avatar avatar={avatar} initials={initials} />
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-semibold text-[var(--oc-text)]">
+                {formatName(firstName, lastName)}
+              </p>
+              <p className="mt-0.5 text-[10px] text-[var(--oc-muted)]">
+                Profil athlète
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--oc-muted)]">
+                Notifications
+              </h3>
+            </div>
+            <NotificationBell
+              embedded
+              onViewAll={() => navigate('notifications')}
+            />
+          </section>
+
+          <section>
+            <DropdownLabel>Compte</DropdownLabel>
+            <div className="mt-1 space-y-1">
+              <DropdownItem
+                icon={<UserRound className="h-4 w-4" />}
+                label="Profil personnel"
+                active={activePage === 'profile-personal'}
+                onClick={() => navigate('profile-personal')}
+              />
+              <DropdownItem
+                icon={<CircleUserRound className="h-4 w-4" />}
+                label="Profil sportif"
+                active={activePage === 'profile-sport'}
+                onClick={() => navigate('profile-sport')}
+              />
+              <DropdownItem
+                icon={<Settings className="h-4 w-4" />}
+                label="Réglages"
+                active={activePage === 'settings'}
+                onClick={() => navigate('settings')}
+              />
+            </div>
+          </section>
+
+          <section>
+            <DropdownLabel>Apparence</DropdownLabel>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              <DropdownThemeButton
+                active={theme === 'light'}
+                icon={<Sun className="h-4 w-4" />}
+                label="Clair"
+                onClick={() => onThemeChange('light')}
+              />
+              <DropdownThemeButton
+                active={theme === 'dark'}
+                icon={<Moon className="h-4 w-4" />}
+                label="Sombre"
+                onClick={() => onThemeChange('dark')}
+              />
+              <DropdownThemeButton
+                active={theme === 'system'}
+                icon={<Monitor className="h-4 w-4" />}
+                label="Auto"
+                onClick={() => onThemeChange('system')}
+              />
+            </div>
+          </section>
+
+          <section className="border-t border-[var(--oc-border)] pt-3">
+            <DropdownItem
+              icon={<LogOut className="h-4 w-4" />}
+              label="Se déconnecter"
+              danger
+              onClick={() => {
+                setDesktopProfileOpen(false)
+                onLogout()
+              }}
+            />
+          </section>
+
+          <div className="
+            flex items-center justify-between gap-2
+            border-t border-[var(--oc-border)] pt-3
+            text-[9px] text-[var(--oc-muted)]
+          ">
+            <span>{version ? `OpenCoach v${version}` : 'OpenCoach développement'}</span>
+            {commit && <span className="font-mono">{commit}</span>}
+          </div>
+        </div>
+      </SidePanel>
 
       {/* ================================================
           Mobile top bar

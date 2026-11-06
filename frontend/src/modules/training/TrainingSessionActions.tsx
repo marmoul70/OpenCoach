@@ -97,6 +97,12 @@ export function TrainingSessionActions({
     null,
   )
 
+  const corosMoveLocked = [
+    'synced',
+    'pending',
+    'unknown',
+  ].includes(session.corosSyncStatus ?? '')
+
 
   useEffect(() => {
     setActionsOpen(false)
@@ -159,10 +165,18 @@ export function TrainingSessionActions({
   async function skipSession() {
     const confirmed =
       window.confirm(
-        (
-          'Marquer cette séance comme '
-          + 'non réalisée ?'
-        ),
+        session.corosSyncStatus === 'synced'
+          ? (
+              'Cette séance a été envoyée à COROS. '
+              + 'La marquer non réalisée dans OpenCoach '
+              + 'ne la supprimera pas du calendrier COROS. '
+              + 'Tu devras aussi la retirer dans l’application COROS. '
+              + 'Continuer ?'
+            )
+          : (
+              'Marquer cette séance comme '
+              + 'non réalisée ?'
+            ),
       )
 
     if (!confirmed) {
@@ -429,7 +443,10 @@ export function TrainingSessionActions({
 
                 <button
                   type="button"
-                  disabled={saving}
+                  disabled={saving || corosMoveLocked}
+                  title={corosMoveLocked
+                    ? 'Déplacement à effectuer dans l’application COROS.'
+                    : undefined}
                   onClick={() =>
                     void openMove()
                   }
@@ -805,7 +822,7 @@ export function TrainingSessionActions({
           onClick={() =>
             void openMove()
           }
-          disabled={saving}
+          disabled={saving || corosMoveLocked}
         />
       </div>
 

@@ -548,3 +548,44 @@ def test_maps_trail_repetitions_and_recovery_with_explicit_elevation_targets() -
     ]
     assert sections[1]["targetType"] == 3
     assert sections[1]["targetValue"] == 100
+
+
+def test_maps_easy_intensity_on_recovery_sections() -> None:
+    prescription = heart_rate_prescription(
+        {
+            "type": "repeats",
+            "intervals": [
+                {
+                    "repetitions": 4,
+                    "work_distance_meters": 400,
+                    "recovery_duration": 90,
+                    "recovery_unit": "seconds",
+                    "repetition_target": None,
+                }
+            ],
+        }
+    )
+    prescription["recovery_intensity"] = {
+        "targets": [
+            {
+                "reference": "heart_rate",
+                "minimum": 120,
+                "maximum": 135,
+                "unit": "bpm",
+            }
+        ],
+        "guidance": ["Récupération active très facile."],
+    }
+    session = make_session(prescription=prescription)
+
+    sections = map_training_session_to_coros(session).course["sections"]
+
+    recovery = sections[0]["sets"][1]
+    assert recovery == {
+        "sectionType": 3,
+        "targetType": 2,
+        "targetValue": 90,
+        "intensityType": 1,
+        "intensityValueStart": 120,
+        "intensityValueEnd": 135,
+    }

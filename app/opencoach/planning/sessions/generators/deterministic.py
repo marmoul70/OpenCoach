@@ -37,6 +37,7 @@ from opencoach.planning.sessions.proposal import (
 )
 from opencoach.planning.stimulus.training import (
     TrainingModality,
+    TrainingStimulus,
 )
 
 

@@ -848,3 +848,104 @@ def test_rejects_overlong_description_instead_of_silently_truncating_guidance() 
         match="consignes complètes.*dépassent la limite de 1000 caractères",
     ):
         map_training_session_to_coros(session)
+
+
+@pytest.mark.parametrize("phase", ["technique", "strength", "transition"])
+def test_rejects_phases_without_supported_coros_representation(phase: str) -> None:
+    session = make_session(
+        prescription=heart_rate_prescription(
+            {
+                "type": "continuous",
+                "available_minutes": 50,
+                "continuous_minutes": 50,
+                "intervals": [],
+            },
+            blocks=[
+                {
+                    "name": "Phase non représentable",
+                    "phase": phase,
+                    "description": "Consigne à conserver.",
+                }
+            ],
+        )
+    )
+
+    with pytest.raises(
+        CorosWorkoutMappingError,
+        match="Aucune phase ne sera ignorée",
+    ):
+        map_training_session_to_coros(session)
+
+
+def test_rejects_multiple_main_phases_instead_of_mapping_only_the_first() -> None:
+    session = make_session(
+        prescription=heart_rate_prescription(
+            {
+                "type": "continuous",
+                "available_minutes": 50,
+                "continuous_minutes": 50,
+                "intervals": [],
+            },
+            blocks=[
+                {"name": "Premier bloc", "phase": "main", "duration_minutes": 25},
+                {"name": "Deuxième bloc", "phase": "main", "duration_minutes": 25},
+            ],
+        )
+    )
+
+    with pytest.raises(
+        CorosWorkoutMappingError,
+        match="plusieurs phases principales",
+    ):
+        map_training_session_to_coros(session)
+
+
+def test_rejects_multiple_recovery_phase_intensities_for_interval_workouts() -> None:
+    session = make_session(
+        prescription=heart_rate_prescription(
+            {
+                "type": "repeats",
+                "available_minutes": 20,
+                "intervals": [
+                    {
+                        "repetitions": 4,
+                        "work_distance_meters": 400,
+                        "recovery_duration": 60,
+                        "recovery_unit": "seconds",
+                    }
+                ],
+            },
+            blocks=[
+                {"name": "Récupération 1", "phase": "recovery"},
+                {"name": "Récupération 2", "phase": "recovery"},
+            ],
+        )
+    )
+
+    with pytest.raises(
+        CorosWorkoutMappingError,
+        match="plusieurs phases de récupération distinctes",
+    ):
+        map_training_session_to_coros(session)
+
+
+def test_rejects_recovery_phase_on_continuous_workout_without_interval_recovery() -> None:
+    session = make_session(
+        prescription=heart_rate_prescription(
+            {
+                "type": "continuous",
+                "available_minutes": 50,
+                "continuous_minutes": 50,
+                "intervals": [],
+            },
+            blocks=[
+                {"name": "Récupération", "phase": "recovery"},
+            ],
+        )
+    )
+
+    with pytest.raises(
+        CorosWorkoutMappingError,
+        match="phase recovery isolée",
+    ):
+        map_training_session_to_coros(session)

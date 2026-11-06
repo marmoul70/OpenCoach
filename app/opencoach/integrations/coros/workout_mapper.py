@@ -1,0 +1,588 @@
+"""Conversion des prescriptions OpenCoach vers les séances planifiées COROS."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from hashlib import sha256
+import json
+import unicodedata
+from typing import Any
+
+from opencoach.models import TrainingSession
+
+
+class CorosWorkoutMappingError(ValueError):
+    """La séance ne peut pas être représentée fidèlement dans COROS."""
+
+
+@dataclass(frozen=True, slots=True)
+class CorosScheduledWorkoutPayload:
+    """Payload stable pour createScheduledWorkout."""
+
+    date: str
+    course: dict[str, Any]
+    payload_hash: str
+
+    def as_tool_arguments(self) -> dict[str, Any]:
+        return {"date": self.date, "course": self.course}
+
+
+def map_training_session_to_coros(
+    session: TrainingSession,
+) -> CorosScheduledWorkoutPayload:
+    """Convertit une séance planifiée sans inventer de prescription."""
+
+    if session.id is None:
+        raise CorosWorkoutMappingError(
+            "La séance doit être enregistrée dans OpenCoach avant son envoi."
+        )
+    if session.status != "planned":
+        raise CorosWorkoutMappingError(
+            "Seules les séances planifiées peuvent être envoyées à COROS."
+        )
+
+    sport_type = _map_sport_type(session.sport_type)
+    prescription = session.prescription
+    if not isinstance(prescription, dict):
+        raise CorosWorkoutMappingError(
+            "Cette séance ne possède pas de prescription structurée. "
+            "Seules les séances générées avec une prescription compatible "
+            "peuvent être envoyées."
+        )
+
+    work_structure = prescription.get("work_structure")
+    if not isinstance(work_structure, dict):
+        raise CorosWorkoutMappingError(
+            "La prescription ne contient pas de structure de travail exploitable."
+        )
+
+    structure_type = str(work_structure.get("type") or "").strip().lower()
+    sections: list[dict[str, Any]] = []
+    warmup_blocks = _matching_blocks(prescription, "warmup")
+    cooldown_blocks = _matching_blocks(prescription, "cooldown")
+
+    for block in warmup_blocks:
+        sections.append(
+            _build_phase_section(
+                block,
+                section_type=1,
+                sport_type=sport_type,
+                phase_label="échauffement",
+            )
+        )
+
+    if structure_type == "continuous":
+        sections.append(
+            _build_continuous_section(
+                session=session,
+                work_structure=work_structure,
+                prescription=prescription,
+                sport_type=sport_type,
+                warmup_seconds=sum(
+                    _block_seconds(block) for block in warmup_blocks
+                ),
+                cooldown_seconds=sum(
+                    _block_seconds(block) for block in cooldown_blocks
+                ),
+            )
+        )
+    elif structure_type in {"repeats", "intervals"}:
+        sections.extend(
+            _build_interval_groups(
+                work_structure=work_structure,
+                prescription=prescription,
+                sport_type=sport_type,
+            )
+        )
+    else:
+        raise CorosWorkoutMappingError(
+            "Cette structure (renforcement, circuit ou travail technique) "
+            "n'est pas encore prise en charge par l'envoi COROS."
+        )
+
+    for block in cooldown_blocks:
+        sections.append(
+            _build_phase_section(
+                block,
+                section_type=4,
+                sport_type=sport_type,
+                phase_label="retour au calme",
+            )
+        )
+
+    if not sections:
+        raise CorosWorkoutMappingError(
+            "La séance ne contient aucune phase compatible avec COROS."
+        )
+
+    description = _build_course_description(
+        session=session,
+        prescription=prescription,
+        work_structure=work_structure,
+    )
+    course = {
+        "sportType": sport_type,
+        "courseName": session.title.strip()[:100],
+        "courseDescription": description,
+        "sections": sections,
+    }
+    arguments = {
+        "date": session.date.strftime("%Y%m%d"),
+        "course": course,
+    }
+    serialized = json.dumps(
+        arguments,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+    return CorosScheduledWorkoutPayload(
+        date=arguments["date"],
+        course=course,
+        payload_hash=sha256(serialized.encode("utf-8")).hexdigest(),
+    )
+
+
+def _map_sport_type(value: str) -> int:
+    normalized = value.strip().lower().replace("_", "").replace(" ", "")
+    mapping = {
+        "run": 1,
+        "running": 1,
+        "trailrun": 5,
+        "trailrunning": 5,
+        "ride": 2,
+        "cycling": 2,
+        "bike": 2,
+    }
+    sport_type = mapping.get(normalized)
+    if sport_type is None:
+        raise CorosWorkoutMappingError(
+            "COROS MCP permet actuellement de créer des séances de course, "
+            "trail et vélo. Le renforcement, la natation et les autres sports "
+            "ne peuvent pas être envoyés par cette fonction."
+        )
+    return sport_type
+
+
+def _matching_blocks(
+    prescription: dict[str, Any],
+    phase: str,
+) -> list[dict[str, Any]]:
+    blocks = prescription.get("blocks")
+    if not isinstance(blocks, list):
+        return []
+    matches: list[dict[str, Any]] = []
+    for block in blocks:
+        if not isinstance(block, dict):
+            continue
+        name = _normalize_text(
+            str(block.get("name") or block.get("type") or block.get("label") or "")
+        )
+        if phase == "warmup" and (
+            "warmup" in name or "echauffement" in name or "mise en route" in name
+        ):
+            matches.append(block)
+        elif phase == "cooldown" and (
+            "cooldown" in name or "retour au calme" in name or "recuperation finale" in name
+        ):
+            matches.append(block)
+    return matches
+
+
+def _normalize_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value.lower())
+    return "".join(character for character in normalized if not unicodedata.combining(character))
+
+
+def _block_seconds(block: dict[str, Any]) -> int:
+    value = block.get("duration_minutes")
+    if value is None:
+        return 0
+    try:
+        minutes = float(value)
+    except (TypeError, ValueError) as exc:
+        raise CorosWorkoutMappingError(
+            "Une durée de phase est invalide dans la prescription."
+        ) from exc
+    if minutes <= 0:
+        raise CorosWorkoutMappingError(
+            "Les durées des phases doivent être positives."
+        )
+    return round(minutes * 60)
+
+
+def _build_phase_section(
+    block: dict[str, Any],
+    *,
+    section_type: int,
+    sport_type: int,
+    phase_label: str,
+) -> dict[str, Any]:
+    seconds = _block_seconds(block)
+    if seconds <= 0:
+        raise CorosWorkoutMappingError(
+            f"La durée de {phase_label} est absente ou invalide."
+        )
+    if sport_type == 5:
+        raise CorosWorkoutMappingError(
+            f"COROS impose une cible en distance pour le {phase_label} en trail. "
+            "La prescription OpenCoach ne contient ici qu'une durée."
+        )
+    return {
+        "sectionType": section_type,
+        "targetType": 2,
+        "targetValue": seconds,
+    }
+
+
+def _build_continuous_section(
+    *,
+    session: TrainingSession,
+    work_structure: dict[str, Any],
+    prescription: dict[str, Any],
+    sport_type: int,
+    warmup_seconds: int,
+    cooldown_seconds: int,
+) -> dict[str, Any]:
+    if sport_type == 5:
+        distance = work_structure.get("work_distance_meters")
+        if distance is None and session.distance_km is not None:
+            distance = round(session.distance_km * 1000)
+        if distance is None:
+            raise CorosWorkoutMappingError(
+                "COROS exige une cible en distance ou en dénivelé pour le trail. "
+                "Cette séance ne contient qu'une durée."
+            )
+        section = {
+            "sectionType": 2,
+            "targetType": 1,
+            "targetValue": _positive_integer(distance, "distance"),
+        }
+    else:
+        minutes = (
+            work_structure.get("continuous_minutes")
+            or work_structure.get("available_minutes")
+        )
+        if minutes is None:
+            minutes = (
+                session.duration_minutes
+                - round(warmup_seconds / 60)
+                - round(cooldown_seconds / 60)
+            )
+        seconds = round(float(minutes) * 60)
+        if seconds <= 0:
+            raise CorosWorkoutMappingError(
+                "La durée du bloc principal est invalide."
+            )
+        section = {
+            "sectionType": 2,
+            "targetType": 2,
+            "targetValue": seconds,
+        }
+
+    section.update(_intensity_fields(prescription, sport_type))
+    return section
+
+
+def _build_interval_groups(
+    *,
+    work_structure: dict[str, Any],
+    prescription: dict[str, Any],
+    sport_type: int,
+) -> list[dict[str, Any]]:
+    intervals = work_structure.get("intervals")
+    if not isinstance(intervals, list) or not intervals:
+        raise CorosWorkoutMappingError(
+            "La structure fractionnée ne contient aucun intervalle."
+        )
+
+    groups: list[dict[str, Any]] = []
+    for interval in intervals:
+        if not isinstance(interval, dict):
+            raise CorosWorkoutMappingError(
+                "Un intervalle de la prescription est invalide."
+            )
+        repetitions = _positive_integer(
+            interval.get("repetitions"),
+            "nombre de répétitions",
+        )
+        if repetitions > 20:
+            raise CorosWorkoutMappingError(
+                "COROS limite un groupe à 20 répétitions. "
+                "Cette série doit être découpée dans OpenCoach."
+            )
+
+        work_section = _build_work_section(
+            interval=interval,
+            prescription=prescription,
+            sport_type=sport_type,
+        )
+        sets = [work_section]
+
+        recovery_duration = interval.get("recovery_duration")
+        if recovery_duration is not None:
+            if sport_type == 5:
+                raise CorosWorkoutMappingError(
+                    "COROS n'accepte pas de récupération chronométrée "
+                    "dans un entraînement trail. La récupération de cette "
+                    "séance doit être exprimée autrement avant l'envoi."
+                )
+            recovery_seconds = _duration_seconds(
+                recovery_duration,
+                interval.get("recovery_unit"),
+                default_unit="seconds",
+            )
+            sets.append({
+                "sectionType": 3,
+                "targetType": 2,
+                "targetValue": recovery_seconds,
+            })
+
+        groups.append({
+            "intervalGroup": True,
+            "repeats": repetitions,
+            "sets": sets,
+        })
+    return groups
+
+
+def _build_work_section(
+    *,
+    interval: dict[str, Any],
+    prescription: dict[str, Any],
+    sport_type: int,
+) -> dict[str, Any]:
+    distance = interval.get("work_distance_meters")
+    duration = interval.get("work_duration")
+    unit = interval.get("work_unit")
+
+    if distance is not None:
+        section = {
+            "sectionType": 2,
+            "targetType": 1,
+            "targetValue": _positive_integer(distance, "distance de répétition"),
+        }
+    elif duration is not None:
+        if sport_type == 5:
+            raise CorosWorkoutMappingError(
+                "COROS exige une cible en distance ou en dénivelé pour les fractions trail."
+            )
+        section = {
+            "sectionType": 2,
+            "targetType": 2,
+            "targetValue": _duration_seconds(
+                duration,
+                unit,
+                default_unit="minutes",
+            ),
+        }
+    else:
+        raise CorosWorkoutMappingError(
+            "Une répétition doit avoir une durée ou une distance."
+        )
+
+    repetition_target = interval.get("repetition_target")
+    repetition_intensity = (
+        _pace_fields_from_repetition_target(repetition_target)
+        if sport_type != 2
+        else None
+    )
+    if repetition_intensity is not None:
+        section.update(repetition_intensity)
+    else:
+        section.update(_intensity_fields(prescription, sport_type))
+    return section
+
+
+def _intensity_fields(
+    prescription: dict[str, Any],
+    sport_type: int,
+) -> dict[str, int]:
+    intensity = prescription.get("intensity")
+    targets = intensity.get("targets") if isinstance(intensity, dict) else None
+    if not isinstance(targets, list):
+        raise CorosWorkoutMappingError(
+            "La séance ne possède pas de cible physiologique compatible avec COROS."
+        )
+
+    for target in targets:
+        if not isinstance(target, dict):
+            continue
+        reference = str(target.get("reference") or "").strip().lower()
+        if reference in {"heart_rate", "heart_rate_reserve"}:
+            minimum = _bounded_integer(
+                target.get("minimum"), 30, 240, "fréquence cardiaque minimale"
+            )
+            maximum = _bounded_integer(
+                target.get("maximum"), 30, 240, "fréquence cardiaque maximale"
+            )
+            if maximum < minimum:
+                raise CorosWorkoutMappingError(
+                    "La plage de fréquence cardiaque est incohérente."
+                )
+            return {
+                "intensityType": 1,
+                "intensityValueStart": minimum,
+                "intensityValueEnd": maximum,
+            }
+        if reference == "vma_percent" and sport_type in {1, 5}:
+            derived = target.get("derived")
+            pace = (
+                derived.get("pace_seconds_per_km")
+                if isinstance(derived, dict)
+                else None
+            )
+            if not isinstance(pace, dict):
+                continue
+            fastest = _bounded_integer(
+                pace.get("fastest"), 120, 1499, "allure minimale"
+            )
+            slowest = _bounded_integer(
+                pace.get("slowest"), 120, 1499, "allure maximale"
+            )
+            if slowest < fastest:
+                raise CorosWorkoutMappingError(
+                    "La plage d'allure issue de la VMA est incohérente."
+                )
+            return {
+                "intensityType": 2,
+                "intensityValueStart": fastest,
+                "intensityValueEnd": slowest,
+            }
+
+    raise CorosWorkoutMappingError(
+        "La prescription est uniquement exprimée en RPE ou dans une unité "
+        "que COROS ne sait pas piloter. Il faut une cible de fréquence "
+        "cardiaque (bpm) ou, en course/trail, une allure calculée."
+    )
+
+
+def _pace_fields_from_repetition_target(
+    target: Any,
+) -> dict[str, int] | None:
+    if not isinstance(target, dict):
+        return None
+    try:
+        distance = float(target.get("distance_meters"))
+        fast_seconds = float(target.get("fast_seconds"))
+        slow_seconds = float(target.get("slow_seconds"))
+    except (TypeError, ValueError):
+        return None
+    if distance <= 0 or fast_seconds <= 0 or slow_seconds <= 0:
+        return None
+
+    fastest = round(fast_seconds * 1000 / distance)
+    slowest = round(slow_seconds * 1000 / distance)
+    if not (120 <= fastest <= 1499 and 120 <= slowest <= 1499):
+        return None
+    return {
+        "intensityType": 2,
+        "intensityValueStart": min(fastest, slowest),
+        "intensityValueEnd": max(fastest, slowest),
+    }
+
+
+def _duration_seconds(
+    value: Any,
+    unit: Any,
+    *,
+    default_unit: str,
+) -> int:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError) as exc:
+        raise CorosWorkoutMappingError(
+            "Une durée d'intervalle est invalide."
+        ) from exc
+    normalized = str(unit or default_unit).strip().lower()
+    if normalized in {"second", "seconds", "sec", "s"}:
+        seconds = round(numeric)
+    elif normalized in {"minute", "minutes", "min", "m"}:
+        seconds = round(numeric * 60)
+    else:
+        raise CorosWorkoutMappingError(
+            "L'unité de durée de l'intervalle n'est pas reconnue."
+        )
+    if seconds <= 0:
+        raise CorosWorkoutMappingError(
+            "Les durées des intervalles doivent être positives."
+        )
+    return seconds
+
+
+def _positive_integer(value: Any, label: str) -> int:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError) as exc:
+        raise CorosWorkoutMappingError(
+            f"La {label} est invalide."
+        ) from exc
+    result = round(numeric)
+    if result <= 0 or abs(numeric - result) > 1e-6:
+        raise CorosWorkoutMappingError(
+            f"La {label} doit être un entier strictement positif."
+        )
+    return result
+
+
+def _bounded_integer(
+    value: Any,
+    minimum: int,
+    maximum: int,
+    label: str,
+) -> int:
+    result = _positive_integer(value, label)
+    if not minimum <= result <= maximum:
+        raise CorosWorkoutMappingError(
+            f"{label.capitalize()} doit être comprise entre {minimum} et {maximum}."
+        )
+    return result
+
+
+def _build_course_description(
+    *,
+    session: TrainingSession,
+    prescription: dict[str, Any],
+    work_structure: dict[str, Any],
+) -> str:
+    parts = [session.description.strip() or session.title.strip()]
+    intensity = prescription.get("intensity")
+    targets = intensity.get("targets") if isinstance(intensity, dict) else None
+    if isinstance(targets, list):
+        for target in targets:
+            if not isinstance(target, dict):
+                continue
+            reference = str(target.get("reference") or "").lower()
+            if reference in {"heart_rate", "heart_rate_reserve"}:
+                parts.append(
+                    f"Cible cardiaque : {target.get('minimum')}–{target.get('maximum')} bpm."
+                )
+                break
+            if reference == "vma_percent":
+                derived = target.get("derived")
+                pace = (
+                    derived.get("pace_seconds_per_km")
+                    if isinstance(derived, dict)
+                    else None
+                )
+                if isinstance(pace, dict):
+                    parts.append(
+                        "Allure cible calculée à partir de la VMA : "
+                        f"{_format_pace(pace.get('fastest'))}–"
+                        f"{_format_pace(pace.get('slowest'))}/km."
+                    )
+                    break
+    structure_type = str(work_structure.get("type") or "")
+    if structure_type in {"repeats", "intervals"}:
+        parts.append("Respecter les répétitions et les récupérations indiquées sur la montre.")
+    description = " ".join(part for part in parts if part)
+    return description[:1000] or "Séance planifiée par OpenCoach."
+
+
+def _format_pace(value: Any) -> str:
+    try:
+        seconds = round(float(value))
+    except (TypeError, ValueError):
+        return "—"
+    minutes, remainder = divmod(seconds, 60)
+    return f"{minutes}:{remainder:02d}"

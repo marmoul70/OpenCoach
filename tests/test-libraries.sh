@@ -82,6 +82,10 @@ assert_failure \
     "Une commande inexistante est refusée" \
     require_command command-that-does-not-exist
 
+assert_success \
+    "curl est disponible pour les installations optionnelles" \
+    require_command curl
+
 echo
 echo "[INFO] Tests APT"
 
@@ -96,6 +100,10 @@ assert_success \
 assert_success \
     "Le paquet git est disponible" \
     package_is_available git
+
+assert_success \
+    "Le paquet curl est disponible" \
+    package_is_available curl
 
 echo
 echo "========================================"

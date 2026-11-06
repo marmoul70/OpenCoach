@@ -157,6 +157,14 @@ def test_generator_covers_secondary_stimuli() -> None:
             TrainingStimulus.DOWNHILL_SPECIFICITY,
         )
     )
+    assert any(
+        "montée" in note.lower()
+        for note in proposal.coach_notes
+    )
+    assert any(
+        "descente" in note.lower()
+        for note in proposal.coach_notes
+    )
 
 
 def test_required_modality_has_priority() -> None:

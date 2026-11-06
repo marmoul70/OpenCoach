@@ -692,3 +692,41 @@ def test_second_taper_week_reduces_threshold_volume_again() -> None:
         structure.description
         == "2 × 5 min / récupération 2 min."
     )
+
+def test_work_interval_preserves_work_and_recovery_elevation_targets() -> None:
+    interval = WorkInterval(
+        repetitions=5,
+        work_duration=90,
+        work_unit=WorkDurationUnit.SECONDS,
+        work_elevation_gain_meters=100,
+        recovery_duration=60,
+        recovery_unit=WorkDurationUnit.SECONDS,
+        recovery_elevation_gain_meters=30,
+    )
+
+    assert interval.work_elevation_gain_meters == 100
+    assert interval.recovery_elevation_gain_meters == 30
+    assert interval.total_duration_seconds == 690
+
+
+def test_work_interval_rejects_recovery_elevation_without_time_budget() -> None:
+    with pytest.raises(ValueError, match="durée pour le calcul du planning"):
+        WorkInterval(
+            repetitions=5,
+            work_duration=90,
+            work_unit=WorkDurationUnit.SECONDS,
+            recovery_elevation_gain_meters=30,
+        )
+
+
+def test_work_interval_rejects_two_recovery_targets() -> None:
+    with pytest.raises(ValueError, match="simultanément une distance et un dénivelé"):
+        WorkInterval(
+            repetitions=5,
+            work_duration=90,
+            work_unit=WorkDurationUnit.SECONDS,
+            recovery_duration=60,
+            recovery_unit=WorkDurationUnit.SECONDS,
+            recovery_distance_meters=100,
+            recovery_elevation_gain_meters=30,
+        )

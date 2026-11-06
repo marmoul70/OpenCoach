@@ -188,6 +188,19 @@ main() {
     log_success \
         "Application OpenCoach installée et migrée."
 
+    if (( WITH_AI_REQUESTED == 1 )); then
+        log_info \
+            "Installation optionnelle du moteur IA local"
+
+        if ! bash "$BOOTSTRAP_DIR/install-ai.sh"; then
+            log_warning \
+                "L'IA locale n'a pas pu être installée. Le bootstrap OpenCoach classique continue."
+        else
+            log_success \
+                "Moteur IA local installé. L'intégration applicative reste désactivée."
+        fi
+    fi
+
     log_info \
         "Installation des services OpenCoach"
 
@@ -200,20 +213,6 @@ main() {
 
     log_success \
         "Services OpenCoach installés et configurés."
-
-    if (( WITH_AI_REQUESTED == 1 )); then
-        log_info \
-            "Installation optionnelle du moteur IA local"
-
-        if ! bash "$BOOTSTRAP_DIR/install-ai.sh"; then
-            log_error \
-                "L'installation du moteur IA local a échoué. OpenCoach classique reste installé."
-            return 1
-        fi
-
-        log_success \
-            "Moteur IA local installé. L'intégration applicative reste désactivée."
-    fi
 
     log_access_information
 

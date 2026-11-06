@@ -1075,11 +1075,15 @@ def _build_course_description(
             if not isinstance(interval, dict):
                 continue
             work_elevation = interval.get("work_elevation_gain_meters")
+            work_duration = interval.get("work_duration")
+            work_unit = str(interval.get("work_unit") or "minutes")
             recovery_elevation = interval.get("recovery_elevation_gain_meters")
             recovery_duration = interval.get("recovery_duration")
             recovery_unit = str(interval.get("recovery_unit") or "seconds")
             if work_elevation is not None:
                 parts.append(f"Série {index} : {work_elevation} m D+.")
+            if work_duration is not None:
+                parts.append(f"Série {index} : {work_duration} {work_unit}.")
             if recovery_elevation is not None:
                 parts.append(f"Récupération série {index} : {recovery_elevation} m D+.")
             if recovery_duration is not None:

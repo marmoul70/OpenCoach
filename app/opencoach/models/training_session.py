@@ -49,6 +49,8 @@ class TrainingSession:
 
     coros_sync_status: str | None = None
 
+    coros_sync_started_at: datetime | None = None
+
     coros_last_synced_at: datetime | None = None
 
     coros_payload_hash: str | None = None

@@ -142,6 +142,7 @@ Les tests couvrent :
 - la conversion d'une séance continue avec échauffement, complément facile et retour au calme ;
 - la conservation et la validation des phases et prescriptions individuelles version 2, avec compatibilité du format version 1 ;
 - la conversion des répétitions, distances, allures, récupérations et découpage des séries de plus de 20 répétitions ;
+- l'affichage dans la description des temps de passage exacts et de la plage d'allure calculée à partir de la VMA, en complément des cibles exécutables transmises aux étapes COROS ;
 - les plages de fréquence cardiaque et les allures issues de la VMA ;
 - le refus des cibles RPE seules, des séances terminées et des sports/structures non compatibles ;
 - la lecture préalable du calendrier à la date cible et l'extraction des séances déjà présentes ;

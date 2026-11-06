@@ -5,6 +5,7 @@ import pytest
 from opencoach.models import TrainingSession
 from opencoach.planning.sessions.prescription.integrity import (
     TrainingSessionPrescriptionIntegrityError,
+    _validate_intensity_targets,
     validate_training_session_prescription,
 )
 
@@ -410,3 +411,167 @@ def test_version_two_accepts_work_and_recovery_elevation_with_time_budgets() -> 
     )
 
     validate_training_session_prescription(value)
+
+
+def test_version_two_accepts_recovery_phase_intensity_without_legacy_global_target() -> None:
+    value = session(
+        prescription={
+            "version": 2,
+            "blocks": [
+                {
+                    "name": "Travail",
+                    "description": "Effort régulier.",
+                    "duration_minutes": 40,
+                    "phase": "main",
+                    "intensity": {
+                        "targets": [
+                            {
+                                "reference": "heart_rate",
+                                "minimum": 140,
+                                "maximum": 155,
+                                "unit": "bpm",
+                            }
+                        ],
+                        "guidance": [],
+                    },
+                },
+                {
+                    "name": "Récupération",
+                    "description": "Relâcher l'effort.",
+                    "duration_minutes": 5,
+                    "phase": "recovery",
+                    "intensity": {
+                        "targets": [
+                            {
+                                "reference": "rpe",
+                                "minimum": 1,
+                                "maximum": 2,
+                                "unit": "/10",
+                            }
+                        ],
+                        "guidance": ["Respiration facile."],
+                    },
+                },
+            ],
+            "work_structure": {
+                "type": "repeats",
+                "stimulus": "aerobic_easy",
+                "available_minutes": 45,
+                "continuous_minutes": None,
+                "description": "Fractionné.",
+                "circuit": None,
+                "intervals": [
+                    {
+                        "repetitions": 4,
+                        "work_duration": 4,
+                        "work_unit": "minutes",
+                        "work_distance_meters": None,
+                        "recovery_duration": 1,
+                        "recovery_unit": "minutes",
+                        "recovery_distance_meters": None,
+                        "recovery_elevation_gain_meters": None,
+                        "work_elevation_gain_meters": None,
+                    }
+                ],
+            },
+            "intensity": {
+                "targets": [
+                    {
+                        "reference": "heart_rate",
+                        "minimum": 140,
+                        "maximum": 155,
+                        "unit": "bpm",
+                    }
+                ],
+                "guidance": [],
+            },
+        }
+    )
+
+    validate_training_session_prescription(value)
+
+
+def test_version_two_rejects_recovery_without_global_or_phase_intensity() -> None:
+    value = session(
+        prescription={
+            "version": 2,
+            "blocks": [
+                {
+                    "name": "Travail",
+                    "description": "Effort régulier.",
+                    "duration_minutes": 45,
+                    "phase": "main",
+                    "intensity": {
+                        "targets": [
+                            {
+                                "reference": "heart_rate",
+                                "minimum": 140,
+                                "maximum": 155,
+                                "unit": "bpm",
+                            }
+                        ],
+                        "guidance": [],
+                    },
+                }
+            ],
+            "work_structure": {
+                "type": "repeats",
+                "stimulus": "aerobic_easy",
+                "available_minutes": 45,
+                "continuous_minutes": None,
+                "description": "Fractionné.",
+                "circuit": None,
+                "intervals": [
+                    {
+                        "repetitions": 4,
+                        "work_duration": 4,
+                        "work_unit": "minutes",
+                        "work_distance_meters": None,
+                        "recovery_duration": 1,
+                        "recovery_unit": "minutes",
+                        "recovery_distance_meters": None,
+                        "recovery_elevation_gain_meters": None,
+                        "work_elevation_gain_meters": None,
+                    }
+                ],
+            },
+            "intensity": {
+                "targets": [
+                    {
+                        "reference": "heart_rate",
+                        "minimum": 140,
+                        "maximum": 155,
+                        "unit": "bpm",
+                    }
+                ],
+                "guidance": [],
+            },
+        }
+    )
+
+    with pytest.raises(
+        TrainingSessionPrescriptionIntegrityError,
+        match="intensité dédiée aux récupérations",
+    ):
+        validate_training_session_prescription(value)
+
+
+@pytest.mark.parametrize("invalid_bound", [float("nan"), float("inf"), float("-inf")])
+def test_version_two_rejects_non_finite_intensity_bounds(invalid_bound: float) -> None:
+    with pytest.raises(
+        TrainingSessionPrescriptionIntegrityError,
+        match="bornes d'intensité",
+    ):
+        _validate_intensity_targets(
+            {
+                "targets": [
+                    {
+                        "reference": "heart_rate",
+                        "minimum": invalid_bound,
+                        "maximum": 155,
+                        "unit": "bpm",
+                    }
+                ]
+            },
+            context="de test",
+        )

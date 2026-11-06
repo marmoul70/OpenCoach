@@ -2,9 +2,9 @@
 
 ## Objectif
 
-Permettre l'envoi explicite d'une séance planifiée OpenCoach vers le calendrier d'entraînement COROS, afin qu'elle puisse ensuite être synchronisée sur la montre.
+Conserver une prescription de coaching complète, la convertir en entraînement structuré COROS et permettre la création ou la mise à jour d'une séance individuelle dans le calendrier COROS.
 
-L'envoi est individuel : aucune synchronisation automatique de toutes les séances n'est déclenchée.
+Le système maître reste OpenCoach. Cette évolution ne déclenche toujours aucun envoi automatique J-1 et ne synchronise jamais une semaine entière. Le déclenchement automatique sera traité séparément après validation du moteur de prescription et du convertisseur.
 
 ## Audit de l'existant
 
@@ -15,7 +15,9 @@ OpenCoach dispose de deux flux distincts :
 - La saisie manuelle du calendrier sert principalement à enregistrer une activité déjà réalisée. Elle renseigne les métadonnées générales (sport, durée, distance, D+, intensité et zone cardiaque), mais ne construit pas de structure d'intervalles exploitable par une montre.
 - Le moteur de planification et de génération du coach crée des séances planifiées avec une prescription structurée versionnée. Celle-ci conserve les blocs, la structure de travail, les répétitions, les récupérations et les cibles d'intensité.
 
-La prescription est persistée dans `training_sessions.prescription`, mais elle n'était pas incluse dans la réponse de l'API des séances. Le flux d'envoi expose désormais cette donnée au frontend.
+La prescription est persistée dans `training_sessions.prescription`. Le format version 2 conserve, pour chaque bloc, sa phase métier, sa durée, ses cibles éventuelles et sa prescription d'intensité propre. Les formats version 1 déjà enregistrés restent lisibles.
+
+Les phases générées sont qualifiées : échauffement, travail principal, complément facile et retour au calme. Les phases faciles reçoivent une prescription facile distincte ; elles n'héritent pas artificiellement de l'intensité du bloc principal. Les cibles RPE restent conservées dans OpenCoach même lorsqu'elles ne sont pas pilotables directement par COROS.
 
 ### Connecteur COROS existant
 
@@ -54,13 +56,17 @@ Après confirmation du serveur COROS, OpenCoach indique que la séance est ajout
 | Trail | Sport 5, sous contraintes de cibles |
 | Échauffement | Section 1 |
 | Travail principal | Section 2 |
-| Récupération chronométrée | Section 3 |
+| Complément facile | Section 2 |
+| Récupération inter-répétitions | Section 3 |
 | Retour au calme | Section 4 |
 | Durée | Cible en secondes |
 | Distance | Cible en mètres |
 | Fréquence cardiaque absolue en bpm | Intensité type 1, plage absolue |
 | VMA avec allure dérivée | Intensité type 2, allure absolue en secondes/km |
-| Répétitions | Groupe d'intervalles COROS |
+| Intensité par phase | Cible propre à la section, jamais héritée automatiquement d'une autre phase |
+| Répétitions | Groupes d'intervalles COROS (20 répétitions maximum par groupe) |
+| Dénivelé positif | Cible trail en mètres si la prescription fournit explicitement un D+ |
+| Consignes non pilotables | Description de la séance, sans conversion arbitraire |
 
 La cible d'allure calculée pour une répétition métrique est prioritaire sur la cible générale lorsque cette donnée est explicitement présente dans la prescription. Une cible en réserve de fréquence cardiaque (HRR) n'est jamais assimilée à des bpm : elle est refusée si aucune cible absolue compatible n'est disponible.
 
@@ -74,7 +80,11 @@ Le convertisseur refuse une séance lorsqu'une conversion fidèle n'est pas poss
 - COROS impose des cibles en distance ou en dénivelé pour le trail, pas des cibles en temps. Les phases trail chronométrées et les récupérations trail chronométrées sont donc refusées.
 - Les structures techniques, circuits et renforcement ne sont pas aplaties en une séance continue.
 - COROS limite la création aux dates comprises entre aujourd'hui et les 90 prochains jours, dans le fuseau du compte COROS ; la validation finale de cette fenêtre est effectuée par le service COROS.
-- La mise à jour et la suppression d'une séance déjà envoyée ne sont pas incluses dans cette première version. Le déplacement d'une séance envoyée ou dont le résultat est incertain est bloqué dans OpenCoach ; il doit être géré dans l'application COROS. Une séance envoyée puis modifiée dans OpenCoach ne peut pas être renvoyée comme une nouvelle séance sans créer un risque de doublon.
+- COROS n'accepte pas les cibles chronométrées en mode Trail : échauffement, retour au calme et récupérations trail doivent disposer d'une cible distance ou dénivelé explicite. Le convertisseur refuse la séance si cette donnée manque.
+- Un bloc RPE seul reste visible dans OpenCoach et dans les consignes textuelles, mais ne peut pas être transformé en cible COROS. Si aucune autre cible physiologique compatible n'existe, l'envoi est refusé.
+- Une cible D+ et une cible distance ne peuvent pas être simultanément des cibles automatiques d'une même section COROS. La cible structurée prioritaire est transmise et l'autre donnée est conservée dans la description.
+- La mise à jour d'une séance autonome déjà envoyée utilise obligatoirement `queryScheduledWorkoutDetails`, vérifie `editable=true`, puis appelle `updateScheduledWorkout` avec le même `idInPlan` et le cours complet. Elle ne crée jamais une seconde séance. Si la mise à jour a un résultat réseau incertain, l'identifiant existant est conservé et la reprise reste une mise à jour, après confirmation.
+- Le déplacement et la suppression d'une séance envoyée ne sont pas pris en charge par MCP ; ils doivent être gérés dans l'application COROS.
 
 ## Protection contre les doublons
 
@@ -89,7 +99,7 @@ Les colonnes suivantes sont ajoutées à `training_sessions` :
 
 L'intention d'envoi est enregistrée avant l'appel distant. Ainsi, si le processus s'arrête pendant la requête, un second clic n'envoie pas aveuglément une copie supplémentaire.
 
-- `synced` : le même contenu ne peut pas être envoyé une seconde fois ;
+- `synced` : le même contenu ne peut pas être envoyé une seconde fois ; si le contenu OpenCoach change, l'élément existant est mis à jour via son identifiant COROS ;
 - `failed` : le serveur COROS a explicitement refusé la requête, une nouvelle tentative est autorisée ;
 - `pending` : un envoi est en cours. Une seconde requête est bloquée pendant cinq minutes.
 - `unknown` ou `pending` bloqué depuis plus de cinq minutes : le résultat est incertain. L'utilisateur doit vérifier le calendrier COROS et confirmer que la séance est absente avant d'autoriser une nouvelle tentative. Si le calendrier contient déjà une séance au même titre à cette date, OpenCoach bloque également la nouvelle tentative.
@@ -107,13 +117,15 @@ Le serveur vérifie dynamiquement que l'outil `createScheduledWorkout` est dispo
 
 Les tests couvrent :
 
-- la conversion d'une séance continue avec échauffement et retour au calme ;
-- la conversion des répétitions, distances, allures et récupérations ;
+- la conversion d'une séance continue avec échauffement, complément facile et retour au calme ;
+- la conservation et la validation des phases et prescriptions individuelles version 2, avec compatibilité du format version 1 ;
+- la conversion des répétitions, distances, allures, récupérations et découpage des séries de plus de 20 répétitions ;
 - les plages de fréquence cardiaque et les allures issues de la VMA ;
 - le refus des cibles RPE seules, des séances terminées et des sports/structures non compatibles ;
 - la lecture préalable du calendrier à la date cible et l'extraction des séances déjà présentes ;
 - l'extraction de l'identifiant de la séance planifiée et le filtrage des autres séances du jour ;
 - la distinction entre refus explicite de l'outil COROS et résultat réseau incertain ;
+- la lecture de l'éditabilité d'une séance existante, la mise à jour sans création d'un doublon et la réservation SQL atomique ;
 - l'unicité de la tête Alembic après migration.
 
 Aucun envoi réel à COROS n'est exécuté par les tests automatisés.

@@ -825,6 +825,26 @@ def _build_course_description(
                         unit = target.get("unit") or ""
                         if minimum is not None and maximum is not None:
                             parts.append(f"{name or 'Phase'} : {label} {minimum}–{maximum} {unit}".strip())
+    recovery_intensity = prescription.get("recovery_intensity")
+    recovery_targets = (
+        recovery_intensity.get("targets")
+        if isinstance(recovery_intensity, dict)
+        else None
+    )
+    if isinstance(recovery_targets, list):
+        for target in recovery_targets:
+            if not isinstance(target, dict):
+                continue
+            label = target.get("label") or target.get("reference")
+            minimum = target.get("minimum")
+            maximum = target.get("maximum")
+            unit = target.get("unit") or ""
+            if minimum is not None and maximum is not None:
+                parts.append(
+                    f"Récupérations : {label} {minimum}–{maximum} {unit}."
+                )
+                break
+
     intervals = work_structure.get("intervals")
     has_repetition_pace = (
         sport_type != 2

@@ -478,7 +478,9 @@ def push_training_session_to_coros(
                 ),
             )
         is_update = True
-    elif current_status in {"unknown", "pending"}:
+    elif current_status in {"unknown", "pending", "failed"}:
+        # Un échec de mise à jour conserve l'identifiant COROS : la reprise
+        # doit actualiser cette séance, jamais en créer une seconde.
         is_update = bool(training_session.coros_workout_id)
 
     if current_status == "pending":
@@ -754,6 +756,31 @@ def push_training_session_to_coros(
     training_session.coros_payload_hash = workout_payload.payload_hash
     training_session.coros_sync_error = None
 
+    # Vérifier que la prescription n'a pas changé entre sa lecture initiale
+    # et la réservation atomique. Le payload préparé doit encore représenter
+    # exactement la séance qui va être envoyée.
+    try:
+        claimed_payload = map_training_session_to_coros(training_session)
+    except CorosWorkoutMappingError as exc:
+        training_session.coros_sync_status = "failed"
+        training_session.coros_sync_started_at = None
+        training_session.coros_sync_error = (
+            "La séance a changé pendant la préparation de l'envoi. "
+            "Corrige ou actualise la séance avant de réessayer."
+        )
+        repository.save_session(athlete_profile_id, training_session)
+        raise HTTPException(status_code=409, detail=training_session.coros_sync_error) from exc
+
+    if claimed_payload.payload_hash != workout_payload.payload_hash:
+        training_session.coros_sync_status = "failed"
+        training_session.coros_sync_started_at = None
+        training_session.coros_sync_error = (
+            "La séance OpenCoach a été modifiée pendant la préparation. "
+            "Aucun contenu n'a été envoyé à COROS ; relance l'envoi."
+        )
+        repository.save_session(athlete_profile_id, training_session)
+        raise HTTPException(status_code=409, detail=training_session.coros_sync_error)
+
     try:
         if is_update:
             result = client.call_tool(
@@ -843,14 +870,52 @@ def push_training_session_to_coros(
             detail=training_session.coros_sync_error,
         )
 
+    # Relire la séance après l'appel distant : une modification OpenCoach
+    # pendant l'attente ne doit pas être présentée comme déjà synchronisée.
+    expire_all = getattr(db, "expire_all", None)
+    if callable(expire_all):
+        expire_all()
+    latest_session = repository.get_session(
+        athlete_profile_id,
+        session_id,
+    )
+    if latest_session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Séance introuvable après l'envoi COROS.",
+        )
+    latest_session.coros_workout_id = (
+        returned_workout_id
+        or latest_session.coros_workout_id
+    )
+    try:
+        latest_payload = map_training_session_to_coros(latest_session)
+    except CorosWorkoutMappingError:
+        latest_payload = None
+
+    if (
+        latest_payload is None
+        or latest_payload.payload_hash != workout_payload.payload_hash
+    ):
+        latest_session.coros_sync_status = "failed"
+        latest_session.coros_sync_started_at = None
+        latest_session.coros_payload_hash = workout_payload.payload_hash
+        latest_session.coros_sync_error = (
+            "La séance OpenCoach a été modifiée pendant l'envoi. "
+            "COROS a reçu la version précédente ; relance l'envoi pour "
+            "mettre à jour la séance existante."
+        )
+        repository.save_session(athlete_profile_id, latest_session)
+        raise HTTPException(
+            status_code=409,
+            detail=latest_session.coros_sync_error,
+        )
+
+    training_session = latest_session
     training_session.coros_sync_status = "synced"
     training_session.coros_sync_started_at = None
     training_session.coros_last_synced_at = now
     training_session.coros_sync_error = None
-    training_session.coros_workout_id = (
-        returned_workout_id
-        or training_session.coros_workout_id
-    )
     saved_session = repository.save_session(
         athlete_profile_id,
         training_session,

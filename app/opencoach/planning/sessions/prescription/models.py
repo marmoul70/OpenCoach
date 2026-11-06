@@ -16,6 +16,7 @@ physiologiques sont absentes ou insuffisamment fiables.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -55,6 +56,19 @@ class IntensityRange:
     def __post_init__(
         self,
     ) -> None:
+        for label, value in (
+            ("minimale", self.minimum),
+            ("maximale", self.maximum),
+        ):
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+            ):
+                raise ValueError(
+                    f"La borne {label} d'intensité doit être un nombre fini."
+                )
+
         if self.minimum < 0:
             raise ValueError(
                 "La borne minimale d'intensité "

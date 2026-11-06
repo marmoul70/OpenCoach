@@ -74,6 +74,7 @@ class FakeCorosClient:
     update_error = False
     on_update = None
     details_available_dates = None
+    details_error_dates = set()
 
     def __init__(self, access_token):
         self.access_token = access_token
@@ -118,6 +119,8 @@ class FakeCorosClient:
             if self.update_error:
                 raise CorosMcpToolError("COROS a refusé la mise à jour.")
         if name == "queryScheduledWorkoutDetails":
+            if arguments["date"] in type(self).details_error_dates:
+                raise CorosMcpToolError("Séance introuvable à cette date.")
             if (
                 type(self).details_available_dates is not None
                 and arguments["date"] not in type(self).details_available_dates
@@ -240,6 +243,7 @@ def make_client(monkeypatch, session):
     FakeCorosClient.update_error = False
     FakeCorosClient.on_update = None
     FakeCorosClient.details_available_dates = None
+    FakeCorosClient.details_error_dates = set()
     monkeypatch.setattr(coros_api, "CorosMcpClient", FakeCorosClient)
 
     return TestClient(app), repository, profile_id
@@ -456,6 +460,36 @@ def test_uncertain_move_reconciles_workout_at_new_date_when_old_date_lookup_miss
     assert detail_calls == [
         {"date": "20261112", "idInPlan": "existing-workout-id"},
         {"date": "20261113", "idInPlan": "existing-workout-id"},
+    ]
+    assert repository.session.coros_scheduled_date == date(2026, 11, 13)
+
+
+
+def test_uncertain_move_reconciles_when_coros_errors_on_old_date(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "unknown"
+    session.coros_workout_id = "existing-workout-id"
+    session.coros_scheduled_date = date(2026, 11, 12)
+    session.coros_payload_hash = "old-payload-hash"
+    session.date = date(2026, 11, 13)
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.details_error_dates = {"20261112"}
+    FakeCorosClient.details_available_dates = {"20261113"}
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={"confirmed_no_duplicate": True},
+    )
+
+    assert response.status_code == 200
+    detail_calls = [
+        arguments
+        for name, arguments in FakeCorosClient.calls
+        if name == "queryScheduledWorkoutDetails"
+    ]
+    assert [item["date"] for item in detail_calls] == [
+        "20261112",
+        "20261113",
     ]
     assert repository.session.coros_scheduled_date == date(2026, 11, 13)
 

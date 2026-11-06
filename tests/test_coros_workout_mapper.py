@@ -589,3 +589,28 @@ def test_maps_easy_intensity_on_recovery_sections() -> None:
         "intensityValueStart": 120,
         "intensityValueEnd": 135,
     }
+
+
+def test_maps_distance_only_main_block_without_requiring_duration() -> None:
+    session = make_session(
+        prescription=heart_rate_prescription(
+            {
+                "type": "continuous",
+                "continuous_minutes": None,
+            },
+            blocks=[
+                {
+                    "name": "Sortie principale",
+                    "phase": "main",
+                    "duration_minutes": None,
+                    "target_distance_meters": 12000,
+                    "description": "Endurance aérobie.",
+                }
+            ],
+        )
+    )
+
+    payload = map_training_session_to_coros(session)
+
+    assert payload.course["sections"][0]["targetType"] == 1
+    assert payload.course["sections"][0]["targetValue"] == 12000

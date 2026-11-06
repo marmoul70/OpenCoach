@@ -67,24 +67,46 @@ class FakeCorosClient:
     def list_tools(self):
         return [
             {
+                "name": "queryTrainingSchedule",
+                "inputSchema": {
+                    "properties": {
+                        "startDay": {"type": "string"},
+                        "endDay": {"type": "string"},
+                    },
+                    "required": ["startDay", "endDay"],
+                },
+            },
+            {
                 "name": "createScheduledWorkout",
                 "inputSchema": {
                     "required": ["date", "course"],
                 },
-            }
+            },
         ]
 
     def call_tool(self, name, arguments):
         self.calls.append((name, arguments))
+        if name == "queryTrainingSchedule":
+            return {
+                "structuredContent": {
+                    "schedule": {
+                        "days": [
+                            {
+                                "date": "2026-11-12",
+                                "courses": [
+                                    {
+                                        "idInPlan": "existing-workout-id",
+                                        "courseName": "Renforcement",
+                                    }
+                                ],
+                            }
+                        ]
+                    }
+                }
+            }
         return {
             "structuredContent": {
                 "idInPlan": "new-workout-id",
-                "otherWorkouts": [
-                    {
-                        "idInPlan": "existing-workout-id",
-                        "courseName": "Renforcement",
-                    }
-                ],
             }
         }
 
@@ -177,9 +199,13 @@ def test_pushes_planned_session_to_coros_and_reports_other_workouts(monkeypatch)
     assert "Renforcement" in body["message"]
     assert repository.session.coros_sync_status == "synced"
     assert repository.session.coros_workout_id == "new-workout-id"
-    assert len(FakeCorosClient.calls) == 1
+    assert len(FakeCorosClient.calls) == 2
+    assert FakeCorosClient.calls[0] == (
+        "queryTrainingSchedule",
+        {"startDay": "20261112", "endDay": "20261112"},
+    )
 
-    tool_name, arguments = FakeCorosClient.calls[0]
+    tool_name, arguments = FakeCorosClient.calls[1]
     assert tool_name == "createScheduledWorkout"
     assert arguments["date"] == "20261112"
     assert arguments["course"]["sportType"] == 1
@@ -201,7 +227,7 @@ def test_repeated_push_does_not_create_a_duplicate(monkeypatch):
     assert first.status_code == 200
     assert second.status_code == 200
     assert second.json()["status"] == "synced"
-    assert len(FakeCorosClient.calls) == 1
+    assert len(FakeCorosClient.calls) == 2
 
 
 def test_uncertain_previous_push_requires_explicit_no_duplicate_confirmation(

@@ -425,113 +425,108 @@ export function AppNavigation({
         title="Compte et notifications"
         onClose={() => setDesktopProfileOpen(false)}
       >
-        <div className="space-y-4">
-          <section className="
-            flex items-center gap-3 border-b border-[var(--oc-border)]
-            px-1 pb-4
-          ">
-            <Avatar avatar={avatar} initials={initials} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-[var(--oc-text)]">
-                {formatName(firstName, lastName)}
-              </p>
-              <p className="mt-0.5 text-[10px] text-[var(--oc-muted)]">
-                Profil athlète
-              </p>
-            </div>
-            <span className="
-              rounded-full bg-[var(--oc-surface-muted)]
-              px-2 py-1 text-[9px] font-medium text-[var(--oc-muted)]
-            ">
-              Mon compte
-            </span>
-          </section>
-
-          <section>
+        <div className="flex min-h-full flex-col gap-4">
+          {/* Notifications stay at the top */}
+          <section className="shrink-0">
             <NotificationBell
               embedded
               onViewAll={() => navigate('notifications')}
             />
           </section>
 
-          <section className="border-t border-[var(--oc-border)] pt-3">
-            <DropdownLabel>Mon compte</DropdownLabel>
-            <div className="mt-1 space-y-0.5">
-              <DropdownItem
-                icon={<UserRound className="h-4 w-4" />}
-                label="Profil personnel"
-                active={activePage === 'profile-personal'}
-                onClick={() => navigate('profile-personal')}
-              />
-              <DropdownItem
-                icon={<CircleUserRound className="h-4 w-4" />}
-                label="Profil sportif"
-                active={activePage === 'profile-sport'}
-                onClick={() => navigate('profile-sport')}
-              />
-              <DropdownItem
-                icon={<Settings className="h-4 w-4" />}
-                label="Réglages"
-                active={activePage === 'settings'}
-                onClick={() => navigate('settings')}
-              />
-            </div>
-          </section>
+          {/* Account actions are anchored to the bottom */}
+          <div className="mt-auto space-y-4 border-t border-[var(--oc-border)] pt-4">
+            <section className="flex items-center gap-3 px-1">
+              <Avatar avatar={avatar} initials={initials} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-semibold text-[var(--oc-text)]">
+                  {formatName(firstName, lastName)}
+                </p>
+                <p className="mt-0.5 text-[10px] text-[var(--oc-muted)]">
+                  Profil athlète
+                </p>
+              </div>
+            </section>
 
-          <section className="border-t border-[var(--oc-border)] pt-3">
-            <div className="mb-2 flex items-center justify-between">
-              <DropdownLabel>Apparence</DropdownLabel>
-              <span className="text-[9px] text-[var(--oc-muted)]">
-                {theme === 'system' ? 'Automatique' : theme === 'light' ? 'Clair' : 'Sombre'}
+            <section>
+              <DropdownLabel>Mon compte</DropdownLabel>
+              <div className="mt-1 space-y-0.5">
+                <DropdownItem
+                  icon={<UserRound className="h-4 w-4" />}
+                  label="Profil personnel"
+                  active={activePage === 'profile-personal'}
+                  onClick={() => navigate('profile-personal')}
+                />
+                <DropdownItem
+                  icon={<CircleUserRound className="h-4 w-4" />}
+                  label="Profil sportif"
+                  active={activePage === 'profile-sport'}
+                  onClick={() => navigate('profile-sport')}
+                />
+                <DropdownItem
+                  icon={<Settings className="h-4 w-4" />}
+                  label="Réglages"
+                  active={activePage === 'settings'}
+                  onClick={() => navigate('settings')}
+                />
+              </div>
+            </section>
+
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <DropdownLabel>Apparence</DropdownLabel>
+                <span className="text-[9px] text-[var(--oc-muted)]">
+                  {theme === 'system' ? 'Automatique' : theme === 'light' ? 'Clair' : 'Sombre'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <DropdownThemeButton
+                  active={theme === 'light'}
+                  icon={<Sun className="h-4 w-4" />}
+                  label="Clair"
+                  onClick={() => onThemeChange('light')}
+                />
+                <DropdownThemeButton
+                  active={theme === 'dark'}
+                  icon={<Moon className="h-4 w-4" />}
+                  label="Sombre"
+                  onClick={() => onThemeChange('dark')}
+                />
+                <DropdownThemeButton
+                  active={theme === 'system'}
+                  icon={<Monitor className="h-4 w-4" />}
+                  label="Auto"
+                  onClick={() => onThemeChange('system')}
+                />
+              </div>
+            </section>
+
+            <section className="
+              flex items-center justify-between gap-3
+              border-t border-[var(--oc-border)] pt-3
+            ">
+              <button
+                type="button"
+                onClick={() => {
+                  setDesktopProfileOpen(false)
+                  onLogout()
+                }}
+                className="
+                  inline-flex items-center gap-2 rounded-lg px-2 py-2
+                  text-[11px] font-medium text-rose-600
+                  transition-colors hover:bg-rose-500/[0.07]
+                  dark:text-rose-400
+                "
+              >
+                <LogOut className="h-4 w-4" />
+                Se déconnecter
+              </button>
+              <span className="text-right text-[8px] text-[var(--oc-muted-soft)]">
+                {version ? `v${version}` : 'dev'}
+                {commit ? ` · ${commit}` : ''}
               </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <DropdownThemeButton
-                active={theme === 'light'}
-                icon={<Sun className="h-4 w-4" />}
-                label="Clair"
-                onClick={() => onThemeChange('light')}
-              />
-              <DropdownThemeButton
-                active={theme === 'dark'}
-                icon={<Moon className="h-4 w-4" />}
-                label="Sombre"
-                onClick={() => onThemeChange('dark')}
-              />
-              <DropdownThemeButton
-                active={theme === 'system'}
-                icon={<Monitor className="h-4 w-4" />}
-                label="Auto"
-                onClick={() => onThemeChange('system')}
-              />
-            </div>
-          </section>
-
-          <section className="
-            flex items-center justify-between gap-3
-            border-t border-[var(--oc-border)] pt-3
-          ">
-            <button
-              type="button"
-              onClick={() => {
-                setDesktopProfileOpen(false)
-                onLogout()
-              }}
-              className="
-                inline-flex items-center gap-2 rounded-lg px-2 py-2
-                text-[11px] font-medium text-rose-600
-                transition-colors hover:bg-rose-500/[0.07]
-                dark:text-rose-400
-              "
-            >
-              <LogOut className="h-4 w-4" />
-              Se déconnecter
-            </button>
-            <span className="text-right text-[8px] text-[var(--oc-muted-soft)]">
-              {version ? `v${version}` : 'dev'}
-              {commit ? ` · ${commit}` : ''}
-            </span>
-          </section>
+            </section>
+          </div>
         </div>
       </SidePanel>
 

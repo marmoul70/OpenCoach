@@ -94,6 +94,10 @@ def validate_training_session_prescription(
                     f"Phase de séance non reconnue : {phase!r}."
                 )
             block_intensity = block.get("intensity")
+            if phase in {"warmup", "main", "easy", "cooldown"} and block_intensity is None:
+                raise TrainingSessionPrescriptionIntegrityError(
+                    "Chaque phase de course doit conserver sa prescription d'intensité."
+                )
             if block_intensity is not None and (
                 not isinstance(block_intensity, dict)
                 or not isinstance(block_intensity.get("targets"), list)
@@ -116,6 +120,28 @@ def validate_training_session_prescription(
             "OpenCoach doit posséder une structure "
             "de travail."
         )
+
+    if version == 2:
+        intervals = work_structure.get("intervals")
+        has_recovery = (
+            isinstance(intervals, list)
+            and any(
+                isinstance(interval, dict)
+                and any(
+                    interval.get(key) is not None
+                    for key in (
+                        "recovery_duration",
+                        "recovery_distance_meters",
+                        "recovery_elevation_gain_meters",
+                    )
+                )
+                for interval in intervals
+            )
+        )
+        if has_recovery and prescription.get("recovery_intensity") is None:
+            raise TrainingSessionPrescriptionIntegrityError(
+                "Une séance fractionnée doit conserver une intensité dédiée aux récupérations."
+            )
 
     stimulus = work_structure.get(
         "stimulus"

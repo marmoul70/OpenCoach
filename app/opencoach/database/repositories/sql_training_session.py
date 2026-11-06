@@ -122,6 +122,8 @@ class SqlTrainingSessionRepository(
             for field_name in coros_metadata:
                 incoming_value = getattr(session, field_name)
                 current_value = getattr(database_session, field_name)
+                # Preserve a remote value when a non-COROS writer sends None.
+                # Explicit non-None updates from COROS remain authoritative.
                 if incoming_value is not None or current_value is None:
                     setattr(database_session, field_name, incoming_value)
             self.session.commit()

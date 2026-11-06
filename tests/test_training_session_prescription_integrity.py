@@ -132,7 +132,7 @@ def test_version_two_prescription_accepts_ordered_phases_and_block_targets() -> 
                 {
                     "name": "Échauffement",
                     "description": "Mise en route progressive.",
-                    "duration_minutes": 15,
+                    "duration_minutes": 10,
                     "phase": "warmup",
                     "intensity": {
                         "targets": [
@@ -149,7 +149,7 @@ def test_version_two_prescription_accepts_ordered_phases_and_block_targets() -> 
                 {
                     "name": "Bloc principal",
                     "description": "Travail au seuil.",
-                    "duration_minutes": 40,
+                    "duration_minutes": 35,
                     "phase": "main",
                     "intensity": {
                         "targets": [
@@ -199,4 +199,161 @@ def test_version_two_rejects_unknown_phase() -> None:
     ]
 
     with pytest.raises(TrainingSessionPrescriptionIntegrityError):
+        validate_training_session_prescription(value)
+
+
+def test_version_two_requires_explicit_phase_name_and_description() -> None:
+    value = session(
+        prescription={
+            "version": 2,
+            "blocks": [
+                {
+                    "name": "Bloc",
+                    "description": "Consigne.",
+                    "duration_minutes": 45,
+                    "intensity": {
+                        "targets": [
+                            {
+                                "reference": "rpe",
+                                "minimum": 3,
+                                "maximum": 4,
+                                "unit": "/10",
+                            }
+                        ],
+                        "guidance": [],
+                    },
+                }
+            ],
+            "work_structure": {
+                "type": "continuous",
+                "stimulus": "aerobic_easy",
+                "available_minutes": 45,
+                "continuous_minutes": 45,
+                "description": "Travail continu.",
+                "circuit": None,
+                "intervals": [],
+            },
+            "intensity": {
+                "targets": [
+                    {
+                        "reference": "rpe",
+                        "minimum": 3,
+                        "maximum": 4,
+                        "unit": "/10",
+                    }
+                ],
+                "guidance": [],
+            },
+        }
+    )
+
+    with pytest.raises(
+        TrainingSessionPrescriptionIntegrityError,
+        match="Phase de séance absente",
+    ):
+        validate_training_session_prescription(value)
+
+
+def test_version_two_requires_phase_durations_to_match_session_duration() -> None:
+    value = session(
+        prescription={
+            "version": 2,
+            "blocks": [
+                {
+                    "name": "Séance",
+                    "description": "Travail continu.",
+                    "duration_minutes": 40,
+                    "phase": "main",
+                    "intensity": {
+                        "targets": [
+                            {
+                                "reference": "rpe",
+                                "minimum": 3,
+                                "maximum": 4,
+                                "unit": "/10",
+                            }
+                        ],
+                        "guidance": [],
+                    },
+                }
+            ],
+            "work_structure": {
+                "type": "continuous",
+                "stimulus": "aerobic_easy",
+                "available_minutes": 40,
+                "continuous_minutes": 40,
+                "description": "Travail continu.",
+                "circuit": None,
+                "intervals": [],
+            },
+            "intensity": {
+                "targets": [
+                    {
+                        "reference": "rpe",
+                        "minimum": 3,
+                        "maximum": 4,
+                        "unit": "/10",
+                    }
+                ],
+                "guidance": [],
+            },
+        }
+    )
+
+    with pytest.raises(
+        TrainingSessionPrescriptionIntegrityError,
+        match="ne correspond pas à la durée totale",
+    ):
+        validate_training_session_prescription(value)
+
+
+def test_version_two_rejects_invalid_interval_work_and_recovery_targets() -> None:
+    value = session()
+    assert value.prescription is not None
+    value.prescription["version"] = 2
+    value.prescription["blocks"] = [
+        {
+            "name": "Bloc principal",
+            "description": "Intervalles.",
+            "duration_minutes": 45,
+            "phase": "main",
+            "intensity": {
+                "targets": [
+                    {
+                        "reference": "rpe",
+                        "minimum": 7,
+                        "maximum": 8,
+                        "unit": "/10",
+                    }
+                ],
+                "guidance": [],
+            },
+        }
+    ]
+    value.prescription["work_structure"]["intervals"] = [
+        {
+            "repetitions": 5,
+            "work_duration": 60,
+            "work_unit": "seconds",
+            "work_distance_meters": 400,
+            "recovery_duration": 30,
+            "recovery_unit": "seconds",
+        }
+    ]
+    value.prescription["recovery_intensity"] = {
+        "targets": [
+            {
+                "reference": "rpe",
+                "minimum": 1,
+                "maximum": 2,
+                "unit": "/10",
+            }
+        ],
+        "guidance": [],
+    }
+
+    with pytest.raises(
+        TrainingSessionPrescriptionIntegrityError,
+        match="exactement une durée ou une distance",
+    ):
         validate_training_session_prescription(value)

@@ -123,6 +123,26 @@ def validate_training_session_prescription(
 
     if version == 2:
         intervals = work_structure.get("intervals")
+        if isinstance(intervals, list):
+            for interval in intervals:
+                if not isinstance(interval, dict):
+                    raise TrainingSessionPrescriptionIntegrityError(
+                        "Chaque série doit être un objet structuré."
+                    )
+                for target_key in (
+                    "work_elevation_gain_meters",
+                    "recovery_distance_meters",
+                    "recovery_elevation_gain_meters",
+                ):
+                    target_value = interval.get(target_key)
+                    if target_value is not None and (
+                        isinstance(target_value, bool)
+                        or not isinstance(target_value, int)
+                        or target_value <= 0
+                    ):
+                        raise TrainingSessionPrescriptionIntegrityError(
+                            f"La cible {target_key} doit être un entier strictement positif."
+                        )
         has_recovery = (
             isinstance(intervals, list)
             and any(

@@ -603,13 +603,15 @@ def _build_interval_groups(
                 "Une récupération en dénivelé n'est disponible que pour le trail."
             )
 
-        recovery_intensity = prescription.get("recovery_intensity")
+        # Une phase recovery explicitement prescrite est la source
+        # prioritaire. La cible globale reste un fallback de compatibilité.
+        recovery_intensity = (
+            recovery_block.get("intensity")
+            if isinstance(recovery_block, dict)
+            else None
+        )
         if not isinstance(recovery_intensity, dict):
-            recovery_intensity = (
-                recovery_block.get("intensity")
-                if isinstance(recovery_block, dict)
-                else None
-            )
+            recovery_intensity = prescription.get("recovery_intensity")
         if isinstance(recovery_intensity, dict):
             recovery_section.update(_intensity_fields(
                 {"intensity": recovery_intensity},

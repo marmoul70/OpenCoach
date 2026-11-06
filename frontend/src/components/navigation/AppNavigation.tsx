@@ -1254,56 +1254,6 @@ function MobileDrawerItem({
 }
 
 
-function ThemeButton({
-  active,
-  icon,
-  label,
-  onClick,
-}: {
-  active: boolean
-  icon: React.ReactNode
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        (
-          'flex items-center '
-          + 'justify-center gap-1.5 '
-          + 'rounded-xl border '
-          + 'px-2 py-2 '
-          + 'text-xs font-semibold '
-          + 'transition'
-        ),
-        active
-          ? (
-              'border-emerald-500/25 '
-              + 'bg-emerald-50 '
-              + 'text-emerald-700 '
-              + 'dark:bg-emerald-500/10 '
-              + 'dark:text-emerald-400'
-            )
-          : (
-              'border-[var(--oc-border)] '
-              + 'bg-[var(--oc-surface)] '
-              + 'text-[var(--oc-muted)] '
-              + 'dark:border-[var(--oc-border)] '
-              + 'dark:bg-[var(--oc-surface)]/[0.03] '
-              + 'dark:text-[var(--oc-muted)]'
-            ),
-      ].join(' ')}
-    >
-      {icon}
-      {label}
-    </button>
-  )
-}
-
-
-
 
 function Avatar({
   avatar,

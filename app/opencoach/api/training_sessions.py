@@ -154,6 +154,7 @@ def to_response(
             session.intervals_sync_error
         ),
         coros_sync_status=session.coros_sync_status,
+        coros_scheduled_date=session.coros_scheduled_date,
         coros_sync_started_at=_as_utc(session.coros_sync_started_at),
         coros_last_synced_at=_as_utc(session.coros_last_synced_at),
         coros_sync_error=session.coros_sync_error,

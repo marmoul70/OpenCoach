@@ -11,11 +11,13 @@ import {
 
 interface NotificationBellProps {
   onViewAll: () => void
+  placement?: 'default' | 'sidebar'
 }
 
 
 export function NotificationBell({
   onViewAll,
+  placement = 'default',
 }: NotificationBellProps) {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<AppNotification[]>([])
@@ -116,19 +118,21 @@ export function NotificationBell({
           <button
             type="button"
             aria-label="Fermer les notifications"
-            className="fixed inset-0 z-[70] cursor-default"
+            className="fixed inset-0 z-[40] cursor-default"
             onClick={() => setOpen(false)}
           />
           <section
             role="dialog"
             aria-label="Notifications récentes"
-            className="
-              absolute right-0 top-[calc(100%+10px)] z-[80]
-              w-[min(360px,calc(100vw-24px))] overflow-hidden
-              rounded-2xl border border-[var(--oc-border)]
-              bg-[var(--oc-surface)] shadow-[0_18px_50px_rgba(15,23,42,0.18)]
-              dark:shadow-[0_18px_50px_rgba(0,0,0,0.42)]
-            "
+            className={[
+              placement === 'sidebar'
+                ? 'fixed bottom-20 left-3'
+                : 'absolute right-0 top-[calc(100%+10px)]',
+              'z-[80] w-[min(360px,calc(100vw-24px))] overflow-hidden',
+              'rounded-2xl border border-[var(--oc-border)]',
+              'bg-[var(--oc-surface)] shadow-[0_18px_50px_rgba(15,23,42,0.18)]',
+              'dark:shadow-[0_18px_50px_rgba(0,0,0,0.42)]',
+            ].join(' ')}
           >
             <div className="
               flex items-center justify-between border-b

@@ -60,6 +60,7 @@ def map_training_session_to_coros(
     structure_type = str(work_structure.get("type") or "").strip().lower()
     sections: list[dict[str, Any]] = []
     warmup_blocks = _matching_blocks(prescription, "warmup")
+    easy_blocks = _matching_blocks(prescription, "easy")
     cooldown_blocks = _matching_blocks(prescription, "cooldown")
 
     for block in warmup_blocks:
@@ -99,6 +100,18 @@ def map_training_session_to_coros(
         raise CorosWorkoutMappingError(
             "Cette structure (renforcement, circuit ou travail technique) "
             "n'est pas encore prise en charge par l'envoi COROS."
+        )
+
+    # Les compléments faciles sont des phases réelles de la séance :
+    # ils ne doivent pas disparaître entre le travail principal et le cooldown.
+    for block in easy_blocks:
+        sections.append(
+            _build_phase_section(
+                block,
+                section_type=2,
+                sport_type=sport_type,
+                phase_label="complément facile",
+            )
         )
 
     for block in cooldown_blocks:
@@ -182,6 +195,11 @@ def _matching_blocks(
     for block in blocks:
         if not isinstance(block, dict):
             continue
+        explicit_phase = str(block.get("phase") or "").strip().lower()
+        if explicit_phase:
+            if explicit_phase == phase:
+                matches.append(block)
+            continue
         name = _normalize_text(
             str(block.get("name") or block.get("type") or block.get("label") or "")
         )
@@ -191,6 +209,10 @@ def _matching_blocks(
             matches.append(block)
         elif phase == "cooldown" and (
             "cooldown" in name or "retour au calme" in name or "recuperation finale" in name
+        ):
+            matches.append(block)
+        elif phase == "easy" and (
+            "complement facile" in name or "footing facile" in name
         ):
             matches.append(block)
     return matches
@@ -235,11 +257,18 @@ def _build_phase_section(
             f"COROS impose une cible en distance pour le {phase_label} en trail. "
             "La prescription OpenCoach ne contient ici qu'une durée."
         )
-    return {
+    section = {
         "sectionType": section_type,
         "targetType": 2,
         "targetValue": seconds,
     }
+    block_intensity = block.get("intensity")
+    if isinstance(block_intensity, dict):
+        section.update(_intensity_fields(
+            {"intensity": block_intensity},
+            sport_type,
+        ))
+    return section
 
 
 def _build_continuous_section(
@@ -251,20 +280,20 @@ def _build_continuous_section(
     warmup_seconds: int,
     cooldown_seconds: int,
 ) -> dict[str, Any]:
-    if sport_type == 5:
-        distance = work_structure.get("work_distance_meters")
-        if distance is None and session.distance_km is not None:
-            distance = _positive_integer(
-                session.distance_km * 1000,
-                "distance",
-            )
-        if distance is not None:
-            section = {
-                "sectionType": 2,
-                "targetType": 1,
-                "targetValue": _positive_integer(distance, "distance"),
-            }
-        elif session.elevation_gain_m is not None:
+    distance = work_structure.get("work_distance_meters")
+    if distance is None and session.distance_km is not None:
+        distance = _positive_integer(
+            session.distance_km * 1000,
+            "distance",
+        )
+
+    if distance is not None:
+        section = {
+            "sectionType": 2,
+            "targetType": 1,
+            "targetValue": _positive_integer(distance, "distance"),
+        }
+    elif sport_type == 5 and session.elevation_gain_m is not None:
             section = {
                 "sectionType": 2,
                 "targetType": 3,
@@ -273,11 +302,11 @@ def _build_continuous_section(
                     "dénivelé",
                 ),
             }
-        else:
-            raise CorosWorkoutMappingError(
-                "COROS exige une cible en distance ou en dénivelé pour le trail. "
-                "Cette séance ne contient qu'une durée."
-            )
+    elif sport_type == 5:
+        raise CorosWorkoutMappingError(
+            "COROS exige une cible en distance ou en dénivelé pour le trail. "
+            "Cette séance ne contient qu'une durée."
+        )
     else:
         minutes = (
             work_structure.get("continuous_minutes")
@@ -616,6 +645,41 @@ def _build_course_description(
     sport_type: int,
 ) -> str:
     parts = [session.description.strip() or session.title.strip()]
+    blocks = prescription.get("blocks")
+    if isinstance(blocks, list):
+        for block in blocks:
+            if not isinstance(block, dict):
+                continue
+            name = str(block.get("name") or block.get("label") or "").strip()
+            detail = str(block.get("description") or "").strip()
+            duration = block.get("duration_minutes")
+            target_parts = []
+            if duration is not None:
+                target_parts.append(f"{duration} min")
+            distance = block.get("target_distance_meters")
+            if distance is not None:
+                target_parts.append(f"{distance} m")
+            elevation = block.get("target_elevation_gain_meters")
+            if elevation is not None:
+                target_parts.append(f"{elevation} m D+")
+            heading = " — ".join(part for part in (name, ", ".join(target_parts)) if part)
+            if heading or detail:
+                parts.append(": ".join(part for part in (heading, detail) if part))
+            block_intensity = block.get("intensity")
+            block_targets = (
+                block_intensity.get("targets")
+                if isinstance(block_intensity, dict)
+                else None
+            )
+            if isinstance(block_targets, list):
+                for target in block_targets:
+                    if isinstance(target, dict):
+                        label = target.get("label") or target.get("reference")
+                        minimum = target.get("minimum")
+                        maximum = target.get("maximum")
+                        unit = target.get("unit") or ""
+                        if minimum is not None and maximum is not None:
+                            parts.append(f"{name or 'Phase'} : {label} {minimum}–{maximum} {unit}".strip())
     intervals = work_structure.get("intervals")
     has_repetition_pace = (
         sport_type != 2

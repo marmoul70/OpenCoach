@@ -89,8 +89,10 @@ class CorosMcpClient:
             )
 
         if result.get("isError") is True:
-            raise CorosMcpProtocolError(
-                f"L'outil COROS '{normalized_name}' a retourné une erreur."
+            detail = _tool_error_detail(result)
+            raise CorosMcpToolError(
+                f"L'outil COROS '{normalized_name}' a refusé la requête"
+                + (f" : {detail}" if detail else ".")
             )
 
         return result

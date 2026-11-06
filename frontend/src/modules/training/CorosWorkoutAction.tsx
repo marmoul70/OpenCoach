@@ -39,7 +39,7 @@ export function CorosWorkoutAction({
   const normalizedSport = session.sportType
     .trim()
     .toLowerCase()
-    .replace(/[\\s_-]/g, '')
+    .replace(/[\s_-]/g, '')
 
   const supportedSport = [
     'run',

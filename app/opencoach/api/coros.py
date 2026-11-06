@@ -476,7 +476,29 @@ def push_training_session_to_coros(
             ),
         )
 
-    if current_status in {"pending", "unknown"} and not payload.confirmed_no_duplicate:
+    if current_status == "pending":
+        stale_pending = _coros_push_is_stale(
+            training_session.coros_sync_started_at
+        )
+        if not stale_pending:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Un envoi COROS est encore en cours. Attends sa fin avant "
+                    "de relancer cette opération."
+                ),
+            )
+        if not payload.confirmed_no_duplicate:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "L'envoi COROS est bloqué depuis plus de cinq minutes. "
+                    "Vérifie le calendrier COROS. Si la séance est absente, "
+                    "confirme cette vérification pour autoriser une nouvelle tentative."
+                ),
+            )
+
+    if current_status == "unknown" and not payload.confirmed_no_duplicate:
         raise HTTPException(
             status_code=409,
             detail=(
@@ -565,6 +587,7 @@ def push_training_session_to_coros(
     # Persister l'intention avant l'appel distant : si le serveur s'arrête
     # pendant l'écriture, un second clic ne créera pas un doublon silencieux.
     training_session.coros_sync_status = "pending"
+    training_session.coros_sync_started_at = datetime.now(timezone.utc)
     training_session.coros_payload_hash = workout_payload.payload_hash
     training_session.coros_sync_error = None
     training_session = repository.save_session(
@@ -579,6 +602,7 @@ def push_training_session_to_coros(
         )
     except CorosMcpAuthenticationError as exc:
         training_session.coros_sync_status = "failed"
+        training_session.coros_sync_started_at = None
         training_session.coros_sync_error = (
             "La connexion COROS a été refusée. Reconnecte ton compte avant de réessayer."
         )
@@ -603,6 +627,7 @@ def push_training_session_to_coros(
         ) from exc
     except CorosMcpProtocolError as exc:
         training_session.coros_sync_status = "unknown"
+        training_session.coros_sync_started_at = None
         training_session.coros_sync_error = (
             "COROS n'a pas confirmé le résultat de l'envoi. "
             "Vérifie le calendrier COROS avant toute nouvelle tentative."
@@ -626,6 +651,7 @@ def push_training_session_to_coros(
 
     now = datetime.now(timezone.utc)
     training_session.coros_sync_status = "synced"
+    training_session.coros_sync_started_at = None
     training_session.coros_last_synced_at = now
     training_session.coros_sync_error = None
     training_session.coros_workout_id = _extract_coros_scheduled_id(result)
@@ -660,6 +686,23 @@ def push_training_session_to_coros(
         "message": message,
         "other_workouts": other_workouts,
     }
+
+
+def _coros_push_is_stale(
+    started_at: datetime | None,
+    *,
+    now: datetime | None = None,
+) -> bool:
+    """Autorise une réconciliation manuelle seulement après un délai de sécurité."""
+    if started_at is None:
+        return False
+    current_time = now or datetime.now(timezone.utc)
+    normalized_start = (
+        started_at.replace(tzinfo=timezone.utc)
+        if started_at.tzinfo is None
+        else started_at
+    )
+    return current_time - normalized_start >= timedelta(minutes=5)
 
 
 def _extract_coros_scheduled_id(result: dict[str, Any]) -> str | None:

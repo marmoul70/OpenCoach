@@ -217,7 +217,18 @@ export function NotificationBell({
               )}
             </div>
 
-            {!embedded && <div className="border-t border-[var(--oc-border)] p-2">\n              <button\n                type="button"\n                onClick={viewAll}\n                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--oc-surface-muted)] px-3 py-2.5 text-[10px] font-semibold text-[var(--oc-text-secondary)] transition hover:bg-[var(--oc-surface-hover)]"\n              >\n                <CheckCheck className="h-3.5 w-3.5" />\n                Ouvrir le centre de notifications\n              </button>\n            </div>}
+            {!embedded && (
+              <div className="border-t border-[var(--oc-border)] p-2">
+                <button
+                  type="button"
+                  onClick={viewAll}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--oc-surface-muted)] px-3 py-2.5 text-[10px] font-semibold text-[var(--oc-text-secondary)] transition hover:bg-[var(--oc-surface-hover)]"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  Ouvrir le centre de notifications
+                </button>
+              </div>
+            )}
           </section>
         </>
       )}

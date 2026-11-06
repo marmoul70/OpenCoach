@@ -254,7 +254,10 @@ def _build_continuous_section(
     if sport_type == 5:
         distance = work_structure.get("work_distance_meters")
         if distance is None and session.distance_km is not None:
-            distance = round(session.distance_km * 1000)
+            distance = _positive_integer(
+                session.distance_km * 1000,
+                "distance",
+            )
         if distance is not None:
             section = {
                 "sectionType": 2,
@@ -539,6 +542,10 @@ def _duration_seconds(
         raise CorosWorkoutMappingError(
             "Une durée d'intervalle est invalide."
         ) from exc
+    if not math.isfinite(numeric) or numeric <= 0:
+        raise CorosWorkoutMappingError(
+            "Les durées des intervalles doivent être positives et finies."
+        )
     normalized = str(unit or default_unit).strip().lower()
     if normalized in {"second", "seconds", "sec", "s"}:
         seconds = round(numeric)
@@ -548,7 +555,7 @@ def _duration_seconds(
         raise CorosWorkoutMappingError(
             "L'unité de durée de l'intervalle n'est pas reconnue."
         )
-    if not math.isfinite(numeric) or seconds <= 0:
+    if seconds <= 0:
         raise CorosWorkoutMappingError(
             "Les durées des intervalles doivent être positives et finies."
         )

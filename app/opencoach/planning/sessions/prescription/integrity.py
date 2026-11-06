@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from opencoach.models import TrainingSession
 
 
@@ -38,6 +40,8 @@ def _validate_intensity_targets(
             or isinstance(maximum, bool)
             or not isinstance(minimum, (int, float))
             or not isinstance(maximum, (int, float))
+            or not math.isfinite(minimum)
+            or not math.isfinite(maximum)
             or minimum < 0
             or maximum < minimum
         ):
@@ -343,7 +347,19 @@ def validate_training_session_prescription(
                 for interval in intervals
             )
         )
-        if has_recovery and prescription.get("recovery_intensity") is None:
+        has_recovery_phase_intensity = any(
+            isinstance(block, dict)
+            and block.get("phase") == "recovery"
+            and isinstance(block.get("intensity"), dict)
+            and isinstance(block["intensity"].get("targets"), list)
+            and bool(block["intensity"]["targets"])
+            for block in blocks
+        )
+        if (
+            has_recovery
+            and prescription.get("recovery_intensity") is None
+            and not has_recovery_phase_intensity
+        ):
             raise TrainingSessionPrescriptionIntegrityError(
                 "Une séance fractionnée doit conserver une intensité dédiée aux récupérations."
             )

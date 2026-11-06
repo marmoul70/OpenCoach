@@ -382,32 +382,23 @@ export function AppNavigation({
         {/* Desktop account and notification dock */}
         <div className="
           border-t border-[var(--oc-border)]
-          p-3
+          px-3 py-2.5
           dark:border-[var(--oc-border)]
         ">
-          <div className="
-            flex items-center gap-1.5
-            rounded-2xl border border-[var(--oc-border)]
-            bg-[var(--oc-surface-muted)]/65 p-1.5
-            shadow-sm shadow-black/[0.025]
-            transition-colors
-            dark:bg-[var(--oc-surface)]/[0.035]
-          ">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setDesktopProfileOpen((current) => !current)}
               aria-haspopup="menu"
               aria-expanded={desktopProfileOpen}
               className="
-                flex min-w-0 flex-1 items-center gap-2
-                rounded-xl px-1.5 py-1.5 text-left
+                flex min-w-0 flex-1 items-center gap-2.5
+                rounded-xl px-1.5 py-2 text-left
                 transition-colors hover:bg-[var(--oc-surface-hover)]
                 dark:hover:bg-[var(--oc-surface)]/[0.06]
               "
             >
-              <span className="shrink-0 rounded-full ring-2 ring-[var(--oc-surface)]">
-                <Avatar avatar={avatar} initials={initials} size="small" />
-              </span>
+              <Avatar avatar={avatar} initials={initials} size="small" />
 
               <span className="min-w-0 flex-1">
                 <span className="
@@ -429,8 +420,6 @@ export function AppNavigation({
                 desktopProfileOpen ? '-rotate-90' : '',
               ].join(' ')} />
             </button>
-
-            <span aria-hidden="true" className="h-7 w-px shrink-0 bg-[var(--oc-border)]" />
 
             <NotificationBell
               placement="sidebar"

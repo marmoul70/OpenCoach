@@ -58,26 +58,32 @@ def _absolute_fallback_impact(
 ) -> EventImpact:
     """Politique conservatrice lorsque l'historique est insuffisant."""
 
-    elevation = (
-        race.elevation_gain_m
-        or 0.0
-    )
+    elevation = race.elevation_gain_m
 
     if (
         race.distance_km >= 42.0
-        or elevation >= 2000.0
+        or (
+            elevation is not None
+            and elevation >= 2000.0
+        )
     ):
         return EventImpact.CRITICAL
 
     if (
         race.distance_km >= 25.0
-        or elevation >= 1000.0
+        or (
+            elevation is not None
+            and elevation >= 1000.0
+        )
     ):
         return EventImpact.HIGH
 
     if (
         race.distance_km >= 10.0
-        or elevation >= 400.0
+        or (
+            elevation is not None
+            and elevation >= 400.0
+        )
     ):
         return EventImpact.MODERATE
 

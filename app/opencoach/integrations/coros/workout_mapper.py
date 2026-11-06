@@ -165,12 +165,13 @@ def map_training_session_to_coros(
             "Séance configurée comme course à pied pour conserver les étapes "
             "chronométrées ; sur la montre, démarre-la en mode Trail Run."
         )
-        available_description = max(0, 999 - len(trail_note))
-        description = (
-            description[:available_description].rstrip()
-            + " "
-            + trail_note
-        )
+        if len(description) + 1 + len(trail_note) > 1000:
+            raise CorosWorkoutMappingError(
+                "Les consignes de la séance et l'instruction de démarrage Trail "
+                "dépassent la limite de 1000 caractères de COROS. "
+                "Réduis les consignes avant l'envoi."
+            )
+        description = description.rstrip() + " " + trail_note
     course_name = session.title.strip()
     if not course_name:
         raise CorosWorkoutMappingError(
@@ -1122,7 +1123,13 @@ def _build_course_description(
                 parts.append(f"Série {index} : {repetitions} × {work}{suffix}.")
         parts.append("Suivre les étapes, répétitions et récupérations affichées sur la montre.")
     description = " ".join(part for part in parts if part)
-    return description[:1000] or "Séance planifiée par OpenCoach."
+    if len(description) > 1000:
+        raise CorosWorkoutMappingError(
+            "Les consignes complètes de la séance dépassent la limite de "
+            "1000 caractères de COROS. Aucune consigne ne sera coupée : "
+            "réduis ou regroupe les descriptions avant l'envoi."
+        )
+    return description or "Séance planifiée par OpenCoach."
 
 
 def _format_elapsed(value: Any) -> str:

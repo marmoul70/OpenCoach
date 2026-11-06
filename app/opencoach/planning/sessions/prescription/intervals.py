@@ -59,9 +59,13 @@ class CircuitStep:
     description: str
 
     def __post_init__(self) -> None:
-        if self.duration_seconds <= 0:
+        if (
+            isinstance(self.duration_seconds, bool)
+            or not isinstance(self.duration_seconds, int)
+            or self.duration_seconds <= 0
+        ):
             raise ValueError(
-                "La durée d'une étape de circuit doit être positive."
+                "La durée d'une étape de circuit doit être un entier strictement positif."
             )
 
         if not self.description.strip():
@@ -81,9 +85,13 @@ class WorkCircuit:
     ]
 
     def __post_init__(self) -> None:
-        if self.repetitions <= 0:
+        if (
+            isinstance(self.repetitions, bool)
+            or not isinstance(self.repetitions, int)
+            or self.repetitions <= 0
+        ):
             raise ValueError(
-                "Le nombre de répétitions d'un circuit doit être positif."
+                "Le nombre de répétitions d'un circuit doit être un entier strictement positif."
             )
 
         if not self.steps:

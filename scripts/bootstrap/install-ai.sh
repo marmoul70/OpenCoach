@@ -273,7 +273,7 @@ main() {
     ensure_model_available "$model"
 
     log_success "Moteur IA local installé et vérifié."
-    log_warning "OPENCOACH_AI_ENABLED reste à false : l'intégration backend n'est pas encore activée."
+    log_warning "OPENCOACH_AI_ENABLED n'est pas modifié par l'installation du runtime."
     log_info "Le backend et les tâches planifiées OpenCoach restent indépendants d'Ollama."
 }
 

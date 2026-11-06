@@ -486,3 +486,30 @@ def test_maps_explicit_trail_elevation_target_from_main_phase() -> None:
     assert payload.course["sections"][0]["targetType"] == 3
     assert payload.course["sections"][0]["targetValue"] == 700
     assert "700 m D+" in payload.course["courseDescription"]
+
+
+def test_maps_distance_only_phase_without_inventing_a_duration() -> None:
+    session = make_session(
+        prescription=heart_rate_prescription(
+            {
+                "type": "continuous",
+                "work_distance_meters": 8000,
+            },
+            blocks=[
+                {
+                    "name": "Échauffement",
+                    "phase": "warmup",
+                    "target_distance_meters": 1500,
+                    "description": "Progressif.",
+                }
+            ],
+        )
+    )
+
+    payload = map_training_session_to_coros(session)
+
+    assert payload.course["sections"][0] == {
+        "sectionType": 1,
+        "targetType": 1,
+        "targetValue": 1500,
+    }

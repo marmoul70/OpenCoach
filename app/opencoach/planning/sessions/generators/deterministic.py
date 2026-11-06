@@ -664,12 +664,36 @@ def _round_to_five(
 def _build_secondary_stimulus_guidance(
     request: SessionCoachRequest,
 ) -> tuple[str, ...]:
-    """Rend explicites les stimuli secondaires regroupés dans l'intention.
+    """Rend explicites tous les stimuli secondaires de l'intention.
 
-    Ces consignes restent qualitatives lorsque le parcours ou le matériel
-    ne fournit pas de cible chiffrée fiable.
+    Ces consignes restent qualitatives lorsque le parcours, le matériel ou
+    la prescription ne fournit pas de cible chiffrée fiable. Elles ne créent
+    ni répétition, ni durée, ni distance, ni dénivelé supplémentaires.
     """
     guidance_by_stimulus = {
+        TrainingStimulus.AEROBIC_EASY: (
+            "Stimulus complémentaire — endurance facile : conserver une "
+            "respiration confortable et une allure permettant de parler "
+            "sans difficulté."
+        ),
+        TrainingStimulus.AEROBIC_ENDURANCE: (
+            "Stimulus complémentaire — endurance aérobie : maintenir un "
+            "effort régulier et maîtrisé, sans accélération non prescrite."
+        ),
+        TrainingStimulus.THRESHOLD: (
+            "Stimulus complémentaire — seuil : rechercher un effort soutenu "
+            "mais contrôlé et respecter la cible d'intensité prescrite."
+        ),
+        TrainingStimulus.SPEED_DEVELOPMENT: (
+            "Stimulus complémentaire — vitesse : privilégier la qualité "
+            "gestuelle et la régularité des fractions déjà prévues, avec "
+            "une récupération suffisante."
+        ),
+        TrainingStimulus.VO2MAX: (
+            "Stimulus complémentaire — puissance aérobie : réaliser les "
+            "fractions prévues à intensité maîtrisée et préserver la qualité "
+            "de course jusqu'à la dernière répétition."
+        ),
         TrainingStimulus.UPHILL_STRENGTH: (
             "Stimulus complémentaire — montée : sur les côtes naturelles "
             "du parcours, privilégier une foulée dynamique, des appuis "
@@ -680,25 +704,45 @@ def _build_secondary_stimulus_guidance(
             "les montées disponibles en conservant une posture stable et "
             "une poussée régulière, sans ajouter de cible de D+ non prescrite."
         ),
+        TrainingStimulus.UPHILL_THRESHOLD: (
+            "Stimulus complémentaire — seuil en montée : maintenir un effort "
+            "régulier dans les côtes et piloter l'effort par les sensations "
+            "ou la fréquence cardiaque plutôt que par l'allure."
+        ),
         TrainingStimulus.DOWNHILL_SPECIFICITY: (
             "Stimulus complémentaire — descente : travailler le contrôle "
             "des appuis, la cadence et le relâchement sur des portions "
             "adaptées et sûres."
+        ),
+        TrainingStimulus.LONG_ENDURANCE: (
+            "Stimulus complémentaire — endurance longue : privilégier la "
+            "régularité, adapter l'effort au relief et appliquer la stratégie "
+            "d'alimentation prévue."
         ),
         TrainingStimulus.RACE_SPECIFIC: (
             "Stimulus complémentaire — spécificité course : choisir un "
             "terrain cohérent avec les contraintes connues de l'objectif. "
             "Aucune distance ni cible de D+ supplémentaire n'est supposée."
         ),
+        TrainingStimulus.STRENGTH_LOWER_BODY: (
+            "Stimulus complémentaire — membres inférieurs : intégrer le "
+            "travail de force prévu dans la séance en conservant une "
+            "exécution contrôlée."
+        ),
         TrainingStimulus.STRENGTH_CORE: (
             "Stimulus complémentaire — tronc : intégrer le travail de "
             "gainage et de stabilité prévu dans la séance, sans dépasser "
             "le temps alloué."
         ),
-        TrainingStimulus.STRENGTH_LOWER_BODY: (
-            "Stimulus complémentaire — membres inférieurs : intégrer le "
-            "travail de force prévu dans la séance en conservant une "
-            "exécution contrôlée."
+        TrainingStimulus.RECOVERY: (
+            "Stimulus complémentaire — récupération : rester très facile, "
+            "éviter toute recherche de performance et terminer avec une "
+            "sensation de fraîcheur."
+        ),
+        TrainingStimulus.PRE_RACE_ACTIVATION: (
+            "Stimulus complémentaire — activation pré-course : conserver "
+            "une charge globale faible, réaliser uniquement les accélérations "
+            "déjà prévues et terminer frais."
         ),
     }
 

@@ -596,15 +596,47 @@ def push_training_session_to_coros(
                 ),
             )
         schema = tool.get("inputSchema")
-        required = (
-            set(schema.get("required", []))
+        properties = (
+            schema.get("properties")
             if isinstance(schema, dict)
-            else set()
+            else None
         )
-        if not required_arguments.issubset(required):
+        required = (
+            schema.get("required")
+            if isinstance(schema, dict)
+            else None
+        )
+        if (
+            not isinstance(properties, dict)
+            or not isinstance(required, list)
+            or not all(isinstance(key, str) for key in required)
+            or not required_arguments.issubset(required)
+        ):
             raise HTTPException(
                 status_code=502,
-                detail=f"Le schéma COROS de {tool_name} est incompatible avec OpenCoach.",
+                detail=f"Le schéma COROS de {tool_name} est incomplet ou incompatible avec OpenCoach.",
+            )
+
+        expected_types = {
+            "date": "string",
+            "idInPlan": "string",
+            "course": "object",
+        }
+        incompatible = [
+            key
+            for key in required_arguments
+            if (
+                not isinstance(properties.get(key), dict)
+                or properties[key].get("type") != expected_types[key]
+            )
+        ]
+        if incompatible:
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    f"Le schéma COROS de {tool_name} définit des types "
+                    "d'arguments incompatibles avec OpenCoach."
+                ),
             )
 
     if is_update:

@@ -118,6 +118,11 @@ class SessionProposal:
         | None
     ) = None
 
+    recovery_intensity_prescription: (
+        SessionIntensityPrescription
+        | None
+    ) = None
+
     work_structure: (
         WorkStructure
         | None

@@ -18,6 +18,7 @@ OpenCoach dispose de deux flux distincts :
 La prescription est persistée dans `training_sessions.prescription`. Le format version 2 conserve, pour chaque bloc, sa phase métier, sa durée, ses cibles éventuelles et sa prescription d'intensité propre. Les formats version 1 déjà enregistrés restent lisibles.
 
 Les phases générées sont qualifiées : échauffement, travail principal, complément facile et retour au calme. Les phases faciles reçoivent une prescription facile distincte ; elles n'héritent pas artificiellement de l'intensité du bloc principal. Les cibles RPE restent conservées dans OpenCoach même lorsqu'elles ne sont pas pilotables directement par COROS.
+L'activation pré-course conserve également son échauffement, ses accélérations fractionnées, le temps facile complémentaire et son retour au calme ; les répétitions courtes ne remplacent pas artificiellement toute la durée planifiée.
 
 ### Connecteur COROS existant
 

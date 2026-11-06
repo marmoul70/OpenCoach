@@ -456,8 +456,11 @@ def push_training_session_to_coros(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     current_status = training_session.coros_sync_status
-    is_update = current_status == "synced"
-    if is_update:
+    previous_payload_hash = training_session.coros_payload_hash
+    is_update = bool(training_session.coros_workout_id) and current_status in {
+        "synced", "unknown", "pending"
+    }
+    if current_status == "synced" and is_update:
         if training_session.coros_payload_hash == workout_payload.payload_hash:
             return {
                 "status": "synced",
@@ -625,6 +628,21 @@ def push_training_session_to_coros(
                 "COROS indique que cette séance n'est pas modifiable."
             )
             raise HTTPException(status_code=409, detail=reason)
+        existing_course = details.get("course")
+        if not isinstance(existing_course, dict):
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    "COROS n'a pas retourné le contenu de la séance à remplacer. "
+                    "Aucune modification n'a été effectuée."
+                ),
+            )
+        # COROS impose un remplacement intégral. On part de la copie réellement
+        # planifiée puis on remplace les champs maîtrisés par la prescription OpenCoach.
+        replacement_course = dict(existing_course)
+        replacement_course.update(workout_payload.course)
+        replacement_course.pop("dayNo", None)
+        replacement_course.pop("strengthBodypart", None)
 
     schedule_tool = next(
         (
@@ -742,7 +760,7 @@ def push_training_session_to_coros(
                 {
                     "date": workout_payload.date,
                     "idInPlan": training_session.coros_workout_id,
-                    "course": workout_payload.course,
+                    "course": replacement_course,
                 },
             )
         else:
@@ -751,8 +769,10 @@ def push_training_session_to_coros(
                 workout_payload.as_tool_arguments(),
             )
     except CorosMcpAuthenticationError as exc:
-        training_session.coros_sync_status = "failed"
+        training_session.coros_sync_status = "synced" if is_update else "failed"
         training_session.coros_sync_started_at = None
+        if is_update:
+            training_session.coros_payload_hash = previous_payload_hash
         training_session.coros_sync_error = (
             "La connexion COROS a été refusée. Reconnecte ton compte avant de réessayer."
         )
@@ -768,8 +788,10 @@ def push_training_session_to_coros(
             detail=training_session.coros_sync_error,
         ) from exc
     except CorosMcpToolError as exc:
-        training_session.coros_sync_status = "failed"
+        training_session.coros_sync_status = "synced" if is_update else "failed"
         training_session.coros_sync_started_at = None
+        if is_update:
+            training_session.coros_payload_hash = previous_payload_hash
         training_session.coros_sync_error = str(exc)[:2000]
         repository.save_session(athlete_profile_id, training_session)
         raise HTTPException(

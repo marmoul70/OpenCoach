@@ -105,6 +105,11 @@ Sans `--with-ai`, le bootstrap n'installe ni Ollama ni modèle de langage.
 Le service Ollama est indépendant de `opencoach-backend.service` : aucune
 directive systemd `Requires=` ou `After=ollama.service` n'est ajoutée au backend.
 
+Si l'installation Ollama ou le téléchargement du modèle échoue, le bootstrap
+journalise un avertissement et poursuit l'installation classique. L'échec du
+composant IA ne bloque donc pas le démarrage du backend ni les timers Python.
+
+
 Le bootstrap IA :
 - réutilise Ollama s'il est déjà installé ;
 - sinon télécharge et exécute l'installateur officiel Ollama ;

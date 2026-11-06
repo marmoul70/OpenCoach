@@ -128,7 +128,7 @@ def test_maps_repetitions_and_preserves_recovery_duration() -> None:
     group = payload.course["sections"][0]
 
     assert group["intervalGroup"] is True
-    assert group["repeats"] == 6
+    assert group["repeats"] == 5
     assert group["sets"] == [
         {
             "sectionType": 2,
@@ -144,6 +144,14 @@ def test_maps_repetitions_and_preserves_recovery_duration() -> None:
             "targetValue": 90,
         },
     ]
+    assert payload.course["sections"][1] == {
+        "sectionType": 2,
+        "targetType": 1,
+        "targetValue": 400,
+        "intensityType": 2,
+        "intensityValueStart": 225,
+        "intensityValueEnd": 240,
+    }
 
 
 def test_maps_vma_target_to_absolute_pace_for_running() -> None:

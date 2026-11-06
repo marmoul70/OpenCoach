@@ -212,6 +212,27 @@ def test_sql_training_session_repository_lists_period() -> None:
         db.close()
 
 
+
+def test_sql_training_session_repository_persists_coros_scheduled_date() -> None:
+    db = create_session()
+
+    try:
+        profile = create_profile(db)
+        repository = SqlTrainingSessionRepository(db)
+        session = create_training_session()
+        session.coros_workout_id = "coros-existing-id"
+        session.coros_scheduled_date = date(2026, 8, 10)
+
+        saved = repository.save_session(profile.id, session)
+        reloaded = repository.get_session(profile.id, saved.id)
+
+        assert reloaded is not None
+        assert reloaded.coros_workout_id == "coros-existing-id"
+        assert reloaded.coros_scheduled_date == date(2026, 8, 10)
+    finally:
+        db.close()
+
+
 def test_sql_training_session_repository_updates_status() -> None:
     db = create_session()
 

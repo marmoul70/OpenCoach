@@ -75,6 +75,20 @@ def validate_training_session_prescription(
                     "Chaque phase de la prescription doit être un objet structuré."
                 )
             phase = block.get("phase")
+            for target_key in (
+                "target_distance_meters",
+                "target_elevation_gain_meters",
+                "target_duration_seconds",
+            ):
+                target_value = block.get(target_key)
+                if target_value is not None and (
+                    isinstance(target_value, bool)
+                    or not isinstance(target_value, int)
+                    or target_value <= 0
+                ):
+                    raise TrainingSessionPrescriptionIntegrityError(
+                        f"La cible {target_key} doit être un entier strictement positif."
+                    )
             if phase is not None and phase not in allowed_phases:
                 raise TrainingSessionPrescriptionIntegrityError(
                     f"Phase de séance non reconnue : {phase!r}."

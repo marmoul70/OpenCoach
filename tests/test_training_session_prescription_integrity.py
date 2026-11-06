@@ -122,3 +122,81 @@ def test_generated_session_requires_intensity_targets() -> None:
         validate_training_session_prescription(
             value
         )
+
+
+def test_version_two_prescription_accepts_ordered_phases_and_block_targets() -> None:
+    value = session(
+        prescription={
+            "version": 2,
+            "blocks": [
+                {
+                    "name": "Échauffement",
+                    "description": "Mise en route progressive.",
+                    "duration_minutes": 15,
+                    "phase": "warmup",
+                    "intensity": {
+                        "targets": [
+                            {
+                                "reference": "heart_rate",
+                                "minimum": 120,
+                                "maximum": 140,
+                                "unit": "bpm",
+                            }
+                        ],
+                        "guidance": [],
+                    },
+                },
+                {
+                    "name": "Bloc principal",
+                    "description": "Travail au seuil.",
+                    "duration_minutes": 40,
+                    "phase": "main",
+                    "intensity": {
+                        "targets": [
+                            {
+                                "reference": "vma_percent",
+                                "minimum": 80,
+                                "maximum": 90,
+                                "unit": "% VMA",
+                            }
+                        ],
+                        "guidance": [],
+                    },
+                },
+            ],
+            "work_structure": {
+                "type": "continuous",
+                "stimulus": "aerobic_easy",
+                "available_minutes": 40,
+                "continuous_minutes": 40,
+                "description": "Travail continu.",
+                "circuit": None,
+                "intervals": [],
+            },
+            "intensity": {
+                "targets": [
+                    {
+                        "reference": "heart_rate",
+                        "minimum": 140,
+                        "maximum": 155,
+                        "unit": "bpm",
+                    }
+                ],
+                "guidance": [],
+            },
+        }
+    )
+
+    validate_training_session_prescription(value)
+
+
+def test_version_two_rejects_unknown_phase() -> None:
+    value = session()
+    assert value.prescription is not None
+    value.prescription["version"] = 2
+    value.prescription["blocks"] = [
+        {"name": "Bloc", "description": "Test", "phase": "unknown"}
+    ]
+
+    with pytest.raises(TrainingSessionPrescriptionIntegrityError):
+        validate_training_session_prescription(value)

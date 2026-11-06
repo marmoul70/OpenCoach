@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID, uuid4
@@ -17,12 +18,20 @@ from opencoach.authentication.dependencies import (
 )
 from opencoach.database.models import CorosSyncLock, IntegrationConnection
 from opencoach.database.session import get_db
+from opencoach.database.repositories.sql_training_session import (
+    SqlTrainingSessionRepository,
+)
 from opencoach.integrations.coros.client import CorosMcpClient
 from opencoach.integrations.coros.tokens import refresh_secret_if_needed
 from opencoach.integrations.coros.errors import (
     CorosMcpAuthenticationError,
     CorosMcpError,
     CorosMcpProtocolError,
+    CorosMcpToolError,
+)
+from opencoach.integrations.coros.workout_mapper import (
+    CorosWorkoutMappingError,
+    map_training_session_to_coros,
 )
 from opencoach.integrations.coros.oauth import (
     CorosOAuthClientService,
@@ -55,6 +64,10 @@ class CorosSettingsUpdate(BaseModel):
     enabled: bool = True
     sync_interval_hours: int = Field(default=12, ge=0, le=24)
     categories: dict[str, bool]
+
+
+class CorosWorkoutPushRequest(BaseModel):
+    confirmed_no_duplicate: bool = False
 
 
 def _cipher() -> SecretCipher:
@@ -420,6 +433,267 @@ def test_coros_connection(
         ],
         "available_tools_count": len(tools),
     }
+
+
+@router.post("/workouts/{session_id}/push")
+def push_training_session_to_coros(
+    session_id: UUID,
+    payload: CorosWorkoutPushRequest,
+    athlete_profile_id: UUID = Depends(get_current_athlete_profile_id),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Ajoute une séance OpenCoach planifiée au calendrier COROS."""
+    repository = SqlTrainingSessionRepository(db)
+    training_session = repository.get_session(
+        athlete_profile_id,
+        session_id,
+    )
+    if training_session is None:
+        raise HTTPException(status_code=404, detail="Séance introuvable.")
+
+    try:
+        workout_payload = map_training_session_to_coros(training_session)
+    except CorosWorkoutMappingError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    current_status = training_session.coros_sync_status
+    if current_status == "synced":
+        if training_session.coros_payload_hash == workout_payload.payload_hash:
+            return {
+                "status": "synced",
+                "last_synced_at": (
+                    training_session.coros_last_synced_at.isoformat()
+                    if training_session.coros_last_synced_at
+                    else None
+                ),
+                "message": "Cette séance est déjà présente dans ton calendrier COROS.",
+            }
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Cette séance a déjà été envoyée à COROS puis modifiée dans OpenCoach. "
+                "La mise à jour d'une séance déjà envoyée sera ajoutée dans une évolution "
+                "ultérieure ; aucun doublon n'a été créé."
+            ),
+        )
+
+    if current_status in {"pending", "unknown"} and not payload.confirmed_no_duplicate:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Le résultat du précédent envoi n'a pas pu être confirmé. "
+                "Vérifie d'abord le calendrier COROS. Si la séance n'y figure pas, "
+                "confirme cette vérification pour autoriser un nouvel envoi."
+            ),
+        )
+
+    connection = _connection(db, athlete_profile_id)
+    if connection is None or not connection.enabled:
+        raise HTTPException(
+            status_code=409,
+            detail="Connecte et active d'abord ton compte COROS.",
+        )
+
+    cipher = _cipher()
+    secret = _read_secret(connection, cipher)
+    if secret.get("status") != "connected":
+        raise HTTPException(
+            status_code=409,
+            detail="La connexion COROS doit être réautorisée.",
+        )
+
+    try:
+        refreshed = refresh_secret_if_needed(
+            secret,
+            _oauth(),
+            now=datetime.now(timezone.utc).timestamp(),
+        )
+        if refreshed != secret:
+            _save_secret(connection, cipher, refreshed)
+            db.commit()
+
+        client = CorosMcpClient(refreshed["access_token"])
+        tools = client.list_tools()
+    except CorosMcpAuthenticationError as exc:
+        connection.enabled = False
+        connection.config = {
+            **(connection.config or {}),
+            "connected": False,
+        }
+        db.commit()
+        raise HTTPException(
+            status_code=401,
+            detail="La connexion COROS a expiré. Reconnecte ton compte.",
+        ) from exc
+    except CorosMcpError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Le serveur COROS MCP est temporairement indisponible.",
+        ) from exc
+
+    create_tool = next(
+        (
+            tool for tool in tools
+            if tool.get("name") == "createScheduledWorkout"
+        ),
+        None,
+    )
+    if create_tool is None:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "La connexion COROS actuelle ne propose pas la création "
+                "de séances planifiées. Actualise les outils MCP ou réessaie "
+                "après une mise à jour du service COROS."
+            ),
+        )
+
+    input_schema = create_tool.get("inputSchema")
+    required = (
+        set(input_schema.get("required", []))
+        if isinstance(input_schema, dict)
+        else set()
+    )
+    if not {"date", "course"}.issubset(required):
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Le schéma createScheduledWorkout fourni par COROS "
+                "est incompatible avec cette version d'OpenCoach."
+            ),
+        )
+
+    # Persister l'intention avant l'appel distant : si le serveur s'arrête
+    # pendant l'écriture, un second clic ne créera pas un doublon silencieux.
+    training_session.coros_sync_status = "pending"
+    training_session.coros_payload_hash = workout_payload.payload_hash
+    training_session.coros_sync_error = None
+    training_session = repository.save_session(
+        athlete_profile_id,
+        training_session,
+    )
+
+    try:
+        result = client.call_tool(
+            "createScheduledWorkout",
+            workout_payload.as_tool_arguments(),
+        )
+    except CorosMcpAuthenticationError as exc:
+        training_session.coros_sync_status = "failed"
+        training_session.coros_sync_error = (
+            "La connexion COROS a été refusée. Reconnecte ton compte avant de réessayer."
+        )
+        repository.save_session(athlete_profile_id, training_session)
+        connection.enabled = False
+        connection.config = {
+            **(connection.config or {}),
+            "connected": False,
+        }
+        db.commit()
+        raise HTTPException(
+            status_code=401,
+            detail=training_session.coros_sync_error,
+        ) from exc
+    except CorosMcpToolError as exc:
+        training_session.coros_sync_status = "failed"
+        training_session.coros_sync_error = str(exc)[:2000]
+        repository.save_session(athlete_profile_id, training_session)
+        raise HTTPException(
+            status_code=422,
+            detail=training_session.coros_sync_error,
+        ) from exc
+    except CorosMcpProtocolError as exc:
+        training_session.coros_sync_status = "unknown"
+        training_session.coros_sync_error = (
+            "COROS n'a pas confirmé le résultat de l'envoi. "
+            "Vérifie le calendrier COROS avant toute nouvelle tentative."
+        )
+        repository.save_session(athlete_profile_id, training_session)
+        raise HTTPException(
+            status_code=502,
+            detail=training_session.coros_sync_error,
+        ) from exc
+    except CorosMcpError as exc:
+        training_session.coros_sync_status = "unknown"
+        training_session.coros_sync_error = (
+            "Le résultat de l'envoi est incertain. "
+            "Vérifie le calendrier COROS avant toute nouvelle tentative."
+        )
+        repository.save_session(athlete_profile_id, training_session)
+        raise HTTPException(
+            status_code=502,
+            detail=training_session.coros_sync_error,
+        ) from exc
+
+    now = datetime.now(timezone.utc)
+    training_session.coros_sync_status = "synced"
+    training_session.coros_last_synced_at = now
+    training_session.coros_sync_error = None
+    training_session.coros_workout_id = _extract_coros_scheduled_id(result)
+    saved_session = repository.save_session(
+        athlete_profile_id,
+        training_session,
+    )
+
+    return {
+        "status": "synced",
+        "last_synced_at": (
+            saved_session.coros_last_synced_at.isoformat()
+            if saved_session.coros_last_synced_at
+            else now.isoformat()
+        ),
+        "message": (
+            f"« {saved_session.title} » a été ajoutée au calendrier COROS "
+            f"du {saved_session.date.strftime('%d/%m/%Y')}. "
+            "Synchronise ensuite ta montre avec l'application COROS."
+        ),
+    }
+
+
+def _extract_coros_scheduled_id(result: dict[str, Any]) -> str | None:
+    """Récupère idInPlan sans dépendre d'un format de réponse unique."""
+    candidates: list[Any] = []
+    structured = result.get("structuredContent")
+    if structured is not None:
+        candidates.append(structured)
+
+    for item in result.get("content", []):
+        if not isinstance(item, dict) or item.get("type") != "text":
+            continue
+        raw_text = item.get("text")
+        if not isinstance(raw_text, str):
+            continue
+        try:
+            candidates.append(json.loads(raw_text))
+        except ValueError:
+            match = re.search(
+                r"idInPlan\\s*[:=]\\s*[\"']?(\\d+)",
+                raw_text,
+            )
+            if match:
+                return match.group(1)
+
+    for candidate in candidates:
+        found = _find_coros_id(candidate)
+        if found:
+            return found
+    return None
+
+
+def _find_coros_id(value: Any) -> str | None:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key in {"idInPlan", "id_in_plan"} and item is not None:
+                return str(item)
+            found = _find_coros_id(item)
+            if found:
+                return found
+    elif isinstance(value, list):
+        for item in value:
+            found = _find_coros_id(item)
+            if found:
+                return found
+    return None
 
 
 @router.post("/sync")

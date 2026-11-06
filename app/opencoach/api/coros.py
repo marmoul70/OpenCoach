@@ -457,10 +457,8 @@ def push_training_session_to_coros(
 
     current_status = training_session.coros_sync_status
     previous_payload_hash = training_session.coros_payload_hash
-    is_update = bool(training_session.coros_workout_id) and current_status in {
-        "synced", "unknown", "pending"
-    }
-    if current_status == "synced" and is_update:
+    is_update = False
+    if current_status == "synced":
         if training_session.coros_payload_hash == workout_payload.payload_hash:
             return {
                 "status": "synced",
@@ -479,6 +477,9 @@ def push_training_session_to_coros(
                     "est absent. Aucune nouvelle séance ne sera créée par sécurité."
                 ),
             )
+        is_update = True
+    elif current_status in {"unknown", "pending"}:
+        is_update = bool(training_session.coros_workout_id)
 
     if current_status == "pending":
         stale_pending = _coros_push_is_stale(

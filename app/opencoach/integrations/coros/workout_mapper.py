@@ -434,8 +434,14 @@ def _build_interval_groups(
             sport_type=sport_type,
         )
         recovery_duration = interval.get("recovery_duration")
+        recovery_distance = interval.get("recovery_distance_meters")
+        recovery_elevation = interval.get("recovery_elevation_gain_meters")
+        has_recovery = any(
+            value is not None
+            for value in (recovery_duration, recovery_distance, recovery_elevation)
+        )
 
-        if recovery_duration is None or repetitions == 1:
+        if not has_recovery or repetitions == 1:
             remaining = repetitions
             while remaining > 0:
                 chunk = min(remaining, 20)
@@ -451,22 +457,54 @@ def _build_interval_groups(
             continue
 
         if sport_type == 5:
-            raise CorosWorkoutMappingError(
-                "COROS n'accepte pas de récupération chronométrée "
-                "dans un entraînement trail. La récupération de cette "
-                "séance doit être exprimée autrement avant l'envoi."
+            if recovery_distance is not None:
+                recovery_section = {
+                    "sectionType": 3,
+                    "targetType": 1,
+                    "targetValue": _positive_integer(
+                        recovery_distance,
+                        "distance de récupération",
+                    ),
+                }
+            elif recovery_elevation is not None:
+                recovery_section = {
+                    "sectionType": 3,
+                    "targetType": 3,
+                    "targetValue": _positive_integer(
+                        recovery_elevation,
+                        "dénivelé de récupération",
+                    ),
+                }
+            else:
+                raise CorosWorkoutMappingError(
+                    "COROS n'accepte pas de récupération chronométrée "
+                    "dans un entraînement trail. Fournis une distance ou "
+                    "un dénivelé explicite pour cette récupération."
+                )
+        elif recovery_distance is not None:
+            recovery_section = {
+                "sectionType": 3,
+                "targetType": 1,
+                "targetValue": _positive_integer(
+                    recovery_distance,
+                    "distance de récupération",
+                ),
+            }
+        elif recovery_duration is not None:
+            recovery_seconds = _duration_seconds(
+                recovery_duration,
+                interval.get("recovery_unit"),
+                default_unit="seconds",
             )
-
-        recovery_seconds = _duration_seconds(
-            recovery_duration,
-            interval.get("recovery_unit"),
-            default_unit="seconds",
-        )
-        recovery_section = {
-            "sectionType": 3,
-            "targetType": 2,
-            "targetValue": recovery_seconds,
-        }
+            recovery_section = {
+                "sectionType": 3,
+                "targetType": 2,
+                "targetValue": recovery_seconds,
+            }
+        else:
+            raise CorosWorkoutMappingError(
+                "Une récupération en dénivelé n'est disponible que pour le trail."
+            )
 
         recovery_intensity = (
             recovery_block.get("intensity")
@@ -508,6 +546,7 @@ def _build_work_section(
     sport_type: int,
 ) -> dict[str, Any]:
     distance = interval.get("work_distance_meters")
+    elevation = interval.get("work_elevation_gain_meters")
     duration = interval.get("work_duration")
     unit = interval.get("work_unit")
 
@@ -516,6 +555,12 @@ def _build_work_section(
             "sectionType": 2,
             "targetType": 1,
             "targetValue": _positive_integer(distance, "distance de répétition"),
+        }
+    elif elevation is not None and sport_type == 5:
+        section = {
+            "sectionType": 2,
+            "targetType": 3,
+            "targetValue": _positive_integer(elevation, "dénivelé de répétition"),
         }
     elif duration is not None:
         if sport_type == 5:
@@ -832,19 +877,28 @@ def _build_course_description(
                     continue
                 repetitions = interval.get("repetitions")
                 distance = interval.get("work_distance_meters")
+                elevation = interval.get("work_elevation_gain_meters")
                 duration = interval.get("work_duration")
                 unit = str(interval.get("work_unit") or "minutes")
                 work = (
                     f"{distance} m"
                     if distance is not None
+                    else f"{elevation} m D+"
+                    if elevation is not None
                     else f"{duration} {unit}" if duration is not None
                     else "travail non quantifié"
                 )
                 recovery = interval.get("recovery_duration")
+                recovery_distance = interval.get("recovery_distance_meters")
+                recovery_elevation = interval.get("recovery_elevation_gain_meters")
                 recovery_unit = str(interval.get("recovery_unit") or "seconds")
                 suffix = (
                     f", récupération {recovery} {recovery_unit}"
                     if recovery is not None
+                    else f", récupération {recovery_distance} m"
+                    if recovery_distance is not None
+                    else f", récupération {recovery_elevation} m D+"
+                    if recovery_elevation is not None
                     else ""
                 )
                 parts.append(f"Série {index} : {repetitions} × {work}{suffix}.")

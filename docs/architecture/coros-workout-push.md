@@ -71,7 +71,7 @@ Le convertisseur refuse une séance lorsqu'une conversion fidèle n'est pas poss
 - Une séance uniquement prescrite en RPE ne peut pas devenir une cible automatique COROS : le RPE n'est pas converti arbitrairement en fréquence cardiaque ou en allure.
 - COROS impose des cibles en distance ou en dénivelé pour le trail, pas des cibles en temps. Les phases trail chronométrées et les récupérations trail chronométrées sont donc refusées.
 - Les structures techniques, circuits et renforcement ne sont pas aplaties en une séance continue.
-- La mise à jour, le déplacement et la suppression d'une séance déjà envoyée ne sont pas inclus dans cette première version. Une séance envoyée puis modifiée dans OpenCoach ne peut pas être renvoyée comme une nouvelle séance sans créer un risque de doublon.
+- La mise à jour et la suppression d'une séance déjà envoyée ne sont pas incluses dans cette première version. Le déplacement d'une séance envoyée ou dont le résultat est incertain est bloqué dans OpenCoach ; il doit être géré dans l'application COROS. Une séance envoyée puis modifiée dans OpenCoach ne peut pas être renvoyée comme une nouvelle séance sans créer un risque de doublon.
 
 ## Protection contre les doublons
 

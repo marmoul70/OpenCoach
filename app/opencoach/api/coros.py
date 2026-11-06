@@ -813,6 +813,7 @@ def push_training_session_to_coros(
         ) from exc
     except CorosMcpError as exc:
         training_session.coros_sync_status = "unknown"
+        training_session.coros_sync_started_at = None
         training_session.coros_sync_error = (
             "Le résultat de l'envoi est incertain. "
             "Vérifie le calendrier COROS avant toute nouvelle tentative."

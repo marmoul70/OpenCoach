@@ -19,6 +19,7 @@ import {
   HeartPulse,
   LogOut,
   Monitor,
+  MoreHorizontal,
   Moon,
   Settings,
   Sun,
@@ -161,6 +162,11 @@ export function AppNavigation({
   ] = useState(false)
 
   const [
+    mobileNavigationOpen,
+    setMobileNavigationOpen,
+  ] = useState(false)
+
+  const [
 
     desktopProfileOpen,
 
@@ -183,6 +189,7 @@ export function AppNavigation({
     
             setDesktopProfileOpen(false)
             setMobileMenuOpen(false)
+            setMobileNavigationOpen(false)
 
     window.scrollTo({
       top: 0,
@@ -554,42 +561,43 @@ export function AppNavigation({
           dark:bg-[color-mix(in_srgb,var(--oc-surface)_90%,transparent)]
         "
       >
-        <button
-          type="button"
-          onClick={() =>
-            navigate(
-              'dashboard',
-            )
-          }
-          className="
-            flex
-            items-center
-            gap-2.5
-          "
-        >
-          <img
-            src="/opencoach-logo.png"
-            alt="OpenCoach"
-            className="
-              h-8
-              w-8
-              shrink-0
-              object-contain
-            "
-          />
-
-          <span
-            className="
-              text-lg
-              font-bold
-              tracking-[-0.035em]
-              text-[var(--oc-text)]
-              dark:text-white
-            "
+        <div className="flex min-w-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={() => navigate('dashboard')}
+            className="flex items-center gap-2.5"
+            aria-label="Accueil OpenCoach"
           >
-            OpenCoach
-          </span>
-        </button>
+            <img
+              src="/opencoach-logo.png"
+              alt="OpenCoach"
+              className="h-8 w-8 shrink-0 object-contain"
+            />
+            <span className="
+              text-lg font-bold tracking-[-0.035em]
+              text-[var(--oc-text)] dark:text-white
+            ">
+              OpenCoach
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMobileNavigationOpen(true)}
+            className="
+              flex h-9 w-9 shrink-0 items-center justify-center
+              rounded-full text-[var(--oc-muted)]
+              transition-colors hover:bg-[var(--oc-surface-hover)]
+              hover:text-[var(--oc-text)]
+              dark:hover:bg-[var(--oc-surface)]/[0.06]
+            "
+            aria-label="Ouvrir la navigation OpenCoach"
+            aria-haspopup="dialog"
+            aria-expanded={mobileNavigationOpen}
+          >
+            <MoreHorizontal className="h-5 w-5" />
+          </button>
+        </div>
 
 
 
@@ -716,310 +724,150 @@ export function AppNavigation({
           setMobileMenuOpen(false)
         }
       >
-        <div className="space-y-5">
-
-          <section
-            className="
-              flex
-              items-center
-              gap-3
-              rounded-2xl
-              border
-              border-[var(--oc-border)]
-              bg-[var(--oc-surface)]
-              p-3
-              shadow-sm
-              dark:border-[var(--oc-border)]
-              dark:bg-[var(--oc-surface)]/[0.03]
-            "
-          >
-            <Avatar
-              avatar={avatar}
-              initials={initials}
-            />
-
-            <div className="min-w-0">
-              <p
-                className="
-                  truncate
-                  text-[13px]
-                  font-semibold
-                  text-[var(--oc-text)]
-                  dark:text-[var(--oc-text)]
-                "
-              >
-                {formatName(
-                  firstName,
-                  lastName,
-                )}
-              </p>
-
-              <p
-                className="
-                  mt-0.5
-                  text-[10px]
-                  text-[var(--oc-muted)]
-                "
-              >
-                Athlète OpenCoach
-              </p>
-            </div>
-          </section>
-
-          <section>
+        <div className="flex min-h-full flex-col gap-4">
+          {/* Notifications stay at the top */}
+          <section className="shrink-0">
             <NotificationBell
               embedded
               onViewAll={() => navigate('notifications')}
             />
           </section>
 
+          {/* Account actions are anchored to the bottom */}
+          <div className="mt-auto space-y-4 border-t border-[var(--oc-border)] pt-4">
+            <section className="flex items-center gap-3 px-1">
+              <Avatar avatar={avatar} initials={initials} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-semibold text-[var(--oc-text)]">
+                  {formatName(firstName, lastName)}
+                </p>
+                <p className="mt-0.5 text-[10px] text-[var(--oc-muted)]">
+                  Profil athlète
+                </p>
+              </div>
+            </section>
+
+            <section>
+              <DropdownLabel>Mon compte</DropdownLabel>
+              <div className="mt-1 space-y-0.5">
+                <DropdownItem
+                  icon={<UserRound className="h-4 w-4" />}
+                  label="Profil personnel"
+                  active={activePage === 'profile-personal'}
+                  onClick={() => navigate('profile-personal')}
+                />
+                <DropdownItem
+                  icon={<CircleUserRound className="h-4 w-4" />}
+                  label="Profil sportif"
+                  active={activePage === 'profile-sport'}
+                  onClick={() => navigate('profile-sport')}
+                />
+                <DropdownItem
+                  icon={<Settings className="h-4 w-4" />}
+                  label="Réglages"
+                  active={activePage === 'settings'}
+                  onClick={() => navigate('settings')}
+                />
+              </div>
+            </section>
+
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <DropdownLabel>Apparence</DropdownLabel>
+                <span className="text-[9px] text-[var(--oc-muted)]">
+                  {theme === 'system' ? 'Automatique' : theme === 'light' ? 'Clair' : 'Sombre'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <DropdownThemeButton
+                  active={theme === 'light'}
+                  icon={<Sun className="h-4 w-4" />}
+                  label="Clair"
+                  onClick={() => onThemeChange('light')}
+                />
+                <DropdownThemeButton
+                  active={theme === 'dark'}
+                  icon={<Moon className="h-4 w-4" />}
+                  label="Sombre"
+                  onClick={() => onThemeChange('dark')}
+                />
+                <DropdownThemeButton
+                  active={theme === 'system'}
+                  icon={<Monitor className="h-4 w-4" />}
+                  label="Auto"
+                  onClick={() => onThemeChange('system')}
+                />
+              </div>
+            </section>
+
+            <section className="
+              flex items-center justify-between gap-3
+              border-t border-[var(--oc-border)] pt-3
+            ">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  onLogout()
+                }}
+                className="
+                  inline-flex items-center gap-2 rounded-lg px-2 py-2
+                  text-[11px] font-medium text-rose-600
+                  transition-colors hover:bg-rose-500/[0.07]
+                  dark:text-rose-400
+                "
+              >
+                <LogOut className="h-4 w-4" />
+                Se déconnecter
+              </button>
+              <span className="text-right text-[8px] text-[var(--oc-muted-soft)]">
+                {version ? `v${version}` : 'dev'}
+                {commit ? ` · ${commit}` : ''}
+              </span>
+            </section>
+          </div>
+        </div>
+      </SidePanel>
+
+      {/* Mobile OpenCoach navigation in its own SidePanel */}
+      <SidePanel
+        open={mobileNavigationOpen}
+        eyebrow="OpenCoach"
+        title="Navigation"
+        onClose={() => setMobileNavigationOpen(false)}
+      >
+        <div className="space-y-5">
+          <section>
+            <p className="mb-2 px-1 oc-type-label font-bold uppercase tracking-[0.12em]">
+              Planning
+            </p>
+            <div className="overflow-hidden rounded-2xl border border-[var(--oc-border)] bg-[var(--oc-surface)] dark:bg-[var(--oc-surface)]/[0.025]">
+              {mainNavigation.map(({ page, label, icon: Icon }, index) => (
+                <MobileDrawerItem
+                  key={page}
+                  icon={<Icon />}
+                  title={label}
+                  description={page === 'dashboard' ? 'Vue d’ensemble' : `Accéder à ${label.toLowerCase()}`}
+                  divider={index > 0}
+                  onClick={() => navigate(page)}
+                />
+              ))}
+            </div>
+          </section>
 
           <section>
-            <p
-              className="
-                mb-2
-                px-1
-                oc-type-label font-bold uppercase tracking-[0.12em]
-              "
-            >
-              Mon suivi
+            <p className="mb-2 px-1 oc-type-label font-bold uppercase tracking-[0.12em]">
+              Suivi
             </p>
-
-            <div
-              className="
-                overflow-hidden
-                rounded-2xl
-                border
-                border-[var(--oc-border)]
-                bg-[var(--oc-surface)]
-                dark:border-[var(--oc-border)]
-                dark:bg-[var(--oc-surface)]/[0.025]
-              "
-            >
+            <div className="overflow-hidden rounded-2xl border border-[var(--oc-border)] bg-[var(--oc-surface)] dark:bg-[var(--oc-surface)]/[0.025]">
               <MobileDrawerItem
                 icon={<Gauge />}
                 title="Ressenti"
                 description="État du jour"
-                onClick={() =>
-                  navigate('feeling')
-                }
-              />
-
-              <MobileDrawerItem
-                icon={<CloudSun />}
-                title="Météo"
-                description="Conditions et prévisions"
-                divider
-                onClick={() =>
-                  navigate('weather')
-                }
-              />
-
-              <MobileDrawerItem
-                icon={<Flag />}
-                title="Courses"
-                description="Objectifs et calendrier des courses"
-                divider
-                onClick={() =>
-                  navigate('races')
-                }
-              />
-
-            </div>
-          </section>
-
-
-          <section>
-            <p
-              className="
-                mb-2
-                px-1
-                oc-type-label font-bold uppercase tracking-[0.12em]
-              "
-            >
-              Mon profil
-            </p>
-
-            <div
-              className="
-                overflow-hidden
-                rounded-2xl
-                border
-                border-[var(--oc-border)]
-                bg-[var(--oc-surface)]
-                dark:border-[var(--oc-border)]
-                dark:bg-[var(--oc-surface)]/[0.025]
-              "
-            >
-              <MobileDrawerItem
-                icon={<UserRound />}
-                title="Profil personnel"
-                description="Identité et informations"
-                onClick={() =>
-                  navigate('profile-personal')
-                }
-              />
-
-              <MobileDrawerItem
-                icon={<CircleUserRound />}
-                title="Profil sportif"
-                description="Zones et physiologie"
-                divider
-                onClick={() =>
-                  navigate('profile-sport')
-                }
+                onClick={() => navigate('feeling')}
               />
             </div>
           </section>
-
-
-          <section>
-            <p
-              className="
-                mb-2
-                px-1
-                oc-type-label font-bold uppercase tracking-[0.12em]
-              "
-            >
-              OpenCoach
-            </p>
-
-            <div
-              className="
-                overflow-hidden
-                rounded-2xl
-                border
-                border-[var(--oc-border)]
-                bg-[var(--oc-surface)]
-                dark:border-[var(--oc-border)]
-                dark:bg-[var(--oc-surface)]/[0.025]
-              "
-            >
-              <MobileDrawerItem
-                icon={<Settings />}
-                title="Réglages"
-                description="Configuration OpenCoach"
-                onClick={() =>
-                  navigate('settings')
-                }
-              />
-            </div>
-          </section>
-
-
-          <section
-            className="
-              rounded-2xl
-              border
-              border-[var(--oc-border)]
-              bg-[var(--oc-surface)]
-              p-3
-              dark:border-[var(--oc-border)]
-              dark:bg-[var(--oc-surface)]/[0.025]
-            "
-          >
-            <p
-              className="
-                oc-type-label font-bold uppercase tracking-[0.12em]
-              "
-            >
-              Apparence
-            </p>
-
-            <div
-              className="
-                mt-3
-                grid
-                grid-cols-3
-                gap-2
-              "
-            >
-              <ThemeButton
-                active={
-                  theme === 'light'
-                }
-                icon={
-                  <Sun className="h-4 w-4" />
-                }
-                label="Clair"
-                onClick={() =>
-                  onThemeChange('light')
-                }
-              />
-
-              <ThemeButton
-                active={
-                  theme === 'dark'
-                }
-                icon={
-                  <Moon className="h-4 w-4" />
-                }
-                label="Sombre"
-                onClick={() =>
-                  onThemeChange('dark')
-                }
-              />
-
-              <ThemeButton
-                active={
-                  theme === 'system'
-                }
-                icon={
-                  <Monitor className="h-4 w-4" />
-                }
-                label="Système"
-                onClick={() =>
-                  onThemeChange('system')
-                }
-              />
-            </div>
-          </section>
-
-
-          <button
-            type="button"
-            onClick={onLogout}
-            className="
-              flex
-              w-full
-              items-center
-              justify-center
-              gap-2
-              rounded-xl
-              px-4
-              py-3
-              text-[11px]
-              font-semibold
-              text-red-500
-              transition
-              hover:bg-red-50
-              dark:text-red-400
-              dark:hover:bg-red-500/10
-            "
-          >
-            <LogOut className="h-4 w-4" />
-
-            Se déconnecter
-          </button>
-
-
-          <div
-            className="
-              pb-2
-              text-center
-              text-[9px]
-              text-[var(--oc-muted-soft)]
-              dark:text-[var(--oc-muted-soft)]
-            "
-          >
-            {version
-              ? `OpenCoach v${version}`
-              : 'OpenCoach développement'}
-
-            {commit
-              ? ` · ${commit}`
-              : ''}
-          </div>
         </div>
       </SidePanel>
 

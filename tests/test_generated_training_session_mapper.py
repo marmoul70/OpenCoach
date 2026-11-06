@@ -324,3 +324,26 @@ def test_mapper_persists_vma_speed_and_pace_targets() -> None:
             "pace_seconds_per_km"
         ]["fastest"],
     ) == 343
+
+
+def test_mapper_persists_phase_metadata_and_block_level_intensity() -> None:
+    generated = create_generated_session()
+    mapped = generated_session_to_training_session(
+        generated,
+        planning_key="phase-metadata",
+    )
+
+    assert mapped.prescription is not None
+    assert mapped.prescription["version"] == 2
+    blocks = mapped.prescription["blocks"]
+    phases = [block["phase"] for block in blocks]
+
+    assert "warmup" in phases
+    assert "main" in phases
+    assert "cooldown" in phases
+
+    main_block = next(block for block in blocks if block["phase"] == "main")
+    assert main_block["intensity"] is not None
+    assert main_block["intensity"]["targets"]
+    warmup_block = next(block for block in blocks if block["phase"] == "warmup")
+    assert warmup_block["intensity"] is None

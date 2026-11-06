@@ -135,3 +135,16 @@ def test_negative_elevation_is_rejected() -> None:
             distance_km=50.0,
             elevation_gain_m=-1.0,
         )
+
+
+def test_unknown_elevation_is_not_classified_as_flat() -> None:
+    profile = build_race_demand_profile(
+        distance_km=50.0,
+        elevation_gain_m=None,
+    )
+
+    assert profile.elevation_gain_m is None
+    assert profile.elevation_demand is ElevationDemand.UNKNOWN
+    assert profile.elevation_ratio_m_per_km is None
+    assert profile.uphill_demand is None
+    assert profile.downhill_demand is None

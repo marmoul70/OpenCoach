@@ -346,4 +346,5 @@ def test_mapper_persists_phase_metadata_and_block_level_intensity() -> None:
     assert main_block["intensity"] is not None
     assert main_block["intensity"]["targets"]
     warmup_block = next(block for block in blocks if block["phase"] == "warmup")
-    assert warmup_block["intensity"] is None
+    assert warmup_block["intensity"] is not None
+    assert warmup_block["intensity"]["targets"][0]["reference"] == "rpe"

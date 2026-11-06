@@ -58,9 +58,20 @@ export function CorosWorkoutAction({
     return null
   }
 
-  const needsConfirmation = (
+  const pendingInProgress = (
     session.corosSyncStatus === 'pending'
-    || session.corosSyncStatus === 'unknown'
+    && Boolean(session.corosSyncStartedAt)
+    && Date.now() - new Date(
+      session.corosSyncStartedAt as string,
+    ).getTime() < 5 * 60 * 1000
+  )
+
+  const needsConfirmation = (
+    session.corosSyncStatus === 'unknown'
+    || (
+      session.corosSyncStatus === 'pending'
+      && !pendingInProgress
+    )
   )
 
   const alreadySynced = (
@@ -68,7 +79,7 @@ export function CorosWorkoutAction({
   )
 
   async function sendToCoros(): Promise<void> {
-    if (saving || alreadySynced) {
+    if (saving || alreadySynced || pendingInProgress) {
       return
     }
 
@@ -149,7 +160,7 @@ export function CorosWorkoutAction({
     <div className="mt-2">
       <button
         type="button"
-        disabled={saving}
+        disabled={saving || pendingInProgress}
         onClick={() => void sendToCoros()}
         title={session.corosSyncError ?? undefined}
         className="
@@ -175,7 +186,7 @@ export function CorosWorkoutAction({
           dark:text-sky-300
         "
       >
-        {saving ? (
+        {saving || pendingInProgress ? (
           <RefreshCw className="h-3.5 w-3.5 animate-spin" />
         ) : needsConfirmation ? (
           <AlertTriangle className="h-3.5 w-3.5" />
@@ -184,8 +195,8 @@ export function CorosWorkoutAction({
         ) : (
           <CloudUpload className="h-3.5 w-3.5" />
         )}
-        {saving
-          ? 'Envoi en cours…'
+        {saving || pendingInProgress
+          ? 'Envoi COROS en cours…'
           : needsConfirmation
             ? 'Vérifier COROS puis réessayer'
             : session.corosSyncStatus === 'failed'

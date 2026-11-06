@@ -379,350 +379,163 @@ export function AppNavigation({
         </nav>
 
 
-                {/* OPENCOACH DESKTOP PROFILE DROPDOWN */}
+        {/* Desktop account and notification dock */}
+        <div className="
+          border-t border-[var(--oc-border)]
+          p-3
+          dark:border-[var(--oc-border)]
+        ">
+          <div className="
+            flex items-center gap-1.5
+            rounded-2xl border border-[var(--oc-border)]
+            bg-[var(--oc-surface-muted)]/65 p-1.5
+            shadow-sm shadow-black/[0.025]
+            transition-colors
+            dark:bg-[var(--oc-surface)]/[0.035]
+          ">
+            <button
+              type="button"
+              onClick={() => setDesktopProfileOpen((current) => !current)}
+              aria-haspopup="menu"
+              aria-expanded={desktopProfileOpen}
+              className="
+                flex min-w-0 flex-1 items-center gap-2
+                rounded-xl px-1.5 py-1.5 text-left
+                transition-colors hover:bg-[var(--oc-surface-hover)]
+                dark:hover:bg-[var(--oc-surface)]/[0.06]
+              "
+            >
+              <span className="relative shrink-0">
+                <Avatar avatar={avatar} initials={initials} size="small" />
+                <span className="
+                  absolute bottom-0 right-0 h-2.5 w-2.5
+                  rounded-full border-2 border-[var(--oc-surface)]
+                  bg-emerald-500
+                " />
+              </span>
 
-                <div
-                  className="
-                    relative
-                    border-t
-                    border-[var(--oc-border)]
-                    p-2
-                    dark:border-[var(--oc-border)]
-                  "
-                >
+              <span className="min-w-0 flex-1">
+                <span className="
+                  block truncate text-[11.5px] font-semibold
+                  leading-4 text-[var(--oc-text)]
+                ">
+                  {formatName(firstName, lastName)}
+                </span>
+                <span className="
+                  mt-0.5 block truncate text-[9px] leading-3
+                  text-[var(--oc-muted)]
+                ">
+                  Profil athlète
+                </span>
+              </span>
 
-                  {/* Déclencheur */}
+              <ChevronRight className={[
+                'h-3.5 w-3.5 shrink-0 text-[var(--oc-muted-soft)] transition-transform',
+                desktopProfileOpen ? '-rotate-90' : '',
+              ].join(' ')} />
+            </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDesktopProfileOpen(
-                        (current) => !current,
-                      )
-                    }}
-                    aria-haspopup="menu"
-                    aria-expanded={
-                      desktopProfileOpen
-                    }
-                    className={[
-                      (
-                        'flex w-full items-center '
-                        + 'gap-2.5 rounded-[10px] '
-                        + 'pl-2 pr-14 py-[7px] '
-                        + 'text-left transition-colors'
-                      ),
-                      desktopProfileOpen
-                        ? (
-                            'bg-[var(--oc-surface-muted)] '
-                            + 'dark:bg-[var(--oc-surface)]/[0.06]'
-                          )
-                        : (
-                            'hover:bg-[var(--oc-surface-hover)] '
-                            + 'dark:hover:bg-[var(--oc-surface)]/[0.045]'
-                          ),
-                    ].join(' ')}
-                  >
-                    <Avatar
-                      avatar={avatar}
-                      initials={initials}
-                      size="small"
-                    />
+            <span aria-hidden="true" className="h-7 w-px shrink-0 bg-[var(--oc-border)]" />
 
-                    <div
-                      className="
-                        min-w-0
-                        flex-1
-                      "
-                    >
-                      <p
-                        className="
-                          truncate
-                          text-[12.5px]
-                          font-semibold
-                          text-[var(--oc-text)]
-                          dark:text-[var(--oc-text)]
-                        "
-                      >
-                        {formatName(
-                          firstName,
-                          lastName,
-                        )}
-                      </p>
+            <NotificationBell
+              placement="sidebar"
+              onViewAll={() => navigate('notifications')}
+            />
+          </div>
 
-                      <p
-                        className="
-                          mt-0.5
-                          truncate
-                          text-[9.5px]
-                          text-[var(--oc-muted)]
-                          dark:text-[var(--oc-muted)]
-                        "
-                      >
-                        Profil athlète
-                      </p>
-                    </div>
+          {/* Account menu */}
+          {desktopProfileOpen && (
+            <div
+              role="menu"
+              className="
+                absolute bottom-[76px] left-[calc(100%+8px)] z-[90]
+                w-[210px] overflow-hidden rounded-xl
+                border border-[var(--oc-border)]
+                bg-[var(--oc-surface)] p-1
+                shadow-[0_10px_28px_rgba(15,23,42,0.13)]
+                dark:shadow-[0_10px_30px_rgba(0,0,0,0.28)]
+              "
+            >
+              <DropdownLabel>Compte</DropdownLabel>
 
-                    <ChevronRight
-                      className={[
-                        (
-                          'h-3.5 w-3.5 '
-                          + 'shrink-0 '
-                          + 'text-[var(--oc-muted-soft)] '
-                          + 'transition-transform '
-                          + 'dark:text-[var(--oc-muted-soft)]'
-                        ),
-                        desktopProfileOpen
-                          ? '-rotate-90'
-                          : 'rotate-0',
-                      ].join(' ')}
-                    />
-                  </button>
+              <DropdownItem
+                icon={<UserRound className="h-3 w-3" />}
+                label="Profil personnel"
+                active={activePage === 'profile-personal'}
+                onClick={() => navigate('profile-personal')}
+              />
 
+              <DropdownItem
+                icon={<CircleUserRound className="h-3 w-3" />}
+                label="Profil sportif"
+                active={activePage === 'profile-sport'}
+                onClick={() => navigate('profile-sport')}
+              />
 
-                  <div className="absolute right-8 top-1/2 z-[60] -translate-y-1/2">
-                    <NotificationBell
-                      placement="sidebar"
-                      onViewAll={() => navigate('notifications')}
-                    />
-                  </div>
+              <DropdownItem
+                icon={<Settings className="h-3 w-3" />}
+                label="Réglages"
+                active={activePage === 'settings'}
+                onClick={() => navigate('settings')}
+              />
 
-                  {/* Dropdown */}
+              <DropdownSeparator />
+              <DropdownLabel>Apparence</DropdownLabel>
 
-                  {desktopProfileOpen && (
-                    <div
-                      role="menu"
-                      className="
-                        absolute
-                        bottom-0
-                        left-[calc(100%+8px)]
-                        w-[210px]
-                        z-[90]
-                        overflow-hidden
-                        rounded-[12px]
-                        border
-                        border-[var(--oc-border)]
-                        bg-[var(--oc-surface)]
-                        p-1
-                        shadow-[0_10px_28px_rgba(15,23,42,0.13)]
-                        dark:border-[var(--oc-border)]
-                        dark:bg-[var(--oc-surface)]
-                        dark:shadow-[0_10px_30px_rgba(0,0,0,0.28)]
-                      "
-                    >
+              <div className="grid grid-cols-3 gap-1 px-0.5 pb-1">
+                <DropdownThemeButton
+                  active={theme === 'light'}
+                  icon={<Sun className="h-3 w-3" />}
+                  label="Clair"
+                  onClick={() => onThemeChange('light')}
+                />
+                <DropdownThemeButton
+                  active={theme === 'dark'}
+                  icon={<Moon className="h-3 w-3" />}
+                  label="Sombre"
+                  onClick={() => onThemeChange('dark')}
+                />
+                <DropdownThemeButton
+                  active={theme === 'system'}
+                  icon={<Monitor className="h-3 w-3" />}
+                  label="Auto"
+                  onClick={() => onThemeChange('system')}
+                />
+              </div>
 
-                      <DropdownLabel>
-                        Compte
-                      </DropdownLabel>
+              <DropdownSeparator />
+              <DropdownItem
+                icon={<LogOut className="h-3 w-3" />}
+                label="Se déconnecter"
+                danger
+                onClick={() => {
+                  setDesktopProfileOpen(false)
+                  onLogout()
+                }}
+              />
 
-                      <DropdownItem
-                        icon={
-                          <UserRound
-                            className="h-3 w-3"
-                          />
-                        }
-                        label="Profil personnel"
-                        active={
-                          activePage
-                          === 'profile-personal'
-                        }
-                        onClick={() =>
-                          navigate(
-                            'profile-personal',
-                          )
-                        }
-                      />
-
-                      <DropdownItem
-                        icon={
-                          <CircleUserRound
-                            className="h-3 w-3"
-                          />
-                        }
-                        label="Profil sportif"
-                        active={
-                          activePage
-                          === 'profile-sport'
-                        }
-                        onClick={() =>
-                          navigate(
-                            'profile-sport',
-                          )
-                        }
-                      />
-
-                      <DropdownItem
-                        icon={
-                          <Settings
-                            className="h-3 w-3"
-                          />
-                        }
-                        label="Réglages"
-                        active={
-                          activePage
-                          === 'settings'
-                        }
-                        onClick={() =>
-                          navigate(
-                            'settings',
-                          )
-                        }
-                      />
-
-
-                      <DropdownSeparator />
-
-
-                      <DropdownLabel>
-                        Apparence
-                      </DropdownLabel>
-
-                      <div
-                        className="
-                          grid
-                          grid-cols-3
-                          gap-1
-                          px-0.5
-                          pb-1
-                        "
-                      >
-                        <DropdownThemeButton
-                          active={
-                            theme === 'light'
-                          }
-                          icon={
-                            <Sun
-                              className="h-3 w-3"
-                            />
-                          }
-                          label="Clair"
-                          onClick={() =>
-                            onThemeChange(
-                              'light',
-                            )
-                          }
-                        />
-
-                        <DropdownThemeButton
-                          active={
-                            theme === 'dark'
-                          }
-                          icon={
-                            <Moon
-                              className="h-3 w-3"
-                            />
-                          }
-                          label="Sombre"
-                          onClick={() =>
-                            onThemeChange(
-                              'dark',
-                            )
-                          }
-                        />
-
-                        <DropdownThemeButton
-                          active={
-                            theme === 'system'
-                          }
-                          icon={
-                            <Monitor
-                              className="h-3 w-3"
-                            />
-                          }
-                          label="Auto"
-                          onClick={() =>
-                            onThemeChange(
-                              'system',
-                            )
-                          }
-                        />
-                      </div>
-
-
-                      <DropdownSeparator />
-
-
-                      <DropdownItem
-                        icon={
-                          <LogOut
-                            className="h-3 w-3"
-                          />
-                        }
-                        label="Se déconnecter"
-                        danger
-                        onClick={() => {
-                          setDesktopProfileOpen(
-                            false,
-                          )
-
-                          onLogout()
-                        }}
-                      />
-
-
-                      {/* Version */}
-
-                      <div
-                        className="
-                          mt-1
-                          rounded-[9px]
-                          bg-[var(--oc-surface-muted)]
-                          px-2
-                          py-1.5
-                          dark:bg-[var(--oc-surface)]/[0.035]
-                        "
-                      >
-                        <div
-                          className="
-                            flex
-                            items-center
-                            justify-between
-                            gap-2
-                          "
-                        >
-                          <span
-                            className="
-                              text-[8px]
-                              text-[var(--oc-muted)]
-                              dark:text-[var(--oc-muted)]
-                            "
-                          >
-                            Version
-                          </span>
-
-                          <span
-                            className="
-                              text-[7.5px]
-                              font-semibold
-                              text-[var(--oc-text-secondary)]
-                              dark:text-[var(--oc-text-secondary)]
-                            "
-                          >
-                            {version
-                              ? `v${version}`
-                              : 'dev'}
-                          </span>
-                        </div>
-
-                        {commit && (
-                          <p
-                            className="
-                              mt-0.5
-                              truncate
-                              text-right
-                              font-mono
-                              text-[7.5px]
-                              text-[var(--oc-muted-soft)]
-                              dark:text-[var(--oc-muted-soft)]
-                            "
-                          >
-                            {commit}
-                          </p>
-                        )}
-                      </div>
-
-                    </div>
-                  )}
+              <div className="
+                mt-1 rounded-lg bg-[var(--oc-surface-muted)]
+                px-2 py-1.5 dark:bg-[var(--oc-surface)]/[0.035]
+              ">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[8px] text-[var(--oc-muted)]">Version</span>
+                  <span className="text-[7.5px] font-semibold text-[var(--oc-text-secondary)]">
+                    {version ? `v${version}` : 'dev'}
+                  </span>
                 </div>
+                {commit && (
+                  <p className="
+                    mt-0.5 truncate text-right font-mono text-[7.5px]
+                    text-[var(--oc-muted-soft)]
+                  ">
+                    {commit}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
               </aside>
 

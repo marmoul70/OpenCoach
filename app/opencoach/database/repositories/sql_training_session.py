@@ -1,7 +1,7 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -133,6 +133,63 @@ class SqlTrainingSessionRepository(
 
             raise TrainingSessionRepositoryError(
                 "Impossible d'enregistrer la séance."
+            ) from exc
+
+    def claim_coros_workout_push(
+        self,
+        athlete_profile_id: UUID,
+        session_id: UUID,
+        payload_hash: str,
+        started_at: datetime,
+        *,
+        allow_uncertain: bool = False,
+    ) -> bool:
+        """Réserve atomiquement l'envoi COROS pour empêcher deux créations."""
+        started_at_utc = (
+            started_at.replace(tzinfo=None)
+            if started_at.tzinfo is not None
+            else started_at
+        )
+        eligible_statuses = [
+            TrainingSessionModel.coros_sync_status.is_(None),
+            TrainingSessionModel.coros_sync_status == "failed",
+        ]
+        if allow_uncertain:
+            stale_before = started_at_utc - timedelta(minutes=5)
+            eligible_statuses.extend([
+                TrainingSessionModel.coros_sync_status == "unknown",
+                and_(
+                    TrainingSessionModel.coros_sync_status == "pending",
+                    or_(
+                        TrainingSessionModel.coros_sync_started_at.is_(None),
+                        TrainingSessionModel.coros_sync_started_at <= stale_before,
+                    ),
+                ),
+            ])
+
+        try:
+            result = self.session.execute(
+                update(TrainingSessionModel)
+                .where(
+                    TrainingSessionModel.id == session_id,
+                    TrainingSessionModel.athlete_profile_id
+                    == athlete_profile_id,
+                    or_(*eligible_statuses),
+                )
+                .values(
+                    coros_sync_status="pending",
+                    coros_sync_started_at=started_at_utc,
+                    coros_payload_hash=payload_hash,
+                    coros_sync_error=None,
+                )
+                .execution_options(synchronize_session=False)
+            )
+            self.session.commit()
+            return result.rowcount == 1
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+            raise TrainingSessionRepositoryError(
+                "Impossible de réserver l'envoi COROS."
             ) from exc
 
     def delete_session(

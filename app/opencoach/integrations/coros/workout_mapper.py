@@ -1091,7 +1091,6 @@ def _build_course_description(
                         f"{_format_pace(pace.get('slowest'))}/km."
                     )
                     break
-    structure_type = str(work_structure.get("type") or "")
     description = " ".join(part for part in parts if part)
     if len(description) > 1000:
         raise CorosWorkoutMappingError(

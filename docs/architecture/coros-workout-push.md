@@ -103,6 +103,7 @@ Le convertisseur refuse une séance lorsqu'une conversion fidèle n'est pas poss
 - COROS n'accepte pas les cibles chronométrées dans un entraînement de type Trail. Si une séance Trail contient des étapes chronométrées, OpenCoach la crée comme entraînement Run afin de conserver le guidage complet ; la description demande alors de lancer la séance en mode Trail Run sur la montre (COROS permet l'exécution d'un workout Run dans ce mode). Le type Trail n'est utilisé que lorsque toutes les phases et récupérations disposent de cibles distance ou D+ explicites.
 - Un bloc RPE seul reste visible dans OpenCoach et dans les consignes textuelles, mais ne peut pas être transformé en cible COROS. Si aucune autre cible physiologique compatible n'existe, l'envoi est refusé.
 - Une cible D+ et une cible distance ne peuvent pas être simultanément des cibles automatiques d'une même section COROS. La cible structurée prioritaire est transmise et l'autre donnée est conservée dans la description.
+- Le profil de demande de course sert à qualifier les besoins relatifs (montées, descentes, endurance), mais ne fournit pas une répartition de terrain par séance. Aucune cible D+ n'est donc calculée automatiquement à partir du seul D+ de la course ; elle doit provenir d'une prescription explicite ou d'une future source de parcours/terrain fiable.
 - La mise à jour d'une séance autonome déjà envoyée utilise obligatoirement `queryScheduledWorkoutDetails`, vérifie `editable=true`, puis appelle `updateScheduledWorkout` avec le même `idInPlan` et le cours complet. Elle ne crée jamais une seconde séance. Si la mise à jour a un résultat réseau incertain, l'identifiant existant est conservé et la reprise reste une mise à jour, après confirmation.
 - Le déplacement et la suppression d'une séance envoyée ne sont pas pris en charge par MCP ; ils doivent être gérés dans l'application COROS.
 
@@ -122,7 +123,7 @@ L'intention d'envoi est enregistrée avant l'appel distant. Ainsi, si le process
 - `synced` : le même contenu ne peut pas être envoyé une seconde fois ; si le contenu OpenCoach change, l'élément existant est mis à jour via son identifiant COROS ;
 - `failed` : le serveur COROS a explicitement refusé la requête, une nouvelle tentative est autorisée ;
 - `pending` : un envoi est en cours. Une seconde requête est bloquée pendant cinq minutes.
-- `unknown` ou `pending` bloqué depuis plus de cinq minutes : le résultat est incertain. Pour une création sans identifiant COROS, l'utilisateur doit vérifier le calendrier et confirmer l'absence avant de retenter. Pour une mise à jour disposant déjà d'un identifiant, OpenCoach relit les détails de cette même séance et reprend par `updateScheduledWorkout`, jamais par une nouvelle création.
+- `unknown` ou `pending` bloqué depuis plus de cinq minutes : le résultat est incertain. Pour une création sans identifiant COROS, notamment lorsque l'outil ne retourne pas `idInPlan` malgré une réponse de création, OpenCoach ne déclare pas la séance synchronisée : l'utilisateur doit vérifier le calendrier et confirmer l'absence avant de retenter. Pour une mise à jour disposant déjà d'un identifiant, OpenCoach relit les détails de cette même séance et reprend par `updateScheduledWorkout`, jamais par une nouvelle création.
 
 Les identifiants COROS ne sont jamais affichés dans l'interface.
 

@@ -487,6 +487,7 @@ class SqlTrainingSessionRepository(
             intervals_sync_error=session.intervals_sync_error,
             coros_workout_id=session.coros_workout_id,
             coros_sync_status=session.coros_sync_status,
+            coros_sync_started_at=session.coros_sync_started_at,
             coros_last_synced_at=session.coros_last_synced_at,
             coros_payload_hash=session.coros_payload_hash,
             coros_sync_error=session.coros_sync_error,

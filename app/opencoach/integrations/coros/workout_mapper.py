@@ -956,14 +956,6 @@ def _build_course_description(
                 "Les consignes secondaires dépassent la capacité de description "
                 "COROS. Réduis le nombre de stimuli regroupés avant l'envoi."
             )
-    parts.append(f"Durée totale prévue : {session.duration_minutes} min.")
-    if session.distance_km is not None:
-        parts.append(f"Distance prévue : {session.distance_km:g} km.")
-    if session.elevation_gain_m is not None:
-        parts.append(f"Dénivelé positif prévu : {session.elevation_gain_m} m.")
-    structure_description = str(work_structure.get("description") or "").strip()
-    if structure_description:
-        parts.append(f"Structure : {structure_description}")
     if isinstance(blocks, list):
         for block in blocks:
             if not isinstance(block, dict):
@@ -1100,42 +1092,6 @@ def _build_course_description(
                     )
                     break
     structure_type = str(work_structure.get("type") or "")
-    if structure_type in {"repeats", "intervals"}:
-        if isinstance(intervals, list):
-            for index, interval in enumerate(intervals, start=1):
-                if not isinstance(interval, dict):
-                    continue
-                repetitions = interval.get("repetitions")
-                distance = interval.get("work_distance_meters")
-                elevation = interval.get("work_elevation_gain_meters")
-                duration = interval.get("work_duration")
-                unit = str(interval.get("work_unit") or "minutes")
-                work_details = []
-                if distance is not None:
-                    work_details.append(f"{distance} m")
-                if elevation is not None:
-                    work_details.append(f"{elevation} m D+")
-                if duration is not None:
-                    work_details.append(f"{duration} {unit}")
-                work = " / ".join(work_details) or "travail non quantifié"
-                recovery = interval.get("recovery_duration")
-                recovery_distance = interval.get("recovery_distance_meters")
-                recovery_elevation = interval.get("recovery_elevation_gain_meters")
-                recovery_unit = str(interval.get("recovery_unit") or "seconds")
-                recovery_details = []
-                if recovery is not None:
-                    recovery_details.append(f"{recovery} {recovery_unit}")
-                if recovery_distance is not None:
-                    recovery_details.append(f"{recovery_distance} m")
-                if recovery_elevation is not None:
-                    recovery_details.append(f"{recovery_elevation} m D+")
-                suffix = (
-                    f", récupération {' / '.join(recovery_details)}"
-                    if recovery_details
-                    else ""
-                )
-                parts.append(f"Série {index} : {repetitions} × {work}{suffix}.")
-        parts.append("Suivre les étapes, répétitions et récupérations affichées sur la montre.")
     description = " ".join(part for part in parts if part)
     if len(description) > 1000:
         raise CorosWorkoutMappingError(

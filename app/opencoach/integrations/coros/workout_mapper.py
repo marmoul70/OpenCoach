@@ -985,13 +985,21 @@ def _build_course_description(
             )
             if isinstance(block_targets, list):
                 for target in block_targets:
-                    if isinstance(target, dict):
-                        label = target.get("label") or target.get("reference")
-                        minimum = target.get("minimum")
-                        maximum = target.get("maximum")
-                        unit = target.get("unit") or ""
-                        if minimum is not None and maximum is not None:
-                            parts.append(f"{name or 'Phase'} : {label} {minimum}–{maximum} {unit}".strip())
+                    if not isinstance(target, dict):
+                        continue
+                    reference = str(target.get("reference") or "").strip().lower()
+                    # Les cibles cardiaques et les allures VMA pilotables sont
+                    # déjà présentes dans les étapes COROS : ne pas les dupliquer.
+                    if reference in {"heart_rate", "vma_percent"}:
+                        continue
+                    label = target.get("label") or reference or "Intensité"
+                    minimum = target.get("minimum")
+                    maximum = target.get("maximum")
+                    unit = target.get("unit") or ""
+                    if minimum is not None and maximum is not None:
+                        parts.append(
+                            f"{name or 'Phase'} : {label} {minimum}–{maximum} {unit}".strip()
+                        )
     recovery_intensity = prescription.get("recovery_intensity")
     recovery_targets = (
         recovery_intensity.get("targets")
@@ -1002,7 +1010,10 @@ def _build_course_description(
         for target in recovery_targets:
             if not isinstance(target, dict):
                 continue
-            label = target.get("label") or target.get("reference")
+            reference = str(target.get("reference") or "").strip().lower()
+            if reference in {"heart_rate", "vma_percent"}:
+                continue
+            label = target.get("label") or reference or "Intensité"
             minimum = target.get("minimum")
             maximum = target.get("maximum")
             unit = target.get("unit") or ""
@@ -1010,7 +1021,6 @@ def _build_course_description(
                 parts.append(
                     f"Récupérations : {label} {minimum}–{maximum} {unit}."
                 )
-                break
 
     intervals = work_structure.get("intervals")
     has_repetition_pace = (
@@ -1060,46 +1070,20 @@ def _build_course_description(
                 f"{vma_min:g}–{vma_max:g} % VMA."
             )
 
-    intensity = prescription.get("intensity")
-    targets = (
-        intensity.get("targets")
-        if isinstance(intensity, dict) and not has_repetition_pace
-        else None
-    )
-    if isinstance(targets, list):
-        for target in targets:
-            if not isinstance(target, dict):
-                continue
-            reference = str(target.get("reference") or "").lower()
-            if reference == "heart_rate":
-                parts.append(
-                    f"Cible cardiaque : {target.get('minimum')}–{target.get('maximum')} bpm."
-                )
-                break
-            if reference == "vma_percent":
-                derived = target.get("derived")
-                pace = (
-                    derived.get("pace_seconds_per_km")
-                    if isinstance(derived, dict)
-                    else None
-                )
-                if isinstance(pace, dict):
-                    parts.append(
-                        "Allure cible calculée à partir de la VMA : "
-                        f"{_format_pace(pace.get('fastest'))}–"
-                        f"{_format_pace(pace.get('slowest'))}/km."
-                    )
-                    break
     if isinstance(intervals, list):
         for index, interval in enumerate(intervals, start=1):
             if not isinstance(interval, dict):
                 continue
             work_elevation = interval.get("work_elevation_gain_meters")
             recovery_elevation = interval.get("recovery_elevation_gain_meters")
+            recovery_duration = interval.get("recovery_duration")
+            recovery_unit = str(interval.get("recovery_unit") or "seconds")
             if work_elevation is not None:
                 parts.append(f"Série {index} : {work_elevation} m D+.")
             if recovery_elevation is not None:
                 parts.append(f"Récupération série {index} : {recovery_elevation} m D+.")
+            if recovery_duration is not None:
+                parts.append(f"Récupération série {index} : {recovery_duration} {recovery_unit}.")
 
     description = " ".join(part for part in parts if part)
     if len(description) > 1000:

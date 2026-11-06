@@ -105,7 +105,7 @@ class CorosMcpClient:
                 "capabilities": {},
                 "clientInfo": {
                     "name": "OpenCoach",
-                    "version": "0.1.0",
+                    "version": "0.8.4",
                 },
             },
         )

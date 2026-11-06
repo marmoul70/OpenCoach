@@ -459,6 +459,40 @@ def test_manual_planned_session_is_preserved() -> None:
     )
 
 
+def test_obsolete_session_with_coros_identity_is_preserved() -> None:
+    """Une séance déjà planifiée sur COROS n'est jamais supprimée localement."""
+    remote = create_existing_session()
+    remote.coros_workout_id = "coros-id-obsolete"
+    remote.coros_scheduled_date = remote.date
+    remote.coros_sync_status = "synced"
+    repository = FakeTrainingSessionRepository((remote,))
+    service = create_persistence_service(repository)
+
+    service.persist(
+        athlete_profile_id=uuid4(),
+        week=create_week(),
+        envelope=create_envelope_for_week(create_week()),
+    )
+
+    assert any(session.id == remote.id for session in repository.sessions)
+    assert remote.coros_workout_id == "coros-id-obsolete"
+
+
+def test_obsolete_session_with_coros_pending_state_is_preserved() -> None:
+    remote = create_existing_session()
+    remote.coros_sync_status = "pending"
+    repository = FakeTrainingSessionRepository((remote,))
+    service = create_persistence_service(repository)
+
+    service.persist(
+        athlete_profile_id=uuid4(),
+        week=create_week(),
+        envelope=create_envelope_for_week(create_week()),
+    )
+
+    assert any(session.id == remote.id for session in repository.sessions)
+
+
 def test_obsolete_completed_session_is_preserved() -> None:
     """Une ancienne séance réalisée n'est jamais supprimée."""
 

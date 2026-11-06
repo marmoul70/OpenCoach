@@ -748,6 +748,8 @@ def test_saved_intervals_connection_rejects_bad_credentials(
             self,
             api_key,
             athlete_id,
+            *,
+            web_cookie=None,
         ) -> None:
             pass
 

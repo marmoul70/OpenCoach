@@ -43,6 +43,8 @@ Pour une mise à jour, OpenCoach appelle d'abord `queryScheduledWorkoutDetails` 
 - le nom et la description destinés à l'athlète ;
 - les phases et répétitions converties depuis la prescription OpenCoach.
 
+Les stimuli secondaires regroupés dans une intention de séance ne restent pas de simples métadonnées : le générateur ajoute des consignes qualitatives dédiées (montées, descentes, spécificité course ou renforcement complémentaire) dans les notes de coach, qui sont reprises dans la description persistée puis transmise à COROS. Ces consignes ne fabriquent ni distance, ni durée, ni cible de D+ absente de la prescription.
+
 Le contenu transmis est le cours complet ; les sections d'un entraînement peuvent utiliser des cibles différentes selon le sport : temps, distance ou dénivelé.
 
 Cette opération ajoute directement une séance autonome à une date du calendrier COROS. Elle ne crée pas de modèle réutilisable dans la bibliothèque COROS et ne modifie pas un plan d'entraînement COROS existant.

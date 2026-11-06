@@ -115,6 +115,8 @@ def test_maps_repetitions_and_preserves_recovery_duration() -> None:
                             "distance_meters": 400,
                             "fast_seconds": 90,
                             "slow_seconds": 96,
+                            "vma_percent_min": 95,
+                            "vma_percent_max": 100,
                         },
                         "recovery_duration": 90,
                         "recovery_unit": "seconds",
@@ -152,6 +154,10 @@ def test_maps_repetitions_and_preserves_recovery_duration() -> None:
         "intensityValueStart": 225,
         "intensityValueEnd": 240,
     }
+    description = payload.course["courseDescription"]
+    assert "Série 1 : 400 m en 1:30–1:36" in description
+    assert "3:45–4:00/km" in description
+    assert "95–100 % VMA" in description
 
 
 def test_maps_vma_target_to_absolute_pace_for_running() -> None:

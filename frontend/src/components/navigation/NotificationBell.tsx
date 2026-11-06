@@ -124,7 +124,7 @@ export function NotificationBell({
             onClick={() => setOpen(false)}
           />}
           <section
-            role="dialog"
+            role={embedded ? "region" : "dialog"}
             aria-label="Notifications récentes"
             className={embedded
               ? 'w-full overflow-hidden'

@@ -119,6 +119,7 @@ def map_training_session_to_coros(
         session=session,
         prescription=prescription,
         work_structure=work_structure,
+        sport_type=sport_type,
     )
     course = {
         "sportType": sport_type,
@@ -248,16 +249,26 @@ def _build_continuous_section(
         distance = work_structure.get("work_distance_meters")
         if distance is None and session.distance_km is not None:
             distance = round(session.distance_km * 1000)
-        if distance is None:
+        if distance is not None:
+            section = {
+                "sectionType": 2,
+                "targetType": 1,
+                "targetValue": _positive_integer(distance, "distance"),
+            }
+        elif session.elevation_gain_m is not None:
+            section = {
+                "sectionType": 2,
+                "targetType": 3,
+                "targetValue": _positive_integer(
+                    session.elevation_gain_m,
+                    "dénivelé",
+                ),
+            }
+        else:
             raise CorosWorkoutMappingError(
                 "COROS exige une cible en distance ou en dénivelé pour le trail. "
                 "Cette séance ne contient qu'une durée."
             )
-        section = {
-            "sectionType": 2,
-            "targetType": 1,
-            "targetValue": _positive_integer(distance, "distance"),
-        }
     else:
         minutes = (
             work_structure.get("continuous_minutes")
@@ -294,13 +305,14 @@ def _build_interval_groups(
     prescription: dict[str, Any],
     sport_type: int,
 ) -> list[dict[str, Any]]:
+    """Convertit les séries en respectant les récupérations entre répétitions."""
     intervals = work_structure.get("intervals")
     if not isinstance(intervals, list) or not intervals:
         raise CorosWorkoutMappingError(
             "La structure fractionnée ne contient aucun intervalle."
         )
 
-    groups: list[dict[str, Any]] = []
+    sections: list[dict[str, Any]] = []
     for interval in intervals:
         if not isinstance(interval, dict):
             raise CorosWorkoutMappingError(
@@ -321,33 +333,47 @@ def _build_interval_groups(
             prescription=prescription,
             sport_type=sport_type,
         )
-        sets = [work_section]
-
         recovery_duration = interval.get("recovery_duration")
-        if recovery_duration is not None:
-            if sport_type == 5:
-                raise CorosWorkoutMappingError(
-                    "COROS n'accepte pas de récupération chronométrée "
-                    "dans un entraînement trail. La récupération de cette "
-                    "séance doit être exprimée autrement avant l'envoi."
-                )
-            recovery_seconds = _duration_seconds(
-                recovery_duration,
-                interval.get("recovery_unit"),
-                default_unit="seconds",
-            )
-            sets.append({
-                "sectionType": 3,
-                "targetType": 2,
-                "targetValue": recovery_seconds,
-            })
 
-        groups.append({
+        if recovery_duration is None or repetitions == 1:
+            if repetitions == 1:
+                sections.append(work_section)
+            else:
+                sections.append({
+                    "intervalGroup": True,
+                    "repeats": repetitions,
+                    "sets": [work_section],
+                })
+            continue
+
+        if sport_type == 5:
+            raise CorosWorkoutMappingError(
+                "COROS n'accepte pas de récupération chronométrée "
+                "dans un entraînement trail. La récupération de cette "
+                "séance doit être exprimée autrement avant l'envoi."
+            )
+
+        recovery_seconds = _duration_seconds(
+            recovery_duration,
+            interval.get("recovery_unit"),
+            default_unit="seconds",
+        )
+        recovery_section = {
+            "sectionType": 3,
+            "targetType": 2,
+            "targetValue": recovery_seconds,
+        }
+
+        # OpenCoach compte les récupérations entre les répétitions :
+        # il n'y en a donc pas après la dernière répétition.
+        sections.append({
             "intervalGroup": True,
-            "repeats": repetitions,
-            "sets": sets,
+            "repeats": repetitions - 1,
+            "sets": [work_section, recovery_section],
         })
-    return groups
+        sections.append(work_section)
+
+    return sections
 
 
 def _build_work_section(
@@ -554,10 +580,31 @@ def _build_course_description(
     session: TrainingSession,
     prescription: dict[str, Any],
     work_structure: dict[str, Any],
+    sport_type: int,
 ) -> str:
     parts = [session.description.strip() or session.title.strip()]
+    intervals = work_structure.get("intervals")
+    has_repetition_pace = (
+        sport_type != 2
+        and isinstance(intervals, list)
+        and any(
+            isinstance(interval, dict)
+            and isinstance(interval.get("repetition_target"), dict)
+            for interval in intervals
+        )
+    )
+    if has_repetition_pace:
+        parts.append(
+            "Allure des répétitions pilotée par les temps de passage "
+            "calculés dans la prescription."
+        )
+
     intensity = prescription.get("intensity")
-    targets = intensity.get("targets") if isinstance(intensity, dict) else None
+    targets = (
+        intensity.get("targets")
+        if isinstance(intensity, dict) and not has_repetition_pace
+        else None
+    )
     if isinstance(targets, list):
         for target in targets:
             if not isinstance(target, dict):

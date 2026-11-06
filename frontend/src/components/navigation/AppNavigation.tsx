@@ -597,9 +597,6 @@ export function AppNavigation({
         </button>
 
 
-        <NotificationBell
-          onViewAll={() => navigate('notifications')}
-        />
 
         <button
           type="button"
@@ -718,8 +715,8 @@ export function AppNavigation({
 
       <SidePanel
         open={mobileMenuOpen}
-        eyebrow="Navigation"
-        title="Mon espace"
+        eyebrow="Mon espace"
+        title="Compte et notifications"
         onClose={() =>
           setMobileMenuOpen(false)
         }
@@ -772,6 +769,13 @@ export function AppNavigation({
                 Athlète OpenCoach
               </p>
             </div>
+          </section>
+
+          <section>
+            <NotificationBell
+              embedded
+              onViewAll={() => navigate('notifications')}
+            />
           </section>
 
 

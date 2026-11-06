@@ -159,6 +159,11 @@ class TrainingSession(Base):
         nullable=True,
     )
 
+    coros_scheduled_date: Mapped[date | None] = mapped_column(
+        Date,
+        nullable=True,
+    )
+
     coros_sync_status: Mapped[str | None] = mapped_column(
         String(30),
         nullable=True,

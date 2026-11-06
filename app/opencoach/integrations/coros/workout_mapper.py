@@ -946,7 +946,6 @@ def _build_course_description(
     # 1000 caractères de COROS : elles passent avant les détails descriptifs
     # redondants afin de ne pas être coupées en fin de chaîne.
     parts.extend(secondary_guidance)
-    parts.extend(regular_description[1:])
     if secondary_guidance:
         mandatory_description = " ".join(
             [parts[0], *secondary_guidance]

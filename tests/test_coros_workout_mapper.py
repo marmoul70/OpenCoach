@@ -823,3 +823,28 @@ def test_recovery_phase_rpe_falls_back_to_compatible_global_recovery_target() ->
     assert recovery["intensityType"] == 1
     assert recovery["intensityValueStart"] == 115
     assert recovery["intensityValueEnd"] == 130
+
+
+def test_rejects_overlong_description_instead_of_silently_truncating_guidance() -> None:
+    session = make_session(
+        prescription=heart_rate_prescription(
+            {
+                "type": "continuous",
+                "continuous_minutes": 50,
+            },
+            blocks=[
+                {
+                    "name": "Bloc principal",
+                    "phase": "main",
+                    "duration_minutes": 50,
+                    "description": "Consigne détaillée. " * 70,
+                }
+            ],
+        )
+    )
+
+    with pytest.raises(
+        CorosWorkoutMappingError,
+        match="consignes complètes.*dépassent la limite de 1000 caractères",
+    ):
+        map_training_session_to_coros(session)

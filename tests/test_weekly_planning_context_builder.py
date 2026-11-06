@@ -534,7 +534,7 @@ def test_missing_elevation_defaults_to_zero(
     assert (
         result.planning_input
         .target_elevation_gain_m
-        == 0.0
+        is None
     )
 
 
@@ -938,3 +938,45 @@ def test_race_preparation_keeps_stable_activation_anchor(
             26,
         )
     )
+
+
+def test_primary_race_without_elevation_keeps_unknown_through_coaching(
+    monkeypatch,
+) -> None:
+    race = create_race(
+        elevation_gain_m=None,
+    )
+    context = create_context(
+        primary_race=race,
+    )
+    builder, _, _ = create_builder(
+        context=context,
+    )
+
+    monkeypatch.setattr(
+        (
+            "opencoach.coaching.generation.context."
+            "calculate_training_history_metrics"
+        ),
+        lambda snapshot: create_metrics(),
+    )
+
+    prepared = builder.build(
+        athlete_profile_id=uuid4(),
+        planning_date=PLANNING_DATE,
+        trajectory_start_date=TRAJECTORY_START_DATE,
+    )
+
+    assert prepared.planning_input.target_race_date == race.date
+    assert prepared.planning_input.target_distance_km == race.distance_km
+    assert prepared.planning_input.target_elevation_gain_m is None
+
+    result = build_current_week_coaching(
+        input_data=prepared.planning_input,
+    )
+
+    assert result.trajectory.race_profile is not None
+    assert result.trajectory.race_profile.elevation_gain_m is None
+    assert result.trajectory.race_profile.elevation_demand.value == "unknown"
+    assert result.trajectory.race_profile.uphill_demand is None
+    assert result.trajectory.race_profile.downhill_demand is None

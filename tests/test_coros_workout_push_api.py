@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import date, datetime, timedelta, timezone
 from uuid import uuid4
 
@@ -31,12 +32,12 @@ class FakeRepository:
         self.on_claim = None
 
     def get_session(self, profile_id, session_id):
-        return self.session if self.session.id == session_id else None
+        return deepcopy(self.session) if self.session.id == session_id else None
 
     def save_session(self, profile_id, session):
-        self.session = session
-        self.saved.append(session)
-        return session
+        self.session = deepcopy(session)
+        self.saved.append(deepcopy(session))
+        return deepcopy(session)
 
     def claim_coros_workout_push(
         self,

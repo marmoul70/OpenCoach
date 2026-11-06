@@ -413,10 +413,10 @@ def _build_interval_groups(
         if isinstance(main_block, dict)
         else None
     )
-    intensity_source = (
-        {"intensity": block_intensity}
-        if isinstance(block_intensity, dict)
-        else prescription
+    intensity_source = _select_intensity_source(
+        block_intensity,
+        prescription,
+        sport_type,
     )
     sections: list[dict[str, Any]] = []
     for interval in intervals:

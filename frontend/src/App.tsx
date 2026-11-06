@@ -36,6 +36,7 @@ const FeelingPage = lazy(() => import('./modules/feeling/FeelingPage').then(modu
 const Settings = lazy(() => import('./modules/settings').then(module => ({ default: module.Settings })))
 const WeatherPage = lazy(() => import('./modules/weather/WeatherPage').then(module => ({ default: module.WeatherPage })))
 const HealthPage = lazy(() => import('./modules/health/HealthPage').then(module => ({ default: module.HealthPage })))
+const NotificationsPage = lazy(() => import('./modules/notifications/NotificationsPage').then(module => ({ default: module.NotificationsPage })))
 
 type Page =
   | 'dashboard'
@@ -49,6 +50,7 @@ type Page =
   | 'activities'
   | 'weather'
   | 'health'
+  | 'notifications'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -78,6 +80,12 @@ function App() {
     }
 
     if (
+      url.pathname === '/notifications'
+    ) {
+      return 'notifications'
+    }
+
+    if (
       url.pathname === '/weather'
     ) {
       return 'weather'
@@ -103,6 +111,19 @@ function App() {
       )
 
     if (
+      page === 'notifications'
+      && url.pathname !== '/notifications'
+    ) {
+      window.history.replaceState(
+        null,
+        '',
+        '/notifications',
+      )
+
+      return
+    }
+
+    if (
       page === 'health'
       && url.pathname !== '/health'
     ) {
@@ -123,6 +144,19 @@ function App() {
         null,
         '',
         '/weather',
+      )
+
+      return
+    }
+
+    if (
+      page !== 'notifications'
+      && url.pathname === '/notifications'
+    ) {
+      window.history.replaceState(
+        null,
+        '',
+        '/',
       )
 
       return
@@ -517,6 +551,7 @@ function App() {
             {page === 'races' && <RacePage />}
             {page === 'weather' && <WeatherPage />}
             {page === 'health' && <HealthPage />}
+            {page === 'notifications' && <NotificationsPage />}
             {page === 'profile-personal' && <PersonalProfile />}
             {page === 'profile-sport' && <Profile />}
             {page === 'settings' && <Settings />}

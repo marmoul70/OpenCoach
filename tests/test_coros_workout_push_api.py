@@ -112,8 +112,8 @@ class FakeCorosClient:
     def call_tool(self, name, arguments):
         self.calls.append((name, arguments))
         if name == "updateScheduledWorkout":
-            if self.on_update is not None:
-                self.on_update()
+            if type(self).on_update is not None:
+                type(self).on_update()
             if self.update_error:
                 raise CorosMcpToolError("COROS a refusé la mise à jour.")
         if name == "queryScheduledWorkoutDetails":
@@ -441,7 +441,9 @@ def test_session_changed_between_mapping_and_claim_is_not_sent_to_coros(monkeypa
     assert "modifiée pendant la préparation" in response.json()["detail"]
     assert repository.session.coros_sync_status == "failed"
     assert repository.session.title == "Footing modifié avant envoi"
-    assert FakeCorosClient.calls == []
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule"
+    ]
 
 
 def test_definitive_update_error_keeps_existing_coros_identity_and_old_hash(monkeypatch):

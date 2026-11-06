@@ -669,3 +669,51 @@ def test_uses_compatible_session_target_when_main_block_only_has_rpe() -> None:
     assert payload.course["sections"][0]["intensityType"] == 1
     assert payload.course["sections"][0]["intensityValueStart"] == 140
     assert payload.course["sections"][0]["intensityValueEnd"] == 155
+
+
+def test_uses_explicit_recovery_phase_intensity_for_interval_recoveries() -> None:
+    prescription = heart_rate_prescription(
+        {
+            "type": "repeats",
+            "intervals": [
+                {
+                    "repetitions": 4,
+                    "work_distance_meters": 400,
+                    "recovery_duration": 90,
+                    "recovery_unit": "seconds",
+                    "repetition_target": None,
+                }
+            ],
+        },
+        blocks=[
+            {
+                "phase": "recovery",
+                "name": "Récupération entre répétitions",
+                "intensity": {
+                    "targets": [
+                        {
+                            "reference": "heart_rate",
+                            "minimum": 118,
+                            "maximum": 132,
+                            "unit": "bpm",
+                        }
+                    ],
+                    "guidance": ["Rester très facile pendant la récupération."],
+                },
+            }
+        ],
+    )
+    session = make_session(prescription=prescription)
+
+    sections = map_training_session_to_coros(session).course["sections"]
+
+    recovery = sections[0]["sets"][1]
+    assert recovery == {
+        "sectionType": 3,
+        "targetType": 2,
+        "targetValue": 90,
+        "intensityType": 1,
+        "intensityValueStart": 118,
+        "intensityValueEnd": 132,
+    }
+

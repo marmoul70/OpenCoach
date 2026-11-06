@@ -8,6 +8,7 @@ from opencoach.api import coros as coros_api
 from opencoach.api.coros import get_current_athlete_profile_id
 from opencoach.database.session import get_db
 from opencoach.models import TrainingSession
+from opencoach.integrations.coros.errors import CorosMcpToolError
 
 
 class FakeConnection:
@@ -66,6 +67,8 @@ class FakeCorosClient:
     scheduled_names = ["Renforcement"]
     editable = True
     created_id = "new-workout-id"
+    update_error = False
+    on_update = None
 
     def __init__(self, access_token):
         self.access_token = access_token
@@ -104,6 +107,11 @@ class FakeCorosClient:
 
     def call_tool(self, name, arguments):
         self.calls.append((name, arguments))
+        if name == "updateScheduledWorkout":
+            if self.on_update is not None:
+                self.on_update()
+            if self.update_error:
+                raise CorosMcpToolError("COROS a refusé la mise à jour.")
         if name == "queryScheduledWorkoutDetails":
             return {
                 "structuredContent": {
@@ -219,6 +227,8 @@ def make_client(monkeypatch, session):
     FakeCorosClient.scheduled_names = ["Renforcement"]
     FakeCorosClient.editable = True
     FakeCorosClient.created_id = "new-workout-id"
+    FakeCorosClient.update_error = False
+    FakeCorosClient.on_update = None
     monkeypatch.setattr(coros_api, "CorosMcpClient", FakeCorosClient)
 
     return TestClient(app), repository, profile_id
@@ -405,6 +415,73 @@ def test_refuses_to_update_a_coros_workout_that_is_not_editable(monkeypatch):
         "queryScheduledWorkoutDetails"
     ]
     assert repository.session.coros_workout_id == "completed-workout-id"
+
+
+
+def test_definitive_update_error_keeps_existing_coros_identity_and_old_hash(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "synced"
+    session.coros_workout_id = "existing-workout-id"
+    session.coros_payload_hash = "old-payload-hash"
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.update_error = True
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 422
+    assert repository.session.coros_sync_status == "synced"
+    assert repository.session.coros_workout_id == "existing-workout-id"
+    assert repository.session.coros_payload_hash == "old-payload-hash"
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryScheduledWorkoutDetails",
+        "updateScheduledWorkout",
+    ]
+
+
+def test_session_changed_during_update_is_not_reported_as_synced_and_retries_as_update(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "synced"
+    session.coros_workout_id = "existing-workout-id"
+    session.coros_payload_hash = "old-payload-hash"
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.on_update = lambda: setattr(
+        repository.session,
+        "title",
+        "Footing modifié pendant l'envoi",
+    )
+
+    interrupted = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert interrupted.status_code == 409
+    assert "modifiée pendant l'envoi" in interrupted.json()["detail"]
+    assert repository.session.coros_sync_status == "failed"
+    assert repository.session.coros_workout_id == "updated-workout-id"
+    assert FakeCorosClient.calls[1][1]["course"]["courseName"] == "Footing aérobie"
+
+    FakeCorosClient.on_update = None
+    retried = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert retried.status_code == 200
+    assert repository.session.coros_sync_status == "synced"
+    assert repository.session.title == "Footing modifié pendant l'envoi"
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryScheduledWorkoutDetails",
+        "updateScheduledWorkout",
+        "queryScheduledWorkoutDetails",
+        "updateScheduledWorkout",
+    ]
+    assert FakeCorosClient.calls[-1][1]["course"]["courseName"] == (
+        "Footing modifié pendant l'envoi"
+    )
 
 
 def test_uncertain_update_retry_keeps_existing_coros_identity(monkeypatch):

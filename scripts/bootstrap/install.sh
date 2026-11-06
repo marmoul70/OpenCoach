@@ -46,7 +46,7 @@ show_help() {
     printf '%s\n' \
         "  --with-ai  Installe Ollama et le modèle IA local (optionnel)."
     printf '%s\n' \
-        "  --help   Affiche cette aide."
+        "  --help      Affiche cette aide."
 }
 
 

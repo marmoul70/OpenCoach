@@ -120,6 +120,7 @@ def test_service_stores_and_returns_personal_web_cookie() -> None:
     assert credentials.secret == "secret-api-key"
     assert credentials.web_cookie == "session-cookie"
     assert service.has_intervals_web_cookie(profile_id) is True
+    assert service.get_intervals_web_cookie_hint(profile_id) == "okie"
 
 
 def test_service_requires_api_key_for_new_connection() -> None:

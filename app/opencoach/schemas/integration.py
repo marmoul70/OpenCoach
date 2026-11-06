@@ -31,6 +31,7 @@ class IntervalsConnectionResponse(BaseModel):
     athlete_id: str | None
     api_key_configured: bool
     web_cookie_configured: bool = False
+    web_cookie_hint: str | None = None
     last_synced_at: datetime | None = None
 
 

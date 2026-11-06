@@ -5,6 +5,7 @@ export interface IntervalsConnection {
   athlete_id: string | null
   api_key_configured: boolean
   web_cookie_configured: boolean
+  web_cookie_hint: string | null
   last_synced_at: string | null
 }
 

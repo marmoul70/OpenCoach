@@ -156,6 +156,10 @@ class FakeIntegrationConnectionService:
     def has_intervals_web_cookie(self, athlete_profile_id):
         return bool(self.saved and self.saved.get("web_cookie"))
 
+    def get_intervals_web_cookie_hint(self, athlete_profile_id):
+        cookie = self.saved.get("web_cookie") if self.saved else None
+        return cookie[-4:] if cookie else None
+
     def mark_synced(
         self,
         athlete_profile_id: UUID,
@@ -449,6 +453,7 @@ def test_get_intervals_connection_returns_configured() -> None:
         "athlete_id": "i651743",
         "api_key_configured": True,
         "web_cookie_configured": False,
+        "web_cookie_hint": None,
         "last_synced_at": "2026-08-19T18:30:00",
     }
 
@@ -479,6 +484,7 @@ def test_get_intervals_connection_returns_unconfigured() -> None:
         "athlete_id": None,
         "api_key_configured": False,
         "web_cookie_configured": False,
+        "web_cookie_hint": None,
         "last_synced_at": None,
     }
 
@@ -526,6 +532,7 @@ def test_put_intervals_connection() -> None:
         "athlete_id": "i651743",
         "api_key_configured": True,
         "web_cookie_configured": True,
+        "web_cookie_hint": "okie",
         "last_synced_at": None,
     }
 

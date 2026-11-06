@@ -85,11 +85,13 @@ class FakePush:
         sent=1,
         failed=0,
         removed=0,
+        persisted=True,
         error=None,
     ):
         self.sent = sent
         self.failed = failed
         self.removed = removed
+        self.persisted = persisted
         self.error = error
         self.calls = []
 
@@ -117,6 +119,7 @@ class FakePush:
             sent=self.sent,
             failed=self.failed,
             removed=self.removed,
+            persisted=self.persisted,
         )
 
 
@@ -241,7 +244,7 @@ def test_reports_incomplete_intervals_sync() -> None:
     )
 
 
-def test_push_failure_is_retryable() -> None:
+def test_push_failure_does_not_duplicate_persisted_inbox_notification() -> None:
     stored = _ready_stored()
     repository = FakeRepository(stored)
 
@@ -259,12 +262,13 @@ def test_push_failure_is_retryable() -> None:
 
     assert (
         result.status
-        is WeeklyDebriefNotificationStatus.FAILED
+        is WeeklyDebriefNotificationStatus.SENT
     )
-    assert repository.mark_calls == []
-    assert stored.notification_sent_at is None
+    assert result.error == "push_delivery_failed:1"
+    assert len(repository.mark_calls) == 1
+    assert stored.notification_sent_at is not None
 
-def test_zero_delivery_is_retryable() -> None:
+def test_zero_push_delivery_is_still_persisted_in_inbox() -> None:
     stored = _ready_stored()
     repository = FakeRepository(stored)
 
@@ -286,7 +290,7 @@ def test_zero_delivery_is_retryable() -> None:
 
     assert (
         result.status
-        is WeeklyDebriefNotificationStatus.NO_RECIPIENT
+        is WeeklyDebriefNotificationStatus.SENT
     )
-    assert repository.mark_calls == []
-    assert stored.notification_sent_at is None
+    assert len(repository.mark_calls) == 1
+    assert stored.notification_sent_at is not None

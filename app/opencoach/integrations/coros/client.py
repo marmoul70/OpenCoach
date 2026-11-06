@@ -8,6 +8,7 @@ import httpx
 from opencoach.integrations.coros.errors import (
     CorosMcpAuthenticationError,
     CorosMcpProtocolError,
+    CorosMcpToolError,
 )
 
 
@@ -225,3 +226,19 @@ class CorosMcpClient:
         if not isinstance(payload, dict):
             raise ValueError("Événement SSE non objet.")
         return payload
+
+
+
+def _tool_error_detail(result: dict[str, Any]) -> str:
+    """Extrait un message textuel sans exposer les données de requête."""
+    content = result.get("content")
+    if not isinstance(content, list):
+        return ""
+    messages = [
+        str(item.get("text", "")).strip()
+        for item in content
+        if isinstance(item, dict)
+        and item.get("type") == "text"
+        and item.get("text")
+    ]
+    return " ".join(messages)[:500]

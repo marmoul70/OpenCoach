@@ -1,6 +1,8 @@
 import {
   Activity,
   Check,
+  Eye,
+  EyeOff,
   CircleAlert,
   KeyRound,
   Info,
@@ -753,6 +755,7 @@ export function IntervalsSection() {
               label="Cookie de session partenaire"
               value={webCookie}
               type="password"
+              showVisibilityToggle
               placeholder={
                 connection?.web_cookie_configured
                   ? 'Cookie déjà configuré'
@@ -764,6 +767,31 @@ export function IntervalsSection() {
                 setMessage(null)
               }}
             />
+
+            <div className="sm:col-span-2 -mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[9px]">
+              {connection?.web_cookie_configured ? (
+                <>
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Cookie enregistré
+                  </span>
+                  {connection.web_cookie_hint && (
+                    <span className="text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]">
+                      · Terminaison : <code className="font-semibold tracking-[0.12em]">••••{connection.web_cookie_hint}</code>
+                    </span>
+                  )}
+                  {webCookie.trim() && (
+                    <span className="text-amber-700 dark:text-amber-400">
+                      · Un nouveau cookie remplacera celui-ci après enregistrement.
+                    </span>
+                  )}
+                </>
+              ) : webCookie.trim() ? (
+                <span className="text-amber-700 dark:text-amber-400">Nouveau cookie saisi — pas encore enregistré.</span>
+              ) : (
+                <span className="text-[var(--oc-muted-soft)] dark:text-[var(--oc-muted)]">Aucun cookie enregistré.</span>
+              )}
+            </div>
 
             <div
               className="
@@ -1381,6 +1409,7 @@ function ConnectionField({
   placeholder,
   icon: Icon,
   type = 'text',
+  showVisibilityToggle = false,
 }: {
   label: string
   value: string
@@ -1389,9 +1418,12 @@ function ConnectionField({
   placeholder?: string
   icon: typeof Activity
   type?: string
+  showVisibilityToggle?: boolean
 }) {
+  const [visible, setVisible] = useState(false)
+
   return (
-    <label>
+    <div>
       <span
         className="
           mb-1.5
@@ -1436,7 +1468,8 @@ function ConnectionField({
         />
 
         <input
-          type={type}
+          aria-label={label}
+          type={type === 'password' && showVisibilityToggle && visible ? 'text' : type}
           value={value}
           placeholder={placeholder}
           autoComplete="off"
@@ -1459,8 +1492,20 @@ function ConnectionField({
             dark:placeholder:text-[var(--oc-text-secondary)]
           "
         />
+
+        {showVisibilityToggle && (
+          <button
+            type="button"
+            onClick={() => setVisible(current => !current)}
+            aria-label={visible ? 'Masquer le cookie saisi' : 'Afficher le cookie saisi'}
+            title={visible ? 'Masquer' : 'Afficher'}
+            className="ml-2 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--oc-muted-soft)] transition hover:bg-black/[0.04] hover:text-[var(--oc-text)] dark:hover:bg-white/[0.06]"
+          >
+            {visible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          </button>
+        )}
       </div>
-    </label>
+    </div>
   )
 }
 

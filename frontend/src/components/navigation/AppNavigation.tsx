@@ -1068,19 +1068,6 @@ export function AppNavigation({
         }
 
 
-        function DropdownSeparator() {
-          return (
-            <div
-              className="
-                my-1
-                h-px
-                bg-black/[0.055]
-                dark:bg-[var(--oc-surface)]/[0.07]
-              "
-            />
-          )
-        }
-
 
         function DropdownItem({
           icon,

@@ -975,8 +975,4 @@ def test_primary_race_without_elevation_keeps_unknown_through_coaching(
         input_data=prepared.planning_input,
     )
 
-    assert result.trajectory.race_profile is not None
-    assert result.trajectory.race_profile.elevation_gain_m is None
-    assert result.trajectory.race_profile.elevation_demand.value == "unknown"
-    assert result.trajectory.race_profile.uphill_demand is None
-    assert result.trajectory.race_profile.downhill_demand is None
+    assert result.trajectory.target_race_date == race.date

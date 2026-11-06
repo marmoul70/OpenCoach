@@ -85,9 +85,13 @@ class SessionBlock:
             ("dénivelé", self.target_elevation_gain_meters),
             ("durée cible", self.target_duration_seconds),
         ):
-            if value is not None and value <= 0:
+            if value is not None and (
+                isinstance(value, bool)
+                or not isinstance(value, int)
+                or value <= 0
+            ):
                 raise ValueError(
-                    f"La {label} cible d'un bloc doit être strictement positive."
+                    f"La {label} cible d'un bloc doit être un entier strictement positif."
                 )
 
 

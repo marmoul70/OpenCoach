@@ -36,6 +36,27 @@ class FakeRepository:
         self.saved.append(session)
         return session
 
+    def claim_coros_workout_push(
+        self,
+        profile_id,
+        session_id,
+        payload_hash,
+        started_at,
+        *,
+        allow_uncertain=False,
+    ):
+        status = self.session.coros_sync_status
+        eligible = status in {None, "failed"}
+        if allow_uncertain and status in {"pending", "unknown"}:
+            eligible = True
+        if not eligible:
+            return False
+        self.session.coros_sync_status = "pending"
+        self.session.coros_sync_started_at = started_at.replace(tzinfo=None)
+        self.session.coros_payload_hash = payload_hash
+        self.session.coros_sync_error = None
+        return True
+
 
 class FakeCorosClient:
     calls = []

@@ -164,6 +164,11 @@ class TrainingSession(Base):
         nullable=True,
     )
 
+    coros_sync_started_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
     coros_last_synced_at: Mapped[datetime | None] = mapped_column(
         DateTime,
         nullable=True,

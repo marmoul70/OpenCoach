@@ -301,3 +301,36 @@ def test_maps_continuous_trail_session_to_climb_target_when_available() -> None:
     assert payload.course["sportType"] == 5
     assert payload.course["sections"][0]["targetType"] == 3
     assert payload.course["sections"][0]["targetValue"] == 800
+
+
+
+def test_rejects_heart_rate_reserve_when_no_absolute_bpm_target_exists() -> None:
+    session = make_session(
+        prescription={
+            "version": 1,
+            "blocks": [],
+            "work_structure": {
+                "type": "continuous",
+                "continuous_minutes": 40,
+            },
+            "intensity": {
+                "targets": [
+                    {
+                        "reference": "heart_rate_reserve",
+                        "minimum": 60,
+                        "maximum": 70,
+                        "unit": "%",
+                    },
+                    {
+                        "reference": "rpe",
+                        "minimum": 3,
+                        "maximum": 4,
+                        "unit": "/10",
+                    },
+                ]
+            },
+        },
+    )
+
+    with pytest.raises(CorosWorkoutMappingError, match="uniquement exprimée en RPE"):
+        map_training_session_to_coros(session)

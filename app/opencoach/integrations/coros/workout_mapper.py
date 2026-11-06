@@ -448,7 +448,10 @@ def _intensity_fields(
         if not isinstance(target, dict):
             continue
         reference = str(target.get("reference") or "").strip().lower()
-        if reference in {"heart_rate", "heart_rate_reserve"}:
+        # COROS attend une fréquence cardiaque absolue en bpm.
+        # La réserve de FC (HRR) est un pourcentage/réserve et ne
+        # doit jamais être transmise comme une valeur bpm.
+        if reference == "heart_rate":
             minimum = _bounded_integer(
                 target.get("minimum"), 30, 240, "fréquence cardiaque minimale"
             )
@@ -640,7 +643,7 @@ def _build_course_description(
             if not isinstance(target, dict):
                 continue
             reference = str(target.get("reference") or "").lower()
-            if reference in {"heart_rate", "heart_rate_reserve"}:
+            if reference == "heart_rate":
                 parts.append(
                     f"Cible cardiaque : {target.get('minimum')}–{target.get('maximum')} bpm."
                 )

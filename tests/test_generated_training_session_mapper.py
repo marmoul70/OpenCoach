@@ -2,6 +2,8 @@ from dataclasses import replace
 from datetime import date
 from uuid import uuid4
 
+import pytest
+
 from opencoach.planning.sessions.prescription import (
     IntensityRange,
     IntensityReference,
@@ -9,6 +11,7 @@ from opencoach.planning.sessions.prescription import (
 )
 
 from opencoach.integrations.coros.workout_mapper import (
+    CorosWorkoutMappingError,
     map_training_session_to_coros,
 )
 from opencoach.planning.sessions.prescription.integrity import (
@@ -22,6 +25,9 @@ from opencoach.coaching.generation.models import (
 )
 from opencoach.planning.sessions.generators import (
     DeterministicSessionGenerator,
+)
+from opencoach.planning.sessions.generators.catalog import (
+    get_session_recipe,
 )
 from opencoach.planning.sessions.intent import (
     SessionIntent,
@@ -94,6 +100,42 @@ def create_generated_session(*, secondary_stimuli=()):
             7,
             7,
         ),
+        day=Weekday.WEDNESDAY,
+        phase=TrainingPhase.SPECIFIC,
+        proposal=proposal,
+    )
+
+
+
+def create_generated_session_for_stimulus(stimulus: TrainingStimulus):
+    recipe = get_session_recipe(stimulus)
+    intent = SessionIntent(
+        primary_stimulus=stimulus,
+        secondary_stimuli=(),
+        importance=SessionIntentImportance.IMPORTANT,
+        specificity=SpecificityLevel.HIGH,
+        substitution=SubstitutionPolicy.ALLOWED,
+        preferred_modalities=(recipe.default_modality,),
+        required_modalities=(),
+        duration_min_minutes=60,
+        duration_max_minutes=60,
+    )
+    slot = WeeklySessionIntentSlot(
+        slot_id=stimulus.value,
+        day=Weekday.WEDNESDAY,
+        intent=intent,
+        fatigue_budget=FatigueBudget.HIGH,
+        duration_available_minutes=60,
+    )
+    proposal = DeterministicSessionGenerator().generate_session(
+        request=SessionCoachRequest(
+            phase=TrainingPhase.SPECIFIC,
+            slot=slot,
+        )
+    )
+    return GeneratedTrainingSession(
+        slot_id=stimulus.value,
+        date=date(2027, 7, 7),
         day=Weekday.WEDNESDAY,
         phase=TrainingPhase.SPECIFIC,
         proposal=proposal,
@@ -360,6 +402,52 @@ def test_mapper_persists_phase_metadata_and_block_level_intensity() -> None:
     assert warmup_block["intensity"] is not None
     assert warmup_block["intensity"]["targets"][0]["reference"] == "rpe"
 
+
+
+
+def test_every_primary_stimulus_has_an_explicit_coros_mapping_or_safe_refusal() -> None:
+    unsupported = {
+        TrainingStimulus.DOWNHILL_SPECIFICITY,
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE,
+        TrainingStimulus.STRENGTH_LOWER_BODY,
+        TrainingStimulus.STRENGTH_CORE,
+    }
+    heart_rate_intensity = {
+        "targets": [
+            {
+                "reference": "heart_rate",
+                "minimum": 140,
+                "maximum": 155,
+                "unit": "bpm",
+                "label": "Fréquence cardiaque",
+            }
+        ],
+        "guidance": [],
+    }
+
+    for stimulus in TrainingStimulus:
+        generated = create_generated_session_for_stimulus(stimulus)
+        persisted = generated_session_to_training_session(
+            generated,
+            planning_key=f"stimulus-matrix:{stimulus.value}",
+        )
+        assert persisted.prescription is not None
+        persisted.prescription["intensity"] = heart_rate_intensity
+        persisted.prescription["recovery_intensity"] = heart_rate_intensity
+        for block in persisted.prescription["blocks"]:
+            block["intensity"] = heart_rate_intensity
+
+        validate_training_session_prescription(persisted)
+
+        if stimulus in unsupported:
+            with pytest.raises(CorosWorkoutMappingError):
+                map_training_session_to_coros(replace(persisted, id=uuid4()))
+        else:
+            payload = map_training_session_to_coros(
+                replace(persisted, id=uuid4())
+            )
+            assert payload.course["sections"]
+            assert payload.course["courseName"] == persisted.title
 
 
 def test_secondary_stimuli_survive_generation_persistence_validation_and_coros_mapping() -> None:

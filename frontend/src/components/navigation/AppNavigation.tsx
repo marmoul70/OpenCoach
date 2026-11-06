@@ -8,7 +8,6 @@ import {
 
 import {
   Activity,
-  Bell,
   Bot,
   CalendarDays,
   ChevronRight,

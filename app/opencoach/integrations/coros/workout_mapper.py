@@ -156,11 +156,16 @@ def map_training_session_to_coros(
         sport_type=sport_type,
     )
     if trail_mode_fallback:
-        description = (
-            description
-            + " Séance configurée comme course à pied pour conserver les étapes "
+        trail_note = (
+            "Séance configurée comme course à pied pour conserver les étapes "
             "chronométrées ; sur la montre, démarre-la en mode Trail Run."
-        )[:1000]
+        )
+        available_description = max(0, 999 - len(trail_note))
+        description = (
+            description[:available_description].rstrip()
+            + " "
+            + trail_note
+        )
     course_name = session.title.strip()
     if not course_name:
         raise CorosWorkoutMappingError(

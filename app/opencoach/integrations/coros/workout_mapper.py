@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
+import math
 import json
 import unicodedata
 from typing import Any
@@ -121,9 +122,14 @@ def map_training_session_to_coros(
         work_structure=work_structure,
         sport_type=sport_type,
     )
+    course_name = session.title.strip()
+    if not course_name:
+        raise CorosWorkoutMappingError(
+            "Le nom de la séance ne peut pas être vide."
+        )
     course = {
         "sportType": sport_type,
-        "courseName": session.title.strip()[:100],
+        "courseName": course_name[:100],
         "courseDescription": description,
         "sections": sections,
     }
@@ -205,9 +211,9 @@ def _block_seconds(block: dict[str, Any]) -> int:
         raise CorosWorkoutMappingError(
             "Une durée de phase est invalide dans la prescription."
         ) from exc
-    if minutes <= 0:
+    if not math.isfinite(minutes) or minutes <= 0:
         raise CorosWorkoutMappingError(
-            "Les durées des phases doivent être positives."
+            "Les durées des phases doivent être positives et finies."
         )
     return round(minutes * 60)
 
@@ -498,7 +504,16 @@ def _pace_fields_from_repetition_target(
         slow_seconds = float(target.get("slow_seconds"))
     except (TypeError, ValueError):
         return None
-    if distance <= 0 or fast_seconds <= 0 or slow_seconds <= 0:
+    if (
+        not all(math.isfinite(value) for value in (
+            distance,
+            fast_seconds,
+            slow_seconds,
+        ))
+        or distance <= 0
+        or fast_seconds <= 0
+        or slow_seconds <= 0
+    ):
         return None
 
     fastest = round(fast_seconds * 1000 / distance)
@@ -533,9 +548,9 @@ def _duration_seconds(
         raise CorosWorkoutMappingError(
             "L'unité de durée de l'intervalle n'est pas reconnue."
         )
-    if seconds <= 0:
+    if not math.isfinite(numeric) or seconds <= 0:
         raise CorosWorkoutMappingError(
-            "Les durées des intervalles doivent être positives."
+            "Les durées des intervalles doivent être positives et finies."
         )
     return seconds
 
@@ -547,6 +562,10 @@ def _positive_integer(value: Any, label: str) -> int:
         raise CorosWorkoutMappingError(
             f"La {label} est invalide."
         ) from exc
+    if not math.isfinite(numeric):
+        raise CorosWorkoutMappingError(
+            f"La {label} doit être une valeur finie."
+        )
     result = round(numeric)
     if result <= 0 or abs(numeric - result) > 1e-6:
         raise CorosWorkoutMappingError(
@@ -567,6 +586,10 @@ def _bounded_integer(
         raise CorosWorkoutMappingError(
             f"La {label} est invalide."
         ) from exc
+    if not math.isfinite(numeric):
+        raise CorosWorkoutMappingError(
+            f"La {label} doit être une valeur finie."
+        )
     result = round(numeric)
     if not minimum <= result <= maximum:
         raise CorosWorkoutMappingError(

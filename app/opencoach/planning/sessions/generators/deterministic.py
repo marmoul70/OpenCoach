@@ -118,6 +118,18 @@ class DeterministicSessionGenerator:
             )
         )
 
+        # La prescription physiologique générale décrit le bloc principal,
+        # pas automatiquement l'échauffement ou le retour au calme.
+        blocks = tuple(
+            replace(
+                block,
+                intensity_prescription=intensity_prescription,
+            )
+            if block.phase == "main" and intensity_prescription is not None
+            else block
+            for block in blocks
+        )
+
         return SessionProposal(
             title=recipe.title,
             modality=modality,
@@ -417,6 +429,7 @@ def _build_session_content(
                     duration_minutes=(
                         duration_minutes
                     ),
+                    phase="main",
                 ),
             ),
             work_structure,
@@ -453,6 +466,7 @@ def _build_session_content(
                     recipe.warmup_description
                 ),
                 duration_minutes=warmup,
+                phase="warmup",
             )
         )
 
@@ -468,6 +482,7 @@ def _build_session_content(
             duration_minutes=ceil(
                 work_structure.planned_minutes
             ),
+            phase="main",
         )
     )
 
@@ -492,6 +507,7 @@ def _build_session_content(
                 duration_minutes=(
                     remaining_main_minutes
                 ),
+                phase="easy",
             )
         )
 
@@ -503,6 +519,7 @@ def _build_session_content(
                     recipe.cooldown_description
                 ),
                 duration_minutes=cooldown,
+                phase="cooldown",
             )
         )
 

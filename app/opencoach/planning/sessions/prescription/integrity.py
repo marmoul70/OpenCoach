@@ -73,7 +73,11 @@ def validate_training_session_prescription(
         )
 
     version = prescription.get("version")
-    if version not in {1, 2}:
+    if (
+        isinstance(version, bool)
+        or not isinstance(version, int)
+        or version not in {1, 2}
+    ):
         raise TrainingSessionPrescriptionIntegrityError(
             "La version de prescription OpenCoach n'est pas prise en charge."
         )
@@ -203,7 +207,34 @@ def validate_training_session_prescription(
         )
 
     if version == 2:
+        structure_type = work_structure.get("type")
+        if structure_type not in {
+            "continuous", "intervals", "repeats",
+            "technical", "strength", "circuit",
+        }:
+            raise TrainingSessionPrescriptionIntegrityError(
+                "Le type de structure de travail est absent ou non reconnu."
+            )
+
         intervals = work_structure.get("intervals")
+        if not isinstance(intervals, list):
+            raise TrainingSessionPrescriptionIntegrityError(
+                "La structure version 2 doit conserver sa liste d'intervalles."
+            )
+        if structure_type == "continuous":
+            continuous_minutes = work_structure.get("continuous_minutes")
+            if (
+                isinstance(continuous_minutes, bool)
+                or not isinstance(continuous_minutes, int)
+                or continuous_minutes <= 0
+            ):
+                raise TrainingSessionPrescriptionIntegrityError(
+                    "Une séance continue doit définir une durée positive."
+                )
+        if structure_type in {"intervals", "repeats"} and not intervals:
+            raise TrainingSessionPrescriptionIntegrityError(
+                "Une séance fractionnée doit contenir au moins une série."
+            )
         if isinstance(intervals, list):
             for interval in intervals:
                 if not isinstance(interval, dict):
@@ -357,4 +388,9 @@ def validate_training_session_prescription(
         raise TrainingSessionPrescriptionIntegrityError(
             "La prescription d'intensité doit contenir "
             "au moins une cible."
+        )
+    if version == 2:
+        _validate_intensity_targets(
+            intensity,
+            context="globale de la séance",
         )

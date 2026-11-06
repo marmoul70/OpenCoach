@@ -1356,43 +1356,33 @@ def _duration_to_seconds(
 def _format_interval_description(
     interval: WorkInterval,
 ) -> str:
-    work = _format_duration(
-        interval.work_duration,
-        interval.work_unit,
-    )
-
+    work_details: list[str] = []
     if interval.work_distance_meters is not None:
-        work = f"{interval.work_distance_meters} m"
-    elif interval.work_elevation_gain_meters is not None:
-        work = f"{interval.work_duration} {interval.work_unit.value} / {interval.work_elevation_gain_meters} m D+"
-    else:
-        work = _format_duration(
-            interval.work_duration,
-            interval.work_unit,
+        work_details.append(f"{interval.work_distance_meters} m")
+    if interval.work_elevation_gain_meters is not None:
+        work_details.append(f"{interval.work_elevation_gain_meters} m D+")
+    if interval.work_duration is not None and interval.work_unit is not None:
+        work_details.append(
+            _format_duration(interval.work_duration, interval.work_unit)
         )
+    work = " / ".join(work_details) or "travail"
 
-    recovery = ""
-
-    if interval.recovery_duration is not None:
-        assert interval.recovery_unit is not None
-
-        recovery = (
-            " / récupération "
-            + _format_duration(
-                interval.recovery_duration,
-                interval.recovery_unit,
-            )
+    recovery_details: list[str] = []
+    if interval.recovery_duration is not None and interval.recovery_unit is not None:
+        recovery_details.append(
+            _format_duration(interval.recovery_duration, interval.recovery_unit)
         )
-        if interval.recovery_distance_meters is not None:
-            recovery += f" / {interval.recovery_distance_meters} m"
-        if interval.recovery_elevation_gain_meters is not None:
-            recovery += f" / {interval.recovery_elevation_gain_meters} m D+"
+    if interval.recovery_distance_meters is not None:
+        recovery_details.append(f"{interval.recovery_distance_meters} m")
+    if interval.recovery_elevation_gain_meters is not None:
+        recovery_details.append(f"{interval.recovery_elevation_gain_meters} m D+")
 
-    return (
-        f"{interval.repetitions} × "
-        f"{work}"
-        f"{recovery}."
+    recovery = (
+        " / récupération " + " / ".join(recovery_details)
+        if recovery_details
+        else ""
     )
+    return f"{interval.repetitions} × {work}{recovery}."
 
 
 def _format_duration(

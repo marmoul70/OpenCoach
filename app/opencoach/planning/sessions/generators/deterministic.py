@@ -151,6 +151,7 @@ class DeterministicSessionGenerator:
             intensity_prescription=(
                 intensity_prescription
             ),
+            recovery_intensity_prescription=easy_intensity,
             work_structure=(
                 work_structure
             ),

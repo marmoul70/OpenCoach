@@ -281,3 +281,23 @@ def test_rejects_missing_structured_prescription() -> None:
 
     with pytest.raises(CorosWorkoutMappingError, match="prescription structurée"):
         map_training_session_to_coros(session)
+
+
+
+def test_maps_continuous_trail_session_to_climb_target_when_available() -> None:
+    session = make_session(
+        sport_type="TrailRun",
+        prescription=heart_rate_prescription(
+            {
+                "type": "continuous",
+                "continuous_minutes": 90,
+            }
+        ),
+    )
+    session.elevation_gain_m = 800
+
+    payload = map_training_session_to_coros(session)
+
+    assert payload.course["sportType"] == 5
+    assert payload.course["sections"][0]["targetType"] == 3
+    assert payload.course["sections"][0]["targetValue"] == 800

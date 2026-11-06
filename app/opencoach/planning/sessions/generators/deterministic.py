@@ -409,8 +409,8 @@ def _build_session_content(
     )
 
     if (
-        recipe.structure
-        is SessionStructure.RECOVERY
+        recipe.structure is SessionStructure.RECOVERY
+        and stimulus is TrainingStimulus.RECOVERY
     ):
         work_structure = (
             build_work_structure(

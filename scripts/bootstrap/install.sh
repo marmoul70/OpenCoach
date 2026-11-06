@@ -7,6 +7,7 @@
 # Usage :
 #   sudo ./scripts/bootstrap/install.sh
 #   sudo ./scripts/bootstrap/install.sh --dev
+#   sudo ./scripts/bootstrap/install.sh --with-ai
 
 set -Eeuo pipefail
 
@@ -26,6 +27,7 @@ source "$PROJECT_ROOT/scripts/lib/log.sh"
 
 
 DEV_REQUESTED=0
+WITH_AI_REQUESTED=0
 
 
 show_help() {
@@ -34,11 +36,15 @@ show_help() {
     printf '%s\n' "Utilisation :"
     printf '  %s\n' "$0"
     printf '  %s --dev\n' "$0"
+    printf '  %s --with-ai\n' "$0"
+    printf '  %s --dev --with-ai\n' "$0"
     printf '  %s --help\n' "$0"
     printf '\n'
     printf '%s\n' "Options :"
     printf '%s\n' \
-        "  --dev    Installe également les dépendances de développement."
+        "  --dev       Installe également les dépendances de développement."
+    printf '%s\n' \
+        "  --with-ai  Installe Ollama et le modèle IA local (optionnel)."
     printf '%s\n' \
         "  --help   Affiche cette aide."
 }
@@ -49,6 +55,10 @@ parse_arguments() {
         case "$1" in
             "--dev")
                 DEV_REQUESTED=1
+                ;;
+
+            "--with-ai")
+                WITH_AI_REQUESTED=1
                 ;;
 
             "--help"|"-h")
@@ -190,6 +200,20 @@ main() {
 
     log_success \
         "Services OpenCoach installés et configurés."
+
+    if (( WITH_AI_REQUESTED == 1 )); then
+        log_info \
+            "Installation optionnelle du moteur IA local"
+
+        if ! "$BOOTSTRAP_DIR/install-ai.sh"; then
+            log_error \
+                "L'installation du moteur IA local a échoué. OpenCoach classique reste installé."
+            return 1
+        fi
+
+        log_success \
+            "Moteur IA local installé. L'intégration applicative reste désactivée."
+    fi
 
     log_access_information
 

@@ -584,16 +584,33 @@ def push_training_session_to_coros(
             ),
         )
 
-    # Persister l'intention avant l'appel distant : si le serveur s'arrête
-    # pendant l'écriture, un second clic ne créera pas un doublon silencieux.
-    training_session.coros_sync_status = "pending"
-    training_session.coros_sync_started_at = datetime.now(timezone.utc)
-    training_session.coros_payload_hash = workout_payload.payload_hash
-    training_session.coros_sync_error = None
-    training_session = repository.save_session(
+    # Réservation atomique : deux requêtes simultanées ne peuvent pas
+    # toutes les deux passer de l'état libre à pending.
+    started_at = datetime.now(timezone.utc)
+    claimed = repository.claim_coros_workout_push(
         athlete_profile_id,
-        training_session,
+        session_id,
+        workout_payload.payload_hash,
+        started_at,
+        allow_uncertain=payload.confirmed_no_duplicate,
     )
+    if not claimed:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Une autre requête a déjà réservé l'envoi de cette séance. "
+                "Actualise la page avant de réessayer."
+            ),
+        )
+    training_session = repository.get_session(
+        athlete_profile_id,
+        session_id,
+    )
+    if training_session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Séance introuvable après réservation de l'envoi COROS.",
+        )
 
     try:
         result = client.call_tool(

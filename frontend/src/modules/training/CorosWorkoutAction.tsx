@@ -54,10 +54,32 @@ export function CorosWorkoutAction({
   if (
     session.status !== 'planned'
     || session.type === 'rest'
-    || !session.prescription
     || !supportedSport
   ) {
     return null
+  }
+
+  if (!session.prescription) {
+    return (
+      <div
+        className="
+          mt-2
+          rounded-[9px]
+          border
+          border-[var(--oc-border)]
+          bg-[var(--oc-surface)]/[0.025]
+          px-3
+          py-2
+          text-[10px]
+          leading-4
+          text-[var(--oc-muted)]
+        "
+      >
+        Envoi COROS indisponible : cette séance n’a pas de prescription
+        structurée. Les séances saisies manuellement ne contiennent pas
+        encore les phases et les cibles nécessaires à la montre.
+      </div>
+    )
   }
 
   const pendingInProgress = (

@@ -912,6 +912,17 @@ def _build_course_description(
         for line in (session.description or "").splitlines()
         if line.strip()
     ]
+    blocks = prescription.get("blocks")
+    block_description_markers = [
+        (
+            str(block.get("name") or block.get("label") or "").strip().casefold(),
+            str(block.get("description") or "").strip().casefold(),
+        )
+        for block in blocks
+        if isinstance(block, dict)
+        and str(block.get("name") or block.get("label") or "").strip()
+        and str(block.get("description") or "").strip()
+    ] if isinstance(blocks, list) else []
     secondary_guidance = [
         line
         for line in session_lines
@@ -921,6 +932,10 @@ def _build_course_description(
         line
         for line in session_lines
         if not line.casefold().startswith("stimulus complémentaire")
+        and not any(
+            name in line.casefold() and detail in line.casefold()
+            for name, detail in block_description_markers
+        )
     ]
     parts = [
         regular_description[0]
@@ -949,7 +964,6 @@ def _build_course_description(
     structure_description = str(work_structure.get("description") or "").strip()
     if structure_description:
         parts.append(f"Structure : {structure_description}")
-    blocks = prescription.get("blocks")
     if isinstance(blocks, list):
         for block in blocks:
             if not isinstance(block, dict):

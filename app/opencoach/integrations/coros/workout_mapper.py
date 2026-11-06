@@ -891,7 +891,40 @@ def _build_course_description(
     work_structure: dict[str, Any],
     sport_type: int,
 ) -> str:
-    parts = [session.description.strip() or session.title.strip()]
+    session_lines = [
+        line.strip()
+        for line in (session.description or "").splitlines()
+        if line.strip()
+    ]
+    secondary_guidance = [
+        line
+        for line in session_lines
+        if line.casefold().startswith("stimulus complémentaire")
+    ]
+    regular_description = [
+        line
+        for line in session_lines
+        if not line.casefold().startswith("stimulus complémentaire")
+    ]
+    parts = [
+        regular_description[0]
+        if regular_description
+        else session.title.strip()
+    ]
+    # Les consignes secondaires sont prioritaires dans le champ limité à
+    # 1000 caractères de COROS : elles passent avant les détails descriptifs
+    # redondants afin de ne pas être coupées en fin de chaîne.
+    parts.extend(secondary_guidance)
+    parts.extend(regular_description[1:])
+    if secondary_guidance:
+        mandatory_description = " ".join(
+            [parts[0], *secondary_guidance]
+        )
+        if len(mandatory_description) > 999:
+            raise CorosWorkoutMappingError(
+                "Les consignes secondaires dépassent la capacité de description "
+                "COROS. Réduis le nombre de stimuli regroupés avant l'envoi."
+            )
     parts.append(f"Durée totale prévue : {session.duration_minutes} min.")
     if session.distance_km is not None:
         parts.append(f"Distance prévue : {session.distance_km:g} km.")

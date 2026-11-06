@@ -63,6 +63,7 @@ class RaceVolumeDemand:
 
     limited_by_minimum: bool
     limited_by_maximum: bool
+    elevation_data_available: bool
 
     def __post_init__(self) -> None:
         values = (
@@ -95,10 +96,17 @@ def build_race_volume_demand(
 ) -> RaceVolumeDemand:
     """Construit la demande de volume de pic spécifique."""
 
+    # En l'absence de D+ connu, seule la distance contribue au calcul.
+    # Le résultat reste explicitement marqué comme incomplet : il ne
+    # qualifie pas la course de plate et n'invente aucun dénivelé.
+    elevation_data_available = (
+        race_profile.elevation_gain_m is not None
+    )
     effort_distance_km = (
         race_profile.distance_km
-        + race_profile.elevation_gain_m
-        / 100.0
+        + (
+            race_profile.elevation_gain_m or 0.0
+        ) / 100.0
     )
 
     raw_specific_peak_duration_minutes = (
@@ -142,5 +150,8 @@ def build_race_volume_demand(
         ),
         limited_by_maximum=(
             limited_by_maximum
+        ),
+        elevation_data_available=(
+            elevation_data_available
         ),
     )

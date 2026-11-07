@@ -366,7 +366,11 @@ def test_uncertain_previous_push_requires_explicit_no_duplicate_confirmation(
     )
     assert confirmed.status_code == 200
     assert repository.session.coros_sync_status == "synced"
-    assert len(FakeCorosClient.calls) == 2
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+        "queryTrainingSchedule",
+        "createScheduledWorkout",
+    ]
 
 
 
@@ -412,7 +416,11 @@ def test_stale_pending_push_requires_confirmation_then_can_retry(monkeypatch):
     assert confirmed.status_code == 200
     assert repository.session.coros_sync_status == "synced"
     assert repository.session.coros_sync_started_at is None
-    assert len(FakeCorosClient.calls) == 2
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+        "queryTrainingSchedule",
+        "createScheduledWorkout",
+    ]
 
 
 

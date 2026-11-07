@@ -1,9 +1,10 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from opencoach.api.training_sessions import _as_utc
 from opencoach.api.coros import (
     _extract_coros_scheduled_id,
     _extract_other_coros_workouts,
+    _extract_scheduled_workout_records_for_date,
 )
 
 
@@ -108,3 +109,49 @@ def test_extracts_non_editable_reason_from_scheduled_workout_details() -> None:
     assert details is not None
     assert details["editable"] is False
     assert details["reason"] == "Séance terminée; Date passée"
+
+
+
+def test_extracts_scheduled_workout_from_iso_date_keyed_schedule() -> None:
+    result = {
+        "structuredContent": {
+            "2026-11-12": {
+                "workouts": [
+                    {
+                        "idInPlan": "9223372036854775001",
+                        "courseName": "Footing aérobie",
+                    }
+                ]
+            }
+        }
+    }
+
+    assert _extract_scheduled_workout_records_for_date(
+        result,
+        date(2026, 11, 12),
+    ) == [("9223372036854775001", "Footing aérobie")]
+
+
+def test_extracts_scheduled_workout_from_iso_date_field() -> None:
+    result = {
+        "structuredContent": {
+            "schedule": {
+                "days": [
+                    {
+                        "date": "2026-11-12",
+                        "workouts": [
+                            {
+                                "idInPlan": "9223372036854775002",
+                                "courseName": "Footing aérobie",
+                            }
+                        ],
+                    }
+                ]
+            }
+        }
+    }
+
+    assert _extract_scheduled_workout_records_for_date(
+        result,
+        date(2026, 11, 12),
+    ) == [("9223372036854775002", "Footing aérobie")]

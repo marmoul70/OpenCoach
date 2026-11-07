@@ -72,6 +72,7 @@ class FakeCorosClient:
     scheduled_names = ["Renforcement"]
     editable = True
     created_id = "new-workout-id"
+    create_result_without_id = False
     update_error = False
     on_update = None
     details_available_dates = None
@@ -191,6 +192,11 @@ class FakeCorosClient:
                 },
                 "content": [{"type": "text", "text": standalone_text}],
             }
+        if name == "createScheduledWorkout" and self.create_result_without_id:
+            workout_name = arguments["course"]["courseName"]
+            if workout_name not in type(self).scheduled_names:
+                type(self).scheduled_names.append(workout_name)
+            return {"content": [{"type": "text", "text": "Workout created successfully."}]}
         return {
             "structuredContent": {
                 "idInPlan": (
@@ -337,6 +343,29 @@ def test_pushes_planned_session_to_coros_and_reports_other_workouts(monkeypatch)
     assert tool_name == "createScheduledWorkout"
     assert arguments["date"] == "20261112"
     assert arguments["course"]["sportType"] == 1
+
+
+def test_create_without_returned_id_recovers_id_from_calendar_and_marks_synced(monkeypatch):
+    session = make_session()
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.create_result_without_id = True
+    FakeCorosClient.scheduled_names = ["Renforcement"]
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "synced"
+    assert repository.session.coros_sync_status == "synced"
+    assert repository.session.coros_workout_id == "101"
+    assert repository.session.coros_scheduled_date == date(2026, 11, 12)
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+        "createScheduledWorkout",
+        "queryTrainingSchedule",
+    ]
 
 
 def test_repeated_push_does_not_create_a_duplicate(monkeypatch):

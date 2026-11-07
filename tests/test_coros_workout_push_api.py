@@ -160,13 +160,13 @@ class FakeCorosClient:
             # COROS's real text response so recovery tests identify only
             # explicitly standalone workouts.
             standalone_text = (
-                "Training Schedule\\n"
-                "========================\\n\\n"
+                "Training Schedule\n"
+                "========================\n\n"
                 + "".join(
-                    "2026-11-12\\n"
-                    f"{workout_name}\\n"
-                    "Standalone workout (scheduled from the workout library)\\n"
-                    f"idInPlan: existing-{index}\\n\\n"
+                    "2026-11-12\n"
+                    f"{workout_name}\n"
+                    "Standalone workout (scheduled from the workout library)\n"
+                    f"idInPlan: existing-{index}\n\n"
                     for index, workout_name in enumerate(self.scheduled_names)
                 )
             )

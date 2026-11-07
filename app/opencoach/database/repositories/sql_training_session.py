@@ -119,13 +119,21 @@ class SqlTrainingSessionRepository(
                 "coros_payload_hash",
                 "coros_sync_error",
             )
-            for field_name in coros_metadata:
-                incoming_value = getattr(session, field_name)
-                current_value = getattr(database_session, field_name)
-                # Preserve a remote value when a non-COROS writer sends None.
-                # Explicit non-None updates from COROS remain authoritative.
-                if incoming_value is not None or current_value is None:
-                    setattr(database_session, field_name, incoming_value)
+            # A planner rebuild has no COROS metadata at all. Preserve the
+            # existing remote state in that case. A COROS service write carries
+            # at least one non-None sync field and must be able to clear fields
+            # such as coros_sync_error by explicitly writing None.
+            has_incoming_coros_state = any(
+                getattr(session, field_name) is not None
+                for field_name in coros_metadata
+            )
+            if has_incoming_coros_state:
+                for field_name in coros_metadata:
+                    setattr(
+                        database_session,
+                        field_name,
+                        getattr(session, field_name),
+                    )
             self.session.commit()
             self.session.refresh(database_session)
 

@@ -73,7 +73,7 @@ class AISettings:
                 "OPENCOACH_AI_BASE_URL doit être une URL HTTP(S) valide sans identifiants."
             )
 
-        if not model or not re.fullmatch(r"[A-Za-z0-9._:/-]+", model):
+        if not model or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]*", model):
             raise AIConfigurationError(
                 "OPENCOACH_AI_MODEL est vide ou contient des caractères invalides."
             )

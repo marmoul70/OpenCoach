@@ -56,6 +56,17 @@ def test_rejects_non_local_ollama_endpoint(monkeypatch, base_url):
     [
         "http://localhost:11434",
         "http://127.0.0.1:11434",
+        "http://[::1]:11434",
+    ],
+)
+def test_accepts_loopback_ollama_endpoint(monkeypatch, base_url):
+    monkeypatch.setenv("OPENCOACH_AI_BASE_URL", base_url)
+
+    settings = AISettings.from_environment()
+
+    assert settings.base_url == base_url
+
+
 @pytest.mark.parametrize(
     "base_url",
     [
@@ -68,17 +79,6 @@ def test_rejects_invalid_ollama_port(monkeypatch, base_url):
 
     with pytest.raises(AIConfigurationError, match="port invalide"):
         AISettings.from_environment()
-
-
-        "http://[::1]:11434",
-    ],
-)
-def test_accepts_loopback_ollama_endpoint(monkeypatch, base_url):
-    monkeypatch.setenv("OPENCOACH_AI_BASE_URL", base_url)
-
-    settings = AISettings.from_environment()
-
-    assert settings.base_url == base_url
 
 
 def test_reads_ai_environment(monkeypatch):

@@ -146,8 +146,15 @@ async def ask_local_ai_with_athlete_context(
     athlete_profile_id=Depends(get_current_athlete_profile_id),
     context_service: PlanningContextService = Depends(get_planning_context_service),
     service: AIService = Depends(get_ai_service),
+    settings: AISettings = Depends(get_ai_settings),
 ) -> AIQuestionResponse:
     """Dialogue IA enrichi par un snapshot sportif déterministe en lecture seule."""
+    if not settings.enabled:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Le moteur IA local est désactivé.",
+        )
+
     try:
         context = await run_in_threadpool(
             context_service.build,

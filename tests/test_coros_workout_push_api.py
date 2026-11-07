@@ -166,7 +166,7 @@ class FakeCorosClient:
                     "2026-11-12\n"
                     f"{workout_name}\n"
                     "Standalone workout (scheduled from the workout library)\n"
-                    f"idInPlan: existing-{index}\n\n"
+                    f"idInPlan: {100 + index}\n\n"
                     for index, workout_name in enumerate(self.scheduled_names)
                 )
             )
@@ -178,7 +178,7 @@ class FakeCorosClient:
                                 "date": "2026-11-12",
                                 "courses": [
                                     {
-                                        "idInPlan": f"existing-{index}",
+                                        "idInPlan": str(100 + index),
                                         "courseName": workout_name,
                                     }
                                     for index, workout_name in enumerate(
@@ -493,7 +493,7 @@ def test_uncertain_create_recovers_existing_coros_id_and_updates_instead_of_dupl
         "updateScheduledWorkout",
     ]
     update_arguments = FakeCorosClient.calls[-1][1]
-    assert update_arguments["idInPlan"] == "existing-0"
+    assert update_arguments["idInPlan"] == "100"
     assert all(
         name != "createScheduledWorkout"
         for name, _ in FakeCorosClient.calls

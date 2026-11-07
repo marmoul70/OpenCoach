@@ -206,18 +206,18 @@ def test_recovery_records_include_only_explicitly_standalone_workouts() -> None:
             {
                 "type": "text",
                 "text": (
-                    "Training Schedule\\n"
-                    "========================\\n\\n"
-                    "2026-11-12\\n"
-                    "Footing 35 min\\n"
-                    "Plan ID: 480641426263295064\\n"
-                    "idInPlan: 26\\n"
-                    "Distance: 4.53 km\\n\\n"
-                    "2026-11-12\\n"
-                    "Test COROS - Endurance fondamentale\\n"
-                    "Standalone workout (scheduled from the workout library)\\n"
-                    "idInPlan: 10\\n"
-                    "Distance: 5.43 km\\n"
+                    "Training Schedule\n"
+                    "========================\n\n"
+                    "2026-11-12\n"
+                    "Footing 35 min\n"
+                    "Plan ID: 480641426263295064\n"
+                    "idInPlan: 26\n"
+                    "Distance: 4.53 km\n\n"
+                    "2026-11-12\n"
+                    "Test COROS - Endurance fondamentale\n"
+                    "Standalone workout (scheduled from the workout library)\n"
+                    "idInPlan: 10\n"
+                    "Distance: 5.43 km\n"
                 ),
             }
         ]

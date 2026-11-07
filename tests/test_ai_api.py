@@ -8,6 +8,8 @@ from opencoach.ai.config import AISettings, get_ai_settings
 from opencoach.ai.schemas import AIChatResult
 from opencoach.ai.service import AIService, AIServiceDisabledError
 from opencoach.api.ai import get_ai_service
+from opencoach.api.coaching.dependencies import get_planning_context_service
+from opencoach.authentication.dependencies import get_current_athlete_profile_id
 from opencoach.api.app import create_app
 from opencoach.authentication.auth import COOKIE_NAME
 
@@ -141,3 +143,66 @@ def test_ai_chat_requires_authentication() -> None:
         json={"question": "Bonjour"},
     )
     assert response.status_code == 401
+
+
+
+class FakePlanningContextService:
+    def __init__(self, context):
+        self.context = context
+        self.profile_id = None
+
+    def build(self, athlete_profile_id, planning_date):
+        self.profile_id = athlete_profile_id
+        return self.context
+
+
+def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
+    from datetime import date
+    from types import SimpleNamespace
+    from uuid import UUID
+
+    athlete_profile_id = UUID("00000000-0000-0000-0000-000000000002")
+    context = SimpleNamespace(
+        planning_date=date.today(),
+        athlete=SimpleNamespace(
+            training=SimpleNamespace(
+                sport_disciplines=["trail_running"],
+                experience="advanced",
+                weekly_sessions=4,
+                weekly_duration_minutes=300,
+                weekly_distance_km=40.0,
+            ),
+            physiology=SimpleNamespace(
+                vma=15.0,
+                max_heart_rate=181,
+                resting_heart_rate=None,
+            ),
+        ),
+        recent_stats=None,
+        recent_load=None,
+        readiness=None,
+        primary_race=None,
+        constraints=(),
+    )
+    planning_service = FakePlanningContextService(context)
+    ai_service = FakeAIService()
+    app = create_app()
+    app.dependency_overrides[get_ai_settings] = lambda: AISettings(enabled=True)
+    app.dependency_overrides[get_ai_service] = lambda: ai_service
+    app.dependency_overrides[get_planning_context_service] = lambda: planning_service
+    app.dependency_overrides[get_current_athlete_profile_id] = lambda: athlete_profile_id
+    client = TestClient(app)
+    client.cookies.set(COOKIE_NAME, "test-session-token")
+
+    response = client.post(
+        "/api/ai/coach",
+        json={"question": "Analyse ma préparation."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["context_used"] is True
+    assert planning_service.profile_id == athlete_profile_id
+    messages = ai_service.request.messages
+    assert [message.role for message in messages] == ["system", "system", "user"]
+    assert "VMA enregistrée : 15.0 km/h." in messages[1].content
+    assert messages[2].content == "Analyse ma préparation."

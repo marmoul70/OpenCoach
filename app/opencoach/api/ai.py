@@ -97,7 +97,7 @@ def get_ai_status(
     )
 
 
-@router.post("/chat", response_model=AIQuestionResponse)
+@router.post("/chat", response_model=AIQuestionResponse, response_model_exclude_defaults=True)
 async def ask_local_ai(
     payload: AIQuestionRequest,
     _user_id=Depends(get_current_user_id),
@@ -131,7 +131,7 @@ async def ask_local_ai(
     )
 
 
-@router.post("/coach", response_model=AIQuestionResponse)
+@router.post("/coach", response_model=AIQuestionResponse, response_model_exclude_defaults=True)
 async def ask_local_ai_with_athlete_context(
     payload: AIQuestionRequest,
     _user_id=Depends(get_current_user_id),

@@ -220,7 +220,7 @@ start_ollama_service() {
 
     local attempt
 
-    for attempt in {1..30}; do
+    for ((attempt = 1; attempt <= 30; attempt++)); do
         if curl --fail --silent "$OLLAMA_API_URL" >/dev/null 2>&1; then
             log_success "API Ollama disponible sur 127.0.0.1:11434."
             return 0

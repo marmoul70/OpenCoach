@@ -50,7 +50,7 @@ test_main_installer_exposes_opt_in_flag() {
 
 test_main_installer_calls_ai_installer_only_when_requested() {
     grep -Fq 'WITH_AI_REQUESTED == 1' "$INSTALL_SCRIPT" \
-        && grep -Fq 'bash "$BOOTSTRAP_DIR/install-ai.sh"' "$INSTALL_SCRIPT"
+        && grep -Fq "bash \"\$BOOTSTRAP_DIR/install-ai.sh\"" "$INSTALL_SCRIPT"
 }
 
 test_curl_is_declared_as_system_package_and_command() {
@@ -105,4 +105,4 @@ if (( FAILED > 0 )); then
     exit 1
 fi
 
-printf '\n[ OK ] Tous les tests d'installation IA sont réussis.\n'
+printf "\\n[ OK ] Tous les tests d'installation IA sont réussis.\\n"

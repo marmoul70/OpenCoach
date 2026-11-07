@@ -76,6 +76,14 @@ class AISettings:
                 "OPENCOACH_AI_BASE_URL doit être une URL HTTP(S) valide sans identifiants."
             )
 
+        try:
+            # Accessing .port forces urllib to reject malformed/out-of-range ports.
+            parsed_url.port
+        except ValueError as exc:
+            raise AIConfigurationError(
+                "OPENCOACH_AI_BASE_URL contient un port invalide."
+            ) from exc
+
         hostname = parsed_url.hostname.lower()
         try:
             is_loopback = ipaddress.ip_address(hostname).is_loopback

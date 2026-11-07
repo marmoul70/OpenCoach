@@ -848,28 +848,45 @@ def push_training_session_to_coros(
             if isinstance(schedule_schema, dict)
             else {}
         )
+        # Match the live COROS MCP schema while retaining legacy aliases.
         start_key = next(
             (
-                key for key in ("startDay", "start_day")
+                key for key in (
+                    "startDate", "startDay", "start_date", "start_day",
+                )
                 if key in schedule_properties
             ),
             None,
         )
         end_key = next(
             (
-                key for key in ("endDay", "end_day")
+                key for key in (
+                    "endDate", "endDay", "end_date", "end_day",
+                )
                 if key in schedule_properties
             ),
             None,
         )
         if start_key and end_key:
             schedule_day = training_session.date.strftime("%Y%m%d")
+            start_type = (
+                schedule_properties.get(start_key, {}).get("type")
+                if isinstance(schedule_properties.get(start_key), dict)
+                else None
+            )
+            end_type = (
+                schedule_properties.get(end_key, {}).get("type")
+                if isinstance(schedule_properties.get(end_key), dict)
+                else None
+            )
+            start_value = int(schedule_day) if start_type == "integer" else schedule_day
+            end_value = int(schedule_day) if end_type == "integer" else schedule_day
             try:
                 schedule_result = client.call_tool(
                     "queryTrainingSchedule",
                     {
-                        start_key: schedule_day,
-                        end_key: schedule_day,
+                        start_key: start_value,
+                        end_key: end_value,
                     },
                 )
             except CorosMcpAuthenticationError as exc:

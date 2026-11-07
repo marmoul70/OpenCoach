@@ -16,7 +16,7 @@ DIST_DIR="$FRONTEND_DIR/dist"
 WEB_ROOT="/var/www/opencoach"
 
 # Reuse the shared OpenCoach colored logging functions.
-# shellcheck source=./lib/log.sh
+# shellcheck source=./scripts/lib/log.sh
 source "$PROJECT_ROOT/scripts/lib/log.sh"
 
 fail() {

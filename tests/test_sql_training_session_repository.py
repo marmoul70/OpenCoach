@@ -524,3 +524,33 @@ def test_sql_training_session_repository_allows_coros_service_to_clear_sync_erro
     finally:
         db.close()
 
+
+
+def test_sql_training_session_repository_claims_legacy_synced_session_without_payload_hash() -> None:
+    db = create_session()
+    try:
+        profile = create_profile(db)
+        repository = SqlTrainingSessionRepository(db)
+        session = create_training_session()
+        session.coros_workout_id = "legacy-coros-plan-id"
+        session.coros_sync_status = "synced"
+        session.coros_payload_hash = None
+        saved = repository.save_session(profile.id, session)
+
+        claimed_at = datetime(2026, 11, 7, 10, 0)
+        claimed = repository.claim_coros_workout_push(
+            profile.id,
+            saved.id,
+            "b" * 64,
+            claimed_at,
+            allow_synced_update=True,
+        )
+
+        assert claimed is True
+        updated = repository.get_session(profile.id, saved.id)
+        assert updated is not None
+        assert updated.coros_workout_id == "legacy-coros-plan-id"
+        assert updated.coros_sync_status == "pending"
+        assert updated.coros_payload_hash == "b" * 64
+    finally:
+        db.close()

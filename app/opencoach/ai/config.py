@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
+import math
 import os
 import re
 from urllib.parse import urlsplit
@@ -78,7 +79,12 @@ class AISettings:
                 "OPENCOACH_AI_MODEL est vide ou contient des caractères invalides."
             )
 
-        if connect_timeout <= 0 or read_timeout <= 0:
+        if (
+            not math.isfinite(connect_timeout)
+            or not math.isfinite(read_timeout)
+            or connect_timeout <= 0
+            or read_timeout <= 0
+        ):
             raise AIConfigurationError(
                 "Les délais IA doivent être strictement positifs."
             )

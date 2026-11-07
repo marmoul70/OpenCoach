@@ -670,6 +670,7 @@ def push_training_session_to_coros(
                     _extract_scheduled_workout_records_for_date(
                         recovery_schedule,
                         training_session.date,
+                        date_scoped=True,
                     )
                 )
                 if name.strip().casefold() == current_title
@@ -1574,7 +1575,7 @@ def _extract_scheduled_workout_records_for_date(
             if (
                 (date_scoped or current_date is not None)
                 and current_name is None
-                and not line.startswith(("=", "-", "Plan ID:", "Standalone workout", "Distance:", "Estimated Time:", "Load:", "To view", "Use Plan ID"))
+                and not line.startswith(("=", "-", "Training Schedule", "Plan ID:", "Standalone workout", "Distance:", "Estimated Time:", "Load:", "To view", "Use Plan ID"))
             ):
                 current_name = line
 

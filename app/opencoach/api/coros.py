@@ -1119,29 +1119,114 @@ def push_training_session_to_coros(
     now = datetime.now(timezone.utc)
     returned_workout_id = _extract_coros_scheduled_id(result)
     if not is_update and not returned_workout_id:
-        training_session = _reload_coros_training_session(
-            db,
-            repository,
-            athlete_profile_id,
-            session_id,
+        # COROS peut confirmer la création sans exposer idInPlan dans la
+        # réponse de createScheduledWorkout. Relire immédiatement le calendrier
+        # permet de récupérer l'identifiant avant de déclarer l'envoi incertain.
+        schedule_schema = (
+            schedule_tool.get("inputSchema")
+            if isinstance(schedule_tool, dict)
+            else None
         )
-        if training_session is None:
-            raise HTTPException(status_code=404, detail="Séance introuvable après l'appel COROS.")
-        # La création peut avoir réussi côté COROS, mais sans idInPlan
-        # OpenCoach ne peut ni prouver la synchronisation ni mettre à jour
-        # cette séance ensuite. Conserver un état incertain impose une
-        # vérification du calendrier avant toute nouvelle création.
-        training_session.coros_sync_status = "unknown"
-        training_session.coros_sync_started_at = None
-        training_session.coros_sync_error = (
-            "COROS n'a pas retourné l'identifiant de la séance créée. "
-            "Vérifie le calendrier COROS avant toute nouvelle tentative."
+        schedule_properties = (
+            schedule_schema.get("properties", {})
+            if isinstance(schedule_schema, dict)
+            else {}
         )
-        repository.save_session(athlete_profile_id, training_session)
-        raise HTTPException(
-            status_code=502,
-            detail=training_session.coros_sync_error,
+        start_key = next(
+            (
+                key for key in (
+                    "startDate", "startDay", "start_date", "start_day",
+                )
+                if key in schedule_properties
+            ),
+            None,
         )
+        end_key = next(
+            (
+                key for key in (
+                    "endDate", "endDay", "end_date", "end_day",
+                )
+                if key in schedule_properties
+            ),
+            None,
+        )
+        if start_key and end_key:
+            schedule_day = training_session.date.strftime("%Y%m%d")
+            start_type = schedule_properties.get(start_key, {}).get("type")
+            end_type = schedule_properties.get(end_key, {}).get("type")
+            start_value = int(schedule_day) if start_type == "integer" else schedule_day
+            end_value = int(schedule_day) if end_type == "integer" else schedule_day
+            try:
+                post_create_schedule = client.call_tool(
+                    "queryTrainingSchedule",
+                    {start_key: start_value, end_key: end_value},
+                )
+            except CorosMcpAuthenticationError as exc:
+                post_create_schedule = None
+                recovery_error = (
+                    "La connexion COROS a expiré après la création. "
+                    "La séance peut être présente dans COROS ; son identifiant "
+                    "n'a pas pu être récupéré."
+                )
+                recovery_status = 401
+            except CorosMcpError:
+                post_create_schedule = None
+                recovery_error = (
+                    "COROS a peut-être créé la séance, mais OpenCoach n'a pas "
+                    "pu relire le calendrier pour récupérer son identifiant."
+                )
+                recovery_status = 502
+            else:
+                recovery_error = (
+                    "COROS a créé la séance, mais son identifiant reste "
+                    "introuvable dans le calendrier."
+                )
+                recovery_status = 502
+
+            if post_create_schedule is not None:
+                current_title = training_session.title.strip().casefold()
+                matching = [
+                    (workout_id, name)
+                    for workout_id, name in (
+                        _extract_standalone_scheduled_workout_records_for_date(
+                            post_create_schedule,
+                            training_session.date,
+                        )
+                    )
+                    if name.strip().casefold() == current_title
+                ]
+                matching_ids = {
+                    workout_id for workout_id, _ in matching if workout_id
+                }
+                if len(matching_ids) == 1:
+                    returned_workout_id = next(iter(matching_ids))
+                elif len(matching_ids) > 1 or matching:
+                    recovery_error = (
+                        "La séance existe dans le calendrier COROS, mais "
+                        "plusieurs correspondances ou identifiants ambigus "
+                        "empêchent de confirmer sa synchronisation."
+                    )
+
+        if not returned_workout_id:
+            training_session = _reload_coros_training_session(
+                db,
+                repository,
+                athlete_profile_id,
+                session_id,
+            )
+            if training_session is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Séance introuvable après l'appel COROS.",
+                )
+            training_session.coros_sync_status = "unknown"
+            training_session.coros_sync_started_at = None
+            training_session.coros_sync_error = recovery_error
+            repository.save_session(athlete_profile_id, training_session)
+            raise HTTPException(
+                status_code=recovery_status,
+                detail=training_session.coros_sync_error,
+            )
 
     # Relire la séance après l'appel distant : une modification OpenCoach
     # pendant l'attente ne doit pas être présentée comme déjà synchronisée.

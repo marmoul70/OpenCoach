@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
+import ipaddress
 import math
 import os
 import re
@@ -69,9 +70,20 @@ class AISettings:
             or parsed_url.password
             or parsed_url.query
             or parsed_url.fragment
+            or not parsed_url.hostname
         ):
             raise AIConfigurationError(
                 "OPENCOACH_AI_BASE_URL doit être une URL HTTP(S) valide sans identifiants."
+            )
+
+        hostname = parsed_url.hostname.lower()
+        try:
+            is_loopback = ipaddress.ip_address(hostname).is_loopback
+        except ValueError:
+            is_loopback = hostname == "localhost"
+        if not is_loopback:
+            raise AIConfigurationError(
+                "OPENCOACH_AI_BASE_URL doit pointer vers la machine locale (localhost ou loopback)."
             )
 
         if not model or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]*", model):

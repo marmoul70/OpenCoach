@@ -162,24 +162,44 @@ export function TrainingSessionActions({
   }
 
 
-  async function skipSession() {
-    const confirmed =
-      window.confirm(
-        session.corosSyncStatus === 'synced'
-          ? (
-              'Cette séance a été envoyée à COROS. '
-              + 'La marquer non réalisée dans OpenCoach '
-              + 'ne la supprimera pas du calendrier COROS. '
-              + 'Tu devras aussi la retirer dans l’application COROS. '
-              + 'Continuer ?'
-            )
-          : (
-              'Marquer cette séance comme '
-              + 'non réalisée ?'
-            ),
-      )
+  function confirmStatusChange(
+    nextStatus: 'completed' | 'skipped',
+  ): boolean {
+    const hasCorosCopy = Boolean(
+      session.corosWorkoutId
+      || [
+        'synced',
+        'pending',
+        'unknown',
+      ].includes(session.corosSyncStatus ?? ''),
+    )
 
-    if (!confirmed) {
+    const action = nextStatus === 'completed'
+      ? 'réalisée'
+      : 'non réalisée'
+
+    const message = hasCorosCopy
+      ? (
+          'Cette séance est associée à un envoi COROS '
+          + 'confirmé ou potentiellement effectué. '
+          + 'La marquer comme '
+          + action
+          + ' dans OpenCoach ne modifiera pas le calendrier COROS. '
+          + 'Vérifie et, si nécessaire, retire ou ajuste manuellement '
+          + 'la séance dans l’application COROS. Continuer ?'
+        )
+      : (
+          'Marquer cette séance comme '
+          + action
+          + ' ?'
+        )
+
+    return window.confirm(message)
+  }
+
+
+  async function skipSession() {
+    if (!confirmStatusChange('skipped')) {
       return
     }
 
@@ -349,6 +369,9 @@ export function TrainingSessionActions({
                   type="button"
                   disabled={saving}
                   onClick={() => {
+                    if (!confirmStatusChange('completed')) {
+                      return
+                    }
                     setActionsOpen(false)
                     onRealized()
                   }}

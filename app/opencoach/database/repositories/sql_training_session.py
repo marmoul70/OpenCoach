@@ -1,7 +1,7 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -105,6 +105,35 @@ class SqlTrainingSessionRepository(
             database_session.intervals_sync_error = (
                 session.intervals_sync_error
             )
+            # Les objets reconstruits par le planificateur ne transportent
+            # pas les métadonnées COROS. Préserver l'identité et les états
+            # distants tant qu'une opération COROS dédiée ne les modifie pas.
+            # Les écritures explicitement renseignées (notamment depuis le
+            # service COROS) restent prioritaires.
+            coros_metadata = (
+                "coros_workout_id",
+                "coros_scheduled_date",
+                "coros_sync_status",
+                "coros_sync_started_at",
+                "coros_last_synced_at",
+                "coros_payload_hash",
+                "coros_sync_error",
+            )
+            # A planner rebuild has no COROS metadata at all. Preserve the
+            # existing remote state in that case. A COROS service write carries
+            # at least one non-None sync field and must be able to clear fields
+            # such as coros_sync_error by explicitly writing None.
+            has_incoming_coros_state = any(
+                getattr(session, field_name) is not None
+                for field_name in coros_metadata
+            )
+            if has_incoming_coros_state:
+                for field_name in coros_metadata:
+                    setattr(
+                        database_session,
+                        field_name,
+                        getattr(session, field_name),
+                    )
             self.session.commit()
             self.session.refresh(database_session)
 
@@ -115,6 +144,75 @@ class SqlTrainingSessionRepository(
 
             raise TrainingSessionRepositoryError(
                 "Impossible d'enregistrer la séance."
+            ) from exc
+
+    def claim_coros_workout_push(
+        self,
+        athlete_profile_id: UUID,
+        session_id: UUID,
+        payload_hash: str,
+        started_at: datetime,
+        *,
+        allow_uncertain: bool = False,
+        allow_synced_update: bool = False,
+    ) -> bool:
+        """Réserve atomiquement une création ou la mise à jour d'une copie COROS."""
+        started_at_utc = (
+            started_at.replace(tzinfo=None)
+            if started_at.tzinfo is not None
+            else started_at
+        )
+        eligible_statuses = [
+            TrainingSessionModel.coros_sync_status.is_(None),
+            TrainingSessionModel.coros_sync_status == "failed",
+        ]
+        if allow_synced_update:
+            eligible_statuses.append(
+                and_(
+                    TrainingSessionModel.coros_sync_status == "synced",
+                    TrainingSessionModel.coros_workout_id.is_not(None),
+                    or_(
+                        TrainingSessionModel.coros_payload_hash.is_(None),
+                        TrainingSessionModel.coros_payload_hash != payload_hash,
+                    ),
+                )
+            )
+        if allow_uncertain:
+            stale_before = started_at_utc - timedelta(minutes=5)
+            eligible_statuses.extend([
+                TrainingSessionModel.coros_sync_status == "unknown",
+                and_(
+                    TrainingSessionModel.coros_sync_status == "pending",
+                    or_(
+                        TrainingSessionModel.coros_sync_started_at.is_(None),
+                        TrainingSessionModel.coros_sync_started_at <= stale_before,
+                    ),
+                ),
+            ])
+
+        try:
+            result = self.session.execute(
+                update(TrainingSessionModel)
+                .where(
+                    TrainingSessionModel.id == session_id,
+                    TrainingSessionModel.athlete_profile_id
+                    == athlete_profile_id,
+                    or_(*eligible_statuses),
+                )
+                .values(
+                    coros_sync_status="pending",
+                    coros_sync_started_at=started_at_utc,
+                    coros_payload_hash=payload_hash,
+                    coros_sync_error=None,
+                )
+                .execution_options(synchronize_session=False)
+            )
+            self.session.commit()
+            return result.rowcount == 1
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+            raise TrainingSessionRepositoryError(
+                "Impossible de réserver l'envoi COROS."
             ) from exc
 
     def delete_session(
@@ -140,6 +238,20 @@ class SqlTrainingSessionRepository(
         if database_session is None:
             raise TrainingSessionRepositoryError(
                 "Séance introuvable."
+            )
+
+        # Ne jamais supprimer une référence distante sans suppression COROS
+        # confirmée. La fonction de suppression distante sera distincte.
+        if (
+            database_session.coros_workout_id is not None
+            or database_session.coros_sync_status in {
+                "pending",
+                "synced",
+                "unknown",
+            }
+        ):
+            raise TrainingSessionRepositoryError(
+                "Une séance liée au calendrier COROS ne peut pas être supprimée automatiquement."
             )
 
         try:
@@ -467,6 +579,13 @@ class SqlTrainingSessionRepository(
             intervals_last_synced_at=session.intervals_last_synced_at,
             intervals_payload_hash=session.intervals_payload_hash,
             intervals_sync_error=session.intervals_sync_error,
+            coros_workout_id=session.coros_workout_id,
+            coros_scheduled_date=session.coros_scheduled_date,
+            coros_sync_status=session.coros_sync_status,
+            coros_sync_started_at=session.coros_sync_started_at,
+            coros_last_synced_at=session.coros_last_synced_at,
+            coros_payload_hash=session.coros_payload_hash,
+            coros_sync_error=session.coros_sync_error,
         )
 
     @staticmethod

@@ -44,3 +44,18 @@ class TrainingSession:
     intervals_payload_hash: str | None = None
 
     intervals_sync_error: str | None = None
+
+    coros_workout_id: str | None = None
+
+    # Dernière date connue du même entraînement dans le calendrier COROS.
+    coros_scheduled_date: date | None = None
+
+    coros_sync_status: str | None = None
+
+    coros_sync_started_at: datetime | None = None
+
+    coros_last_synced_at: datetime | None = None
+
+    coros_payload_hash: str | None = None
+
+    coros_sync_error: str | None = None

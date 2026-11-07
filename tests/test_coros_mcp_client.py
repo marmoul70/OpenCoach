@@ -10,6 +10,7 @@ from opencoach.integrations.coros.client import (
 from opencoach.integrations.coros.errors import (
     CorosMcpAuthenticationError,
     CorosMcpProtocolError,
+    CorosMcpToolError,
 )
 
 
@@ -149,3 +150,50 @@ def test_coros_client_rejects_invalid_json_rpc_response():
 
 def test_coros_endpoint_defaults_to_europe():
     assert DEFAULT_COROS_MCP_URL == "https://mcpeu.coros.com/mcp"
+
+
+
+def test_coros_client_distinguishes_explicit_tool_rejection_from_transport_error():
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content)
+
+        if payload["method"] == "initialize":
+            return httpx.Response(
+                200,
+                json={
+                    "jsonrpc": "2.0",
+                    "id": payload["id"],
+                    "result": {"protocolVersion": "2025-06-18"},
+                },
+            )
+
+        if payload["method"] == "notifications/initialized":
+            return httpx.Response(202)
+
+        if payload["method"] == "tools/call":
+            return httpx.Response(
+                200,
+                json={
+                    "jsonrpc": "2.0",
+                    "id": payload["id"],
+                    "result": {
+                        "isError": True,
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Date outside supported range",
+                            }
+                        ],
+                    },
+                },
+            )
+
+        return httpx.Response(400)
+
+    client = CorosMcpClient(
+        "test-access-token",
+        transport=httpx.MockTransport(handler),
+    )
+
+    with pytest.raises(CorosMcpToolError, match="Date outside supported range"):
+        client.call_tool("createScheduledWorkout", {"date": "20261112"})

@@ -57,7 +57,7 @@ def metrics() -> TrainingHistoryMetrics:
 def race(
     *,
     distance_km: float,
-    elevation_gain_m: float,
+    elevation_gain_m: float | None,
 ) -> Race:
     return Race(
         id=uuid4(),
@@ -187,3 +187,16 @@ def test_critical_training_race_creates_recovery_window() -> None:
         date(2026, 9, 11),
         date(2026, 9, 12),
     )
+
+def test_unknown_training_race_elevation_is_not_used_as_zero() -> None:
+    assessment = evaluate_training_race_impact(
+        race=race(
+            distance_km=10.0,
+            elevation_gain_m=None,
+        ),
+        history_metrics=metrics(),
+    )
+
+    assert assessment.distance_ratio == 0.2
+    assert assessment.elevation_ratio is None
+    assert assessment.impact is EventImpact.LOW

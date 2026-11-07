@@ -153,6 +153,42 @@ class TrainingSession(Base):
         nullable=True,
     )
 
+    # Synchronisation des séances planifiées vers COROS.
+    coros_workout_id: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+
+    coros_scheduled_date: Mapped[date | None] = mapped_column(
+        Date,
+        nullable=True,
+    )
+
+    coros_sync_status: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+    )
+
+    coros_sync_started_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    coros_last_synced_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    coros_payload_hash: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+
+    coros_sync_error: Mapped[str | None] = mapped_column(
+        String(2000),
+        nullable=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),

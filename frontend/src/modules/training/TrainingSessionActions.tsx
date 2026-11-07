@@ -22,6 +22,10 @@ import {
   useToast,
 } from '../../components/ui/ToastProvider'
 
+import {
+  CorosWorkoutAction,
+} from './CorosWorkoutAction'
+
 import type {
   TrainingSession,
 } from './types'
@@ -93,6 +97,12 @@ export function TrainingSessionActions({
     null,
   )
 
+  const corosMoveLocked = [
+    'synced',
+    'pending',
+    'unknown',
+  ].includes(session.corosSyncStatus ?? '')
+
 
   useEffect(() => {
     setActionsOpen(false)
@@ -152,16 +162,42 @@ export function TrainingSessionActions({
   }
 
 
-  async function skipSession() {
-    const confirmed =
-      window.confirm(
-        (
-          'Marquer cette séance comme '
-          + 'non réalisée ?'
-        ),
-      )
+  function confirmStatusChange(
+    nextStatus: 'completed' | 'skipped',
+  ): boolean {
+    const hasCorosCopy = [
+      'synced',
+      'pending',
+      'unknown',
+      'failed',
+    ].includes(session.corosSyncStatus ?? '')
 
-    if (!confirmed) {
+    const action = nextStatus === 'completed'
+      ? 'réalisée'
+      : 'non réalisée'
+
+    const message = hasCorosCopy
+      ? (
+          'Cette séance est associée à un envoi COROS '
+          + 'confirmé ou potentiellement effectué. '
+          + 'La marquer comme '
+          + action
+          + ' dans OpenCoach ne modifiera pas le calendrier COROS. '
+          + 'Vérifie et, si nécessaire, retire ou ajuste manuellement '
+          + 'la séance dans l’application COROS. Continuer ?'
+        )
+      : (
+          'Marquer cette séance comme '
+          + action
+          + ' ?'
+        )
+
+    return window.confirm(message)
+  }
+
+
+  async function skipSession() {
+    if (!confirmStatusChange('skipped')) {
       return
     }
 
@@ -331,6 +367,9 @@ export function TrainingSessionActions({
                   type="button"
                   disabled={saving}
                   onClick={() => {
+                    if (!confirmStatusChange('completed')) {
+                      return
+                    }
                     setActionsOpen(false)
                     onRealized()
                   }}
@@ -425,7 +464,10 @@ export function TrainingSessionActions({
 
                 <button
                   type="button"
-                  disabled={saving}
+                  disabled={saving || corosMoveLocked}
+                  title={corosMoveLocked
+                    ? 'Déplacement à effectuer dans l’application COROS.'
+                    : undefined}
                   onClick={() =>
                     void openMove()
                   }
@@ -475,6 +517,8 @@ export function TrainingSessionActions({
                     "
                   />
                 </button>
+
+                <CorosWorkoutAction session={session} />
               </div>
             )}
 
@@ -799,10 +843,11 @@ export function TrainingSessionActions({
           onClick={() =>
             void openMove()
           }
-          disabled={saving}
+          disabled={saving || corosMoveLocked}
         />
       </div>
 
+      <CorosWorkoutAction session={session} />
 
       {error && (
         <div

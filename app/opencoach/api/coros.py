@@ -17,12 +17,20 @@ from opencoach.authentication.dependencies import (
 )
 from opencoach.database.models import CorosSyncLock, IntegrationConnection
 from opencoach.database.session import get_db
+from opencoach.database.repositories.sql_training_session import (
+    SqlTrainingSessionRepository,
+)
 from opencoach.integrations.coros.client import CorosMcpClient
 from opencoach.integrations.coros.tokens import refresh_secret_if_needed
 from opencoach.integrations.coros.errors import (
     CorosMcpAuthenticationError,
     CorosMcpError,
     CorosMcpProtocolError,
+    CorosMcpToolError,
+)
+from opencoach.integrations.coros.workout_mapper import (
+    CorosWorkoutMappingError,
+    map_training_session_to_coros,
 )
 from opencoach.integrations.coros.oauth import (
     CorosOAuthClientService,
@@ -57,6 +65,10 @@ class CorosSettingsUpdate(BaseModel):
     categories: dict[str, bool]
 
 
+class CorosWorkoutPushRequest(BaseModel):
+    confirmed_no_duplicate: bool = False
+
+
 def _cipher() -> SecretCipher:
     try:
         return SecretCipher.from_env()
@@ -77,6 +89,19 @@ def _connection(
             IntegrationConnection.provider == "coros",
         )
     )
+
+
+def _reload_coros_training_session(
+    db: Session,
+    repository: SqlTrainingSessionRepository,
+    athlete_profile_id: UUID,
+    session_id: UUID,
+):
+    """Relit une séance après un appel externe sans réécrire un état périmé."""
+    expire_all = getattr(db, "expire_all", None)
+    if callable(expire_all):
+        expire_all()
+    return repository.get_session(athlete_profile_id, session_id)
 
 
 def _recover_interrupted_coros_sync(
@@ -420,6 +445,942 @@ def test_coros_connection(
         ],
         "available_tools_count": len(tools),
     }
+
+
+@router.post("/workouts/{session_id}/push")
+def push_training_session_to_coros(
+    session_id: UUID,
+    payload: CorosWorkoutPushRequest,
+    athlete_profile_id: UUID = Depends(get_current_athlete_profile_id),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Crée ou actualise la séance OpenCoach planifiée dans le calendrier COROS."""
+    repository = SqlTrainingSessionRepository(db)
+    training_session = repository.get_session(
+        athlete_profile_id,
+        session_id,
+    )
+    if training_session is None:
+        raise HTTPException(status_code=404, detail="Séance introuvable.")
+
+    try:
+        workout_payload = map_training_session_to_coros(training_session)
+    except CorosWorkoutMappingError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    current_status = training_session.coros_sync_status
+    previous_payload_hash = training_session.coros_payload_hash
+    is_update = False
+    if current_status == "synced":
+        if training_session.coros_payload_hash == workout_payload.payload_hash:
+            return {
+                "status": "synced",
+                "last_synced_at": (
+                    training_session.coros_last_synced_at.isoformat()
+                    if training_session.coros_last_synced_at
+                    else None
+                ),
+                "message": "Cette séance est déjà à jour dans ton calendrier COROS.",
+            }
+        if not training_session.coros_workout_id:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "La séance est marquée comme synchronisée mais son identifiant COROS "
+                    "est absent. Aucune nouvelle séance ne sera créée par sécurité."
+                ),
+            )
+        is_update = True
+    elif current_status in {"unknown", "pending", "failed"}:
+        # Un échec de mise à jour conserve l'identifiant COROS : la reprise
+        # doit actualiser cette séance, jamais en créer une seconde.
+        is_update = bool(training_session.coros_workout_id)
+
+    if current_status == "pending":
+        stale_pending = _coros_push_is_stale(
+            training_session.coros_sync_started_at
+        )
+        if not stale_pending:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Un envoi COROS est encore en cours. Attends sa fin avant "
+                    "de relancer cette opération."
+                ),
+            )
+        if not payload.confirmed_no_duplicate:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "L'envoi COROS est bloqué depuis plus de cinq minutes. "
+                    "Vérifie le calendrier COROS. Si la séance est absente, "
+                    "confirme cette vérification pour autoriser une nouvelle tentative."
+                ),
+            )
+
+    if current_status == "unknown" and not payload.confirmed_no_duplicate:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Le résultat du précédent envoi n'a pas pu être confirmé. "
+                "Vérifie d'abord le calendrier COROS. Si la séance n'y figure pas, "
+                "confirme cette vérification pour autoriser un nouvel envoi."
+            ),
+        )
+
+    connection = _connection(db, athlete_profile_id)
+    if connection is None or not connection.enabled:
+        raise HTTPException(
+            status_code=409,
+            detail="Connecte et active d'abord ton compte COROS.",
+        )
+
+    cipher = _cipher()
+    secret = _read_secret(connection, cipher)
+    if secret.get("status") != "connected":
+        raise HTTPException(
+            status_code=409,
+            detail="La connexion COROS doit être réautorisée.",
+        )
+
+    try:
+        refreshed = refresh_secret_if_needed(
+            secret,
+            _oauth(),
+            now=datetime.now(timezone.utc).timestamp(),
+        )
+        if refreshed != secret:
+            _save_secret(connection, cipher, refreshed)
+            db.commit()
+
+        client = CorosMcpClient(refreshed["access_token"])
+        tools = client.list_tools()
+    except CorosMcpAuthenticationError as exc:
+        connection.enabled = False
+        connection.config = {
+            **(connection.config or {}),
+            "connected": False,
+        }
+        db.commit()
+        raise HTTPException(
+            status_code=401,
+            detail="La connexion COROS a expiré. Reconnecte ton compte.",
+        ) from exc
+    except CorosMcpError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Le serveur COROS MCP est temporairement indisponible.",
+        ) from exc
+
+    if is_update:
+        required_tools = {
+            "queryScheduledWorkoutDetails": {"date", "idInPlan"},
+            "updateScheduledWorkout": {"date", "idInPlan", "course"},
+        }
+    else:
+        required_tools = {"createScheduledWorkout": {"date", "course"}}
+
+    available_tools = {
+        tool.get("name"): tool
+        for tool in tools
+        if isinstance(tool, dict) and tool.get("name")
+    }
+    for tool_name, required_arguments in required_tools.items():
+        tool = available_tools.get(tool_name)
+        if tool is None:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"La connexion COROS ne propose pas l'outil {tool_name}. "
+                    "Aucune nouvelle séance ne sera créée en remplacement."
+                ),
+            )
+        schema = tool.get("inputSchema")
+        properties = (
+            schema.get("properties")
+            if isinstance(schema, dict)
+            else None
+        )
+        required = (
+            schema.get("required")
+            if isinstance(schema, dict)
+            else None
+        )
+        if (
+            not isinstance(properties, dict)
+            or not isinstance(required, list)
+            or not all(isinstance(key, str) for key in required)
+            or not required_arguments.issubset(required)
+        ):
+            raise HTTPException(
+                status_code=502,
+                detail=f"Le schéma COROS de {tool_name} est incomplet ou incompatible avec OpenCoach.",
+            )
+
+        expected_types = {
+            "date": "string",
+            "idInPlan": "string",
+            "course": "object",
+        }
+        incompatible = [
+            key
+            for key in required_arguments
+            if (
+                not isinstance(properties.get(key), dict)
+                or properties[key].get("type") != expected_types[key]
+            )
+        ]
+        if incompatible:
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    f"Le schéma COROS de {tool_name} définit des types "
+                    "d'arguments incompatibles avec OpenCoach."
+                ),
+            )
+
+    if is_update:
+        coros_existing_date = (
+            training_session.coros_scheduled_date
+            or training_session.date
+        )
+        lookup_dates = [coros_existing_date]
+        if training_session.date != coros_existing_date:
+            lookup_dates.append(training_session.date)
+
+        details = None
+        for lookup_index, lookup_date in enumerate(lookup_dates):
+            try:
+                details_result = client.call_tool(
+                    "queryScheduledWorkoutDetails",
+                    {
+                        "date": lookup_date.strftime("%Y%m%d"),
+                        "idInPlan": training_session.coros_workout_id,
+                    },
+                )
+            except CorosMcpAuthenticationError as exc:
+                raise HTTPException(
+                    status_code=401,
+                    detail="La connexion COROS a expiré. Reconnecte ton compte.",
+                ) from exc
+            except CorosMcpToolError as exc:
+                # COROS peut signaler « introuvable » comme erreur outil
+                # lorsque la séance a déjà été déplacée par une requête dont
+                # la réponse a été perdue. Essayer alors la date cible connue.
+                if lookup_index < len(lookup_dates) - 1:
+                    continue
+                raise HTTPException(
+                    status_code=502,
+                    detail=(
+                        "Impossible de retrouver la séance COROS aux dates "
+                        "connues. Aucune modification n'a été effectuée."
+                    ),
+                ) from exc
+            except CorosMcpError as exc:
+                raise HTTPException(
+                    status_code=502,
+                    detail=(
+                        "Impossible de vérifier la séance déjà planifiée dans COROS. "
+                        "Aucune modification n'a été effectuée."
+                    ),
+                ) from exc
+
+            details = _extract_coros_scheduled_details(details_result)
+            if details is not None:
+                break
+
+        if details is None:
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    "COROS n'a pas retourné un détail exploitable de la séance. "
+                    "Aucune modification n'a été effectuée."
+                ),
+            )
+        if details["editable"] is not True:
+            reason = details.get("reason") or (
+                "COROS indique que cette séance n'est pas modifiable."
+            )
+            raise HTTPException(status_code=409, detail=reason)
+        existing_course = details.get("course")
+        if not isinstance(existing_course, dict):
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    "COROS n'a pas retourné le contenu de la séance à remplacer. "
+                    "Aucune modification n'a été effectuée."
+                ),
+            )
+        # COROS impose un remplacement intégral. On part de la copie réellement
+        # planifiée puis on remplace les champs maîtrisés par la prescription OpenCoach.
+        replacement_course = dict(existing_course)
+        replacement_course.update(workout_payload.course)
+        replacement_course.pop("dayNo", None)
+        replacement_course.pop("strengthBodypart", None)
+
+    schedule_tool = next(
+        (
+            tool for tool in tools
+            if tool.get("name") == "queryTrainingSchedule"
+        ),
+        None,
+    )
+    existing_workouts: list[str] = []
+    if not is_update and schedule_tool is not None:
+        schedule_schema = schedule_tool.get("inputSchema")
+        schedule_properties = (
+            schedule_schema.get("properties", {})
+            if isinstance(schedule_schema, dict)
+            else {}
+        )
+        start_key = next(
+            (
+                key for key in ("startDay", "start_day")
+                if key in schedule_properties
+            ),
+            None,
+        )
+        end_key = next(
+            (
+                key for key in ("endDay", "end_day")
+                if key in schedule_properties
+            ),
+            None,
+        )
+        if start_key and end_key:
+            schedule_day = training_session.date.strftime("%Y%m%d")
+            try:
+                schedule_result = client.call_tool(
+                    "queryTrainingSchedule",
+                    {
+                        start_key: schedule_day,
+                        end_key: schedule_day,
+                    },
+                )
+            except CorosMcpAuthenticationError as exc:
+                raise HTTPException(
+                    status_code=401,
+                    detail="La connexion COROS a expiré. Reconnecte ton compte.",
+                ) from exc
+            except CorosMcpError as exc:
+                raise HTTPException(
+                    status_code=502,
+                    detail=(
+                        "Impossible de vérifier le calendrier COROS avant l'ajout. "
+                        "Aucune séance n'a été envoyée."
+                    ),
+                ) from exc
+            existing_workouts = _extract_scheduled_workouts_for_date(
+                schedule_result,
+                training_session.date,
+            )
+
+    if current_status in {"pending", "unknown"}:
+        current_title = training_session.title.strip().casefold()
+        matching_workouts = [
+            name for name in existing_workouts
+            if name.strip().casefold() == current_title
+        ]
+        if matching_workouts:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Une séance portant déjà ce titre est présente dans le "
+                    "calendrier COROS à cette date. Par sécurité, aucun nouvel "
+                    "envoi n'a été effectué. Vérifie cette séance dans COROS."
+                ),
+            )
+
+    # Réservation atomique : deux requêtes simultanées ne peuvent pas
+    # toutes les deux passer de l'état libre à pending.
+    started_at = datetime.now(timezone.utc)
+    claimed = repository.claim_coros_workout_push(
+        athlete_profile_id,
+        session_id,
+        workout_payload.payload_hash,
+        started_at,
+        allow_uncertain=payload.confirmed_no_duplicate,
+        allow_synced_update=is_update,
+    )
+    if not claimed:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Une autre requête a déjà réservé l'envoi de cette séance. "
+                "Actualise la page avant de réessayer."
+            ),
+        )
+    training_session = _reload_coros_training_session(
+        db,
+        repository,
+        athlete_profile_id,
+        session_id,
+    )
+    if training_session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Séance introuvable après réservation de l'envoi COROS.",
+        )
+    # La réservation SQL est une mise à jour atomique avec
+    # synchronize_session=False : réconcilier explicitement l'objet ORM
+    # chargé avant la réservation pour ne pas réécrire un ancien hash.
+    training_session.coros_sync_status = "pending"
+    training_session.coros_sync_started_at = started_at
+    training_session.coros_payload_hash = workout_payload.payload_hash
+    training_session.coros_sync_error = None
+
+    # Vérifier que la prescription n'a pas changé entre sa lecture initiale
+    # et la réservation atomique. Le payload préparé doit encore représenter
+    # exactement la séance qui va être envoyée.
+    try:
+        claimed_payload = map_training_session_to_coros(training_session)
+    except CorosWorkoutMappingError as exc:
+        training_session.coros_sync_status = "failed"
+        training_session.coros_sync_started_at = None
+        training_session.coros_sync_error = (
+            "La séance a changé pendant la préparation de l'envoi. "
+            "Corrige ou actualise la séance avant de réessayer."
+        )
+        repository.save_session(athlete_profile_id, training_session)
+        raise HTTPException(
+            status_code=409,
+            detail=training_session.coros_sync_error,
+        ) from exc
+
+    if claimed_payload.payload_hash != workout_payload.payload_hash:
+        training_session.coros_sync_status = "failed"
+        training_session.coros_sync_started_at = None
+        training_session.coros_sync_error = (
+            "La séance OpenCoach a été modifiée pendant la préparation. "
+            "Aucun contenu n'a été envoyé à COROS ; relance l'envoi."
+        )
+        repository.save_session(athlete_profile_id, training_session)
+        raise HTTPException(status_code=409, detail=training_session.coros_sync_error)
+
+    try:
+        if is_update:
+            result = client.call_tool(
+                "updateScheduledWorkout",
+                {
+                    "date": workout_payload.date,
+                    "idInPlan": training_session.coros_workout_id,
+                    "course": replacement_course,
+                },
+            )
+        else:
+            result = client.call_tool(
+                "createScheduledWorkout",
+                workout_payload.as_tool_arguments(),
+            )
+    except CorosMcpAuthenticationError as exc:
+        training_session = _reload_coros_training_session(
+            db,
+            repository,
+            athlete_profile_id,
+            session_id,
+        )
+        if training_session is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Séance introuvable après l'appel COROS.",
+            )
+        training_session.coros_sync_status = "synced" if is_update else "failed"
+        training_session.coros_sync_started_at = None
+        if is_update:
+            training_session.coros_payload_hash = previous_payload_hash
+        training_session.coros_sync_error = (
+            "La connexion COROS a été refusée. Reconnecte ton compte avant de réessayer."
+        )
+        repository.save_session(athlete_profile_id, training_session)
+        connection.enabled = False
+        connection.config = {
+            **(connection.config or {}),
+            "connected": False,
+        }
+        db.commit()
+        raise HTTPException(
+            status_code=401,
+            detail=training_session.coros_sync_error,
+        ) from exc
+    except CorosMcpToolError as exc:
+        training_session = _reload_coros_training_session(
+            db,
+            repository,
+            athlete_profile_id,
+            session_id,
+        )
+        if training_session is None:
+            raise HTTPException(status_code=404, detail="Séance introuvable après l'appel COROS.")
+        training_session.coros_sync_status = "synced" if is_update else "failed"
+        training_session.coros_sync_started_at = None
+        if is_update:
+            training_session.coros_payload_hash = previous_payload_hash
+        training_session.coros_sync_error = str(exc)[:2000]
+        repository.save_session(athlete_profile_id, training_session)
+        raise HTTPException(
+            status_code=422,
+            detail=training_session.coros_sync_error,
+        ) from exc
+    except CorosMcpProtocolError as exc:
+        training_session = _reload_coros_training_session(
+            db,
+            repository,
+            athlete_profile_id,
+            session_id,
+        )
+        if training_session is None:
+            raise HTTPException(status_code=404, detail="Séance introuvable après l'appel COROS.")
+        training_session.coros_sync_status = "unknown"
+        training_session.coros_sync_started_at = None
+        training_session.coros_sync_error = (
+            "COROS n'a pas confirmé le résultat de l'envoi. "
+            "Vérifie le calendrier COROS avant toute nouvelle tentative."
+        )
+        repository.save_session(athlete_profile_id, training_session)
+        raise HTTPException(
+            status_code=502,
+            detail=training_session.coros_sync_error,
+        ) from exc
+    except CorosMcpError as exc:
+        training_session = _reload_coros_training_session(
+            db,
+            repository,
+            athlete_profile_id,
+            session_id,
+        )
+        if training_session is None:
+            raise HTTPException(status_code=404, detail="Séance introuvable après l'appel COROS.")
+        training_session.coros_sync_status = "unknown"
+        training_session.coros_sync_started_at = None
+        training_session.coros_sync_error = (
+            "Le résultat de l'envoi est incertain. "
+            "Vérifie le calendrier COROS avant toute nouvelle tentative."
+        )
+        repository.save_session(athlete_profile_id, training_session)
+        raise HTTPException(
+            status_code=502,
+            detail=training_session.coros_sync_error,
+        ) from exc
+
+    now = datetime.now(timezone.utc)
+    returned_workout_id = _extract_coros_scheduled_id(result)
+    if not is_update and not returned_workout_id:
+        training_session = _reload_coros_training_session(
+            db,
+            repository,
+            athlete_profile_id,
+            session_id,
+        )
+        if training_session is None:
+            raise HTTPException(status_code=404, detail="Séance introuvable après l'appel COROS.")
+        # La création peut avoir réussi côté COROS, mais sans idInPlan
+        # OpenCoach ne peut ni prouver la synchronisation ni mettre à jour
+        # cette séance ensuite. Conserver un état incertain impose une
+        # vérification du calendrier avant toute nouvelle création.
+        training_session.coros_sync_status = "unknown"
+        training_session.coros_sync_started_at = None
+        training_session.coros_sync_error = (
+            "COROS n'a pas retourné l'identifiant de la séance créée. "
+            "Vérifie le calendrier COROS avant toute nouvelle tentative."
+        )
+        repository.save_session(athlete_profile_id, training_session)
+        raise HTTPException(
+            status_code=502,
+            detail=training_session.coros_sync_error,
+        )
+
+    # Relire la séance après l'appel distant : une modification OpenCoach
+    # pendant l'attente ne doit pas être présentée comme déjà synchronisée.
+    latest_session = _reload_coros_training_session(
+        db,
+        repository,
+        athlete_profile_id,
+        session_id,
+    )
+    if latest_session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Séance introuvable après l'envoi COROS.",
+        )
+    latest_session.coros_workout_id = (
+        returned_workout_id
+        or latest_session.coros_workout_id
+    )
+    latest_session.coros_scheduled_date = datetime.strptime(
+        workout_payload.date,
+        "%Y%m%d",
+    ).date()
+    try:
+        latest_payload = map_training_session_to_coros(latest_session)
+    except CorosWorkoutMappingError:
+        latest_payload = None
+
+    if (
+        latest_payload is None
+        or latest_payload.payload_hash != workout_payload.payload_hash
+    ):
+        latest_session.coros_sync_status = "failed"
+        latest_session.coros_sync_started_at = None
+        latest_session.coros_payload_hash = workout_payload.payload_hash
+        latest_session.coros_sync_error = (
+            "La séance OpenCoach a été modifiée pendant l'envoi. "
+            "COROS a reçu la version précédente ; relance l'envoi pour "
+            "mettre à jour la séance existante."
+        )
+        repository.save_session(athlete_profile_id, latest_session)
+        raise HTTPException(
+            status_code=409,
+            detail=latest_session.coros_sync_error,
+        )
+
+    training_session = latest_session
+    training_session.coros_sync_status = "synced"
+    training_session.coros_sync_started_at = None
+    training_session.coros_last_synced_at = now
+    training_session.coros_sync_error = None
+    saved_session = repository.save_session(
+        athlete_profile_id,
+        training_session,
+    )
+    other_workouts = list(dict.fromkeys([
+        *existing_workouts,
+        *_extract_other_coros_workouts(
+            result,
+            created_id=saved_session.coros_workout_id,
+            current_name=saved_session.title,
+        ),
+    ]))
+    action = "a été mise à jour" if is_update else "a été ajoutée"
+    message = (
+        f"« {saved_session.title} » {action} au calendrier COROS "
+        f"du {saved_session.date.strftime('%d/%m/%Y')}. "
+        "Synchronise ensuite ta montre avec l'application COROS."
+    )
+    if other_workouts:
+        message += (
+            " Autres séances déjà présentes ce jour : "
+            + ", ".join(other_workouts)
+            + "."
+        )
+
+    return {
+        "status": "synced",
+        "last_synced_at": (
+            saved_session.coros_last_synced_at.isoformat()
+            if saved_session.coros_last_synced_at
+            else now.isoformat()
+        ),
+        "message": message,
+        "other_workouts": other_workouts,
+    }
+
+
+def _coros_push_is_stale(
+    started_at: datetime | None,
+    *,
+    now: datetime | None = None,
+) -> bool:
+    """Autorise une réconciliation manuelle seulement après un délai de sécurité."""
+    if started_at is None:
+        return True
+    current_time = now or datetime.now(timezone.utc)
+    normalized_start = (
+        started_at.replace(tzinfo=timezone.utc)
+        if started_at.tzinfo is None
+        else started_at
+    )
+    return current_time - normalized_start >= timedelta(minutes=5)
+
+
+def _extract_coros_scheduled_id(result: dict[str, Any]) -> str | None:
+    """Récupère idInPlan sans dépendre d'un format de réponse unique."""
+    candidates: list[Any] = []
+    structured = result.get("structuredContent")
+    if structured is not None:
+        candidates.append(structured)
+
+    for item in result.get("content", []):
+        if not isinstance(item, dict) or item.get("type") != "text":
+            continue
+        raw_text = item.get("text")
+        if not isinstance(raw_text, str):
+            continue
+        try:
+            candidates.append(json.loads(raw_text))
+        except ValueError:
+            object_start = raw_text.find("{")
+            object_end = raw_text.rfind("}")
+            if object_start >= 0 and object_end > object_start:
+                try:
+                    candidates.append(
+                        json.loads(raw_text[object_start:object_end + 1])
+                    )
+                except ValueError:
+                    pass
+
+    for candidate in candidates:
+        found = _find_coros_id(candidate)
+        if found:
+            return found
+    return None
+
+
+def _extract_coros_scheduled_details(
+    result: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Extrait l'état d'éditabilité d'une séance standalone COROS."""
+    candidates: list[Any] = []
+    structured = result.get("structuredContent")
+    if structured is not None:
+        candidates.append(structured)
+
+    for item in result.get("content", []):
+        if not isinstance(item, dict) or item.get("type") != "text":
+            continue
+        raw_text = item.get("text")
+        if not isinstance(raw_text, str):
+            continue
+        try:
+            candidates.append(json.loads(raw_text))
+        except ValueError:
+            start = raw_text.find("{")
+            end = raw_text.rfind("}")
+            if start >= 0 and end > start:
+                try:
+                    candidates.append(json.loads(raw_text[start:end + 1]))
+                except ValueError:
+                    pass
+
+    def find_course(value: Any) -> dict[str, Any] | None:
+        if isinstance(value, dict):
+            course = value.get("course")
+            if isinstance(course, dict):
+                return course
+            if "courseName" in value and isinstance(value.get("sections"), list):
+                return value
+            for child in value.values():
+                found = find_course(child)
+                if found is not None:
+                    return found
+        elif isinstance(value, list):
+            for child in value:
+                found = find_course(child)
+                if found is not None:
+                    return found
+        return None
+
+    def find_editability(value: Any) -> tuple[bool, str | None] | None:
+        if isinstance(value, dict):
+            editable = value.get("editable")
+            if isinstance(editable, bool):
+                reason = value.get("reason") or value.get("reasons") or value.get("message")
+                normalized_reason = (
+                    "; ".join(str(item) for item in reason)
+                    if isinstance(reason, list)
+                    else str(reason) if reason else None
+                )
+                return editable, normalized_reason
+            for child in value.values():
+                found = find_editability(child)
+                if found is not None:
+                    return found
+        elif isinstance(value, list):
+            for child in value:
+                found = find_editability(child)
+                if found is not None:
+                    return found
+        return None
+
+    for candidate in candidates:
+        editability = find_editability(candidate)
+        if editability is not None:
+            editable, reason = editability
+            return {
+                "editable": editable,
+                "reason": reason,
+                "course": find_course(candidate),
+            }
+    return None
+
+
+def _extract_scheduled_workouts_for_date(
+    result: dict[str, Any],
+    target_date,
+) -> list[str]:
+    """Extrait les séances déjà planifiées à la date interrogée."""
+    target_values = {
+        target_date.strftime("%Y%m%d"),
+        target_date.isoformat(),
+    }
+    candidates: list[Any] = []
+    structured = result.get("structuredContent")
+    if structured is not None:
+        candidates.append(structured)
+    for item in result.get("content", []):
+        if not isinstance(item, dict) or item.get("type") != "text":
+            continue
+        raw_text = item.get("text")
+        if not isinstance(raw_text, str):
+            continue
+        try:
+            candidates.append(json.loads(raw_text))
+        except ValueError:
+            object_start = raw_text.find("{")
+            object_end = raw_text.rfind("}")
+            if object_start >= 0 and object_end > object_start:
+                try:
+                    candidates.append(
+                        json.loads(raw_text[object_start:object_end + 1])
+                    )
+                except ValueError:
+                    pass
+
+    found: list[str] = []
+    date_keys = {
+        "date",
+        "day",
+        "happenDay",
+        "happen_day",
+        "scheduleDate",
+        "schedule_date",
+    }
+    workout_list_keys = {
+        "courses",
+        "workouts",
+        "entities",
+        "programs",
+        "scheduledWorkouts",
+        "scheduled_workouts",
+        "items",
+    }
+
+    def collect_workout_names(value: Any, *, in_workout_list: bool = False) -> None:
+        if isinstance(value, dict):
+            is_workout = in_workout_list or any(
+                key in value
+                for key in ("courseName", "workoutName", "idInPlan", "id_in_plan")
+            )
+            if is_workout:
+                name = (
+                    value.get("courseName")
+                    or value.get("workoutName")
+                    or value.get("name")
+                    or value.get("title")
+                )
+                if isinstance(name, str) and name.strip() and name.strip() not in found:
+                    found.append(name.strip())
+            for key, child in value.items():
+                collect_workout_names(
+                    child,
+                    in_workout_list=key in workout_list_keys,
+                )
+        elif isinstance(value, list):
+            for child in value:
+                collect_workout_names(child, in_workout_list=in_workout_list)
+
+    def visit(value: Any, *, date_matches: bool = False) -> None:
+        if isinstance(value, dict):
+            matches = date_matches
+            for key in date_keys:
+                candidate_date = value.get(key)
+                if candidate_date is not None:
+                    normalized = str(candidate_date).replace("-", "")[:8]
+                    if normalized in target_values:
+                        matches = True
+                        break
+            if matches:
+                for key, child in value.items():
+                    if key in workout_list_keys:
+                        collect_workout_names(child, in_workout_list=True)
+                if not any(key in value for key in workout_list_keys):
+                    for child in value.values():
+                        visit(child, date_matches=True)
+                return
+            for key, child in value.items():
+                if key in target_values:
+                    collect_workout_names(child, in_workout_list=True)
+                else:
+                    visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child, date_matches=date_matches)
+
+    for candidate in candidates:
+        visit(candidate)
+    return found
+
+
+def _extract_other_coros_workouts(
+    result: dict[str, Any],
+    *,
+    created_id: str | None,
+    current_name: str,
+) -> list[str]:
+    """Retourne les autres séances du jour éventuellement incluses dans le résultat."""
+    candidates: list[Any] = []
+    structured = result.get("structuredContent")
+    if structured is not None:
+        candidates.append(structured)
+    for item in result.get("content", []):
+        if not isinstance(item, dict) or item.get("type") != "text":
+            continue
+        raw_text = item.get("text")
+        if not isinstance(raw_text, str):
+            continue
+        try:
+            candidates.append(json.loads(raw_text))
+        except ValueError:
+            continue
+
+    found: list[str] = []
+    current_normalized = current_name.strip().casefold()
+    for candidate in candidates:
+        for workout_id, name in _collect_coros_workout_names(candidate):
+            if created_id is not None and workout_id == created_id:
+                continue
+            if name.strip().casefold() == current_normalized:
+                continue
+            if name not in found:
+                found.append(name)
+    return found
+
+
+def _collect_coros_workout_names(value: Any) -> list[tuple[str | None, str]]:
+    collected: list[tuple[str | None, str]] = []
+    if isinstance(value, dict):
+        workout_id = value.get("idInPlan", value.get("id_in_plan"))
+        name = (
+            value.get("courseName")
+            or value.get("workoutName")
+            or value.get("name")
+            or value.get("title")
+        )
+        if isinstance(name, str) and name.strip():
+            collected.append(
+                (str(workout_id) if workout_id is not None else None, name.strip())
+            )
+        for item in value.values():
+            collected.extend(_collect_coros_workout_names(item))
+    elif isinstance(value, list):
+        for item in value:
+            collected.extend(_collect_coros_workout_names(item))
+    return collected
+
+
+def _find_coros_id(value: Any) -> str | None:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key in {"idInPlan", "id_in_plan"} and item is not None:
+                return str(item)
+            found = _find_coros_id(item)
+            if found:
+                return found
+    elif isinstance(value, list):
+        for item in value:
+            found = _find_coros_id(item)
+            if found:
+                return found
+    return None
 
 
 @router.post("/sync")

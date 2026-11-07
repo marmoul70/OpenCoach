@@ -148,7 +148,6 @@ class WeeklyPlanningContextBuilder:
             )
             target_elevation_gain_m = (
                 primary_race.elevation_gain_m
-                or 0.0
             )
 
         available_days = self._available_days(

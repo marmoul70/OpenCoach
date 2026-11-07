@@ -59,9 +59,13 @@ class CircuitStep:
     description: str
 
     def __post_init__(self) -> None:
-        if self.duration_seconds <= 0:
+        if (
+            isinstance(self.duration_seconds, bool)
+            or not isinstance(self.duration_seconds, int)
+            or self.duration_seconds <= 0
+        ):
             raise ValueError(
-                "La durée d'une étape de circuit doit être positive."
+                "La durée d'une étape de circuit doit être un entier strictement positif."
             )
 
         if not self.description.strip():
@@ -81,9 +85,13 @@ class WorkCircuit:
     ]
 
     def __post_init__(self) -> None:
-        if self.repetitions <= 0:
+        if (
+            isinstance(self.repetitions, bool)
+            or not isinstance(self.repetitions, int)
+            or self.repetitions <= 0
+        ):
             raise ValueError(
-                "Le nombre de répétitions d'un circuit doit être positif."
+                "Le nombre de répétitions d'un circuit doit être un entier strictement positif."
             )
 
         if not self.steps:
@@ -137,6 +145,10 @@ class WorkInterval:
 
     work_distance_meters: int | None = None
 
+    # Cibles secondaires de relief : elles coexistent avec la durée
+    # nécessaire au calcul de charge et au budget temporel.
+    work_elevation_gain_meters: int | None = None
+
     repetition_target: (
         DistanceRepetitionTarget
         | None
@@ -144,13 +156,19 @@ class WorkInterval:
 
     recovery_duration: int | None = None
     recovery_unit: WorkDurationUnit | None = None
+    recovery_distance_meters: int | None = None
+    recovery_elevation_gain_meters: int | None = None
 
     def __post_init__(
         self,
     ) -> None:
-        if self.repetitions <= 0:
+        if (
+            isinstance(self.repetitions, bool)
+            or not isinstance(self.repetitions, int)
+            or self.repetitions <= 0
+        ):
             raise ValueError(
-                "Le nombre de répétitions doit être positif."
+                "Le nombre de répétitions doit être un entier strictement positif."
             )
 
         has_duration = (
@@ -193,10 +211,14 @@ class WorkInterval:
 
         if (
             self.work_duration is not None
-            and self.work_duration <= 0
+            and (
+                isinstance(self.work_duration, bool)
+                or not isinstance(self.work_duration, int)
+                or self.work_duration <= 0
+            )
         ):
             raise ValueError(
-                "La durée de travail doit être positive."
+                "La durée de travail doit être un entier strictement positif."
             )
 
         if (
@@ -220,12 +242,36 @@ class WorkInterval:
                 "à la distance de travail."
             )
 
+        for label, value in (
+            ("distance de travail", self.work_distance_meters),
+            ("dénivelé de travail", self.work_elevation_gain_meters),
+            ("distance de récupération", self.recovery_distance_meters),
+            ("dénivelé de récupération", self.recovery_elevation_gain_meters),
+        ):
+            if value is not None and (
+                isinstance(value, bool)
+                or not isinstance(value, int)
+                or value <= 0
+            ):
+                raise ValueError(
+                    f"Le {label} doit être un entier strictement positif."
+                )
+
         if (
-            self.work_distance_meters is not None
-            and self.work_distance_meters <= 0
+            self.recovery_distance_meters is not None
+            and self.recovery_elevation_gain_meters is not None
         ):
             raise ValueError(
-                "La distance de travail doit être positive."
+                "Une récupération ne peut pas cibler simultanément une distance et un dénivelé."
+            )
+
+        if (
+            (self.recovery_distance_meters is not None
+             or self.recovery_elevation_gain_meters is not None)
+            and self.recovery_duration is None
+        ):
+            raise ValueError(
+                "Une cible de récupération distance/D+ doit conserver une durée pour le calcul du planning."
             )
 
         if (
@@ -239,10 +285,14 @@ class WorkInterval:
 
         if (
             self.recovery_duration is not None
-            and self.recovery_duration <= 0
+            and (
+                isinstance(self.recovery_duration, bool)
+                or not isinstance(self.recovery_duration, int)
+                or self.recovery_duration <= 0
+            )
         ):
             raise ValueError(
-                "La durée de récupération doit être positive."
+                "La durée de récupération doit être un entier strictement positif."
             )
 
         if (
@@ -1326,29 +1376,33 @@ def _duration_to_seconds(
 def _format_interval_description(
     interval: WorkInterval,
 ) -> str:
-    work = _format_duration(
-        interval.work_duration,
-        interval.work_unit,
-    )
-
-    recovery = ""
-
-    if interval.recovery_duration is not None:
-        assert interval.recovery_unit is not None
-
-        recovery = (
-            " / récupération "
-            + _format_duration(
-                interval.recovery_duration,
-                interval.recovery_unit,
-            )
+    work_details: list[str] = []
+    if interval.work_distance_meters is not None:
+        work_details.append(f"{interval.work_distance_meters} m")
+    if interval.work_elevation_gain_meters is not None:
+        work_details.append(f"{interval.work_elevation_gain_meters} m D+")
+    if interval.work_duration is not None and interval.work_unit is not None:
+        work_details.append(
+            _format_duration(interval.work_duration, interval.work_unit)
         )
+    work = " / ".join(work_details) or "travail"
 
-    return (
-        f"{interval.repetitions} × "
-        f"{work}"
-        f"{recovery}."
+    recovery_details: list[str] = []
+    if interval.recovery_duration is not None and interval.recovery_unit is not None:
+        recovery_details.append(
+            _format_duration(interval.recovery_duration, interval.recovery_unit)
+        )
+    if interval.recovery_distance_meters is not None:
+        recovery_details.append(f"{interval.recovery_distance_meters} m")
+    if interval.recovery_elevation_gain_meters is not None:
+        recovery_details.append(f"{interval.recovery_elevation_gain_meters} m D+")
+
+    recovery = (
+        " / récupération " + " / ".join(recovery_details)
+        if recovery_details
+        else ""
     )
+    return f"{interval.repetitions} × {work}{recovery}."
 
 
 def _format_duration(

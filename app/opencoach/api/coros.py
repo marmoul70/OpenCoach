@@ -618,6 +618,11 @@ def push_training_session_to_coros(
             ),
             None,
         )
+        recovery_error = (
+            "COROS a créé la séance, mais OpenCoach n'a pas pu récupérer "
+            "son identifiant depuis le calendrier."
+        )
+        recovery_status = 502
         if start_key and end_key:
             schedule_day = training_session.date.strftime("%Y%m%d")
             start_type = (

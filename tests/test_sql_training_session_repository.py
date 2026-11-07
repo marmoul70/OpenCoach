@@ -499,3 +499,28 @@ def test_sql_training_session_repository_refuses_delete_when_coros_copy_exists()
         assert repository.get_session(profile.id, saved.id) is not None
     finally:
         db.close()
+
+
+def test_sql_training_session_repository_allows_coros_service_to_clear_sync_error() -> None:
+    db = create_session()
+    try:
+        profile = create_profile(db)
+        repository = SqlTrainingSessionRepository(db)
+        original = create_training_session()
+        original.coros_workout_id = "coros-remote-456"
+        original.coros_sync_status = "failed"
+        original.coros_sync_error = "Ancienne erreur"
+        saved = repository.save_session(profile.id, original)
+
+        synced = repository.get_session(profile.id, saved.id)
+        synced.coros_sync_status = "synced"
+        synced.coros_last_synced_at = datetime(2026, 8, 9, 7, 1)
+        synced.coros_sync_error = None
+        updated = repository.save_session(profile.id, synced)
+
+        assert updated.coros_sync_status == "synced"
+        assert updated.coros_sync_error is None
+        assert updated.coros_workout_id == "coros-remote-456"
+    finally:
+        db.close()
+

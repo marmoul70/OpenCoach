@@ -86,10 +86,10 @@ class FakeCorosClient:
                 "name": "queryTrainingSchedule",
                 "inputSchema": {
                     "properties": {
-                        "startDay": {"type": "string"},
-                        "endDay": {"type": "string"},
+                        "startDate": {"type": "string"},
+                        "endDate": {"type": "string"},
                     },
-                    "required": ["startDay", "endDay"],
+                    "required": ["startDate", "endDate"],
                 },
             },
             {
@@ -315,7 +315,7 @@ def test_pushes_planned_session_to_coros_and_reports_other_workouts(monkeypatch)
     assert len(FakeCorosClient.calls) == 2
     assert FakeCorosClient.calls[0] == (
         "queryTrainingSchedule",
-        {"startDay": "20261112", "endDay": "20261112"},
+        {"startDate": "20261112", "endDate": "20261112"},
     )
 
     tool_name, arguments = FakeCorosClient.calls[1]

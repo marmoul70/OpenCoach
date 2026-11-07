@@ -203,6 +203,6 @@ def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
     assert response.json()["context_used"] is True
     assert planning_service.profile_id == athlete_profile_id
     messages = ai_service.request.messages
-    assert [message.role for message in messages] == ["system", "system", "user"]
+    assert [message.role for message in messages] == ["system", "user", "user"]
     assert "VMA enregistrée : 15.0 km/h." in messages[1].content
     assert messages[2].content == "Analyse ma préparation."

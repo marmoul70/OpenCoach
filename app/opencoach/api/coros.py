@@ -667,7 +667,7 @@ def push_training_session_to_coros(
             matching = [
                 (workout_id, name)
                 for workout_id, name in (
-                    _extract_standalone_scheduled_workout_records_for_date(
+                    _extract_scheduled_workout_records_for_date(
                         recovery_schedule,
                         training_session.date,
                     )

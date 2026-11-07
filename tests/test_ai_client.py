@@ -61,6 +61,40 @@ def test_http_error_is_sanitized():
         asyncio.run(run())
 
 
+def test_timeout_is_reported_without_transport_details():
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("private transport detail", request=request)
+
+    async def run():
+        client = OllamaClient(
+            AISettings(enabled=True),
+            transport=httpx.MockTransport(handler),
+        )
+        await client.chat(make_request())
+
+    with pytest.raises(AIProviderError, match="délai imparti") as error:
+        asyncio.run(run())
+
+    assert "private transport detail" not in str(error.value)
+
+
+def test_connection_error_is_sanitized():
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("private host detail", request=request)
+
+    async def run():
+        client = OllamaClient(
+            AISettings(enabled=True),
+            transport=httpx.MockTransport(handler),
+        )
+        await client.chat(make_request())
+
+    with pytest.raises(AIProviderError, match="Impossible de communiquer") as error:
+        asyncio.run(run())
+
+    assert "private host detail" not in str(error.value)
+
+
 def test_invalid_response_is_rejected():
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"unexpected": True})

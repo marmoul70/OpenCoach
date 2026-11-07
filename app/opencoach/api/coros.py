@@ -1302,10 +1302,9 @@ def _extract_scheduled_workout_records_for_date(
     target_date,
 ) -> list[tuple[str | None, str]]:
     """Extrait les identifiants et titres des séances planifiées à une date."""
-    target_values = {
-        target_date.strftime("%Y%m%d"),
-        target_date.isoformat(),
-    }
+    # All incoming COROS date representations are normalized by removing
+    # hyphens before comparison, so keep the target in the same YYYYMMDD form.
+    target_values = {target_date.strftime("%Y%m%d")}
     candidates: list[Any] = []
     structured = result.get("structuredContent")
     if structured is not None:
@@ -1398,10 +1397,9 @@ def _extract_scheduled_workouts_for_date(
     target_date,
 ) -> list[str]:
     """Extrait les séances déjà planifiées à la date interrogée."""
-    target_values = {
-        target_date.strftime("%Y%m%d"),
-        target_date.isoformat(),
-    }
+    # All incoming COROS date representations are normalized by removing
+    # hyphens before comparison, so keep the target in the same YYYYMMDD form.
+    target_values = {target_date.strftime("%Y%m%d")}
     candidates: list[Any] = []
     structured = result.get("structuredContent")
     if structured is not None:

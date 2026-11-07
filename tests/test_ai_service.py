@@ -1,5 +1,7 @@
 """Tests de la façade IA et de son interrupteur de sécurité."""
 
+import asyncio
+
 import pytest
 
 from opencoach.ai.config import AISettings
@@ -20,8 +22,7 @@ class FakeClient:
         )
 
 
-@pytest.mark.asyncio
-async def test_disabled_service_never_calls_provider():
+def test_disabled_service_never_calls_provider():
     client = FakeClient()
     service = AIService(
         AISettings(enabled=False),
@@ -31,14 +32,15 @@ async def test_disabled_service_never_calls_provider():
         messages=[AIMessage(role="user", content="Bonjour")],
     )
 
-    with pytest.raises(AIServiceDisabledError):
-        await service.chat(request)
+    async def run():
+        with pytest.raises(AIServiceDisabledError):
+            await service.chat(request)
 
+    asyncio.run(run())
     assert client.calls == 0
 
 
-@pytest.mark.asyncio
-async def test_enabled_service_calls_provider():
+def test_enabled_service_calls_provider():
     client = FakeClient()
     service = AIService(
         AISettings(enabled=True),
@@ -48,7 +50,7 @@ async def test_enabled_service_calls_provider():
         messages=[AIMessage(role="user", content="Bonjour")],
     )
 
-    result = await service.chat(request)
+    result = asyncio.run(service.chat(request))
 
     assert result.content == "Réponse de test."
     assert client.calls == 1

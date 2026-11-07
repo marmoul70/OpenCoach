@@ -171,7 +171,10 @@ class SqlTrainingSessionRepository(
                 and_(
                     TrainingSessionModel.coros_sync_status == "synced",
                     TrainingSessionModel.coros_workout_id.is_not(None),
-                    TrainingSessionModel.coros_payload_hash != payload_hash,
+                    or_(
+                        TrainingSessionModel.coros_payload_hash.is_(None),
+                        TrainingSessionModel.coros_payload_hash != payload_hash,
+                    ),
                 )
             )
         if allow_uncertain:

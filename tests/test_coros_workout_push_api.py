@@ -156,6 +156,20 @@ class FakeCorosClient:
                 }
             }
         if name == "queryTrainingSchedule":
+            # Keep structured data for schedule display assertions, and mirror
+            # COROS's real text response so recovery tests identify only
+            # explicitly standalone workouts.
+            standalone_text = (
+                "Training Schedule\\n"
+                "========================\\n\\n"
+                + "".join(
+                    "2026-11-12\\n"
+                    f"{workout_name}\\n"
+                    "Standalone workout (scheduled from the workout library)\\n"
+                    f"idInPlan: existing-{index}\\n\\n"
+                    for index, workout_name in enumerate(self.scheduled_names)
+                )
+            )
             return {
                 "structuredContent": {
                     "schedule": {
@@ -165,16 +179,17 @@ class FakeCorosClient:
                                 "courses": [
                                     {
                                         "idInPlan": f"existing-{index}",
-                                        "courseName": name,
+                                        "courseName": workout_name,
                                     }
-                                    for index, name in enumerate(
+                                    for index, workout_name in enumerate(
                                         self.scheduled_names
                                     )
                                 ],
                             }
                         ]
                     }
-                }
+                },
+                "content": [{"type": "text", "text": standalone_text}],
             }
         return {
             "structuredContent": {

@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from opencoach.ai.client import AIProviderError
 from opencoach.ai.config import AISettings, get_ai_settings
@@ -44,6 +44,14 @@ class AIQuestionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     question: str = Field(min_length=1, max_length=4_000)
+
+    @field_validator("question")
+    @classmethod
+    def validate_question(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("La question ne peut pas être vide.")
+        return normalized
 
 
 class AIQuestionResponse(BaseModel):

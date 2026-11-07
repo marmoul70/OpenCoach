@@ -6,6 +6,7 @@ from datetime import date
 from functools import lru_cache
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from opencoach.ai.client import AIProviderError
@@ -24,8 +25,7 @@ router = APIRouter(prefix="/api/ai", tags=["ai"])
 
 _SYSTEM_PROMPT = """Tu es l'assistant local d'OpenCoach.
 Réponds en français, de façon claire, prudente et concise.
-Tu n'as accès à aucune donnée personnelle ou activité sportive dans cette conversation,
-sauf si elles sont explicitement fournies dans la question.
+Tu peux utiliser uniquement les informations présentes dans les messages de cette conversation.
 N'invente jamais de mesure, d'activité, de disponibilité COROS ou de recommandation
 présentée comme issue du dossier de l'athlète.
 Tu ne peux ni modifier un entraînement, ni créer une séance, ni écrire dans COROS.
@@ -141,7 +141,11 @@ async def ask_local_ai_with_athlete_context(
 ) -> AIQuestionResponse:
     """Dialogue IA enrichi par un snapshot sportif déterministe en lecture seule."""
     try:
-        context = context_service.build(athlete_profile_id, date.today())
+        context = await run_in_threadpool(
+            context_service.build,
+            athlete_profile_id,
+            date.today(),
+        )
         athlete_facts = build_athlete_context(context)
     except Exception as exc:
         raise HTTPException(

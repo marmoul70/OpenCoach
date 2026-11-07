@@ -4,12 +4,15 @@ from fastapi.testclient import TestClient
 
 from opencoach.ai.config import AISettings, get_ai_settings
 from opencoach.api.app import create_app
+from opencoach.authentication.auth import COOKIE_NAME
 
 
 def _client(settings: AISettings) -> TestClient:
     app = create_app()
     app.dependency_overrides[get_ai_settings] = lambda: settings
-    return TestClient(app)
+    client = TestClient(app)
+    client.cookies.set(COOKIE_NAME, "test-session-token")
+    return client
 
 
 def test_ai_status_reports_disabled_by_default_without_provider_call() -> None:

@@ -37,24 +37,24 @@ test_build_failure_stops_deployment() {
 }
 
 test_build_output_is_validated() {
-    grep -Fq '[[ -s "$DIST_DIR/index.html" ]]' "$SCRIPT" \
-        && grep -Fq '[[ -d "$DIST_DIR/assets" ]]' "$SCRIPT" \
+    grep -Fq "[[ -s \"\$DIST_DIR/index.html\" ]]" "$SCRIPT" \
+        && grep -Fq "[[ -d \"\$DIST_DIR/assets\" ]]" "$SCRIPT" \
         && grep -Fq 'Aucun fichier JS/CSS référencé' "$SCRIPT"
 }
 
 test_referenced_assets_are_checked_before_copy() {
     local validation_line copy_line
-    validation_line="$(grep -nF '[[ -s "$DIST_DIR/$asset" ]]' "$SCRIPT" | head -n 1 | cut -d: -f1)"
+    validation_line="$(grep -nF "[[ -s \"\$DIST_DIR/\$asset\" ]]" "$SCRIPT" | head -n 1 | cut -d: -f1)"
     copy_line="$(grep -nF 'sudo cp -a' "$SCRIPT" | head -n 1 | cut -d: -f1)"
     [[ -n "$validation_line" && -n "$copy_line" && "$validation_line" -lt "$copy_line" ]]
 }
 
 test_deployed_index_is_compared() {
-    grep -Fq 'cmp -s "$DIST_DIR/index.html" "$WEB_ROOT/index.html"' "$SCRIPT"
+    grep -Fq "cmp -s \"\$DIST_DIR/index.html\" \"\$WEB_ROOT/index.html\"" "$SCRIPT"
 }
 
 test_deployed_assets_are_checked() {
-    grep -Fq 'sudo test -s "$WEB_ROOT/$asset"' "$SCRIPT"
+    grep -Fq "sudo test -s \"\$WEB_ROOT/\$asset\"" "$SCRIPT"
 }
 
 test_nginx_config_is_validated_before_reload() {

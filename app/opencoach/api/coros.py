@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID, uuid4
@@ -1396,6 +1397,40 @@ def _extract_scheduled_workout_records_for_date(
     }
     found: list[tuple[str | None, str]] = []
 
+    # COROS MCP currently renders the schedule as plain text. Parse its
+    # date/name/idInPlan blocks as well as structured JSON responses.
+    for item in result.get("content", []):
+        if not isinstance(item, dict) or item.get("type") != "text":
+            continue
+        raw_text = item.get("text")
+        if not isinstance(raw_text, str):
+            continue
+        current_date = None
+        current_name = None
+        for raw_line in raw_text.splitlines():
+            line = raw_line.strip()
+            date_match = re.fullmatch(r"(\\d{4})-(\\d{2})-(\\d{2})", line)
+            if date_match:
+                current_date = "".join(date_match.groups())
+                current_name = None
+                continue
+            if not line:
+                continue
+            id_match = re.fullmatch(r"idInPlan\\s*:\\s*(\\d+)", line, re.IGNORECASE)
+            if id_match:
+                if current_date in target_values and current_name:
+                    record = (id_match.group(1), current_name)
+                    if record not in found:
+                        found.append(record)
+                current_name = None
+                continue
+            if (
+                current_date is not None
+                and current_name is None
+                and not line.startswith(("=", "-", "Plan ID:", "Standalone workout", "Distance:", "Estimated Time:", "Load:", "To view", "Use Plan ID"))
+            ):
+                current_name = line
+
     def collect(value: Any, *, in_workout_list: bool = False) -> None:
         if isinstance(value, dict):
             is_workout = in_workout_list or any(
@@ -1483,7 +1518,13 @@ def _extract_scheduled_workouts_for_date(
                 except ValueError:
                     pass
 
-    found: list[str] = []
+    found: list[str] = [
+        name
+        for _, name in _extract_scheduled_workout_records_for_date(
+            result,
+            target_date,
+        )
+    ]
     date_keys = {
         "date",
         "day",

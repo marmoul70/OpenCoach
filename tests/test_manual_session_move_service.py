@@ -629,3 +629,44 @@ def test_move_refuses_blocked_day():
             ),
         )
 
+
+
+@pytest.mark.parametrize(
+    ("sync_status", "remote_id"),
+    [
+        ("synced", "coros-plan-123"),
+        ("pending", None),
+        ("unknown", None),
+    ],
+)
+def test_move_refuses_coros_linked_or_uncertain_sessions(
+    sync_status,
+    remote_id,
+):
+    from opencoach.coaching.manual_session_move_service import (
+        ManualSessionMoveCorosLinkedError,
+    )
+
+    session = make_strength_session()
+    session.coros_sync_status = sync_status
+    session.coros_workout_id = remote_id
+    repository = FakeTrainingSessionRepository([session])
+    service = ManualSessionMoveService(
+        training_session_repository=repository,
+        athlete_constraint_repository=FakeAthleteConstraintRepository(),
+    )
+
+    with pytest.raises(
+        ManualSessionMoveCorosLinkedError,
+        match="liée ou potentiellement liée au calendrier COROS",
+    ):
+        service.move(
+            athlete_profile_id=PROFILE_ID,
+            athlete=make_athlete(),
+            session_id=session.id,
+            target_date=date(2026, 9, 9),
+            reference_date=date(2026, 9, 8),
+        )
+
+    assert session.date == date(2026, 9, 8)
+    assert repository.list_calls == []

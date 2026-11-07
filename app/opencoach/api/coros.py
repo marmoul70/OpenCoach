@@ -576,6 +576,8 @@ def push_training_session_to_coros(
     # est perdue (par exemple HTTP 502 après effet de bord). Avant toute
     # nouvelle création depuis un état incertain, rechercher le titre exact
     # dans le calendrier et récupérer son idInPlan pour reprendre en UPDATE.
+    recovery_schedule_checked = False
+    existing_workouts: list[str] = []
     if (
         not is_update
         and current_status in {"unknown", "pending"}
@@ -612,6 +614,11 @@ def push_training_session_to_coros(
                 recovery_schedule = client.call_tool(
                     "queryTrainingSchedule",
                     {start_key: schedule_day, end_key: schedule_day},
+                )
+                recovery_schedule_checked = True
+                existing_workouts = _extract_scheduled_workouts_for_date(
+                    recovery_schedule,
+                    training_session.date,
                 )
             except CorosMcpAuthenticationError as exc:
                 raise HTTPException(
@@ -809,8 +816,11 @@ def push_training_session_to_coros(
         ),
         None,
     )
-    existing_workouts: list[str] = []
-    if not is_update and schedule_tool is not None:
+    if (
+        not is_update
+        and schedule_tool is not None
+        and not recovery_schedule_checked
+    ):
         schedule_schema = schedule_tool.get("inputSchema")
         schedule_properties = (
             schedule_schema.get("properties", {})

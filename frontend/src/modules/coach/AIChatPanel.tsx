@@ -69,7 +69,10 @@ export function AIChatPanel() {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ question: normalized }),
+        body: JSON.stringify({
+          question: normalized,
+          history: messages.slice(-8),
+        }),
       })
 
       const payload = await response.json() as AIReply | { detail?: string }
@@ -164,7 +167,7 @@ export function AIChatPanel() {
                 <Send className="h-3.5 w-3.5" />
               </button>
             </form>
-            <p className="text-[9px] text-[var(--oc-muted)]">Réponses générées localement · chaque question est analysée séparément avec le dernier instantané sportif. L’historique affiché reste local à cette page.</p>
+            <p className="text-[9px] text-[var(--oc-muted)]">Réponses générées localement · les 8 derniers messages sont transmis pour garder le fil de la conversation. L’historique n’est pas enregistré durablement.</p>
           </>
         )}
       </div>

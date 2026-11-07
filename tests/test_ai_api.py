@@ -1,5 +1,6 @@
 """Tests des endpoints authentifiés du moteur IA."""
 
+import pytest
 from fastapi.testclient import TestClient
 
 from opencoach.ai.client import AIProviderError
@@ -124,12 +125,14 @@ def test_ai_chat_rejects_client_supplied_system_messages() -> None:
 def test_ai_chat_rejects_empty_or_oversized_questions() -> None:
     client = _client(AISettings(enabled=True), FakeAIService())
     assert client.post("/api/ai/chat", json={"question": ""}).status_code == 422
+    assert client.post("/api/ai/chat", json={"question": "   "}).status_code == 422
     assert client.post(
         "/api/ai/chat",
         json={"question": "x" * 4_001},
     ).status_code == 422
 
 
+@pytest.mark.real_auth
 def test_ai_chat_requires_authentication() -> None:
     app = create_app()
     app.dependency_overrides[get_ai_settings] = lambda: AISettings(enabled=True)

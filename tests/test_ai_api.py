@@ -207,7 +207,7 @@ def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
     assert "assistant coach local d'OpenCoach" in messages[0].content
     assert "Les services déterministes OpenCoach restent la source de vérité" in messages[0].content
     assert messages[1].content.startswith(
-        "CONTEXTE SPORTIF STRUCTURÉ (faits en lecture seule) :\\n"
+        "CONTEXTE SPORTIF STRUCTURÉ (faits en lecture seule) :\n"
     )
     assert "VMA enregistrée : 15.0 km/h." in messages[1].content
     assert messages[2].content == "Analyse ma préparation."

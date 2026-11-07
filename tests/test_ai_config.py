@@ -56,6 +56,20 @@ def test_rejects_non_local_ollama_endpoint(monkeypatch, base_url):
     [
         "http://localhost:11434",
         "http://127.0.0.1:11434",
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://localhost:invalid",
+        "http://localhost:70000",
+    ],
+)
+def test_rejects_invalid_ollama_port(monkeypatch, base_url):
+    monkeypatch.setenv("OPENCOACH_AI_BASE_URL", base_url)
+
+    with pytest.raises(AIConfigurationError, match="port invalide"):
+        AISettings.from_environment()
+
+
         "http://[::1]:11434",
     ],
 )

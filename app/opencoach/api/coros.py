@@ -938,19 +938,21 @@ def push_training_session_to_coros(
     if (
         current_status in {"unknown", "pending"}
         and not is_update
+        and (
+            not payload.confirmed_no_duplicate
+            or not recovery_schedule_checked
+        )
     ):
-        # Une tentative précédente a pu créer la séance malgré une réponse
-        # MCP perdue ou incomplète. Une confirmation utilisateur ne prouve
-        # pas l'absence distante : ne jamais retomber sur CREATE dans cet état.
-        # Seule la récupération d'un idInPlan permet de reprendre en UPDATE.
+        # A CREATE may have succeeded despite a lost MCP response. A retry is
+        # allowed only after an explicit user confirmation AND a successful
+        # fresh calendar query that found no exact-title match above.
         raise HTTPException(
             status_code=409,
             detail=(
-                "Le résultat d'un précédent envoi COROS reste incertain et "
-                "aucun identifiant de séance existante n'a pu être récupéré. "
-                "Par sécurité, OpenCoach bloque toute nouvelle création pour "
-                "éviter un doublon. Vérifie le calendrier COROS ou contacte "
-                "l'assistance avant toute autre action."
+                "Le résultat d'un précédent envoi COROS reste incertain. "
+                "Confirme la vérification du calendrier et assure-toi que "
+                "la séance n'existe plus dans COROS avant toute nouvelle "
+                "création."
             ),
         )
 

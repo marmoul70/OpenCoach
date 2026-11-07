@@ -165,14 +165,12 @@ export function TrainingSessionActions({
   function confirmStatusChange(
     nextStatus: 'completed' | 'skipped',
   ): boolean {
-    const hasCorosCopy = Boolean(
-      session.corosWorkoutId
-      || [
-        'synced',
-        'pending',
-        'unknown',
-      ].includes(session.corosSyncStatus ?? ''),
-    )
+    const hasCorosCopy = [
+      'synced',
+      'pending',
+      'unknown',
+      'failed',
+    ].includes(session.corosSyncStatus ?? '')
 
     const action = nextStatus === 'completed'
       ? 'réalisée'

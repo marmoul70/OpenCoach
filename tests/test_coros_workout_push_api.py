@@ -412,7 +412,7 @@ def test_stale_pending_push_requires_confirmation_then_can_retry(monkeypatch):
 
 
 
-def test_uncertain_retry_is_blocked_when_same_title_is_already_on_coros(
+def test_uncertain_retry_recovers_existing_workout_when_same_title_is_on_coros(
     monkeypatch,
 ):
     session = make_session()
@@ -426,11 +426,17 @@ def test_uncertain_retry_is_blocked_when_same_title_is_already_on_coros(
         json={"confirmed_no_duplicate": True},
     )
 
-    assert response.status_code == 409
-    assert "portant déjà ce titre" in response.json()["detail"]
+    assert response.status_code == 200
+    assert repository.session.coros_workout_id == "updated-workout-id"
     assert [name for name, _ in FakeCorosClient.calls] == [
-        "queryTrainingSchedule"
+        "queryTrainingSchedule",
+        "queryScheduledWorkoutDetails",
+        "updateScheduledWorkout",
     ]
+    assert all(
+        name != "createScheduledWorkout"
+        for name, _ in FakeCorosClient.calls
+    )
 
 
 def test_uncertain_create_recovers_existing_coros_id_and_updates_instead_of_duplicating(

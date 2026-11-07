@@ -1,7 +1,10 @@
 import {
   AlertTriangle,
+  CheckCircle2,
   CloudUpload,
   RefreshCw,
+  ShieldAlert,
+  X,
 } from 'lucide-react'
 
 import {
@@ -35,6 +38,8 @@ export function CorosWorkoutAction({
 }: CorosWorkoutActionProps) {
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
+  const [confirmationOpen, setConfirmationOpen] = useState(false)
+  const [confirmedNoDuplicate, setConfirmedNoDuplicate] = useState(false)
 
   const normalizedSport = session.sportType
     .trim()
@@ -102,39 +107,20 @@ export function CorosWorkoutAction({
     session.corosSyncStatus === 'synced'
   )
 
+  function openConfirmation(): void {
+    if (saving || pendingInProgress) {
+      return
+    }
+    setConfirmedNoDuplicate(false)
+    setConfirmationOpen(true)
+  }
+
   async function sendToCoros(): Promise<void> {
     if (saving || pendingInProgress) {
       return
     }
-
-    if (needsConfirmation) {
-      const confirmed = window.confirm(
-        'Le résultat du précédent envoi est incertain. '
-        + 'Vérifie d’abord dans le calendrier COROS que cette séance '
-        + 'n’existe pas déjà. Confirme uniquement si elle est absente.',
-      )
-      if (!confirmed) {
-        return
-      }
-    } else if (alreadySynced) {
-      const confirmed = window.confirm(
-        `Envoyer la version OpenCoach actuelle de « ${session.title} » `
-        + `le ${formatDate(session.date)} vers COROS ? `
-        + 'Si la séance n’a pas changé, OpenCoach détectera automatiquement '
-        + 'qu’aucune mise à jour n’est nécessaire.',
-      )
-      if (!confirmed) {
-        return
-      }
-    } else {
-      const confirmed = window.confirm(
-        `Ajouter « ${session.title} » le ${formatDate(session.date)} `
-        + 'au calendrier COROS ? La montre recevra la séance après '
-        + 'synchronisation avec l’application COROS.',
-      )
-      if (!confirmed) {
-        return
-      }
+    if (needsConfirmation && !confirmedNoDuplicate) {
+      return
     }
 
     setSaving(true)
@@ -143,6 +129,7 @@ export function CorosWorkoutAction({
         session.id,
         needsConfirmation,
       )
+      setConfirmationOpen(false)
       window.dispatchEvent(
         new Event(TRAINING_SESSION_UPDATED_EVENT),
       )
@@ -154,6 +141,7 @@ export function CorosWorkoutAction({
         message: result.message,
       })
     } catch (error) {
+      setConfirmationOpen(false)
       toast({
         type: 'error',
         title: 'Envoi COROS impossible',
@@ -171,7 +159,7 @@ export function CorosWorkoutAction({
       <button
         type="button"
         disabled={saving || pendingInProgress}
-        onClick={() => void sendToCoros()}
+        onClick={openConfirmation}
         title={session.corosSyncError ?? undefined}
         className="
           inline-flex
@@ -227,6 +215,133 @@ export function CorosWorkoutAction({
         >
           {session.corosSyncError}
         </p>
+      )}
+
+      {confirmationOpen && (
+        <div
+          className="
+            fixed inset-0 z-[100]
+            flex items-center justify-center
+            bg-slate-950/45
+            px-4 py-6
+            backdrop-blur-[3px]
+          "
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !saving) {
+              setConfirmationOpen(false)
+            }
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="coros-confirm-title"
+            className="
+              w-full max-w-[420px]
+              overflow-hidden rounded-2xl
+              border border-[var(--oc-border)]
+              bg-[var(--oc-surface-raised)]
+              shadow-2xl
+            "
+          >
+            <header className="flex items-start gap-3 border-b border-[var(--oc-border)] px-5 py-4">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-300">
+                {needsConfirmation
+                  ? <ShieldAlert className="h-5 w-5" />
+                  : <CloudUpload className="h-5 w-5" />}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2 id="coros-confirm-title" className="text-sm font-semibold text-[var(--oc-text)]">
+                  {needsConfirmation
+                    ? 'Vérification avant nouvel envoi'
+                    : alreadySynced
+                      ? 'Mettre à jour la séance COROS'
+                      : 'Envoyer la séance vers COROS'}
+                </h2>
+                <p className="mt-1 text-xs leading-5 text-[var(--oc-text-secondary)]">
+                  {session.title} · {formatDate(session.date)}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Fermer"
+                disabled={saving}
+                onClick={() => setConfirmationOpen(false)}
+                className="rounded-lg p-1.5 text-[var(--oc-text-secondary)] transition hover:bg-[var(--oc-surface-hover)]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </header>
+
+            <div className="space-y-3 px-5 py-4">
+              {needsConfirmation ? (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <div>
+                      <p className="text-xs font-semibold text-[var(--oc-text)]">
+                        Le résultat du précédent envoi est incertain.
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-[var(--oc-text-secondary)]">
+                        Consulte le calendrier COROS à cette date. Ne relance l’envoi que si cette séance est absente.
+                      </p>
+                    </div>
+                  </div>
+                  <label className="mt-3 flex cursor-pointer items-start gap-2 border-t border-amber-500/15 pt-3 text-xs leading-5 text-[var(--oc-text)]">
+                    <input
+                      type="checkbox"
+                      checked={confirmedNoDuplicate}
+                      onChange={(event) => setConfirmedNoDuplicate(event.target.checked)}
+                      className="mt-1 accent-amber-600"
+                    />
+                    <span>J’ai vérifié le calendrier COROS et confirmé que cette séance n’y figure pas.</span>
+                  </label>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs leading-5 text-[var(--oc-text-secondary)]">
+                    {alreadySynced
+                      ? 'La version actuelle de la séance sera comparée à celle de COROS. Si elle a changé, la séance existante sera mise à jour sans en créer une seconde.'
+                      : 'Cette séance sera ajoutée à ton calendrier COROS. Elle sera ensuite transférable vers ta montre après synchronisation avec l’application COROS.'}
+                  </p>
+                  <div className="flex items-center justify-between rounded-xl border border-[var(--oc-border)] bg-[var(--oc-surface-muted)] px-3 py-2.5">
+                    <span className="text-xs text-[var(--oc-text-secondary)]">Durée prévue</span>
+                    <span className="text-sm font-semibold tabular-nums text-[var(--oc-text)]">{session.durationMinutes} min</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <footer className="flex justify-end gap-2 border-t border-[var(--oc-border)] bg-[var(--oc-surface-muted)]/60 px-5 py-3">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => setConfirmationOpen(false)}
+                className="rounded-lg px-3 py-2 text-xs font-medium text-[var(--oc-text-secondary)] transition hover:bg-[var(--oc-surface-hover)]"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={saving || (needsConfirmation && !confirmedNoDuplicate)}
+                onClick={() => void sendToCoros()}
+                className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {saving
+                  ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  : <CheckCircle2 className="h-3.5 w-3.5" />}
+                {saving
+                  ? 'Envoi en cours…'
+                  : needsConfirmation
+                    ? 'Confirmer et réessayer'
+                    : alreadySynced
+                      ? 'Vérifier et mettre à jour'
+                      : 'Confirmer l’envoi'}
+              </button>
+            </footer>
+          </section>
+        </div>
       )}
     </div>
   )

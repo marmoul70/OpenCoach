@@ -230,6 +230,22 @@ class ManualSessionMoveService:
                 )
             )
 
+        # Revalider après le calcul du placement : un envoi COROS peut avoir
+        # réservé la séance pendant la prévisualisation.
+        if (
+            session.coros_workout_id is not None
+            or session.coros_sync_status in {
+                "pending",
+                "synced",
+                "unknown",
+            }
+        ):
+            raise ManualSessionMoveCorosLinkedError(
+                "Cette séance est liée ou potentiellement liée au calendrier COROS. "
+                "Déplace-la d'abord dans l'application COROS ; le déplacement "
+                "OpenCoach sera disponible après prise en charge de cette synchronisation."
+            )
+
         session.date = target_date
 
         return (

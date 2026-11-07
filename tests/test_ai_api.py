@@ -156,6 +156,31 @@ class FakePlanningContextService:
         return self.context
 
 
+def test_ai_coach_skips_athlete_context_when_ai_is_disabled() -> None:
+    from uuid import UUID
+
+    athlete_profile_id = UUID("00000000-0000-0000-0000-000000000002")
+    planning_service = FakePlanningContextService(context=None)
+    ai_service = FakeAIService()
+    app = create_app()
+    app.dependency_overrides[get_ai_settings] = lambda: AISettings(enabled=False)
+    app.dependency_overrides[get_ai_service] = lambda: ai_service
+    app.dependency_overrides[get_planning_context_service] = lambda: planning_service
+    app.dependency_overrides[get_current_athlete_profile_id] = lambda: athlete_profile_id
+    client = TestClient(app)
+    client.cookies.set(COOKIE_NAME, "test-session-token")
+
+    response = client.post(
+        "/api/ai/coach",
+        json={"question": "Analyse ma préparation."},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Le moteur IA local est désactivé."
+    assert planning_service.profile_id is None
+    assert ai_service.request is None
+
+
 def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
     from datetime import date
     from types import SimpleNamespace

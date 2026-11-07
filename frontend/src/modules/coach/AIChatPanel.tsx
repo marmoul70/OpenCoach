@@ -164,7 +164,7 @@ export function AIChatPanel() {
                 <Send className="h-3.5 w-3.5" />
               </button>
             </form>
-            <p className="text-[9px] text-[var(--oc-muted)]">Réponses générées localement · historique conservé uniquement dans cette page.</p>
+            <p className="text-[9px] text-[var(--oc-muted)]">Réponses générées localement · chaque question est analysée séparément avec le dernier instantané sportif. L’historique affiché reste local à cette page.</p>
           </>
         )}
       </div>

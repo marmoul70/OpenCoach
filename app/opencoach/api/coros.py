@@ -1528,7 +1528,7 @@ def _extract_standalone_scheduled_workout_records_for_date(
             if line.startswith("Plan ID:"):
                 is_standalone = False
                 continue
-            id_match = re.fullmatch(r"idInPlan\\s*:\\s*(\\d+)", line, re.IGNORECASE)
+            id_match = re.fullmatch(r"idInPlan\s*:\s*(\d+)", line, re.IGNORECASE)
             if id_match:
                 if (
                     current_date == target_day

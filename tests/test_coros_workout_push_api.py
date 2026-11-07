@@ -73,6 +73,7 @@ class FakeCorosClient:
     editable = True
     created_id = "new-workout-id"
     create_result_without_id = False
+    standalone_marker = True
     update_error = False
     on_update = None
     details_available_dates = None
@@ -166,8 +167,12 @@ class FakeCorosClient:
                 + "".join(
                     "2026-11-12\n"
                     f"{workout_name}\n"
-                    "Standalone workout (scheduled from the workout library)\n"
-                    f"idInPlan: {100 + index}\n\n"
+                    + (
+                        "Standalone workout (scheduled from the workout library)\n"
+                        if type(self).standalone_marker
+                        else ""
+                    )
+                    + f"idInPlan: {100 + index}\n\n"
                     for index, workout_name in enumerate(self.scheduled_names)
                 )
             )
@@ -279,6 +284,7 @@ def make_client(monkeypatch, session):
     FakeCorosClient.editable = True
     FakeCorosClient.created_id = "new-workout-id"
     FakeCorosClient.create_result_without_id = False
+    FakeCorosClient.standalone_marker = True
     FakeCorosClient.update_error = False
     FakeCorosClient.on_update = None
     FakeCorosClient.details_available_dates = None
@@ -827,6 +833,7 @@ def test_create_without_coros_id_is_reconciled_from_new_calendar_record(monkeypa
     client, repository, _ = make_client(monkeypatch, session)
     FakeCorosClient.created_id = None
     FakeCorosClient.create_result_without_id = True
+    FakeCorosClient.standalone_marker = False
 
     response = client.post(
         f"/api/integrations/coros/workouts/{session.id}/push",

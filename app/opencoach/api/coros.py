@@ -576,6 +576,7 @@ def push_training_session_to_coros(
     # dans le calendrier et récupérer son idInPlan pour reprendre en UPDATE.
     recovery_schedule_checked = False
     existing_workouts: list[str] = []
+    existing_workout_records: list[tuple[str | None, str]] = []
     if (
         not is_update
         and current_status in {"unknown", "pending"}
@@ -910,10 +911,13 @@ def push_training_session_to_coros(
                         "Aucune séance n'a été envoyée."
                     ),
                 ) from exc
-            existing_workouts = _extract_scheduled_workouts_for_date(
+            existing_workout_records = _extract_scheduled_workout_records_for_date(
                 schedule_result,
                 training_session.date,
             )
+            existing_workouts = [
+                name for _, name in existing_workout_records
+            ]
 
     if current_status in {"pending", "unknown"} and not is_update:
         current_title = training_session.title.strip().casefold()
@@ -1190,26 +1194,70 @@ def push_training_session_to_coros(
 
             if post_create_schedule is not None:
                 current_title = training_session.title.strip().casefold()
-                matching = [
+                post_create_records = _extract_scheduled_workout_records_for_date(
+                    post_create_schedule,
+                    training_session.date,
+                )
+                # The pre-create calendar snapshot lets us identify the record
+                # added by this exact CREATE operation, even when COROS omits
+                # its "Standalone workout" text marker. This is safer than
+                # accepting any same-title record: plan workouts already in
+                # the calendar are excluded by their pre-create idInPlan.
+                previous_ids = {
+                    workout_id
+                    for workout_id, _ in existing_workout_records
+                    if workout_id
+                }
+                newly_added_matches = [
                     (workout_id, name)
-                    for workout_id, name in (
-                        _extract_standalone_scheduled_workout_records_for_date(
-                            post_create_schedule,
-                            training_session.date,
-                        )
-                    )
-                    if name.strip().casefold() == current_title
+                    for workout_id, name in post_create_records
+                    if workout_id
+                    and workout_id not in previous_ids
+                    and name.strip().casefold() == current_title
                 ]
                 matching_ids = {
-                    workout_id for workout_id, _ in matching if workout_id
+                    workout_id for workout_id, _ in newly_added_matches
                 }
                 if len(matching_ids) == 1:
                     returned_workout_id = next(iter(matching_ids))
-                elif len(matching_ids) > 1 or matching:
+                elif len(matching_ids) > 1:
                     recovery_error = (
                         "La séance existe dans le calendrier COROS, mais "
-                        "plusieurs correspondances ou identifiants ambigus "
-                        "empêchent de confirmer sa synchronisation."
+                        "plusieurs nouveaux identifiants correspondent au même "
+                        "titre. La synchronisation reste incertaine."
+                    )
+                elif not existing_workout_records:
+                    # Compatibility fallback for deployments where the
+                    # pre-create schedule could not be parsed at all.
+                    standalone_matches = [
+                        (workout_id, name)
+                        for workout_id, name in (
+                            _extract_standalone_scheduled_workout_records_for_date(
+                                post_create_schedule,
+                                training_session.date,
+                            )
+                        )
+                        if name.strip().casefold() == current_title
+                    ]
+                    standalone_ids = {
+                        workout_id for workout_id, _ in standalone_matches
+                    }
+                    if len(standalone_ids) == 1:
+                        returned_workout_id = next(iter(standalone_ids))
+                    elif len(standalone_ids) > 1 or standalone_matches:
+                        recovery_error = (
+                            "La séance existe dans le calendrier COROS, mais "
+                            "plusieurs correspondances ou identifiants ambigus "
+                            "empêchent de confirmer sa synchronisation."
+                        )
+                elif any(
+                    name.strip().casefold() == current_title
+                    for _, name in post_create_records
+                ):
+                    recovery_error = (
+                        "La séance existe dans le calendrier COROS, mais son "
+                        "nouvel identifiant n'a pas pu être distingué des "
+                        "séances déjà présentes."
                     )
 
         if not returned_workout_id:

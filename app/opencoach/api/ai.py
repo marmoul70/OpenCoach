@@ -2,16 +2,23 @@
 
 from __future__ import annotations
 
+from datetime import date
 from functools import lru_cache
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from opencoach.ai.client import AIProviderError
+from opencoach.ai.context import build_athlete_context
 from opencoach.ai.config import AISettings, get_ai_settings
 from opencoach.ai.schemas import AIChatRequest, AIMessage
 from opencoach.ai.service import AIService, AIServiceDisabledError
-from opencoach.authentication.dependencies import get_current_user_id
+from opencoach.authentication.dependencies import (
+    get_current_athlete_profile_id,
+    get_current_user_id,
+)
+from opencoach.api.coaching.dependencies import get_planning_context_service
+from opencoach.planning.service import PlanningContextService
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
@@ -61,6 +68,7 @@ class AIQuestionResponse(BaseModel):
 
     answer: str
     model: str
+    context_used: bool = False
 
 
 @lru_cache(maxsize=8)
@@ -120,4 +128,51 @@ async def ask_local_ai(
     return AIQuestionResponse(
         answer=result.content,
         model=result.model,
+    )
+
+
+@router.post("/coach", response_model=AIQuestionResponse)
+async def ask_local_ai_with_athlete_context(
+    payload: AIQuestionRequest,
+    _user_id=Depends(get_current_user_id),
+    athlete_profile_id=Depends(get_current_athlete_profile_id),
+    context_service: PlanningContextService = Depends(get_planning_context_service),
+    service: AIService = Depends(get_ai_service),
+) -> AIQuestionResponse:
+    """Dialogue IA enrichi par un snapshot sportif déterministe en lecture seule."""
+    try:
+        context = context_service.build(athlete_profile_id, date.today())
+        athlete_facts = build_athlete_context(context)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Impossible de préparer le contexte sportif OpenCoach.",
+        ) from exc
+
+    request = AIChatRequest(
+        messages=[
+            AIMessage(role="system", content=_SYSTEM_PROMPT),
+            AIMessage(role="system", content=athlete_facts),
+            AIMessage(role="user", content=payload.question),
+        ],
+        temperature=0.2,
+        num_predict=512,
+    )
+    try:
+        result = await service.chat(request)
+    except AIServiceDisabledError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Le moteur IA local est désactivé.",
+        ) from exc
+    except AIProviderError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+
+    return AIQuestionResponse(
+        answer=result.content,
+        model=result.model,
+        context_used=True,
     )

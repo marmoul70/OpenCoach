@@ -48,6 +48,8 @@ class OllamaClient:
                 base_url=self.settings.base_url,
                 timeout=timeout,
                 transport=self.transport,
+                # Ignore HTTP_PROXY/HTTPS_PROXY : le moteur doit rester local.
+                trust_env=False,
             ) as client:
                 response = await client.post(
                     "/api/chat",

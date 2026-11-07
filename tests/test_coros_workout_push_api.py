@@ -433,6 +433,38 @@ def test_uncertain_retry_is_blocked_when_same_title_is_already_on_coros(
     ]
 
 
+def test_uncertain_create_recovers_existing_coros_id_and_updates_instead_of_duplicating(
+    monkeypatch,
+):
+    session = make_session()
+    session.coros_sync_status = "unknown"
+    session.coros_payload_hash = "previous-payload-hash"
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.scheduled_names = ["Footing aérobie"]
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={"confirmed_no_duplicate": True},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "synced"
+    assert repository.session.coros_sync_status == "synced"
+    assert repository.session.coros_workout_id == "updated-workout-id"
+    assert repository.session.coros_scheduled_date == date(2026, 11, 12)
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+        "queryScheduledWorkoutDetails",
+        "updateScheduledWorkout",
+    ]
+    update_arguments = FakeCorosClient.calls[-1][1]
+    assert update_arguments["idInPlan"] == "existing-0"
+    assert all(
+        name != "createScheduledWorkout"
+        for name, _ in FakeCorosClient.calls
+    )
+
+
 def test_updates_existing_coros_workout_instead_of_creating_a_duplicate(monkeypatch):
     session = make_session()
     session.coros_sync_status = "synced"

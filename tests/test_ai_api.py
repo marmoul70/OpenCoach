@@ -278,21 +278,35 @@ def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
 
     response = client.post(
         "/api/ai/coach",
-        json={"question": "Analyse ma préparation."},
+        json={
+            "question": "Analyse ma préparation.",
+            "history": [
+                {"role": "user", "content": "J'ai couru hier."},
+                {"role": "assistant", "content": "Séance bien enregistrée dans notre échange."},
+            ],
+        },
     )
 
     assert response.status_code == 200
     assert response.json()["context_used"] is True
     assert planning_service.profile_id == athlete_profile_id
     messages = ai_service.request.messages
-    assert [message.role for message in messages] == ["system", "user", "user"]
+    assert [message.role for message in messages] == [
+        "system",
+        "user",
+        "user",
+        "assistant",
+        "user",
+    ]
     assert "assistant coach local d'OpenCoach" in messages[0].content
     assert "Les services déterministes OpenCoach restent la source de vérité" in messages[0].content
     assert messages[1].content.startswith(
         "CONTEXTE SPORTIF STRUCTURÉ (faits en lecture seule) :\n"
     )
     assert "VMA enregistrée : 15.0 km/h." in messages[1].content
-    assert messages[2].content == "Analyse ma préparation."
+    assert messages[2].content == "J'ai couru hier."
+    assert messages[3].content == "Séance bien enregistrée dans notre échange."
+    assert messages[4].content == "Analyse ma préparation."
 
     rejected_profile = client.post(
         "/api/ai/coach",

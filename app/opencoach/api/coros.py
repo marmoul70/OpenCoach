@@ -564,7 +564,6 @@ def push_training_session_to_coros(
     if (
         not is_update
         and current_status in {"unknown", "pending"}
-        and payload.confirmed_no_duplicate
     ):
         schedule_tool = next(
             (

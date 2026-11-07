@@ -95,18 +95,34 @@ class FakeCorosClient:
             {
                 "name": "createScheduledWorkout",
                 "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "date": {"type": "string"},
+                        "course": {"type": "object"},
+                    },
                     "required": ["date", "course"],
                 },
             },
             {
                 "name": "queryScheduledWorkoutDetails",
                 "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "date": {"type": "string"},
+                        "idInPlan": {"type": "string"},
+                    },
                     "required": ["date", "idInPlan"],
                 },
             },
             {
                 "name": "updateScheduledWorkout",
                 "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "date": {"type": "string"},
+                        "idInPlan": {"type": "string"},
+                        "course": {"type": "object"},
+                    },
                     "required": ["date", "idInPlan", "course"],
                 },
             },

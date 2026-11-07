@@ -356,7 +356,9 @@ def test_uncertain_previous_push_requires_explicit_no_duplicate_confirmation(
         json={},
     )
     assert blocked.status_code == 409
-    assert FakeCorosClient.calls == []
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+    ]
 
     confirmed = client.post(
         f"/api/integrations/coros/workouts/{session.id}/push",
@@ -399,7 +401,9 @@ def test_stale_pending_push_requires_confirmation_then_can_retry(monkeypatch):
         json={},
     )
     assert blocked.status_code == 409
-    assert FakeCorosClient.calls == []
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+    ]
 
     confirmed = client.post(
         f"/api/integrations/coros/workouts/{session.id}/push",

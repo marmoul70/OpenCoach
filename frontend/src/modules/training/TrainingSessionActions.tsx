@@ -362,7 +362,10 @@ export function TrainingSessionActions({
 
 
             {!moveOpen && (
-              <div className="space-y-0.5">
+              <div className="space-y-1">
+                <p className="px-2 pb-0.5 pt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--oc-text-secondary)]">
+                  Suivi de séance
+                </p>
                 <button
                   type="button"
                   disabled={saving}
@@ -461,7 +464,10 @@ export function TrainingSessionActions({
                   Non réalisée
                 </button>
 
-
+                <div className="mx-2 my-1.5 border-t border-[var(--oc-border)]" />
+                <p className="px-2 pb-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--oc-text-secondary)]">
+                  Planification
+                </p>
                 <button
                   type="button"
                   disabled={saving || corosMoveLocked}
@@ -518,6 +524,10 @@ export function TrainingSessionActions({
                   />
                 </button>
 
+                <div className="mx-2 my-1.5 border-t border-[var(--oc-border)]" />
+                <p className="px-2 pb-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--oc-text-secondary)]">
+                  Synchronisation
+                </p>
                 <CorosWorkoutAction session={session} />
               </div>
             )}

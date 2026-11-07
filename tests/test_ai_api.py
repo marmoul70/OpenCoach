@@ -204,5 +204,19 @@ def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
     assert planning_service.profile_id == athlete_profile_id
     messages = ai_service.request.messages
     assert [message.role for message in messages] == ["system", "user", "user"]
+    assert "assistant coach local d'OpenCoach" in messages[0].content
+    assert "Les services déterministes OpenCoach restent la source de vérité" in messages[0].content
+    assert messages[1].content.startswith(
+        "CONTEXTE SPORTIF STRUCTURÉ (faits en lecture seule) :\\n"
+    )
     assert "VMA enregistrée : 15.0 km/h." in messages[1].content
     assert messages[2].content == "Analyse ma préparation."
+
+    rejected_profile = client.post(
+        "/api/ai/coach",
+        json={
+            "question": "Analyse ma préparation.",
+            "athlete_profile_id": "00000000-0000-0000-0000-000000000003",
+        },
+    )
+    assert rejected_profile.status_code == 422

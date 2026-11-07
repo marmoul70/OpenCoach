@@ -596,20 +596,45 @@ def push_training_session_to_coros(
             if isinstance(schedule_schema, dict)
             else {}
         )
+        # COROS MCP's current queryTrainingSchedule schema uses startDate/endDate.
+        # Keep the older startDay/endDay spellings as compatibility fallbacks for
+        # regional or older deployments, and honor integer schemas if advertised.
         start_key = next(
-            (key for key in ("startDay", "start_day") if key in schedule_properties),
+            (
+                key for key in (
+                    "startDate", "startDay", "start_date", "start_day",
+                )
+                if key in schedule_properties
+            ),
             None,
         )
         end_key = next(
-            (key for key in ("endDay", "end_day") if key in schedule_properties),
+            (
+                key for key in (
+                    "endDate", "endDay", "end_date", "end_day",
+                )
+                if key in schedule_properties
+            ),
             None,
         )
         if start_key and end_key:
             schedule_day = training_session.date.strftime("%Y%m%d")
+            start_type = (
+                schedule_properties.get(start_key, {}).get("type")
+                if isinstance(schedule_properties.get(start_key), dict)
+                else None
+            )
+            end_type = (
+                schedule_properties.get(end_key, {}).get("type")
+                if isinstance(schedule_properties.get(end_key), dict)
+                else None
+            )
+            start_value = int(schedule_day) if start_type == "integer" else schedule_day
+            end_value = int(schedule_day) if end_type == "integer" else schedule_day
             try:
                 recovery_schedule = client.call_tool(
                     "queryTrainingSchedule",
-                    {start_key: schedule_day, end_key: schedule_day},
+                    {start_key: start_value, end_key: end_value},
                 )
                 recovery_schedule_checked = True
                 existing_workouts = _extract_scheduled_workouts_for_date(
@@ -1319,7 +1344,10 @@ def _extract_scheduled_workout_records_for_date(
     """Extrait les identifiants et titres des séances planifiées à une date."""
     # All incoming COROS date representations are normalized by removing
     # hyphens before comparison, so keep the target in the same YYYYMMDD form.
-    target_values = {target_date.strftime("%Y%m%d")}
+    target_values = {
+        target_date.strftime("%Y%m%d"),
+        target_date.strftime("%Y-%m-%d"),
+    }
     candidates: list[Any] = []
     structured = result.get("structuredContent")
     if structured is not None:
@@ -1394,7 +1422,7 @@ def _extract_scheduled_workout_records_for_date(
                         visit(child, date_matches=True)
                 return
             for key, child in value.items():
-                if key in target_values:
+                if str(key).replace("-", "")[:8] == target_date.strftime("%Y%m%d"):
                     collect(child, in_workout_list=True)
                 else:
                     visit(child)

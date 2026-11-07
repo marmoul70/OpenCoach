@@ -822,41 +822,24 @@ def test_synced_session_without_coros_id_never_falls_back_to_creation(monkeypatc
     assert FakeCorosClient.calls == []
 
 
-def test_create_without_coros_id_remains_uncertain_and_can_be_reconciled(monkeypatch):
+def test_create_without_coros_id_is_reconciled_from_new_calendar_record(monkeypatch):
     session = make_session()
     client, repository, _ = make_client(monkeypatch, session)
     FakeCorosClient.created_id = None
+    FakeCorosClient.create_result_without_id = True
 
-    uncertain = client.post(
+    response = client.post(
         f"/api/integrations/coros/workouts/{session.id}/push",
         json={},
     )
 
-    assert uncertain.status_code == 502
-    assert repository.session.coros_sync_status == "unknown"
-    assert repository.session.coros_workout_id is None
-    assert repository.session.coros_last_synced_at is None
-    assert "identifiant" in repository.session.coros_sync_error
+    assert response.status_code == 200
+    assert response.json()["status"] == "synced"
+    assert repository.session.coros_sync_status == "synced"
+    assert repository.session.coros_workout_id == "101"
+    assert repository.session.coros_last_synced_at is not None
     assert [name for name, _ in FakeCorosClient.calls] == [
         "queryTrainingSchedule",
         "createScheduledWorkout",
         "queryTrainingSchedule",
     ]
-
-    FakeCorosClient.created_id = "reconciled-workout-id"
-    retried = client.post(
-        f"/api/integrations/coros/workouts/{session.id}/push",
-        json={"confirmed_no_duplicate": True},
-    )
-
-    assert retried.status_code == 409
-    assert "bloque toute nouvelle création" in retried.json()["detail"]
-    assert repository.session.coros_sync_status == "unknown"
-    assert repository.session.coros_workout_id is None
-    assert [name for name, _ in FakeCorosClient.calls] == [
-        "queryTrainingSchedule",
-        "createScheduledWorkout",
-        "queryTrainingSchedule",
-        "queryTrainingSchedule",
-    ]
-    assert all(name != "createScheduledWorkout" for name, _ in FakeCorosClient.calls[2:])

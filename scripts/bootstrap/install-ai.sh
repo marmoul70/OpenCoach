@@ -77,8 +77,12 @@ ensure_environment_file() {
         return 1
     fi
 
-    python3 - "$ENV_FILE" "$DEFAULT_MODEL" <<'PYTHON'
+    if ! python3 - "$ENV_FILE" "$DEFAULT_MODEL" <<'PYTHON'
+import os
+import re
+import stat
 import sys
+import tempfile
 from pathlib import Path
 
 env_path = Path(sys.argv[1])
@@ -94,25 +98,68 @@ defaults = {
     "OPENCOACH_AI_MAX_CONCURRENCY": "1",
 }
 
-lines = env_path.read_text(encoding="utf-8").splitlines()
-updated = []
+if env_path.is_symlink():
+    raise SystemExit("Refus de modifier un fichier .env symbolique.")
+
+try:
+    original_stat = env_path.stat()
+    original = env_path.read_text(encoding="utf-8")
+except OSError as exc:
+    raise SystemExit(f"Lecture du fichier .env impossible : {exc}")
+
+lines = original.splitlines()
 seen = set()
+duplicates = set()
+updated = []
+
+assignment = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=")
+
+# Première passe : détecter les doublons avant toute modification.
 for line in lines:
-    if "=" not in line or line.lstrip().startswith("#"):
+    if line.lstrip().startswith("#"):
+        continue
+
+    match = assignment.match(line)
+    if not match:
+        continue
+
+    key = match.group(1)
+    if key in defaults:
+        if key in seen:
+            duplicates.add(key)
+        seen.add(key)
+
+if duplicates:
+    names = ", ".join(sorted(duplicates))
+    raise SystemExit(
+        f"Variables IA déclarées plusieurs fois dans .env : {names}. "
+        "Corrigez les doublons avant de relancer l'installation."
+    )
+
+# Deuxième passe : conserver les lignes et valeurs existantes.
+seen.clear()
+
+for line in lines:
+    if line.lstrip().startswith("#"):
         updated.append(line)
         continue
 
-    key, current = line.split("=", 1)
-    key = key.strip()
+    match = assignment.match(line)
+    if not match:
+        updated.append(line)
+        continue
+
+    key = match.group(1)
     if key not in defaults:
         updated.append(line)
         continue
 
-    if key in seen:
-        continue
     seen.add(key)
+    current = line.split("=", 1)[1].strip()
 
-    if current.strip().strip("'").strip('"'):
+    # Une valeur vide ou composée uniquement de guillemets
+    # reçoit la valeur par défaut. Toute valeur non vide est conservée.
+    if current.strip("'\""):
         updated.append(line)
     else:
         updated.append(f"{key}={defaults[key]}")
@@ -126,12 +173,49 @@ missing = {
 if missing:
     if updated and updated[-1].strip():
         updated.append("")
+
     updated.append("# OpenCoach - IA locale (désactivée jusqu'à validation)")
     updated.extend(f"{key}={value}" for key, value in missing.items())
 
-if updated != lines:
-    env_path.write_text("\n".join(updated) + "\n", encoding="utf-8")
+result = "\n".join(updated) + "\n"
+
+if result == original and stat.S_IMODE(original_stat.st_mode) == 0o600:
+    raise SystemExit(0)
+
+temp_path = None
+
+try:
+    fd, temp_name = tempfile.mkstemp(
+        prefix=".env.",
+        suffix=".tmp",
+        dir=str(env_path.parent),
+    )
+    temp_path = Path(temp_name)
+
+    with os.fdopen(fd, "w", encoding="utf-8") as temporary:
+        temporary.write(result)
+        temporary.flush()
+        os.fsync(temporary.fileno())
+
+    os.chown(temp_path, original_stat.st_uid, original_stat.st_gid)
+    os.chmod(temp_path, 0o600)
+    os.replace(temp_path, env_path)
+
+    directory_fd = os.open(env_path.parent, os.O_RDONLY)
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+
+except Exception:
+    if temp_path is not None:
+        temp_path.unlink(missing_ok=True)
+    raise
 PYTHON
+    then
+        log_error "Impossible de préparer les paramètres IA dans .env."
+        return 1
+    fi
 
     chmod 600 "$ENV_FILE"
 }
@@ -263,12 +347,17 @@ main() {
 
     ensure_environment_file
 
+    # Valider la configuration avant toute opération sur le système.
+        # Valider la configuration avant toute opération sur le système.
+    local model
+    if ! model="$(read_configured_model)"; then
+        log_error "Installation IA interrompue : modèle configuré invalide."
+        return 1
+    fi
+
     install_ollama_if_missing
 
     start_ollama_service
-
-    local model
-    model="$(read_configured_model)"
 
     ensure_model_available "$model"
 
@@ -278,4 +367,6 @@ main() {
 }
 
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

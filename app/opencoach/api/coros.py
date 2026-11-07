@@ -869,7 +869,7 @@ def push_training_session_to_coros(
                 training_session.date,
             )
 
-    if current_status in {"pending", "unknown"}:
+    if current_status in {"pending", "unknown"} and not is_update:
         current_title = training_session.title.strip().casefold()
         matching_workouts = [
             name for name in existing_workouts

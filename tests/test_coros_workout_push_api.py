@@ -840,6 +840,7 @@ def test_create_without_coros_id_remains_uncertain_and_can_be_reconciled(monkeyp
     assert [name for name, _ in FakeCorosClient.calls] == [
         "queryTrainingSchedule",
         "createScheduledWorkout",
+        "queryTrainingSchedule",
     ]
 
     FakeCorosClient.created_id = "reconciled-workout-id"
@@ -855,6 +856,7 @@ def test_create_without_coros_id_remains_uncertain_and_can_be_reconciled(monkeyp
     assert [name for name, _ in FakeCorosClient.calls] == [
         "queryTrainingSchedule",
         "createScheduledWorkout",
+        "queryTrainingSchedule",
         "queryTrainingSchedule",
     ]
     assert all(name != "createScheduledWorkout" for name, _ in FakeCorosClient.calls[2:])

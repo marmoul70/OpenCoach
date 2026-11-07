@@ -167,7 +167,7 @@ async def ask_local_ai_with_athlete_context(
             AIMessage(
                 role="user",
                 content=(
-                    "CONTEXTE SPORTIF STRUCTURÉ (faits en lecture seule) :\\n"
+                    "CONTEXTE SPORTIF STRUCTURÉ (faits en lecture seule) :\n"
                     + athlete_facts
                 ),
             ),

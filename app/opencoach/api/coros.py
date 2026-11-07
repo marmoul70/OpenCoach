@@ -508,25 +508,8 @@ def push_training_session_to_coros(
                     "de relancer cette opération."
                 ),
             )
-        if not payload.confirmed_no_duplicate:
-            raise HTTPException(
-                status_code=409,
-                detail=(
-                    "L'envoi COROS est bloqué depuis plus de cinq minutes. "
-                    "Vérifie le calendrier COROS. Si la séance est absente, "
-                    "confirme cette vérification pour autoriser une nouvelle tentative."
-                ),
-            )
-
-    if current_status == "unknown" and not payload.confirmed_no_duplicate:
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "Le résultat du précédent envoi n'a pas pu être confirmé. "
-                "Vérifie d'abord le calendrier COROS. Si la séance n'y figure pas, "
-                "confirme cette vérification pour autoriser un nouvel envoi."
-            ),
-        )
+        # Pour un envoi ancien, on autorise d'abord la recherche de réconciliation.
+        # La confirmation ne sera exigée que si aucune séance existante n'est retrouvée.
 
     connection = _connection(db, athlete_profile_id)
     if connection is None or not connection.enabled:
@@ -880,10 +863,23 @@ def push_training_session_to_coros(
                 status_code=409,
                 detail=(
                     "Une séance portant déjà ce titre est présente dans le "
-                    "calendrier COROS à cette date. Par sécurité, aucun nouvel "
-                    "envoi n'a été effectué. Vérifie cette séance dans COROS."
+                    "calendrier COROS, mais son identifiant n'a pas pu être "
+                    "récupéré. Aucun nouvel envoi n'a été effectué."
                 ),
             )
+
+    if (
+        current_status == "unknown"
+        or (current_status == "pending" and stale_pending)
+    ) and not is_update and not payload.confirmed_no_duplicate:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Aucune séance correspondante n'a été retrouvée dans le "
+                "calendrier COROS. Vérifie une dernière fois le calendrier ; "
+                "si la séance est absente, confirme pour autoriser sa création."
+            ),
+        )
 
     # Réservation atomique : deux requêtes simultanées ne peuvent pas
     # toutes les deux passer de l'état libre à pending.

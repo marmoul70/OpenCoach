@@ -278,6 +278,7 @@ def make_client(monkeypatch, session):
     FakeCorosClient.scheduled_names = ["Renforcement"]
     FakeCorosClient.editable = True
     FakeCorosClient.created_id = "new-workout-id"
+    FakeCorosClient.create_result_without_id = False
     FakeCorosClient.update_error = False
     FakeCorosClient.on_update = None
     FakeCorosClient.details_available_dates = None

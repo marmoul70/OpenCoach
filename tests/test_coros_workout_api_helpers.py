@@ -155,3 +155,42 @@ def test_extracts_scheduled_workout_from_iso_date_field() -> None:
         result,
         date(2026, 11, 12),
     ) == [("9223372036854775002", "Footing aérobie")]
+
+
+
+def test_extracts_scheduled_workouts_from_coros_plain_text_schedule() -> None:
+    from opencoach.api.coros import _extract_scheduled_workouts_for_date
+
+    result = {
+        "content": [
+            {
+                "type": "text",
+                "text": (
+                    "Training Schedule\\n"
+                    "========================\\n\\n"
+                    "2026-11-12\\n"
+                    "Footing 35 min\\n"
+                    "Plan ID: 480641426263295064\\n"
+                    "idInPlan: 26\\n"
+                    "Distance: 4.53 km\\n\\n"
+                    "2026-11-12\\n"
+                    "Test COROS - Endurance fondamentale\\n"
+                    "Standalone workout (scheduled from the workout library)\\n"
+                    "idInPlan: 10\\n"
+                    "Distance: 5.43 km\\n"
+                ),
+            }
+        ]
+    }
+
+    assert _extract_scheduled_workout_records_for_date(
+        result,
+        date(2026, 11, 12),
+    ) == [
+        ("26", "Footing 35 min"),
+        ("10", "Test COROS - Endurance fondamentale"),
+    ]
+    assert _extract_scheduled_workouts_for_date(
+        result,
+        date(2026, 11, 12),
+    ) == ["Footing 35 min", "Test COROS - Endurance fondamentale"]

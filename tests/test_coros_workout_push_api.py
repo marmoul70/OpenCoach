@@ -415,14 +415,14 @@ def test_uncertain_previous_push_requires_explicit_no_duplicate_confirmation(
         f"/api/integrations/coros/workouts/{session.id}/push",
         json={"confirmed_no_duplicate": True},
     )
-    assert confirmed.status_code == 409
-    assert "bloque toute nouvelle création" in confirmed.json()["detail"]
-    assert repository.session.coros_sync_status == "unknown"
+    assert confirmed.status_code == 200
+    assert confirmed.json()["status"] == "synced"
+    assert repository.session.coros_sync_status == "synced"
     assert [name for name, _ in FakeCorosClient.calls] == [
         "queryTrainingSchedule",
         "queryTrainingSchedule",
+        "createScheduledWorkout",
     ]
-    assert all(name != "createScheduledWorkout" for name, _ in FakeCorosClient.calls)
 
 
 
@@ -465,15 +465,14 @@ def test_stale_pending_push_requires_confirmation_then_can_retry(monkeypatch):
         f"/api/integrations/coros/workouts/{session.id}/push",
         json={"confirmed_no_duplicate": True},
     )
-    assert confirmed.status_code == 409
-    assert "bloque toute nouvelle création" in confirmed.json()["detail"]
-    assert repository.session.coros_sync_status == "pending"
-    assert repository.session.coros_sync_started_at is not None
+    assert confirmed.status_code == 200
+    assert confirmed.json()["status"] == "synced"
+    assert repository.session.coros_sync_status == "synced"
     assert [name for name, _ in FakeCorosClient.calls] == [
         "queryTrainingSchedule",
         "queryTrainingSchedule",
+        "createScheduledWorkout",
     ]
-    assert all(name != "createScheduledWorkout" for name, _ in FakeCorosClient.calls)
 
 
 

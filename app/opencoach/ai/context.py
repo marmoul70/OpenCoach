@@ -95,11 +95,15 @@ def build_athlete_context(context: PlanningContext) -> str:
 
     race = context.primary_race
     if race is not None:
-        lines.append(
+        race_summary = (
             f"Prochaine course principale : {_safe_label(race.name)}, "
-            f"le {race.date.isoformat()}, {race.distance_km:.1f} km, "
-            f"{(race.elevation_gain_m or 0):.0f} m D+."
+            f"le {race.date.isoformat()}, {race.distance_km:.1f} km"
         )
+        if race.elevation_gain_m is not None:
+            race_summary += f", {race.elevation_gain_m:.0f} m D+"
+        else:
+            race_summary += ", dénivelé positif non renseigné"
+        lines.append(race_summary + ".")
     else:
         lines.append("Aucune course principale future enregistrée.")
 

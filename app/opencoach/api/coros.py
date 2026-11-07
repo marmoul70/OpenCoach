@@ -660,9 +660,11 @@ def push_training_session_to_coros(
             current_title = training_session.title.strip().casefold()
             matching = [
                 (workout_id, name)
-                for workout_id, name in _extract_scheduled_workout_records_for_date(
-                    recovery_schedule,
-                    training_session.date,
+                for workout_id, name in (
+                    _extract_standalone_scheduled_workout_records_for_date(
+                        recovery_schedule,
+                        training_session.date,
+                    )
                 )
                 if name.strip().casefold() == current_title
             ]
@@ -1486,6 +1488,70 @@ def _extract_scheduled_workout_records_for_date(
         visit(candidate)
     return found
 
+
+
+def _extract_standalone_scheduled_workout_records_for_date(
+    result: dict[str, Any],
+    target_date,
+) -> list[tuple[str, str]]:
+    """Récupère uniquement les séances explicitement autonomes et identifiées."""
+    target_day = target_date.strftime("%Y%m%d")
+    found: list[tuple[str, str]] = []
+
+    # Le format texte COROS distingue explicitement les séances autonomes
+    # ("Standalone workout") des séances rattachées à un plan ("Plan ID").
+    # En l'absence de marqueur explicite, on échoue volontairement fermé :
+    # un idInPlan de plan ne doit jamais être envoyé à updateScheduledWorkout.
+    for item in result.get("content", []):
+        if not isinstance(item, dict) or item.get("type") != "text":
+            continue
+        raw_text = item.get("text")
+        if not isinstance(raw_text, str):
+            continue
+
+        current_date = None
+        current_name = None
+        is_standalone = False
+        for raw_line in raw_text.splitlines():
+            line = raw_line.strip()
+            date_match = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", line)
+            if date_match:
+                current_date = "".join(date_match.groups())
+                current_name = None
+                is_standalone = False
+                continue
+            if not line:
+                continue
+            if line.casefold().startswith("standalone workout"):
+                is_standalone = True
+                continue
+            if line.startswith("Plan ID:"):
+                is_standalone = False
+                continue
+            id_match = re.fullmatch(r"idInPlan\\s*:\\s*(\\d+)", line, re.IGNORECASE)
+            if id_match:
+                if (
+                    current_date == target_day
+                    and is_standalone
+                    and current_name
+                ):
+                    record = (id_match.group(1), current_name)
+                    if record not in found:
+                        found.append(record)
+                current_name = None
+                is_standalone = False
+                continue
+            if (
+                current_date is not None
+                and current_name is None
+                and not line.startswith((
+                    "=", "-", "Distance:", "Estimated Time:", "Load:",
+                    "To view", "Use Plan ID",
+                ))
+            ):
+                current_name = line
+
+    return found
 
 def _extract_scheduled_workouts_for_date(
     result: dict[str, Any],

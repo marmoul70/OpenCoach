@@ -485,6 +485,7 @@ def test_uncertain_retry_recovers_existing_workout_when_same_title_is_on_coros(
     session.coros_payload_hash = "previous-payload-hash"
     client, repository, _ = make_client(monkeypatch, session)
     FakeCorosClient.scheduled_names = ["Footing aérobie"]
+    FakeCorosClient.standalone_marker = False
 
     response = client.post(
         f"/api/integrations/coros/workouts/{session.id}/push",

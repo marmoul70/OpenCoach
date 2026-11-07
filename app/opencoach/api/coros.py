@@ -572,6 +572,90 @@ def push_training_session_to_coros(
             detail="Le serveur COROS MCP est temporairement indisponible.",
         ) from exc
 
+    # Une création peut être acceptée par COROS alors que la réponse MCP
+    # est perdue (par exemple HTTP 502 après effet de bord). Avant toute
+    # nouvelle création depuis un état incertain, rechercher le titre exact
+    # dans le calendrier et récupérer son idInPlan pour reprendre en UPDATE.
+    if (
+        not is_update
+        and current_status in {"unknown", "pending"}
+        and payload.confirmed_no_duplicate
+    ):
+        schedule_tool = next(
+            (
+                tool for tool in tools
+                if tool.get("name") == "queryTrainingSchedule"
+            ),
+            None,
+        )
+        schedule_schema = (
+            schedule_tool.get("inputSchema")
+            if isinstance(schedule_tool, dict)
+            else None
+        )
+        schedule_properties = (
+            schedule_schema.get("properties", {})
+            if isinstance(schedule_schema, dict)
+            else {}
+        )
+        start_key = next(
+            (key for key in ("startDay", "start_day") if key in schedule_properties),
+            None,
+        )
+        end_key = next(
+            (key for key in ("endDay", "end_day") if key in schedule_properties),
+            None,
+        )
+        if start_key and end_key:
+            schedule_day = training_session.date.strftime("%Y%m%d")
+            try:
+                recovery_schedule = client.call_tool(
+                    "queryTrainingSchedule",
+                    {start_key: schedule_day, end_key: schedule_day},
+                )
+            except CorosMcpAuthenticationError as exc:
+                raise HTTPException(
+                    status_code=401,
+                    detail="La connexion COROS a expiré. Reconnecte ton compte.",
+                ) from exc
+            except CorosMcpError as exc:
+                raise HTTPException(
+                    status_code=502,
+                    detail=(
+                        "Impossible de vérifier le calendrier COROS pour "
+                        "récupérer une création précédente. Aucun nouvel envoi "
+                        "n'a été effectué."
+                    ),
+                ) from exc
+
+            current_title = training_session.title.strip().casefold()
+            matching = [
+                (workout_id, name)
+                for workout_id, name in _extract_scheduled_workout_records_for_date(
+                    recovery_schedule,
+                    training_session.date,
+                )
+                if name.strip().casefold() == current_title
+            ]
+            matching_ids = {
+                workout_id for workout_id, _ in matching
+                if workout_id
+            }
+            if len(matching_ids) == 1:
+                training_session.coros_workout_id = next(iter(matching_ids))
+                training_session.coros_scheduled_date = training_session.date
+                repository.save_session(athlete_profile_id, training_session)
+                is_update = True
+            elif matching:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "Une séance portant ce titre existe déjà dans COROS, "
+                        "mais son identifiant ne peut pas être déterminé sans "
+                        "ambiguïté. Aucun nouvel envoi n'a été effectué."
+                    ),
+                )
+
     if is_update:
         required_tools = {
             "queryScheduledWorkoutDetails": {"date", "idInPlan"},
@@ -1201,6 +1285,102 @@ def _extract_coros_scheduled_details(
                 "course": find_course(candidate),
             }
     return None
+
+
+def _extract_scheduled_workout_records_for_date(
+    result: dict[str, Any],
+    target_date,
+) -> list[tuple[str | None, str]]:
+    """Extrait les identifiants et titres des séances planifiées à une date."""
+    target_values = {
+        target_date.strftime("%Y%m%d"),
+        target_date.isoformat(),
+    }
+    candidates: list[Any] = []
+    structured = result.get("structuredContent")
+    if structured is not None:
+        candidates.append(structured)
+    for item in result.get("content", []):
+        if not isinstance(item, dict) or item.get("type") != "text":
+            continue
+        raw_text = item.get("text")
+        if not isinstance(raw_text, str):
+            continue
+        try:
+            candidates.append(json.loads(raw_text))
+        except ValueError:
+            object_start = raw_text.find("{")
+            object_end = raw_text.rfind("}")
+            if object_start >= 0 and object_end > object_start:
+                try:
+                    candidates.append(json.loads(raw_text[object_start:object_end + 1]))
+                except ValueError:
+                    pass
+
+    date_keys = {
+        "date", "day", "happenDay", "happen_day",
+        "scheduleDate", "schedule_date",
+    }
+    workout_list_keys = {
+        "courses", "workouts", "entities", "programs",
+        "scheduledWorkouts", "scheduled_workouts", "items",
+    }
+    found: list[tuple[str | None, str]] = []
+
+    def collect(value: Any, *, in_workout_list: bool = False) -> None:
+        if isinstance(value, dict):
+            is_workout = in_workout_list or any(
+                key in value
+                for key in ("courseName", "workoutName", "idInPlan", "id_in_plan")
+            )
+            if is_workout:
+                name = (
+                    value.get("courseName")
+                    or value.get("workoutName")
+                    or value.get("name")
+                    or value.get("title")
+                )
+                raw_id = value.get("idInPlan", value.get("id_in_plan"))
+                if isinstance(name, str) and name.strip():
+                    record = (
+                        str(raw_id) if raw_id is not None else None,
+                        name.strip(),
+                    )
+                    if record not in found:
+                        found.append(record)
+            for key, child in value.items():
+                collect(child, in_workout_list=key in workout_list_keys)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child, in_workout_list=in_workout_list)
+
+    def visit(value: Any, *, date_matches: bool = False) -> None:
+        if isinstance(value, dict):
+            matches_date = date_matches or any(
+                str(value.get(key, "")).replace("-", "")[:8] in target_values
+                for key in date_keys
+                if value.get(key) is not None
+            )
+            if matches_date:
+                for key, child in value.items():
+                    if key in workout_list_keys:
+                        collect(child, in_workout_list=True)
+                if not any(key in value for key in workout_list_keys):
+                    for child in value.values():
+                        visit(child, date_matches=True)
+                return
+            for key, child in value.items():
+                if key in target_values:
+                    collect(child, in_workout_list=True)
+                else:
+                    visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child, date_matches=date_matches)
+
+    for candidate in candidates:
+        visit(candidate)
+    return found
 
 
 def _extract_scheduled_workouts_for_date(

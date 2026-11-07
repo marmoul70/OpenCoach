@@ -423,7 +423,7 @@ def test_uncertain_retry_recovers_existing_workout_when_same_title_is_on_coros(
 
     response = client.post(
         f"/api/integrations/coros/workouts/{session.id}/push",
-        json={"confirmed_no_duplicate": True},
+        json={},
     )
 
     assert response.status_code == 200
@@ -450,7 +450,7 @@ def test_uncertain_create_recovers_existing_coros_id_and_updates_instead_of_dupl
 
     response = client.post(
         f"/api/integrations/coros/workouts/{session.id}/push",
-        json={"confirmed_no_duplicate": True},
+        json={},
     )
 
     assert response.status_code == 200

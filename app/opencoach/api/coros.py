@@ -202,6 +202,20 @@ def get_coros_connection(
     athlete_profile_id: UUID = Depends(get_current_athlete_profile_id),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
+    if (
+        is_update
+        and current_status in {"unknown", "pending"}
+        and (current_status == "unknown" or stale_pending)
+        and not payload.confirmed_no_duplicate
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Le résultat de la précédente mise à jour COROS est incertain. "
+                "Confirme la vérification du calendrier avant de réessayer."
+            ),
+        )
+
     connection = _connection(db, athlete_profile_id)
     if connection is None:
         return {
@@ -888,7 +902,7 @@ def push_training_session_to_coros(
         session_id,
         workout_payload.payload_hash,
         started_at,
-        allow_uncertain=payload.confirmed_no_duplicate,
+        allow_uncertain=(payload.confirmed_no_duplicate or is_update),
         allow_synced_update=is_update,
     )
     if not claimed:

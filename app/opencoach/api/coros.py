@@ -914,6 +914,7 @@ def push_training_session_to_coros(
             existing_workout_records = _extract_scheduled_workout_records_for_date(
                 schedule_result,
                 training_session.date,
+                date_scoped=True,
             )
             existing_workouts = [
                 name for _, name in existing_workout_records
@@ -1199,6 +1200,7 @@ def push_training_session_to_coros(
                 post_create_records = _extract_scheduled_workout_records_for_date(
                     post_create_schedule,
                     training_session.date,
+                    date_scoped=True,
                 )
                 # The pre-create calendar snapshot lets us identify the record
                 # added by this exact CREATE operation, even when COROS omits
@@ -1500,8 +1502,11 @@ def _extract_coros_scheduled_details(
 def _extract_scheduled_workout_records_for_date(
     result: dict[str, Any],
     target_date,
+    *,
+    date_scoped: bool = False,
 ) -> list[tuple[str | None, str]]:
-    """Extrait les identifiants et titres des séances planifiées à une date."""
+    """Extrait les séances d'une date, ou toutes celles d'une réponse déjà filtrée."""
+
     # All incoming COROS date representations are normalized by removing
     # hyphens before comparison, so keep the target in the same YYYYMMDD form.
     target_values = {
@@ -1560,14 +1565,14 @@ def _extract_scheduled_workout_records_for_date(
                 continue
             id_match = re.fullmatch(r"idInPlan\s*:\s*(\d+)", line, re.IGNORECASE)
             if id_match:
-                if current_date in target_values and current_name:
+                if (date_scoped or current_date in target_values) and current_name:
                     record = (id_match.group(1), current_name)
                     if record not in found:
                         found.append(record)
                 current_name = None
                 continue
             if (
-                current_date is not None
+                (date_scoped or current_date is not None)
                 and current_name is None
                 and not line.startswith(("=", "-", "Plan ID:", "Standalone workout", "Distance:", "Estimated Time:", "Load:", "To view", "Use Plan ID"))
             ):
@@ -1625,7 +1630,7 @@ def _extract_scheduled_workout_records_for_date(
                 visit(child, date_matches=date_matches)
 
     for candidate in candidates:
-        visit(candidate)
+        visit(candidate, date_matches=date_scoped)
     return found
 
 

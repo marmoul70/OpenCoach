@@ -36,6 +36,37 @@ def test_ai_is_disabled_by_default(monkeypatch):
     assert settings.max_concurrency == 1
 
 
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://ollama.example.com:11434",
+        "https://192.168.1.20:11434",
+        "http://10.0.0.5:11434",
+    ],
+)
+def test_rejects_non_local_ollama_endpoint(monkeypatch, base_url):
+    monkeypatch.setenv("OPENCOACH_AI_BASE_URL", base_url)
+
+    with pytest.raises(AIConfigurationError, match="machine locale"):
+        AISettings.from_environment()
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://localhost:11434",
+        "http://127.0.0.1:11434",
+        "http://[::1]:11434",
+    ],
+)
+def test_accepts_loopback_ollama_endpoint(monkeypatch, base_url):
+    monkeypatch.setenv("OPENCOACH_AI_BASE_URL", base_url)
+
+    settings = AISettings.from_environment()
+
+    assert settings.base_url == base_url
+
+
 def test_reads_ai_environment(monkeypatch):
     monkeypatch.setenv("OPENCOACH_AI_ENABLED", "true")
     monkeypatch.setenv("OPENCOACH_AI_MODEL", "qwen3:8b")

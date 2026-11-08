@@ -93,10 +93,10 @@ export function AIChatPanel() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Ouvrir l’assistant IA"
-        className="fixed bottom-20 right-5 z-[70] inline-flex h-12 items-center gap-2 rounded-full border border-emerald-600/20 bg-emerald-600 px-4 text-sm font-semibold text-white shadow-lg shadow-emerald-950/15 transition hover:-translate-y-0.5 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 lg:bottom-6"
+        className="fixed bottom-20 right-5 z-[70] inline-flex h-12 w-12 items-center justify-center rounded-full border border-emerald-600/20 bg-emerald-600 p-0 text-sm font-semibold text-white shadow-lg shadow-emerald-950/15 transition hover:-translate-y-0.5 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 lg:bottom-6 lg:w-auto lg:gap-2 lg:justify-start lg:px-4"
       >
         <Bot className="h-5 w-5" />
-        <span>Assistant IA</span>
+        <span className="hidden lg:inline">Assistant IA</span>
       </button>
 
       <SidePanel

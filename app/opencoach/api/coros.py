@@ -714,7 +714,10 @@ def push_training_session_to_coros(
                 workout_id for workout_id, _ in matching
                 if workout_id
             }
-            if len(matching_ids) == 1:
+            matching_without_id = any(
+                not workout_id for workout_id, _ in matching
+            )
+            if len(matching_ids) == 1 and not matching_without_id:
                 training_session.coros_workout_id = next(iter(matching_ids))
                 training_session.coros_scheduled_date = training_session.date
                 repository.save_session(athlete_profile_id, training_session)

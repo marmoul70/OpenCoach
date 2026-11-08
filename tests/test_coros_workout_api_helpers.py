@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+import json\nfrom datetime import date, datetime, timezone
 
 from opencoach.api.training_sessions import _as_utc
 from opencoach.api.coros import (
@@ -110,6 +110,24 @@ def test_extracts_non_editable_reason_from_scheduled_workout_details() -> None:
     assert details["editable"] is False
     assert details["reason"] == "Séance terminée; Date passée"
 
+
+
+def test_extracts_coros_schedule_when_content_is_json_encoded_string() -> None:
+    report = (
+        "Training Schedule\\n"
+        "========================\\n\\n"
+        "2026-11-12\\n"
+        "Test COROS - Endurance fondamentale\\n"
+        "Standalone workout\\n"
+        "idInPlan: 12345\\n"
+    )
+    result = {"content": [json.dumps(report)]}
+
+    assert _extract_scheduled_workout_records_for_date(
+        result,
+        date(2026, 11, 12),
+        date_scoped=True,
+    ) == [("12345", "Test COROS - Endurance fondamentale")]
 
 
 def test_extracts_scheduled_workout_from_iso_date_keyed_schedule() -> None:

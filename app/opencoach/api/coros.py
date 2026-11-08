@@ -845,6 +845,24 @@ def push_training_session_to_coros(
                     ),
                 ) from exc
 
+            # Capture the actual details response shape for parser diagnostics.
+            logger.warning(
+                "COROS scheduled workout details response for %s (id present: %s): %s",
+                lookup_date.isoformat(),
+                bool(training_session.coros_workout_id),
+                json.dumps(
+                    {
+                        "structuredContent": details_result.get("structuredContent"),
+                        "content": [
+                            item.get("text", "") if isinstance(item, dict) else item
+                            for item in details_result.get("content", [])
+                            if isinstance(item, (str, dict))
+                        ],
+                    },
+                    ensure_ascii=False,
+                    default=str,
+                )[:12000],
+            )
             details = _extract_coros_scheduled_details(details_result)
             if details is not None:
                 break
@@ -1481,14 +1499,28 @@ def _extract_coros_scheduled_details(
         candidates.append(structured)
 
     for item in result.get("content", []):
-        if not isinstance(item, dict) or item.get("type") != "text":
+        # COROS MCP may return either text blocks or direct string items.
+        if isinstance(item, str):
+            raw_text = item
+        elif isinstance(item, dict) and item.get("type") == "text":
+            raw_text = item.get("text")
+        else:
             continue
-        raw_text = item.get("text")
         if not isinstance(raw_text, str):
             continue
         try:
-            candidates.append(json.loads(raw_text))
+            decoded = json.loads(raw_text)
         except ValueError:
+            decoded = None
+        # Some MCP responses are JSON strings containing another JSON object.
+        if isinstance(decoded, str):
+            try:
+                decoded = json.loads(decoded)
+            except ValueError:
+                pass
+        if isinstance(decoded, (dict, list)):
+            candidates.append(decoded)
+        else:
             start = raw_text.find("{")
             end = raw_text.rfind("}")
             if start >= 0 and end > start:

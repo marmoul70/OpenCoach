@@ -24,6 +24,7 @@ def test_chat_sends_expected_payload_and_parses_response():
         payload = json.loads(request.content)
         assert payload["model"] == "test-model"
         assert payload["stream"] is False
+        assert "think" not in payload
         assert payload["messages"][0]["content"] == "Explique ma charge."
         return httpx.Response(
             200,
@@ -108,3 +109,28 @@ def test_invalid_response_is_rejected():
 
     with pytest.raises(AIProviderError, match="ne respecte pas le contrat"):
         asyncio.run(run())
+
+
+
+def test_qwen3_disables_internal_thinking_to_preserve_answer_tokens():
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content)
+        assert payload["model"] == "qwen3:8b"
+        assert payload["think"] is False
+        return httpx.Response(
+            200,
+            json={
+                "model": "qwen3:8b",
+                "message": {"role": "assistant", "content": "Analyse complète."},
+                "done": True,
+            },
+        )
+
+    async def run():
+        settings = AISettings(enabled=True, model="qwen3:8b")
+        client = OllamaClient(settings, transport=httpx.MockTransport(handler))
+        return await client.chat(make_request())
+
+    result = asyncio.run(run())
+    assert result.content == "Analyse complète."
+    assert result.done is True

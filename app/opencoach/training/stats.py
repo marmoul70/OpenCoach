@@ -19,19 +19,17 @@ class TrainingStats:
     measured_load: float
     estimated_load: float
 
+    # Nombre de séances dont la donnée source est renseignée.
+    distance_data_count: int = 0
+    elevation_data_count: int = 0
+    measured_load_data_count: int = 0
+
     @property
     def sessions_count(self) -> int:
         """Nombre total d'efforts réellement effectués."""
-        return (
-            self.activities_count
-            + self.manual_sessions_count
-        )
+        return self.activities_count + self.manual_sessions_count
 
     @property
     def total_load(self) -> float:
         """Charge totale mesurée et estimée."""
-        return round(
-            self.measured_load
-            + self.estimated_load,
-            2,
-        )
+        return round(self.measured_load + self.estimated_load, 2)

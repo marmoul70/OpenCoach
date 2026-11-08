@@ -12,12 +12,12 @@ from opencoach.api.coros import (
     CorosWorkoutPushRequest,
     push_training_session_to_coros,
 )
-from opencoach.database.models import IntegrationConnection
 from opencoach.coaching.tomorrow_session_reminder import (
     build_tomorrow_session_reminder,
 )
 from opencoach.database.models import (
     AthleteProfile,
+    IntegrationConnection,
     User,
 )
 from opencoach.database.repositories.sql_training_session import (

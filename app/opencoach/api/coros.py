@@ -1248,13 +1248,22 @@ def push_training_session_to_coros(
                     for workout_id, _ in existing_workout_records
                     if workout_id
                 }
-                newly_added_matches = [
-                    (workout_id, name)
-                    for workout_id, name in post_create_records
-                    if workout_id
-                    and workout_id not in previous_ids
+                preexisting_same_title_without_id = any(
+                    not workout_id
                     and name.strip().casefold() == current_title
-                ]
+                    for workout_id, name in existing_workout_records
+                )
+                newly_added_matches = (
+                    []
+                    if preexisting_same_title_without_id
+                    else [
+                        (workout_id, name)
+                        for workout_id, name in post_create_records
+                        if workout_id
+                        and workout_id not in previous_ids
+                        and name.strip().casefold() == current_title
+                    ]
+                )
                 matching_ids = {
                     workout_id for workout_id, _ in newly_added_matches
                 }

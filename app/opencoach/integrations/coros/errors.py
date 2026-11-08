@@ -8,3 +8,7 @@ class CorosMcpAuthenticationError(CorosMcpError):
 
 class CorosMcpProtocolError(CorosMcpError):
     """Réponse MCP invalide ou incompatible."""
+
+
+class CorosMcpToolError(CorosMcpError):
+    """L'outil COROS a explicitement refusé l'opération demandée."""

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -134,6 +134,7 @@ def to_response(
         heart_rate_zone=session.heart_rate_zone,
         status=session.status,
         activity_id=session.activity_id,
+        prescription=session.prescription,
         intervals_external_id=(
             session.intervals_external_id
         ),
@@ -152,9 +153,23 @@ def to_response(
         intervals_sync_error=(
             session.intervals_sync_error
         ),
+        coros_sync_status=session.coros_sync_status,
+        coros_scheduled_date=session.coros_scheduled_date,
+        coros_sync_started_at=_as_utc(session.coros_sync_started_at),
+        coros_last_synced_at=_as_utc(session.coros_last_synced_at),
+        coros_sync_error=session.coros_sync_error,
     )
 
 
+
+
+def _as_utc(value: datetime | None) -> datetime | None:
+    """Expose les dates COROS en UTC explicite, même si SQLite les rend naïves."""
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def _debrief_response(
@@ -1382,6 +1397,29 @@ def get_training_session_move_options(
 
     Elle ne déplace aucune séance et ne modifie aucun statut.
     """
+
+    current_session = repository.get_session(
+        athlete_profile_id,
+        session_id,
+    )
+    if current_session is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Séance introuvable.",
+        )
+    if current_session.coros_sync_status in {
+        "synced",
+        "pending",
+        "unknown",
+    }:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Cette séance a été envoyée à COROS ou son envoi est incertain. "
+                "Son déplacement doit être effectué dans l'application COROS "
+                "et l'état OpenCoach doit rester cohérent."
+            ),
+        )
 
     service = ManualSessionMoveService(
         training_session_repository=(

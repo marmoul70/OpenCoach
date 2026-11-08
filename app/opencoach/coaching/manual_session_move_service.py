@@ -47,6 +47,12 @@ class ManualSessionMoveTargetUnavailableError(
     """La date demandée n'est pas autorisée."""
 
 
+class ManualSessionMoveCorosLinkedError(
+    ManualSessionMoveTargetUnavailableError
+):
+    """La séance est déjà liée au calendrier COROS."""
+
+
 @dataclass(slots=True)
 class ManualSessionMoveService:
     """Prépare les options de déplacement d'une séance."""
@@ -147,6 +153,29 @@ class ManualSessionMoveService:
     ):
         """Déplace une séance après revalidation complète."""
 
+        session = self.training_session_repository.get_session(
+            athlete_profile_id,
+            session_id,
+        )
+        if session is None:
+            raise ManualSessionMoveSessionNotFoundError(
+                "Séance introuvable."
+            )
+
+        if (
+            session.coros_workout_id is not None
+            or session.coros_sync_status in {
+                "pending",
+                "synced",
+                "unknown",
+            }
+        ):
+            raise ManualSessionMoveCorosLinkedError(
+                "Cette séance est liée ou potentiellement liée au calendrier COROS. "
+                "Déplace-la d'abord dans l'application COROS ; le déplacement "
+                "OpenCoach sera disponible après prise en charge de cette synchronisation."
+            )
+
         plan = self.preview(
             athlete_profile_id=(
                 athlete_profile_id
@@ -199,6 +228,22 @@ class ManualSessionMoveService:
                 ManualSessionMoveSessionNotFoundError(
                     "Séance introuvable."
                 )
+            )
+
+        # Revalider après le calcul du placement : un envoi COROS peut avoir
+        # réservé la séance pendant la prévisualisation.
+        if (
+            session.coros_workout_id is not None
+            or session.coros_sync_status in {
+                "pending",
+                "synced",
+                "unknown",
+            }
+        ):
+            raise ManualSessionMoveCorosLinkedError(
+                "Cette séance est liée ou potentiellement liée au calendrier COROS. "
+                "Déplace-la d'abord dans l'application COROS ; le déplacement "
+                "OpenCoach sera disponible après prise en charge de cette synchronisation."
             )
 
         session.date = target_date

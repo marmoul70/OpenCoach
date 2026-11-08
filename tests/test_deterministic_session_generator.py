@@ -157,6 +157,41 @@ def test_generator_covers_secondary_stimuli() -> None:
             TrainingStimulus.DOWNHILL_SPECIFICITY,
         )
     )
+    assert any(
+        "montée" in note.lower()
+        for note in proposal.coach_notes
+    )
+    assert any(
+        "descente" in note.lower()
+        for note in proposal.coach_notes
+    )
+
+
+
+def test_every_secondary_stimulus_produces_explicit_coach_guidance() -> None:
+    secondary_stimuli = tuple(
+        stimulus
+        for stimulus in TrainingStimulus
+        if stimulus is not TrainingStimulus.LONG_ENDURANCE
+    )
+
+    proposal = DeterministicSessionGenerator().generate_session(
+        request=create_request(
+            secondary_stimuli=secondary_stimuli,
+        ),
+    )
+
+    guidance = tuple(
+        note
+        for note in proposal.coach_notes
+        if note.startswith("Stimulus complémentaire")
+    )
+
+    assert len(guidance) == len(secondary_stimuli)
+    assert len(set(guidance)) == len(secondary_stimuli)
+    assert any("seuil en montée" in note.lower() for note in guidance)
+    assert any("puissance aérobie" in note.lower() for note in guidance)
+    assert any("activation pré-course" in note.lower() for note in guidance)
 
 
 def test_required_modality_has_priority() -> None:
@@ -237,6 +272,30 @@ def test_recipe_default_modality_is_fallback() -> None:
         proposal.modality
         is TrainingModality.STRENGTH
     )
+
+
+
+def test_pre_race_activation_preserves_easy_time_around_short_repetitions() -> None:
+    proposal = DeterministicSessionGenerator().generate_session(
+        request=create_request(
+            primary_stimulus=TrainingStimulus.PRE_RACE_ACTIVATION,
+            importance=SessionIntentImportance.SUPPORT,
+            minimum=45,
+            maximum=45,
+            available=45,
+            required_modalities=(),
+            preferred_modalities=(TrainingModality.RUNNING,),
+        ),
+    )
+
+    phases = [block.phase for block in proposal.blocks]
+    assert phases == ["warmup", "main", "easy", "cooldown"]
+    assert sum(block.duration_minutes or 0 for block in proposal.blocks) == 45
+    assert proposal.work_structure is not None
+    assert proposal.work_structure.intervals
+    assert proposal.work_structure.planned_minutes < 30
+    assert proposal.blocks[2].duration_minutes is not None
+    assert proposal.blocks[2].duration_minutes > 0
 
 
 def test_recovery_session_uses_single_block() -> None:
@@ -547,52 +606,6 @@ def test_session_coach_request_exposes_phase_week_index() -> None:
     )
 
     assert request.phase_week_index == 3
-
-
-def test_base_vo2max_progresses_with_phase_week_index() -> None:
-    generator = DeterministicSessionGenerator()
-
-    descriptions = []
-
-    for phase_week_index in (
-        1,
-        2,
-        3,
-    ):
-        base_request = create_request(
-            primary_stimulus=TrainingStimulus.VO2MAX,
-            minimum=45,
-            maximum=45,
-            available=45,
-            required_modalities=(),
-            preferred_modalities=(
-                TrainingModality.RUNNING,
-            ),
-        )
-
-        request = SessionCoachRequest(
-            phase=TrainingPhase.BASE,
-            slot=base_request.slot,
-            target_load=base_request.target_load,
-            planned_duration_minutes=45,
-            phase_week_index=phase_week_index,
-        )
-
-        proposal = generator.generate_session(
-            request=request,
-        )
-
-        assert proposal.work_structure is not None
-
-        descriptions.append(
-            proposal.work_structure.description
-        )
-
-    assert descriptions == [
-        "10 × 60 s / récupération 60 s.",
-        "8 × 90 s / récupération 90 s.",
-        "5 × 3 min / récupération 2 min.",
-    ]
 
 
 def test_base_vo2max_progresses_with_phase_week_index() -> None:

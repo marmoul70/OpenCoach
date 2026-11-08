@@ -181,7 +181,7 @@ def _serialize_prescription(
     """
 
     return {
-        "version": 1,
+        "version": 2,
         "blocks": [
             {
                 "name": block.name,
@@ -190,6 +190,18 @@ def _serialize_prescription(
                 ),
                 "duration_minutes": (
                     block.duration_minutes
+                ),
+                "phase": block.phase,
+                "target_distance_meters": block.target_distance_meters,
+                "target_elevation_gain_meters": block.target_elevation_gain_meters,
+                "target_duration_seconds": block.target_duration_seconds,
+                "intensity": (
+                    _serialize_intensity_prescription(
+                        block.intensity_prescription,
+                        vma_kmh=vma_kmh,
+                    )
+                    if block.intensity_prescription is not None
+                    else None
                 ),
             }
             for block in proposal.blocks
@@ -209,6 +221,14 @@ def _serialize_prescription(
             )
             if proposal.intensity_prescription
             is not None
+            else None
+        ),
+        "recovery_intensity": (
+            _serialize_intensity_prescription(
+                proposal.recovery_intensity_prescription,
+                vma_kmh=vma_kmh,
+            )
+            if proposal.recovery_intensity_prescription is not None
             else None
         ),
     }
@@ -274,6 +294,9 @@ def _serialize_work_interval(
         "work_distance_meters": (
             interval.work_distance_meters
         ),
+        "work_elevation_gain_meters": (
+            interval.work_elevation_gain_meters
+        ),
         "repetition_target": (
             _to_json_value(
                 interval.repetition_target
@@ -290,6 +313,12 @@ def _serialize_work_interval(
             if interval.recovery_unit
             is not None
             else None
+        ),
+        "recovery_distance_meters": (
+            interval.recovery_distance_meters
+        ),
+        "recovery_elevation_gain_meters": (
+            interval.recovery_elevation_gain_meters
         ),
     }
 

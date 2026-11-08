@@ -1,3 +1,5 @@
+import pytest
+
 from opencoach.planning.physiology.snapshot import (
     PhysiologicalCalibrationMetric,
     PhysiologicalCalibrationSnapshot,
@@ -8,6 +10,7 @@ from opencoach.planning.sessions.prescription import (
     build_intensity_prescription,
     validate_intensity_policy_catalog,
 )
+from opencoach.planning.sessions.prescription.models import IntensityRange
 from opencoach.planning.stimulus.training import (
     TrainingStimulus,
 )
@@ -473,3 +476,29 @@ def test_vo2max_does_not_force_personalized_hr_zone() -> None:
     )
 
     assert vma_target is not None
+
+
+@pytest.mark.parametrize(
+    ("minimum", "maximum"),
+    [
+        (float("nan"), 5.0),
+        (1.0, float("nan")),
+        (float("inf"), 5.0),
+        (1.0, float("inf")),
+        (float("-inf"), 5.0),
+        (1.0, float("-inf")),
+        (True, 5.0),
+    ],
+)
+def test_intensity_range_rejects_non_finite_or_boolean_bounds(
+    minimum: float,
+    maximum: float,
+) -> None:
+    with pytest.raises(ValueError, match="nombre fini"):
+        IntensityRange(
+            reference=IntensityReference.RPE,
+            minimum=minimum,
+            maximum=maximum,
+            unit="/10",
+            label="Effort perçu",
+        )

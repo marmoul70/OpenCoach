@@ -1,5 +1,8 @@
 from dataclasses import replace
 from datetime import date
+from uuid import uuid4
+
+import pytest
 
 from opencoach.planning.sessions.prescription import (
     IntensityRange,
@@ -7,6 +10,13 @@ from opencoach.planning.sessions.prescription import (
     SessionIntensityPrescription,
 )
 
+from opencoach.integrations.coros.workout_mapper import (
+    CorosWorkoutMappingError,
+    map_training_session_to_coros,
+)
+from opencoach.planning.sessions.prescription.integrity import (
+    validate_training_session_prescription,
+)
 from opencoach.coaching.generation.mapper import (
     generated_session_to_training_session,
 )
@@ -15,6 +25,9 @@ from opencoach.coaching.generation.models import (
 )
 from opencoach.planning.sessions.generators import (
     DeterministicSessionGenerator,
+)
+from opencoach.planning.sessions.generators.catalog import (
+    get_session_recipe,
 )
 from opencoach.planning.sessions.intent import (
     SessionIntent,
@@ -41,12 +54,12 @@ from opencoach.planning.weekly.training_envelope import (
 )
 
 
-def create_generated_session():
+def create_generated_session(*, secondary_stimuli=()):
     intent = SessionIntent(
         primary_stimulus=(
             TrainingStimulus.THRESHOLD
         ),
-        secondary_stimuli=(),
+        secondary_stimuli=secondary_stimuli,
         importance=(
             SessionIntentImportance.IMPORTANT
         ),
@@ -87,6 +100,42 @@ def create_generated_session():
             7,
             7,
         ),
+        day=Weekday.WEDNESDAY,
+        phase=TrainingPhase.SPECIFIC,
+        proposal=proposal,
+    )
+
+
+
+def create_generated_session_for_stimulus(stimulus: TrainingStimulus):
+    recipe = get_session_recipe(stimulus)
+    intent = SessionIntent(
+        primary_stimulus=stimulus,
+        secondary_stimuli=(),
+        importance=SessionIntentImportance.IMPORTANT,
+        specificity=SpecificityLevel.HIGH,
+        substitution=SubstitutionPolicy.ALLOWED,
+        preferred_modalities=(recipe.default_modality,),
+        required_modalities=(),
+        duration_min_minutes=60,
+        duration_max_minutes=60,
+    )
+    slot = WeeklySessionIntentSlot(
+        slot_id=stimulus.value,
+        day=Weekday.WEDNESDAY,
+        intent=intent,
+        fatigue_budget=FatigueBudget.HIGH,
+        duration_available_minutes=60,
+    )
+    proposal = DeterministicSessionGenerator().generate_session(
+        request=SessionCoachRequest(
+            phase=TrainingPhase.SPECIFIC,
+            slot=slot,
+        )
+    )
+    return GeneratedTrainingSession(
+        slot_id=stimulus.value,
+        date=date(2027, 7, 7),
         day=Weekday.WEDNESDAY,
         phase=TrainingPhase.SPECIFIC,
         proposal=proposal,
@@ -324,3 +373,149 @@ def test_mapper_persists_vma_speed_and_pace_targets() -> None:
             "pace_seconds_per_km"
         ]["fastest"],
     ) == 343
+
+
+def test_mapper_persists_phase_metadata_and_block_level_intensity() -> None:
+    generated = create_generated_session()
+    mapped = generated_session_to_training_session(
+        generated,
+        planning_key="phase-metadata",
+    )
+
+    assert mapped.prescription is not None
+    assert mapped.prescription["version"] == 2
+    blocks = mapped.prescription["blocks"]
+    phases = [block["phase"] for block in blocks]
+
+    assert "warmup" in phases
+    assert "main" in phases
+    assert "cooldown" in phases
+
+    recovery_intensity = mapped.prescription["recovery_intensity"]
+    assert recovery_intensity is not None
+    assert recovery_intensity["targets"]
+
+    main_block = next(block for block in blocks if block["phase"] == "main")
+    assert main_block["intensity"] is not None
+    assert main_block["intensity"]["targets"]
+    warmup_block = next(block for block in blocks if block["phase"] == "warmup")
+    assert warmup_block["intensity"] is not None
+    assert warmup_block["intensity"]["targets"][0]["reference"] == "rpe"
+
+
+
+
+def test_every_primary_stimulus_has_an_explicit_coros_mapping_or_safe_refusal() -> None:
+    unsupported = {
+        TrainingStimulus.DOWNHILL_SPECIFICITY,
+        TrainingStimulus.UPHILL_STRENGTH_ENDURANCE,
+        TrainingStimulus.STRENGTH_LOWER_BODY,
+        TrainingStimulus.STRENGTH_CORE,
+    }
+    heart_rate_intensity = {
+        "targets": [
+            {
+                "reference": "heart_rate",
+                "minimum": 140,
+                "maximum": 155,
+                "unit": "bpm",
+                "label": "Fréquence cardiaque",
+            }
+        ],
+        "guidance": [],
+    }
+
+    for stimulus in TrainingStimulus:
+        generated = create_generated_session_for_stimulus(stimulus)
+        persisted = generated_session_to_training_session(
+            generated,
+            planning_key=f"stimulus-matrix:{stimulus.value}",
+        )
+        assert persisted.prescription is not None
+        persisted.prescription["intensity"] = heart_rate_intensity
+        persisted.prescription["recovery_intensity"] = heart_rate_intensity
+        for block in persisted.prescription["blocks"]:
+            block["intensity"] = heart_rate_intensity
+
+        validate_training_session_prescription(persisted)
+
+        if stimulus in unsupported:
+            with pytest.raises(CorosWorkoutMappingError):
+                map_training_session_to_coros(replace(persisted, id=uuid4()))
+        else:
+            payload = map_training_session_to_coros(
+                replace(persisted, id=uuid4())
+            )
+            assert payload.course["sections"]
+            assert payload.course["courseName"] == persisted.title
+
+
+def test_secondary_stimuli_survive_generation_persistence_validation_and_coros_mapping() -> None:
+    generated = create_generated_session(
+        secondary_stimuli=(
+            TrainingStimulus.UPHILL_THRESHOLD,
+            TrainingStimulus.VO2MAX,
+        ),
+    )
+    persisted = generated_session_to_training_session(
+        generated,
+        planning_key="secondary-stimuli-e2e",
+    )
+
+    assert "seuil en montée" in persisted.description.lower()
+    assert "puissance aérobie" in persisted.description.lower()
+
+    # Le scénario valide la chaîne de transport du texte secondaire.
+    # On fournit une cible FC absolue explicite pour rendre la séance
+    # exécutable dans COROS sans convertir arbitrairement le RPE.
+    heart_rate_intensity = {
+        "targets": [
+            {
+                "reference": "heart_rate",
+                "minimum": 140,
+                "maximum": 155,
+                "unit": "bpm",
+                "label": "Fréquence cardiaque",
+            }
+        ],
+        "guidance": [],
+    }
+    assert persisted.prescription is not None
+    persisted.prescription["intensity"] = heart_rate_intensity
+    persisted.prescription["recovery_intensity"] = heart_rate_intensity
+    for block in persisted.prescription["blocks"]:
+        block["intensity"] = heart_rate_intensity
+
+    validate_training_session_prescription(persisted)
+    coros_payload = map_training_session_to_coros(
+        replace(persisted, id=uuid4())
+    )
+
+    description = coros_payload.course["courseDescription"].lower()
+    assert "seuil en montée" in description
+    assert "puissance aérobie" in description
+    assert coros_payload.course["sections"]
+
+
+def test_serializes_work_and_recovery_elevation_targets() -> None:
+    from opencoach.coaching.generation.mapper import _serialize_work_interval
+    from opencoach.planning.sessions.prescription import (
+        WorkDurationUnit,
+        WorkInterval,
+    )
+
+    interval = WorkInterval(
+        repetitions=4,
+        work_duration=120,
+        work_unit=WorkDurationUnit.SECONDS,
+        work_elevation_gain_meters=80,
+        recovery_duration=60,
+        recovery_unit=WorkDurationUnit.SECONDS,
+        recovery_distance_meters=100,
+    )
+
+    payload = _serialize_work_interval(interval)
+
+    assert payload["work_elevation_gain_meters"] == 80
+    assert payload["recovery_distance_meters"] == 100
+    assert payload["recovery_elevation_gain_meters"] is None

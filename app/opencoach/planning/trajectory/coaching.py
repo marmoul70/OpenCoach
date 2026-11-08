@@ -145,26 +145,28 @@ class CoachingTrajectoryInput:
     athlete_schedule_constrained: bool = False
 
     def __post_init__(self) -> None:
-        target_values = (
+        required_target_values = (
             self.target_race_date,
             self.target_distance_km,
-            self.target_elevation_gain_m,
         )
 
         has_target = any(
             value is not None
-            for value in target_values
+            for value in (
+                *required_target_values,
+                self.target_elevation_gain_m,
+            )
         )
 
         complete_target = all(
             value is not None
-            for value in target_values
+            for value in required_target_values
         )
 
         if has_target and not complete_target:
             raise ValueError(
                 "Une course cible doit fournir ensemble "
-                "date, distance et dénivelé."
+                "date et distance. Le dénivelé peut rester inconnu."
             )
 
         if (
@@ -309,11 +311,6 @@ def build_coaching_trajectory(
     race_profile: RaceDemandProfile | None = None
 
     if input_data.target_distance_km is not None:
-        assert (
-            input_data.target_elevation_gain_m
-            is not None
-        )
-
         race_profile = build_race_demand_profile(
             distance_km=(
                 input_data.target_distance_km

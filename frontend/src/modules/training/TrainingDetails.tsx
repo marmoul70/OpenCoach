@@ -4,6 +4,7 @@ import {
   Check,
   Star,
   X,
+  Watch,
 } from 'lucide-react'
 
 import {
@@ -911,6 +912,23 @@ function SessionHeader({
             session.status
           }
         />
+
+        {session.corosSyncStatus === 'synced' && (
+          <span
+            title="Séance synchronisée avec COROS"
+            aria-label="Synchronisée avec COROS"
+            className="
+              inline-flex items-center gap-1
+              rounded-full border border-sky-500/20
+              bg-sky-500/[0.07] px-1.5 py-0.5
+              text-[10px] font-semibold text-sky-700
+              dark:text-sky-300
+            "
+          >
+            <Watch className="h-3 w-3" />
+            COROS
+          </span>
+        )}
 
         {(
           onSkipped

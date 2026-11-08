@@ -162,6 +162,7 @@ def create_test_client(
 
 def test_training_sessions_api_lists_period() -> None:
     client, repository = create_test_client()
+    repository.session.coros_scheduled_date = date(2026, 8, 10)
 
     response = client.get(
         "/api/training-sessions",
@@ -182,6 +183,7 @@ def test_training_sessions_api_lists_period() -> None:
     assert payload[0]["sport_type"] == "Run"
     assert payload[0]["status"] == "planned"
     assert payload[0]["activity_id"] is None
+    assert payload[0]["coros_scheduled_date"] == "2026-08-10"
 
 def test_training_sessions_api_creates_session() -> None:
     client, repository = create_test_client()

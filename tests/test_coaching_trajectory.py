@@ -649,3 +649,13 @@ def test_trajectory_recovery_volume_is_not_reduced_twice() -> None:
         result.envelope.target_duration_minutes
         == pytest.approx(315.0)
     )
+
+def test_race_profile_preserves_unknown_elevation() -> None:
+    result = build_coaching_trajectory(
+        input_data=create_input(
+            target_elevation_gain_m=None,
+        )
+    )
+
+    assert result.race_profile is not None
+    assert result.race_profile.elevation_gain_m is None

@@ -173,12 +173,20 @@ def _normalize_guidance_duration(
     session: TrainingSession,
     guidance: SessionGuidance,
 ) -> SessionGuidance:
-    """Fait tenir les blocs dans la durée totale planifiée."""
+    """Respecte les durées prescrites, puis applique le fallback historique."""
 
-    if (
-        session.type == "rest"
-        or len(guidance.main_set) != 1
-    ):
+    if session.type == "rest":
+        return guidance
+
+    prescribed_guidance = _apply_prescribed_block_durations(
+        session,
+        guidance,
+    )
+
+    if prescribed_guidance is not None:
+        return prescribed_guidance
+
+    if len(guidance.main_set) != 1:
         return guidance
 
     main_step = guidance.main_set[0]
@@ -220,6 +228,77 @@ def _normalize_guidance_duration(
                 duration_minutes=main_minutes,
             ),
         ),
+    )
+
+
+def _apply_prescribed_block_durations(
+    session: TrainingSession,
+    guidance: SessionGuidance,
+) -> SessionGuidance | None:
+    """Applique les durées persistées lorsque les blocs correspondent aux étapes.
+
+    La correspondance est positionnelle : échauffement, cœur de séance,
+    retour au calme. On ne devine jamais une phase et on ne répartit pas
+    les minutes si la structure ou le total ne sont pas cohérents.
+    """
+
+    prescription = session.prescription
+
+    if not isinstance(prescription, dict):
+        return None
+
+    blocks = prescription.get("blocks")
+
+    if not isinstance(blocks, list) or not blocks:
+        return None
+
+    steps = (
+        *guidance.warmup,
+        *guidance.main_set,
+        *guidance.cooldown,
+    )
+
+    if len(blocks) != len(steps):
+        return None
+
+    durations: list[int] = []
+
+    for block in blocks:
+        if not isinstance(block, dict):
+            return None
+
+        duration = block.get("duration_minutes")
+
+        # bool est un sous-type de int en Python : on l'exclut explicitement.
+        if type(duration) is not int or duration <= 0:
+            return None
+
+        durations.append(duration)
+
+    if sum(durations) != session.duration_minutes:
+        return None
+
+    cursor = 0
+
+    def apply_durations(
+        phase_steps: tuple[SessionGuidanceStep, ...],
+    ) -> tuple[SessionGuidanceStep, ...]:
+        nonlocal cursor
+        updated = tuple(
+            replace(
+                step,
+                duration_minutes=durations[cursor + index],
+            )
+            for index, step in enumerate(phase_steps)
+        )
+        cursor += len(phase_steps)
+        return updated
+
+    return replace(
+        guidance,
+        warmup=apply_durations(guidance.warmup),
+        main_set=apply_durations(guidance.main_set),
+        cooldown=apply_durations(guidance.cooldown),
     )
 
 

@@ -136,3 +136,16 @@ def test_policy_rejects_invalid_bounds() -> None:
             minimum_minutes=600.0,
             maximum_minutes=300.0,
         )
+
+
+def test_unknown_elevation_uses_distance_only_and_marks_demand_incomplete() -> None:
+    profile = build_race_demand_profile(
+        distance_km=50.0,
+        elevation_gain_m=None,
+    )
+
+    demand = build_race_volume_demand(race_profile=profile)
+
+    assert demand.effort_distance_km == pytest.approx(50.0)
+    assert demand.elevation_data_available is False
+    assert demand.specific_peak_duration_minutes == pytest.approx(310.0)

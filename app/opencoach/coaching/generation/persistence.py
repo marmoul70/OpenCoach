@@ -296,6 +296,16 @@ def _remove_obsolete_generated_sessions(
     """
 
     for session in existing_sessions:
+        # Conserver les séances référencées dans le calendrier COROS :
+        # l'API actuelle ne propose pas de suppression distante confirmée.
+        # Leur retirer l'identifiant local créerait une copie orpheline.
+        if session.coros_workout_id is not None or session.coros_sync_status in {
+            "pending",
+            "synced",
+            "unknown",
+        }:
+            continue
+
         if (
             reconcile_from_date is not None
             and session.date

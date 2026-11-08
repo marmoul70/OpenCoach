@@ -3,14 +3,21 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from uuid import UUID
 
+from fastapi import HTTPException
 from sqlalchemy import select
 
+from opencoach.api.coros import (
+    CorosWorkoutPushRequest,
+    push_training_session_to_coros,
+)
 from opencoach.coaching.tomorrow_session_reminder import (
     build_tomorrow_session_reminder,
 )
 from opencoach.database.models import (
     AthleteProfile,
+    IntegrationConnection,
     User,
 )
 from opencoach.database.repositories.sql_training_session import (
@@ -99,6 +106,62 @@ def _weather_advice(
             target_date=target_date,
         )
     )
+
+
+def _sync_session_to_coros(
+    database,
+    *,
+    athlete_profile_id: UUID,
+    session_id: UUID,
+) -> str | None:
+    """Synchronise la séance via le même flux sécurisé que l'envoi manuel.
+
+    Aucun envoi n'est tenté si COROS n'est pas activé pour le profil.
+    Les états incertains restent protégés par les contrôles de l'API : le
+    rappel ne confirme jamais une création COROS dont le résultat est ambigu.
+    """
+    connection = database.scalar(
+        select(IntegrationConnection).where(
+            IntegrationConnection.athlete_profile_id == athlete_profile_id,
+            IntegrationConnection.provider == "coros",
+        )
+    )
+    if connection is None or not connection.enabled:
+        return None
+
+    try:
+        result = push_training_session_to_coros(
+            session_id=session_id,
+            payload=CorosWorkoutPushRequest(),
+            athlete_profile_id=athlete_profile_id,
+            db=database,
+        )
+    except HTTPException as exc:
+        detail = exc.detail
+        if isinstance(detail, str) and detail.strip():
+            return f"Synchronisation COROS non effectuée : {detail.strip()}"
+        return (
+            "Synchronisation COROS non effectuée : "
+            f"erreur HTTP {exc.status_code}."
+        )
+    except Exception as exc:
+        # La notification de rappel doit rester envoyée même si COROS est
+        # indisponible. Le détail est journalisé sans exposer de secret.
+        print(
+            "[AVERTISSEMENT] Synchronisation COROS impossible "
+            f"pour la séance {session_id} : {exc}"
+        )
+        return (
+            "Synchronisation COROS indisponible. "
+            "Consulte OpenCoach avant ta séance."
+        )
+
+    message = result.get("message") if isinstance(result, dict) else None
+    if isinstance(message, str) and message.strip():
+        return f"COROS : {message.strip()}"
+    if isinstance(result, dict) and result.get("status") == "synced":
+        return "COROS : séance synchronisée."
+    return "Synchronisation COROS non confirmée."
 
 
 def main() -> int:
@@ -196,19 +259,27 @@ def main() -> int:
                 for training_session in (
                     planned_sessions
                 ):
+                    coros_message = _sync_session_to_coros(
+                        database,
+                        athlete_profile_id=profile.id,
+                        session_id=training_session.id,
+                    )
                     reminder = (
                         build_tomorrow_session_reminder(
                             training_session,
                             weather_advice=advice,
                         )
                     )
+                    reminder_body = reminder.body
+                    if coros_message:
+                        reminder_body += " " + coros_message
 
                     report = (
                         push_service
                         .send_training_reminder(
                             user_id=user_id,
                             title=reminder.title,
-                            body=reminder.body,
+                            body=reminder_body,
                             url=reminder.url,
                         )
                     )

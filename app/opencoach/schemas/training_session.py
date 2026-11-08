@@ -81,6 +81,7 @@ class TrainingSessionResponse(BaseModel):
     heart_rate_zone: str | None
     status: str
     activity_id: UUID | None
+    prescription: dict | None = None
 
     intervals_external_id: str | None = None
     intervals_event_id: str | None = None
@@ -88,6 +89,12 @@ class TrainingSessionResponse(BaseModel):
     intervals_last_synced_at: datetime | None = None
     intervals_payload_hash: str | None = None
     intervals_sync_error: str | None = None
+
+    coros_sync_status: str | None = None
+    coros_scheduled_date: date | None = None
+    coros_sync_started_at: datetime | None = None
+    coros_last_synced_at: datetime | None = None
+    coros_sync_error: str | None = None
 
 
 class TrainingSessionStatusUpdate(BaseModel):

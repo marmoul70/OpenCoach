@@ -290,3 +290,60 @@ def test_easy_guidance_blocks_fit_total_session_duration() -> None:
         + cooldown_minutes
         == training_session.duration_minutes
     )
+
+
+def test_structured_blocks_preserve_their_exact_durations() -> None:
+    training_session = session(
+        "aerobic_easy",
+        duration_minutes=50,
+    )
+    training_session.prescription = {
+        "version": 1,
+        "blocks": [
+            {"name": "Échauffement", "duration_minutes": 10},
+            {"name": "Bloc principal", "duration_minutes": 30},
+            {"name": "Retour au calme", "duration_minutes": 10},
+        ],
+        "work_structure": {
+            "type": "continuous",
+            "available_minutes": 30,
+            "continuous_minutes": 30,
+            "intervals": [],
+        },
+    }
+
+    guidance = build_session_guidance(training_session)
+
+    assert guidance.warmup[0].duration_minutes == 10
+    assert guidance.main_set[0].duration_minutes == 30
+    assert guidance.cooldown[0].duration_minutes == 10
+    assert sum(
+        step.duration_minutes or 0
+        for phase in (
+            guidance.warmup,
+            guidance.main_set,
+            guidance.cooldown,
+        )
+        for step in phase
+    ) == training_session.duration_minutes
+
+
+def test_inconsistent_structured_blocks_keep_legacy_duration_fallback() -> None:
+    training_session = session(
+        "aerobic_easy",
+        duration_minutes=50,
+    )
+    training_session.prescription = {
+        "version": 1,
+        "blocks": [
+            {"name": "Échauffement", "duration_minutes": 10},
+            {"name": "Bloc principal", "duration_minutes": 30},
+            {"name": "Retour au calme", "duration_minutes": 5},
+        ],
+    }
+
+    guidance = build_session_guidance(training_session)
+
+    assert guidance.warmup[0].duration_minutes == 10
+    assert guidance.main_set[0].duration_minutes == 35
+    assert guidance.cooldown[0].duration_minutes == 5

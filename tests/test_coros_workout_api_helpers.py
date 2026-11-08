@@ -196,6 +196,44 @@ def test_extracts_scheduled_workouts_from_coros_plain_text_schedule() -> None:
     ) == ["Footing 35 min", "Test COROS - Endurance fondamentale"]
 
 
+def test_extracts_schedule_when_coros_wraps_plain_text_in_json_string() -> None:
+    import json
+
+    schedule_text = (
+        "Training Schedule\\n"
+        "========================\\n\\n"
+        "2026-11-12\\n"
+        "Footing 35 min\\n"
+        "Plan ID: 480641426263295064\\n"
+        "idInPlan: 26\\n"
+        "Distance: 4.53 km\\n\\n"
+        "2026-11-12\\n"
+        "Test COROS - Endurance fondamentale\\n"
+        "Standalone workout (scheduled from the workout library)\\n"
+        "idInPlan: 11\\n"
+        "Distance: 5.43 km\\n\\n"
+        "2026-11-12\\n"
+        "Test COROS - Endurance fondamentale\\n"
+        "Standalone workout (scheduled from the workout library)\\n"
+        "idInPlan: 12\\n"
+        "Distance: 5.43 km\\n"
+    )
+    result = {
+        "structuredContent": None,
+        "content": [{"type": "text", "text": json.dumps(schedule_text)}],
+    }
+
+    assert _extract_scheduled_workout_records_for_date(
+        result,
+        date(2026, 11, 12),
+        date_scoped=True,
+    ) == [
+        ("26", "Footing 35 min"),
+        ("11", "Test COROS - Endurance fondamentale"),
+        ("12", "Test COROS - Endurance fondamentale"),
+    ]
+
+
 def test_recovery_records_include_only_explicitly_standalone_workouts() -> None:
     from opencoach.api.coros import (
         _extract_standalone_scheduled_workout_records_for_date,

@@ -1559,9 +1559,18 @@ def _extract_scheduled_workout_records_for_date(
         raw_text = item.get("text")
         if not isinstance(raw_text, str):
             continue
+        # COROS MCP may wrap its plain-text report as a JSON string
+        # (including escaped \\n sequences). Unwrap that layer before
+        # parsing lines; parsing it only as a JSON candidate loses all rows.
         try:
-            candidates.append(json.loads(raw_text))
+            decoded_text = json.loads(raw_text)
         except ValueError:
+            decoded_text = None
+        if isinstance(decoded_text, str):
+            raw_text = decoded_text
+        elif isinstance(decoded_text, (dict, list)):
+            candidates.append(decoded_text)
+        else:
             object_start = raw_text.find("{")
             object_end = raw_text.rfind("}")
             if object_start >= 0 and object_end > object_start:
@@ -1569,6 +1578,8 @@ def _extract_scheduled_workout_records_for_date(
                     candidates.append(json.loads(raw_text[object_start:object_end + 1]))
                 except ValueError:
                     pass
+        # Preserve normalized text for the line-oriented schedule parser.
+        item["_opencoach_decoded_schedule_text"] = raw_text
 
     date_keys = {
         "date", "day", "happenDay", "happen_day",
@@ -1585,7 +1596,7 @@ def _extract_scheduled_workout_records_for_date(
     for item in result.get("content", []):
         if not isinstance(item, dict) or item.get("type") != "text":
             continue
-        raw_text = item.get("text")
+        raw_text = item.get("_opencoach_decoded_schedule_text", item.get("text"))
         if not isinstance(raw_text, str):
             continue
         current_date = None

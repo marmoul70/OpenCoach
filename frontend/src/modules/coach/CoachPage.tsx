@@ -26,10 +26,6 @@ import {
 } from '../training/TrainingDetails'
 
 import {
-  AIChatPanel,
-} from './AIChatPanel'
-
-import {
   useTrainingSessions,
 } from '../training/trainingStore'
 
@@ -830,8 +826,6 @@ export function CoachPage() {
           </div>
         </section>
       </div>
-
-      <AIChatPanel />
 
       <SidePanel
         open={

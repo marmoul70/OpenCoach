@@ -1427,6 +1427,7 @@ def _coros_push_is_stale(
 def _extract_coros_scheduled_id(result: dict[str, Any]) -> str | None:
     """Récupère idInPlan sans dépendre d'un format de réponse unique."""
     candidates: list[Any] = []
+    schedule_texts: list[str] = []
     structured = result.get("structuredContent")
     if structured is not None:
         candidates.append(structured)
@@ -1579,7 +1580,7 @@ def _extract_scheduled_workout_records_for_date(
                 except ValueError:
                     pass
         # Preserve normalized text for the line-oriented schedule parser.
-        item["_opencoach_decoded_schedule_text"] = raw_text
+        schedule_texts.append(raw_text)
 
     date_keys = {
         "date", "day", "happenDay", "happen_day",
@@ -1593,12 +1594,7 @@ def _extract_scheduled_workout_records_for_date(
 
     # COROS MCP currently renders the schedule as plain text. Parse its
     # date/name/idInPlan blocks as well as structured JSON responses.
-    for item in result.get("content", []):
-        if not isinstance(item, dict) or item.get("type") != "text":
-            continue
-        raw_text = item.get("_opencoach_decoded_schedule_text", item.get("text"))
-        if not isinstance(raw_text, str):
-            continue
+    for raw_text in schedule_texts:
         current_date = None
         current_name = None
         for raw_line in raw_text.splitlines():

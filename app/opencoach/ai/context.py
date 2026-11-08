@@ -123,10 +123,16 @@ def build_athlete_context(context: PlanningContext) -> str:
             f"Couverture du planning sur cette fenêtre : "
             f"{load.planning_coverage_ratio:.0%}."
         )
-        lines.append(
-            f"Charge réelle calculée par le service de comparaison sur cette fenêtre : "
-            f"{load.actual_load_total:.1f}."
-        )
+        comparison_load = getattr(load, "actual_load_total", None)
+        if comparison_load is None:
+            lines.append(
+                "Charge réelle de comparaison au planning : donnée indisponible."
+            )
+        else:
+            lines.append(
+                f"Charge réelle calculée par le service de comparaison sur cette fenêtre : "
+                f"{comparison_load:.1f}."
+            )
         lines.append(
             "Cette charge de comparaison ne doit pas être confondue avec les statistiques "
             "d'activité sur 28 jours."

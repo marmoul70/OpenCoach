@@ -37,6 +37,7 @@ class OllamaClient:
                 for message in request.messages
             ],
             "stream": False,
+            **({"think": False} if self.settings.model.lower().startswith("qwen3") else {}),
             "options": {
                 "temperature": request.temperature,
                 "num_predict": request.num_predict,

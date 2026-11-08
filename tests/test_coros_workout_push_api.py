@@ -888,6 +888,7 @@ def test_create_reconciliation_fails_closed_when_existing_same_title_has_no_id(m
     query_count = 0
     def ambiguous_schedule(self, name, arguments):
         nonlocal query_count
+        FakeCorosClient.calls.append((name, arguments))
         if name == "queryTrainingSchedule":
             query_count += 1
             workout = {"courseName": "Footing aérobie"}

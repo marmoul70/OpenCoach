@@ -834,6 +834,27 @@ def test_synced_session_without_coros_id_never_falls_back_to_creation(monkeypatc
     assert FakeCorosClient.calls == []
 
 
+def test_uncertain_retry_fails_closed_when_schedule_has_no_parseable_records(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "unknown"
+    session.coros_payload_hash = "previous-payload-hash"
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.scheduled_names = []
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={"confirmed_no_duplicate": True},
+    )
+
+    assert response.status_code == 502
+    assert "ne reconnaît aucun enregistrement" in response.json()["detail"]
+    assert repository.session.coros_sync_status == "unknown"
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+    ]
+    assert all(name != "createScheduledWorkout" for name, _ in FakeCorosClient.calls)
+
+
 def test_uncertain_retry_uses_date_scoped_schedule_without_date_fields(monkeypatch):
     session = make_session()
     session.coros_sync_status = "unknown"

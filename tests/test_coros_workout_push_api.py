@@ -72,6 +72,9 @@ class FakeCorosClient:
     scheduled_names = ["Renforcement"]
     editable = True
     created_id = "new-workout-id"
+    create_result_without_id = False
+    standalone_marker = True
+    schedule_omits_date_context = False
     update_error = False
     on_update = None
     details_available_dates = None
@@ -86,10 +89,10 @@ class FakeCorosClient:
                 "name": "queryTrainingSchedule",
                 "inputSchema": {
                     "properties": {
-                        "startDay": {"type": "string"},
-                        "endDay": {"type": "string"},
+                        "startDate": {"type": "string"},
+                        "endDate": {"type": "string"},
                     },
-                    "required": ["startDay", "endDay"],
+                    "required": ["startDate", "endDate"],
                 },
             },
             {
@@ -156,26 +159,54 @@ class FakeCorosClient:
                 }
             }
         if name == "queryTrainingSchedule":
+            # Keep structured data for schedule display assertions, and mirror
+            # COROS's real text response so recovery tests identify only
+            # explicitly standalone workouts.
+            standalone_text = (
+                "Training Schedule\n"
+                "========================\n\n"
+                + "".join(
+                    ("" if type(self).schedule_omits_date_context else "2026-11-12\n")
+                    + f"{workout_name}\n"
+                    + (
+                        "Standalone workout (scheduled from the workout library)\n"
+                        if type(self).standalone_marker
+                        else ""
+                    )
+                    + f"idInPlan: {100 + index}\n\n"
+                    for index, workout_name in enumerate(self.scheduled_names)
+                )
+            )
             return {
                 "structuredContent": {
                     "schedule": {
                         "days": [
                             {
-                                "date": "2026-11-12",
+                                **(
+                                    {}
+                                    if type(self).schedule_omits_date_context
+                                    else {"date": "2026-11-12"}
+                                ),
                                 "courses": [
                                     {
-                                        "idInPlan": f"existing-{index}",
-                                        "courseName": name,
+                                        "idInPlan": str(100 + index),
+                                        "courseName": workout_name,
                                     }
-                                    for index, name in enumerate(
+                                    for index, workout_name in enumerate(
                                         self.scheduled_names
                                     )
                                 ],
                             }
                         ]
                     }
-                }
+                },
+                "content": [{"type": "text", "text": standalone_text}],
             }
+        if name == "createScheduledWorkout" and self.create_result_without_id:
+            workout_name = arguments["course"]["courseName"]
+            if workout_name not in type(self).scheduled_names:
+                type(self).scheduled_names.append(workout_name)
+            return {"content": [{"type": "text", "text": "Workout created successfully."}]}
         return {
             "structuredContent": {
                 "idInPlan": (
@@ -257,6 +288,9 @@ def make_client(monkeypatch, session):
     FakeCorosClient.scheduled_names = ["Renforcement"]
     FakeCorosClient.editable = True
     FakeCorosClient.created_id = "new-workout-id"
+    FakeCorosClient.create_result_without_id = False
+    FakeCorosClient.standalone_marker = True
+    FakeCorosClient.schedule_omits_date_context = False
     FakeCorosClient.update_error = False
     FakeCorosClient.on_update = None
     FakeCorosClient.details_available_dates = None
@@ -315,13 +349,36 @@ def test_pushes_planned_session_to_coros_and_reports_other_workouts(monkeypatch)
     assert len(FakeCorosClient.calls) == 2
     assert FakeCorosClient.calls[0] == (
         "queryTrainingSchedule",
-        {"startDay": "20261112", "endDay": "20261112"},
+        {"startDate": "20261112", "endDate": "20261112"},
     )
 
     tool_name, arguments = FakeCorosClient.calls[1]
     assert tool_name == "createScheduledWorkout"
     assert arguments["date"] == "20261112"
     assert arguments["course"]["sportType"] == 1
+
+
+def test_create_without_returned_id_recovers_id_from_calendar_and_marks_synced(monkeypatch):
+    session = make_session()
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.create_result_without_id = True
+    FakeCorosClient.scheduled_names = ["Renforcement"]
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "synced"
+    assert repository.session.coros_sync_status == "synced"
+    assert repository.session.coros_workout_id == "101"
+    assert repository.session.coros_scheduled_date == date(2026, 11, 12)
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+        "createScheduledWorkout",
+        "queryTrainingSchedule",
+    ]
 
 
 def test_repeated_push_does_not_create_a_duplicate(monkeypatch):
@@ -356,15 +413,22 @@ def test_uncertain_previous_push_requires_explicit_no_duplicate_confirmation(
         json={},
     )
     assert blocked.status_code == 409
-    assert FakeCorosClient.calls == []
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+    ]
 
     confirmed = client.post(
         f"/api/integrations/coros/workouts/{session.id}/push",
         json={"confirmed_no_duplicate": True},
     )
     assert confirmed.status_code == 200
+    assert confirmed.json()["status"] == "synced"
     assert repository.session.coros_sync_status == "synced"
-    assert len(FakeCorosClient.calls) == 2
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+        "queryTrainingSchedule",
+        "createScheduledWorkout",
+    ]
 
 
 
@@ -399,38 +463,128 @@ def test_stale_pending_push_requires_confirmation_then_can_retry(monkeypatch):
         json={},
     )
     assert blocked.status_code == 409
-    assert FakeCorosClient.calls == []
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+    ]
 
     confirmed = client.post(
         f"/api/integrations/coros/workouts/{session.id}/push",
         json={"confirmed_no_duplicate": True},
     )
     assert confirmed.status_code == 200
+    assert confirmed.json()["status"] == "synced"
     assert repository.session.coros_sync_status == "synced"
-    assert repository.session.coros_sync_started_at is None
-    assert len(FakeCorosClient.calls) == 2
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+        "queryTrainingSchedule",
+        "createScheduledWorkout",
+    ]
 
 
 
-def test_uncertain_retry_is_blocked_when_same_title_is_already_on_coros(
+def test_uncertain_retry_recovers_existing_workout_when_same_title_is_on_coros(
     monkeypatch,
 ):
     session = make_session()
     session.coros_sync_status = "unknown"
     session.coros_payload_hash = "previous-payload-hash"
-    client, _, _ = make_client(monkeypatch, session)
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.scheduled_names = ["Footing aérobie"]
+    FakeCorosClient.standalone_marker = False
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 200
+    assert repository.session.coros_workout_id == "updated-workout-id"
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+        "queryScheduledWorkoutDetails",
+        "updateScheduledWorkout",
+    ]
+    assert all(
+        name != "createScheduledWorkout"
+        for name, _ in FakeCorosClient.calls
+    )
+
+
+def test_uncertain_recovery_rejects_same_title_when_one_record_has_no_id(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "unknown"
+    session.coros_payload_hash = "previous-payload-hash"
+    client, repository, _ = make_client(monkeypatch, session)
+
+    def ambiguous_schedule(self, name, arguments):
+        FakeCorosClient.calls.append((name, arguments))
+        if name == "queryTrainingSchedule":
+            return {
+                "structuredContent": {
+                    "schedule": {
+                        "days": [
+                            {
+                                "date": "2026-11-12",
+                                "courses": [
+                                    {
+                                        "idInPlan": "existing-id",
+                                        "courseName": "Footing aérobie",
+                                    },
+                                    {"courseName": "Footing aérobie"},
+                                ],
+                            }
+                        ]
+                    }
+                }
+            }
+        raise AssertionError(f"Unexpected COROS call: {name}")
+
+    monkeypatch.setattr(FakeCorosClient, "call_tool", ambiguous_schedule)
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 409
+    assert "sans" in response.json()["detail"] or "ambiguïté" in response.json()["detail"]
+    assert repository.session.coros_workout_id is None
+    assert repository.session.coros_sync_status == "unknown"
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+    ]
+
+
+def test_uncertain_create_recovers_existing_coros_id_and_updates_instead_of_duplicating(
+    monkeypatch,
+):
+    session = make_session()
+    session.coros_sync_status = "unknown"
+    session.coros_payload_hash = "previous-payload-hash"
+    client, repository, _ = make_client(monkeypatch, session)
     FakeCorosClient.scheduled_names = ["Footing aérobie"]
 
     response = client.post(
         f"/api/integrations/coros/workouts/{session.id}/push",
-        json={"confirmed_no_duplicate": True},
+        json={},
     )
 
-    assert response.status_code == 409
-    assert "portant déjà ce titre" in response.json()["detail"]
+    assert response.status_code == 200
+    assert response.json()["status"] == "synced"
+    assert repository.session.coros_sync_status == "synced"
+    assert repository.session.coros_workout_id == "updated-workout-id"
+    assert repository.session.coros_scheduled_date == date(2026, 11, 12)
     assert [name for name, _ in FakeCorosClient.calls] == [
-        "queryTrainingSchedule"
+        "queryTrainingSchedule",
+        "queryScheduledWorkoutDetails",
+        "updateScheduledWorkout",
     ]
+    update_arguments = FakeCorosClient.calls[-1][1]
+    assert update_arguments["idInPlan"] == "100"
+    assert all(
+        name != "createScheduledWorkout"
+        for name, _ in FakeCorosClient.calls
+    )
 
 
 def test_updates_existing_coros_workout_instead_of_creating_a_duplicate(monkeypatch):
@@ -725,38 +879,124 @@ def test_synced_session_without_coros_id_never_falls_back_to_creation(monkeypatc
     assert FakeCorosClient.calls == []
 
 
-def test_create_without_coros_id_remains_uncertain_and_can_be_reconciled(monkeypatch):
+def test_uncertain_retry_fails_closed_when_schedule_has_no_parseable_records(monkeypatch):
     session = make_session()
+    session.coros_sync_status = "unknown"
+    session.coros_payload_hash = "previous-payload-hash"
     client, repository, _ = make_client(monkeypatch, session)
-    FakeCorosClient.created_id = None
+    FakeCorosClient.scheduled_names = []
 
-    uncertain = client.post(
-        f"/api/integrations/coros/workouts/{session.id}/push",
-        json={},
-    )
-
-    assert uncertain.status_code == 502
-    assert repository.session.coros_sync_status == "unknown"
-    assert repository.session.coros_workout_id is None
-    assert repository.session.coros_last_synced_at is None
-    assert "identifiant" in repository.session.coros_sync_error
-    assert [name for name, _ in FakeCorosClient.calls] == [
-        "queryTrainingSchedule",
-        "createScheduledWorkout",
-    ]
-
-    FakeCorosClient.created_id = "reconciled-workout-id"
-    retried = client.post(
+    response = client.post(
         f"/api/integrations/coros/workouts/{session.id}/push",
         json={"confirmed_no_duplicate": True},
     )
 
-    assert retried.status_code == 200
+    assert response.status_code == 502
+    assert "ne reconnaît aucun enregistrement" in response.json()["detail"]
+    assert repository.session.coros_sync_status == "unknown"
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+    ]
+    assert all(name != "createScheduledWorkout" for name, _ in FakeCorosClient.calls)
+
+
+def test_uncertain_retry_uses_date_scoped_schedule_without_date_fields(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "unknown"
+    session.coros_payload_hash = "previous-payload-hash"
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.scheduled_names = ["Footing aérobie"]
+    FakeCorosClient.standalone_marker = False
+    FakeCorosClient.schedule_omits_date_context = True
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "synced"
     assert repository.session.coros_sync_status == "synced"
-    assert repository.session.coros_workout_id == "reconciled-workout-id"
+    assert repository.session.coros_workout_id == "updated-workout-id"
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+        "queryScheduledWorkoutDetails",
+        "updateScheduledWorkout",
+    ]
+
+
+def test_create_reconciliation_fails_closed_when_existing_same_title_has_no_id(monkeypatch):
+    session = make_session()
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.create_result_without_id = True
+
+    query_count = 0
+    def ambiguous_schedule(self, name, arguments):
+        nonlocal query_count
+        FakeCorosClient.calls.append((name, arguments))
+        if name == "queryTrainingSchedule":
+            query_count += 1
+            workout = {"courseName": "Footing aérobie"}
+            if query_count == 2:
+                workout["idInPlan"] = "newly-visible-id"
+            return {
+                "structuredContent": {
+                    "schedule": {
+                        "days": [
+                            {
+                                "date": "2026-11-12",
+                                "courses": [workout],
+                            }
+                        ]
+                    }
+                }
+            }
+        if name == "createScheduledWorkout":
+            return {
+                "content": [
+                    {"type": "text", "text": "Workout created successfully."}
+                ]
+            }
+        return original_call(self, name, arguments)
+
+    original_call = FakeCorosClient.call_tool
+    monkeypatch.setattr(FakeCorosClient, "call_tool", ambiguous_schedule)
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 502
+    assert "identifiant" in response.json()["detail"]
+    assert repository.session.coros_sync_status == "unknown"
+    assert repository.session.coros_workout_id is None
     assert [name for name, _ in FakeCorosClient.calls] == [
         "queryTrainingSchedule",
         "createScheduledWorkout",
         "queryTrainingSchedule",
+    ]
+
+
+def test_create_without_coros_id_is_reconciled_from_new_calendar_record(monkeypatch):
+    session = make_session()
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.created_id = None
+    FakeCorosClient.create_result_without_id = True
+    FakeCorosClient.standalone_marker = False
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "synced"
+    assert repository.session.coros_sync_status == "synced"
+    assert repository.session.coros_workout_id == "101"
+    assert repository.session.coros_last_synced_at is not None
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
         "createScheduledWorkout",
+        "queryTrainingSchedule",
     ]

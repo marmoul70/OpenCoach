@@ -1552,6 +1552,7 @@ def _extract_scheduled_workout_records_for_date(
         target_date.strftime("%Y-%m-%d"),
     }
     candidates: list[Any] = []
+    schedule_texts: list[str] = []
     structured = result.get("structuredContent")
     if structured is not None:
         candidates.append(structured)

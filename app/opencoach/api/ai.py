@@ -154,6 +154,11 @@ async def ask_local_ai(
     )
     try:
         result = await service.chat(request)
+        if not result.done:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Le moteur IA a interrompu la génération avant la fin de la réponse.",
+            )
     except AIServiceDisabledError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

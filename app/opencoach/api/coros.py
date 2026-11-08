@@ -1569,9 +1569,14 @@ def _extract_scheduled_workout_records_for_date(
     if structured is not None:
         candidates.append(structured)
     for item in result.get("content", []):
-        if not isinstance(item, dict) or item.get("type") != "text":
+        # MCP servers may return either standard text content blocks or a
+        # direct list of strings (the latter is used by COROS schedule queries).
+        if isinstance(item, str):
+            raw_text = item
+        elif isinstance(item, dict) and item.get("type") == "text":
+            raw_text = item.get("text")
+        else:
             continue
-        raw_text = item.get("text")
         if not isinstance(raw_text, str):
             continue
         # COROS MCP may wrap its plain-text report as a JSON string
@@ -1705,11 +1710,22 @@ def _extract_standalone_scheduled_workout_records_for_date(
     # En l'absence de marqueur explicite, on échoue volontairement fermé :
     # un idInPlan de plan ne doit jamais être envoyé à updateScheduledWorkout.
     for item in result.get("content", []):
-        if not isinstance(item, dict) or item.get("type") != "text":
+        if isinstance(item, str):
+            raw_text = item
+        elif isinstance(item, dict) and item.get("type") == "text":
+            raw_text = item.get("text")
+        else:
             continue
-        raw_text = item.get("text")
         if not isinstance(raw_text, str):
             continue
+
+        # COROS MCP can return a JSON-encoded string inside a string item.
+        try:
+            decoded_text = json.loads(raw_text)
+        except ValueError:
+            decoded_text = None
+        if isinstance(decoded_text, str):
+            raw_text = decoded_text
 
         current_date = None
         current_name = None

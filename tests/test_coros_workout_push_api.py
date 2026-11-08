@@ -880,6 +880,58 @@ def test_uncertain_retry_uses_date_scoped_schedule_without_date_fields(monkeypat
     ]
 
 
+def test_create_reconciliation_fails_closed_when_existing_same_title_has_no_id(monkeypatch):
+    session = make_session()
+    client, repository, _ = make_client(monkeypatch, session)
+    FakeCorosClient.create_result_without_id = True
+
+    query_count = 0
+    def ambiguous_schedule(self, name, arguments):
+        nonlocal query_count
+        if name == "queryTrainingSchedule":
+            query_count += 1
+            workout = {"courseName": "Footing aérobie"}
+            if query_count == 2:
+                workout["idInPlan"] = "newly-visible-id"
+            return {
+                "structuredContent": {
+                    "schedule": {
+                        "days": [
+                            {
+                                "date": "2026-11-12",
+                                "courses": [workout],
+                            }
+                        ]
+                    }
+                }
+            }
+        if name == "createScheduledWorkout":
+            return {
+                "content": [
+                    {"type": "text", "text": "Workout created successfully."}
+                ]
+            }
+        return original_call(self, name, arguments)
+
+    original_call = FakeCorosClient.call_tool
+    monkeypatch.setattr(FakeCorosClient, "call_tool", ambiguous_schedule)
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 502
+    assert "identifiant" in response.json()["detail"]
+    assert repository.session.coros_sync_status == "unknown"
+    assert repository.session.coros_workout_id is None
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+        "createScheduledWorkout",
+        "queryTrainingSchedule",
+    ]
+
+
 def test_create_without_coros_id_is_reconciled_from_new_calendar_record(monkeypatch):
     session = make_session()
     client, repository, _ = make_client(monkeypatch, session)

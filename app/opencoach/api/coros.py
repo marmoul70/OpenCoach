@@ -1528,6 +1528,34 @@ def _extract_coros_scheduled_details(
                     candidates.append(json.loads(raw_text[start:end + 1]))
                 except ValueError:
                     pass
+        # Preserve decoded plain-text details; COROS returns editability and
+        # the complete course JSON as labelled lines in this response format.
+        schedule_texts.append(decoded if isinstance(decoded, str) else raw_text)
+
+    for raw_text in schedule_texts:
+        editable_match = re.search(
+            r"^Editable via MCP:\\s*(yes|no)\\s*$",
+            raw_text,
+            re.IGNORECASE | re.MULTILINE,
+        )
+        course_match = re.search(
+            r"^Course JSON:\\s*(\\{.*\\})\\s*$",
+            raw_text,
+            re.IGNORECASE | re.MULTILINE | re.DOTALL,
+        )
+        if editable_match:
+            course = None
+            if course_match:
+                try:
+                    parsed_course = json.loads(course_match.group(1))
+                    if isinstance(parsed_course, dict):
+                        course = parsed_course
+                except ValueError:
+                    pass
+            candidates.append({
+                "editable": editable_match.group(1).casefold() == "yes",
+                "course": course,
+            })
 
     def find_course(value: Any) -> dict[str, Any] | None:
         if isinstance(value, dict):

@@ -1534,12 +1534,12 @@ def _extract_coros_scheduled_details(
 
     for raw_text in schedule_texts:
         editable_match = re.search(
-            r"^Editable via MCP:\\s*(yes|no)\\s*$",
+            r"^Editable via MCP:\s*(yes|no)\s*$",
             raw_text,
             re.IGNORECASE | re.MULTILINE,
         )
         course_match = re.search(
-            r"^Course JSON:\\s*(\\{.*\\})\\s*$",
+            r"^Course JSON:\s*(\{.*\})\s*$",
             raw_text,
             re.IGNORECASE | re.MULTILINE | re.DOTALL,
         )

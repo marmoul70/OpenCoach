@@ -72,6 +72,29 @@ def test_training_session_coros_timestamps_are_exposed_as_explicit_utc() -> None
     assert _as_utc(None) is None
 
 
+def test_extracts_editability_from_nested_json_string_content() -> None:
+    from opencoach.api.coros import _extract_coros_scheduled_details
+
+    payload = {
+        "result": {
+            "editable": True,
+            "workoutDetails": {
+                "course": {
+                    "courseName": "Test COROS - Endurance fondamentale",
+                    "sections": [{"sectionType": 2}],
+                }
+            },
+        }
+    }
+    result = {"content": [json.dumps(json.dumps(payload))]}
+
+    details = _extract_coros_scheduled_details(result)
+
+    assert details is not None
+    assert details["editable"] is True
+    assert details["course"]["courseName"] == "Test COROS - Endurance fondamentale"
+
+
 def test_extracts_editability_and_course_from_scheduled_workout_details() -> None:
     from opencoach.api.coros import _extract_coros_scheduled_details
 

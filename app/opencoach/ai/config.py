@@ -26,7 +26,7 @@ class AISettings:
     base_url: str = "http://127.0.0.1:11434"
     model: str = "phi4-mini:latest"
     connect_timeout_seconds: float = 2.0
-    read_timeout_seconds: float = 90.0
+    read_timeout_seconds: float = 240.0
     max_concurrency: int = 1
 
     @classmethod
@@ -50,7 +50,7 @@ class AISettings:
         )
         read_timeout = _read_float(
             "OPENCOACH_AI_READ_TIMEOUT_SECONDS",
-            90.0,
+            240.0,
         )
         max_concurrency = _read_int(
             "OPENCOACH_AI_MAX_CONCURRENCY",

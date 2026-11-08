@@ -10,16 +10,12 @@ from opencoach.models import (
     TrainingSession,
 )
 
-from .load_estimation import (
-    estimate_session_load,
-)
+from .load_estimation import estimate_session_load
 from .stats import TrainingStats
 
 
 class TrainingStatsService:
-    """Calcule les statistiques réellement effectuées
-    sur une période.
-    """
+    """Calcule les statistiques réellement effectuées sur une période."""
 
     def __init__(
         self,
@@ -27,9 +23,7 @@ class TrainingStatsService:
         training_session_repository: TrainingSessionRepository,
     ) -> None:
         self.activity_repository = activity_repository
-        self.training_session_repository = (
-            training_session_repository
-        )
+        self.training_session_repository = training_session_repository
 
     def calculate(
         self,
@@ -41,122 +35,65 @@ class TrainingStatsService:
 
         if end_date < start_date:
             raise ValueError(
-                "La date de fin doit être "
-                "postérieure ou égale à la date de début."
+                "La date de fin doit être postérieure ou égale à la date de début."
             )
 
-        activities = (
-            self.activity_repository
-            .list_activities_between(
-                athlete_profile_id,
-                start_date,
-                end_date,
-            )
+        activities = self.activity_repository.list_activities_between(
+            athlete_profile_id, start_date, end_date
         )
-
-        sessions = (
-            self.training_session_repository
-            .list_sessions_between(
-                athlete_profile_id,
-                start_date,
-                end_date,
-            )
+        sessions = self.training_session_repository.list_sessions_between(
+            athlete_profile_id, start_date, end_date
         )
-
         manual_sessions = [
-            session
-            for session in sessions
-            if self._is_manual_completed_session(
-                session
-            )
+            session for session in sessions
+            if self._is_manual_completed_session(session)
         ]
 
         total_duration_minutes = (
-            sum(
-                self._activity_duration_minutes(
-                    activity
-                )
-                for activity in activities
-            )
-            + sum(
-                session.duration_minutes
-                for session in manual_sessions
-            )
+            sum(self._activity_duration_minutes(activity) for activity in activities)
+            + sum(session.duration_minutes for session in manual_sessions)
         )
-
         total_distance_km = (
-            sum(
-                (activity.distance_m or 0.0)
-                / 1000.0
-                for activity in activities
-            )
-            + sum(
-                session.distance_km or 0.0
-                for session in manual_sessions
-            )
+            sum((activity.distance_m or 0.0) / 1000.0 for activity in activities)
+            + sum(session.distance_km or 0.0 for session in manual_sessions)
         )
-
         total_elevation_gain_m = (
-            sum(
-                activity.elevation_gain_m or 0.0
-                for activity in activities
-            )
-            + sum(
-                session.elevation_gain_m or 0.0
-                for session in manual_sessions
-            )
+            sum(activity.elevation_gain_m or 0.0 for activity in activities)
+            + sum(session.elevation_gain_m or 0.0 for session in manual_sessions)
         )
-
         measured_load = sum(
-            activity.training_load or 0.0
-            for activity in activities
+            activity.training_load or 0.0 for activity in activities
         )
-
         estimated_load = sum(
-            estimate_session_load(
-                session
-            )
-            for session in manual_sessions
+            estimate_session_load(session) for session in manual_sessions
         )
 
         return TrainingStats(
             start_date=start_date,
             end_date=end_date,
-            activities_count=len(
-                activities
+            activities_count=len(activities),
+            manual_sessions_count=len(manual_sessions),
+            total_duration_minutes=total_duration_minutes,
+            total_distance_km=round(total_distance_km, 3),
+            total_elevation_gain_m=round(total_elevation_gain_m, 1),
+            measured_load=round(measured_load, 2),
+            estimated_load=round(estimated_load, 2),
+            distance_data_count=(
+                sum(activity.distance_m is not None for activity in activities)
+                + sum(session.distance_km is not None for session in manual_sessions)
             ),
-            manual_sessions_count=len(
-                manual_sessions
+            elevation_data_count=(
+                sum(activity.elevation_gain_m is not None for activity in activities)
+                + sum(session.elevation_gain_m is not None for session in manual_sessions)
             ),
-            total_duration_minutes=(
-                total_duration_minutes
-            ),
-            total_distance_km=round(
-                total_distance_km,
-                3,
-            ),
-            total_elevation_gain_m=round(
-                total_elevation_gain_m,
-                1,
-            ),
-            measured_load=round(
-                measured_load,
-                2,
-            ),
-            estimated_load=round(
-                estimated_load,
-                2,
+            measured_load_data_count=sum(
+                activity.training_load is not None for activity in activities
             ),
         )
 
     @staticmethod
-    def _is_manual_completed_session(
-        session: TrainingSession,
-    ) -> bool:
-        """Détermine si une séance terminée doit servir
-        de fallback en l'absence d'activité réelle.
-        """
-
+    def _is_manual_completed_session(session: TrainingSession) -> bool:
+        """Séance terminée saisie manuellement, sans activité liée."""
         return (
             session.status == "completed"
             and session.activity_id is None
@@ -164,20 +101,13 @@ class TrainingStatsService:
         )
 
     @staticmethod
-    def _activity_duration_minutes(
-        activity: Activity,
-    ) -> int:
+    def _activity_duration_minutes(activity: Activity) -> int:
         """Retourne la meilleure durée réelle disponible."""
-
         seconds = (
             activity.moving_time_seconds
             if activity.moving_time_seconds is not None
             else activity.elapsed_time_seconds
         )
-
         if seconds is None:
             return 0
-
-        return round(
-            seconds / 60
-        )
+        return round(seconds / 60)

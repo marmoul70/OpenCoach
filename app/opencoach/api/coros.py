@@ -1463,6 +1463,7 @@ def _extract_coros_scheduled_details(
 ) -> dict[str, Any] | None:
     """Extrait l'état d'éditabilité d'une séance standalone COROS."""
     candidates: list[Any] = []
+    schedule_texts: list[str] = []
     structured = result.get("structuredContent")
     if structured is not None:
         candidates.append(structured)

@@ -115,12 +115,12 @@ def test_extracts_non_editable_reason_from_scheduled_workout_details() -> None:
 
 def test_extracts_coros_schedule_when_content_is_json_encoded_string() -> None:
     report = (
-        "Training Schedule\\n"
-        "========================\\n\\n"
-        "2026-11-12\\n"
-        "Test COROS - Endurance fondamentale\\n"
-        "Standalone workout\\n"
-        "idInPlan: 12345\\n"
+        "Training Schedule\n"
+        "========================\n\n"
+        "2026-11-12\n"
+        "Test COROS - Endurance fondamentale\n"
+        "Standalone workout\n"
+        "idInPlan: 12345\n"
     )
     result = {"content": [json.dumps(report)]}
 

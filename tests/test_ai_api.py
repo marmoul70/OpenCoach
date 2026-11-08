@@ -316,3 +316,21 @@ def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
         },
     )
     assert rejected_profile.status_code == 422
+
+
+
+def test_ai_chat_rejects_incomplete_provider_generation() -> None:
+    incomplete = AIChatResult(
+        model="qwen3:8b",
+        content="Réponse interrompue",
+        done=False,
+    )
+    response = _client(
+        AISettings(enabled=True),
+        FakeAIService(result=incomplete),
+    ).post("/api/ai/chat", json={"question": "Bonjour"})
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == (
+        "Le moteur IA a interrompu la génération avant la fin de la réponse."
+    )

@@ -336,9 +336,17 @@ async def ask_local_ai_with_athlete_context(
     preferences = db.scalar(
         select(AICoachPreference).where(AICoachPreference.user_id == user_id)
     )
-    coach_preferences = AICoachPreferencesPayload(
-        **(preferences.__dict__ if preferences is not None else {})
-    ) if preferences is not None else _DEFAULT_COACH_PREFERENCES
+    coach_preferences = (
+        AICoachPreferencesPayload(
+            personality=preferences.personality,
+            firmness=preferences.firmness,
+            motivation=preferences.motivation,
+            response_style=preferences.response_style,
+            custom_prompt=preferences.custom_prompt,
+        )
+        if preferences is not None
+        else _DEFAULT_COACH_PREFERENCES
+    )
 
     request = AIChatRequest(
         messages=[

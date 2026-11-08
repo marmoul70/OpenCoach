@@ -92,7 +92,7 @@ def build_athlete_context(context: PlanningContext) -> str:
 
         load_coverage = (
             None if measured_load_count is None
-            else measured_load_count + stats.manual_sessions_count
+            else measured_load_count + getattr(stats, "manual_sessions_count", 0)
         )
         if load_coverage is None or count == 0 or load_coverage == count:
             lines.append(

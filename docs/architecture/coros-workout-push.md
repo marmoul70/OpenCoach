@@ -4,7 +4,7 @@
 
 Conserver une prescription de coaching complète, la convertir en entraînement structuré COROS et permettre la création ou la mise à jour d'une séance individuelle dans le calendrier COROS.
 
-Le système maître reste OpenCoach. Cette évolution ne déclenche toujours aucun envoi automatique J-1 et ne synchronise jamais une semaine entière. Le déclenchement automatique sera traité séparément après validation du moteur de prescription et du convertisseur.
+Le système maître reste OpenCoach. L'envoi manuel et le déclenchement automatique à J-1 utilisent le même moteur de conversion et de synchronisation. Le déclenchement automatique est limité aux séances planifiées du lendemain, au moment de la préparation de leur notification ; il ne synchronise jamais une semaine entière.
 
 ## Audit de l'existant
 
@@ -51,6 +51,19 @@ Le contenu transmis est le cours complet ; les sections d'un entraînement peuve
 Cette opération ajoute directement une séance autonome à une date du calendrier COROS. Elle ne crée pas de modèle réutilisable dans la bibliothèque COROS et ne modifie pas un plan d'entraînement COROS existant.
 
 Après confirmation du serveur COROS, OpenCoach indique que la séance est ajoutée au calendrier. L'utilisateur doit ensuite synchroniser la montre avec l'application COROS pour récupérer le programme.
+
+## Synchronisation automatique à J-1
+
+Le traitement des rappels du lendemain (`send_tomorrow_training_reminder.py`) tente de synchroniser chaque séance planifiée avant de persister et d'envoyer sa notification.
+
+- La synchronisation est tentée uniquement si une connexion COROS existe et est activée pour le profil.
+- Le traitement appelle le même flux que l'action manuelle, avec les mêmes validations de prescription, renouvellement OAuth, réservation SQL atomique, création/mise à jour et réconciliation.
+- Une séance déjà à jour reste inchangée ; une séance déjà liée est mise à jour avec son `idInPlan` existant si sa prescription a évolué.
+- Les états `pending`, `unknown` ou les résultats ambigus restent protégés : le rappel automatique ne fournit jamais la confirmation manuelle exigée pour autoriser une nouvelle création après un résultat incertain.
+- Si COROS est indisponible, si la séance n'est pas compatible ou si l'état distant ne permet pas une opération sûre, la notification d'entraînement reste envoyée. Elle inclut un message indiquant que la synchronisation n'a pas été confirmée.
+- Si COROS n'est pas activé, le rappel conserve son contenu habituel sans message COROS.
+
+La notification reste donc prioritaire et indépendante de la disponibilité du service COROS. La synchronisation de la montre physique avec l'application COROS reste une action à effectuer par l'athlète après l'ajout au calendrier.
 
 ## Contrat de prescription version 2
 

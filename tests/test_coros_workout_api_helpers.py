@@ -1,4 +1,5 @@
-import json\nfrom datetime import date, datetime, timezone
+import json
+from datetime import date, datetime, timezone
 
 from opencoach.api.training_sessions import _as_utc
 from opencoach.api.coros import (

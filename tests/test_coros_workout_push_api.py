@@ -510,6 +510,51 @@ def test_uncertain_retry_recovers_existing_workout_when_same_title_is_on_coros(
     )
 
 
+def test_uncertain_recovery_rejects_same_title_when_one_record_has_no_id(monkeypatch):
+    session = make_session()
+    session.coros_sync_status = "unknown"
+    session.coros_payload_hash = "previous-payload-hash"
+    client, repository, _ = make_client(monkeypatch, session)
+
+    def ambiguous_schedule(self, name, arguments):
+        FakeCorosClient.calls.append((name, arguments))
+        if name == "queryTrainingSchedule":
+            return {
+                "structuredContent": {
+                    "schedule": {
+                        "days": [
+                            {
+                                "date": "2026-11-12",
+                                "courses": [
+                                    {
+                                        "idInPlan": "existing-id",
+                                        "courseName": "Footing aérobie",
+                                    },
+                                    {"courseName": "Footing aérobie"},
+                                ],
+                            }
+                        ]
+                    }
+                }
+            }
+        raise AssertionError(f"Unexpected COROS call: {name}")
+
+    monkeypatch.setattr(FakeCorosClient, "call_tool", ambiguous_schedule)
+
+    response = client.post(
+        f"/api/integrations/coros/workouts/{session.id}/push",
+        json={},
+    )
+
+    assert response.status_code == 409
+    assert "sans" in response.json()["detail"] or "ambiguïté" in response.json()["detail"]
+    assert repository.session.coros_workout_id is None
+    assert repository.session.coros_sync_status == "unknown"
+    assert [name for name, _ in FakeCorosClient.calls] == [
+        "queryTrainingSchedule",
+    ]
+
+
 def test_uncertain_create_recovers_existing_coros_id_and_updates_instead_of_duplicating(
     monkeypatch,
 ):

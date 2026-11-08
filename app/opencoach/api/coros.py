@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 from datetime import datetime, timedelta, timezone
@@ -40,6 +41,8 @@ from opencoach.integrations.coros.oauth import (
 from opencoach.security import SecretCipher, SecretCipherError
 from opencoach.services.coros_sync_job import COROS_SYNC_JOBS, run_coros_sync_job
 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/integrations/coros",
@@ -644,10 +647,42 @@ def push_training_session_to_coros(
                     {start_key: start_value, end_key: end_value},
                 )
                 recovery_schedule_checked = True
-                existing_workouts = _extract_scheduled_workouts_for_date(
+                existing_workout_records = _extract_scheduled_workout_records_for_date(
                     recovery_schedule,
                     training_session.date,
+                    date_scoped=True,
                 )
+                existing_workouts = [
+                    name for _, name in existing_workout_records
+                ]
+                # Temporary, local diagnostic: capture the actual MCP payload
+                # shape (never credentials) to diagnose COROS calendar variants.
+                logger.warning(
+                    "COROS schedule recovery payload for %s: %s",
+                    training_session.date.isoformat(),
+                    json.dumps(
+                        {
+                            "structuredContent": recovery_schedule.get("structuredContent"),
+                            "content": [
+                                item.get("text", "")
+                                for item in recovery_schedule.get("content", [])
+                                if isinstance(item, dict) and item.get("type") == "text"
+                            ],
+                        },
+                        ensure_ascii=False,
+                        default=str,
+                    )[:12000],
+                )
+                if not existing_workout_records:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=(
+                            "Le calendrier COROS a répondu, mais OpenCoach ne "
+                            "reconnaît aucun enregistrement pour cette date. "
+                            "Aucune création n'a été effectuée ; consulte les "
+                            "journaux du backend pour le diagnostic."
+                        ),
+                    )
             except CorosMcpAuthenticationError as exc:
                 raise HTTPException(
                     status_code=401,

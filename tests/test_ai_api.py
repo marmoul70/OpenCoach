@@ -268,7 +268,27 @@ def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
     )
     planning_service = FakePlanningContextService(context)
     ai_service = FakeAIService()
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    from opencoach.database.base import Base
+    from opencoach.database.session import get_db
+
+    test_engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(test_engine)
+    TestSession = sessionmaker(bind=test_engine, autoflush=False, autocommit=False)
+
+    def override_get_db():
+        with TestSession() as db:
+            yield db
+
     app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_ai_settings] = lambda: AISettings(enabled=True)
     app.dependency_overrides[get_ai_service] = lambda: ai_service
     app.dependency_overrides[get_planning_context_service] = lambda: planning_service
@@ -316,6 +336,7 @@ def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
         },
     )
     assert rejected_profile.status_code == 422
+    test_engine.dispose()
 
 
 

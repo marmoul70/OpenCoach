@@ -20,6 +20,7 @@ import {
 import { TrainingProvider } from './modules/training/trainingStore'
 import { RaceProvider } from './modules/races/raceStore'
 import { logout as logoutOpenCoach } from './modules/auth'
+import { AIChatPanel } from './modules/coach/AIChatPanel'
 
 /**
  * Les pages sont chargées à la demande : le premier écran ne télécharge
@@ -556,6 +557,8 @@ function App() {
             {page === 'profile-sport' && <Profile />}
             {page === 'settings' && <Settings />}
           </Suspense>
+
+          <AIChatPanel />
         </div>
       </TrainingProvider>
     </RaceProvider>

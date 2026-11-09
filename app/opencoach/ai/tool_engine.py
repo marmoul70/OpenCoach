@@ -50,6 +50,19 @@ class AIToolRegistry:
         self._tools: dict[str, AITool] = {}
         self._argument_guard = argument_guard
         self._execution_results: list[AIToolResult] = []
+        self._allowed_tool_names: set[str] | None = None
+
+    def restrict_to(self, names: set[str]) -> None:
+        """Limite les outils exposés et exécutables pour la requête courante."""
+        unknown = names.difference(self._tools)
+        if unknown:
+            raise ValueError(f"Outils inconnus dans la sélection : {', '.join(sorted(unknown))}")
+        self._allowed_tool_names = set(names)
+
+    @property
+    def allowed_tool_names(self) -> frozenset[str] | None:
+        """Liste blanche active ; None signifie que le registre est non filtré."""
+        return None if self._allowed_tool_names is None else frozenset(self._allowed_tool_names)
 
     @property
     def execution_results(self) -> tuple[AIToolResult, ...]:
@@ -71,6 +84,7 @@ class AIToolRegistry:
                 "parameters": tool.arguments_model.model_json_schema(),
             }
             for tool in self._tools.values()
+            if self._allowed_tool_names is None or tool.name in self._allowed_tool_names
         ]
 
     def execute(
@@ -83,7 +97,9 @@ class AIToolRegistry:
     ) -> AIToolResult:
         """Vérifie la provenance, valide puis exécute un outil enregistré."""
         tool = self._tools.get(name)
-        if tool is None:
+        if tool is None or (
+            self._allowed_tool_names is not None and name not in self._allowed_tool_names
+        ):
             result = AIToolResult(
                 tool=name,
                 status="not_found",

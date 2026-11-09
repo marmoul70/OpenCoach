@@ -166,7 +166,7 @@ Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Miss
 | Historique d'entraînement | Implémenté, contrôles de couverture explicites |
 | Outils complémentaires | 11 outils complémentaires implémentés ; profil, contraintes, préparation de course, phase hebdomadaire, calendrier, séances planifiées, activité et débriefing couverts |
 | Orchestration IA | Boucle bornée et clarification testées ; validation Ollama réel restante |
-| Benchmark modèles | À démarrer |
+| Benchmark modèles | Runner aligné sur le prompt et les descriptions de production ; exécution VM et analyse des modèles restantes |
 | Observabilité / intégration | À démarrer |
 
 Dernière mise à jour : 9 novembre 2026.

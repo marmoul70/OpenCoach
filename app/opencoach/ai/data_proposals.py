@@ -137,6 +137,26 @@ def get_profile_data_proposal(
     return _to_response(proposal)
 
 
+def list_pending_profile_data_proposals(
+    db: Session,
+    athlete_profile_id: UUID,
+    limit: int = 10,
+) -> list[AIDataProposalResponse]:
+    """Retourne les propositions en attente du seul profil authentifié."""
+    now = _now_utc_naive()
+    proposals = db.scalars(
+        select(AIDataProposal)
+        .where(
+            AIDataProposal.athlete_profile_id == athlete_profile_id,
+            AIDataProposal.status == "pending",
+            AIDataProposal.expires_at > now,
+        )
+        .order_by(AIDataProposal.created_at.desc())
+        .limit(max(1, min(limit, 20)))
+    ).all()
+    return [_to_response(proposal) for proposal in proposals]
+
+
 def confirm_profile_data_proposal(
     db: Session,
     athlete_profile_id: UUID,

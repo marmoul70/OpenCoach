@@ -76,11 +76,44 @@ Pour chaque modèle :
 - Il ne valide pas les imports réels COROS/Intervals.icu.
 - Il ne constitue pas une validation d'Ollama tant que les scénarios n'ont pas été exécutés sur la VM.
 
-## 7. Étapes suivantes
+## 7. Exécution sur la VM
+
+Depuis la racine du dépôt, dans l'environnement virtuel Python :
+
+```bash
+python scripts/ai/benchmark_models.py --models qwen3:8b --repetitions 3
+```
+
+Essai court pour vérifier la connexion et le format du rapport :
+
+```bash
+python scripts/ai/benchmark_models.py --models qwen3:8b --limit 3 --repetitions 1
+```
+
+Comparer plusieurs modèles uniquement s'ils sont déjà installés dans Ollama :
+
+```bash
+ollama list
+python scripts/ai/benchmark_models.py --models qwen3:8b qwen3:4b qwen3:3b --repetitions 3
+```
+
+Le script :
+- réutilise le prompt système du coach et les schémas Pydantic des outils ;
+- interroge uniquement l'API Ollama locale (localhost/loopback imposé) ;
+- n'exécute aucun handler métier et ne modifie aucune donnée OpenCoach ;
+- mesure la sélection d'outil, l'exactitude des arguments, les demandes de clarification de premier tour et la latence ;
+- écrit un rapport JSON détaillé et un CSV dans `data/ai-benchmarks/`.
+
+Les clarifications qui ne peuvent être vérifiées qu'après un résultat métier (par exemple après le retour du calendrier des courses) sont marquées comme multi-tours et ne sont pas notées par ce premier runner. Les comportements interdits dans le texte libre nécessitent encore une revue qualitative ; le runner ne prétend pas les détecter automatiquement.
+
+Après exécution, transmettre les deux fichiers de rapport et la sortie terminal pour interprétation.
+
+## 8. Étapes suivantes
 
 - [x] Définir les dimensions d'évaluation et les critères de sécurité.
 - [x] Créer un premier corpus versionné de scénarios de dialogue.
 - [ ] Vérifier chaque schéma d'outil du corpus contre le registre réel.
-- [ ] Ajouter un runner automatisé et un export JSON/CSV des résultats.
+- [x] Ajouter un runner de sélection d'outils Ollama et un export JSON/CSV des résultats (`scripts/ai/benchmark_models.py`).
+- [x] Ajouter des tests unitaires du scoring, des clarifications et des synthèses (`tests/test_ai_benchmark_runner.py`).
 - [ ] Exécuter trois répétitions par cas sur la VM.
 - [ ] Comparer Qwen3 8B, 4B et 3B et documenter le choix.

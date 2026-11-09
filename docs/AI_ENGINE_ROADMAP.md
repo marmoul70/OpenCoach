@@ -79,6 +79,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] `activity_detail(activity_date | activity_id)` : détail d'une activité, sélection par date locale ou identifiant, choix explicite en cas d'ambiguïté et contrôle d'appartenance à l'athlète.
 - [x] `training_trends(nb_days, comparison_days)` : comparaison de deux périodes successives, avec calcul des écarts et contrôle de couverture.
 - [x] `athlete_training_profile()` : repères physiologiques, zones FC, capacité hebdomadaire et cibles de ravitaillement réellement configurés.
+- [x] `active_constraints(target_date)` : contraintes temporaires couvrant la date demandée, autorisation course/cross-training et durée maximale, sans diagnostic médical.
 - [x] `race_calendar(start_date, horizon_days)` : calendrier des courses et objectifs de préparation.
 - [x] `planned_sessions(start_date, end_date)` : séances prévues, intensité et zone cardiaque, agrégats avec contrôle de couverture.
 - [x] `weekly_plan_context(week_start)` : phase, type de semaine, cible de charge et durée planifiée.
@@ -141,7 +142,7 @@ Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Miss
 | Cadrage / roadmap | Réalisé |
 | AI Tool Engine | Implémenté, CI Python/Bash/frontend verte |
 | Historique d'entraînement | Implémenté, contrôles de couverture explicites |
-| Outils complémentaires | 9 outils complémentaires implémentés ; profil, phase hebdomadaire, calendrier, séances planifiées, activité et débriefing couvert |
+| Outils complémentaires | 10 outils complémentaires implémentés ; profil, contraintes, phase hebdomadaire, calendrier, séances planifiées, activité et débriefing couverts |
 | Orchestration IA | Boucle bornée et clarification testées ; validation Ollama réel restante |
 | Benchmark modèles | À démarrer |
 | Observabilité / intégration | À démarrer |
@@ -151,6 +152,7 @@ Dernière mise à jour : 9 novembre 2026.
 ### Mission 3 bis — bibliothèque de coaching
 
 - `athlete_training_profile` expose les repères du profil sportif sans identité personnelle ; les zones cardiaques utilisent le calcul existant `get_heart_rate_zone`. Les champs absents restent `null` et sont listés.
+- `active_constraints` retourne uniquement les contraintes temporaires qui couvrent la date consultée, pour l'athlète authentifié. Les règles course/cross-training et durée maximale sont exposées sans diagnostic ni extrapolation hors période ; les notes libres sont bornées et non fiables.
 - `race_calendar` lit les courses du seul athlète authentifié sur une fenêtre bornée de 1 à 365 jours.
 - `planned_sessions` lit les séances sur une fenêtre obligatoire de 31 jours maximum ; les descriptions et prescriptions JSON brutes sont exclues. Les agrégats distance/D+ sont masqués si la couverture est incomplète.
 - Les textes libres (titres, noms, lieux et messages) sont bornés et explicitement considérés comme données non fiables.
@@ -180,3 +182,13 @@ Dernière mise à jour : 9 novembre 2026.
 - [x] Ajouter `activity_detail` avec sélection par date ou identifiant, désambiguïsation et sortie de données filtrée.
 - [ ] Benchmark des modèles et complétion de l'observabilité.
 
+
+
+### Mission 3 bis — contraintes temporaires de l'athlète
+
+- `active_constraints(target_date)` lit les contraintes qui couvrent la date demandée, bornes incluses ; la date du jour est utilisée par défaut.
+- Les restrictions de course, de cross-training et de durée maximale sont restituées explicitement.
+- Les contraintes sont filtrées par `athlete_profile_id` authentifié ; aucune contrainte d'un autre athlète n'est accessible.
+- Les notes libres sont tronquées, traitées comme données non fiables et ne sont jamais interprétées comme un diagnostic.
+- Le prompt impose l'appel de cet outil avant une recommandation de séance lorsqu'une douleur, blessure, maladie, indisponibilité ou limitation est évoquée. L'absence de contrainte enregistrée ne constitue pas une validation médicale.
+- Tests dédiés : date par défaut, date explicite, période inclusive, absence de contrainte et isolation entre athlètes.

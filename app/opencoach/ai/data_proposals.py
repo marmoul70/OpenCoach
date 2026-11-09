@@ -81,7 +81,7 @@ class AIDataProposalCreate(BaseModel):
             validated = AthleteTrainingSchema(experience=self.value)
             object.__setattr__(self, "value", validated.experience)
         elif kind == "available_days":
-            if not isinstance(self.value, list) or any(
+            if not isinstance(self.value, list) or not self.value or any(
                 isinstance(day, bool) or not isinstance(day, int)
                 for day in self.value
             ):
@@ -89,7 +89,7 @@ class AIDataProposalCreate(BaseModel):
             validated = AthleteTrainingSchema(available_days=self.value)
             object.__setattr__(self, "value", validated.available_days)
         elif kind == "sport_disciplines":
-            if not isinstance(self.value, list) or any(
+            if not isinstance(self.value, list) or not self.value or any(
                 not isinstance(item, str) for item in self.value
             ):
                 raise ValueError("Les disciplines doivent être une liste de textes.")

@@ -17,7 +17,7 @@ Un bon résultat rédactionnel ne compense jamais un mauvais appel d'outil ou un
 ## 2. Corpus de référence
 
 Le corpus versionné est `tests/fixtures/ai_model_evaluation_cases.json`. Il couvre :
-- clarification des périodes manquantes ;
+- clarification des périodes manquantes et reprise correcte du paramètre fourni au tour suivant ;
 - bornes et validation des paramètres ;
 - historique, charge, tendances et récupération ;
 - données absentes ;
@@ -127,5 +127,6 @@ Après exécution, transmettre les deux fichiers de rapport et la sortie termina
 - [x] Ajouter des tests unitaires du scoring, des clarifications et des synthèses (`tests/test_ai_benchmark_runner.py`).
 - [x] Aligner le prompt système et les descriptions des 13 outils de lecture sur le contrat de production, puis fixer la date de référence synthétique.
 - [x] Valider les arguments réellement générés contre les schémas Pydantic et les exposer dans le rapport.
+- [x] Ajouter un scénario multi-tours vérifiant qu'une période fournie après clarification est réutilisée sans être inventée.
 - [ ] Exécuter trois répétitions par cas sur la VM.
 - [ ] Comparer Qwen3 8B, 4B et 3B et documenter le choix.

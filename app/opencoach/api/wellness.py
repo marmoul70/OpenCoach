@@ -8,8 +8,6 @@ from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
 )
 from opencoach.database.repositories import (
-    CorosDailyDataRepositoryError,
-    SqlCorosDailyDataRepository,
     DailyContextRepositoryError,
     SqlDailyContextRepository,
     SqlWellnessRepository,
@@ -17,6 +15,7 @@ from opencoach.database.repositories import (
 )
 from opencoach.database.session import get_db
 from opencoach.models import WellnessDay
+from opencoach.wellness_aggregation import aggregate_wellness_days
 from opencoach.recovery_assessment import (
     RecoveryAssessment,
     build_recovery_assessment,
@@ -63,23 +62,11 @@ def get_latest_wellness(
     ),
 ) -> WellnessDay:
     try:
-        coros_latest = repository.get_latest(
-            athlete_profile_id,
-            provider="coros",
+        imported = repository.list_range(
+            athlete_profile_id, date.min, date.today(),
         )
-        intervals_latest = repository.get_latest(
-            athlete_profile_id,
-            provider="intervals",
-        )
-        available = [
-            item for item in (coros_latest, intervals_latest)
-            if item is not None
-        ]
-        wellness = max(
-            available,
-            key=lambda item: (item.date, item.provider == "coros"),
-            default=None,
-        )
+        aggregated = aggregate_wellness_days(imported)
+        wellness = aggregated.days[-1] if aggregated.days else None
 
     except WellnessRepositoryError as exc:
         raise HTTPException(
@@ -108,49 +95,15 @@ def get_wellness_trends(
 ) -> dict:
     """Retourne les tendances Wellness récentes."""
 
-    if provider not in {"coros", "intervals"}:
-        raise HTTPException(
-            status_code=422,
-            detail="Le fournisseur doit être coros ou intervals.",
-        )
-
     if not 2 <= days <= 30:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "La fenêtre doit être comprise "
-                "entre 2 et 30 jours."
-            ),
-        )
+        raise HTTPException(status_code=422, detail="La fenêtre doit être comprise entre 2 et 30 jours.")
 
     end_date = date.today()
-
-    start_date = (
-        end_date
-        - timedelta(
-            days=days - 1
-        )
-    )
+    start_date = end_date - timedelta(days=days - 1)
 
     try:
-        wellness_days = (
-            repository.list_range(
-                athlete_profile_id,
-                start_date,
-                end_date,
-                provider=provider,
-            )
-        )
-        if not wellness_days and provider == "coros":
-            wellness_days = repository.list_range(
-                athlete_profile_id,
-                start_date,
-                end_date,
-                provider="intervals",
-            )
-            if wellness_days:
-                provider = "intervals"
-
+        imported = repository.list_range(athlete_profile_id, start_date, end_date)
+        wellness_days = list(aggregate_wellness_days(imported).days)
     except WellnessRepositoryError as exc:
         raise HTTPException(
             status_code=503,
@@ -167,7 +120,7 @@ def get_wellness_trends(
         days=days,
     )
 
-    return _trends_response(trends, provider=provider)
+    return _trends_response(trends, provider="opencoach")
 
 
 def _trends_response(
@@ -249,53 +202,16 @@ def get_recovery_assessment(
     context_repository: SqlDailyContextRepository = Depends(
         get_daily_context_repository,
     ),
-    time_series_repository: SqlCorosDailyDataRepository = Depends(
-        get_coros_daily_data_repository,
-    ),
 ) -> dict:
     """Expose la synthèse descriptive 7/14/30 jours au coach."""
 
     target_date = date.today()
     start_date = target_date - timedelta(days=29)
-    provider = "coros"
-
     try:
-        wellness_days = repository.list_range(
-            athlete_profile_id,
-            start_date,
-            target_date,
-            provider=provider,
-        )
-        if not wellness_days:
-            wellness_days = repository.list_range(
-                athlete_profile_id,
-                start_date,
-                target_date,
-                provider="intervals",
-            )
-            if wellness_days:
-                provider = "intervals"
-
-        subjective_context = context_repository.get_by_date(
-            athlete_profile_id,
-            target_date,
-        )
-        # Les séries temporelles sont exclusivement COROS. Ne jamais les
-        # mélanger avec un jeu Wellness Intervals utilisé en repli.
-        time_series_snapshots = (
-            time_series_repository.list_time_series_snapshots(
-                athlete_profile_id,
-                start_date,
-                target_date,
-            )
-            if provider == "coros"
-            else []
-        )
-    except (
-        WellnessRepositoryError,
-        DailyContextRepositoryError,
-        CorosDailyDataRepositoryError,
-    ) as exc:
+        imported = repository.list_range(athlete_profile_id, start_date, target_date)
+        wellness_days = list(aggregate_wellness_days(imported).days)
+        subjective_context = context_repository.get_by_date(athlete_profile_id, target_date)
+    except (WellnessRepositoryError, DailyContextRepositoryError) as exc:
         raise HTTPException(
             status_code=503,
             detail="Impossible de charger la synthèse de récupération.",
@@ -304,8 +220,7 @@ def get_recovery_assessment(
     assessment = build_recovery_assessment(
         wellness_days=wellness_days,
         target_date=target_date,
-        provider=provider,
+        provider="opencoach",
         subjective_context=subjective_context,
-        time_series_snapshots=time_series_snapshots,
     )
     return recovery_assessment_to_dict(assessment)

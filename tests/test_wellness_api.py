@@ -131,6 +131,7 @@ def test_get_latest_wellness() -> None:
         "spo2": 99.0,
         "steps": 34711,
         "provider_updated_at": None,
+        "stored_at": None,
     }
 
     assert repository.calls == []
@@ -178,7 +179,7 @@ def test_get_latest_wellness_handles_storage_error() -> None:
     }
 
 
-def test_get_latest_wellness_prefers_coros_when_available() -> None:
+def test_get_latest_wellness_returns_canonical_opencoach_data() -> None:
     repository = FakeWellnessRepository(
         WellnessDay(
             provider="coros",
@@ -200,11 +201,6 @@ def test_get_latest_wellness_prefers_coros_when_available() -> None:
     assert response.json()["sleep_deep_seconds"] == 7200
     assert repository.calls == []
 
-
-
-class FakeCorosDailyDataRepository:
-    def list_time_series_snapshots(self, athlete_profile_id, start_date, end_date):
-        return []
 
 
 class FakeDailyContextRepository:
@@ -277,22 +273,13 @@ def test_get_recovery_assessment_returns_unavailable_when_no_sensor_data() -> No
     assert payload["subjective"] is None
 
 
-def test_recovery_intervals_fallback_does_not_mix_coros_time_series() -> None:
+def test_recovery_uses_all_wellness_data_already_imported_into_opencoach() -> None:
     class IntervalsOnlyRepository:
         def list_range(self, athlete_profile_id, start_date, end_date, *, provider=None):
             if provider is None or provider == "intervals":
                 return [WellnessDay(provider="intervals", date=end_date, hrv=52.0)]
             return []
 
-    class SpyCorosDailyDataRepository:
-        called = False
-
-        def list_time_series_snapshots(self, athlete_profile_id, start_date, end_date):
-            self.called = True
-            return [{
-                "category": "hrv_timeseries",
-                "payload": {"samples": [{"metric": "sleep_hrv", "value": 99}]},
-            }]
 
     client, _ = create_client(IntervalsOnlyRepository())
     client.app.dependency_overrides[

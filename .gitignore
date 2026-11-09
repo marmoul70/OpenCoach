@@ -252,3 +252,6 @@ data/backups/
 
 # OpenCoach runtime notifications
 data/notifications/
+
+# Rapports locaux du benchmark IA (ne pas versionner les sorties)
+data/ai-benchmarks/

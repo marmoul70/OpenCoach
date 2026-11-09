@@ -47,10 +47,10 @@ def _timestamp(value: datetime | None) -> datetime | None:
 def aggregate_wellness_days(days: list[WellnessDay]) -> WellnessAggregation:
     """Fusionne les lignes de tous les fournisseurs stockées dans OpenCoach.
 
-    Une métrique est choisie indépendamment des autres. La mesure ayant la date
-    de mise à jour fournisseur la plus récente est retenue. Si plusieurs valeurs
-    concurrentes ont la même fraîcheur (ou aucune date de mise à jour), la
-    métrique est laissée inconnue plutôt que choisie arbitrairement.
+    Une métrique est choisie indépendamment des autres. La date de mise à jour
+    fournisseur est prioritaire ; à défaut, la date de mise à jour du stockage
+    OpenCoach départage les imports. Si plusieurs valeurs ont la même fraîcheur,
+    la métrique est laissée inconnue plutôt que choisie arbitrairement.
     """
     grouped: dict[date, list[WellnessDay]] = {}
     for item in days:
@@ -69,7 +69,7 @@ def aggregate_wellness_days(days: list[WellnessDay]) -> WellnessAggregation:
             candidates = [row for row in rows if getattr(row, field) is not None]
             if not candidates:
                 continue
-            dated = [(row, _timestamp(row.provider_updated_at)) for row in candidates]
+            dated = [(row, _timestamp(row.provider_updated_at or row.stored_at)) for row in candidates]
             distinct_all = {getattr(row, field) for row in candidates}
             # Une valeur sans horodatage ne peut pas être comparée à une
             # valeur horodatée : en cas de désaccord, ne pas choisir arbitrairement.

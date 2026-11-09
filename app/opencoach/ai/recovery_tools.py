@@ -53,10 +53,10 @@ def build_recovery_status_tool(
             }
 
         warnings = []
-        if aggregation.conflicts:
+        if getattr(assessment, "data_conflicts", ()):
             warnings.append(
-                "Des valeurs concurrentes de fraîcheur identique ont été écartées : "
-                + str(aggregation.conflicts)
+                "Certaines métriques ont été écartées à cause de conflits entre imports OpenCoach : "
+                + ", ".join(assessment.data_conflicts)
             )
         if assessment.data_status == "stale":
             warnings.append(

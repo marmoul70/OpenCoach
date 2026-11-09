@@ -546,3 +546,116 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
         assert calls == [(athlete_profile_id, date.today(), date.today())]
         assert registry.execute("delete_training", {}).status == "not_found"
     engine.dispose()
+
+
+def test_ai_coach_returns_evidence_verified_pending_data_proposal():
+    from datetime import date
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+    from sqlalchemy.pool import StaticPool
+
+    from opencoach.api.training_stats import get_training_stats_service
+    from opencoach.authentication.dependencies import get_current_user_id
+    from opencoach.database.base import Base
+    from opencoach.database.models import AIDataProposal, AthleteProfile, User
+    from opencoach.database.session import get_db
+
+    user_id = uuid4()
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    with Session(engine) as db:
+        user = User(id=user_id, email="coach-proposal-api@example.test")
+        profile = AthleteProfile(user=user)
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+        athlete_profile_id = profile.id
+
+    def override_get_db():
+        with Session(engine) as db:
+            yield db
+
+    context = SimpleNamespace(
+        planning_date=date.today(),
+        athlete=SimpleNamespace(
+            training=SimpleNamespace(
+                sport_disciplines=["trail_running"],
+                experience="advanced",
+                weekly_sessions=4,
+                weekly_duration_minutes=300,
+                weekly_distance_km=40.0,
+            ),
+            physiology=SimpleNamespace(
+                vma=None,
+                max_heart_rate=None,
+                resting_heart_rate=None,
+            ),
+        ),
+        recent_stats=None,
+        recent_load=None,
+        readiness=None,
+        primary_race=None,
+        constraints=(),
+    )
+    planning_service = FakePlanningContextService(context)
+
+    class ProposalFakeAIService(FakeAIService):
+        async def chat_with_tools(self, request, registry):
+            self.request = request
+            self.registry = registry
+            self.tool_result = registry.execute(
+                "propose_profile_data",
+                {
+                    "field_key": "vma",
+                    "value": 15.5,
+                    "evidence": "Ma VMA est de 15,5 km/h.",
+                },
+            )
+            return AIChatResult(
+                model="qwen3:8b",
+                content="Je te propose d'enregistrer cette VMA.",
+                done=True,
+            )
+
+    ai_service = ProposalFakeAIService()
+    app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_ai_settings] = lambda: AISettings(enabled=True)
+    app.dependency_overrides[get_ai_service] = lambda: ai_service
+    app.dependency_overrides[get_planning_context_service] = lambda: planning_service
+    app.dependency_overrides[get_current_athlete_profile_id] = lambda: athlete_profile_id
+    app.dependency_overrides[get_current_user_id] = lambda: user_id
+    app.dependency_overrides[get_training_stats_service] = lambda: SimpleNamespace(
+        calculate=lambda *_: None
+    )
+    client = TestClient(app)
+    client.cookies.set(COOKIE_NAME, "test-session-token")
+
+    response = client.post(
+        "/api/ai/coach",
+        json={"question": "Ma VMA est de 15,5 km/h."},
+    )
+
+    assert response.status_code == 200
+    proposals = response.json()["data_proposals"]
+    assert len(proposals) == 1
+    assert proposals[0]["field_key"] == "vma"
+    assert proposals[0]["value"] == 15.5
+    assert proposals[0]["unit"] == "km/h"
+    assert proposals[0]["status"] == "pending"
+
+    with Session(engine) as db:
+        stored_profile = db.get(AthleteProfile, athlete_profile_id)
+        stored_proposals = db.query(AIDataProposal).all()
+        assert stored_profile.vma is None
+        assert len(stored_proposals) == 1
+        assert stored_proposals[0].status == "pending"
+
+    engine.dispose()

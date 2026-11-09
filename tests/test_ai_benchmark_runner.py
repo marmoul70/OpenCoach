@@ -16,6 +16,7 @@ from scripts.ai.benchmark_models import (
     TOOL_PROFILES,
     filter_cases_for_tool_profile,
     ARGUMENT_MODELS,
+    build_routed_tool_definitions,
 )
 
 
@@ -242,3 +243,36 @@ def test_expected_fixture_arguments_validate_against_production_schemas() -> Non
         for call in case["expected_tool_calls"]:
             model = ARGUMENT_MODELS[call["tool"]]
             model.model_validate(call["arguments"])
+
+
+
+def test_production_router_benchmark_reduces_catalog_for_specific_intents():
+    history = {
+        "id": "history_explicit",
+        "prompt": "Analyse mon historique sur les 7 derniers jours.",
+        "expected_tool_calls": [{"tool": "training_history", "arguments": {"nb_days": 7}}],
+    }
+    definitions = build_routed_tool_definitions(history)
+    names = {item.name for item in definitions}
+
+    assert names == {"training_history"}
+    assert len(definitions) < len(build_tool_definitions("all"))
+
+
+def test_production_router_benchmark_keeps_empty_catalog_for_no_tool_request():
+    general = {
+        "id": "general_question",
+        "prompt": "Explique-moi la différence entre endurance fondamentale et seuil.",
+        "expected_tool_calls": [],
+    }
+    assert build_routed_tool_definitions(general) == []
+
+
+def test_production_router_benchmark_preserves_compound_intents():
+    compound = {
+        "id": "compound",
+        "prompt": "Analyse ma charge et ma récupération, puis compare mon évolution.",
+        "expected_tool_calls": [],
+    }
+    names = {item.name for item in build_routed_tool_definitions(compound)}
+    assert {"training_load", "recovery_analysis", "recovery_status", "training_trends"} <= names

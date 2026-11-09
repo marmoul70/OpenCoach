@@ -51,6 +51,30 @@ def test_registry_rejects_unknown_tool_and_invalid_arguments():
     assert invalid.status == "invalid_arguments"
 
 
+def test_registry_restricts_both_visible_and_executable_tools():
+    registry = AIToolRegistry()
+    registry.register(AITool(
+        name="visible",
+        description="Outil visible.",
+        arguments_model=EchoArguments,
+        handler=lambda args: {"value": args.value},
+    ))
+    registry.register(AITool(
+        name="hidden",
+        description="Outil masqué.",
+        arguments_model=EchoArguments,
+        handler=lambda args: {"value": args.value},
+    ))
+
+    registry.restrict_to({"visible"})
+
+    assert [item["name"] for item in registry.definitions()] == ["visible"]
+    blocked = registry.execute("hidden", {"value": 2})
+    accepted = registry.execute("visible", {"value": 3})
+    assert blocked.status == "not_found"
+    assert accepted.status == "ok"
+
+
 def test_registry_does_not_expose_internal_exception_details():
     registry = AIToolRegistry()
 

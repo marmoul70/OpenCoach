@@ -113,8 +113,10 @@ def test_training_history_tool_uses_injected_athlete_and_inclusive_period():
         "nb_days": 7,
         "inclusive": True,
     }
-    assert result.data["metrics"]["duration_minutes"]["coverage"]["status"] == "not_tracked"
+    assert result.data["metrics"]["duration_minutes"]["coverage"]["status"] == "unavailable"
+    assert result.data["metrics"]["duration_minutes"]["value"] is None
     assert result.data["metrics"]["distance_km"]["coverage"]["status"] == "partial"
+    assert result.data["metrics"]["distance_km"]["value"] is None
     assert result.data["metrics"]["elevation_gain_m"]["coverage"]["status"] == "partial"
     assert result.data["metrics"]["training_load"]["total"] == 150.0
 
@@ -126,5 +128,19 @@ def test_training_history_tool_rejects_out_of_range_period():
     registry.register(tool)
 
     result = registry.execute("training_history", {"nb_days": 366})
+
+    assert result.status == "invalid_arguments"
+
+
+
+def test_training_history_tool_requires_explicit_period():
+    tool = build_training_history_tool(
+        SimpleNamespace(calculate=lambda *_: None),
+        uuid4(),
+    )
+    registry = AIToolRegistry()
+    registry.register(tool)
+
+    result = registry.execute("training_history", {})
 
     assert result.status == "invalid_arguments"

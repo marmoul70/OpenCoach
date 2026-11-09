@@ -87,22 +87,21 @@ export function CoachAIChat() {
     }
   }, [])
 
-  async function sendMessage(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const value = question.trim()
-    if (!value || loading) return
+  async function submitQuestion(value: string) {
+    const normalized = value.trim()
+    if (!normalized || loading) return
 
     const history = messages.slice(-8).map(({ role, content }) => ({
       role,
       content,
     }))
-    setMessages((current) => [...current, { role: 'user', content: value }])
+    setMessages((current) => [...current, { role: 'user', content: normalized }])
     setQuestion('')
     setLoading(true)
     setError(null)
 
     try {
-      const response = await askAICoach(value, history)
+      const response = await askAICoach(normalized, history)
       setMessages((current) => [
         ...current,
         { role: 'assistant', content: response.answer },
@@ -121,6 +120,11 @@ export function CoachAIChat() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function sendMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    await submitQuestion(question)
   }
 
   async function handleProposal(
@@ -155,6 +159,17 @@ export function CoachAIChat() {
           <p className="text-[10px] text-[var(--oc-muted)]">Analyse ton profil et collecte les informations manquantes</p>
         </div>
         <span className="ml-auto rounded-full border border-emerald-500/20 bg-emerald-500/[0.06] px-2 py-1 text-[9px] font-semibold text-emerald-700 dark:text-emerald-400">Local</span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--oc-border)] px-4 py-2.5 sm:px-5">
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => void submitQuestion("Fais un bilan de mon état de forme et de ma fatigue. Analyse le sommeil, la HRV, la fréquence cardiaque au repos, le stress et la charge sur 7, 14 et 30 jours. Sépare les mesures objectives de mon ressenti et pose-moi les questions manquantes.")}
+          className="rounded-full border border-emerald-500/25 bg-emerald-500/[0.06] px-3 py-1.5 text-[10px] font-semibold text-emerald-700 transition hover:bg-emerald-500/[0.12] disabled:opacity-40 dark:text-emerald-400"
+        >
+          Bilan forme, fatigue et sommeil
+        </button>
       </div>
 
       <div className="max-h-[420px] space-y-3 overflow-y-auto px-4 py-4 sm:px-5">

@@ -29,6 +29,38 @@
     ]
   },
   {
+    "id": "history_after_period_clarification",
+    "category": "tool_selection",
+    "prompt": "Sur les 7 derniers jours.",
+    "conversation": [
+      {
+        "role": "user",
+        "content": "Fais-moi le bilan de mon historique d'entraînement."
+      },
+      {
+        "role": "assistant",
+        "content": "Sur combien de jours souhaites-tu que j'analyse ton historique ?"
+      },
+      {
+        "role": "user",
+        "content": "Sur les 7 derniers jours."
+      }
+    ],
+    "expected_tool_calls": [
+      {
+        "tool": "training_history",
+        "arguments": {
+          "nb_days": 7
+        }
+      }
+    ],
+    "expected_clarification": null,
+    "forbidden_behaviors": [
+      "Perdre la période donnée après clarification",
+      "Inventer une autre durée"
+    ]
+  },
+  {
     "id": "history_out_of_range",
     "category": "argument_validation",
     "prompt": "Analyse mon historique sur 500 jours.",

@@ -457,6 +457,9 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     )
 
     assert "Tu es l'assistant coach local d'OpenCoach." in prompt
+    assert "session_execution_review" in prompt
+    assert "athlete_training_profile" in prompt
+    assert "ne conclus jamais que la séance n'a pas été faite" in prompt
     assert "tu ne peux ni modifier un entraînement" in prompt
     assert "Sois très direct et rigoureux" in prompt
     assert "Structure l'analyse avec faits, interprétation, limites et recommandations." in prompt

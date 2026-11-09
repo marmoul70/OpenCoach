@@ -3,6 +3,7 @@ from scripts.ai.benchmark_models import (
     summarize,
     validate_local_base_url,
     build_tool_definitions,
+    ARGUMENT_MODELS,
 )
 
 
@@ -125,3 +126,20 @@ def test_benchmark_exposes_the_complete_production_read_tool_catalog() -> None:
         "recovery_analysis",
         "training_trends",
     } == names
+
+
+def test_expected_fixture_arguments_validate_against_production_schemas() -> None:
+    import json
+    from pathlib import Path
+
+    fixture = (
+        Path(__file__).parent
+        / "fixtures"
+        / "ai_model_evaluation_cases.json"
+    )
+    cases = json.loads(fixture.read_text(encoding="utf-8"))
+
+    for case in cases:
+        for call in case["expected_tool_calls"]:
+            model = ARGUMENT_MODELS[call["tool"]]
+            model.model_validate(call["arguments"])

@@ -20,6 +20,7 @@ from opencoach.ai.service import AIOrchestrationError, AIService, AIServiceDisab
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.ai.training_tools import build_training_history_tool
 from opencoach.ai.load_tools import build_training_load_tool
+from opencoach.ai.recovery_tools import build_recovery_status_tool
 from opencoach.database.session import get_db
 from opencoach.api.training_stats import get_training_stats_service
 from opencoach.training import TrainingStatsService
@@ -273,6 +274,12 @@ def get_ai_tool_registry(
         build_training_load_tool(
             context_service.recent_load_service,
             training_stats_service,
+            athlete_profile_id,
+        )
+    )
+    registry.register(
+        build_recovery_status_tool(
+            context_service.readiness_service,
             athlete_profile_id,
         )
     )

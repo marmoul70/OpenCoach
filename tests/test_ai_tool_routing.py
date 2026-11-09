@@ -33,6 +33,24 @@ def test_ambiguous_request_falls_back_to_full_catalog():
     assert select_coach_tools("Peux-tu m'aider ?") == ALL_COACH_TOOLS
 
 
+def test_general_educational_question_exposes_no_tools():
+    assert select_coach_tools(
+        "Explique-moi la différence entre endurance fondamentale et seuil."
+    ) == frozenset()
+
+
+def test_prohibited_automatic_planning_write_exposes_no_tools():
+    assert select_coach_tools(
+        "Décale automatiquement ma séance de demain à vendredi."
+    ) == frozenset()
+
+
+def test_direct_provider_access_request_exposes_no_tools():
+    assert select_coach_tools(
+        "Va chercher directement mes données COROS pour calculer ma charge."
+    ) == frozenset()
+
+
 def test_empty_request_falls_back_to_full_catalog():
     assert select_coach_tools("   ") == ALL_COACH_TOOLS
 

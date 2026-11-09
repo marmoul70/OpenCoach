@@ -901,3 +901,29 @@ def test_readiness_can_aggregate_all_provider_data_stored_in_opencoach():
     assert result.baseline.resting_hr.sample_count == 14
     assert repository.list_range_calls[0][-1] is None
     assert repository.list_range_calls[1][-1] is None
+
+
+def test_readiness_marks_conflicting_current_metric_as_unavailable():
+    current = create_current_day()
+    current.provider = "coros"
+    current.hrv = 55.0
+    conflicting_import = WellnessDay(
+        provider="intervals",
+        date=TARGET_DATE,
+        hrv=90.0,
+    )
+    repository = FakeWellnessRepository(
+        current=current,
+        history=[conflicting_import, *create_history()],
+    )
+    service = ReadinessService(
+        repository,
+        thresholds=load_threshold_settings(),
+        provider=None,
+    )
+
+    result = service.calculate(uuid4(), TARGET_DATE)
+
+    assert result.current.provider == "opencoach"
+    assert result.current.hrv is None
+    assert f"{TARGET_DATE.isoformat()}:hrv" in result.data_conflicts

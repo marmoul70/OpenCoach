@@ -49,7 +49,7 @@ def test_build_athlete_context_includes_only_selected_deterministic_facts() -> N
             ),
             data_status="fresh",
             source_date=date(2026, 11, 7),
-            provider="coros",
+            provider="opencoach",
         ),
         primary_race=SimpleNamespace(
             name="Trail test",
@@ -65,6 +65,7 @@ def test_build_athlete_context_includes_only_selected_deterministic_facts() -> N
     assert "VMA enregistrée : 15.0 km/h." in result
     assert "120.5 km" in result
     assert "Disponibilité quotidienne calculée : good" in result
+    assert "source : opencoach" in result
     assert "Trail test" in result
     assert "données personnelles" not in result.lower()
     assert "ne peux modifier" in result

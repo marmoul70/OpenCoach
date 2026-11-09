@@ -461,6 +461,7 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "Tu es l'assistant coach local d'OpenCoach." in prompt
     assert "session_execution_review" in prompt
     assert "propose_profile_data" in prompt
+    assert "recovery_analysis" in prompt
     assert "citation exacte" in prompt
     assert "proposition de sauvegarde en attente" in prompt
     assert "Une réponse utilisateur ne devient pas automatiquement une donnée persistée" in prompt
@@ -468,6 +469,8 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "pas encore enregistrée dans le profil" in prompt
     assert "athlete_training_profile" in prompt
     assert "active_constraints" in prompt
+    assert "recovery_analysis" in prompt
+    assert "état de forme" in prompt
     assert "race_preparation_analysis" in prompt
     assert "ne crée aucun score de préparation" in prompt
     assert "ne conclus jamais que la séance n'a pas été faite" in prompt
@@ -539,6 +542,7 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
             "training_history",
             "training_load",
             "recovery_status",
+            "recovery_analysis",
             "training_trends",
         ]
         result = registry.execute("training_history", {"nb_days": 1})

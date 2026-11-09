@@ -63,6 +63,13 @@ def build_training_history_tool(
         load_available = (
             stats.measured_load_data_count + stats.manual_sessions_count
         )
+
+        def metric_value(value: float | int, available: int):
+            # Une somme partielle ne doit jamais être présentée comme un total fiable.
+            if sessions_count and available < sessions_count:
+                return None
+            return value
+
         return {
             "period": {
                 "start_date": stats.start_date.isoformat(),
@@ -77,28 +84,27 @@ def build_training_history_tool(
             },
             "metrics": {
                 "duration_minutes": {
-                    "value": stats.total_duration_minutes,
+                    "value": metric_value(
+                        stats.total_duration_minutes,
+                        stats.duration_data_count,
+                    ),
                     "unit": "minutes",
-                    "coverage": {
-                        "status": "not_tracked",
-                        "total_sessions": sessions_count,
-                        "warning": "La couverture des durées sources n'est pas encore mesurée par TrainingStatsService.",
-                    },
+                    "coverage": coverage(stats.duration_data_count),
                 },
                 "distance_km": {
-                    "value": stats.total_distance_km,
+                    "value": metric_value(stats.total_distance_km, stats.distance_data_count),
                     "unit": "km",
                     "coverage": coverage(stats.distance_data_count),
                 },
                 "elevation_gain_m": {
-                    "value": stats.total_elevation_gain_m,
+                    "value": metric_value(stats.total_elevation_gain_m, stats.elevation_data_count),
                     "unit": "m",
                     "coverage": coverage(stats.elevation_data_count),
                 },
                 "training_load": {
                     "measured": stats.measured_load,
                     "estimated": stats.estimated_load,
-                    "total": stats.total_load,
+                    "total": metric_value(stats.total_load, load_available),
                     "unit": "load_points",
                     "coverage": coverage(load_available),
                 },

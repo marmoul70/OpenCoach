@@ -27,6 +27,7 @@ class ProposeProfileDataArguments(BaseModel):
         "weekly_sessions", "weekly_duration_minutes", "weekly_distance_km",
         "carbohydrates_per_hour", "fluids_per_hour", "sodium_per_hour",
         "fatigue_threshold", "available_days", "experience", "sport_disciplines",
+        "shoe", "bike", "watch",
     ]
     value: Any
     evidence: str = Field(min_length=1, max_length=200)
@@ -95,6 +96,22 @@ def _evidence_contains_value(
         return value in _EXPERIENCE_EVIDENCE and any(
             term in normalized for term in _EXPERIENCE_EVIDENCE[value]
         )
+
+    if field_key in {"shoe", "bike", "watch"} and isinstance(value, dict):
+        allowed_keys = {"model", "brand"} if field_key == "watch" else {"model", "brand", "category"}
+        if set(value) - allowed_keys or not isinstance(value.get("model"), str):
+            return False
+        evidence_values = [value["model"]]
+        evidence_values.extend(
+            item for item in (value.get("brand"), value.get("category"))
+            if item is not None
+        )
+        return all(
+            isinstance(item, str)
+            and item.strip()
+            and item.casefold() in normalized
+            for item in evidence_values
+        )
     return False
 
 
@@ -141,9 +158,11 @@ def build_profile_data_proposal_tool(
             "Champs pris en charge : valeurs numériques de profil, available_days "
             "(liste de jours, lundi=0 à dimanche=6), experience (beginner, "
             "intermediate, advanced, expert), sport_disciplines (road_running, "
-            "trail_running). evidence doit être une citation exacte d'un message "
-            "utilisateur qui étaye chaque valeur. Cet outil ne modifie jamais le "
-            "profil : l'utilisateur doit confirmer séparément la proposition."
+            "trail_running). Les équipements shoe, bike et watch attendent un objet "
+            "avec model obligatoire, brand optionnelle et category optionnelle (pas "
+            "de category pour watch). Chaque valeur textuelle doit figurer dans "
+            "evidence. Cet outil ne modifie jamais le profil : l'utilisateur doit "
+            "confirmer séparément la proposition."
         ),
         arguments_model=ProposeProfileDataArguments,
         handler=handler,

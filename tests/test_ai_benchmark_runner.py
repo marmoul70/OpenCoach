@@ -2,6 +2,7 @@ from scripts.ai.benchmark_models import (
     score_response,
     summarize,
     validate_local_base_url,
+    build_tool_definitions,
 )
 
 
@@ -102,3 +103,25 @@ def test_benchmark_refuses_remote_endpoints() -> None:
 def test_benchmark_accepts_localhost_and_loopback() -> None:
     assert validate_local_base_url("http://localhost:11434/") == "http://localhost:11434"
     assert validate_local_base_url("http://127.0.0.1:11434") == "http://127.0.0.1:11434"
+
+
+def test_benchmark_exposes_the_complete_production_read_tool_catalog() -> None:
+    definitions = build_tool_definitions()
+    names = {item.name for item in definitions}
+
+    assert len(definitions) == 13
+    assert {
+        "athlete_training_profile",
+        "active_constraints",
+        "weekly_plan_context",
+        "race_calendar",
+        "race_preparation_analysis",
+        "planned_sessions",
+        "session_execution_review",
+        "activity_detail",
+        "training_history",
+        "training_load",
+        "recovery_status",
+        "recovery_analysis",
+        "training_trends",
+    } == names

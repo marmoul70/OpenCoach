@@ -234,3 +234,17 @@ Dernière mise à jour : 9 novembre 2026.
 - [x] Ajouter les tests de validation, preuve utilisateur, confirmation et conflit.
 
 **Livrable :** le coach peut ajouter un équipement au profil sans inventer de caractéristiques ni contourner la confirmation explicite.
+
+### Mission 5 — dialogue forme, fatigue et récupération
+
+- [x] Réutiliser le moteur Python `recovery_assessment.py` pour analyser les fenêtres 7/14/30 jours.
+- [x] Ajouter l'outil IA en lecture seule `recovery_analysis`, limité au profil authentifié.
+- [x] Inclure sommeil, score et phases disponibles, HRV, FC repos, stress et charge ATL/CTL.
+- [x] Inclure séparément le contexte quotidien et le check-in Coach (énergie, douleur, maladie, indisponibilité).
+- [x] Conserver la fraîcheur, la couverture, la provenance et les valeurs inconnues.
+- [x] Interdire les scores composites inventés et les interprétations médicales.
+- [x] Ajouter au coach les règles de dialogue et un raccourci frontend « Bilan forme, fatigue et sommeil ».
+- [x] Ajouter les tests du nouvel outil et de son enregistrement dans le registre.
+- [ ] Tester les conversations réelles avec Ollama sur la VM et vérifier les réponses lorsque le sommeil ou le ressenti manque.
+
+**Documentation :** `docs/AI_RECOVERY_COACHING.md`.

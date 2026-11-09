@@ -80,6 +80,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] `training_trends(nb_days, comparison_days)` : comparaison de deux périodes successives, avec calcul des écarts et contrôle de couverture.
 - [x] `athlete_training_profile()` : repères physiologiques, zones FC, capacité hebdomadaire et cibles de ravitaillement réellement configurés.
 - [x] `active_constraints(target_date)` : contraintes temporaires couvrant la date demandée, autorisation course/cross-training et durée maximale, sans diagnostic médical.
+- [x] `race_preparation_analysis(race_id, history_days)` : exigences d'une course future croisées avec le profil et la progression récente, couverture des métriques contrôlée et aucun score de préparation artificiel.
 - [x] `race_calendar(start_date, horizon_days)` : calendrier des courses et objectifs de préparation.
 - [x] `planned_sessions(start_date, end_date)` : séances prévues, intensité et zone cardiaque, agrégats avec contrôle de couverture.
 - [x] `weekly_plan_context(week_start)` : phase, type de semaine, cible de charge et durée planifiée.
@@ -142,7 +143,7 @@ Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Miss
 | Cadrage / roadmap | Réalisé |
 | AI Tool Engine | Implémenté, CI Python/Bash/frontend verte |
 | Historique d'entraînement | Implémenté, contrôles de couverture explicites |
-| Outils complémentaires | 10 outils complémentaires implémentés ; profil, contraintes, phase hebdomadaire, calendrier, séances planifiées, activité et débriefing couverts |
+| Outils complémentaires | 11 outils complémentaires implémentés ; profil, contraintes, préparation de course, phase hebdomadaire, calendrier, séances planifiées, activité et débriefing couverts |
 | Orchestration IA | Boucle bornée et clarification testées ; validation Ollama réel restante |
 | Benchmark modèles | À démarrer |
 | Observabilité / intégration | À démarrer |
@@ -153,6 +154,7 @@ Dernière mise à jour : 9 novembre 2026.
 
 - `athlete_training_profile` expose les repères du profil sportif sans identité personnelle ; les zones cardiaques utilisent le calcul existant `get_heart_rate_zone`. Les champs absents restent `null` et sont listés.
 - `active_constraints` retourne uniquement les contraintes temporaires qui couvrent la date consultée, pour l'athlète authentifié. Les règles course/cross-training et durée maximale sont exposées sans diagnostic ni extrapolation hors période ; les notes libres sont bornées et non fiables.
+- `race_preparation_analysis` croise une course future du calendrier avec le profil et les entraînements observés sur une fenêtre demandée de 7 à 180 jours. Il utilise `TrainingStatsService` pour les agrégats, contrôle séparément la couverture de durée, distance, D+ et charge via les repositories, et masque les totaux incomplets. Aucun score de préparation ni probabilité de réussite n'est calculé.
 - `race_calendar` lit les courses du seul athlète authentifié sur une fenêtre bornée de 1 à 365 jours.
 - `planned_sessions` lit les séances sur une fenêtre obligatoire de 31 jours maximum ; les descriptions et prescriptions JSON brutes sont exclues. Les agrégats distance/D+ sont masqués si la couverture est incomplète.
 - Les textes libres (titres, noms, lieux et messages) sont bornés et explicitement considérés comme données non fiables.
@@ -192,3 +194,15 @@ Dernière mise à jour : 9 novembre 2026.
 - Les notes libres sont tronquées, traitées comme données non fiables et ne sont jamais interprétées comme un diagnostic.
 - Le prompt impose l'appel de cet outil avant une recommandation de séance lorsqu'une douleur, blessure, maladie, indisponibilité ou limitation est évoquée. L'absence de contrainte enregistrée ne constitue pas une validation médicale.
 - Tests dédiés : date par défaut, date explicite, période inclusive, absence de contrainte et isolation entre athlètes.
+
+
+### Mission 3 ter — analyse de préparation à une course
+
+- `race_preparation_analysis(race_id, history_days)` est accessible en lecture seule et limitée à la course de l'athlète authentifié.
+- Le `race_id` est récupéré via `race_calendar` ; une course absente ou appartenant à un autre athlète renvoie `not_found`.
+- `history_days` est obligatoire et borné entre 7 et 180 jours. Le prompt impose une clarification lorsque la durée n'est pas donnée.
+- La course passée est identifiée comme `past_event` et n'est pas traitée comme un objectif futur.
+- Les exigences de course incluent distance, D+, densité de dénivelé et délai restant. Les données du profil restent distinctes des volumes réellement observés.
+- Les agrégats de progression sont fournis uniquement avec couverture complète ; les données partielles sont masquées, sans extrapolation.
+- Le coach ne produit ni score de préparation, ni probabilité de réussite, ni diagnostic médical.
+- Tests dédiés : métriques complètes, couverture partielle, isolation entre athlètes et course passée.

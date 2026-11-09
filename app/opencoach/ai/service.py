@@ -81,7 +81,11 @@ class AIService:
                     )
                 )
                 for call in result.tool_calls:
-                    # Les handlers métier sont synchrones (SQLAlchemy/services) :\n                    # les exécuter hors de la boucle asyncio pour ne pas bloquer l'API.\n                    tool_result = await asyncio.to_thread(\n                        registry.execute, call.name, call.arguments\n                    )
+                    # Les handlers métier sont synchrones (SQLAlchemy/services) :
+                    # les exécuter hors de la boucle asyncio pour ne pas bloquer l'API.
+                    tool_result = await asyncio.to_thread(
+                        registry.execute, call.name, call.arguments
+                    )
                     serialized = json.dumps(
                         tool_result.model_dump(mode="json"),
                         ensure_ascii=False,

@@ -60,6 +60,7 @@ def build_training_history_tool(
                 "status": state,
             }
 
+        duration_available = getattr(stats, "duration_data_count", 0)
         load_available = (
             stats.measured_load_data_count + stats.manual_sessions_count
         )
@@ -86,10 +87,10 @@ def build_training_history_tool(
                 "duration_minutes": {
                     "value": metric_value(
                         stats.total_duration_minutes,
-                        getattr(stats, "duration_data_count", 0),
+                        duration_available,
                     ),
                     "unit": "minutes",
-                    "coverage": coverage(stats.duration_data_count),
+                    "coverage": coverage(duration_available),
                 },
                 "distance_km": {
                     "value": metric_value(stats.total_distance_km, stats.distance_data_count),

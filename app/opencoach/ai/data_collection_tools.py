@@ -148,6 +148,51 @@ def _evidence_contains_value(
             return False
         return True
 
+    if field_key == "daily_checkin" and isinstance(value, dict):
+        required = {"energy_rating", "pain_wellness_rating", "illness", "unavailable"}
+        if not required.issubset(value):
+            return False
+        for key in ("energy_rating", "pain_wellness_rating"):
+            number = value.get(key)
+            if isinstance(number, bool) or not isinstance(number, int) or str(number) not in normalized:
+                return False
+        illness_terms = ("malade", "maladie", "fièvre", "symptôme")
+        illness_negative = ("pas malade", "aucun symptôme", "sans symptôme")
+        availability_terms = ("indisponible", "pas disponible", "je ne peux pas")
+        availability_negative = ("disponible", "je peux m'entraîner", "je peux courir")
+        for key, positive, negative in (
+            ("illness", illness_terms, illness_negative),
+            ("unavailable", availability_terms, availability_negative),
+        ):
+            terms = negative if value[key] is False else positive
+            if not any(term in normalized for term in terms):
+                return False
+        aliases = {
+            "head": ("tête", "tete"), "neck": ("cou",), "shoulder": ("épaule", "epaule"),
+            "back": ("dos",), "lower_back": ("bas du dos", "lombaire"),
+            "hip": ("hanche",), "groin": ("aine",), "thigh": ("cuisse",),
+            "knee": ("genou",), "calf": ("mollet",), "shin": ("tibia",),
+            "ankle": ("cheville",), "achilles": ("achille",), "foot": ("pied",),
+            "other": ("autre",),
+        }
+        for location in value.get("pain_locations", []):
+            if not isinstance(location, dict) or location.get("area") not in aliases:
+                return False
+            if not any(term in normalized for term in aliases[location["area"]]):
+                return False
+            side_terms = {
+                "left": ("gauche",), "right": ("droit", "droite"),
+                "both": ("deux côtés", "des deux côtés", "bilatéral"),
+                "center": ("au centre", "central"), "not_applicable": (),
+            }
+            side = location.get("side", "not_applicable")
+            if side not in side_terms or (side_terms[side] and not any(term in normalized for term in side_terms[side])):
+                return False
+        note = value.get("note")
+        if note is not None and (not isinstance(note, str) or note.casefold() not in normalized):
+            return False
+        return True
+
     if field_key in {"shoe", "bike", "watch"} and isinstance(value, dict):
         allowed_keys = {"model", "brand"} if field_key == "watch" else {"model", "brand", "category"}
         if set(value) - allowed_keys or not isinstance(value.get("model"), str):

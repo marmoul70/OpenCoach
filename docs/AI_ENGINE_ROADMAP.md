@@ -74,7 +74,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 
 ### Mission 3 — Outils sportifs complémentaires
 - [x] `training_load(nb_days)` : charge récente et comparaison prévu/réalisé via `RecentTrainingLoadService`, avec couverture du planning et données absentes explicitées.
-- [ ] `planning_comparison(nb_days)` : prévu/réalisé/écarts et couverture.
+- [x] `planning_comparison(nb_days)` : comparaison prévu/réalisé couverte par `training_load`, avec écarts et couverture.
 - [x] `recovery_status(target_date)` : score Readiness, signaux, baselines, fraîcheur et indisponibilité explicite.
 - [ ] `activity_detail(activity_id)` : détail d'une activité, avec contrôle d'appartenance à l'athlète.
 - [x] `training_trends(nb_days, comparison_days)` : comparaison de deux périodes successives, avec calcul des écarts et contrôle de couverture.
@@ -140,6 +140,17 @@ Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Miss
 | Benchmark modèles | À démarrer |
 | Observabilité / intégration | À démarrer |
 
-Dernière mise à jour : 9 novembre 2026.\n\n### Reprise sur main 0.8.5\n\n- [x] Créer une branche propre depuis `main` 0.8.5, sans reprendre les 356 commits obsolètes de l'ancienne branche.\n- [x] Réintégrer le moteur IA, `training_history`, les préférences du coach et les tests associés.
+Dernière mise à jour : 9 novembre 2026.
+
+### Reprise sur main 0.8.5
+
+- [x] Créer une branche propre depuis `main` 0.8.5, sans reprendre les 356 commits obsolètes de l'ancienne branche.
+- [x] Réintégrer le moteur IA, `training_history`, les préférences du coach et les tests associés.
 - [x] Ajouter les outils `training_load`, `recovery_status` et `training_trends` en lecture seule.
-- [x] Ajouter l'installation optionnelle d'Ollama via `install.sh --with-ai`, sans activer automatiquement le coach.\n- [x] Enregistrer les paramètres Ollama locaux dans `.env.example` ; l'IA reste désactivée par défaut.\n- [ ] Valider la migration Alembic, les tests Python et l'intégration réelle Ollama sur la VM Debian 13.\n- [ ] Ajouter les outils métier complémentaires après validation du socle.
+- [x] Couvrir la comparaison prévu/réalisé avec `training_load`.
+- [x] Ajouter l'installation optionnelle d'Ollama via `install.sh --with-ai`, sans activer automatiquement le coach.
+- [x] Enregistrer les paramètres Ollama locaux dans `.env.example` ; l'IA reste désactivée par défaut.
+- [x] Valider CI Python 3.13, Bash/ShellCheck et frontend sur le commit `de1776e2` (run GitHub Actions `42617922430`).
+- [ ] Valider la migration Alembic sur la VM Debian 13 et effectuer un test réel avec Ollama.
+- [ ] Ajouter `activity_detail`, puis benchmarker les modèles et compléter l'observabilité.
+

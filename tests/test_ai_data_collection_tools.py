@@ -1,0 +1,150 @@
+"""Tests de l'outil de collecte de données lié aux preuves utilisateur."""
+
+from uuid import uuid4
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from sqlalchemy.pool import StaticPool
+
+from opencoach.ai.data_collection_tools import build_profile_data_proposal_tool
+from opencoach.ai.tool_engine import AIToolRegistry
+from opencoach.database.base import Base
+from opencoach.database.models import AIDataProposal, AthleteProfile, User
+
+
+def _database():
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+    user = User(id=uuid4(), email="data-collection@example.test")
+    profile = AthleteProfile(user=user)
+    session.add(profile)
+    session.commit()
+    session.refresh(profile)
+    return engine, session, profile
+
+
+def test_proposal_tool_requires_exact_user_evidence_and_creates_pending_only():
+    engine, db, profile = _database()
+    try:
+        tool = build_profile_data_proposal_tool(
+            db,
+            profile.id,
+            ["Ma VMA mesurée est de 15,5 km/h."],
+        )
+        registry = AIToolRegistry()
+        registry.register(tool)
+
+        result = registry.execute(
+            "propose_profile_data",
+            {
+                "field_key": "vma",
+                "value": 15.5,
+                "evidence": "Ma VMA mesurée est de 15,5 km/h.",
+            },
+        )
+
+        assert result.status == "ok"
+        assert result.data["status"] == "pending"
+        assert result.data["requires_explicit_confirmation"] is True
+        assert result.data["unit"] == "km/h"
+        assert profile.vma is None
+        assert db.query(AIDataProposal).count() == 1
+        assert registry.execution_results[-1].data == result.data
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_proposal_tool_rejects_evidence_not_present_in_user_messages():
+    engine, db, profile = _database()
+    try:
+        tool = build_profile_data_proposal_tool(
+            db,
+            profile.id,
+            ["Je ne connais pas ma VMA."],
+        )
+        registry = AIToolRegistry()
+        registry.register(tool)
+
+        result = registry.execute(
+            "propose_profile_data",
+            {
+                "field_key": "vma",
+                "value": 15.5,
+                "evidence": "Ma VMA est de 15,5 km/h.",
+            },
+        )
+
+        assert result.status == "failed"
+        assert db.query(AIDataProposal).count() == 0
+        assert profile.vma is None
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_proposal_tool_rejects_value_not_contained_in_evidence():
+    engine, db, profile = _database()
+    try:
+        tool = build_profile_data_proposal_tool(
+            db,
+            profile.id,
+            ["Ma VMA est de 15 km/h."],
+        )
+        registry = AIToolRegistry()
+        registry.register(tool)
+
+        result = registry.execute(
+            "propose_profile_data",
+            {
+                "field_key": "vma",
+                "value": 16,
+                "evidence": "Ma VMA est de 15 km/h.",
+            },
+        )
+
+        assert result.status == "failed"
+        assert db.query(AIDataProposal).count() == 0
+        assert profile.vma is None
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_proposal_tool_uses_only_authenticated_profile_scope():
+    engine, db, profile = _database()
+    try:
+        other_profile = AthleteProfile(
+            user=User(id=uuid4(), email="other-data-collection@example.test")
+        )
+        db.add(other_profile)
+        db.commit()
+
+        tool = build_profile_data_proposal_tool(
+            db,
+            profile.id,
+            ["Je pèse 82 kg."],
+        )
+        registry = AIToolRegistry()
+        registry.register(tool)
+        result = registry.execute(
+            "propose_profile_data",
+            {
+                "field_key": "weight_kg",
+                "value": 82,
+                "evidence": "Je pèse 82 kg.",
+            },
+        )
+
+        proposal = db.query(AIDataProposal).one()
+        assert result.status == "ok"
+        assert proposal.athlete_profile_id == profile.id
+        assert other_profile.weight_kg is None
+    finally:
+        db.close()
+        engine.dispose()

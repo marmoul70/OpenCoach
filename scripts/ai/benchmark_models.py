@@ -390,6 +390,7 @@ async def main_async(args: argparse.Namespace) -> int:
         "case_count": len(cases),
         "scope": "tool_selection_and_schema_validation_no_business_tool_execution",
         "prompt_profile": "production_coach_system_prompt_default_preferences",
+        "tool_descriptions": "mirrored_from_production_read_tool_registry",
         "reference_date": "2026-11-09",
         "context_note": "Synthetic reference-date context only; no athlete-specific facts or database access.",
         "summaries": summaries,

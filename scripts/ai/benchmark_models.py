@@ -27,6 +27,7 @@ from opencoach.ai.config import AISettings
 from opencoach.ai.schemas import AIChatRequest, AIMessage, AIToolDefinition
 from opencoach.ai.activity_tools import ActivityDetailArguments
 from opencoach.ai.constraints_tools import ActiveConstraintsArguments
+from opencoach.ai.execution_tools import SessionExecutionReviewArguments
 from opencoach.ai.coaching_tools import (
     EmptyArguments,
     PlannedSessionsArguments,
@@ -56,6 +57,7 @@ ARGUMENT_MODELS = {
     "race_preparation_analysis": RacePreparationArguments,
     "activity_detail": ActivityDetailArguments,
     "planned_sessions": PlannedSessionsArguments,
+    "session_execution_review": SessionExecutionReviewArguments,
     "weekly_plan_context": WeeklyPlanContextArguments,
 }
 
@@ -71,6 +73,7 @@ TOOL_DESCRIPTIONS = {
     "race_preparation_analysis": "Analyse la préparation d'une course ; race_id et history_days sont obligatoires.",
     "activity_detail": "Détaille une activité OpenCoach identifiée par date ou identifiant.",
     "planned_sessions": "Liste les séances planifiées sur une période explicite.",
+    "session_execution_review": "Compare une séance planifiée à son activité réellement associée.",
     "weekly_plan_context": "Consulte le contexte de planification d'une semaine.",
 }
 

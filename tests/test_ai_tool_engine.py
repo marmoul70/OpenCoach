@@ -113,6 +113,7 @@ def test_training_history_tool_uses_injected_athlete_and_inclusive_period():
         "nb_days": 7,
         "inclusive": True,
     }
+    assert result.data["metrics"]["duration_minutes"]["coverage"]["status"] == "not_tracked"
     assert result.data["metrics"]["distance_km"]["coverage"]["status"] == "partial"
     assert result.data["metrics"]["elevation_gain_m"]["coverage"]["status"] == "partial"
     assert result.data["metrics"]["training_load"]["total"] == 150.0

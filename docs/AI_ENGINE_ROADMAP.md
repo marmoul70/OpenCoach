@@ -108,8 +108,9 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] Ajouter le service de proposition et de confirmation avec validation typée, contrôle de cohérence physiologique, détection de conflit, expiration et protection contre la double confirmation.
 - [x] Ajouter les endpoints authentifiés de création, consultation, confirmation et refus ; l'écriture n'est déclenchée que par l'endpoint de confirmation.
 - [x] Ajouter les tests unitaires du service : absence d'écriture avant confirmation, bornes, isolation, conflit, expiration, refus, cohérence physiologique et double confirmation.
-- [ ] Relier le tool calling du coach à la création de proposition et exposer la proposition sous forme structurée dans la réponse API.
-- [ ] Ajouter une carte frontend Confirmer / Refuser et afficher le résultat réel de la sauvegarde.
+- [x] Relier le tool calling du coach à la création de proposition avec preuve exacte issue d'un message utilisateur ; la valeur n'est acceptée que si elle apparaît dans cette preuve.
+- [x] Exposer les propositions créées sous forme structurée dans la réponse de /api/ai/coach.
+- [x] Ajouter une interface conversationnelle au tableau de bord Coach avec les actions Confirmer / Refuser et le statut de sauvegarde retourné par l'API.
 - [ ] Étendre progressivement le mécanisme aux autres domaines métier, après validation du profil.
 
 **Livrable :** le coach peut demander une information manquante et l'enregistrer durablement uniquement après validation explicite.

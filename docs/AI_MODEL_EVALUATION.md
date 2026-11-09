@@ -37,7 +37,7 @@ Pour chaque modèle et chaque scénario :
 2. injecter une date de référence synthétique fixe (2026-11-09), sans charger de faits athlète réels ;
 3. réinitialiser l'historique conversationnel entre scénarios ;
 4. fixer les paramètres Ollama (température, contexte, options) et les consigner ;
-5. enregistrer les tool calls, leurs arguments, leur validation Pydantic, la réponse textuelle disponible et les durées ;
+5. enregistrer les tool calls, leurs arguments, leur validation Pydantic, la réponse textuelle disponible, les durées et compteurs natifs Ollama ;
 6. exécuter trois répétitions par scénario pour mesurer la stabilité ;
 7. ne pas utiliser de données personnelles réelles dans les fixtures ;
 8. ne pas modifier les données métier pendant le benchmark.
@@ -97,6 +97,14 @@ Essai court pour vérifier la connexion et le format du rapport :
 python scripts/ai/benchmark_models.py --models qwen3:8b --limit 3 --repetitions 1
 ```
 
+Comparer l'impact du catalogue et du prompt sans changer la configuration de production :
+
+```bash
+python scripts/ai/benchmark_models.py --models qwen3:8b --tool-profile all --prompt-profile production --repetitions 3
+python scripts/ai/benchmark_models.py --models qwen3:8b --tool-profile history --prompt-profile production --repetitions 3
+python scripts/ai/benchmark_models.py --models qwen3:8b --tool-profile history --prompt-profile minimal --repetitions 3
+```
+
 Comparer plusieurs modèles uniquement s'ils sont déjà installés dans Ollama :
 
 ```bash
@@ -105,13 +113,16 @@ python scripts/ai/benchmark_models.py --models qwen3:8b qwen3:4b qwen3:3b --repe
 ```
 
 Le script :
-- réutilise le prompt système de production du coach avec les préférences par défaut, les descriptions des 13 outils de lecture recopiées du registre de production et leurs schémas Pydantic ;
+- propose deux profils de prompt : `production` (prompt réel du coach) et `minimal` (règles de routage réduites, uniquement pour diagnostic) ;
+- propose deux catalogues : `all` (13 outils) et `history` (training_history, training_load, recovery_analysis) ;
+- réutilise les schémas Pydantic métier dans les deux catalogues ;
 - injecte une date de référence synthétique fixe, mais ne charge pas le contexte athlète réel construit par `/coach` : le benchmark reste sans accès à la base et n’évalue donc pas l’effet des faits personnalisés ;
 - n'expose pas le tool de proposition de données de profil, car ce runner est limité à la sélection des outils de lecture ;
 - valide séparément les arguments générés contre les modèles Pydantic et marque les appels hors bornes (par exemple 500 jours) ;
 - interroge uniquement l'API Ollama locale (localhost/loopback imposé) ;
 - n'exécute aucun handler métier et ne modifie aucune donnée OpenCoach ;
-- mesure la sélection d'outil, l'exactitude des arguments, les demandes de clarification de premier tour et la latence ;
+- mesure la sélection d'outil, l'exactitude des arguments, les demandes de clarification de premier tour et la latence murale ;
+- conserve les métriques Ollama `total_duration`, `load_duration`, `prompt_eval_count`, `prompt_eval_duration`, `eval_count` et `eval_duration` (durées en nanosecondes), ainsi que le débit de génération calculé ;
 - écrit un rapport JSON détaillé et un CSV dans `data/ai-benchmarks/`.
 
 Les clarifications qui ne peuvent être vérifiées qu'après un résultat métier (par exemple après le retour du calendrier des courses) sont marquées comme multi-tours et ne sont pas notées par ce premier runner. Les comportements interdits dans le texte libre nécessitent encore une revue qualitative ; le runner ne prétend pas les détecter automatiquement.
@@ -128,5 +139,7 @@ Après exécution, transmettre les deux fichiers de rapport et la sortie termina
 - [x] Aligner le prompt système et les descriptions des 13 outils de lecture sur le contrat de production, puis fixer la date de référence synthétique.
 - [x] Valider les arguments réellement générés contre les schémas Pydantic et les exposer dans le rapport.
 - [x] Ajouter un scénario multi-tours vérifiant qu'une période fournie après clarification est réutilisée sans être inventée.
-- [ ] Exécuter trois répétitions par cas sur la VM.
+- [x] Capturer les métriques natives Ollama pour séparer le coût de chargement, du prompt et de la génération.
+- [x] Ajouter les profils comparatifs de catalogue (13 outils / 3 outils ciblés) et de prompt (production / minimal), sans modifier le prompt de production.
+- [ ] Exécuter les trois configurations comparatives sur la VM.
 - [ ] Comparer Qwen3 8B, 4B et 3B et documenter le choix.

@@ -174,16 +174,43 @@ def validate_local_base_url(value: str) -> str:
     return value.rstrip("/")
 
 
-def build_tool_definitions() -> list[AIToolDefinition]:
-    """Construit les schémas directement depuis les modèles Pydantic métier."""
+TOOL_PROFILES = {
+    "all": tuple(ARGUMENT_MODELS),
+    "history": ("training_history", "training_load", "recovery_analysis"),
+}
+
+MINIMAL_SYSTEM_PROMPT = """Tu es l'orchestrateur du coach OpenCoach.
+Règles impératives :
+- Les données athlète proviennent uniquement des outils OpenCoach ; les fournisseurs externes ne sont jamais interrogés directement.
+- Choisis l'outil qui correspond exactement à la demande. Un historique de séances utilise training_history, jamais training_load ou recovery_analysis.
+- Une charge d'entraînement utilise training_load ; une analyse sommeil/récupération utilise recovery_analysis.
+- Si un paramètre obligatoire manque, pose une question ciblée et n'appelle aucun outil avant la réponse.
+- Ne déduis jamais une période, une date ou une valeur absente. Réutilise exactement la précision donnée dans les tours précédents.
+- Les calculs sportifs sont réalisés par Python/OpenCoach, jamais par toi.
+"""
+
+
+def build_tool_definitions(profile: str = "all") -> list[AIToolDefinition]:
+    """Construit les schémas Pydantic de production selon le profil demandé."""
+    if profile not in TOOL_PROFILES:
+        raise ValueError(f"Profil d'outils inconnu : {profile}")
     return [
         AIToolDefinition(
             name=name,
             description=TOOL_DESCRIPTIONS[name],
-            parameters=model.model_json_schema(),
+            parameters=ARGUMENT_MODELS[name].model_json_schema(),
         )
-        for name, model in ARGUMENT_MODELS.items()
+        for name in TOOL_PROFILES[profile]
     ]
+
+
+def build_system_prompt(profile: str = "production") -> str:
+    """Retourne le prompt de production ou un prompt minimal de diagnostic."""
+    if profile == "production":
+        return _coach_system_prompt(_DEFAULT_COACH_PREFERENCES)
+    if profile == "minimal":
+        return MINIMAL_SYSTEM_PROMPT
+    raise ValueError(f"Profil de prompt inconnu : {profile}")
 
 
 def canonical(value: Any) -> str:
@@ -261,10 +288,11 @@ async def run_case(
     definitions: list[AIToolDefinition],
     temperature: float,
     num_predict: int,
+    prompt_profile: str = "production",
 ) -> dict[str, Any]:
     request = AIChatRequest(
         messages=[
-            AIMessage(role="system", content=_coach_system_prompt(_DEFAULT_COACH_PREFERENCES)),
+            AIMessage(role="system", content=build_system_prompt(prompt_profile)),
             AIMessage(
                 role="user",
                 content=(
@@ -295,6 +323,17 @@ async def run_case(
             "category": case["category"],
             "status": "ok",
             "latency_ms": round(elapsed_ms, 2),
+            "ollama_total_duration_ns": response.total_duration,
+            "ollama_load_duration_ns": response.load_duration,
+            "prompt_eval_count": response.prompt_eval_count,
+            "prompt_eval_duration_ns": response.prompt_eval_duration,
+            "eval_count": response.eval_count,
+            "eval_duration_ns": response.eval_duration,
+            "generation_tokens_per_second": (
+                round(response.eval_count / (response.eval_duration / 1_000_000_000), 2)
+                if response.eval_count is not None and response.eval_duration
+                else None
+            ),
             **score,
         }
     except AIProviderError as exc:
@@ -304,6 +343,13 @@ async def run_case(
             "category": case["category"],
             "status": "provider_error",
             "latency_ms": round((time.perf_counter() - started) * 1000, 2),
+            "ollama_total_duration_ns": None,
+            "ollama_load_duration_ns": None,
+            "prompt_eval_count": None,
+            "prompt_eval_duration_ns": None,
+            "eval_count": None,
+            "eval_duration_ns": None,
+            "generation_tokens_per_second": None,
             "error": str(exc),
             "tool_selection_pass": False,
             "clarification_checkable": False,
@@ -348,7 +394,7 @@ async def main_async(args: argparse.Namespace) -> int:
     cases = json.loads(fixture_path.read_text(encoding="utf-8"))
     if args.limit:
         cases = cases[:args.limit]
-    definitions = build_tool_definitions()
+    definitions = build_tool_definitions(args.tool_profile)
     all_rows: list[dict[str, Any]] = []
 
     for model in args.models:
@@ -371,6 +417,7 @@ async def main_async(args: argparse.Namespace) -> int:
                     definitions=definitions,
                     temperature=args.temperature,
                     num_predict=args.num_predict,
+                    prompt_profile=args.prompt_profile,
                 )
                 row["repetition"] = repetition
                 all_rows.append(row)
@@ -400,7 +447,10 @@ async def main_async(args: argparse.Namespace) -> int:
         "num_predict": args.num_predict,
         "case_count": len(cases),
         "scope": "tool_selection_and_schema_validation_no_business_tool_execution",
-        "prompt_profile": "production_coach_system_prompt_default_preferences",
+        "prompt_profile": args.prompt_profile,
+        "tool_profile": args.tool_profile,
+        "tool_count": len(definitions),
+        "ollama_metrics_note": "Ollama durations are nanoseconds; token throughput uses eval_count / eval_duration.",
         "tool_descriptions": "mirrored_from_production_read_tool_registry",
         "reference_date": "2026-11-09",
         "context_note": "Synthetic reference-date context only; no athlete-specific facts or database access.",
@@ -411,7 +461,10 @@ async def main_async(args: argparse.Namespace) -> int:
     with csv_path.open("w", encoding="utf-8", newline="") as handle:
         fields = [
             "model", "repetition", "case_id", "category", "status",
-            "latency_ms", "tool_selection_pass", "argument_validation_pass", "clarification_checkable",
+            "latency_ms", "ollama_total_duration_ns", "ollama_load_duration_ns",
+            "prompt_eval_count", "prompt_eval_duration_ns", "eval_count",
+            "eval_duration_ns", "generation_tokens_per_second",
+            "tool_selection_pass", "argument_validation_pass", "clarification_checkable",
             "clarification_pass", "expected_tool_calls", "actual_tool_calls",
             "response_excerpt", "error",
         ]
@@ -443,6 +496,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=0, help="Limite de scénarios pour un essai rapide.")
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--num-predict", type=int, default=512)
+    parser.add_argument("--prompt-profile", choices=("production", "minimal"), default="production")
+    parser.add_argument("--tool-profile", choices=tuple(TOOL_PROFILES), default="all")
     parser.add_argument("--connect-timeout", type=float, default=3.0)
     parser.add_argument("--read-timeout", type=float, default=240.0)
     parser.add_argument("--output-dir", default="data/ai-benchmarks")

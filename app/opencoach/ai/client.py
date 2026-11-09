@@ -99,6 +99,12 @@ class OllamaClient:
                 content=message.get("content", ""),
                 tool_calls=tool_calls,
                 done=data["done"],
+                total_duration=data.get("total_duration"),
+                load_duration=data.get("load_duration"),
+                prompt_eval_count=data.get("prompt_eval_count"),
+                prompt_eval_duration=data.get("prompt_eval_duration"),
+                eval_count=data.get("eval_count"),
+                eval_duration=data.get("eval_duration"),
             )
         except (KeyError, TypeError, ValueError) as exc:
             raise AIProviderError(

@@ -11,6 +11,8 @@ from scripts.ai.benchmark_models import (
     summarize,
     validate_local_base_url,
     build_tool_definitions,
+    build_system_prompt,
+    TOOL_PROFILES,
     ARGUMENT_MODELS,
 )
 
@@ -174,6 +176,27 @@ def test_benchmark_exposes_the_complete_production_read_tool_catalog() -> None:
     assert "demande-la à l'utilisateur et attends sa réponse" in descriptions["training_history"]
     assert "demande la période si elle manque et attends la réponse" in descriptions["training_load"]
     assert "deux durées si elles manquent et attends la réponse" in descriptions["training_trends"]
+
+
+def test_benchmark_supports_all_and_focused_tool_profiles() -> None:
+    all_tools = build_tool_definitions("all")
+    focused_tools = build_tool_definitions("history")
+
+    assert len(all_tools) == 13
+    assert [tool.name for tool in focused_tools] == [
+        "training_history", "training_load", "recovery_analysis"
+    ]
+    assert set(TOOL_PROFILES["history"]).issubset(ARGUMENT_MODELS)
+
+
+def test_benchmark_supports_production_and_minimal_prompt_profiles() -> None:
+    production = build_system_prompt("production")
+    minimal = build_system_prompt("minimal")
+
+    assert "OpenCoach" in production
+    assert "jamais des outils" not in minimal  # prompt content is intentionally concise
+    assert "training_history" in minimal
+    assert "ne déduis jamais une période" in minimal.lower()
 
 
 def test_expected_fixture_arguments_validate_against_production_schemas() -> None:

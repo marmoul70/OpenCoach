@@ -47,6 +47,56 @@ def test_chat_sends_expected_payload_and_parses_response():
     assert result.done is True
 
 
+def test_ollama_runtime_metrics_are_preserved():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={
+            "model": "test-model",
+            "message": {"role": "assistant", "content": "Analyse disponible."},
+            "done": True,
+            "total_duration": 1_000_000_000,
+            "load_duration": 100_000_000,
+            "prompt_eval_count": 250,
+            "prompt_eval_duration": 200_000_000,
+            "eval_count": 80,
+            "eval_duration": 400_000_000,
+        })
+
+    async def run():
+        client = OllamaClient(
+            AISettings(enabled=True, model="test-model"),
+            transport=httpx.MockTransport(handler),
+        )
+        return await client.chat(make_request())
+
+    result = asyncio.run(run())
+    assert result.total_duration == 1_000_000_000
+    assert result.load_duration == 100_000_000
+    assert result.prompt_eval_count == 250
+    assert result.prompt_eval_duration == 200_000_000
+    assert result.eval_count == 80
+    assert result.eval_duration == 400_000_000
+
+
+def test_missing_ollama_runtime_metrics_remain_optional():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={
+            "model": "test-model",
+            "message": {"role": "assistant", "content": "Analyse disponible."},
+            "done": True,
+        })
+
+    async def run():
+        client = OllamaClient(
+            AISettings(enabled=True, model="test-model"),
+            transport=httpx.MockTransport(handler),
+        )
+        return await client.chat(make_request())
+
+    result = asyncio.run(run())
+    assert result.total_duration is None
+    assert result.eval_count is None
+
+
 def test_http_error_is_sanitized():
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(503, request=request)

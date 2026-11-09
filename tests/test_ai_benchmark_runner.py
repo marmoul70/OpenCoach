@@ -23,6 +23,7 @@ def test_benchmark_scores_exact_tool_and_arguments() -> None:
     )
 
     assert result["tool_selection_pass"] is True
+    assert result["argument_validation_pass"] is True
 
 
 def test_benchmark_rejects_wrong_arguments_and_extra_tool_calls() -> None:
@@ -44,6 +45,25 @@ def test_benchmark_rejects_wrong_arguments_and_extra_tool_calls() -> None:
     )
 
     assert result["tool_selection_pass"] is False
+    assert result["argument_validation_pass"] is True
+
+
+def test_benchmark_marks_out_of_range_generated_arguments_invalid() -> None:
+    case = {
+        "id": "history_out_of_range",
+        "expected_tool_calls": [],
+        "expected_clarification": "Signaler la limite autorisée.",
+    }
+
+    result = score_response(
+        case,
+        [{"name": "training_history", "arguments": {"nb_days": 500}}],
+        "",
+    )
+
+    assert result["tool_selection_pass"] is False
+    assert result["argument_validation_pass"] is False
+    assert result["actual_tool_calls"][0]["arguments_valid"] is False
 
 
 def test_benchmark_checks_clarification_only_when_expected_on_first_turn() -> None:
@@ -80,16 +100,17 @@ def test_benchmark_does_not_score_second_turn_clarification_before_tool_result()
 def test_benchmark_summary_reports_latency_and_accuracy() -> None:
     rows = [
         {"model": "qwen3:8b", "status": "ok", "latency_ms": 100,
-         "tool_selection_pass": True, "clarification_checkable": False,
+         "tool_selection_pass": True, "argument_validation_pass": True, "clarification_checkable": False,
          "clarification_pass": None},
         {"model": "qwen3:8b", "status": "ok", "latency_ms": 200,
-         "tool_selection_pass": False, "clarification_checkable": True,
+         "tool_selection_pass": False, "argument_validation_pass": False, "clarification_checkable": True,
          "clarification_pass": True},
     ]
 
     result = summarize(rows, "qwen3:8b")
 
     assert result["tool_selection_accuracy"] == 0.5
+    assert result["argument_validation_accuracy"] == 0.5
     assert result["clarification_accuracy"] == 1.0
     assert result["latency_ms_p50"] == 100
 

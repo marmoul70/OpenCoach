@@ -510,6 +510,7 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
         "training_history",
         "training_load",
         "recovery_status",
+        "training_trends",
     ]
     result = registry.execute("training_history", {"nb_days": 1})
 

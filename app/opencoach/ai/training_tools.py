@@ -16,7 +16,6 @@ class TrainingHistoryArguments(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     nb_days: int = Field(
-        default=7,
         ge=1,
         le=365,
         description="Nombre de jours calendaires inclus dans la période.",

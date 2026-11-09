@@ -254,3 +254,72 @@ def test_structured_training_profile_rejects_empty_collection_values():
         AIDataProposalCreate(field_key="available_days", value=[])
     with pytest.raises(ValidationError):
         AIDataProposalCreate(field_key="sport_disciplines", value=[])
+
+def test_equipment_proposal_creates_item_only_after_confirmation(db):
+    session, profile = db
+    proposal = create_profile_data_proposal(
+        session,
+        profile.id,
+        AIDataProposalCreate(
+            field_key="shoe",
+            value={"model": "Trabuco 14", "brand": "Asics", "category": "trail"},
+        ),
+    )
+
+    assert proposal.status == "pending"
+    assert proposal.unit == "équipement"
+    assert len(profile.shoes) == 0
+
+    confirmed = confirm_profile_data_proposal(session, profile.id, proposal.id)
+    session.refresh(profile)
+    assert confirmed.status == "confirmed"
+    assert len(profile.shoes) == 1
+    assert profile.shoes[0].model == "Trabuco 14"
+    assert profile.shoes[0].brand == "Asics"
+    assert profile.shoes[0].category == "trail"
+    assert profile.shoes[0].active is True
+    assert profile.shoes[0].distance_km == 0
+
+
+def test_equipment_proposal_rejects_invalid_or_duplicate_equipment(db):
+    session, profile = db
+    with pytest.raises(ValidationError):
+        AIDataProposalCreate(field_key="shoe", value={"model": "", "brand": "Asics"})
+    with pytest.raises(ValidationError):
+        AIDataProposalCreate(field_key="watch", value={"model": "Pace 4", "category": "GPS"})
+
+    proposal = create_profile_data_proposal(
+        session,
+        profile.id,
+        AIDataProposalCreate(field_key="watch", value={"model": "Pace 4", "brand": "COROS"}),
+    )
+    confirm_profile_data_proposal(session, profile.id, proposal.id)
+    with pytest.raises(ValueError, match="déjà présent"):
+        create_profile_data_proposal(
+            session,
+            profile.id,
+            AIDataProposalCreate(field_key="watch", value={"model": "Pace 4", "brand": "COROS"}),
+        )
+
+
+def test_equipment_proposal_detects_duplicate_added_before_confirmation(db):
+    from opencoach.database.models import Shoe
+
+    session, profile = db
+    proposal = create_profile_data_proposal(
+        session,
+        profile.id,
+        AIDataProposalCreate(field_key="shoe", value={"model": "Trabuco 14", "brand": "Asics"}),
+    )
+    session.add(Shoe(
+        id="existing-shoe",
+        athlete_profile_id=profile.id,
+        model="Trabuco 14",
+        brand="Asics",
+    ))
+    session.commit()
+
+    with pytest.raises(RuntimeError, match="ajouté depuis"):
+        confirm_profile_data_proposal(session, profile.id, proposal.id)
+    assert session.get(AIDataProposal, proposal.id).status == "conflict"
+    assert len(profile.shoes) == 1

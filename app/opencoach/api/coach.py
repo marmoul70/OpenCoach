@@ -147,8 +147,7 @@ def get_coach_decision_service(
         daily_context_repository=(
             daily_context_repository
         ),
-        provider="coros",
-        fallback_providers=("intervals",),
+        provider=None,
     )
 
     daily_training_load_service = (
@@ -493,24 +492,18 @@ def get_today_coach_decision(
                 )
             )
 
-        recovery_provider = assessment.readiness.provider
         recovery_wellness_days = SqlWellnessRepository(db).list_range(
             athlete_profile_id,
             reference_date - timedelta(days=29),
             reference_date,
-            provider=recovery_provider,
         )
-        recovery_time_series = SqlCorosDailyDataRepository(db).list_time_series_snapshots(
-            athlete_profile_id,
-            reference_date - timedelta(days=29),
-            reference_date,
-        )
+        from opencoach.wellness_aggregation import aggregate_wellness_days
+        recovery_aggregation = aggregate_wellness_days(recovery_wellness_days)
         recovery_assessment = build_recovery_assessment(
-            wellness_days=recovery_wellness_days,
+            wellness_days=list(recovery_aggregation.days),
             target_date=reference_date,
-            provider=recovery_provider,
+            provider="opencoach",
             subjective_context=assessment.readiness.context,
-            time_series_snapshots=recovery_time_series,
         )
         recovery_payload = recovery_assessment_to_dict(
             recovery_assessment

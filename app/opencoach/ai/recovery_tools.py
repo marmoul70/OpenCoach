@@ -236,6 +236,11 @@ def build_recovery_analysis_tool(
             })
 
         warnings = []
+        if aggregation.conflicts:
+            warnings.append(
+                "Des valeurs concurrentes de fraîcheur identique ont été écartées : "
+                + str(aggregation.conflicts)
+            )
         if assessment.data_status == "unavailable":
             warnings.append("Aucune donnée Wellness disponible sur la période.")
         elif assessment.data_status == "stale":

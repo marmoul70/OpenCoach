@@ -214,6 +214,7 @@ class FakePlanningContextService:
     def __init__(self, context):
         self.context = context
         self.profile_id = None
+        self.recent_load_service = object()
 
     def build(self, athlete_profile_id, planning_date):
         self.profile_id = athlete_profile_id

@@ -15,6 +15,10 @@ class AIServiceDisabledError(RuntimeError):
     """L'utilisation de l'IA est désactivée dans OpenCoach."""
 
 
+class AIOrchestrationError(RuntimeError):
+    """Erreur contrôlée de la boucle d'appels d'outils."""
+
+
 class AIService:
     """Façade IA optionnelle, sans accès direct aux services métier."""
 
@@ -68,7 +72,7 @@ class AIService:
                 if not result.tool_calls:
                     return result
                 if len(result.tool_calls) > self.MAX_TOOL_CALLS_PER_ROUND:
-                    raise RuntimeError("Le modèle a dépassé le nombre d'appels d'outils autorisé.")
+                    raise AIOrchestrationError("Le modèle a dépassé le nombre d'appels d'outils autorisé.")
                 messages.append(
                     AIMessage(
                         role="assistant",
@@ -91,4 +95,4 @@ class AIService:
                     messages.append(
                         AIMessage(role="tool", tool_name=call.name, content=serialized)
                     )
-            raise RuntimeError("Le nombre maximal de tours d'outils a été atteint.")
+            raise AIOrchestrationError("Le nombre maximal de tours d'outils a été atteint.")

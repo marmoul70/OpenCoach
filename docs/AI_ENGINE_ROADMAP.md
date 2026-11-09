@@ -37,7 +37,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - Une donnée absente n'est jamais assimilée à zéro ; une donnée partielle doit être signalée.
 - Chaque résultat temporel porte des dates de début et de fin explicites.
 - Les outils d'analyse restent en lecture seule. Les futures écritures de données de profil passent par un service métier distinct, une liste blanche et une confirmation explicite côté API/interface.
-- Aucun outil IA ne peut créer/modifier/supprimer une séance, modifier le planning ou écrire dans COROS.
+- Aucun outil IA ne peut créer/modifier/supprimer une séance, modifier le planning ou écrire dans un fournisseur externe.
 - Les arguments du modèle sont validés côté Python : limites de période, identifiants, types et champs autorisés.
 - Les données libres retournées par les outils sont des données non fiables, jamais des instructions système.
 - Le mode sans outil reste disponible pour les questions générales qui ne nécessitent aucune donnée personnelle.
@@ -248,6 +248,20 @@ Dernière mise à jour : 9 novembre 2026.
 - [ ] Tester les conversations réelles avec Ollama sur la VM et vérifier les réponses lorsque le sommeil ou le ressenti manque.
 
 **Documentation :** `docs/AI_RECOVERY_COACHING.md`.
+
+#### Mission 5 ter — centralisation des données de récupération
+
+- [x] Supprimer la priorité COROS et le repli Intervals dans les analyses coach et Readiness.
+- [x] Lire toutes les lignes Wellness importées dans le stockage OpenCoach, sans accès direct aux API fournisseurs.
+- [x] Consolider chaque métrique indépendamment, par date, depuis tous les fournisseurs enregistrés.
+- [x] Utiliser l'horodatage fournisseur lorsqu'il est disponible, sinon l'horodatage d'import OpenCoach.
+- [x] Ne pas choisir arbitrairement en cas de conflit de fraîcheur : laisser la métrique inconnue et signaler le conflit.
+- [x] Retirer le repository de séries temporelles COROS des outils IA et des synthèses de récupération.
+- [x] Appliquer l'agrégation canonique aux services Readiness, Wellness, Coach et au contexte transmis à l'IA.
+- [x] Ajouter des tests multi-fournisseurs, fraîcheur, conflits, absence d'horodatage et couverture.
+- [ ] Vérifier sur la VM que les imports réels COROS et Intervals alimentent bien `wellness_daily` et que le coach n'utilise que cette table.
+
+**Règle d'architecture :** les intégrations (COROS, Intervals.icu, Garmin, Apple Health ou toute future plateforme) ne sont que des fournisseurs d'import. OpenCoach est l'unique référentiel consulté par le coach et les services de score.
 
 #### Mission 5 bis — check-in conversationnel persistant
 

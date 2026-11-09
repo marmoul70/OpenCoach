@@ -33,7 +33,17 @@ class OllamaClient:
         payload = {
             "model": self.settings.model,
             "messages": [
-                message.model_dump(exclude_none=True, exclude_defaults=True)
+                {
+                    **{"role": message.role, "content": message.content},
+                    **({"tool_name": message.tool_name} if message.tool_name else {}),
+                    **(
+                        {"tool_calls": [
+                            {"function": {"name": call.name, "arguments": call.arguments}}
+                            for call in message.tool_calls
+                        ]}
+                        if message.tool_calls else {}
+                    ),
+                }
                 for message in request.messages
             ],
             "stream": False,

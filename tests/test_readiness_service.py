@@ -394,7 +394,7 @@ def test_readiness_service_uses_previous_wellness_when_current_day_is_missing() 
             (
                 profile_id,
                 TARGET_DATE,
-                "intervals",
+                None,
             )
         ]
     )
@@ -713,7 +713,7 @@ def test_readiness_service_raises_when_no_wellness_is_available() -> None:
             TARGET_DATE,
         )
 
-def test_readiness_service_builds_baseline_before_fallback_source_date() -> None:
+def test_readiness_service_builds_baseline_before_latest_imported_date() -> None:
     history = create_history()
 
     repository = FakeWellnessRepository(
@@ -739,11 +739,12 @@ def test_readiness_service_builds_baseline_before_fallback_source_date() -> None
     )
 
     assert repository.list_range_calls == [
+        (profile_id, date(2026, 8, 17), date(2026, 8, 17), None),
         (
             profile_id,
             date(2026, 8, 3),
             date(2026, 8, 16),
-            "intervals",
+            None,
         )
     ]
 

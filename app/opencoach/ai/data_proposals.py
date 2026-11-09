@@ -126,7 +126,7 @@ class AIDataProposalCreate(BaseModel):
         "weekly_sessions", "weekly_duration_minutes", "weekly_distance_km",
         "carbohydrates_per_hour", "fluids_per_hour", "sodium_per_hour",
         "fatigue_threshold", "available_days", "experience", "sport_disciplines",
-        "shoe", "bike", "watch",
+        "shoe", "bike", "watch", "daily_checkin",
     ]
     value: Any
 
@@ -141,6 +141,11 @@ class AIDataProposalCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_value(self):
+        if self.field_key == "daily_checkin":
+            validated = DailyCheckInProposalValue.model_validate(self.value)
+            object.__setattr__(self, "value", validated.model_dump(mode="json", exclude_none=True))
+            return self
+
         rule = PROFILE_FIELD_RULES[self.field_key]
         kind = rule["kind"]
 

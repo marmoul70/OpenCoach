@@ -304,7 +304,7 @@ async def ask_local_ai(
         num_predict=512,
     )
     try:
-        result = await service.chat_with_tools(request, tool_registry)
+        result = await service.chat(request)
         if not result.done:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -393,7 +393,7 @@ async def ask_local_ai_with_athlete_context(
         num_predict=512,
     )
     try:
-        result = await service.chat(request)
+        result = await service.chat_with_tools(request, tool_registry)
         if not result.done:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,

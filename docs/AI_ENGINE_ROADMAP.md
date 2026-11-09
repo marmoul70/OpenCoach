@@ -317,3 +317,15 @@ Vérification du chemin de lecture IA sur la branche de développement :
 - [ ] Comparer les modèles candidats avec trois répétitions par cas.
 
 **Fichiers :** `docs/AI_MODEL_EVALUATION.md`, `tests/fixtures/ai_model_evaluation_cases.json`, `tests/test_ai_model_evaluation_fixture.py`.
+
+
+### Mission 5 — runner de benchmark Ollama
+
+- [x] Réutiliser le prompt système réel du coach et les schémas Pydantic des outils exposés en production.
+- [x] Ajouter `scripts/ai/benchmark_models.py` : appels Ollama locaux uniquement, corpus fixe, répétitions, scoring des tool calls et arguments, latences p50/p95, exports JSON/CSV.
+- [x] Refuser les URL distantes : le runner ne transmet pas les prompts à un fournisseur externe.
+- [x] Ajouter les tests unitaires du scoring et des synthèses.
+- [ ] Exécuter le runner sur la VM avec Qwen3 8B et les autres modèles réellement installés.
+- [ ] Analyser les échecs de sélection/arguments et compléter le benchmark multi-tours et la revue des réponses libres.
+
+**Limite connue :** le runner mesure la décision du premier tour ; il n'exécute aucun outil métier, ne modifie aucune donnée et ne valide pas la justesse des calculs Python.

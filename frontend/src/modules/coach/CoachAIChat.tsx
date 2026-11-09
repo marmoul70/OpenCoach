@@ -12,7 +12,7 @@ import type {
   AIDataProposal,
 } from '../../core/coach/aiApi'
 
-interface DisplayMessage extends AIChatMessage {}
+type DisplayMessage = AIChatMessage
 
 const FIELD_LABELS: Record<string, string> = {
   height_cm: 'Taille',
@@ -119,7 +119,7 @@ export function CoachAIChat() {
     <section className="mb-4 overflow-hidden rounded-[16px] border border-[var(--oc-border)] bg-[var(--oc-surface)] shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
       <div className="flex items-center gap-3 border-b border-[var(--oc-border)] px-4 py-3 sm:px-5">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-          <Brain className="h-4.5 w-4.5" />
+          <Brain className="h-4 w-4" />
         </div>
         <div className="min-w-0">
           <h2 className="text-[13px] font-semibold text-[var(--oc-text)] dark:text-white">Coach IA</h2>

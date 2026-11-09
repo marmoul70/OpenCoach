@@ -148,6 +148,11 @@ def test_benchmark_exposes_the_complete_production_read_tool_catalog() -> None:
         "training_trends",
     } == names
 
+    descriptions = {item.name: item.description for item in definitions}
+    assert "demande-la à l'utilisateur et attends sa réponse" in descriptions["training_history"]
+    assert "demande la période si elle manque et attends la réponse" in descriptions["training_load"]
+    assert "deux durées si elles manquent et attends la réponse" in descriptions["training_trends"]
+
 
 def test_expected_fixture_arguments_validate_against_production_schemas() -> None:
     import json

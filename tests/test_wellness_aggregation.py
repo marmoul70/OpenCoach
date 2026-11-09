@@ -59,3 +59,14 @@ def test_aggregator_does_not_guess_when_conflicting_values_have_no_timestamps():
 
     assert result.days[0].hrv is None
     assert result.conflicts[DAY.isoformat()] == ("hrv",)
+
+
+def test_aggregator_does_not_compare_a_timestamped_value_with_an_undated_conflict():
+    timestamp = datetime(2026, 11, 9, 8, tzinfo=timezone.utc)
+    result = aggregate_wellness_days([
+        WellnessDay(provider="coros", date=DAY, hrv=48.0),
+        WellnessDay(provider="garmin", date=DAY, hrv=53.0, provider_updated_at=timestamp),
+    ])
+
+    assert result.days[0].hrv is None
+    assert result.conflicts[DAY.isoformat()] == ("hrv",)

@@ -2,9 +2,7 @@
 
 ## Objectif
 
-Faire d'OpenCoach le référentiel de données santé et récupération de l'athlète. COROS est la source primaire via le serveur MCP officiel. Les données sont importées, normalisées, historisées dans la base OpenCoach, puis consommées par le moteur de disponibilité (Readiness) et le coach quotidien.
-
-Intervals.icu sert de référence d'architecture et de fournisseur secondaire éventuel ; il ne doit pas être requis pour que le coach fonctionne.
+Faire d'OpenCoach le référentiel unique de données santé et récupération de l'athlète. COROS, Intervals.icu, Garmin, Apple Health et les autres intégrations sont des fournisseurs d'import interchangeables. Les données sont importées, normalisées et historisées dans la base OpenCoach. Readiness, les tendances, le tableau de bord et le coach lisent exclusivement ce stockage centralisé.
 
 ## État du code observé sur `main` (base 0.8.1)
 
@@ -26,7 +24,7 @@ Intervals.icu sert de référence d'architecture et de fournisseur secondaire é
 
 ### Écart fonctionnel majeur
 
-Le connecteur COROS stocke les réponses brutes dans `coros_daily_data`. Les réponses MCP observées sur le compte de test ne sont pas toutes des objets JSON : plusieurs outils renvoient des rapports texte contenant plusieurs dates. Le mapper doit donc extraire les journées internes au rapport, et non attribuer toutes les mesures à la date du snapshot. Le moteur Readiness et le coach lisent encore explicitement le fournisseur Intervals.
+Le connecteur COROS stocke les réponses brutes dans `coros_daily_data`. Les réponses MCP observées sur le compte de test ne sont pas toutes des objets JSON : plusieurs outils renvoient des rapports texte contenant plusieurs dates. Le mapper doit donc extraire les journées internes au rapport, et non attribuer toutes les mesures à la date du snapshot. Les anciens chemins Readiness, Wellness et Coach sélectionnaient un fournisseur (COROS prioritaire, Intervals en repli). La branche de travail remplace cette logique par une agrégation des métriques de tous les imports stockés dans OpenCoach.
 
 ## Architecture cible
 
@@ -42,11 +40,14 @@ CorosMcpClient / CorosImportService
 COROS health mapper (payload fournisseur -> modèle métier)
    |
    v
-WellnessDaily (mesures normalisées, source = coros)
+WellnessDaily (mesures normalisées, provenance = coros)
    |
    +--> WellnessRepository / API Wellness
    |
-   +--> ReadinessService (baseline individuelle + écarts)
+   +--> Wellness aggregation OpenCoach (fusion par métrique et par date)
+             |
+             v
+       ReadinessService (baseline individuelle + écarts)
              |
              v
        Coach quotidien / adaptation de séance
@@ -72,7 +73,7 @@ Les champs exacts et les unités doivent être confirmés à partir des schémas
 
 Les 36 snapshots exportés contiennent des rapports texte pour `daily_health`, `sleep`, `hrv`, `heart_rate`, `stress` et `training_load`. Les rapports `daily_health`, `sleep`, `hrv` et `training_load` peuvent contenir plusieurs dates dans un seul payload. Les dates du sommeil et de la HRV sont des dates de réveil.
 
-Le parseur de la branche de travail normalise les champs suivants : durée du sommeil principal, score de sommeil, HRV nocturne moyenne et baseline HRV, FC au repos du jour le plus récent du rapport santé, FC moyenne/minimale/maximale du sommeil, durée des phases profond/léger/REM/éveil, stress moyen, pas, charge courte (ATL) et charge longue (CTL). Le ratio de charge COROS n'est pas enregistré dans `ramp_rate` car ces deux notions ne sont pas équivalentes. Les nouvelles mesures sont stockées dans des colonnes canoniques nullable de `wellness_daily`, avec migration Alembic dédiée. Les endpoints Wellness exposent les tendances étendues et privilégient COROS, avec repli explicite vers Intervals si aucune donnée COROS n'est disponible. Le stress, les phases détaillées du sommeil, la baseline HRV et les séries temporelles restent conservés dans les snapshots bruts jusqu'à l'évolution du modèle canonique.
+Le parseur de la branche de travail normalise les champs suivants : durée du sommeil principal, score de sommeil, HRV nocturne moyenne et baseline HRV, FC au repos du jour le plus récent du rapport santé, FC moyenne/minimale/maximale du sommeil, durée des phases profond/léger/REM/éveil, stress moyen, pas, charge courte (ATL) et charge longue (CTL). Le ratio de charge COROS n'est pas enregistré dans `ramp_rate` car ces deux notions ne sont pas équivalentes. Les nouvelles mesures sont stockées dans des colonnes canoniques nullable de `wellness_daily`, avec migration Alembic dédiée. Les endpoints Wellness, Readiness et Coach consolident désormais les métriques de tous les fournisseurs importés dans OpenCoach. La valeur la plus récente est retenue par métrique et par date lorsque les horodatages de mise à jour le permettent. En cas de conflit de fraîcheur identique ou inconnue, la métrique reste inconnue et le conflit est signalé. Les snapshots bruts COROS restent une archive d'import et ne sont pas consultés par le coach IA.
 
 Les rapports bruts ne doivent pas être ajoutés comme fixtures permanentes : ils peuvent contenir des données personnelles. Les tests utilisent des extraits synthétiques reprenant leur structure.
 

@@ -29,6 +29,28 @@ const FIELD_LABELS: Record<string, string> = {
   fluids_per_hour: 'Hydratation par heure',
   sodium_per_hour: 'Sodium par heure',
   fatigue_threshold: 'Seuil de fatigue',
+  available_days: 'Jours disponibles',
+  experience: 'Expérience sportive',
+  sport_disciplines: 'Disciplines sportives',
+}
+
+const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+const EXPERIENCE_LABELS: Record<string, string> = {
+  beginner: 'Débutant', intermediate: 'Intermédiaire', advanced: 'Avancé', expert: 'Expert',
+}
+const DISCIPLINE_LABELS: Record<string, string> = {
+  road_running: 'Course sur route', trail_running: 'Trail',
+}
+
+function formatProposalValue(fieldKey: string, value: AIDataProposal['value']): string {
+  if (fieldKey === 'available_days' && Array.isArray(value)) {
+    return value.map((day) => typeof day === 'number' ? DAY_LABELS[day] ?? String(day) : String(day)).join(', ')
+  }
+  if (fieldKey === 'experience' && typeof value === 'string') return EXPERIENCE_LABELS[value] ?? value
+  if (fieldKey === 'sport_disciplines' && Array.isArray(value)) {
+    return value.map((item) => typeof item === 'string' ? DISCIPLINE_LABELS[item] ?? item : String(item)).join(', ')
+  }
+  return Array.isArray(value) ? value.join(', ') : String(value)
 }
 
 export function CoachAIChat() {
@@ -148,8 +170,8 @@ export function CoachAIChat() {
                   {FIELD_LABELS[proposal.field_key] ?? proposal.field_key}
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--oc-muted)]">
-                  {proposal.existing_value !== null && <span>Actuel : {proposal.existing_value} {proposal.unit}</span>}
-                  <span>Nouveau : <strong className="text-[var(--oc-text)] dark:text-white">{proposal.value} {proposal.unit}</strong></span>
+                  {proposal.existing_value !== null && <span>Actuel : {formatProposalValue(proposal.field_key, proposal.existing_value)} {proposal.unit}</span>}
+                  <span>Nouveau : <strong className="text-[var(--oc-text)] dark:text-white">{formatProposalValue(proposal.field_key, proposal.value)} {proposal.unit}</strong></span>
                 </div>
                 {proposal.status === 'pending' && (
                   <div className="mt-3 flex flex-wrap gap-2">

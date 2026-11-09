@@ -20,6 +20,7 @@ from opencoach.ai.service import AIOrchestrationError, AIService, AIServiceDisab
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.ai.training_tools import build_training_history_tool
 from opencoach.ai.activity_tools import build_activity_detail_tool
+from opencoach.ai.execution_tools import build_session_execution_review_tool
 from opencoach.ai.coaching_tools import (
     build_planned_sessions_tool,
     build_race_calendar_tool,
@@ -277,6 +278,7 @@ def get_ai_tool_registry(
     registry.register(build_weekly_plan_context_tool(db, athlete_profile_id))
     registry.register(build_race_calendar_tool(db, athlete_profile_id))
     registry.register(build_planned_sessions_tool(db, athlete_profile_id))
+    registry.register(build_session_execution_review_tool(db, athlete_profile_id))
     registry.register(
         build_activity_detail_tool(db, athlete_profile_id)
     )

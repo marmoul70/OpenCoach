@@ -815,3 +815,20 @@ def test_readiness_marks_conflicting_current_metric_as_unavailable():
     assert result.current.provider == "opencoach"
     assert result.current.hrv is None
     assert f"{TARGET_DATE.isoformat()}:hrv" in result.data_conflicts
+
+
+def test_readiness_does_not_return_a_score_when_all_inputs_are_missing():
+    repository = FakeWellnessRepository(
+        current=WellnessDay(
+            provider="garmin",
+            date=TARGET_DATE,
+        ),
+        history=create_history(),
+    )
+    service = create_service(repository)
+
+    with pytest.raises(
+        ReadinessDataUnavailableError,
+        match="aucune mesure exploitable",
+    ):
+        service.calculate(uuid4(), TARGET_DATE)

@@ -325,3 +325,95 @@ def test_equipment_proposal_detects_duplicate_added_before_confirmation(db):
         confirm_profile_data_proposal(session, profile.id, proposal.id)
     assert session.get(AIDataProposal, proposal.id).status == "conflict"
     assert session.query(Shoe).filter_by(athlete_profile_id=profile.id).count() == 1
+
+
+def test_daily_checkin_is_only_persisted_after_explicit_confirmation(db):
+    from datetime import date
+    from opencoach.database.models.daily_checkin import DailyCheckIn
+
+    session, profile = db
+    payload = AIDataProposalCreate(
+        field_key="daily_checkin",
+        value={
+            "energy_rating": 3,
+            "pain_wellness_rating": 4,
+            "illness": False,
+            "unavailable": False,
+            "pain_locations": [{"area": "knee", "side": "left"}],
+            "note": "Gêne légère au genou gauche.",
+        },
+    )
+    proposal = create_profile_data_proposal(session, profile.id, payload)
+
+    assert proposal.status == "pending"
+    assert proposal.field_key == "daily_checkin"
+    assert session.query(DailyCheckIn).count() == 0
+
+    confirmed = confirm_profile_data_proposal(session, profile.id, proposal.id)
+    stored = session.query(DailyCheckIn).one()
+    assert confirmed.status == "confirmed"
+    assert stored.athlete_profile_id == profile.id
+    assert stored.date == date.today()
+    assert stored.energy_rating == 3
+    assert stored.pain_wellness_rating == 4
+    assert stored.illness is False
+    assert stored.unavailable is False
+    assert stored.pain_locations == [{"area": "knee", "side": "left"}]
+    assert stored.note == "Gêne légère au genou gauche."
+
+
+def test_daily_checkin_proposal_rejects_incomplete_or_inconsistent_payload(db):
+    session, profile = db
+    with pytest.raises(ValidationError):
+        AIDataProposalCreate(
+            field_key="daily_checkin",
+            value={
+                "energy_rating": 3,
+                "pain_wellness_rating": 4,
+                "illness": False,
+                "unavailable": False,
+            },
+        )
+    with pytest.raises(ValidationError):
+        AIDataProposalCreate(
+            field_key="daily_checkin",
+            value={
+                "energy_rating": 3,
+                "pain_wellness_rating": 5,
+                "illness": False,
+                "unavailable": False,
+                "pain_locations": [{"area": "knee", "side": "left"}],
+            },
+        )
+    assert session.query(AIDataProposal).count() == 0
+
+
+def test_daily_checkin_cannot_be_proposed_twice_for_same_day(db):
+    from datetime import date
+    from opencoach.database.models.daily_checkin import DailyCheckIn
+
+    session, profile = db
+    session.add(DailyCheckIn(
+        athlete_profile_id=profile.id,
+        date=date.today(),
+        energy_rating=4,
+        pain_wellness_rating=5,
+        illness=False,
+        unavailable=False,
+        pain_locations=[],
+    ))
+    session.commit()
+    with pytest.raises(ValueError, match="existe déjà"):
+        create_profile_data_proposal(
+            session,
+            profile.id,
+            AIDataProposalCreate(
+                field_key="daily_checkin",
+                value={
+                    "energy_rating": 3,
+                    "pain_wellness_rating": 5,
+                    "illness": False,
+                    "unavailable": False,
+                },
+            ),
+        )

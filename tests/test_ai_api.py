@@ -30,6 +30,13 @@ class FakeAIService:
             raise self.error
         return self.result
 
+    async def chat_with_tools(self, request, registry):
+        self.request = request
+        self.registry = registry
+        if self.error:
+            raise self.error
+        return self.result
+
 
 def _client(settings: AISettings, service=None) -> TestClient:
     app = create_app()

@@ -48,7 +48,7 @@ class AIToolRegistry:
 
     def __init__(self) -> None:
         self._tools: dict[str, AITool] = {}
-        self._execution_results: list[AIToolResult] = {}
+        self._execution_results: list[AIToolResult] = []
 
     @property
     def execution_results(self) -> tuple[AIToolResult, ...]:

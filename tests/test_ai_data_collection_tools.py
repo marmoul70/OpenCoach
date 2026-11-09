@@ -204,3 +204,41 @@ def test_proposal_tool_accepts_experience_and_discipline_from_french_evidence():
     finally:
         db.close()
         engine.dispose()
+
+def test_equipment_proposal_requires_brand_and_model_in_exact_evidence():
+    engine, db, profile = _database()
+    try:
+        evidence = "J'ai acheté des Asics Trabuco 14 pour le trail."
+        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        registry = AIToolRegistry()
+        registry.register(tool)
+        result = registry.execute("propose_profile_data", {
+            "field_key": "shoe",
+            "value": {"model": "Trabuco 14", "brand": "Asics", "category": "trail"},
+            "evidence": evidence,
+        })
+        assert result.status == "ok"
+        assert result.data["status"] == "pending"
+        assert profile.shoes == []
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_equipment_proposal_rejects_invented_brand():
+    engine, db, profile = _database()
+    try:
+        evidence = "J'ai acheté des Trabuco 14."
+        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        registry = AIToolRegistry()
+        registry.register(tool)
+        result = registry.execute("propose_profile_data", {
+            "field_key": "shoe",
+            "value": {"model": "Trabuco 14", "brand": "Asics"},
+            "evidence": evidence,
+        })
+        assert result.status == "failed"
+        assert db.query(AIDataProposal).count() == 0
+    finally:
+        db.close()
+        engine.dispose()

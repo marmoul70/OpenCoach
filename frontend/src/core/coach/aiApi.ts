@@ -1,8 +1,8 @@
 export interface AIDataProposal {
   id: string
   field_key: string
-  value: number | string | number[] | string[]
-  existing_value: number | string | number[] | string[] | null
+  value: number | string | number[] | string[] | Record<string, string>
+  existing_value: number | string | number[] | string[] | Record<string, string> | null
   unit: string
   status: 'pending' | 'confirmed' | 'rejected' | 'expired' | 'conflict'
   expires_at: string

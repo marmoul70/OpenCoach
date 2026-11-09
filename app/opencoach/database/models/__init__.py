@@ -42,6 +42,7 @@ __all__ = [
     "PhysiologicalMeasurement",
     "Notification",
     "AICoachPreference",
+    "AIDataProposal",
 ]
 
 from .daily_checkin import DailyCheckIn

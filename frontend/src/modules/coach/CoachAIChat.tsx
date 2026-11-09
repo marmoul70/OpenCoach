@@ -32,6 +32,9 @@ const FIELD_LABELS: Record<string, string> = {
   available_days: 'Jours disponibles',
   experience: 'Expérience sportive',
   sport_disciplines: 'Disciplines sportives',
+  shoe: 'Chaussure',
+  bike: 'Vélo',
+  watch: 'Montre sportive',
 }
 
 const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']

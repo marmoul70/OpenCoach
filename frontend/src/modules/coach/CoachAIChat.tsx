@@ -53,6 +53,10 @@ function formatProposalValue(fieldKey: string, value: AIDataProposal['value']): 
   if (fieldKey === 'sport_disciplines' && Array.isArray(value)) {
     return value.map((item) => typeof item === 'string' ? DISCIPLINE_LABELS[item] ?? item : String(item)).join(', ')
   }
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    const item = value as Record<string, string>
+    return [item.brand, item.model, item.category].filter(Boolean).join(' ')
+  }
   return Array.isArray(value) ? value.join(', ') : String(value)
 }
 

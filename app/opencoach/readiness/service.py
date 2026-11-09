@@ -145,7 +145,7 @@ class ReadinessService:
 
         if current is None or selected_provider is None:
             raise ReadinessDataUnavailableError(
-                "Aucune donnée Wellness centralisée exploitable n'est disponible "
+                "Aucune donnée Wellness exploitable dans le stockage centralisé OpenCoach n'est disponible "
                 f"avant ou pour le {target_date.isoformat()}."
             )
 

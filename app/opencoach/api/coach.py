@@ -503,9 +503,10 @@ def get_today_coach_decision(
             provider="opencoach",
             subjective_context=assessment.readiness.context,
         )
-        recovery_payload = recovery_assessment_to_dict(
-            recovery_assessment
-        )
+        recovery_payload = recovery_assessment_to_dict(recovery_assessment)
+        recovery_payload["data_store"] = "OpenCoach"
+        recovery_payload["metric_sources"] = recovery_aggregation.metric_sources
+        recovery_payload["conflicting_metrics"] = recovery_aggregation.conflicts
 
     except PlannedSessionUnavailableError as exc:
         raise HTTPException(

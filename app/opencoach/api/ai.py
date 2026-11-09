@@ -24,7 +24,8 @@ from opencoach.ai.coaching_tools import (
     build_planned_sessions_tool,
     build_race_calendar_tool,
     build_training_profile_tool,
-)\nfrom opencoach.ai.load_tools import build_training_load_tool
+)
+from opencoach.ai.load_tools import build_training_load_tool
 from opencoach.ai.recovery_tools import build_recovery_status_tool
 from opencoach.ai.trend_tools import build_training_trends_tool
 from opencoach.database.session import get_db

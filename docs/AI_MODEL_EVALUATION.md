@@ -33,13 +33,14 @@ Chaque scénario comporte les appels attendus, la clarification attendue et les 
 
 Pour chaque modèle et chaque scénario :
 
-1. utiliser la même version du prompt système, du registre d'outils et du corpus ;
-2. réinitialiser l'historique conversationnel entre scénarios ;
-3. fixer les paramètres Ollama (température, contexte, options) et les consigner ;
-4. enregistrer la réponse brute du modèle, les tool calls, leurs arguments, les résultats Python, la réponse finale et les durées ;
-5. exécuter trois répétitions par scénario pour mesurer la stabilité ;
-6. ne pas utiliser de données personnelles réelles dans les fixtures ;
-7. ne pas modifier les données métier pendant le benchmark.
+1. utiliser le prompt système de production `_coach_system_prompt` avec les préférences par défaut, les schémas Pydantic de production et le corpus versionné ;
+2. injecter une date de référence synthétique fixe (2026-11-09), sans charger de faits athlète réels ;
+3. réinitialiser l'historique conversationnel entre scénarios ;
+4. fixer les paramètres Ollama (température, contexte, options) et les consigner ;
+5. enregistrer les tool calls, leurs arguments, leur validation Pydantic, la réponse textuelle disponible et les durées ;
+6. exécuter trois répétitions par scénario pour mesurer la stabilité ;
+7. ne pas utiliser de données personnelles réelles dans les fixtures ;
+8. ne pas modifier les données métier pendant le benchmark.
 
 Les modèles candidats doivent être évalués avec le même environnement local : Qwen3 8B, puis variantes 4B/3B compatibles avec l'installation.
 
@@ -104,7 +105,9 @@ python scripts/ai/benchmark_models.py --models qwen3:8b qwen3:4b qwen3:3b --repe
 ```
 
 Le script :
-- réutilise le prompt système du coach et les schémas Pydantic des outils ;
+- réutilise le prompt système de production du coach avec les préférences par défaut, les schémas Pydantic des outils et une date de référence synthétique ;
+- ne charge pas le contexte athlète réel de `/coach` : le benchmark reste sans accès à la base et n’évalue donc pas l’effet des faits personnalisés ;
+- valide séparément les arguments générés contre les modèles Pydantic et marque les appels hors bornes (par exemple 500 jours) ;
 - interroge uniquement l'API Ollama locale (localhost/loopback imposé) ;
 - n'exécute aucun handler métier et ne modifie aucune donnée OpenCoach ;
 - mesure la sélection d'outil, l'exactitude des arguments, les demandes de clarification de premier tour et la latence ;
@@ -121,5 +124,7 @@ Après exécution, transmettre les deux fichiers de rapport et la sortie termina
 - [x] Générer les 13 schémas depuis les modèles Pydantic du registre métier et valider les arguments attendus du corpus contre ces schémas (`tests/test_ai_benchmark_runner.py`).
 - [x] Ajouter un runner de sélection d'outils Ollama et un export JSON/CSV des résultats (`scripts/ai/benchmark_models.py`).
 - [x] Ajouter des tests unitaires du scoring, des clarifications et des synthèses (`tests/test_ai_benchmark_runner.py`).
+- [x] Aligner le prompt système sur le builder de production et fixer la date de référence synthétique.
+- [x] Valider les arguments réellement générés contre les schémas Pydantic et les exposer dans le rapport.
 - [ ] Exécuter trois répétitions par cas sur la VM.
 - [ ] Comparer Qwen3 8B, 4B et 3B et documenter le choix.

@@ -130,7 +130,20 @@ Les clarifications qui ne peuvent être vérifiées qu'après un résultat méti
 
 Après exécution, transmettre les deux fichiers de rapport et la sortie terminal pour interprétation.
 
-## 8. Étapes suivantes
+## 8. Routage déterministe du catalogue en production
+
+L'endpoint `/api/ai/coach` applique désormais un routeur Python conservateur avant l'appel Ollama :
+
+- les intentions reconnues sélectionnent les familles d'outils correspondantes (historique, charge, récupération, tendances, activité, courses, planning, exécution, contraintes et profil) ;
+- les demandes combinées cumulent les familles détectées ;
+- les suivis courts peuvent s'appuyer sur les deux derniers messages utilisateur pour conserver le contexte ;
+- une demande vide, inconnue ou ambiguë conserve le catalogue complet ;
+- `propose_profile_data` reste exposé comme capacité contrôlée de proposition, sans écriture directe dans le profil ;
+- le registre applique la sélection à la fois aux définitions envoyées au modèle et à l'exécution : un appel à un outil masqué est refusé côté Python.
+
+Le routeur ne consulte aucune donnée sportive et ne calcule aucune métrique. Il ne choisit que les outils disponibles ; tous les calculs restent dans les services déterministes OpenCoach. Le routage est couvert par `tests/test_ai_tool_routing.py` et le contrôle d'exécution par `tests/test_ai_tool_engine.py`.
+
+## 9. Étapes suivantes
 
 - [x] Définir les dimensions d'évaluation et les critères de sécurité.
 - [x] Créer un premier corpus versionné de scénarios de dialogue.

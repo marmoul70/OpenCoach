@@ -7,11 +7,26 @@ if str(ROOT) not in sys.path:
 
 from scripts.ai.benchmark_models import (
     score_response,
+    build_case_conversation,
     summarize,
     validate_local_base_url,
     build_tool_definitions,
     ARGUMENT_MODELS,
 )
+
+
+def test_benchmark_builds_multi_turn_clarification_conversation() -> None:
+    messages = build_case_conversation({
+        "prompt": "Sur les 7 derniers jours.",
+        "conversation": [
+            {"role": "user", "content": "Fais-moi le bilan de mon historique."},
+            {"role": "assistant", "content": "Sur combien de jours ?"},
+            {"role": "user", "content": "Sur 7 jours."},
+        ],
+    })
+
+    assert [message.role for message in messages] == ["user", "assistant", "user"]
+    assert messages[-1].content == "Sur 7 jours."
 
 
 def test_benchmark_scores_exact_tool_and_arguments() -> None:

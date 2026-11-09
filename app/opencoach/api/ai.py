@@ -40,10 +40,17 @@ from opencoach.ai.coaching_tools import (
     build_weekly_plan_context_tool,
 )
 from opencoach.ai.load_tools import build_training_load_tool
-from opencoach.ai.recovery_tools import build_recovery_status_tool
+from opencoach.ai.recovery_tools import (
+    build_recovery_analysis_tool,
+    build_recovery_status_tool,
+)
 from opencoach.ai.race_tools import build_race_preparation_tool
 from opencoach.ai.trend_tools import build_training_trends_tool
 from opencoach.database.session import get_db
+from opencoach.database.repositories.sql_wellness import SqlWellnessRepository
+from opencoach.database.repositories.sql_daily_context import SqlDailyContextRepository
+from opencoach.database.repositories.sql_coros_daily_data import SqlCorosDailyDataRepository
+from opencoach.database.repositories.sql_daily_checkin import SqlDailyCheckInRepository
 from opencoach.api.training_stats import get_training_stats_service
 from opencoach.training import TrainingStatsService
 from opencoach.database.models.ai_coach_preference import AICoachPreference
@@ -97,7 +104,8 @@ Règles d'utilisation des outils :
 - Pour comparer une séance prévue à sa réalisation, retrouve d'abord son session_id via planned_sessions si nécessaire, puis appelle session_execution_review. Si l'outil indique activity_not_linked, demande confirmation ou association ; ne conclus jamais que la séance n'a pas été faite. Les statuts, écarts et métriques viennent du moteur Python : ne les recalcule pas.
 - Pour analyser une activité précise et ses intervalles, utilise activity_detail. Si plusieurs activités correspondent à la date, demande à l'utilisateur de choisir.
 - Pour la charge récente, utilise training_load avec nb_days obligatoire ; si la période manque, demande-la.
-- Pour la récupération d'une date, utilise recovery_status et respecte la date réelle des données, leur fraîcheur et la fiabilité des baselines.
+- Pour toute discussion sur l'état de forme, la fatigue, le sommeil, le stress ou la récupération, utilise recovery_analysis. Il fournit les mesures objectives sur 7, 14 et 30 jours ainsi que le ressenti quotidien lorsqu'il est enregistré. Sépare toujours sommeil, HRV, FC repos, stress, charge et ressenti ; précise la couverture et la fraîcheur. Si le ressenti du jour manque, engage une discussion et demande les éléments utiles au lieu de conclure que tout va bien.
+- Pour une décision de disponibilité quotidienne ou une restriction d'entraînement, utilise aussi recovery_status ; respecte la date réelle des données et la fiabilité des baselines. 
 - Pour comparer des périodes, utilise training_trends. Les deux durées nb_days et comparison_days sont obligatoires ; demande les paramètres manquants avant l'appel.
 - Tu peux combiner plusieurs outils lorsque la demande le nécessite, mais utilise uniquement les résultats utiles à la question. Les outils d'analyse sont en lecture seule. Exception contrôlée : propose_profile_data peut créer une proposition de sauvegarde en attente, sans modifier le profil.
 
@@ -344,6 +352,15 @@ def get_ai_tool_registry(
         build_recovery_status_tool(
             context_service.readiness_service,
             athlete_profile_id,
+        )
+    )
+    registry.register(
+        build_recovery_analysis_tool(
+            wellness_repository=SqlWellnessRepository(db),
+            daily_context_repository=SqlDailyContextRepository(db),
+            time_series_repository=SqlCorosDailyDataRepository(db),
+            daily_checkin_repository=SqlDailyCheckInRepository(db),
+            athlete_profile_id=athlete_profile_id,
         )
     )
     registry.register(

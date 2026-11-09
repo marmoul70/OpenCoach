@@ -525,16 +525,3 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
         assert calls == [(athlete_profile_id, date.today(), date.today())]
         assert registry.execute("delete_training", {}).status == "not_found"
     engine.dispose()
-    definitions = registry.definitions()
-
-    assert [item["name"] for item in definitions] == [
-        "training_history",
-        "training_load",
-        "recovery_status",
-        "training_trends",
-    ]
-    result = registry.execute("training_history", {"nb_days": 1})
-
-    assert result.status == "ok"
-    assert calls == [(athlete_profile_id, date.today(), date.today())]
-    assert registry.execute("delete_training", {}).status == "not_found"

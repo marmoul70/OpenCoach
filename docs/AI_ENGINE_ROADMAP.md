@@ -121,6 +121,8 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] Constituer un premier corpus versionné de scénarios et comportements attendus dans `tests/fixtures/ai_model_evaluation_cases.json`.
 - [x] Ajouter des tests de structure, unicité et couverture des catégories critiques du corpus (`tests/test_ai_model_evaluation_fixture.py`).
 - [ ] Compléter les résultats Python attendus et vérifier tous les arguments contre les schémas réels du registre.
+- [x] Ajouter au runner la validation Pydantic des arguments réellement produits et le taux de conformité du schéma.
+- [x] Aligner le prompt système du benchmark sur le builder de production et injecter une date de référence synthétique fixe, sans données athlète réelles.
 - [ ] Mesurer séparément latence de sélection, exécution Python et rédaction finale.
 - [ ] Comparer Qwen3 8B avec des modèles Ollama plus légers (3B/4B notamment).
 - [ ] Évaluer exactitude des appels, respect des périodes, gestion des absences et qualité rédactionnelle sur Ollama.
@@ -325,6 +327,7 @@ Vérification du chemin de lecture IA sur la branche de développement :
 - [x] Ajouter `scripts/ai/benchmark_models.py` : appels Ollama locaux uniquement, corpus fixe, répétitions, scoring des tool calls et arguments, latences p50/p95, exports JSON/CSV.
 - [x] Refuser les URL distantes : le runner ne transmet pas les prompts à un fournisseur externe.
 - [x] Ajouter les tests unitaires du scoring et des synthèses.
+- [x] Renforcer le benchmark : prompt système production, date synthétique fixe et validation des arguments générés.
 - [ ] Exécuter le runner sur la VM avec Qwen3 8B et les autres modèles réellement installés.
 - [ ] Analyser les échecs de sélection/arguments et compléter le benchmark multi-tours et la revue des réponses libres.
 

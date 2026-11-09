@@ -69,15 +69,20 @@ def aggregate_wellness_days(days: list[WellnessDay]) -> WellnessAggregation:
             candidates = [row for row in rows if getattr(row, field) is not None]
             if not candidates:
                 continue
-            dated = [(row, _timestamp(row.provider_updated_at or row.stored_at)) for row in candidates]
+            provider_stamps = [_timestamp(row.provider_updated_at) for row in candidates]
+            if all(stamp is not None for stamp in provider_stamps):
+                stamps = provider_stamps
+            else:
+                # Si un fournisseur ne donne pas son horodatage, comparer les
+                # dates d’écriture OpenCoach pour toutes les lignes.
+                stored_stamps = [_timestamp(row.stored_at) for row in candidates]
+                stamps = stored_stamps if all(stamp is not None for stamp in stored_stamps) else []
             distinct_all = {getattr(row, field) for row in candidates}
-            # Une valeur sans horodatage ne peut pas être comparée à une
-            # valeur horodatée : en cas de désaccord, ne pas choisir arbitrairement.
-            if any(stamp is None for _, stamp in dated) and len(distinct_all) > 1:
+            if not stamps and len(distinct_all) > 1:
                 conflicts.append(field)
                 continue
-            freshest = max((stamp for _, stamp in dated if stamp is not None), default=None)
-            winners = [row for row, stamp in dated if stamp == freshest] if freshest is not None else candidates
+            freshest = max(stamps) if stamps else None
+            winners = [row for row, stamp in zip(candidates, stamps) if stamp == freshest] if freshest is not None else candidates
             distinct = {getattr(row, field) for row in winners}
             if len(distinct) > 1:
                 conflicts.append(field)
@@ -86,13 +91,13 @@ def aggregate_wellness_days(days: list[WellnessDay]) -> WellnessAggregation:
             sources[field] = tuple(sorted({row.provider for row in winners}))
 
         timestamps = [
-            stamp for stamp in (_timestamp(row.provider_updated_at) for row in rows)
+            stamp for stamp in (_timestamp(row.stored_at) for row in rows)
             if stamp is not None
         ]
         merged_days.append(WellnessDay(
             provider="opencoach",
             date=day,
-            provider_updated_at=max(timestamps) if timestamps else None,
+            stored_at=max(timestamps) if timestamps else None,
             **values,
         ))
         all_sources[day.isoformat()] = sources

@@ -106,6 +106,18 @@ def create_profile_data_proposal(
     current_value = getattr(profile, payload.field_key)
     if current_value == payload.value:
         raise ValueError("Cette valeur est déjà enregistrée dans le profil.")
+    now = _now_utc_naive()
+    existing_pending = db.scalar(
+        select(AIDataProposal).where(
+            AIDataProposal.athlete_profile_id == athlete_profile_id,
+            AIDataProposal.field_key == payload.field_key,
+            AIDataProposal.proposed_value == payload.value,
+            AIDataProposal.status == "pending",
+            AIDataProposal.expires_at > now,
+        )
+    )
+    if existing_pending is not None:
+        return _to_response(existing_pending)
     proposal = AIDataProposal(
         athlete_profile_id=athlete_profile_id,
         field_key=payload.field_key,
@@ -113,7 +125,7 @@ def create_profile_data_proposal(
         existing_value=current_value,
         unit=rule["unit"],
         status="pending",
-        expires_at=_now_utc_naive() + timedelta(minutes=15),
+        expires_at=now + timedelta(minutes=15),
     )
     db.add(proposal)
     db.commit()

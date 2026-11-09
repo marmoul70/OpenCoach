@@ -50,3 +50,30 @@ def test_achilles_pain_before_training_advice_routes_to_constraints():
     )
     assert "active_constraints" in selected
     assert {"recovery_analysis", "recovery_status"} <= selected
+
+
+
+def test_router_never_hides_expected_tools_from_evaluation_fixture():
+    import json
+    from pathlib import Path
+
+    fixture = (
+        Path(__file__).parent
+        / "fixtures"
+        / "ai_model_evaluation_cases.json"
+    )
+    cases = json.loads(fixture.read_text(encoding="utf-8"))
+
+    for case in cases:
+        turns = case.get("conversation") or []
+        if turns:
+            user_turns = [turn["content"] for turn in turns if turn["role"] == "user"]
+            question = user_turns[-1]
+            history = user_turns[:-1]
+        else:
+            question = case["prompt"]
+            history = []
+
+        selected = select_coach_tools(question, history=history)
+        expected = {call["tool"] for call in case["expected_tool_calls"]}
+        assert expected.issubset(selected), case["id"]

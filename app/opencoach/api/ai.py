@@ -475,7 +475,11 @@ async def ask_local_ai(
     request = AIChatRequest(
         messages=[
             AIMessage(role="system", content=_CHAT_SYSTEM_PROMPT),
-            *conversation_messages,
+            *[
+                AIMessage(role=message.role, content=message.content)
+                for message in payload.history
+            ],
+            AIMessage(role="user", content=payload.question),
         ],
         temperature=0.2,
         num_predict=512,
@@ -571,11 +575,7 @@ async def ask_local_ai_with_athlete_context(
                     + athlete_facts
                 ),
             ),
-            *[
-                AIMessage(role=message.role, content=message.content)
-                for message in payload.history
-            ],
-            AIMessage(role="user", content=payload.question),
+            *conversation_messages,
         ],
         temperature=0.2,
         num_predict=512,

@@ -30,7 +30,7 @@ class FakeAIService:
             raise self.error
         return self.result
 
-    async def chat_with_tools(self, request, registry):
+    async def chat_with_tools(self, request, registry, *, user_messages=None):
         self.request = request
         self.registry = registry
         if self.error:

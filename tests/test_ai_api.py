@@ -547,7 +547,7 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
             "recovery_analysis",
             "training_trends",
         ]
-        result = registry.execute("training_history", {"nb_days": 1})
+        result = registry.execute("training_history", {"nb_days": 1}, user_messages=["Montre mon historique sur 1 jour."])
         assert result.status == "ok"
         assert calls == [(athlete_profile_id, date.today(), date.today())]
         assert registry.execute("delete_training", {}).status == "not_found"
@@ -613,7 +613,7 @@ def test_ai_coach_returns_evidence_verified_pending_data_proposal():
     planning_service = FakePlanningContextService(context)
 
     class ProposalFakeAIService(FakeAIService):
-        async def chat_with_tools(self, request, registry):
+        async def chat_with_tools(self, request, registry, *, user_messages=None, assistant_messages=None):
             self.request = request
             self.registry = registry
             self.tool_result = registry.execute(

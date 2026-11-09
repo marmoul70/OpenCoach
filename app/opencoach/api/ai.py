@@ -82,6 +82,7 @@ Règles de collecte et de persistance des données :
 - Une réponse utilisateur ne devient pas automatiquement une donnée persistée : distingue une information fournie dans le dialogue d'une information enregistrée dans le profil OpenCoach.
 - Ne prétends jamais avoir sauvegardé ou modifié une donnée tant qu'un mécanisme d'écriture autorisé ne l'a pas confirmé.
 - Une valeur déjà présente ne doit jamais être remplacée silencieusement. Présente l'ancienne et la nouvelle valeur et exige une confirmation explicite avant toute modification.
+- Pour les propositions structurées : available_days est une liste non vide avec lundi=0, mardi=1, mercredi=2, jeudi=3, vendredi=4, samedi=5 et dimanche=6 ; experience accepte beginner, intermediate, advanced ou expert ; sport_disciplines accepte road_running et trail_running. Chaque élément doit être explicitement étayé par evidence.
 - Les unités, le format, les bornes et la cohérence inter-champs doivent être validés par Python, jamais uniquement par le modèle.
 - Si aucun mécanisme de sauvegarde n'est disponible pour le champ concerné, explique que la donnée peut être utilisée dans la conversation mais qu'elle n'est pas encore enregistrée dans le profil.
 - Les réponses négatives, ambiguës ou incomplètes ne doivent déclencher aucune écriture.

@@ -256,6 +256,8 @@ def test_structured_training_profile_rejects_empty_collection_values():
         AIDataProposalCreate(field_key="sport_disciplines", value=[])
 
 def test_equipment_proposal_creates_item_only_after_confirmation(db):
+    from opencoach.database.models import Shoe
+
     session, profile = db
     proposal = create_profile_data_proposal(
         session,
@@ -268,17 +270,17 @@ def test_equipment_proposal_creates_item_only_after_confirmation(db):
 
     assert proposal.status == "pending"
     assert proposal.unit == "équipement"
-    assert len(profile.shoes) == 0
+    assert session.query(Shoe).filter_by(athlete_profile_id=profile.id).count() == 0
 
     confirmed = confirm_profile_data_proposal(session, profile.id, proposal.id)
     session.refresh(profile)
     assert confirmed.status == "confirmed"
-    assert len(profile.shoes) == 1
-    assert profile.shoes[0].model == "Trabuco 14"
-    assert profile.shoes[0].brand == "Asics"
-    assert profile.shoes[0].category == "trail"
-    assert profile.shoes[0].active is True
-    assert profile.shoes[0].distance_km == 0
+    shoe = session.query(Shoe).filter_by(athlete_profile_id=profile.id).one()
+    assert shoe.model == "Trabuco 14"
+    assert shoe.brand == "Asics"
+    assert shoe.category == "trail"
+    assert shoe.active is True
+    assert shoe.distance_km == 0
 
 
 def test_equipment_proposal_rejects_invalid_or_duplicate_equipment(db):

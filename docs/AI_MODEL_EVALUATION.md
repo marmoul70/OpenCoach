@@ -118,7 +118,7 @@ Après exécution, transmettre les deux fichiers de rapport et la sortie termina
 
 - [x] Définir les dimensions d'évaluation et les critères de sécurité.
 - [x] Créer un premier corpus versionné de scénarios de dialogue.
-- [ ] Vérifier chaque schéma d'outil du corpus contre le registre réel.
+- [x] Générer les 13 schémas depuis les modèles Pydantic du registre métier et valider les arguments attendus du corpus contre ces schémas (`tests/test_ai_benchmark_runner.py`).
 - [x] Ajouter un runner de sélection d'outils Ollama et un export JSON/CSV des résultats (`scripts/ai/benchmark_models.py`).
 - [x] Ajouter des tests unitaires du scoring, des clarifications et des synthèses (`tests/test_ai_benchmark_runner.py`).
 - [ ] Exécuter trois répétitions par cas sur la VM.

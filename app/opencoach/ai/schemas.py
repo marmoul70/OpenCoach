@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class AIToolCall(BaseModel):
@@ -26,12 +26,17 @@ class AIMessage(BaseModel):
     tool_name: str | None = Field(default=None, max_length=100)
     tool_calls: list[AIToolCall] = Field(default_factory=list, max_length=5)
 
-    @field_validator("content")
-    @classmethod
-    def validate_content(cls, value: str) -> str:
-        if not value.strip() and not value and not value == "":
-            raise ValueError("Contenu de message invalide.")
-        return value
+    @model_validator(mode="after")
+    def validate_tool_message_shape(self):
+        if not self.content.strip() and not (
+            self.role == "assistant" and self.tool_calls
+        ):
+            raise ValueError("Le contenu du message ne peut pas être vide.")
+        if self.tool_name and self.role != "tool":
+            raise ValueError("tool_name est réservé aux réponses d'outils.")
+        if self.tool_calls and self.role != "assistant":
+            raise ValueError("Seul un message assistant peut demander un outil.")
+        return self
 
 
 class AIToolDefinition(BaseModel):
@@ -64,3 +69,9 @@ class AIChatResult(BaseModel):
     content: str = Field(default="", max_length=40_000)
     tool_calls: list[AIToolCall] = Field(default_factory=list, max_length=5)
     done: bool
+
+    @model_validator(mode="after")
+    def require_content_or_tool_call(self):
+        if not self.content.strip() and not self.tool_calls:
+            raise ValueError("La réponse IA ne contient ni texte ni appel d'outil.")
+        return self

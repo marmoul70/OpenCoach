@@ -10,6 +10,7 @@ from opencoach.ai.coaching_tools import (
     EmptyArguments,
     PlannedSessionsArguments,
     RaceCalendarArguments,
+    WeeklyPlanContextArguments,
     build_planned_sessions_tool,
     build_race_calendar_tool,
     build_training_profile_tool,

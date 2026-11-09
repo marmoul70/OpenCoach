@@ -30,6 +30,7 @@ from opencoach.ai.schemas import AIChatRequest, AIMessage
 from opencoach.ai.service import AIOrchestrationError, AIService, AIServiceDisabledError
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.ai.argument_evidence import validate_period_argument_evidence
+from opencoach.ai.tool_routing import select_coach_tools
 from opencoach.ai.training_tools import build_training_history_tool
 from opencoach.ai.activity_tools import build_activity_detail_tool
 from opencoach.ai.constraints_tools import build_active_constraints_tool
@@ -590,6 +591,13 @@ async def ask_local_ai_with_athlete_context(
             user_messages,
         )
     )
+    # Le routeur est conservateur : il ne filtre que les intentions reconnues.
+    # Le registre applique la même liste blanche à l'exposition ET à l'exécution.
+    selected_tools = select_coach_tools(
+        payload.question,
+        history=user_messages[:-1],
+    )
+    tool_registry.restrict_to(set(selected_tools))
 
     try:
         result = await service.chat_with_tools(request, tool_registry, user_messages=user_messages, assistant_messages=assistant_messages)

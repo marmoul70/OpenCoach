@@ -73,7 +73,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 **Livrable :** premier outil sportif fiable, sans duplication du calcul métier.
 
 ### Mission 3 — Outils sportifs complémentaires
-- [ ] `training_load(nb_days)` : charge récente via les services existants.
+- [x] `training_load(nb_days)` : charge récente et comparaison prévu/réalisé via `RecentTrainingLoadService`, avec couverture du planning et données absentes explicitées.
 - [ ] `planning_comparison(nb_days)` : prévu/réalisé/écarts et couverture.
 - [ ] `recovery_status(target_date)` : readiness et fraîcheur des données.
 - [ ] `activity_detail(activity_id)` : détail d'une activité, avec contrôle d'appartenance à l'athlète.

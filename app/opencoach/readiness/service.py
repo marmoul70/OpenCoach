@@ -66,6 +66,7 @@ class ReadinessAssessment:
     source_date: date
     data_age_days: int
     data_status: str
+    data_conflicts: tuple[str, ...] = ()
 
 class ReadinessService:
     """Orchestre le calcul complet du Daily Readiness."""
@@ -107,6 +108,7 @@ class ReadinessService:
 
         selected_provider: str | None = self.provider
         current: WellnessDay | None = None
+        data_conflicts: list[str] = []
         if self.provider is None:
             # Mode canonique : toutes les intégrations ont déjà importé leurs
             # mesures dans OpenCoach. Fusionner les métriques sans priorité fournisseur.
@@ -115,6 +117,13 @@ class ReadinessService:
             )
             aggregated = aggregate_wellness_days(imported)
             current = aggregated.days[-1] if aggregated.days else None
+            if current is not None:
+                data_conflicts.extend(
+                    f"{day}:{metric}"
+                    for day, metrics in aggregated.conflicts.items()
+                    for metric in metrics
+                    if day == current.date.isoformat()
+                )
             selected_provider = "opencoach"
         else:
             provider_order = (self.provider, *self.fallback_providers)
@@ -181,7 +190,13 @@ class ReadinessService:
             provider=None if self.provider is None else selected_provider,
         )
         if self.provider is None:
-            history = list(aggregate_wellness_days(history).days)
+            history_aggregation = aggregate_wellness_days(history)
+            history = list(history_aggregation.days)
+            data_conflicts.extend(
+                f"{day}:{metric}"
+                for day, metrics in history_aggregation.conflicts.items()
+                for metric in metrics
+            )
 
         baseline = calculate_readiness_baseline(
             history,
@@ -227,6 +242,7 @@ class ReadinessService:
             source_date=source_date,
             data_age_days=data_age_days,
             data_status=data_status,
+            data_conflicts=tuple(data_conflicts),
         )
 
     def _get_daily_context(

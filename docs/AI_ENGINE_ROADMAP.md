@@ -261,6 +261,7 @@ Dernière mise à jour : 9 novembre 2026.
 - [x] Appliquer l'agrégation canonique aux services Readiness, Wellness, Coach et au contexte transmis à l'IA.
 - [x] Ajouter des tests multi-fournisseurs, fraîcheur, conflits, absence d'horodatage et couverture.
 - [ ] Vérifier sur la VM que les imports réels COROS et Intervals alimentent bien `wellness_daily` et que le coach n'utilise que cette table.
+- [ ] Définir une déduplication inter-fournisseurs des activités avant d'ajouter Garmin/Apple Health : la contrainte actuelle `provider + provider_activity_id` n'empêche pas qu'une même séance importée par deux plateformes soit comptée deux fois dans `TrainingStatsService`.
 
 **Règle d'architecture :** les intégrations (COROS, Intervals.icu, Garmin, Apple Health ou toute future plateforme) ne sont que des fournisseurs d'import. OpenCoach est l'unique référentiel consulté par le coach et les services de score.
 

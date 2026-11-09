@@ -264,7 +264,6 @@ def build_recovery_analysis_tool(
             "data_age_days": payload["data_age_days"],
             "data_status": payload["data_status"],
             "windows": windows,
-            "time_series": payload["time_series"],
             "daily_context": payload["subjective"],
             "daily_checkin": checkin_payload,
             "warnings": warnings,

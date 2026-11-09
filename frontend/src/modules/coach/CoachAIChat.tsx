@@ -1,9 +1,10 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Brain, Check, LoaderCircle, Send, X } from 'lucide-react'
 
 import {
   askAICoach,
   confirmAIDataProposal,
+  listPendingAIDataProposals,
   rejectAIDataProposal,
 } from '../../core/coach/aiApi'
 import type {
@@ -11,9 +12,7 @@ import type {
   AIDataProposal,
 } from '../../core/coach/aiApi'
 
-interface DisplayMessage extends AIChatMessage {
-  proposals?: AIDataProposal[]
-}
+interface DisplayMessage extends AIChatMessage {}
 
 const FIELD_LABELS: Record<string, string> = {
   height_cm: 'Taille',
@@ -39,10 +38,25 @@ export function CoachAIChat() {
       content: 'Je peux analyser tes données OpenCoach, répondre à tes questions et t’aider à compléter ton profil. Si une information importante manque, je te la demanderai.',
     },
   ])
+  const [pendingProposals, setPendingProposals] = useState<AIDataProposal[]>([])
   const [question, setQuestion] = useState('')
   const [loading, setLoading] = useState(false)
   const [activeProposal, setActiveProposal] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    void listPendingAIDataProposals()
+      .then((items) => {
+        if (active) setPendingProposals(items)
+      })
+      .catch(() => {
+        // The conversation remains available if the pending-list endpoint fails.
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -62,12 +76,17 @@ export function CoachAIChat() {
       const response = await askAICoach(value, history)
       setMessages((current) => [
         ...current,
-        {
-          role: 'assistant',
-          content: response.answer,
-          proposals: response.data_proposals,
-        },
+        { role: 'assistant', content: response.answer },
       ])
+      if (response.data_proposals.length > 0) {
+        setPendingProposals((current) => {
+          const known = new Set(current.map((item) => item.id))
+          return [
+            ...response.data_proposals.filter((item) => !known.has(item.id)),
+            ...current,
+          ]
+        })
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Impossible de contacter le coach IA.')
     } finally {
@@ -86,12 +105,9 @@ export function CoachAIChat() {
       const updated = action === 'confirm'
         ? await confirmAIDataProposal(proposal.id)
         : await rejectAIDataProposal(proposal.id)
-      setMessages((current) => current.map((message) => ({
-        ...message,
-        proposals: message.proposals?.map((item) =>
-          item.id === updated.id ? updated : item,
-        ),
-      })))
+      setPendingProposals((current) => current.map((item) =>
+        item.id === updated.id ? updated : item,
+      ))
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'La proposition n’a pas pu être traitée.')
     } finally {
@@ -113,15 +129,11 @@ export function CoachAIChat() {
       </div>
 
       <div className="max-h-[420px] space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
-        {messages.map((message, index) => (
-          <div key={index} className={message.role === 'user' ? 'ml-auto max-w-[88%]' : 'mr-auto max-w-[94%]'}>
-            <div className={message.role === 'user'
-              ? 'rounded-2xl rounded-br-md bg-emerald-600 px-3.5 py-2.5 text-[12px] leading-5 text-white'
-              : 'rounded-2xl rounded-bl-md bg-[var(--oc-surface-muted)] px-3.5 py-2.5 text-[12px] leading-5 text-[var(--oc-text)] dark:text-[var(--oc-text-secondary)]'}>
-              <p className="whitespace-pre-wrap">{message.content}</p>
-            </div>
-            {message.proposals?.map((proposal) => (
-              <div key={proposal.id} className="mt-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.035] p-3">
+        {pendingProposals.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--oc-muted)]">Données à valider</p>
+            {pendingProposals.map((proposal) => (
+              <div key={proposal.id} className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.035] p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-[11px] font-semibold text-[var(--oc-text)] dark:text-white">Proposition de sauvegarde</p>
                   <span className={proposal.status === 'confirmed'
@@ -136,28 +148,16 @@ export function CoachAIChat() {
                   {FIELD_LABELS[proposal.field_key] ?? proposal.field_key}
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--oc-muted)]">
-                  {proposal.existing_value !== null && (
-                    <span>Actuel : {proposal.existing_value} {proposal.unit}</span>
-                  )}
+                  {proposal.existing_value !== null && <span>Actuel : {proposal.existing_value} {proposal.unit}</span>}
                   <span>Nouveau : <strong className="text-[var(--oc-text)] dark:text-white">{proposal.value} {proposal.unit}</strong></span>
                 </div>
                 {proposal.status === 'pending' && (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={activeProposal !== null}
-                      onClick={() => void handleProposal(proposal, 'confirm')}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[10px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-                    >
+                    <button type="button" disabled={activeProposal !== null} onClick={() => void handleProposal(proposal, 'confirm')} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[10px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
                       {activeProposal === proposal.id ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                       Confirmer
                     </button>
-                    <button
-                      type="button"
-                      disabled={activeProposal !== null}
-                      onClick={() => void handleProposal(proposal, 'reject')}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--oc-border)] px-3 py-2 text-[10px] font-semibold text-[var(--oc-muted)] hover:bg-[var(--oc-surface-muted)] disabled:opacity-50"
-                    >
+                    <button type="button" disabled={activeProposal !== null} onClick={() => void handleProposal(proposal, 'reject')} className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--oc-border)] px-3 py-2 text-[10px] font-semibold text-[var(--oc-muted)] hover:bg-[var(--oc-surface-muted)] disabled:opacity-50">
                       <X className="h-3 w-3" />
                       Refuser
                     </button>
@@ -165,6 +165,16 @@ export function CoachAIChat() {
                 )}
               </div>
             ))}
+          </div>
+        )}
+        {messages.map((message, index) => (
+          <div key={index} className={message.role === 'user' ? 'ml-auto max-w-[88%]' : 'mr-auto max-w-[94%]'}>
+            <div className={message.role === 'user'
+              ? 'rounded-2xl rounded-br-md bg-emerald-600 px-3.5 py-2.5 text-[12px] leading-5 text-white'
+              : 'rounded-2xl rounded-bl-md bg-[var(--oc-surface-muted)] px-3.5 py-2.5 text-[12px] leading-5 text-[var(--oc-text)] dark:text-[var(--oc-text-secondary)]'}>
+              <p className="whitespace-pre-wrap">{message.content}</p>
+            </div>
+
           </div>
         ))}
         {loading && (

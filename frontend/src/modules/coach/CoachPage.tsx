@@ -68,6 +68,7 @@ export function CoachPage() {
   if (loading) {
     return (
       <PageContainer>
+        <CoachAIChat />
         <div className="flex min-h-[420px] items-center justify-center">
           <div className="flex items-center gap-2 text-[13px] text-[var(--oc-muted)]">
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-500" />
@@ -81,6 +82,7 @@ export function CoachPage() {
   if (error || unavailable || !coach) {
     return (
       <PageContainer>
+        <CoachAIChat />
         <div className="flex min-h-[420px] items-center justify-center">
           <div className="max-w-md text-center">
             <Brain className="mx-auto h-6 w-6 text-[var(--oc-muted-soft)]" />

@@ -43,7 +43,7 @@ OpenCoach crée une proposition persistée avec :
 - l'origine (coach conversation) et la date de création ;
 - un état en attente, une expiration et un identifiant opaque.
 
-Le modèle ne reçoit aucun accès SQL et ne peut pas choisir une cible hors liste blanche.
+Le modèle ne reçoit aucun accès SQL et ne peut pas choisir une cible hors liste blanche. L'outil IA exige aussi une citation exacte d'un message utilisateur et vérifie côté Python que la valeur numérique apparaît dans cette citation.
 
 ### D. Confirmation utilisateur
 
@@ -85,7 +85,7 @@ Chaque domaine doit utiliser son propre service métier. Ne pas créer un mécan
 - **Conversation state** : l'API conserve les propositions en attente, leur propriétaire, leur expiration et leur état.
 - **Write service** : service métier explicite avec liste blanche de champs et validation.
 - **Confirmation API** : endpoint authentifié séparé pour confirmer ou refuser une proposition.
-- **Frontend** : carte de confirmation affichant champ, valeur, unité, ancienne valeur éventuelle et actions Confirmer / Refuser.
+- **Frontend** : conversation intégrée au tableau de bord Coach ; carte de confirmation affichant champ, valeur, unité, ancienne valeur éventuelle et actions Confirmer / Refuser. Les propositions en attente sont rechargées depuis l'API après actualisation.
 - **Audit** : journal minimal des changements (profil, champ, ancienne/nouvelle valeur, date, source), sans stocker les conversations complètes.
 - **LLM** : peut proposer et expliquer ; ne peut ni confirmer à la place de l'utilisateur, ni écrire directement.
 

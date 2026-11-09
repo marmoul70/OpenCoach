@@ -134,3 +134,44 @@ def test_qwen3_disables_internal_thinking_to_preserve_answer_tokens():
     result = asyncio.run(run())
     assert result.content == "Analyse complète."
     assert result.done is True
+
+
+
+def test_tool_calls_are_parsed_and_tool_definitions_are_sent():
+    from opencoach.ai.schemas import AIToolDefinition
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content)
+        assert payload["tools"][0]["function"]["name"] == "training_history"
+        assert payload["messages"][0]["role"] == "user"
+        return httpx.Response(200, json={
+            "model": "qwen3:8b",
+            "message": {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [{
+                    "function": {
+                        "name": "training_history",
+                        "arguments": {"nb_days": 7},
+                    }
+                }],
+            },
+            "done": True,
+        })
+
+    async def run():
+        settings = AISettings(enabled=True, model="qwen3:8b")
+        client = OllamaClient(settings, transport=httpx.MockTransport(handler))
+        request = AIChatRequest(
+            messages=[AIMessage(role="user", content="Historique")],
+            tools=[AIToolDefinition(
+                name="training_history",
+                description="Historique sportif.",
+                parameters={"type": "object", "required": ["nb_days"]},
+            )],
+        )
+        return await client.chat(request)
+
+    result = asyncio.run(run())
+    assert result.tool_calls[0].name == "training_history"
+    assert result.tool_calls[0].arguments == {"nb_days": 7}

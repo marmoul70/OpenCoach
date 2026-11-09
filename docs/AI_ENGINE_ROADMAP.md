@@ -118,10 +118,12 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 **Livrable :** le coach peut demander une information manquante et l'enregistrer durablement uniquement après validation explicite.
 
 ### Mission 5 — Évaluation et optimisation des modèles
-- [ ] Constituer un jeu de questions sportives de référence et leurs résultats Python attendus.
+- [x] Constituer un premier corpus versionné de scénarios et comportements attendus dans `tests/fixtures/ai_model_evaluation_cases.json`.
+- [x] Ajouter des tests de structure, unicité et couverture des catégories critiques du corpus (`tests/test_ai_model_evaluation_fixture.py`).
+- [ ] Compléter les résultats Python attendus et vérifier tous les arguments contre les schémas réels du registre.
 - [ ] Mesurer séparément latence de sélection, exécution Python et rédaction finale.
 - [ ] Comparer Qwen3 8B avec des modèles Ollama plus légers (3B/4B notamment).
-- [ ] Évaluer exactitude des appels, respect des périodes, gestion des absences et qualité rédactionnelle.
+- [ ] Évaluer exactitude des appels, respect des périodes, gestion des absences et qualité rédactionnelle sur Ollama.
 - [ ] Choisir le modèle par résultats mesurés, pas uniquement par sa taille.
 - [ ] Conserver un modèle de référence et un moyen simple de revenir en arrière.
 
@@ -304,3 +306,14 @@ Vérification du chemin de lecture IA sur la branche de développement :
 - [ ] Développer la migration réversible, le backfill, le rapprochement en mode observation et les tests d'agrégats avant activation.
 
 **Garde-fou :** aucun changement de score ni fusion automatique n'est activé par ce lot documentaire.
+
+
+### Mission 5 — corpus d'évaluation initial
+
+- [x] Scénarios couvrant clarification, limites d'arguments, outils sportifs, récupération, données manquantes, contraintes, calendrier, détail d'activité, absence d'outil, centralisation OpenCoach et interdiction d'écriture du planning.
+- [x] Test automatisé de cohérence structurelle du corpus et de présence des catégories de sécurité.
+- [ ] Vérifier chaque scénario avec les définitions exactes des outils exposés au modèle ; le corpus reste une première version et ne remplace pas l'exécution réelle.
+- [ ] Ajouter le runner Ollama et les mesures p50/p95.
+- [ ] Comparer les modèles candidats avec trois répétitions par cas.
+
+**Fichiers :** `docs/AI_MODEL_EVALUATION.md`, `tests/fixtures/ai_model_evaluation_cases.json`, `tests/test_ai_model_evaluation_fixture.py`.

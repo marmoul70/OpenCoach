@@ -160,13 +160,20 @@ def _evidence_contains_value(
         illness_negative = ("pas malade", "aucun symptôme", "sans symptôme")
         availability_terms = ("indisponible", "pas disponible", "je ne peux pas")
         availability_negative = ("disponible", "je peux m'entraîner", "je peux courir")
-        for key, positive, negative in (
-            ("illness", illness_terms, illness_negative),
-            ("unavailable", availability_terms, availability_negative),
-        ):
-            terms = negative if value[key] is False else positive
-            if not any(term in normalized for term in terms):
+        if value["illness"] is False:
+            if not any(term in normalized for term in illness_negative):
                 return False
+        elif any(term in normalized for term in illness_negative) or not any(
+            term in normalized for term in illness_terms
+        ):
+            return False
+        if value["unavailable"] is False:
+            if "pas disponible" in normalized or "indisponible" in normalized or not any(
+                term in normalized for term in availability_negative
+            ):
+                return False
+        elif not any(term in normalized for term in availability_terms):
+            return False
         aliases = {
             "head": ("tête", "tete"), "neck": ("cou",), "shoulder": ("épaule", "epaule"),
             "back": ("dos",), "lower_back": ("bas du dos", "lombaire"),

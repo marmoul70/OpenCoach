@@ -86,6 +86,14 @@ class TrainingStatsService:
                 sum(activity.elevation_gain_m is not None for activity in activities)
                 + sum(session.elevation_gain_m is not None for session in manual_sessions)
             ),
+            duration_data_count=(
+                sum(
+                    activity.moving_time_seconds is not None
+                    or activity.elapsed_time_seconds is not None
+                    for activity in activities
+                )
+                + len(manual_sessions)
+            ),
             measured_load_data_count=sum(
                 activity.training_load is not None for activity in activities
             ),

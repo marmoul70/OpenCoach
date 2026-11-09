@@ -53,6 +53,11 @@ def build_recovery_status_tool(
             }
 
         warnings = []
+        if aggregation.conflicts:
+            warnings.append(
+                "Des valeurs concurrentes de fraîcheur identique ont été écartées : "
+                + str(aggregation.conflicts)
+            )
         if assessment.data_status == "stale":
             warnings.append(
                 f"Les dernières données disponibles datent du {assessment.source_date.isoformat()}."
@@ -150,6 +155,7 @@ def build_recovery_analysis_tool(
 
     from datetime import timedelta
 
+    from opencoach.wellness_aggregation import aggregate_wellness_days
     from opencoach.recovery_assessment import (
         METRICS,
         build_recovery_assessment,
@@ -159,23 +165,15 @@ def build_recovery_analysis_tool(
     def execute(arguments: BaseModel) -> dict:
         target_date = arguments.target_date
         start_date = target_date - timedelta(days=29)
-        provider = "coros"
-
-        wellness_days = wellness_repository.list_range(
-            athlete_profile_id,
-            start_date,
-            target_date,
-            provider=provider,
+        # Le coach lit uniquement les lignes déjà centralisées dans OpenCoach.
+        # Aucun fournisseur n’est prioritaire : les métriques sont fusionnées
+        # indépendamment, journée par journée.
+        imported_wellness_days = wellness_repository.list_range(
+            athlete_profile_id, start_date, target_date,
         )
-        if not wellness_days:
-            wellness_days = wellness_repository.list_range(
-                athlete_profile_id,
-                start_date,
-                target_date,
-                provider="intervals",
-            )
-            if wellness_days:
-                provider = "intervals"
+        aggregation = aggregate_wellness_days(imported_wellness_days)
+        provider = "opencoach"
+        wellness_days = list(aggregation.days)
 
         subjective_context = daily_context_repository.get_by_date(
             athlete_profile_id,
@@ -185,15 +183,9 @@ def build_recovery_analysis_tool(
             athlete_profile_id,
             target_date,
         )
-        snapshots = (
-            time_series_repository.list_time_series_snapshots(
-                athlete_profile_id,
-                start_date,
-                target_date,
-            )
-            if provider == "coros"
-            else []
-        )
+        # Les séries brutes COROS ne sont pas une source métier du coach.
+        snapshots = []
+
 
         assessment = build_recovery_assessment(
             wellness_days=wellness_days,
@@ -264,7 +256,10 @@ def build_recovery_analysis_tool(
 
         return {
             "target_date": target_date.isoformat(),
+            "data_store": "OpenCoach",
             "provider": provider if wellness_days else None,
+            "metric_sources": aggregation.metric_sources,
+            "conflicting_metrics": aggregation.conflicts,
             "source_date": payload["source_date"],
             "data_age_days": payload["data_age_days"],
             "data_status": payload["data_status"],
@@ -278,7 +273,7 @@ def build_recovery_analysis_tool(
                 "Une donnée absente n'est jamais égale à zéro.",
                 "Les métriques objectives et le ressenti subjectif restent distincts.",
                 "Aucun diagnostic médical ni score de forme composite n'est calculé.",
-                "Les données de sommeil proviennent des mesures importées ; ne pas les inventer.",
+                "Les mesures analysées sont celles déjà importées et centralisées dans OpenCoach.",
             ],
         }
 
@@ -287,7 +282,9 @@ def build_recovery_analysis_tool(
         description=(
             "Analyse descriptive de la forme et de la récupération : sommeil "
             "(durée, score et phases), HRV, fréquence cardiaque au repos, stress, "
-            "charge ATL/CTL et séries COROS, sur des fenêtres de 7, 14 et 30 jours. "
+            "charge ATL/CTL, sur des fenêtres de 7, 14 et 30 jours. Les données "
+            "proviennent exclusivement du stockage centralisé OpenCoach, tous "
+            "fournisseurs d’import confondus ; aucune API fournisseur n’est appelée. "
             "Inclut séparément le ressenti du jour provenant du check-in. À utiliser "
             "pour toute discussion sur fatigue, forme, récupération, sommeil ou stress. "
             "Ne produit aucun diagnostic ni score composite."

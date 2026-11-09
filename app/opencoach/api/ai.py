@@ -358,7 +358,6 @@ def get_ai_tool_registry(
         build_recovery_analysis_tool(
             wellness_repository=SqlWellnessRepository(db),
             daily_context_repository=SqlDailyContextRepository(db),
-            time_series_repository=None,
             daily_checkin_repository=SqlDailyCheckInRepository(db),
             athlete_profile_id=athlete_profile_id,
         )

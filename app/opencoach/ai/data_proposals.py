@@ -89,7 +89,7 @@ class DailyCheckInPainLocation(BaseModel):
         "head", "neck", "shoulder", "back", "lower_back", "hip", "groin",
         "thigh", "knee", "calf", "shin", "ankle", "achilles", "foot", "other",
     ]
-    side: Literal["left", "right", "both", "center", "not_applicable"] = "not_applicable"
+    side: Literal["left", "right", "both", "center", "not_applicable"]
 
 
 class DailyCheckInProposalValue(BaseModel):

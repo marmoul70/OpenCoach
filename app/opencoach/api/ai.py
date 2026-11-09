@@ -16,7 +16,7 @@ from opencoach.ai.client import AIProviderError
 from opencoach.ai.context import build_athlete_context
 from opencoach.ai.config import AISettings, get_ai_settings
 from opencoach.ai.schemas import AIChatRequest, AIMessage
-from opencoach.ai.service import AIService, AIServiceDisabledError
+from opencoach.ai.service import AIOrchestrationError, AIService, AIServiceDisabledError
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.ai.training_tools import build_training_history_tool
 from opencoach.database.session import get_db
@@ -403,6 +403,11 @@ async def ask_local_ai_with_athlete_context(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Le moteur IA local est désactivé.",
+        ) from exc
+    except AIOrchestrationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Le moteur IA a dépassé ses limites d'orchestration.",
         ) from exc
     except AIProviderError as exc:
         raise HTTPException(

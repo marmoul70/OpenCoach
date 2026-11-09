@@ -479,7 +479,7 @@ async def ask_local_ai(
     )
 
 
-@router.post("/coach", response_model=AIQuestionResponse, response_model_exclude_defaults=True)
+@router.post("/coach", response_model=AIQuestionResponse)
 async def ask_local_ai_with_athlete_context(
     payload: AIQuestionRequest,
     user_id=Depends(get_current_user_id),

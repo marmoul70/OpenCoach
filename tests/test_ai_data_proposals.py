@@ -201,3 +201,49 @@ def test_duplicate_pending_proposal_reuses_existing_proposal(db):
 
     assert second.id == first.id
     assert session.query(AIDataProposal).count() == 1
+
+def test_structured_training_profile_proposals_are_validated_and_confirmed(db):
+    session, profile = db
+    days = create_profile_data_proposal(session, profile.id, AIDataProposalCreate(field_key="available_days", value=[0, 2, 4]))
+    experience = create_profile_data_proposal(session, profile.id, AIDataProposalCreate(field_key="experience", value="intermediate"))
+    disciplines = create_profile_data_proposal(session, profile.id, AIDataProposalCreate(field_key="sport_disciplines", value=["road_running", "trail_running"]))
+
+    assert days.value == [0, 2, 4]
+    assert days.unit == "jours"
+    assert profile.available_days == []
+    assert confirm_profile_data_proposal(session, profile.id, days.id).status == "confirmed"
+    assert confirm_profile_data_proposal(session, profile.id, experience.id).status == "confirmed"
+    assert confirm_profile_data_proposal(session, profile.id, disciplines.id).status == "confirmed"
+
+    session.refresh(profile)
+    assert profile.available_days == [0, 2, 4]
+    assert profile.experience == "intermediate"
+    assert profile.sport_disciplines == ["road_running", "trail_running"]
+
+
+def test_structured_training_profile_rejects_invalid_values():
+    with pytest.raises(ValidationError):
+        AIDataProposalCreate(field_key="available_days", value=[0, 7])
+    with pytest.raises(ValidationError):
+        AIDataProposalCreate(field_key="available_days", value=[1, 1])
+    with pytest.raises(ValidationError):
+        AIDataProposalCreate(field_key="available_days", value=[True])
+    with pytest.raises(ValidationError):
+        AIDataProposalCreate(field_key="experience", value="professional")
+    with pytest.raises(ValidationError):
+        AIDataProposalCreate(field_key="sport_disciplines", value=["cycling"])
+    with pytest.raises(ValidationError):
+        AIDataProposalCreate(field_key="sport_disciplines", value=["trail_running", "trail_running"])
+
+
+def test_structured_training_proposal_detects_conflict_before_confirmation(db):
+    session, profile = db
+    proposal = create_profile_data_proposal(session, profile.id, AIDataProposalCreate(field_key="available_days", value=[1, 3]))
+    profile.available_days = [0]
+    session.commit()
+
+    with pytest.raises(RuntimeError, match="a changé"):
+        confirm_profile_data_proposal(session, profile.id, proposal.id)
+    session.refresh(profile)
+    assert profile.available_days == [0]
+    assert session.get(AIDataProposal, proposal.id).status == "conflict"

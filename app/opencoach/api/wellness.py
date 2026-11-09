@@ -79,7 +79,6 @@ def get_latest_wellness(
 @router.get("/trends")
 def get_wellness_trends(
     days: int = 7,
-    provider: str | None = None,
     athlete_profile_id: UUID = Depends(
         get_current_athlete_profile_id,
     ),

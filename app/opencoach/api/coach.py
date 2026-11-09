@@ -47,8 +47,6 @@ from opencoach.api.coaching.dependencies import (
     get_coach_weekly_assessment_service,
 )
 from opencoach.database.repositories import (
-    CorosDailyDataRepositoryError,
-    SqlCorosDailyDataRepository,
     ActivityRepositoryError,
     DailyContextRepositoryError,
     SqlActivityRepository,
@@ -532,7 +530,6 @@ def get_today_coach_decision(
         TrainingSessionRepositoryError,
         WellnessRepositoryError,
         DailyContextRepositoryError,
-        CorosDailyDataRepositoryError,
     ) as exc:
         raise HTTPException(
             status_code=503,

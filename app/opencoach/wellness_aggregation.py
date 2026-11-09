@@ -70,11 +70,14 @@ def aggregate_wellness_days(days: list[WellnessDay]) -> WellnessAggregation:
             if not candidates:
                 continue
             dated = [(row, _timestamp(row.provider_updated_at)) for row in candidates]
+            distinct_all = {getattr(row, field) for row in candidates}
+            # Une valeur sans horodatage ne peut pas être comparée à une
+            # valeur horodatée : en cas de désaccord, ne pas choisir arbitrairement.
+            if any(stamp is None for _, stamp in dated) and len(distinct_all) > 1:
+                conflicts.append(field)
+                continue
             freshest = max((stamp for _, stamp in dated if stamp is not None), default=None)
-            winners = [
-                row for row, stamp in dated
-                if stamp == freshest
-            ] if freshest is not None else candidates
+            winners = [row for row, stamp in dated if stamp == freshest] if freshest is not None else candidates
             distinct = {getattr(row, field) for row in winners}
             if len(distinct) > 1:
                 conflicts.append(field)

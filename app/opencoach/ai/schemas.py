@@ -55,7 +55,7 @@ class AIChatRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     messages: list[AIMessage] = Field(min_length=1, max_length=30)
-    tools: list[AIToolDefinition] = Field(default_factory=list, max_length=10)
+    tools: list[AIToolDefinition] = Field(default_factory=list, max_length=15)
     temperature: float = Field(default=0.2, ge=0.0, le=1.0)
     num_predict: int = Field(default=512, ge=1, le=4096)
 

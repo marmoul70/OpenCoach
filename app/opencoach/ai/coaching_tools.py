@@ -138,9 +138,11 @@ def build_training_profile_tool(
         ]
         if not heart_rate_zones:
             missing.append("heart_rate_zones")
+        elif len(heart_rate_zones) < 5:
+            missing.append("heart_rate_zones_incomplete")
 
         return {
-            "status": "ok",
+            "status": "partial" if missing else "ok",
             "physiology": {
                 "vma_kmh": profile.vma,
                 "max_heart_rate_bpm": profile.max_heart_rate,

@@ -279,3 +279,16 @@ Dernière mise à jour : 9 novembre 2026.
 
 **Limite actuelle :** la collecte conversationnelle ne prend en charge que le check-in du jour. La modification d'un check-in déjà enregistré reste dans le formulaire existant.
 
+### Audit technique — centralisation des données (9 novembre 2026)
+
+Vérification du chemin de lecture IA sur la branche de développement :
+
+- [x] `get_ai_tool_registry` injecte les services métier et repositories OpenCoach associés au profil authentifié ; aucun client API COROS, Intervals.icu, Garmin ou Apple Health n'est injecté dans le registre IA.
+- [x] `recovery_analysis` lit `SqlWellnessRepository` sans filtre fournisseur, puis applique `aggregate_wellness_days` avant les calculs 7/14/30 jours.
+- [x] `ReadinessService` lit le repository Wellness centralisé, agrège toutes les lignes de la date retenue et de la période de baseline ; il ne sélectionne pas un fournisseur comme source de score.
+- [x] La provenance fournisseur retournée par les outils de récupération est une métadonnée de traçabilité des imports, pas une source consultée en direct.
+- [x] Les outils d'historique, de charge, de tendances et de préparation de course utilisent `TrainingStatsService` / `RecentTrainingLoadService` et les repositories OpenCoach.
+- [ ] Vérification opérationnelle sur la VM encore nécessaire : confirmer que les imports réels alimentent `wellness_daily` et que les réponses Ollama respectent les résultats des outils.
+- [ ] Risque bloquant avant l'extension des intégrations d'activités : `activities` garantit actuellement l'unicité par `provider + provider_activity_id` seulement. Une même séance importée via deux plateformes peut donc être comptée deux fois. Ne pas ajouter Garmin/Apple Health ni présenter les agrégats d'activités multi-fournisseurs comme dédupliqués avant d'avoir défini et testé une identité canonique inter-fournisseurs.
+
+**Périmètre de cet audit :** inspection statique des fichiers et tests présents sur GitHub. Les tests automatisés et les échanges avec Ollama n'ont pas été exécutés sur la VM pendant cet audit ; aucun statut CI vert n'est revendiqué pour le dernier commit.

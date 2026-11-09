@@ -21,7 +21,7 @@ class FakeWellnessRepository:
         self.providers.append(provider)
         return [
             item for item in self.days
-            if item.provider == provider and start_date <= item.date <= end_date
+            if (provider is None or item.provider == provider) and start_date <= item.date <= end_date
         ]
 
 
@@ -89,7 +89,8 @@ def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():
     )
     result = tool.handler(RecoveryAnalysisArguments(target_date=TARGET))
 
-    assert result["provider"] == "coros"
+    assert result["provider"] == "opencoach"
+    assert result["data_store"] == "OpenCoach"
     assert result["data_status"] == "fresh"
     assert [window["days"] for window in result["windows"]] == [7, 14, 30]
     assert result["windows"][0]["recorded_days"] == 7
@@ -99,7 +100,7 @@ def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():
     assert result["daily_context"]["fatigue"] == 4
     assert result["daily_checkin"]["energy_rating"] == 2
     assert result["daily_checkin"]["pain_wellness_rating"] == 4
-    assert time_series.calls == 1
+    assert time_series.calls == 0
 
 
 def test_recovery_analysis_uses_intervals_fallback_without_coros_timeseries():
@@ -123,7 +124,8 @@ def test_recovery_analysis_uses_intervals_fallback_without_coros_timeseries():
 
     result = tool.handler(RecoveryAnalysisArguments(target_date=TARGET))
 
-    assert result["provider"] == "intervals"
+    assert result["provider"] == "opencoach"
+    assert result["data_store"] == "OpenCoach"
     assert result["windows"][0]["metrics"]["sleep_seconds"]["current"] == 21600
     assert result["time_series"] == []
     assert time_series.calls == 0
@@ -148,3 +150,46 @@ def test_recovery_analysis_keeps_missing_data_unknown_and_requests_subjective_fo
     assert result["daily_context"] is None
     assert result["daily_checkin"] is None
     assert any("ressenti subjectif" in warning for warning in result["warnings"])
+
+
+def test_recovery_analysis_merges_complementary_metrics_from_all_opencoach_imports():
+    profile_id = uuid4()
+    wellness = FakeWellnessRepository([
+        WellnessDay(
+            provider="coros",
+            date=TARGET,
+            hrv=52.0,
+            sleep_seconds=7 * 3600,
+        ),
+        WellnessDay(
+            provider="intervals",
+            date=TARGET,
+            resting_hr=47,
+            stress_avg=18.0,
+        ),
+        WellnessDay(
+            provider="garmin",
+            date=TARGET - timedelta(days=1),
+            hrv=49.0,
+            sleep_seconds=6 * 3600,
+        ),
+    ])
+    tool = build_recovery_analysis_tool(
+        wellness,
+        FakeDailyContextRepository(),
+        FakeTimeSeriesRepository(),
+        FakeDailyCheckInRepository(),
+        profile_id,
+    )
+
+    result = tool.handler(RecoveryAnalysisArguments(target_date=TARGET))
+
+    current = result["windows"][0]["metrics"]
+    assert result["provider"] == "opencoach"
+    assert current["hrv"]["current"] == 52.0
+    assert current["resting_hr"]["current"] == 47.0
+    assert current["stress_avg"]["current"] == 18.0
+    assert current["sleep_seconds"]["current"] == 7 * 3600
+    assert result["metric_sources"][TARGET.isoformat()]["hrv"] == ("coros",)
+    assert result["metric_sources"][TARGET.isoformat()]["resting_hr"] == ("intervals",)
+    assert result["windows"][0]["recorded_days"] == 2

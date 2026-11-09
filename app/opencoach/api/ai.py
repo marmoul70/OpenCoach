@@ -19,6 +19,7 @@ from opencoach.ai.schemas import AIChatRequest, AIMessage
 from opencoach.ai.service import AIOrchestrationError, AIService, AIServiceDisabledError
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.ai.training_tools import build_training_history_tool
+from opencoach.ai.load_tools import build_training_load_tool
 from opencoach.database.session import get_db
 from opencoach.api.training_stats import get_training_stats_service
 from opencoach.training import TrainingStatsService
@@ -257,6 +258,7 @@ def get_ai_tool_registry(
     training_stats_service: TrainingStatsService = Depends(
         get_training_stats_service,
     ),
+    context_service: PlanningContextService = Depends(get_planning_context_service),
 ) -> AIToolRegistry:
     """Construit le registre métier pour le seul athlète authentifié."""
 
@@ -264,6 +266,12 @@ def get_ai_tool_registry(
     registry.register(
         build_training_history_tool(
             training_stats_service,
+            athlete_profile_id,
+        )
+    )
+    registry.register(
+        build_training_load_tool(
+            context_service.recent_load_service,
             athlete_profile_id,
         )
     )

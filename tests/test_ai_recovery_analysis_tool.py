@@ -113,7 +113,7 @@ def test_recovery_analysis_reads_intervals_after_import_into_opencoach():
     assert result["provider"] == "opencoach"
     assert result["data_store"] == "OpenCoach"
     assert result["windows"][0]["metrics"]["sleep_seconds"]["current"] == 21600
-    assert result["time_series"] == []
+    assert "time_series" not in result
 
 
 def test_recovery_analysis_keeps_missing_data_unknown_and_requests_subjective_followup():

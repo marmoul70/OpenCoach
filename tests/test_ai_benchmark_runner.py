@@ -1,4 +1,8 @@
-from scripts.ai.benchmark_models import score_response, summarize
+from scripts.ai.benchmark_models import (
+    score_response,
+    summarize,
+    validate_local_base_url,
+)
 
 
 def test_benchmark_scores_exact_tool_and_arguments() -> None:
@@ -86,3 +90,15 @@ def test_benchmark_summary_reports_latency_and_accuracy() -> None:
     assert result["tool_selection_accuracy"] == 0.5
     assert result["clarification_accuracy"] == 1.0
     assert result["latency_ms_p50"] == 100
+
+
+def test_benchmark_refuses_remote_endpoints() -> None:
+    import pytest
+
+    with pytest.raises(ValueError, match="loopback"):
+        validate_local_base_url("https://example.com")
+
+
+def test_benchmark_accepts_localhost_and_loopback() -> None:
+    assert validate_local_base_url("http://localhost:11434/") == "http://localhost:11434"
+    assert validate_local_base_url("http://127.0.0.1:11434") == "http://127.0.0.1:11434"

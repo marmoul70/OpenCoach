@@ -96,6 +96,20 @@ class ReadinessService:
             for metric in metrics
         ]
 
+        readiness_inputs = (
+            current.hrv,
+            current.resting_hr,
+            current.sleep_seconds,
+            current.sleep_score,
+            current.fitness_ctl,
+            current.fatigue_atl,
+        )
+        if all(value is None for value in readiness_inputs):
+            raise ReadinessDataUnavailableError(
+                "Les données importées dans OpenCoach ne contiennent aucune mesure "
+                "exploitable pour calculer le Readiness à cette date."
+            )
+
         data_age_days = (target_date - source_date).days
         data_status = "fresh" if data_age_days == 0 else "stale"
 

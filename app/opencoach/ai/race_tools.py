@@ -157,6 +157,10 @@ def build_race_preparation_tool(
             "target_time_minutes": race.target_time_minutes,
         }
 
+        available_load_sessions = sum(
+            1 for item in activities if item.training_load is not None
+        ) + len(manual_sessions)
+
         recent_training = {
             "period": {
                 "start_date": start_date.isoformat(),
@@ -185,20 +189,16 @@ def build_race_preparation_tool(
                 "estimated": stats.estimated_load,
                 "total": (
                     stats.total_load
-                    if stats.sessions_count == 0
-                    or (
-                        stats.measured_load_data_count + stats.manual_sessions_count
-                        == stats.sessions_count
-                    )
+                    if included_sessions > 0
+                    and available_load_sessions == included_sessions
                     else None
                 ),
                 "unit": "load_points",
                 "coverage": (
                     "no_sessions"
-                    if stats.sessions_count == 0
+                    if included_sessions == 0
                     else "complete"
-                    if stats.measured_load_data_count + stats.manual_sessions_count
-                    == stats.sessions_count
+                    if available_load_sessions == included_sessions
                     else "partial_or_unavailable"
                 ),
             },

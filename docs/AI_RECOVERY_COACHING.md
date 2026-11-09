@@ -14,10 +14,10 @@ disponibles et invite le coach à demander les informations subjectives manquant
 Le nouvel outil `recovery_analysis` réutilise les données Wellness déjà importées
 par COROS ou Intervals :
 
-- sommeil : durée totale, score et phases disponibles ;
+- sommeil : durée totale, score, qualité déclarée par le capteur et phases disponibles ;
 - HRV et baseline HRV ;
 - fréquence cardiaque au repos et mesures cardiaques nocturnes ;
-- stress ;
+- stress et saturation SpO₂ lorsque disponible ;
 - charge aiguë ATL et forme CTL ;
 - séries temporelles COROS disponibles.
 

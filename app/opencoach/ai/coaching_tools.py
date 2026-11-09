@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -14,6 +14,7 @@ from opencoach.database.models import (
     AthleteProfile as AthleteProfileModel,
     Race as RaceModel,
     TrainingSession as TrainingSessionModel,
+    WeeklyTrainingPlan as WeeklyTrainingPlanModel,
 )
 from opencoach.models import AthletePhysiology, HeartRateZone, HeartRateZones
 from opencoach.physiology.heart_rate_zones import get_heart_rate_zone
@@ -35,6 +36,15 @@ class RaceCalendarArguments(BaseModel):
         ge=1,
         le=365,
         description="Nombre de jours calendaires à consulter, début inclus.",
+    )
+
+
+class WeeklyPlanContextArguments(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    week_start: date | None = Field(
+        default=None,
+        description="Lundi de la semaine à consulter. Par défaut, la semaine courante.",
     )
 
 
@@ -332,5 +342,73 @@ def build_planned_sessions_tool(
             "si toutes les séances n'ont pas ces données."
         ),
         arguments_model=PlannedSessionsArguments,
+        handler=execute,
+    )
+
+
+def build_weekly_plan_context_tool(
+    session: Session,
+    athlete_profile_id: UUID,
+    *,
+    reference_date_provider=date.today,
+) -> AITool:
+    """Expose le cadre et les objectifs de la semaine générés par OpenCoach."""
+
+    def execute(arguments: BaseModel) -> dict:
+        reference_date = reference_date_provider()
+        week_start = arguments.week_start or (
+            reference_date - timedelta(days=reference_date.weekday())
+        )
+        plan = session.scalar(
+            select(WeeklyTrainingPlanModel).where(
+                WeeklyTrainingPlanModel.athlete_profile_id == athlete_profile_id,
+                WeeklyTrainingPlanModel.week_start == week_start,
+            )
+        )
+        if plan is None:
+            return {
+                "status": "not_found",
+                "week_start": week_start.isoformat(),
+                "message": (
+                    "Aucun cadre hebdomadaire enregistré pour cette semaine. "
+                    "Ne pas inventer la phase, le type de semaine ou les objectifs de charge."
+                ),
+            }
+
+        return {
+            "status": "ok",
+            "week": {
+                "start_date": plan.week_start.isoformat(),
+                "end_date": plan.week_end.isoformat(),
+                "phase": plan.phase,
+                "week_type": plan.week_type,
+                "phase_week_index": plan.phase_week_index,
+                "generated_at": plan.generated_at.isoformat() if plan.generated_at else None,
+                "updated_at": plan.updated_at.isoformat() if plan.updated_at else None,
+            },
+            "targets": {
+                "load_target": plan.target_load,
+                "load_min": plan.load_min,
+                "load_max": plan.load_max,
+                "reference_duration_minutes": plan.reference_duration_minutes,
+                "target_duration_minutes": plan.target_duration_minutes,
+                "long_endurance_reference_minutes": plan.long_endurance_reference_minutes,
+            },
+            "schedule": {
+                "pressure": plan.schedule_pressure,
+                "athlete_schedule_constrained": plan.athlete_schedule_constrained,
+            },
+        }
+
+    return AITool(
+        name="weekly_plan_context",
+        description=(
+            "Retourne le cadre de la semaine OpenCoach : phase, type de semaine, "
+            "rang dans la phase, cible de charge, fourchette de charge, durée cible "
+            "et pression du planning. week_start est facultatif ; s'il est omis, "
+            "consulte la semaine courante (lundi à dimanche). Si aucun plan n'existe, "
+            "le résultat le signale et aucune cible ne doit être supposée."
+        ),
+        arguments_model=WeeklyPlanContextArguments,
         handler=execute,
     )

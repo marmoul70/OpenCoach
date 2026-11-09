@@ -13,12 +13,14 @@ from opencoach.ai.coaching_tools import (
     build_planned_sessions_tool,
     build_race_calendar_tool,
     build_training_profile_tool,
+    build_weekly_plan_context_tool,
 )
 from opencoach.database.base import Base
 from opencoach.database.models import (
     AthleteProfile as AthleteProfileModel,
     Race as RaceModel,
     TrainingSession as TrainingSessionModel,
+    WeeklyTrainingPlan as WeeklyTrainingPlanModel,
     User,
 )
 
@@ -245,3 +247,70 @@ def test_planned_sessions_requires_valid_period_of_at_most_31_days():
         )
     with pytest.raises(ValidationError):
         RaceCalendarArguments(horizon_days=366)
+
+
+def test_weekly_plan_context_returns_targets_for_current_monday():
+    engine = _database()
+    with Session(engine) as session:
+        profile = _profile(session, suffix="weekly-plan")
+        session.add(
+            WeeklyTrainingPlanModel(
+                athlete_profile_id=profile.id,
+                week_start=date(2026, 11, 9),
+                week_end=date(2026, 11, 15),
+                phase="specific_preparation",
+                week_type="build",
+                phase_week_index=3,
+                target_load=420,
+                load_min=380,
+                load_max=460,
+                reference_duration_minutes=300,
+                target_duration_minutes=330,
+                long_endurance_reference_minutes=150,
+                schedule_pressure="moderate",
+                athlete_schedule_constrained=False,
+            )
+        )
+        session.flush()
+        result = build_weekly_plan_context_tool(
+            session,
+            profile.id,
+            reference_date_provider=lambda: date(2026, 11, 11),
+        ).handler(WeeklyPlanContextArguments())
+
+    assert result["status"] == "ok"
+    assert result["week"]["start_date"] == "2026-11-09"
+    assert result["week"]["phase"] == "specific_preparation"
+    assert result["targets"]["load_target"] == 420
+    assert result["targets"]["target_duration_minutes"] == 330
+    assert result["schedule"]["athlete_schedule_constrained"] is False
+    engine.dispose()
+
+
+def test_weekly_plan_context_does_not_return_another_athletes_plan():
+    engine = _database()
+    with Session(engine) as session:
+        owner = _profile(session, suffix="weekly-owner")
+        other = _profile(session, suffix="weekly-other")
+        session.add(
+            WeeklyTrainingPlanModel(
+                athlete_profile_id=owner.id,
+                week_start=date(2026, 11, 9),
+                week_end=date(2026, 11, 15),
+                phase="recovery",
+                week_type="recovery",
+                phase_week_index=1,
+                schedule_pressure="low",
+                athlete_schedule_constrained=False,
+            )
+        )
+        session.flush()
+        result = build_weekly_plan_context_tool(
+            session,
+            other.id,
+            reference_date_provider=lambda: date(2026, 11, 11),
+        ).handler(WeeklyPlanContextArguments())
+
+    assert result["status"] == "not_found"
+    assert result["week_start"] == "2026-11-09"
+    engine.dispose()

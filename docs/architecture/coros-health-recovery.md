@@ -100,16 +100,18 @@ Les rapports bruts ne doivent pas être ajoutés comme fixtures permanentes : il
 - [x] Ajouter des tests synthétiques pour sommeil, HRV, santé quotidienne et charge.
 - [x] Étendre le modèle canonique pour stress, baseline HRV, phases du sommeil et fréquences cardiaques nocturnes.
 - [x] Exposer ces mesures dans les réponses Wellness et les tendances API.
-- [x] Faire préférer COROS au Readiness et au coach, avec repli vers Intervals sans mélanger les baselines.
+- [x] Consolider les mesures de tous les fournisseurs importés dans OpenCoach, sans priorité fournisseur, métrique par métrique et date par date.
 - [ ] Étendre le modèle canonique aux séries temporelles et autres mesures confirmées.
 - [x] Valider les migrations et les tests d'intégration en CI.
 - [ ] Valider un import complet sur la base locale de production et contrôler l'idempotence après synchronisation réelle.
 
-### Sprint 2 — Readiness indépendant d'Intervals
+### Sprint 2 — Readiness indépendant des fournisseurs
 
-- Faire lire le Readiness à partir des données COROS normalisées.
-- Garder la compatibilité historique Intervals pendant la transition, avec sélection explicite de source et indication de fraîcheur.
-- Éviter tout mélange de baselines de fournisseurs différents.
+- [x] Faire lire Readiness depuis les lignes Wellness centralisées dans OpenCoach.
+- [x] Consolider les métriques de tous les fournisseurs pour la journée courante et la baseline historique.
+- [x] Utiliser la date de mise à jour fournisseur, puis la date d'import OpenCoach, pour résoudre la fraîcheur.
+- [x] Écarter et signaler les métriques en conflit plutôt que choisir un fournisseur arbitrairement.
+- [x] Retirer les repositories de données brutes COROS des chemins Readiness, Wellness et Coach IA.
 - Vérifier les données nécessaires et dégrader proprement le calcul si une mesure manque.
 
 ### Sprint 3 — Coach quotidien
@@ -228,7 +230,7 @@ L'audit du pipeline a confirmé les points suivants :
 ### Correctifs apportés pendant l'audit
 
 1. **Synchronisation incrémentale sans nouvelle activité** : après un import initial réussi, une fenêtre incrémentale vide est un succès. `last_synced_at` doit avancer même si aucune nouvelle activité n'a été créée ; sinon le timer relance le même travail à chaque passage. Le premier import sans activité reste en erreur et réessayable.
-2. **Isolation des fournisseurs** : si l'API de récupération utilise Intervals en repli faute de journées COROS, les séries temporelles COROS ne sont plus ajoutées à cette réponse. Les mesures quotidiennes et les séries doivent toujours provenir du même fournisseur.
+2. **Référentiel unique OpenCoach** : les chemins Readiness, Wellness et Coach n'interrogent plus les tables brutes COROS ni les API fournisseurs. Ils lisent les lignes normalisées `wellness_daily` et fusionnent les imports par métrique. Les séries temporelles COROS restent une archive technique, hors du chemin de calcul du coach.
 3. **Horodatage de Santé** : l'interface lit `last_synced_at` depuis `GET /api/integrations/coros/connection`, qui représente la dernière synchronisation réussie, et non le dernier déclenchement du timer systemd. Les timestamps SQL naïfs sont interprétés comme UTC côté navigateur.
 
 ### Tests de non-régression ajoutés
@@ -237,7 +239,7 @@ L'audit du pipeline a confirmé les points suivants :
 - Import incrémental vide après import initial : le timestamp avance.
 - Import avec nouvelles activités : le timestamp avance.
 - Catégorie activités désactivée : le timestamp avance après une synchronisation réussie.
-- Repli Intervals : aucune série temporelle COROS n'est mélangée à la réponse.
+- Agrégation multi-fournisseurs : métriques complémentaires fusionnées, fraîcheur résolue, conflits non départagés laissés inconnus.
 
 ### Limite de validation restante
 

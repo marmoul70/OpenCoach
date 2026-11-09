@@ -42,7 +42,7 @@ from opencoach.ai.recovery_tools import (
 )
 from opencoach.ai.trend_tools import TrainingTrendsArguments
 from opencoach.ai.training_tools import TrainingHistoryArguments
-from opencoach.api.ai import _COACH_SYSTEM_PROMPT
+from opencoach.api.ai import _DEFAULT_COACH_PREFERENCES, _coach_system_prompt
 
 
 ARGUMENT_MODELS = {
@@ -62,7 +62,10 @@ ARGUMENT_MODELS = {
 }
 
 TOOL_DESCRIPTIONS = {
-    "training_history": "Bilan réel de l'historique sur nb_days jours. nb_days est obligatoire.",
+    "training_history": (
+        "Retourne le bilan réel des entraînements sur les nb_days derniers jours calendaires inclusifs : séances, durée, distance, D+ et charge. "
+        "nb_days est obligatoire : si la durée manque, demande-la à l'utilisateur et attends sa réponse avant tout appel. Les métriques précisent leur couverture."
+    ),
     "training_load": "Charge d'entraînement OpenCoach sur nb_days jours. nb_days est obligatoire.",
     "training_trends": "Compare deux périodes. nb_days et comparison_days sont obligatoires.",
     "recovery_analysis": "Analyse descriptive OpenCoach de la récupération sur 7, 14 et 30 jours.",
@@ -118,11 +121,29 @@ def percentile(values: list[float], percent: float) -> float | None:
 
 def score_response(case: dict[str, Any], tool_calls: list[dict[str, Any]], content: str) -> dict[str, Any]:
     expected = case["expected_tool_calls"]
-    actual = [
-        {"tool": call["name"], "arguments": call.get("arguments") or {}}
-        for call in tool_calls
-    ]
-    exact_calls = canonical(expected) == canonical(actual)
+    actual = []
+    comparable_actual = []
+    for call in tool_calls:
+        name = call["name"]
+        arguments = call.get("arguments") or {}
+        argument_model = ARGUMENT_MODELS.get(name)
+        try:
+            if argument_model is None:
+                raise ValueError("Outil inconnu")
+            argument_model.model_validate(arguments)
+            arguments_valid = True
+        except Exception:
+            arguments_valid = False
+        comparable_actual.append({"tool": name, "arguments": arguments})
+        actual.append({
+            "tool": name,
+            "arguments": arguments,
+            "arguments_valid": arguments_valid,
+        })
+    exact_calls = canonical(expected) == canonical(comparable_actual)
+    argument_validation_pass = (
+        all(call["arguments_valid"] for call in actual) if actual else None
+    )
     clarification_stage = case.get("clarification_stage", "first_turn")
     clarification_expected = case.get("expected_clarification") is not None
     clarification_observable = clarification_expected and clarification_stage == "first_turn"
@@ -133,6 +154,7 @@ def score_response(case: dict[str, Any], tool_calls: list[dict[str, Any]], conte
     )
     return {
         "tool_selection_pass": exact_calls,
+        "argument_validation_pass": argument_validation_pass,
         "clarification_checkable": clarification_observable,
         "clarification_pass": clarification_detected if clarification_observable else None,
         "expected_tool_calls": expected,
@@ -152,7 +174,16 @@ async def run_case(
 ) -> dict[str, Any]:
     request = AIChatRequest(
         messages=[
-            AIMessage(role="system", content=_COACH_SYSTEM_PROMPT),
+            AIMessage(role="system", content=_coach_system_prompt(_DEFAULT_COACH_PREFERENCES)),
+            AIMessage(
+                role="user",
+                content=(
+                    "CONTEXTE SPORTIF STRUCTURÉ (jeu de test, sans donnée personnelle) :\n"
+                    f"Date de référence : {case.get('reference_date', '2026-11-09')}.\n"
+                    "Les données individuelles ne sont pas fournies dans ce benchmark ; "
+                    "les outils autorisés sont la seule source de données athlète."
+                ),
+            ),
             AIMessage(role="user", content=case["prompt"]),
         ],
         tools=definitions,
@@ -187,6 +218,7 @@ async def run_case(
             "tool_selection_pass": False,
             "clarification_checkable": False,
             "clarification_pass": None,
+            "argument_validation_pass": None,
             "expected_tool_calls": case["expected_tool_calls"],
             "actual_tool_calls": [],
             "response_excerpt": "",
@@ -207,6 +239,10 @@ def summarize(rows: list[dict[str, Any]], model: str) -> dict[str, Any]:
         "tool_selection_accuracy": round(
             sum(row["tool_selection_pass"] for row in valid) / len(valid), 4
         ) if valid else 0.0,
+        "argument_validation_accuracy": round(
+            sum(row["argument_validation_pass"] for row in valid if row["argument_validation_pass"] is not None)
+            / sum(row["argument_validation_pass"] is not None for row in valid), 4
+        ) if any(row["argument_validation_pass"] is not None for row in valid) else None,
         "clarification_accuracy": round(
             sum(bool(row["clarification_pass"]) for row in clarification_rows)
             / len(clarification_rows), 4
@@ -273,7 +309,10 @@ async def main_async(args: argparse.Namespace) -> int:
         "temperature": args.temperature,
         "num_predict": args.num_predict,
         "case_count": len(cases),
-        "scope": "tool_selection_only_no_business_tool_execution",
+        "scope": "tool_selection_and_schema_validation_no_business_tool_execution",
+        "prompt_profile": "production_coach_system_prompt_default_preferences",
+        "reference_date": "2026-11-09",
+        "context_note": "Synthetic reference-date context only; no athlete-specific facts or database access.",
         "summaries": summaries,
         "results": all_rows,
     }
@@ -281,7 +320,7 @@ async def main_async(args: argparse.Namespace) -> int:
     with csv_path.open("w", encoding="utf-8", newline="") as handle:
         fields = [
             "model", "repetition", "case_id", "category", "status",
-            "latency_ms", "tool_selection_pass", "clarification_checkable",
+            "latency_ms", "tool_selection_pass", "argument_validation_pass", "clarification_checkable",
             "clarification_pass", "expected_tool_calls", "actual_tool_calls",
             "response_excerpt", "error",
         ]

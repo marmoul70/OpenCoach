@@ -242,6 +242,36 @@ def create_profile_data_proposal(
     profile = db.get(AthleteProfile, athlete_profile_id)
     if profile is None:
         raise LookupError("Profil sportif introuvable.")
+    if payload.field_key == "daily_checkin":
+        checkin_date = date.today()
+        if db.scalar(select(DailyCheckInModel).where(
+            DailyCheckInModel.athlete_profile_id == athlete_profile_id,
+            DailyCheckInModel.date == checkin_date,
+        )) is not None:
+            raise ValueError("Un check-in existe déjà pour aujourd'hui ; utilise le formulaire de modification.")
+        now = _now_utc_naive()
+        pending = db.scalar(select(AIDataProposal).where(
+            AIDataProposal.athlete_profile_id == athlete_profile_id,
+            AIDataProposal.field_key == "daily_checkin",
+            AIDataProposal.proposed_value == payload.value,
+            AIDataProposal.status == "pending",
+            AIDataProposal.expires_at > now,
+        ))
+        if pending is not None:
+            return _to_response(pending)
+        proposal = AIDataProposal(
+            athlete_profile_id=athlete_profile_id,
+            field_key="daily_checkin",
+            proposed_value=payload.value,
+            existing_value=None,
+            unit=f"check-in du {checkin_date.isoformat()}",
+            status="pending",
+            expires_at=now + timedelta(minutes=15),
+        )
+        db.add(proposal)
+        db.commit()
+        db.refresh(proposal)
+        return _to_response(proposal)
     rule = PROFILE_FIELD_RULES[payload.field_key]
     current_value = None if rule["kind"] == "equipment" else getattr(profile, payload.field_key)
     if rule["kind"] == "equipment" and _equipment_exists(
@@ -333,6 +363,33 @@ def confirm_profile_data_proposal(
         proposal.status = "expired"
         db.commit()
         raise TimeoutError("La proposition a expiré.")
+    if proposal.field_key == "daily_checkin":
+        checkin_date = date.today()
+        if db.scalar(select(DailyCheckInModel).where(
+            DailyCheckInModel.athlete_profile_id == athlete_profile_id,
+            DailyCheckInModel.date == checkin_date,
+        )) is not None:
+            proposal.status = "conflict"
+            db.commit()
+            raise RuntimeError("Un check-in a été enregistré entre-temps ; confirmation annulée.")
+        payload = DailyCheckInProposalValue.model_validate(proposal.proposed_value)
+        checkin = DailyCheckInModel(
+            athlete_profile_id=athlete_profile_id,
+            date=checkin_date,
+            energy_rating=payload.energy_rating,
+            pain_wellness_rating=payload.pain_wellness_rating,
+            illness=payload.illness,
+            unavailable=payload.unavailable,
+            pain_locations=[item.model_dump() for item in payload.pain_locations],
+            note=payload.note,
+        )
+        db.add(checkin)
+        proposal.status = "confirmed"
+        proposal.confirmed_at = now
+        db.commit()
+        db.refresh(proposal)
+        return _to_response(proposal)
+
     profile = db.get(AthleteProfile, athlete_profile_id)
     if profile is None:
         raise LookupError("Profil sportif introuvable.")

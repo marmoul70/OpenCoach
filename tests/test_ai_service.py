@@ -54,3 +54,54 @@ def test_enabled_service_calls_provider():
 
     assert result.content == "Réponse de test."
     assert client.calls == 1
+
+
+
+def test_tool_orchestration_executes_validated_tool_then_returns_final_answer():
+    from pydantic import BaseModel, ConfigDict
+    from opencoach.ai.schemas import AIToolCall
+    from opencoach.ai.tool_engine import AITool, AIToolRegistry
+
+    class Args(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+        nb_days: int
+
+    class ToolCallingClient:
+        def __init__(self):
+            self.calls = 0
+            self.requests = []
+
+        async def chat(self, request):
+            self.calls += 1
+            self.requests.append(request)
+            if self.calls == 1:
+                return AIChatResult(
+                    model="qwen3:8b",
+                    content="",
+                    tool_calls=[AIToolCall(name="history", arguments={"nb_days": 7})],
+                    done=True,
+                )
+            return AIChatResult(
+                model="qwen3:8b",
+                content="Bilan sur 7 jours.",
+                done=True,
+            )
+
+    registry = AIToolRegistry()
+    registry.register(AITool(
+        name="history",
+        description="Historique.",
+        arguments_model=Args,
+        handler=lambda args: {"days": args.nb_days},
+    ))
+    client = ToolCallingClient()
+    service = AIService(AISettings(enabled=True), client=client)
+    request = AIChatRequest(messages=[AIMessage(role="user", content="Mon historique")])
+
+    result = asyncio.run(service.chat_with_tools(request, registry))
+
+    assert result.content == "Bilan sur 7 jours."
+    assert client.calls == 2
+    assert client.requests[0].tools[0].name == "history"
+    assert client.requests[1].messages[-1].role == "tool"
+    assert '"days": 7' in client.requests[1].messages[-1].content

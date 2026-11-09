@@ -79,7 +79,7 @@ class ReadinessService:
             DailyContextRepository | None
         ) = None,
         thresholds: ThresholdSettings | None = None,
-        provider: str | None = "intervals",
+        provider: str | None = None,
         fallback_providers: tuple[str, ...] = (),
     ) -> None:
         self.repository = repository

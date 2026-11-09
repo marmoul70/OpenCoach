@@ -217,4 +217,9 @@ def get_recovery_assessment(
         provider="opencoach",
         subjective_context=subjective_context,
     )
-    return recovery_assessment_to_dict(assessment)
+    payload = recovery_assessment_to_dict(assessment)
+    aggregation = aggregate_wellness_days(imported)
+    payload["data_store"] = "OpenCoach"
+    payload["metric_sources"] = aggregation.metric_sources
+    payload["conflicting_metrics"] = aggregation.conflicts
+    return payload

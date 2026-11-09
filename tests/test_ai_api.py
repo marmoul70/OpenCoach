@@ -462,6 +462,8 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "session_execution_review" in prompt
     assert "propose_profile_data" in prompt
     assert "recovery_analysis" in prompt
+    assert "OpenCoach est l'unique référentiel de lecture et de calcul" in prompt
+    assert "ne consulte jamais directement une API fournisseur" in prompt
     assert "citation exacte" in prompt
     assert "proposition de sauvegarde en attente" in prompt
     assert "Une réponse utilisateur ne devient pas automatiquement une donnée persistée" in prompt

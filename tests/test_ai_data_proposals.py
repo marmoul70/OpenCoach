@@ -14,6 +14,7 @@ from opencoach.ai.data_proposals import (
     confirm_profile_data_proposal,
     create_profile_data_proposal,
     get_profile_data_proposal,
+    list_pending_profile_data_proposals,
     reject_profile_data_proposal,
 )
 from opencoach.database.base import Base
@@ -169,3 +170,23 @@ def test_same_value_is_not_proposed_again(db):
             profile.id,
             AIDataProposalCreate(field_key="vma", value=15.0),
         )
+
+
+
+def test_pending_proposal_list_is_scoped_and_excludes_expired_or_resolved(db):
+    session, profile = db
+    first = create_profile_data_proposal(
+        session,
+        profile.id,
+        AIDataProposalCreate(field_key="vma", value=15.0),
+    )
+    second = create_profile_data_proposal(
+        session,
+        profile.id,
+        AIDataProposalCreate(field_key="weight_kg", value=82.0),
+    )
+    reject_profile_data_proposal(session, profile.id, second.id)
+
+    proposals = list_pending_profile_data_proposals(session, profile.id)
+    assert [item.id for item in proposals] == [first.id]
+    assert list_pending_profile_data_proposals(session, uuid4()) == []

@@ -8,7 +8,6 @@ from opencoach.api.intervals import (
     get_current_athlete_profile_id,
 )
 from opencoach.api.wellness import (
-    get_coros_daily_data_repository,
     get_daily_context_repository,
     get_wellness_repository,
 )
@@ -38,13 +37,8 @@ class FakeWellnessRepository:
     ):
         if self.error is not None:
             raise self.error
-        if (
-            self.wellness is None
-            or self.wellness.provider != provider
-            or not start_date <= self.wellness.date <= end_date
-        ):
-            return []
-        return [self.wellness]
+        items = self.wellness if isinstance(self.wellness, list) else ([self.wellness] if self.wellness is not None else [])
+        return [item for item in items if (provider is None or item.provider == provider) and start_date <= item.date <= end_date]
 
     def get_latest(
         self,
@@ -112,7 +106,7 @@ def test_get_latest_wellness() -> None:
     assert response.status_code == 200
 
     assert response.json() == {
-        "provider": "intervals",
+        "provider": "opencoach",
         "date": "2026-08-09",
         "fitness_ctl": 19.6794,
         "fatigue_atl": 14.273309,
@@ -139,10 +133,7 @@ def test_get_latest_wellness() -> None:
         "provider_updated_at": None,
     }
 
-    assert repository.calls == [
-        (profile_id, "coros"),
-        (profile_id, "intervals"),
-    ]
+    assert repository.calls == []
 
 
 def test_get_latest_wellness_returns_404_when_empty() -> None:
@@ -203,14 +194,11 @@ def test_get_latest_wellness_prefers_coros_when_available() -> None:
     response = client.get("/api/wellness/latest")
 
     assert response.status_code == 200
-    assert response.json()["provider"] == "coros"
+    assert response.json()["provider"] == "opencoach"
     assert response.json()["hrv_baseline"] == 42.0
     assert response.json()["stress_avg"] == 28.0
     assert response.json()["sleep_deep_seconds"] == 7200
-    assert repository.calls == [
-        (profile_id, "coros"),
-        (profile_id, "intervals"),
-    ]
+    assert repository.calls == []
 
 
 
@@ -258,15 +246,12 @@ def test_get_recovery_assessment_exposes_windows_and_subjective_fatigue() -> Non
     client.app.dependency_overrides[
         get_daily_context_repository
     ] = lambda: context_repository
-    client.app.dependency_overrides[
-        get_coros_daily_data_repository
-    ] = lambda: FakeCorosDailyDataRepository()
 
     response = client.get("/api/wellness/recovery")
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["provider"] == "coros"
+    assert payload["provider"] == "opencoach"
     assert payload["data_status"] == "fresh"
     assert [item["days"] for item in payload["windows"]] == [7, 14, 30]
     assert payload["windows"][0]["metrics"]["hrv"]["current"] == 46.0
@@ -281,9 +266,6 @@ def test_get_recovery_assessment_returns_unavailable_when_no_sensor_data() -> No
     client.app.dependency_overrides[
         get_daily_context_repository
     ] = lambda: FakeDailyContextRepository()
-    client.app.dependency_overrides[
-        get_coros_daily_data_repository
-    ] = lambda: FakeCorosDailyDataRepository()
 
     response = client.get("/api/wellness/recovery")
 
@@ -298,7 +280,7 @@ def test_get_recovery_assessment_returns_unavailable_when_no_sensor_data() -> No
 def test_recovery_intervals_fallback_does_not_mix_coros_time_series() -> None:
     class IntervalsOnlyRepository:
         def list_range(self, athlete_profile_id, start_date, end_date, *, provider=None):
-            if provider == "intervals":
+            if provider is None or provider == "intervals":
                 return [WellnessDay(provider="intervals", date=end_date, hrv=52.0)]
             return []
 
@@ -313,18 +295,31 @@ def test_recovery_intervals_fallback_does_not_mix_coros_time_series() -> None:
             }]
 
     client, _ = create_client(IntervalsOnlyRepository())
-    time_series_repository = SpyCorosDailyDataRepository()
     client.app.dependency_overrides[
         get_daily_context_repository
     ] = lambda: FakeDailyContextRepository()
-    client.app.dependency_overrides[
-        get_coros_daily_data_repository
-    ] = lambda: time_series_repository
 
     response = client.get("/api/wellness/recovery")
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["provider"] == "intervals"
+    assert payload["provider"] == "opencoach"
     assert payload["time_series"] == []
-    assert time_series_repository.called is False
+
+
+def test_latest_wellness_merges_metrics_from_different_import_providers():
+    repository = FakeWellnessRepository([
+        WellnessDay(provider="coros", date=date.today(), hrv=51.0),
+        WellnessDay(provider="intervals", date=date.today(), resting_hr=47),
+        WellnessDay(provider="garmin", date=date.today(), spo2=98.0),
+    ])
+    client, _ = create_client(repository)
+
+    response = client.get("/api/wellness/latest")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["provider"] == "opencoach"
+    assert payload["hrv"] == 51.0
+    assert payload["resting_hr"] == 47
+    assert payload["spo2"] == 98.0

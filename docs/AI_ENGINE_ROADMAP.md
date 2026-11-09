@@ -110,6 +110,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] Ajouter les tests unitaires du service : absence d'écriture avant confirmation, bornes, isolation, conflit, expiration, refus, cohérence physiologique et double confirmation.
 - [x] Relier le tool calling du coach à la création de proposition avec preuve exacte issue d'un message utilisateur ; la valeur n'est acceptée que si elle apparaît dans cette preuve.
 - [x] Exposer les propositions créées sous forme structurée dans la réponse de /api/ai/coach.
+- [x] Ajouter la récupération authentifiée des propositions en attente pour les retrouver après rechargement de la page.
 - [x] Ajouter une interface conversationnelle au tableau de bord Coach avec les actions Confirmer / Refuser et le statut de sauvegarde retourné par l'API.
 - [ ] Étendre progressivement le mécanisme aux autres domaines métier, après validation du profil.
 

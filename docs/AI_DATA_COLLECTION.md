@@ -119,3 +119,27 @@ Aucun endpoint de confirmation ne doit accepter un nom de table, un nom d'attrib
 4. **Orchestration conversationnelle** : détecter les champs manquants, collecter les réponses, créer les propositions sans écrire.
 5. **Interface frontend** : carte de confirmation et retour de sauvegarde vérifiée.
 6. **Extension métier** : contraintes, courses, matériel et préférences, domaine par domaine.
+
+## Extension du profil d'entraînement
+
+Le mécanisme de proposition couvre également les champs structurés déjà présents dans
+`AthleteTrainingSchema` :
+
+- `available_days` : liste de jours, avec lundi = 0 et dimanche = 6. Les valeurs
+  hors plage et les doublons sont rejetés ; la liste est normalisée dans l'ordre
+  croissant.
+- `experience` : une valeur parmi `beginner`, `intermediate`, `advanced`
+  et `expert`.
+- `sport_disciplines` : liste issue de l'énumération métier
+  (`road_running`, `trail_running`), sans doublon.
+
+La citation utilisateur doit étayer chaque élément proposé. Pour les jours et les
+disciplines, le validateur de preuve reconnaît les libellés français usuels ; il ne
+se contente pas de vérifier que le tableau JSON est valide. À la confirmation, le
+service reconstruit et valide l'ensemble des champs d'entraînement avant d'écrire
+la seule propriété proposée. La comparaison avec la valeur initiale protège aussi
+ces listes contre les modifications concurrentes.
+
+L'interface affiche les valeurs structurées sous forme lisible (jours en français,
+niveaux traduits et disciplines explicites). Le stockage utilise le champ JSON déjà
+présent dans `athlete_profiles` : aucune migration supplémentaire n'est requise.

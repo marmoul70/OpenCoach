@@ -141,7 +141,7 @@ def _evidence_contains_value(
                 "center": ("au centre", "central"),
                 "not_applicable": (),
             }
-            if side not in side_terms or (side_terms[side] and not any(term in normalized for term in side_terms[side])):
+            if side not in side_terms or not any(term in normalized for term in side_terms[side]):
                 return False
         note = value.get("note")
         if note is not None and (not isinstance(note, str) or note.casefold() not in normalized):
@@ -190,7 +190,7 @@ def _evidence_contains_value(
             side_terms = {
                 "left": ("gauche",), "right": ("droit", "droite"),
                 "both": ("deux côtés", "des deux côtés", "bilatéral"),
-                "center": ("au centre", "central"), "not_applicable": (),
+                "center": ("au centre", "central"), "not_applicable": ("sans latéralité", "non applicable", "pas de côté précisé"),
             }
             side = location.get("side", "not_applicable")
             if side not in side_terms or (side_terms[side] and not any(term in normalized for term in side_terms[side])):

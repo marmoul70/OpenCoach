@@ -17,6 +17,8 @@ import {
   useCoachToday,
 } from './useCoachToday'
 
+import { CoachAIChat } from './CoachAIChat'
+
 import type {
   CoachWeeklyDebrief,
 } from './types'
@@ -235,6 +237,8 @@ export function CoachPage() {
           </div>
         </div>
       </header>
+
+      <CoachAIChat />
 
       {dataWarning && (
         <div className="mb-3 flex items-center gap-2 rounded-[10px] border border-amber-500/15 bg-amber-50/70 px-3 py-2 text-[9px] text-amber-700 dark:bg-amber-500/[0.05] dark:text-amber-400">

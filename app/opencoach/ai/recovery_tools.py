@@ -143,7 +143,6 @@ class RecoveryAnalysisArguments(BaseModel):
 def build_recovery_analysis_tool(
     wellness_repository,
     daily_context_repository,
-    time_series_repository,
     daily_checkin_repository,
     athlete_profile_id: UUID,
 ) -> AITool:
@@ -183,16 +182,12 @@ def build_recovery_analysis_tool(
             athlete_profile_id,
             target_date,
         )
-        # Les séries brutes COROS ne sont pas une source métier du coach.
-        snapshots = []
-
 
         assessment = build_recovery_assessment(
             wellness_days=wellness_days,
             target_date=target_date,
             provider=provider,
             subjective_context=subjective_context,
-            time_series_snapshots=snapshots,
         )
         payload = recovery_assessment_to_dict(assessment)
 

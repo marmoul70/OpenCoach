@@ -140,7 +140,7 @@ Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Miss
 | Benchmark modèles | À démarrer |
 | Observabilité / intégration | À démarrer |
 
-Dernière mise à jour : 9 novembre 2026.\n\n### Mission 3 — détail d'activité\n\n- L'outil est enregistré dans le registre authentifié de l'athlète et réutilise `SqlActivityDetailRepository`.\n- La sélection se fait par date locale ou identifiant OpenCoach ; si plusieurs séances correspondent, l'outil retourne une liste de choix et demande une clarification.\n- Les données restituées sont filtrées : métriques générales, intervalles bornés à 100 et statistiques de streams (nombre d'échantillons, min/max/moyenne). Aucun JSON COROS brut ni série complète n'est transmis au modèle.\n- Les activités d'un autre profil ne sont pas accessibles ; les détails absents sont explicitement signalés.\n- Tests dédiés ajoutés ; validation CI à effectuer.
+Dernière mise à jour : 9 novembre 2026.\n\n### Mission 3 — détail d'activité\n\n- L'outil est enregistré dans le registre authentifié de l'athlète et réutilise `SqlActivityDetailRepository`.\n- La sélection se fait par date locale ou identifiant OpenCoach ; si plusieurs séances correspondent, l'outil retourne une liste de choix et demande une clarification.\n- Les données restituées sont filtrées : métriques générales, intervalles bornés à 40, textes libres tronqués et statistiques de streams (nombre d'échantillons, min/max/moyenne). Aucun JSON COROS brut ni série complète n'est transmis au modèle.\n- Les activités d'un autre profil ne sont pas accessibles ; les détails absents sont explicitement signalés.\n- Tests dédiés ajoutés ; validation CI à effectuer.
 
 ### Reprise sur main 0.8.5
 

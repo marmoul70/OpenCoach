@@ -122,7 +122,8 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] Ajouter des tests de structure, unicité et couverture des catégories critiques du corpus (`tests/test_ai_model_evaluation_fixture.py`).
 - [ ] Compléter les résultats Python attendus et vérifier tous les arguments contre les schémas réels du registre.
 - [x] Ajouter au runner la validation Pydantic des arguments réellement produits et le taux de conformité du schéma.
-- [x] Aligner le prompt système du benchmark sur le builder de production et injecter une date de référence synthétique fixe, sans données athlète réelles.
+- [x] Aligner le prompt système et les descriptions d'outils du benchmark sur le contrat de production ; injecter une date de référence synthétique fixe, sans données athlète réelles.
+- [x] Ajouter un scénario multi-tours : demander une période, la recevoir au tour suivant et vérifier que le modèle appelle l'outil avec la valeur exacte.
 - [ ] Mesurer séparément latence de sélection, exécution Python et rédaction finale.
 - [ ] Comparer Qwen3 8B avec des modèles Ollama plus légers (3B/4B notamment).
 - [ ] Évaluer exactitude des appels, respect des périodes, gestion des absences et qualité rédactionnelle sur Ollama.
@@ -329,7 +330,7 @@ Vérification du chemin de lecture IA sur la branche de développement :
 - [x] Ajouter les tests unitaires du scoring et des synthèses.
 - [x] Renforcer le benchmark : prompt système production, date synthétique fixe et validation des arguments générés.
 - [ ] Exécuter le runner sur la VM avec Qwen3 8B et les autres modèles réellement installés.
-- [ ] Analyser les échecs de sélection/arguments et compléter le benchmark multi-tours et la revue des réponses libres.
+- [ ] Analyser les échecs de sélection/arguments et étendre le corpus multi-tours (résultats métier simulés) ainsi que la revue des réponses libres.
 
 **Limite connue :** le runner mesure la décision du premier tour ; il n'exécute aucun outil métier, ne modifie aucune donnée et ne valide pas la justesse des calculs Python.
 

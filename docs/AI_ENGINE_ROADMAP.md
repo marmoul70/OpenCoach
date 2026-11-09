@@ -112,7 +112,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] Exposer les propositions créées sous forme structurée dans la réponse de /api/ai/coach.
 - [x] Ajouter la récupération authentifiée des propositions en attente pour les retrouver après rechargement de la page.
 - [x] Ajouter une interface conversationnelle au tableau de bord Coach avec les actions Confirmer / Refuser et le statut de sauvegarde retourné par l'API.
-- [ ] Étendre progressivement le mécanisme aux autres domaines métier, après validation du profil.
+- [x] Étendre la collecte au profil d'entraînement : jours disponibles, expérience et disciplines sportives, avec validation métier, preuve utilisateur, confirmation et affichage structuré.\n- [ ] Étendre progressivement le mécanisme aux autres domaines métier (équipement, courses et contraintes), après validation sur la VM.
 
 **Livrable :** le coach peut demander une information manquante et l'enregistrer durablement uniquement après validation explicite.
 

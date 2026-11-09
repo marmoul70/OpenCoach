@@ -272,6 +272,9 @@ def get_ai_tool_registry(
     """Construit le registre métier pour le seul athlète authentifié."""
 
     registry = AIToolRegistry()
+    registry.register(build_training_profile_tool(db, athlete_profile_id))
+    registry.register(build_race_calendar_tool(db, athlete_profile_id))
+    registry.register(build_planned_sessions_tool(db, athlete_profile_id))
     registry.register(
         build_activity_detail_tool(db, athlete_profile_id)
     )

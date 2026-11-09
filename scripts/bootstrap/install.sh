@@ -40,9 +40,10 @@ show_help() {
     printf '%s\n' "Options :"
     printf '%s\n' \
         "  --dev       Installe également les dépendances de développement."
-        "  --with-ai  Installe Ollama et le modèle IA local (optionnel)."
     printf '%s\n' \
-        "  --help   Affiche cette aide."
+        "  --with-ai   Installe Ollama et le modèle IA local (optionnel)."
+    printf '%s\n' \
+        "  --help      Affiche cette aide."
 }
 
 

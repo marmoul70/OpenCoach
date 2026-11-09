@@ -14,6 +14,7 @@ from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from opencoach.ai.client import AIProviderError
+from opencoach.ai.data_collection_tools import build_profile_data_proposal_tool
 from opencoach.ai.data_proposals import (
     AIDataProposalCreate,
     AIDataProposalResponse,
@@ -74,6 +75,8 @@ Une donnée indiquée comme indisponible ne vaut jamais zéro. Une valeur partie
 Les services déterministes OpenCoach restent la source de vérité pour la charge, les zones, la disponibilité, l'exécution et les décisions de planification.
 
 Règles de collecte et de persistance des données :
+- Lorsqu'un utilisateur fournit explicitement une donnée durable de son profil sportif et que cette donnée est absente ou doit être mise à jour, utilise propose_profile_data avec une citation exacte (evidence) issue d'un de ses messages. Ne crée jamais une proposition à partir d'une déduction, d'une valeur issue d'un calcul ou d'un message assistant.
+- L'outil propose_profile_data ne fait qu'enregistrer une proposition en attente. Il ne sauvegarde pas la valeur dans le profil. Explique à l'utilisateur qu'il doit confirmer la proposition dans l'interface OpenCoach.
 - Lorsqu'une donnée utile au profil ou à une analyse est absente, identifie précisément le champ manquant et demande uniquement cette information. Si plusieurs champs indépendants sont indispensables, regroupe les questions de façon lisible.
 - Une réponse utilisateur ne devient pas automatiquement une donnée persistée : distingue une information fournie dans le dialogue d'une information enregistrée dans le profil OpenCoach.
 - Ne prétends jamais avoir sauvegardé ou modifié une donnée tant qu'un mécanisme d'écriture autorisé ne l'a pas confirmé.
@@ -93,7 +96,7 @@ Règles d'utilisation des outils :
 - Pour la charge récente, utilise training_load avec nb_days obligatoire ; si la période manque, demande-la.
 - Pour la récupération d'une date, utilise recovery_status et respecte la date réelle des données, leur fraîcheur et la fiabilité des baselines.
 - Pour comparer des périodes, utilise training_trends. Les deux durées nb_days et comparison_days sont obligatoires ; demande les paramètres manquants avant l'appel.
-- Tu peux combiner plusieurs outils lorsque la demande le nécessite, mais utilise uniquement les résultats utiles à la question. Les outils sont en lecture seule.
+- Tu peux combiner plusieurs outils lorsque la demande le nécessite, mais utilise uniquement les résultats utiles à la question. Les outils d'analyse sont en lecture seule. Exception contrôlée : propose_profile_data peut créer une proposition de sauvegarde en attente, sans modifier le profil.
 
 Tu peux analyser et expliquer les faits fournis, mais tu ne peux ni modifier un entraînement, ni créer une séance, ni écrire dans le planning ou dans COROS.
 Ne prétends jamais avoir exécuté une action ou consulté une source que tu n'as pas reçue.
@@ -160,6 +163,7 @@ class AIQuestionResponse(BaseModel):
     answer: str
     model: str
     context_used: bool = False
+    data_proposals: list[AIDataProposalResponse] = Field(default_factory=list)
 
 
 
@@ -540,6 +544,19 @@ async def ask_local_ai_with_athlete_context(
         temperature=0.2,
         num_predict=512,
     )
+    user_messages = [
+        message.content
+        for message in payload.history
+        if message.role == "user"
+    ] + [payload.question]
+    tool_registry.register(
+        build_profile_data_proposal_tool(
+            db,
+            athlete_profile_id,
+            user_messages,
+        )
+    )
+
     try:
         result = await service.chat_with_tools(request, tool_registry)
         if not result.done:
@@ -563,8 +580,25 @@ async def ask_local_ai_with_athlete_context(
             detail=str(exc),
         ) from exc
 
+    data_proposals = [
+        AIDataProposalResponse(
+            id=UUID(item.data["proposal_id"]),
+            field_key=item.data["field_key"],
+            value=item.data["value"],
+            existing_value=item.data["existing_value"],
+            unit=item.data["unit"],
+            status=item.data["status"],
+            expires_at=item.data["expires_at"],
+        )
+        for item in tool_registry.execution_results
+        if item.tool == "propose_profile_data"
+        and item.status == "ok"
+        and item.data is not None
+    ]
+
     return AIQuestionResponse(
         answer=result.content,
         model=result.model,
         context_used=True,
+        data_proposals=data_proposals,
     )

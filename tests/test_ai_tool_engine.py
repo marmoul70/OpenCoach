@@ -30,6 +30,7 @@ def test_registry_executes_only_registered_tool_and_returns_normalized_result():
     assert result.data == {"value": 3}
     assert result.metadata["executed_at"]
     assert registry.definitions()[0]["name"] == "echo"
+    assert registry.execution_results == (result,)
 
 
 def test_registry_rejects_unknown_tool_and_invalid_arguments():

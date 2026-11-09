@@ -322,4 +322,4 @@ def test_equipment_proposal_detects_duplicate_added_before_confirmation(db):
     with pytest.raises(RuntimeError, match="ajouté depuis"):
         confirm_profile_data_proposal(session, profile.id, proposal.id)
     assert session.get(AIDataProposal, proposal.id).status == "conflict"
-    assert len(profile.shoes) == 1
+    assert session.query(Shoe).filter_by(athlete_profile_id=profile.id).count() == 1

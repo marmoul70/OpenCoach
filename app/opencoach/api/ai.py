@@ -24,6 +24,7 @@ from opencoach.ai.coaching_tools import (
     build_planned_sessions_tool,
     build_race_calendar_tool,
     build_training_profile_tool,
+    build_weekly_plan_context_tool,
 )
 from opencoach.ai.load_tools import build_training_load_tool
 from opencoach.ai.recovery_tools import build_recovery_status_tool
@@ -273,6 +274,7 @@ def get_ai_tool_registry(
 
     registry = AIToolRegistry()
     registry.register(build_training_profile_tool(db, athlete_profile_id))
+    registry.register(build_weekly_plan_context_tool(db, athlete_profile_id))
     registry.register(build_race_calendar_tool(db, athlete_profile_id))
     registry.register(build_planned_sessions_tool(db, athlete_profile_id))
     registry.register(

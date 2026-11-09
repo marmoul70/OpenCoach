@@ -21,6 +21,7 @@ from opencoach.ai.data_proposals import (
     confirm_profile_data_proposal,
     create_profile_data_proposal,
     get_profile_data_proposal,
+    list_pending_profile_data_proposals,
     reject_profile_data_proposal,
 )
 from opencoach.ai.context import build_athlete_context
@@ -377,6 +378,14 @@ def propose_profile_data_update(
         return create_profile_data_proposal(db, athlete_profile_id, payload)
     except Exception as exc:
         raise _proposal_http_error(exc) from exc
+
+
+@router.get("/data-proposals", response_model=list[AIDataProposalResponse])
+def list_profile_data_proposals(
+    athlete_profile_id=Depends(get_current_athlete_profile_id),
+    db: Session = Depends(get_db),
+) -> list[AIDataProposalResponse]:
+    return list_pending_profile_data_proposals(db, athlete_profile_id)
 
 
 @router.get("/data-proposals/{proposal_id}", response_model=AIDataProposalResponse)

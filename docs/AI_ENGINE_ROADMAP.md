@@ -8,14 +8,14 @@
 
 Faire évoluer l'assistant OpenCoach d'un modèle qui reçoit un grand contexte sportif vers un moteur IA outillé, local et modulaire.
 
-Le modèle doit comprendre la demande, sélectionner un ou plusieurs outils métier autorisés, fournir des paramètres structurés, puis expliquer les résultats JSON retournés par Python. Si un paramètre requis manque (par exemple la durée de l'historique), il doit poser une question de clarification et attendre la réponse ; aucun paramètre métier ne doit être supposé. Il ne doit pas recalculer les statistiques, inventer des données ou prendre seul des décisions métier.
+Le modèle doit comprendre la demande, sélectionner un ou plusieurs outils métier autorisés, fournir des paramètres structurés, puis expliquer les résultats JSON retournés par Python. Si un paramètre requis manque, il doit poser une question ciblée et attendre la réponse. Lorsqu'une donnée de profil manque, il doit pouvoir la collecter et proposer sa sauvegarde durable, mais aucune écriture ne peut avoir lieu sans confirmation explicite de l'utilisateur via l'API/interface. Aucun paramètre métier ne doit être supposé. Il ne doit pas recalculer les statistiques, inventer des données ou prendre seul des décisions métier.
 
 Objectifs :
 - **Véracité :** toutes les valeurs sportives proviennent des services métier existants.
 - **Traçabilité :** chaque résultat précise sa période, ses unités, sa couverture et ses limites.
 - **Performance :** réduire le contexte envoyé au LLM et comparer des modèles locaux plus légers.
 - **Modularité :** séparer le moteur d'outils du fournisseur IA afin de pouvoir changer de modèle sans réécrire le métier.
-- **Sécurité :** outils explicitement autorisés, validation stricte, périmètre lecture seule.
+- **Sécurité :** outils explicitement autorisés, validation stricte, lecture seule par défaut et écritures métier uniquement via un workflow de proposition/confirmation.
 - **Maintenabilité :** réutiliser les services Python existants, sans dupliquer leurs calculs.
 
 ## 2. Architecture cible
@@ -36,8 +36,8 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - Le LLM ne calcule pas les kilomètres, durées, dénivelés, charges, tendances ou scores de récupération.
 - Une donnée absente n'est jamais assimilée à zéro ; une donnée partielle doit être signalée.
 - Chaque résultat temporel porte des dates de début et de fin explicites.
-- Les outils sont en lecture seule dans ce chantier.
-- Aucun outil ne peut créer/modifier/supprimer une séance, modifier le planning ou écrire dans COROS.
+- Les outils d'analyse restent en lecture seule. Les futures écritures de données de profil passent par un service métier distinct, une liste blanche et une confirmation explicite côté API/interface.
+- Aucun outil IA ne peut créer/modifier/supprimer une séance, modifier le planning ou écrire dans COROS.
 - Les arguments du modèle sont validés côté Python : limites de période, identifiants, types et champs autorisés.
 - Les données libres retournées par les outils sont des données non fiables, jamais des instructions système.
 - Le mode sans outil reste disponible pour les questions générales qui ne nécessitent aucune donnée personnelle.
@@ -99,6 +99,18 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] Documenter dans le prompt coach les cas d'usage des outils, les enchaînements utiles et les clarifications obligatoires (historique, charge, tendances, séances planifiées).
 
 **Livrable :** assistant coach capable de choisir et utiliser des outils locaux.
+
+### Mission 4 bis — Collecte et sauvegarde contrôlée des données
+
+- [x] Définir le cycle cible de détection, collecte, validation, proposition, confirmation et persistance dans docs/AI_DATA_COLLECTION.md.
+- [x] Ajouter au prompt coach les garde-fous : ne pas confondre réponse conversationnelle et donnée enregistrée, ne jamais prétendre avoir sauvegardé, ne jamais écraser une valeur sans confirmation.
+- [ ] Créer un modèle de proposition de donnée en attente, lié au profil authentifié, avec expiration et état.
+- [ ] Ajouter un service de validation/écriture limité aux champs autorisés du profil sportif.
+- [ ] Ajouter les endpoints distincts de consultation, confirmation et refus ; la confirmation ne dépend jamais d'un texte libre interprété par le LLM.
+- [ ] Ajouter une carte frontend Confirmer / Refuser et afficher le résultat réel de la sauvegarde.
+- [ ] Étendre progressivement le mécanisme aux autres domaines métier, après validation du profil.
+
+**Livrable :** le coach peut demander une information manquante et l'enregistrer durablement uniquement après validation explicite.
 
 ### Mission 5 — Évaluation et optimisation des modèles
 - [ ] Constituer un jeu de questions sportives de référence et leurs résultats Python attendus.

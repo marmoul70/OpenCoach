@@ -35,3 +35,18 @@ def test_ambiguous_request_falls_back_to_full_catalog():
 
 def test_empty_request_falls_back_to_full_catalog():
     assert select_coach_tools("   ") == ALL_COACH_TOOLS
+
+
+
+def test_activity_detail_wording_routes_to_activity_tool():
+    selected = select_coach_tools("Détaille ma séance du 8 novembre.")
+    assert "activity_detail" in selected
+    assert "race_calendar" not in selected
+
+
+def test_achilles_pain_before_training_advice_routes_to_constraints():
+    selected = select_coach_tools(
+        "J'ai mal au tendon d'Achille, quelle séance puis-je faire aujourd'hui ?"
+    )
+    assert "active_constraints" in selected
+    assert {"recovery_analysis", "recovery_status"} <= selected

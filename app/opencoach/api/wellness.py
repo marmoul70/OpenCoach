@@ -17,7 +17,6 @@ from opencoach.database.session import get_db
 from opencoach.models import WellnessDay
 from opencoach.wellness_aggregation import aggregate_wellness_days
 from opencoach.recovery_assessment import (
-    RecoveryAssessment,
     build_recovery_assessment,
     recovery_assessment_to_dict,
 )
@@ -45,11 +44,6 @@ def get_daily_context_repository(
 ) -> SqlDailyContextRepository:
     return SqlDailyContextRepository(db)
 
-
-def get_coros_daily_data_repository(
-    db: Session = Depends(get_db),
-) -> SqlCorosDailyDataRepository:
-    return SqlCorosDailyDataRepository(db)
 
 
 @router.get("/latest")
@@ -85,7 +79,7 @@ def get_latest_wellness(
 @router.get("/trends")
 def get_wellness_trends(
     days: int = 7,
-    provider: str = "coros",
+    provider: str | None = None,
     athlete_profile_id: UUID = Depends(
         get_current_athlete_profile_id,
     ),

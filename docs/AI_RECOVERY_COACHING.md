@@ -63,13 +63,13 @@ explicitement inconnue ; elle ne signifie pas que l'athlète est en forme.
 8. Si un check-in existe déjà pour aujourd'hui, ne pas proposer de remplacement ;
    orienter l'utilisateur vers le formulaire de modification existant.
 9. Un check-in incomplet, ambigu ou sans preuve suffisante n'est jamais sauvegardé.
-7. Si les données de sommeil ne sont pas importées, demander le ressenti ou signaler
-   l'absence ; ne jamais fabriquer une durée ou une qualité de sommeil.
-8. Ne jamais diagnostiquer un surentraînement, une maladie ou une blessure. Une
-   recommandation d'entraînement doit rester cohérente avec les services de
-   disponibilité et les contraintes actives.
-9. Ne pas modifier automatiquement le planning. Toute adaptation reste soumise aux
-   mécanismes explicites de décision de l'athlète.
+10. Si les données de sommeil ne sont pas importées, demander le ressenti ou signaler
+    l'absence ; ne jamais fabriquer une durée ou une qualité de sommeil.
+11. Ne jamais diagnostiquer un surentraînement, une maladie ou une blessure. Une
+    recommandation d'entraînement doit rester cohérente avec les services de
+    disponibilité et les contraintes actives.
+12. Ne pas modifier automatiquement le planning. Toute adaptation reste soumise aux
+    mécanismes explicites de décision de l'athlète.
 
 ## Collecte conversationnelle et confirmation
 

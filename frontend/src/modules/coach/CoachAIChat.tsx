@@ -35,6 +35,7 @@ const FIELD_LABELS: Record<string, string> = {
   shoe: 'Chaussure',
   bike: 'Vélo',
   watch: 'Montre sportive',
+  daily_checkin: 'État du jour',
 }
 
 const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
@@ -46,6 +47,32 @@ const DISCIPLINE_LABELS: Record<string, string> = {
 }
 
 function formatProposalValue(fieldKey: string, value: AIDataProposal['value']): string {
+  if (fieldKey === 'daily_checkin' && value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    const item = value as Record<string, unknown>
+    const areas: Record<string, string> = {
+      head: 'tête', neck: 'cou', shoulder: 'épaule', back: 'dos',
+      lower_back: 'bas du dos', hip: 'hanche', groin: 'aine', thigh: 'cuisse',
+      knee: 'genou', calf: 'mollet', shin: 'tibia', ankle: 'cheville',
+      achilles: 'tendon d’Achille', foot: 'pied', other: 'autre',
+    }
+    const locations = Array.isArray(item.pain_locations)
+      ? item.pain_locations.map((entry) => {
+          if (entry === null || typeof entry !== 'object') return ''
+          const location = entry as Record<string, unknown>
+          const area = typeof location.area === 'string' ? areas[location.area] ?? location.area : ''
+          const side = location.side === 'left' ? 'gauche' : location.side === 'right' ? 'droite' : location.side === 'both' ? 'des deux côtés' : ''
+          return [area, side].filter(Boolean).join(' ')
+        }).filter(Boolean).join(', ')
+      : ''
+    return [
+      'Énergie ' + String(item.energy_rating) + '/5',
+      'Confort ' + String(item.pain_wellness_rating) + '/5',
+      item.illness === true ? 'malade' : 'pas malade',
+      item.unavailable === true ? 'indisponible' : 'disponible',
+      locations ? 'Douleur : ' + locations : '',
+      typeof item.note === 'string' ? item.note : '',
+    ].filter(Boolean).join(' · ')
+  }
   if (fieldKey === 'available_days' && Array.isArray(value)) {
     return value.map((day) => typeof day === 'number' ? DAY_LABELS[day] ?? String(day) : String(day)).join(', ')
   }

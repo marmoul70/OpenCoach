@@ -181,7 +181,18 @@ def test_race_preparation_masks_partial_metrics_instead_of_extrapolating():
                 elevation_gain_m=200,
             )
         ]
-        service = FakeTrainingStatsService([activity], manual, _stats())
+        partial_stats = TrainingStats(
+            start_date=date(2026, 10, 13),
+            end_date=date(2026, 11, 9),
+            activities_count=1,
+            manual_sessions_count=1,
+            total_duration_minutes=120,
+            total_distance_km=10.0,
+            total_elevation_gain_m=500.0,
+            measured_load=0.0,
+            estimated_load=90.0,
+        )
+        service = FakeTrainingStatsService([activity], manual, partial_stats)
         result = build_race_preparation_tool(
             session,
             service,
@@ -191,7 +202,7 @@ def test_race_preparation_masks_partial_metrics_instead_of_extrapolating():
             RacePreparationArguments(race_id=race.id, history_days=28)
         )
 
-    assert result["status"] == "ok"
+    assert result["status"] == "partial"
     assert result["recent_training"]["distance"]["total"] is None
     assert result["recent_training"]["distance"]["coverage"]["status"] == "partial"
     assert result["recent_training"]["elevation_gain"]["total"] == 500

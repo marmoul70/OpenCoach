@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from opencoach.ai.tool_engine import AITool
-from opencoach.training import RecentTrainingLoadService
+from opencoach.training import RecentTrainingLoadService, TrainingStatsService
 
 
 class TrainingLoadArguments(BaseModel):
@@ -24,6 +24,7 @@ class TrainingLoadArguments(BaseModel):
 
 def build_training_load_tool(
     service: RecentTrainingLoadService,
+    training_stats_service: TrainingStatsService,
     athlete_profile_id: UUID,
     *,
     reference_date_provider=date.today,
@@ -35,23 +36,54 @@ def build_training_load_tool(
         target_date = reference_date_provider()
         start_date = target_date - timedelta(days=nb_days)
         end_date = target_date - timedelta(days=1)
+
         load = service.calculate(
             athlete_profile_id,
             target_date,
             days=nb_days,
         )
+        stats = training_stats_service.calculate(
+            athlete_profile_id,
+            start_date,
+            end_date,
+        )
 
-        actual_sessions = sum(day.actual_sessions_count for day in load.days)
+        actual_sessions = stats.sessions_count
+        available_load_sessions = (
+            stats.measured_load_data_count + stats.manual_sessions_count
+        )
         planned_sessions = sum(day.planned_sessions_count for day in load.days)
-        has_actual_data = actual_sessions > 0
+
+        if actual_sessions == 0:
+            coverage_status = "no_sessions"
+        elif available_load_sessions == 0:
+            coverage_status = "unavailable"
+        elif available_load_sessions < actual_sessions:
+            coverage_status = "partial"
+        else:
+            coverage_status = "complete"
+
+        has_complete_load = coverage_status == "complete"
 
         daily = [
             {
                 "date": day.date.isoformat(),
-                "status": day.status,
+                "status": (
+                    day.status
+                    if has_complete_load or day.actual_sessions_count == 0
+                    else "load_data_incomplete"
+                ),
                 "planned_load": day.planned_load,
-                "actual_load": day.actual_load if day.actual_sessions_count else None,
-                "load_delta": day.load_delta if day.actual_sessions_count else None,
+                "actual_load": (
+                    day.actual_load
+                    if has_complete_load and day.actual_sessions_count
+                    else None
+                ),
+                "load_delta": (
+                    day.load_delta
+                    if has_complete_load and day.actual_sessions_count
+                    else None
+                ),
                 "planned_sessions": day.planned_sessions_count,
                 "actual_sessions": day.actual_sessions_count,
             }
@@ -63,9 +95,17 @@ def build_training_load_tool(
             warnings.append(
                 f"Le planning OpenCoach ne couvre pas {load.unplanned_days} jour(s) de la période."
             )
-        if not has_actual_data:
+        if coverage_status == "no_sessions":
             warnings.append(
                 "Aucune séance réalisée enregistrée : la charge réelle est indisponible, pas égale à zéro."
+            )
+        elif coverage_status == "unavailable":
+            warnings.append(
+                f"Aucune charge exploitable pour les {actual_sessions} séance(s) enregistrée(s)."
+            )
+        elif coverage_status == "partial":
+            warnings.append(
+                f"Charge partielle : {available_load_sessions}/{actual_sessions} séances disposent d'une charge exploitable. Le total complet est masqué."
             )
 
         return {
@@ -81,17 +121,25 @@ def build_training_load_tool(
             },
             "load": {
                 "planned_total": load.planned_load_total,
-                "actual_total": load.actual_load_total if has_actual_data else None,
+                "actual_total": load.actual_load_total if has_complete_load else None,
+                "partial_observed_total": (
+                    load.actual_load_total if coverage_status == "partial" else None
+                ),
                 "measured_total": (
                     round(sum(day.measured_load for day in load.days), 2)
-                    if has_actual_data else None
+                    if has_complete_load else None
                 ),
                 "estimated_total": (
                     round(sum(day.estimated_load for day in load.days), 2)
-                    if has_actual_data else None
+                    if has_complete_load else None
                 ),
-                "delta_total": load.load_delta_total if has_actual_data else None,
-                "ratio": load.load_ratio if has_actual_data else None,
+                "delta_total": load.load_delta_total if has_complete_load else None,
+                "ratio": load.load_ratio if has_complete_load else None,
+                "coverage": {
+                    "available_sessions": available_load_sessions,
+                    "total_sessions": actual_sessions,
+                    "status": coverage_status,
+                },
                 "unit": "load_points",
             },
             "planning_coverage": {
@@ -116,7 +164,7 @@ def build_training_load_tool(
             "Retourne la charge d'entraînement réelle et prévue sur les nb_days derniers "
             "jours calendaires inclusifs, avec écarts quotidiens et couverture du planning. "
             "nb_days est obligatoire : demande la période si elle manque et attends la réponse. "
-            "Une charge réelle sans séance enregistrée est indisponible, pas égale à zéro."
+            "Une charge réelle sans couverture complète n'est jamais présentée comme un total fiable."
         ),
         arguments_model=TrainingLoadArguments,
         handler=execute,

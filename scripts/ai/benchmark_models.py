@@ -9,11 +9,12 @@ from __future__ import annotations
 import argparse
 import asyncio
 import csv
+import ipaddress
 import json
 import os
-import statistics
 import sys
 import time
+from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -72,6 +73,20 @@ TOOL_DESCRIPTIONS = {
     "planned_sessions": "Liste les séances planifiées sur une période explicite.",
     "weekly_plan_context": "Consulte le contexte de planification d'une semaine.",
 }
+
+
+def validate_local_base_url(value: str) -> str:
+    """Refuse tout endpoint distant : le benchmark doit rester local."""
+    parsed = urlsplit(value)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise ValueError("--base-url doit être une URL HTTP(S) locale valide.")
+    try:
+        loopback = ipaddress.ip_address(parsed.hostname).is_loopback
+    except ValueError:
+        loopback = parsed.hostname.lower() == "localhost"
+    if not loopback or parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise ValueError("--base-url doit pointer vers localhost ou une adresse loopback, sans identifiants.")
+    return value.rstrip("/")
 
 
 def build_tool_definitions() -> list[AIToolDefinition]:
@@ -199,6 +214,7 @@ def summarize(rows: list[dict[str, Any]], model: str) -> dict[str, Any]:
 
 
 async def main_async(args: argparse.Namespace) -> int:
+    args.base_url = validate_local_base_url(args.base_url)
     fixture_path = ROOT / "tests/fixtures/ai_model_evaluation_cases.json"
     cases = json.loads(fixture_path.read_text(encoding="utf-8"))
     if args.limit:
@@ -298,7 +314,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--read-timeout", type=float, default=240.0)
     parser.add_argument("--output-dir", default="data/ai-benchmarks")
     args = parser.parse_args()
-    if args.repetitions < 1 or args.limit < 0:
+    try:\n        args.base_url = validate_local_base_url(args.base_url)\n    except ValueError as exc:\n        parser.error(str(exc))\n    if args.repetitions < 1 or args.limit < 0:
         parser.error("--repetitions doit être >= 1 et --limit doit être >= 0.")
     return args
 

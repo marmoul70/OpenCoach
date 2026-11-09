@@ -496,14 +496,35 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
                 total_load=50.0,
             )
 
-    registry = get_ai_tool_registry(
-        athlete_profile_id=athlete_profile_id,
-        training_stats_service=FakeTrainingStatsService(),
-        context_service=SimpleNamespace(
-            recent_load_service=object(),
-            readiness_service=object(),
-        ),
-    )
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+    from opencoach.database.base import Base
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    with Session(engine) as db:
+        registry = get_ai_tool_registry(
+            db=db,
+            athlete_profile_id=athlete_profile_id,
+            training_stats_service=FakeTrainingStatsService(),
+            context_service=SimpleNamespace(
+                recent_load_service=object(),
+                readiness_service=object(),
+            ),
+        )
+        definitions = registry.definitions()
+        assert [item["name"] for item in definitions] == [
+            "activity_detail",
+            "training_history",
+            "training_load",
+            "recovery_status",
+            "training_trends",
+        ]
+        result = registry.execute("training_history", {"nb_days": 1})
+        assert result.status == "ok"
+        assert calls == [(athlete_profile_id, date.today(), date.today())]
+        assert registry.execute("delete_training", {}).status == "not_found"
+    engine.dispose()
     definitions = registry.definitions()
 
     assert [item["name"] for item in definitions] == [

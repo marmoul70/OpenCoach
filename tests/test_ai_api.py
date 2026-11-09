@@ -458,6 +458,9 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
 
     assert "Tu es l'assistant coach local d'OpenCoach." in prompt
     assert "session_execution_review" in prompt
+    assert "propose_profile_data" in prompt
+    assert "citation exacte" in prompt
+    assert "proposition de sauvegarde en attente" in prompt
     assert "Une réponse utilisateur ne devient pas automatiquement une donnée persistée" in prompt
     assert "confirmation explicite" in prompt
     assert "pas encore enregistrée dans le profil" in prompt

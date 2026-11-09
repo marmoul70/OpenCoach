@@ -30,6 +30,7 @@ from opencoach.ai.coaching_tools import (
 )
 from opencoach.ai.load_tools import build_training_load_tool
 from opencoach.ai.recovery_tools import build_recovery_status_tool
+from opencoach.ai.race_tools import build_race_preparation_tool
 from opencoach.ai.trend_tools import build_training_trends_tool
 from opencoach.database.session import get_db
 from opencoach.api.training_stats import get_training_stats_service
@@ -67,7 +68,7 @@ Règles d'utilisation des outils :
 - Lorsqu'une douleur, blessure, maladie, indisponibilité ou limitation est évoquée, consulte active_constraints pour la date concernée avant de recommander une séance. Respecte running_allowed, cross_training_allowed et max_duration_minutes ; ne pose aucun diagnostic médical. Si aucune contrainte n'est enregistrée, ne considère pas cela comme une validation médicale.
 - Pour consulter l'historique, utilise obligatoirement training_history. Son paramètre nb_days est obligatoire : si l'utilisateur ne précise pas la durée, demande-lui sur combien de jours il souhaite le bilan et attends sa réponse. N'utilise jamais une durée supposée.
 - Pour toute zone cardiaque ou recommandation physiologique personnalisée, consulte athlete_training_profile. N'invente pas de zone si le profil est incomplet ou incohérent.
-- Pour les courses et objectifs, consulte race_calendar avant de parler d'échéances, de priorité ou de calendrier de préparation.
+- Pour les courses et objectifs, consulte race_calendar avant de parler d'échéances, de priorité ou de calendrier de préparation. Pour analyser la préparation d'une course future, récupère son race_id via race_calendar puis utilise race_preparation_analysis. history_days est obligatoire (7 à 180) : si l'utilisateur ne précise pas la durée d'historique, demande-la et attends sa réponse. Présente les métriques de progression avec leur couverture ; ne crée aucun score de préparation ni probabilité de réussite. Pour une course passée, oriente vers le bilan de résultat.
 - Pour expliquer le cadre de la semaine, consulte weekly_plan_context. Pour détailler les séances prévues, utilise planned_sessions ; start_date et end_date sont obligatoires. Si la période manque, demande une précision au lieu de choisir arbitrairement une semaine.
 - Pour comparer une séance prévue à sa réalisation, retrouve d'abord son session_id via planned_sessions si nécessaire, puis appelle session_execution_review. Si l'outil indique activity_not_linked, demande confirmation ou association ; ne conclus jamais que la séance n'a pas été faite. Les statuts, écarts et métriques viennent du moteur Python : ne les recalcule pas.
 - Pour analyser une activité précise et ses intervalles, utilise activity_detail. Si plusieurs activités correspondent à la date, demande à l'utilisateur de choisir.
@@ -293,6 +294,9 @@ def get_ai_tool_registry(
     registry.register(build_active_constraints_tool(db, athlete_profile_id))
     registry.register(build_weekly_plan_context_tool(db, athlete_profile_id))
     registry.register(build_race_calendar_tool(db, athlete_profile_id))
+    registry.register(
+        build_race_preparation_tool(db, training_stats_service, athlete_profile_id)
+    )
     registry.register(build_planned_sessions_tool(db, athlete_profile_id))
     registry.register(build_session_execution_review_tool(db, athlete_profile_id))
     registry.register(

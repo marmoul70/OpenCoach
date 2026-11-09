@@ -80,8 +80,9 @@ def build_training_history_tool(
                     "value": stats.total_duration_minutes,
                     "unit": "minutes",
                     "coverage": {
-                        "status": "calculated_from_recorded_sessions",
+                        "status": "not_tracked",
                         "total_sessions": sessions_count,
+                        "warning": "La couverture des durées sources n'est pas encore mesurée par TrainingStatsService.",
                     },
                 },
                 "distance_km": {

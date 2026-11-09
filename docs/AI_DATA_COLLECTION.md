@@ -143,3 +143,22 @@ ces listes contre les modifications concurrentes.
 L'interface affiche les valeurs structurées sous forme lisible (jours en français,
 niveaux traduits et disciplines explicites). Le stockage utilise le champ JSON déjà
 présent dans `athlete_profiles` : aucune migration supplémentaire n'est requise.
+
+## Extension aux équipements
+
+Le circuit prend en charge l'ajout d'une chaussure (`shoe`), d'un vélo
+(`bike`) ou d'une montre (`watch`). Une proposition contient le modèle obligatoire,
+la marque facultative et, pour les chaussures/vélos uniquement, une catégorie
+facultative. Les textes proposés doivent être présents dans la citation exacte du
+message utilisateur.
+
+Aucun kilométrage, état d'usure, seuil d'alerte, préférence ou historique d'utilisation
+n'est inventé : les valeurs par défaut métier sont appliquées à la création
+(kilométrage nul, équipement actif, non préféré). La proposition ne crée aucun
+équipement avant confirmation explicite.
+
+La création et la confirmation vérifient à nouveau les doublons dans la table
+correspondante, en étant limitées au profil authentifié. Une insertion concurrente
+entre la proposition et la confirmation transforme la proposition en conflit au
+lieu de créer un doublon. Les tables d'équipement existantes sont réutilisées ; aucune
+migration n'est nécessaire.

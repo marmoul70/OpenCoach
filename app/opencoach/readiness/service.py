@@ -12,6 +12,7 @@ from opencoach.database.repositories.daily_context import (
 from opencoach.database.repositories.wellness import (
     WellnessRepository,
 )
+from opencoach.wellness_aggregation import aggregate_wellness_days
 from opencoach.models import (
     DailyContext,
     WellnessDay,
@@ -77,7 +78,7 @@ class ReadinessService:
             DailyContextRepository | None
         ) = None,
         thresholds: ThresholdSettings | None = None,
-        provider: str = "intervals",
+        provider: str | None = "intervals",
         fallback_providers: tuple[str, ...] = (),
     ) -> None:
         self.repository = repository
@@ -104,43 +105,39 @@ class ReadinessService:
     ) -> ReadinessAssessment:
         """Calcule le Daily Readiness pour une date donnée."""
 
-        provider_order = (self.provider, *self.fallback_providers)
-        candidates: list[tuple[int, str, WellnessDay]] = []
-
-        # Chaque source est évaluée indépendamment. On retient la plus fraîche ;
-        # à date identique, l'ordre configuré donne la priorité à COROS.
-        for priority, candidate_provider in enumerate(provider_order):
-            candidate = self.repository.get_by_date(
-                athlete_profile_id,
-                target_date,
-                provider=candidate_provider,
-            )
-            if candidate is None:
-                candidate = self.repository.get_latest_on_or_before(
-                    athlete_profile_id,
-                    target_date,
-                    provider=candidate_provider,
-                )
-            if candidate is not None:
-                candidates.append((priority, candidate_provider, candidate))
-
-        selected_provider: str | None = None
+        selected_provider: str | None = self.provider
         current: WellnessDay | None = None
-        if candidates:
-            _, selected_provider, current = max(
-                candidates,
-                key=lambda item: (item[2].date, -item[0]),
+        if self.provider is None:
+            # Mode canonique : toutes les intégrations ont déjà importé leurs
+            # mesures dans OpenCoach. Fusionner les métriques sans priorité fournisseur.
+            imported = self.repository.list_range(
+                athlete_profile_id, date.min, target_date,
             )
+            aggregated = aggregate_wellness_days(imported)
+            current = aggregated.days[-1] if aggregated.days else None
+            selected_provider = "opencoach"
+        else:
+            provider_order = (self.provider, *self.fallback_providers)
+            candidates: list[tuple[int, str, WellnessDay]] = []
+            for priority, candidate_provider in enumerate(provider_order):
+                candidate = self.repository.get_by_date(
+                    athlete_profile_id, target_date, provider=candidate_provider,
+                )
+                if candidate is None:
+                    candidate = self.repository.get_latest_on_or_before(
+                        athlete_profile_id, target_date, provider=candidate_provider,
+                    )
+                if candidate is not None:
+                    candidates.append((priority, candidate_provider, candidate))
+            if candidates:
+                _, selected_provider, current = max(
+                    candidates, key=lambda item: (item[2].date, -item[0]),
+                )
 
         if current is None or selected_provider is None:
-            providers = ", ".join(provider_order)
             raise ReadinessDataUnavailableError(
-                (
-                    "Aucune donnée Wellness exploitable "
-                    f"n'est disponible avant ou pour "
-                    f"le {target_date.isoformat()} "
-                    f"avec les fournisseurs : {providers}."
-                )
+                "Aucune donnée Wellness centralisée exploitable n'est disponible "
+                f"avant ou pour le {target_date.isoformat()}."
             )
 
         source_date = current.date
@@ -181,8 +178,10 @@ class ReadinessService:
             athlete_profile_id,
             history_start,
             history_end,
-            provider=selected_provider,
+            provider=None if self.provider is None else selected_provider,
         )
+        if self.provider is None:
+            history = list(aggregate_wellness_days(history).days)
 
         baseline = calculate_readiness_baseline(
             history,

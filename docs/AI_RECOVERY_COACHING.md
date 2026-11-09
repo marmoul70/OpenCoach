@@ -48,8 +48,16 @@ explicitement inconnue ; elle ne signifie pas que l'athlète est en forme.
 4. Toujours préciser la source, la date de la dernière mesure et la couverture.
 5. Distinguer fatigue générale, énergie déclarée, douleur, maladie et charge
    d'entraînement. Ne pas déduire une douleur ou une maladie d'une variation de HRV.
-6. Si le ressenti du jour est absent, poser une ou deux questions ciblées et inviter
-   l'athlète à renseigner le check-in « Ton état aujourd'hui » dans OpenCoach.
+6. Si le ressenti du jour est absent, recueillir énergie (1 à 5), confort/douleur
+   (1 à 5), maladie et disponibilité. Si une douleur est déclarée, demander sa zone
+   et son côté avant de constituer le check-in.
+7. Quand les quatre réponses sont explicites, le coach peut créer une proposition
+   `daily_checkin` avec `propose_profile_data`. La preuve doit être une citation exacte
+   des messages utilisateur et étayer chaque valeur. Seul le bouton de confirmation
+   dans l'interface persiste le check-in.
+8. Si un check-in existe déjà pour aujourd'hui, ne pas proposer de remplacement ;
+   orienter l'utilisateur vers le formulaire de modification existant.
+9. Un check-in incomplet, ambigu ou sans preuve suffisante n'est jamais sauvegardé.
 7. Si les données de sommeil ne sont pas importées, demander le ressenti ou signaler
    l'absence ; ne jamais fabriquer une durée ou une qualité de sommeil.
 8. Ne jamais diagnostiquer un surentraînement, une maladie ou une blessure. Une
@@ -57,6 +65,21 @@ explicitement inconnue ; elle ne signifie pas que l'athlète est en forme.
    disponibilité et les contraintes actives.
 9. Ne pas modifier automatiquement le planning. Toute adaptation reste soumise aux
    mécanismes explicites de décision de l'athlète.
+
+## Collecte conversationnelle et confirmation
+
+Le mécanisme de proposition existant est réutilisé, sans ajouter de table ni de
+migration. Le champ `daily_checkin` exige explicitement :
+
+- énergie et confort/douleur, chacun noté de 1 à 5 ;
+- maladie et disponibilité, sans valeur par défaut implicite ;
+- zone et côté si la note de confort/douleur est inférieure à 5 ;
+- note facultative.
+
+La date est limitée à aujourd'hui. La création de proposition ne touche pas à
+`daily_checkins`. La confirmation vérifie qu'aucun check-in n'a été enregistré
+entre-temps, puis crée la ligne et clôt la proposition dans la même transaction.
+Un check-in déjà existant n'est pas écrasé par ce flux.
 
 ## Contrat de l'outil
 
@@ -74,6 +97,7 @@ explicitement inconnue ; elle ne signifie pas que l'athlète est en forme.
 Les tests dédiés couvrent :
 - fenêtres de récupération et métriques sommeil ;
 - présence du ressenti subjectif ;
+- collecte quotidienne avec preuve utilisateur, validation des valeurs, absence d’écriture avant confirmation et conflit si un check-in existe déjà ;
 - repli Intervals sans séries COROS ;
 - données manquantes explicitement inconnues ;
 - enregistrement du nouvel outil dans le registre IA et règles du prompt.

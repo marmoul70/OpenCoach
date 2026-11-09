@@ -214,7 +214,7 @@ def build_race_calendar_tool(
                 {
                     "race_id": str(race.id),
                     "date": race.date.isoformat(),
-                    "days_until": (race.date - start_date).days,
+                    "days_from_period_start": (race.date - start_date).days,
                     "name": _safe_text(race.name, 160),
                     "location": _safe_text(race.location, 120),
                     "race_type": _safe_text(race.race_type, 50),
@@ -284,12 +284,12 @@ def build_planned_sessions_tool(
                 "duration_minutes": sum(item.duration_minutes for item in sessions),
                 "distance_km": (
                     round(sum(distance_values), 2)
-                    if len(distance_values) == len(sessions) else None
+                    if sessions and len(distance_values) == len(sessions) else None
                 ),
                 "distance_coverage": f"{len(distance_values)}/{len(sessions)}",
                 "elevation_gain_m": (
                     round(sum(elevation_values), 1)
-                    if len(elevation_values) == len(sessions) else None
+                    if sessions and len(elevation_values) == len(sessions) else None
                 ),
                 "elevation_coverage": f"{len(elevation_values)}/{len(sessions)}",
             },

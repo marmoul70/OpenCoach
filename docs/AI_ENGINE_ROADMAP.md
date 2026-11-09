@@ -1,7 +1,7 @@
 # Roadmap — Moteur IA outillé OpenCoach
 
-> **Branche :** `feature/local-ai-engine`  
-> **Statut global :** conception validée, implémentation initiale en cours  
+> **Branche :** `feature/ai-engine-main-integration`  
+> **Statut global :** socle IA réintégré sur la base main 0.8.5 ; extension des outils en cours  
 > **Principe directeur :** Python est la source de vérité métier ; le modèle IA orchestre les outils autorisés et restitue leurs résultats.
 
 ## 1. Vision et objectifs
@@ -113,7 +113,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 
 ## 5. Stratégie de livraison
 
-Les missions sont réalisées progressivement sur `feature/local-ai-engine`. Chaque lot doit inclure tests et validation CI. Aucun merge sur `main` sans validation explicite.
+Les missions sont réalisées progressivement sur `feature/ai-engine-main-integration`. Chaque lot doit inclure tests et validation CI. Aucun merge sur `main` sans validation explicite.
 
 Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Mission 4 → Mission 5 → Mission 6.
 
@@ -140,4 +140,4 @@ Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Miss
 | Benchmark modèles | À démarrer |
 | Observabilité / intégration | À démarrer |
 
-Dernière mise à jour : 9 novembre 2026.
+Dernière mise à jour : 9 novembre 2026.\n\n### Reprise sur main 0.8.5\n\n- [x] Créer une branche propre depuis `main` 0.8.5, sans reprendre les 356 commits obsolètes de l'ancienne branche.\n- [x] Réintégrer le moteur IA, le premier outil `training_history`, les préférences de coach et les tests associés.\n- [x] Enregistrer les paramètres Ollama locaux dans `.env.example` ; l'IA reste désactivée par défaut.\n- [ ] Valider la migration Alembic, les tests Python et l'intégration réelle Ollama sur la VM Debian 13.\n- [ ] Ajouter les outils métier complémentaires après validation du socle.

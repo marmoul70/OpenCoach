@@ -8,7 +8,7 @@
 
 Faire évoluer l'assistant OpenCoach d'un modèle qui reçoit un grand contexte sportif vers un moteur IA outillé, local et modulaire.
 
-Le modèle doit comprendre la demande, sélectionner un ou plusieurs outils métier autorisés, fournir des paramètres structurés, puis expliquer les résultats JSON retournés par Python. Il ne doit pas recalculer les statistiques, inventer des données ou prendre seul des décisions métier.
+Le modèle doit comprendre la demande, sélectionner un ou plusieurs outils métier autorisés, fournir des paramètres structurés, puis expliquer les résultats JSON retournés par Python. Si un paramètre requis manque (par exemple la durée de l'historique), il doit poser une question de clarification et attendre la réponse ; aucun paramètre métier ne doit être supposé. Il ne doit pas recalculer les statistiques, inventer des données ou prendre seul des décisions métier.
 
 Objectifs :
 - **Véracité :** toutes les valeurs sportives proviennent des services métier existants.
@@ -58,7 +58,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] Définir un schéma Pydantic pour le premier outil (`TrainingHistoryArguments`).
 - [x] Normaliser les résultats et erreurs (statut, données, métadonnées, message contrôlé).
 - [x] Empêcher l'exécution d'un outil inconnu ou d'arguments supplémentaires.
-- [ ] Ajouter tests unitaires du registre, de la validation et du format de résultat.
+- [x] Ajouter tests unitaires du registre, de la validation et du format de résultat.
 
 **Livrable :** moteur d'exécution d'outils Python testable sans Ollama.
 
@@ -67,8 +67,8 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] Réutiliser `TrainingStatsService` et ses repositories existants.
 - [x] Définir clairement la fenêtre inclusive et la date de référence.
 - [x] Retourner séances, durée, distance, D+, charge mesurée/estimée et couverture des données.
-- [ ] Distinguer valeur nulle, donnée absente et couverture partielle.
-- [ ] Tester les périodes, bornes, données manquantes et séances manuelles.
+- [x] Distinguer valeur nulle, donnée absente et couverture partielle (couverture explicitée dans le JSON).
+- [x] Tester les périodes, bornes, données manquantes et séances manuelles.
 
 **Livrable :** premier outil sportif fiable, sans duplication du calcul métier.
 
@@ -82,13 +82,13 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 **Livrable :** catalogue d'outils métier en lecture seule.
 
 ### Mission 4 — Orchestration IA locale
-- [ ] Ajouter le support des tool calls Ollama dans le client, derrière une interface fournisseur.
-- [ ] Présenter au modèle uniquement les définitions des outils autorisés.
-- [ ] Valider chaque appel avant exécution.
-- [ ] Gérer plusieurs appels successifs avec limites de tours, de temps et de taille.
-- [ ] Transmettre au modèle les résultats JSON nécessaires, pas le contexte complet de la base.
-- [ ] Gérer proprement refus, outil inconnu, arguments invalides et erreurs métier.
-- [ ] Conserver les préférences de coach et les règles de sécurité.
+- [x] Ajouter le support des tool calls Ollama dans le client, derrière une interface fournisseur.
+- [x] Présenter au modèle uniquement les définitions des outils autorisés.
+- [x] Valider chaque appel avant exécution.
+- [x] Gérer plusieurs appels successifs avec limites de tours, de temps et de taille.
+- [x] Transmettre au modèle les résultats JSON nécessaires, pas le contexte complet de la base.
+- [x] Gérer proprement refus, outil inconnu, arguments invalides et erreurs métier.
+- [x] Conserver les préférences de coach et les règles de sécurité.
 
 **Livrable :** assistant coach capable de choisir et utiliser des outils locaux.
 
@@ -133,10 +133,10 @@ Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Miss
 | Lot | État |
 |---|---|
 | Cadrage / roadmap | En cours de formalisation |
-| AI Tool Engine | À démarrer |
-| Historique d'entraînement | À démarrer |
+| AI Tool Engine | Socle implémenté, tests à valider CI |
+| Historique d'entraînement | Outil initial implémenté, couverture à renforcer |
 | Outils complémentaires | À démarrer |
-| Orchestration IA | À démarrer |
+| Orchestration IA | Première boucle Ollama implémentée, validation CI / modèle réel à faire |
 | Benchmark modèles | À démarrer |
 | Observabilité / intégration | À démarrer |
 

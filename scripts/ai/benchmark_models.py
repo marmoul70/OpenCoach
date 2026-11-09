@@ -235,6 +235,17 @@ def filter_cases_for_tool_profile(
     return focused_cases
 
 
+def build_benchmark_system_prompt(case: dict[str, Any], profile: str) -> str:
+    """Place le contexte synthétique dans le système, sans ajouter un faux tour utilisateur."""
+    return (
+        f"{build_system_prompt(profile)}\n\n"
+        "CONTEXTE SPORTIF STRUCTURÉ (jeu de test, sans donnée personnelle) :\n"
+        f"Date de référence : {case.get('reference_date', '2026-11-09')}.\n"
+        "Les données individuelles ne sont pas fournies dans ce benchmark ; "
+        "les outils autorisés sont la seule source de données athlète."
+    )
+
+
 def canonical(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
@@ -314,15 +325,9 @@ async def run_case(
 ) -> dict[str, Any]:
     request = AIChatRequest(
         messages=[
-            AIMessage(role="system", content=build_system_prompt(prompt_profile)),
             AIMessage(
-                role="user",
-                content=(
-                    "CONTEXTE SPORTIF STRUCTURÉ (jeu de test, sans donnée personnelle) :\n"
-                    f"Date de référence : {case.get('reference_date', '2026-11-09')}.\n"
-                    "Les données individuelles ne sont pas fournies dans ce benchmark ; "
-                    "les outils autorisés sont la seule source de données athlète."
-                ),
+                role="system",
+                content=build_benchmark_system_prompt(case, prompt_profile),
             ),
             *build_case_conversation(case),
         ],

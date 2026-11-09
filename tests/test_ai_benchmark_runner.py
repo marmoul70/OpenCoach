@@ -12,6 +12,7 @@ from scripts.ai.benchmark_models import (
     validate_local_base_url,
     build_tool_definitions,
     build_system_prompt,
+    build_benchmark_system_prompt,
     TOOL_PROFILES,
     filter_cases_for_tool_profile,
     ARGUMENT_MODELS,
@@ -216,6 +217,14 @@ def test_benchmark_supports_production_and_minimal_prompt_profiles() -> None:
     assert len(minimal) < len(production)
     assert "training_history" in minimal
     assert "ne déduis jamais une période" in minimal.lower()
+
+
+def test_benchmark_context_is_embedded_in_system_message_not_a_fake_user_turn() -> None:
+    case = {"reference_date": "2026-11-09"}
+    prompt = build_benchmark_system_prompt(case, "minimal")
+
+    assert "Date de référence : 2026-11-09" in prompt
+    assert "sans donnée personnelle" in prompt
 
 
 def test_expected_fixture_arguments_validate_against_production_schemas() -> None:

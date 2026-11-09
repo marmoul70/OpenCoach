@@ -5,7 +5,7 @@ from __future__ import annotations
 import httpx
 
 from opencoach.ai.config import AISettings
-from opencoach.ai.schemas import AIChatRequest, AIChatResult
+from opencoach.ai.schemas import AIChatRequest, AIChatResult, AIToolCall
 
 
 class AIProviderError(RuntimeError):
@@ -33,7 +33,7 @@ class OllamaClient:
         payload = {
             "model": self.settings.model,
             "messages": [
-                message.model_dump()
+                message.model_dump(exclude_none=True, exclude_defaults=True)
                 for message in request.messages
             ],
             "stream": False,
@@ -43,19 +43,23 @@ class OllamaClient:
                 "num_predict": request.num_predict,
             },
         }
+        if request.tools:
+            payload["tools"] = [
+                {
+                    "type": "function",
+                    "function": tool.model_dump(),
+                }
+                for tool in request.tools
+            ]
 
         try:
             async with httpx.AsyncClient(
                 base_url=self.settings.base_url,
                 timeout=timeout,
                 transport=self.transport,
-                # Ignore HTTP_PROXY/HTTPS_PROXY : le moteur doit rester local.
                 trust_env=False,
             ) as client:
-                response = await client.post(
-                    "/api/chat",
-                    json=payload,
-                )
+                response = await client.post("/api/chat", json=payload)
                 response.raise_for_status()
                 data = response.json()
         except httpx.TimeoutException as exc:
@@ -73,9 +77,17 @@ class OllamaClient:
 
         try:
             message = data["message"]
+            tool_calls = [
+                AIToolCall(
+                    name=item["function"]["name"],
+                    arguments=item["function"].get("arguments") or {},
+                )
+                for item in message.get("tool_calls", [])
+            ]
             return AIChatResult(
                 model=data["model"],
-                content=message["content"],
+                content=message.get("content", ""),
+                tool_calls=tool_calls,
                 done=data["done"],
             )
         except (KeyError, TypeError, ValueError) as exc:

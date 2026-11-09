@@ -123,3 +123,175 @@ def build_recovery_status_tool(
         arguments_model=RecoveryStatusArguments,
         handler=execute,
     )
+
+class RecoveryAnalysisArguments(BaseModel):
+    """Fenêtre descriptive de récupération, ancrée sur une date."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    target_date: date = Field(
+        default_factory=date.today,
+        description="Date de fin de l'analyse ; aujourd'hui par défaut.",
+    )
+
+
+def build_recovery_analysis_tool(
+    wellness_repository,
+    daily_context_repository,
+    time_series_repository,
+    daily_checkin_repository,
+    athlete_profile_id: UUID,
+) -> AITool:
+    """Expose les données sommeil, physiologie, charge et ressenti sur 7/14/30 jours.
+
+    Les calculs restent dans recovery_assessment.py. L'outil ne crée aucun score
+    composite et conserve séparément données objectives et déclarations athlète.
+    """
+
+    from datetime import timedelta
+
+    from opencoach.recovery_assessment import (
+        METRICS,
+        build_recovery_assessment,
+        recovery_assessment_to_dict,
+    )
+
+    def execute(arguments: BaseModel) -> dict:
+        target_date = arguments.target_date
+        start_date = target_date - timedelta(days=29)
+        provider = "coros"
+
+        wellness_days = wellness_repository.list_range(
+            athlete_profile_id,
+            start_date,
+            target_date,
+            provider=provider,
+        )
+        if not wellness_days:
+            wellness_days = wellness_repository.list_range(
+                athlete_profile_id,
+                start_date,
+                target_date,
+                provider="intervals",
+            )
+            if wellness_days:
+                provider = "intervals"
+
+        subjective_context = daily_context_repository.get_by_date(
+            athlete_profile_id,
+            target_date,
+        )
+        daily_checkin = daily_checkin_repository.get_for_date(
+            athlete_profile_id,
+            target_date,
+        )
+        snapshots = (
+            time_series_repository.list_time_series_snapshots(
+                athlete_profile_id,
+                start_date,
+                target_date,
+            )
+            if provider == "coros"
+            else []
+        )
+
+        assessment = build_recovery_assessment(
+            wellness_days=wellness_days,
+            target_date=target_date,
+            provider=provider,
+            subjective_context=subjective_context,
+            time_series_snapshots=snapshots,
+        )
+        payload = recovery_assessment_to_dict(assessment)
+
+        checkin_payload = None
+        if daily_checkin is not None:
+            checkin_payload = {
+                "date": daily_checkin.date.isoformat(),
+                "energy_rating": daily_checkin.energy_rating,
+                "pain_wellness_rating": daily_checkin.pain_wellness_rating,
+                "illness": daily_checkin.illness,
+                "unavailable": daily_checkin.unavailable,
+                "pain_locations": [
+                    {
+                        "area": item.area.value,
+                        "side": item.side.value,
+                    }
+                    for item in daily_checkin.pain_locations
+                ],
+            }
+
+        windows = []
+        for window in assessment.windows:
+            windows.append({
+                "days": window.days,
+                "start_date": window.start_date.isoformat(),
+                "end_date": window.end_date.isoformat(),
+                "recorded_days": window.recorded_days,
+                "coverage_ratio": round(window.coverage_ratio, 3),
+                "metrics": {
+                    name: {
+                        "current": metric.current,
+                        "average": metric.average,
+                        "median": metric.median,
+                        "sample_count": metric.sample_count,
+                        "coverage_days": metric.coverage_days,
+                        "expected_days": metric.expected_days,
+                    }
+                    for name, metric in window.metrics.items()
+                    if name in METRICS
+                },
+            })
+
+        warnings = []
+        if assessment.data_status == "unavailable":
+            warnings.append("Aucune donnée Wellness disponible sur la période.")
+        elif assessment.data_status == "stale":
+            warnings.append(
+                f"Dernière donnée Wellness le {assessment.source_date.isoformat()} "
+                f"(J-{assessment.data_age_days})."
+            )
+        if checkin_payload is None and payload["subjective"] is None:
+            warnings.append(
+                "Aucun ressenti subjectif enregistré pour cette date. "
+                "Demander à l'athlète comment il se sent ; ne rien déduire."
+            )
+        if windows and windows[0]["coverage_ratio"] < 0.7:
+            warnings.append(
+                "Couverture Wellness inférieure à 70 % sur 7 jours ; "
+                "interpréter les tendances avec prudence."
+            )
+
+        return {
+            "target_date": target_date.isoformat(),
+            "provider": provider if wellness_days else None,
+            "source_date": payload["source_date"],
+            "data_age_days": payload["data_age_days"],
+            "data_status": payload["data_status"],
+            "windows": windows,
+            "time_series": payload["time_series"],
+            "daily_context": payload["subjective"],
+            "daily_checkin": checkin_payload,
+            "warnings": warnings,
+            "interpretation_rules": [
+                "Les fenêtres 7, 14 et 30 jours sont calculées séparément.",
+                "Une donnée absente n'est jamais égale à zéro.",
+                "Les métriques objectives et le ressenti subjectif restent distincts.",
+                "Aucun diagnostic médical ni score de forme composite n'est calculé.",
+                "Les données de sommeil proviennent des mesures importées ; ne pas les inventer.",
+            ],
+        }
+
+    return AITool(
+        name="recovery_analysis",
+        description=(
+            "Analyse descriptive de la forme et de la récupération : sommeil "
+            "(durée, score et phases), HRV, fréquence cardiaque au repos, stress, "
+            "charge ATL/CTL et séries COROS, sur des fenêtres de 7, 14 et 30 jours. "
+            "Inclut séparément le ressenti du jour provenant du check-in. À utiliser "
+            "pour toute discussion sur fatigue, forme, récupération, sommeil ou stress. "
+            "Ne produit aucun diagnostic ni score composite."
+        ),
+        arguments_model=RecoveryAnalysisArguments,
+        handler=execute,
+    )

@@ -144,7 +144,7 @@ def test_race_calendar_returns_only_authenticated_athletes_races_inclusive():
     assert result["status"] == "ok"
     assert result["race_count"] == 1
     assert result["races"][0]["name"] == "Ultra des Vosges"
-    assert result["races"][0]["days_until"] == 0
+    assert result["races"][0]["days_from_period_start"] == 0
     assert result["races"][0]["elevation_gain_m"] == 3100
     engine.dispose()
 

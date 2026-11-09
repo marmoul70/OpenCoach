@@ -146,6 +146,7 @@ def test_training_stats_use_linked_activity_as_actual() -> None:
     assert result.distance_data_count == 1
     assert result.elevation_data_count == 1
     assert result.measured_load_data_count == 1
+    assert result.duration_data_count == 1
 
 def test_training_stats_use_completed_manual_session_without_activity() -> None:
     session = TrainingSession(
@@ -188,3 +189,4 @@ def test_training_stats_use_completed_manual_session_without_activity() -> None:
 
     assert result.measured_load == 0.0
     assert result.estimated_load > 0.0
+    assert result.duration_data_count == 1

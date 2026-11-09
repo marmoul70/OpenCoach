@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from opencoach.ai.coaching_tools import (
+    EmptyArguments,
     PlannedSessionsArguments,
     RaceCalendarArguments,
     build_planned_sessions_tool,
@@ -67,10 +68,7 @@ def test_training_profile_returns_recorded_values_and_personal_hr_zones():
     with Session(engine) as session:
         profile = _profile(session)
         tool = build_training_profile_tool(session, profile.id)
-        result = tool.handler(PlannedSessionsArguments.model_construct(
-            start_date=date(2026, 11, 1),
-            end_date=date(2026, 11, 7),
-        ))
+        result = tool.handler(EmptyArguments())
 
     assert result["status"] == "ok"
     assert result["physiology"]["vma_kmh"] == 15.0
@@ -83,6 +81,7 @@ def test_training_profile_returns_recorded_values_and_personal_hr_zones():
     ]
     assert result["training_capacity"]["weekly_sessions_target"] == 4
     assert result["fueling_targets"]["carbohydrates_g_per_hour"] == 70
+    assert result["fueling_targets"]["fluids_per_hour"] == 600
     assert result["missing_profile_fields"] == []
     engine.dispose()
 
@@ -97,10 +96,7 @@ def test_training_profile_reports_missing_fields_without_estimating_them():
         session.flush()
         result = build_training_profile_tool(
             session, profile.id
-        ).handler(PlannedSessionsArguments.model_construct(
-            start_date=date(2026, 11, 1),
-            end_date=date(2026, 11, 7),
-        ))
+        ).handler(EmptyArguments())
 
     assert result["physiology"]["vma_kmh"] is None
     assert result["physiology"]["max_heart_rate_bpm"] is None

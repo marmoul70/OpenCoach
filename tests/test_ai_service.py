@@ -153,3 +153,58 @@ def test_missing_required_tool_argument_is_returned_to_model_for_clarification()
     assert client.calls == 2
     assert "invalid_arguments" in client.follow_up_tool_message
     assert "paramètres" in client.follow_up_tool_message
+
+
+def test_tool_orchestration_stops_and_asks_for_period_when_model_invents_one():
+    from pydantic import BaseModel, ConfigDict
+    from opencoach.ai.schemas import AIToolCall
+    from opencoach.ai.tool_engine import AITool, AIToolRegistry
+    from opencoach.ai.argument_evidence import validate_period_argument_evidence
+
+    class Args(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+        nb_days: int
+
+    class InventingClient:
+        def __init__(self):
+            self.calls = 0
+
+        async def chat(self, request):
+            self.calls += 1
+            return AIChatResult(model="qwen3:8b", content="", tool_calls=[AIToolCall(name="training_history", arguments={"nb_days": 7})], done=True)
+
+    executions = []
+    registry = AIToolRegistry(argument_guard=validate_period_argument_evidence)
+    registry.register(AITool(name="training_history", description="Historique.", arguments_model=Args, handler=lambda args: executions.append(args.nb_days) or {"days": args.nb_days}))
+    client = InventingClient()
+    service = AIService(AISettings(enabled=True), client=client)
+    request = AIChatRequest(messages=[AIMessage(role="user", content="Fais-moi le bilan de mon historique.")])
+    result = asyncio.run(service.chat_with_tools(request, registry, user_messages=["Fais-moi le bilan de mon historique."]))
+    assert result.content == "Sur combien de jours souhaites-tu que j'analyse ton historique ?"
+    assert client.calls == 1
+    assert executions == []
+    assert registry.execution_results[-1].status == "needs_clarification"
+
+
+def test_tool_orchestration_rejects_period_not_matching_user_request():
+    from pydantic import BaseModel, ConfigDict
+    from opencoach.ai.schemas import AIToolCall
+    from opencoach.ai.tool_engine import AITool, AIToolRegistry
+    from opencoach.ai.argument_evidence import validate_period_argument_evidence
+
+    class Args(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+        nb_days: int
+
+    class WrongPeriodClient:
+        async def chat(self, request):
+            return AIChatResult(model="qwen3:8b", content="", tool_calls=[AIToolCall(name="training_history", arguments={"nb_days": 30})], done=True)
+
+    executions = []
+    registry = AIToolRegistry(argument_guard=validate_period_argument_evidence)
+    registry.register(AITool(name="training_history", description="Historique.", arguments_model=Args, handler=lambda args: executions.append(args.nb_days) or {"days": args.nb_days}))
+    service = AIService(AISettings(enabled=True), client=WrongPeriodClient())
+    request = AIChatRequest(messages=[AIMessage(role="user", content="Analyse mon historique sur 7 jours.")])
+    result = asyncio.run(service.chat_with_tools(request, registry, user_messages=["Analyse mon historique sur 7 jours."]))
+    assert "Tu as indiqué 7 jours" in result.content
+    assert executions == []

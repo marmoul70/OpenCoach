@@ -148,3 +148,20 @@ def test_training_history_tool_requires_explicit_period():
     result = registry.execute("training_history", {})
 
     assert result.status == "invalid_arguments"
+
+
+def test_argument_evidence_guard_blocks_unrequested_or_out_of_range_periods():
+    from opencoach.ai.argument_evidence import validate_period_argument_evidence
+
+    assert validate_period_argument_evidence("training_history", {"nb_days": 7}, ["Fais-moi le bilan de mon historique."]) == "Sur combien de jours souhaites-tu que j'analyse ton historique ?"
+    assert validate_period_argument_evidence("training_history", {"nb_days": 500}, ["Analyse mon historique sur 500 jours."]).startswith("La période demandée (500 jours) dépasse les limites")
+    assert validate_period_argument_evidence("training_history", {"nb_days": 7}, ["Analyse mon historique sur 7 jours."]) is None
+    assert validate_period_argument_evidence("training_history", {"nb_days": 7}, ["Fais-moi le bilan de mon historique.", "7"]) is None
+
+
+def test_argument_evidence_guard_requires_both_trend_periods():
+    from opencoach.ai.argument_evidence import validate_period_argument_evidence
+
+    assert validate_period_argument_evidence("training_trends", {"nb_days": 7, "comparison_days": 7}, ["Compare mes tendances d'entraînement."]).startswith("Pour comparer tes tendances")
+    assert validate_period_argument_evidence("training_trends", {"nb_days": 7, "comparison_days": 14}, ["Compare mes tendances sur 7 jours avec les 14 jours précédents."]) is None
+    assert validate_period_argument_evidence("training_trends", {"nb_days": 7, "comparison_days": 7}, ["Compare mes tendances sur 7 jours avec les 14 jours précédents."]).startswith("Les durées proposées")

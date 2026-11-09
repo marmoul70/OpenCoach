@@ -123,7 +123,9 @@
     "expected_tool_calls": [
       {
         "tool": "recovery_analysis",
-        "arguments": {}
+        "arguments": {
+          "target_date": "2026-11-09"
+        }
       }
     ],
     "expected_clarification": null,

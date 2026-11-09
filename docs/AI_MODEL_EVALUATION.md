@@ -119,6 +119,7 @@ Le script :
 - injecte une date de référence synthétique fixe, mais ne charge pas le contexte athlète réel construit par `/coach` : le benchmark reste sans accès à la base et n’évalue donc pas l’effet des faits personnalisés ;
 - n'expose pas le tool de proposition de données de profil, car ce runner est limité à la sélection des outils de lecture ;
 - valide séparément les arguments générés contre les modèles Pydantic et marque les appels hors bornes (par exemple 500 jours) ;
+- en production, le registre applique un contrôle Python de provenance pour les périodes d'historique, de charge et de tendances ; une période absente, hors bornes ou différente de celle formulée par l'utilisateur bloque l'exécution et retourne une question déterministe ;
 - interroge uniquement l'API Ollama locale (localhost/loopback imposé) ;
 - n'exécute aucun handler métier et ne modifie aucune donnée OpenCoach ;
 - mesure la sélection d'outil, l'exactitude des arguments, les demandes de clarification de premier tour et la latence murale ;
@@ -141,5 +142,8 @@ Après exécution, transmettre les deux fichiers de rapport et la sortie termina
 - [x] Ajouter un scénario multi-tours vérifiant qu'une période fournie après clarification est réutilisée sans être inventée.
 - [x] Capturer les métriques natives Ollama pour séparer le coût de chargement, du prompt et de la génération.
 - [x] Ajouter les profils comparatifs de catalogue (13 outils / 3 outils ciblés) et de prompt (production / minimal), sans modifier le prompt de production.
+- [x] Ajouter un garde-fou Python de provenance des périodes : une valeur obligatoire doit correspondre à une durée explicitement fournie par l'utilisateur ; sinon l'outil métier n'est pas exécuté et une clarification déterministe est retournée.
+- [x] Ajouter des tests de non-exécution en cas de période inventée, altérée ou hors limites.
+- [x] Corriger le scénario de récupération pour tenir compte de la date facultative par défaut du contrat.
 - [ ] Exécuter les trois configurations comparatives sur la VM.
 - [ ] Comparer Qwen3 8B, 4B et 3B et documenter le choix.

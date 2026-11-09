@@ -48,6 +48,8 @@ class AIService:
         self,
         request: AIChatRequest,
         registry: AIToolRegistry,
+        *,
+        user_messages: list[str] | None = None,
     ) -> AIChatResult:
         """Exécute une boucle d'outils bornée et validée côté Python."""
         if not self.settings.enabled:
@@ -84,8 +86,17 @@ class AIService:
                     # Les handlers métier sont synchrones (SQLAlchemy/services) :
                     # les exécuter hors de la boucle asyncio pour ne pas bloquer l'API.
                     tool_result = await asyncio.to_thread(
-                        registry.execute, call.name, call.arguments
+                        registry.execute,
+                        call.name,
+                        call.arguments,
+                        user_messages=user_messages or [],
                     )
+                    if tool_result.status == "needs_clarification":
+                        return AIChatResult(
+                            model=result.model,
+                            content=tool_result.error or "Une précision est nécessaire avant cette analyse.",
+                            done=True,
+                        )
                     serialized = json.dumps(
                         tool_result.model_dump(mode="json"),
                         ensure_ascii=False,

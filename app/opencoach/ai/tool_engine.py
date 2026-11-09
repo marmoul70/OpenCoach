@@ -12,7 +12,7 @@ from typing import Any, Callable, Literal, Type
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 
-ToolStatus = Literal["ok", "invalid_arguments", "not_found", "failed"]
+ToolStatus = Literal["ok", "invalid_arguments", "needs_clarification", "not_found", "failed"]
 
 
 class AIToolResult(BaseModel):
@@ -46,8 +46,9 @@ class AITool:
 class AIToolRegistry:
     """Registre en liste blanche et exécuteur synchrone des outils métier."""
 
-    def __init__(self) -> None:
+    def __init__(self, argument_guard: Callable[[str, dict[str, Any], list[str]], str | None] | None = None) -> None:
         self._tools: dict[str, AITool] = {}
+        self._argument_guard = argument_guard
         self._execution_results: list[AIToolResult] = []
 
     @property
@@ -72,8 +73,14 @@ class AIToolRegistry:
             for tool in self._tools.values()
         ]
 
-    def execute(self, name: str, arguments: dict[str, Any]) -> AIToolResult:
-        """Valide puis exécute uniquement un outil enregistré."""
+    def execute(
+        self,
+        name: str,
+        arguments: dict[str, Any],
+        *,
+        user_messages: list[str] | None = None,
+    ) -> AIToolResult:
+        """Vérifie la provenance, valide puis exécute un outil enregistré."""
         tool = self._tools.get(name)
         if tool is None:
             result = AIToolResult(
@@ -84,6 +91,18 @@ class AIToolRegistry:
             )
             self._execution_results.append(result)
             return result
+
+        if self._argument_guard is not None:
+            clarification = self._argument_guard(name, arguments, user_messages or [])
+            if clarification:
+                result = AIToolResult(
+                    tool=name,
+                    status="needs_clarification",
+                    metadata={"executed_at": _utc_now(), "business_tool_executed": False},
+                    error=clarification,
+                )
+                self._execution_results.append(result)
+                return result
 
         try:
             validated_arguments = tool.arguments_model.model_validate(arguments)

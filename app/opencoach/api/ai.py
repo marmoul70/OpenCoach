@@ -29,6 +29,7 @@ from opencoach.ai.config import AISettings, get_ai_settings
 from opencoach.ai.schemas import AIChatRequest, AIMessage
 from opencoach.ai.service import AIOrchestrationError, AIService, AIServiceDisabledError
 from opencoach.ai.tool_engine import AIToolRegistry
+from opencoach.ai.argument_evidence import validate_period_argument_evidence
 from opencoach.ai.training_tools import build_training_history_tool
 from opencoach.ai.activity_tools import build_activity_detail_tool
 from opencoach.ai.constraints_tools import build_active_constraints_tool
@@ -323,7 +324,7 @@ def get_ai_tool_registry(
 ) -> AIToolRegistry:
     """Construit le registre métier pour le seul athlète authentifié."""
 
-    registry = AIToolRegistry()
+    registry = AIToolRegistry(argument_guard=validate_period_argument_evidence)
     registry.register(build_training_profile_tool(db, athlete_profile_id))
     registry.register(build_active_constraints_tool(db, athlete_profile_id))
     registry.register(build_weekly_plan_context_tool(db, athlete_profile_id))
@@ -474,11 +475,7 @@ async def ask_local_ai(
     request = AIChatRequest(
         messages=[
             AIMessage(role="system", content=_CHAT_SYSTEM_PROMPT),
-            *[
-                AIMessage(role=message.role, content=message.content)
-                for message in payload.history
-            ],
-            AIMessage(role="user", content=payload.question),
+            *conversation_messages,
         ],
         temperature=0.2,
         num_predict=512,
@@ -553,6 +550,17 @@ async def ask_local_ai_with_athlete_context(
         else _DEFAULT_COACH_PREFERENCES
     )
 
+    conversation_messages = [
+        *[
+            AIMessage(role=message.role, content=message.content)
+            for message in payload.history
+        ],
+        AIMessage(role="user", content=payload.question),
+    ]
+    user_messages = [
+        message.content for message in conversation_messages if message.role == "user"
+    ]
+
     request = AIChatRequest(
         messages=[
             AIMessage(role="system", content=_coach_system_prompt(coach_preferences)),
@@ -572,11 +580,6 @@ async def ask_local_ai_with_athlete_context(
         temperature=0.2,
         num_predict=512,
     )
-    user_messages = [
-        message.content
-        for message in payload.history
-        if message.role == "user"
-    ] + [payload.question]
     tool_registry.register(
         build_profile_data_proposal_tool(
             db,
@@ -586,7 +589,7 @@ async def ask_local_ai_with_athlete_context(
     )
 
     try:
-        result = await service.chat_with_tools(request, tool_registry)
+        result = await service.chat_with_tools(request, tool_registry, user_messages=user_messages)
         if not result.done:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,

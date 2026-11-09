@@ -12,7 +12,7 @@ Faire d'OpenCoach le référentiel unique de données santé et récupération d
 - `integrations/intervals/wellness_mapper.py` convertit les champs Intervals en `WellnessDay` : `ctl`, `atl`, `rampRate`, `restingHR`, `hrv`, `sleepSecs`, `sleepScore`, `sleepQuality`, `avgSleepingHR`, `spO2`, `steps`.
 - `integrations/intervals/sync.py` persiste ces valeurs via `WellnessRepository`.
 - Le modèle `WellnessDaily` et le modèle métier `WellnessDay` fournissent déjà une structure canonique partielle.
-- Le service Readiness et les routes Wellness/Coach sont actuellement configurés avec `provider="intervals"`.
+- À la date de rédaction de cette section historique, le service Readiness et les routes Wellness/Coach sélectionnaient `provider="intervals"`. Cette logique a depuis été supprimée des chemins de calcul.
 
 ### Connecteur COROS existant
 
@@ -24,7 +24,7 @@ Faire d'OpenCoach le référentiel unique de données santé et récupération d
 
 ### Écart fonctionnel majeur
 
-Le connecteur COROS stocke les réponses brutes dans `coros_daily_data`. Les réponses MCP observées sur le compte de test ne sont pas toutes des objets JSON : plusieurs outils renvoient des rapports texte contenant plusieurs dates. Le mapper doit donc extraire les journées internes au rapport, et non attribuer toutes les mesures à la date du snapshot. Les anciens chemins Readiness, Wellness et Coach sélectionnaient un fournisseur (COROS prioritaire, Intervals en repli). La branche de travail remplace cette logique par une agrégation des métriques de tous les imports stockés dans OpenCoach.
+Le connecteur COROS stocke les réponses brutes dans `coros_daily_data`. Les réponses MCP observées ne sont pas toutes des objets JSON : plusieurs outils renvoient des rapports texte contenant plusieurs dates. Le mapper extrait donc les journées internes au rapport, et non toutes les mesures à la date du snapshot. Les anciens chemins Readiness, Wellness et Coach sélectionnaient un fournisseur ; le code actuel agrège les métriques de tous les imports normalisés stockés dans OpenCoach.
 
 ## Architecture cible
 
@@ -73,7 +73,7 @@ Les champs exacts et les unités doivent être confirmés à partir des schémas
 
 Les 36 snapshots exportés contiennent des rapports texte pour `daily_health`, `sleep`, `hrv`, `heart_rate`, `stress` et `training_load`. Les rapports `daily_health`, `sleep`, `hrv` et `training_load` peuvent contenir plusieurs dates dans un seul payload. Les dates du sommeil et de la HRV sont des dates de réveil.
 
-Le parseur de la branche de travail normalise les champs suivants : durée du sommeil principal, score de sommeil, HRV nocturne moyenne et baseline HRV, FC au repos du jour le plus récent du rapport santé, FC moyenne/minimale/maximale du sommeil, durée des phases profond/léger/REM/éveil, stress moyen, pas, charge courte (ATL) et charge longue (CTL). Le ratio de charge COROS n'est pas enregistré dans `ramp_rate` car ces deux notions ne sont pas équivalentes. Les nouvelles mesures sont stockées dans des colonnes canoniques nullable de `wellness_daily`, avec migration Alembic dédiée. Les endpoints Wellness, Readiness et Coach consolident désormais les métriques de tous les fournisseurs importés dans OpenCoach. La valeur la plus récente est retenue par métrique et par date lorsque les horodatages de mise à jour le permettent. En cas de conflit de fraîcheur identique ou inconnue, la métrique reste inconnue et le conflit est signalé. Les snapshots bruts COROS restent une archive d'import et ne sont pas consultés par le coach IA.
+Le parseur de la branche de travail normalise les champs suivants : durée du sommeil principal, score de sommeil, HRV nocturne moyenne et baseline HRV, FC au repos du jour le plus récent du rapport santé, FC moyenne/minimale/maximale du sommeil, durée des phases profond/léger/REM/éveil, stress moyen, pas, charge courte (ATL) et charge longue (CTL). Le ratio de charge COROS n'est pas enregistré dans `ramp_rate` car ces deux notions ne sont pas équivalentes. Les nouvelles mesures sont stockées dans des colonnes canoniques nullable de `wellness_daily`, avec migration Alembic dédiée. Les endpoints Wellness, Readiness, Coach et les outils du coach IA consolident les métriques de tous les fournisseurs importés dans OpenCoach. La valeur la plus récente est retenue par métrique et par date lorsque les horodatages de mise à jour le permettent. En cas de conflit de fraîcheur identique ou inconnue, la métrique reste inconnue et le conflit est signalé. Les snapshots bruts propres à un connecteur restent une archive d'import ; les calculs du coach lisent les données normalisées dans `wellness_daily`.
 
 Les rapports bruts ne doivent pas être ajoutés comme fixtures permanentes : ils peuvent contenir des données personnelles. Les tests utilisent des extraits synthétiques reprenant leur structure.
 
@@ -133,7 +133,7 @@ Les rapports bruts ne doivent pas être ajoutés comme fixtures permanentes : il
 - Une synchronisation COROS crée/met à jour des journées Wellness normalisées dans OpenCoach.
 - Les données brutes COROS restent conservées.
 - Le Readiness et le coach peuvent fonctionner sans compte Intervals.icu connecté.
-- Les baselines sont calculées sur l'historique du même athlète et de la même source canonique.
+- Les baselines sont calculées sur l'historique consolidé du même athlète dans OpenCoach, toutes origines d'import confondues.
 - Les absences de données ne sont jamais remplacées par des zéros ou des valeurs estimées.
 - Les tests couvrent les payloads réels COROS anonymisés et les imports répétés.
 - Aucune modification n'est envoyée vers le calendrier COROS.
@@ -141,11 +141,11 @@ Les rapports bruts ne doivent pas être ajoutés comme fixtures permanentes : il
 
 ## Synthèse de récupération descriptive — ajout sur la branche de travail
 
-Le module `opencoach.recovery_assessment` fournit une synthèse distincte du score Readiness. Il calcule des fenêtres glissantes de 7, 14 et 30 jours, sans fusionner les fournisseurs, et retourne pour chaque mesure la dernière valeur disponible, moyenne, médiane, nombre d'échantillons et couverture. Les domaines physiologiques (HRV, FC, sommeil, stress) et la charge (ATL/CTL) sont présentés séparément.
+Le module `opencoach.recovery_assessment` fournit une synthèse distincte du score Readiness. Il calcule des fenêtres glissantes de 7, 14 et 30 jours à partir des journées consolidées OpenCoach, après fusion des imports métrique par métrique. Il retourne pour chaque mesure la dernière valeur disponible, moyenne, médiane, nombre d'échantillons et couverture. Les domaines physiologiques (HRV, FC, sommeil, stress) et la charge (ATL/CTL) sont présentés séparément.
 
 Le ressenti quotidien est repris uniquement depuis `DailyContext` pour la date demandée : fatigue, douleur, maladie, impact du traitement et motivation. Il n'est jamais déduit des capteurs. Si aucune mesure n'est disponible, les champs restent `null` et l'état de source est `unavailable`. Une source ancienne est signalée comme `stale`.
 
-L'endpoint `GET /api/wellness/recovery` expose cette synthèse au coach et au futur écran Santé/Récupération. Il privilégie COROS et ne bascule sur Intervals que si aucune journée COROS n'est présente dans la fenêtre. Cette synthèse est descriptive : aucun seuil de stress ou de fatigue n'est introduit dans le score Readiness à ce stade.
+L'endpoint `GET /api/wellness/recovery` expose cette synthèse au coach et à l'écran Santé/Récupération. Il lit toutes les lignes `wellness_daily` du profil dans OpenCoach et consolide les métriques sans priorité fournisseur. Cette synthèse est descriptive : aucun seuil de stress ou de fatigue n'est introduit dans le score Readiness à ce stade.
 
 
 ## Reconstruction de l'historique Wellness COROS
@@ -207,7 +207,7 @@ La page présente :
 - les séries COROS horodatées avec moyenne, minimum, maximum, nombre de mesures et jours couverts ;
 - le ressenti subjectif séparément des mesures capteurs lorsqu'il est renseigné.
 
-Les mesures absentes restent affichées comme indisponibles et ne sont jamais converties en zéro. Les graphiques et les mesures quotidiennes utilisent le même fournisseur (COROS ou Intervals selon la source retenue par l'évaluation de récupération), afin d'éviter de juxtaposer des séries issues de baselines différentes. Les séries sont descriptives et ne changent pas le calcul Readiness. Le bouton Actualiser relit l'API ; il ne déclenche pas de synchronisation COROS.
+Les mesures absentes restent affichées comme indisponibles et ne sont jamais converties en zéro. Les graphiques et les mesures quotidiennes utilisent les mêmes données consolidées OpenCoach, sans filtre ni sélection de fournisseur. Les séries sont descriptives et ne changent pas le calcul Readiness. Le bouton Actualiser relit l'API ; il ne déclenche pas de synchronisation COROS.
 
 Validation attendue sur VM après mise à jour de la branche :
 1. Ouvrir `/health` sur desktop et mobile.

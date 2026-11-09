@@ -242,3 +242,57 @@ def test_equipment_proposal_rejects_invented_brand():
     finally:
         db.close()
         engine.dispose()
+
+
+def test_daily_checkin_tool_requires_explicit_evidence_and_creates_pending_proposal():
+    engine, db, profile = _database()
+    try:
+        evidence = "Énergie 3/5, douleur 4/5, pas malade, disponible, gêne au genou gauche."
+        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        registry = AIToolRegistry()
+        registry.register(tool)
+        result = registry.execute("propose_profile_data", {
+            "field_key": "daily_checkin",
+            "value": {
+                "energy_rating": 3,
+                "pain_wellness_rating": 4,
+                "illness": False,
+                "unavailable": False,
+                "pain_locations": [{"area": "knee", "side": "left"}],
+            },
+            "evidence": evidence,
+        })
+        assert result.status == "ok"
+        assert result.data["field_key"] == "daily_checkin"
+        assert result.data["status"] == "pending"
+        assert result.data["requires_explicit_confirmation"] is True
+        assert db.query(AIDataProposal).count() == 1
+        from opencoach.database.models.daily_checkin import DailyCheckIn
+        assert db.query(DailyCheckIn).count() == 0
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_daily_checkin_tool_rejects_missing_illness_evidence():
+    engine, db, profile = _database()
+    try:
+        evidence = "Énergie 3/5, douleur 5/5, disponible."
+        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        registry = AIToolRegistry()
+        registry.register(tool)
+        result = registry.execute("propose_profile_data", {
+            "field_key": "daily_checkin",
+            "value": {
+                "energy_rating": 3,
+                "pain_wellness_rating": 5,
+                "illness": False,
+                "unavailable": False,
+            },
+            "evidence": evidence,
+        })
+        assert result.status == "failed"
+        assert db.query(AIDataProposal).count() == 0
+    finally:
+        db.close()
+        engine.dispose()

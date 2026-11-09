@@ -15,6 +15,14 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
     reference_date = date(2026, 11, 9)
     calls = []
 
+    class FakeTrainingStatsService:
+        def calculate(self, profile_id, start_date, end_date):
+            return SimpleNamespace(
+                sessions_count=1,
+                measured_load_data_count=1,
+                manual_sessions_count=0,
+            )
+
     class FakeService:
         def calculate(self, profile_id, target_date, *, days):
             calls.append((profile_id, target_date, days))
@@ -62,6 +70,7 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
     registry.register(
         build_training_load_tool(
             FakeService(),
+            FakeTrainingStatsService(),
             athlete_id,
             reference_date_provider=lambda: reference_date,
         )
@@ -114,8 +123,17 @@ def test_training_load_tool_never_reports_missing_actual_load_as_zero():
                 unplanned_days=0,
             )
 
+    class EmptyStatsService:
+        def calculate(self, profile_id, start_date, end_date):
+            return SimpleNamespace(
+                sessions_count=0,
+                measured_load_data_count=0,
+                manual_sessions_count=0,
+            )
+
     tool = build_training_load_tool(
         EmptyService(),
+        EmptyStatsService(),
         uuid4(),
         reference_date_provider=lambda: date(2026, 11, 9),
     )

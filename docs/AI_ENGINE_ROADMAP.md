@@ -248,3 +248,18 @@ Dernière mise à jour : 9 novembre 2026.
 - [ ] Tester les conversations réelles avec Ollama sur la VM et vérifier les réponses lorsque le sommeil ou le ressenti manque.
 
 **Documentation :** `docs/AI_RECOVERY_COACHING.md`.
+
+#### Mission 5 bis — check-in conversationnel persistant
+
+- [x] Réutiliser le mécanisme de proposition existant sans créer de table ni migration supplémentaire.
+- [x] Ajouter le type `daily_checkin` avec validation stricte des notes énergie/douleur, maladie, disponibilité et localisation des douleurs.
+- [x] Exiger une citation exacte issue des messages utilisateur qui étaye les valeurs proposées.
+- [x] Ne créer aucune ligne dans `daily_checkins` avant confirmation explicite dans l'interface.
+- [x] À la confirmation, vérifier qu'aucun check-in n'a été créé entre-temps et persister la proposition dans la même transaction.
+- [x] Refuser le remplacement d'un check-in existant pour la journée.
+- [x] Afficher un récapitulatif lisible de la proposition dans la carte de validation du coach.
+- [x] Ajouter des tests de validation, de preuve utilisateur, de non-écriture avant confirmation et de conflit.
+- [ ] Valider le dialogue réel avec Ollama sur la VM, notamment les questions complémentaires et la confirmation côté interface.
+
+**Limite actuelle :** la collecte conversationnelle ne prend en charge que le check-in du jour. La modification d'un check-in déjà enregistré reste dans le formulaire existant.
+

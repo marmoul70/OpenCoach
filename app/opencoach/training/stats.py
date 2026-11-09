@@ -20,6 +20,7 @@ class TrainingStats:
     estimated_load: float
 
     # Nombre de séances dont la donnée source est renseignée.
+    duration_data_count: int = 0
     distance_data_count: int = 0
     elevation_data_count: int = 0
     measured_load_data_count: int = 0

@@ -144,6 +144,10 @@ def build_race_preparation_tool(
         if elevation is None:
             missing_race_data.append("elevation_gain_m")
 
+        missing_optional_race_data = (
+            ["target_time_minutes"] if race.target_time_minutes is None else []
+        )
+
         course_profile = {
             "distance_km": distance,
             "elevation_gain_m": elevation,
@@ -264,6 +268,7 @@ def build_race_preparation_tool(
             "recent_training": recent_training,
             "data_quality": {
                 "missing_race_fields": missing_race_data,
+                "missing_optional_race_fields": missing_optional_race_data,
                 "missing_profile_fields": missing_profile_data,
                 "sessions_included": included_sessions,
                 "metric_coverage": {

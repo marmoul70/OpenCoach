@@ -883,10 +883,10 @@ def test_readiness_can_aggregate_all_provider_data_stored_in_opencoach():
         current=coros_current,
         history=[intervals_current, *history],
     )
+    # Le mode par défaut doit agréger les imports OpenCoach sans fournisseur imposé.
     service = ReadinessService(
         repository,
         thresholds=load_threshold_settings(),
-        provider=None,
     )
 
     result = service.calculate(uuid4(), TARGET_DATE)

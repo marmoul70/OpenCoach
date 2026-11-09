@@ -104,9 +104,11 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 
 - [x] Définir le cycle cible de détection, collecte, validation, proposition, confirmation et persistance dans docs/AI_DATA_COLLECTION.md.
 - [x] Ajouter au prompt coach les garde-fous : ne pas confondre réponse conversationnelle et donnée enregistrée, ne jamais prétendre avoir sauvegardé, ne jamais écraser une valeur sans confirmation.
-- [ ] Créer un modèle de proposition de donnée en attente, lié au profil authentifié, avec expiration et état.
-- [ ] Ajouter un service de validation/écriture limité aux champs autorisés du profil sportif.
-- [ ] Ajouter les endpoints distincts de consultation, confirmation et refus ; la confirmation ne dépend jamais d'un texte libre interprété par le LLM.
+- [x] Créer le modèle SQLAlchemy AIDataProposal et la migration Alembic d4f7a9c2e610 : profil propriétaire, champ allowlisté, valeur actuelle/proposée, unité, expiration et état.
+- [x] Ajouter le service de proposition et de confirmation avec validation typée, contrôle de cohérence physiologique, détection de conflit, expiration et protection contre la double confirmation.
+- [x] Ajouter les endpoints authentifiés de création, consultation, confirmation et refus ; l'écriture n'est déclenchée que par l'endpoint de confirmation.
+- [x] Ajouter les tests unitaires du service : absence d'écriture avant confirmation, bornes, isolation, conflit, expiration, refus, cohérence physiologique et double confirmation.
+- [ ] Relier le tool calling du coach à la création de proposition et exposer la proposition sous forme structurée dans la réponse API.
 - [ ] Ajouter une carte frontend Confirmer / Refuser et afficher le résultat réel de la sauvegarde.
 - [ ] Étendre progressivement le mécanisme aux autres domaines métier, après validation du profil.
 

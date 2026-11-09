@@ -94,6 +94,8 @@ METRICS: tuple[str, ...] = (
     "stress_avg",
     "sleep_seconds",
     "sleep_score",
+    "sleep_quality",
+    "spo2",
     "sleep_deep_seconds",
     "sleep_light_seconds",
     "sleep_rem_seconds",

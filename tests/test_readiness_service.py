@@ -149,9 +149,10 @@ class FakeWellnessRepository(
 
         return [
             wellness
-            for wellness in self.history
+            for wellness in ([self.current] + self.history)
             if (
-                start_date
+                wellness is not None
+                and start_date
                 <= wellness.date
                 <= end_date
                 and (
@@ -856,3 +857,47 @@ def test_readiness_uses_fresher_intervals_when_coros_is_stale() -> None:
     assert result.source_date == TARGET_DATE
     assert result.data_status == "fresh"
     assert repository.list_range_calls[-1][-1] == "intervals"
+
+
+def test_readiness_can_aggregate_all_provider_data_stored_in_opencoach():
+    coros_current = WellnessDay(
+        provider="coros",
+        date=TARGET_DATE,
+        hrv=55.0,
+        sleep_seconds=7 * 3600,
+    )
+    intervals_current = WellnessDay(
+        provider="intervals",
+        date=TARGET_DATE,
+        resting_hr=52,
+        sleep_score=78.0,
+    )
+    history = []
+    for offset in range(1, 15):
+        day = TARGET_DATE - timedelta(days=offset)
+        history.extend([
+            WellnessDay(provider="coros", date=day, hrv=50.0, sleep_seconds=7 * 3600),
+            WellnessDay(provider="intervals", date=day, resting_hr=46, sleep_score=80.0),
+        ])
+    repository = FakeWellnessRepository(
+        current=coros_current,
+        history=[intervals_current, *history],
+    )
+    service = ReadinessService(
+        repository,
+        thresholds=load_threshold_settings(),
+        provider=None,
+    )
+
+    result = service.calculate(uuid4(), TARGET_DATE)
+
+    assert result.provider == "opencoach"
+    assert result.current.provider == "opencoach"
+    assert result.current.hrv == 55.0
+    assert result.current.resting_hr == 52
+    assert result.current.sleep_seconds == 7 * 3600
+    assert result.current.sleep_score == 78.0
+    assert result.baseline.hrv.sample_count == 14
+    assert result.baseline.resting_hr.sample_count == 14
+    assert repository.list_range_calls[0][-1] is None
+    assert repository.list_range_calls[1][-1] is None

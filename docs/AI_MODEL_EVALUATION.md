@@ -105,8 +105,9 @@ python scripts/ai/benchmark_models.py --models qwen3:8b qwen3:4b qwen3:3b --repe
 ```
 
 Le script :
-- réutilise le prompt système de production du coach avec les préférences par défaut, les schémas Pydantic des outils et une date de référence synthétique ;
-- ne charge pas le contexte athlète réel de `/coach` : le benchmark reste sans accès à la base et n’évalue donc pas l’effet des faits personnalisés ;
+- réutilise le prompt système de production du coach avec les préférences par défaut, les descriptions des 13 outils de lecture recopiées du registre de production et leurs schémas Pydantic ;
+- injecte une date de référence synthétique fixe, mais ne charge pas le contexte athlète réel construit par `/coach` : le benchmark reste sans accès à la base et n’évalue donc pas l’effet des faits personnalisés ;
+- n'expose pas le tool de proposition de données de profil, car ce runner est limité à la sélection des outils de lecture ;
 - valide séparément les arguments générés contre les modèles Pydantic et marque les appels hors bornes (par exemple 500 jours) ;
 - interroge uniquement l'API Ollama locale (localhost/loopback imposé) ;
 - n'exécute aucun handler métier et ne modifie aucune donnée OpenCoach ;
@@ -124,7 +125,7 @@ Après exécution, transmettre les deux fichiers de rapport et la sortie termina
 - [x] Générer les 13 schémas depuis les modèles Pydantic du registre métier et valider les arguments attendus du corpus contre ces schémas (`tests/test_ai_benchmark_runner.py`).
 - [x] Ajouter un runner de sélection d'outils Ollama et un export JSON/CSV des résultats (`scripts/ai/benchmark_models.py`).
 - [x] Ajouter des tests unitaires du scoring, des clarifications et des synthèses (`tests/test_ai_benchmark_runner.py`).
-- [x] Aligner le prompt système sur le builder de production et fixer la date de référence synthétique.
+- [x] Aligner le prompt système et les descriptions des 13 outils de lecture sur le contrat de production, puis fixer la date de référence synthétique.
 - [x] Valider les arguments réellement générés contre les schémas Pydantic et les exposer dans le rapport.
 - [ ] Exécuter trois répétitions par cas sur la VM.
 - [ ] Comparer Qwen3 8B, 4B et 3B et documenter le choix.

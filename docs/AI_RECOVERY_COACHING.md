@@ -11,20 +11,25 @@ disponibles et invite le coach à demander les informations subjectives manquant
 
 ### Mesures objectives
 
-Le nouvel outil `recovery_analysis` réutilise les données Wellness déjà importées
-par COROS ou Intervals :
+L'outil `recovery_analysis` lit exclusivement les mesures déjà persistées dans
+`wellness_daily` par les connecteurs et imports OpenCoach. Il ne contacte jamais
+COROS, Intervals.icu, Garmin ou une autre plateforme. Tous les fournisseurs sont
+des origines d'import, pas des sources de lecture du coach.
 
-- sommeil : durée totale, score, qualité déclarée par le capteur et phases disponibles ;
+OpenCoach consolide les métriques indépendamment, journée par journée :
+
+- sommeil : durée totale, score, qualité et phases disponibles ;
 - HRV et baseline HRV ;
 - fréquence cardiaque au repos et mesures cardiaques nocturnes ;
 - stress et saturation SpO₂ lorsque disponible ;
-- charge aiguë ATL et forme CTL ;
-- séries temporelles COROS disponibles.
+- charge aiguë ATL et forme CTL.
 
-Le moteur Python `recovery_assessment.py` calcule les fenêtres distinctes de 7, 14
-et 30 jours. Chaque métrique expose sa valeur courante, moyenne, médiane, nombre
-d'échantillons et couverture. Les séries temporelles sont agrégées et dédupliquées
-par le moteur existant.
+Pour chaque métrique et chaque date, la valeur issue de l'import le plus récent
+est retenue lorsque sa date de mise à jour est disponible. Si des valeurs
+concurrentes ont la même fraîcheur ou aucune date de mise à jour, la métrique
+reste inconnue et le conflit est signalé : aucun fournisseur n'est arbitrairement
+privilégié. Le moteur Python `recovery_assessment.py` calcule ensuite les fenêtres
+distinctes de 7, 14 et 30 jours sur ces journées consolidées.
 
 ### Ressenti subjectif
 
@@ -45,7 +50,7 @@ explicitement inconnue ; elle ne signifie pas que l'athlète est en forme.
 2. Pour une question de disponibilité d'entraînement ou de restrictions, compléter
    avec `recovery_status` et les contraintes actives.
 3. Comparer les tendances personnelles, sans appliquer un seuil médical universel.
-4. Toujours préciser la source, la date de la dernière mesure et la couverture.
+4. Préciser que les mesures viennent du stockage OpenCoach, la date de la dernière mesure, la couverture et, si utile, la provenance d'import par métrique.
 5. Distinguer fatigue générale, énergie déclarée, douleur, maladie et charge
    d'entraînement. Ne pas déduire une douleur ou une maladie d'une variation de HRV.
 6. Si le ressenti du jour est absent, recueillir énergie (1 à 5), confort/douleur
@@ -86,10 +91,10 @@ Un check-in déjà existant n'est pas écrasé par ce flux.
 `recovery_analysis(target_date?)` :
 
 - `target_date` est facultatif et vaut aujourd'hui ;
-- utilise COROS en priorité et Intervals en repli, sans fusionner les fournisseurs ;
+- lit toutes les lignes Wellness du profil dans OpenCoach, sans filtre ni priorité fournisseur ;
+- consolide chaque métrique entre les imports et signale les conflits non résolus ;
 - ne lit que les données du profil athlète authentifié ;
-- retourne les fenêtres 7/14/30 jours, les séries temporelles disponibles et les
-  check-ins du jour ;
+- retourne les fenêtres 7/14/30 jours, la provenance des valeurs et les check-ins du jour ;
 - ne réalise aucune écriture et ne calcule aucun score composite.
 
 ## Validation
@@ -98,7 +103,7 @@ Les tests dédiés couvrent :
 - fenêtres de récupération et métriques sommeil ;
 - présence du ressenti subjectif ;
 - collecte quotidienne avec preuve utilisateur, validation des valeurs, absence d’écriture avant confirmation et conflit si un check-in existe déjà ;
-- repli Intervals sans séries COROS ;
+- fusion de métriques complémentaires issues de plusieurs imports et gestion des conflits ;
 - données manquantes explicitement inconnues ;
 - enregistrement du nouvel outil dans le registre IA et règles du prompt.
 

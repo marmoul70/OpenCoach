@@ -312,7 +312,7 @@ Vérification du chemin de lecture IA sur la branche de développement :
 
 - [x] Scénarios couvrant clarification, limites d'arguments, outils sportifs, récupération, données manquantes, contraintes, calendrier, détail d'activité, absence d'outil, centralisation OpenCoach et interdiction d'écriture du planning.
 - [x] Test automatisé de cohérence structurelle du corpus et de présence des catégories de sécurité.
-- [ ] Vérifier chaque scénario avec les définitions exactes des outils exposés au modèle ; le corpus reste une première version et ne remplace pas l'exécution réelle.
+- [x] Vérifier les outils attendus et les arguments du corpus contre les 13 modèles Pydantic du registre réel ; le corpus reste une première version et ne remplace pas l'exécution réelle.
 - [ ] Ajouter le runner Ollama et les mesures p50/p95.
 - [ ] Comparer les modèles candidats avec trois répétitions par cas.
 
@@ -330,4 +330,3 @@ Vérification du chemin de lecture IA sur la branche de développement :
 
 **Limite connue :** le runner mesure la décision du premier tour ; il n'exécute aucun outil métier, ne modifie aucune donnée et ne valide pas la justesse des calculs Python.
 
-- [x] Vérifier la présence des 13 outils en lecture du registre et valider les arguments attendus du corpus contre leurs modèles Pydantic.

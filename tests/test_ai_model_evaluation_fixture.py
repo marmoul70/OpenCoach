@@ -23,6 +23,12 @@ def test_ai_model_evaluation_corpus_has_unique_ids_and_valid_contract() -> None:
         assert isinstance(case["forbidden_behaviors"], list)
         assert case["forbidden_behaviors"]
 
+        if "conversation" in case:
+            assert case["conversation"]
+            assert all(turn["role"] in {"user", "assistant"} for turn in case["conversation"])
+            assert all(turn["content"].strip() for turn in case["conversation"])
+            assert case["conversation"][-1]["role"] == "user"
+
         for call in case["expected_tool_calls"]:
             assert set(call) == {"tool", "arguments"}
             assert call["tool"].strip()

@@ -48,6 +48,12 @@ class AIToolRegistry:
 
     def __init__(self) -> None:
         self._tools: dict[str, AITool] = {}
+        self._execution_results: list[AIToolResult] = {}
+
+    @property
+    def execution_results(self) -> tuple[AIToolResult, ...]:
+        """Résultats des appels effectués pendant la requête courante."""
+        return tuple(self._execution_results)
 
     def register(self, tool: AITool) -> None:
         """Enregistre un outil ; les doublons sont refusés."""
@@ -70,40 +76,48 @@ class AIToolRegistry:
         """Valide puis exécute uniquement un outil enregistré."""
         tool = self._tools.get(name)
         if tool is None:
-            return AIToolResult(
+            result = AIToolResult(
                 tool=name,
                 status="not_found",
                 metadata={"executed_at": _utc_now()},
                 error="Outil non autorisé ou inconnu.",
             )
+            self._execution_results.append(result)
+            return result
 
         try:
             validated_arguments = tool.arguments_model.model_validate(arguments)
         except ValidationError:
-            return AIToolResult(
+            result = AIToolResult(
                 tool=name,
                 status="invalid_arguments",
                 metadata={"executed_at": _utc_now()},
                 error="Les paramètres fournis ne respectent pas le schéma de l'outil.",
             )
+            self._execution_results.append(result)
+            return result
 
         try:
             data = tool.handler(validated_arguments)
         except Exception:
             # Ne pas transmettre au LLM les détails internes, SQL ou secrets.
-            return AIToolResult(
+            result = AIToolResult(
                 tool=name,
                 status="failed",
                 metadata={"executed_at": _utc_now()},
                 error="L'exécution de l'outil a échoué.",
             )
+            self._execution_results.append(result)
+            return result
 
-        return AIToolResult(
+        result = AIToolResult(
             tool=name,
             status="ok",
             data=data,
             metadata={"executed_at": _utc_now()},
         )
+        self._execution_results.append(result)
+        return result
 
 
 def _utc_now() -> str:

@@ -33,16 +33,6 @@ class FakeDailyContextRepository:
         return self.context if self.context and self.context.date == context_date else None
 
 
-class FakeTimeSeriesRepository:
-    def __init__(self, snapshots=None):
-        self.snapshots = snapshots or []
-        self.calls = 0
-
-    def list_time_series_snapshots(self, profile_id, start_date, end_date):
-        self.calls += 1
-        return self.snapshots
-
-
 class FakeDailyCheckInRepository:
     def __init__(self, checkin=None):
         self.checkin = checkin
@@ -82,10 +72,9 @@ def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():
         energy_rating=2,
         pain_wellness_rating=4,
     ))
-    time_series = FakeTimeSeriesRepository()
 
     tool = build_recovery_analysis_tool(
-        wellness, context, time_series, checkin, profile_id
+        wellness, context, checkin, profile_id
     )
     result = tool.handler(RecoveryAnalysisArguments(target_date=TARGET))
 
@@ -100,7 +89,6 @@ def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():
     assert result["daily_context"]["fatigue"] == 4
     assert result["daily_checkin"]["energy_rating"] == 2
     assert result["daily_checkin"]["pain_wellness_rating"] == 4
-    assert time_series.calls == 0
 
 
 def test_recovery_analysis_uses_intervals_fallback_without_coros_timeseries():
@@ -117,7 +105,6 @@ def test_recovery_analysis_uses_intervals_fallback_without_coros_timeseries():
     tool = build_recovery_analysis_tool(
         wellness,
         FakeDailyContextRepository(),
-        time_series,
         FakeDailyCheckInRepository(),
         profile_id,
     )
@@ -136,7 +123,6 @@ def test_recovery_analysis_keeps_missing_data_unknown_and_requests_subjective_fo
     tool = build_recovery_analysis_tool(
         FakeWellnessRepository([]),
         FakeDailyContextRepository(),
-        FakeTimeSeriesRepository(),
         FakeDailyCheckInRepository(),
         profile_id,
     )
@@ -177,7 +163,6 @@ def test_recovery_analysis_merges_complementary_metrics_from_all_opencoach_impor
     tool = build_recovery_analysis_tool(
         wellness,
         FakeDailyContextRepository(),
-        FakeTimeSeriesRepository(),
         FakeDailyCheckInRepository(),
         profile_id,
     )

@@ -101,6 +101,7 @@ def test_training_profile_reports_missing_fields_without_estimating_them():
             session, profile.id
         ).handler(EmptyArguments())
 
+    assert result["status"] == "partial"
     assert result["physiology"]["vma_kmh"] is None
     assert result["physiology"]["max_heart_rate_bpm"] is None
     assert "vma" in result["missing_profile_fields"]

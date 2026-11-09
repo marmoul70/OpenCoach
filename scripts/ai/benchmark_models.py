@@ -198,6 +198,17 @@ def percentile(values: list[float], percent: float) -> float | None:
     return round(ordered[index], 2)
 
 
+def build_case_conversation(case: dict[str, Any]) -> list[AIMessage]:
+    """Construit le dialogue de test, y compris les clarifications déjà échangées."""
+    turns = case.get("conversation") or [
+        {"role": "user", "content": case["prompt"]}
+    ]
+    return [
+        AIMessage(role=turn["role"], content=turn["content"])
+        for turn in turns
+    ]
+
+
 def score_response(case: dict[str, Any], tool_calls: list[dict[str, Any]], content: str) -> dict[str, Any]:
     expected = case["expected_tool_calls"]
     actual = []
@@ -263,7 +274,7 @@ async def run_case(
                     "les outils autorisés sont la seule source de données athlète."
                 ),
             ),
-            AIMessage(role="user", content=case["prompt"]),
+            *build_case_conversation(case),
         ],
         tools=definitions,
         temperature=temperature,

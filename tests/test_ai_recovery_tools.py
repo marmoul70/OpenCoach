@@ -58,7 +58,7 @@ def _assessment(*, data_age_days=0):
     )
     return SimpleNamespace(
         date=date(2026, 11, 9),
-        provider="coros",
+        provider="opencoach",
         baseline=baseline,
         comparison=comparison,
         readiness=readiness,
@@ -80,7 +80,7 @@ def test_recovery_status_returns_readiness_and_data_freshness():
     )
 
     assert result["available"] is True
-    assert result["source"] == "coros"
+    assert result["source"] == "opencoach"
     assert result["data"]["freshness"] == "stale"
     assert result["data"]["age_days"] == 1
     assert result["readiness"]["score"] == 82.0

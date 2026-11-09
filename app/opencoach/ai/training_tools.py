@@ -117,7 +117,8 @@ def build_training_history_tool(
         description=(
             "Retourne le bilan réel des entraînements sur les nb_days derniers "
             "jours calendaires inclusifs : séances, durée, distance, D+ et charge. "
-            "Les métriques précisent leur couverture de données."
+            "nb_days est obligatoire : si la durée manque, demande-la à l'utilisateur "
+            "et attends sa réponse avant tout appel. Les métriques précisent leur couverture."
         ),
         arguments_model=TrainingHistoryArguments,
         handler=execute,

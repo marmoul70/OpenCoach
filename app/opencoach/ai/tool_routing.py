@@ -11,7 +11,7 @@ import unicodedata
 
 
 ALL_COACH_TOOLS = frozenset({
-    "training_profile",
+    "athlete_training_profile",
     "active_constraints",
     "weekly_plan_context",
     "race_calendar",
@@ -56,8 +56,8 @@ def select_coach_tools(question: str, *, history: list[str] | None = None) -> fr
         (("planning", "planifie", "programme", "semaine", "seances prevues", "prochaines seances"), ("weekly_plan_context", "planned_sessions")),
         (("seance prevue", "seance realisee", "execution", "respecte mon plan", "ecart au plan"), ("planned_sessions", "session_execution_review")),
         (("blessure", "douleur", "malade", "maladie", "indisponible", "contrainte", "genant"), ("active_constraints",)),
-        (("zone cardiaque", "zones cardiaques", "vma", "fc max", "frequence cardiaque", "seuil"), ("training_profile",)),
-        (("profil", "mes informations", "mes caracteristiques", "equipement", "chaussures"), ("training_profile",)),
+        (("zone cardiaque", "zones cardiaques", "vma", "fc max", "frequence cardiaque", "seuil"), ("athlete_training_profile",)),
+        (("profil", "mes informations", "mes caracteristiques", "equipement", "chaussures"), ("athlete_training_profile",)),
     )
     for keywords, tools in groups:
         if any(keyword in context for keyword in keywords):

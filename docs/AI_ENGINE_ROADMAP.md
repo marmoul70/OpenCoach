@@ -32,6 +32,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 
 ## 3. Règles non négociables
 
+- OpenCoach est l'unique référentiel de lecture et de calcul du coach : les fournisseurs (COROS, Intervals.icu, Garmin, Apple Health, etc.) importent et normalisent leurs données dans OpenCoach ; aucun score ou bilan du coach ne consulte directement une plateforme externe.
 - Python et les services métier OpenCoach sont la source de vérité des statistiques et décisions sportives.
 - Le LLM ne calcule pas les kilomètres, durées, dénivelés, charges, tendances ou scores de récupération.
 - Une donnée absente n'est jamais assimilée à zéro ; une donnée partielle doit être signalée.

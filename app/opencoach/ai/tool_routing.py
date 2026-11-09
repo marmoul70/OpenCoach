@@ -6,7 +6,6 @@ En cas d'incertitude, il conserve le catalogue complet.
 """
 from __future__ import annotations
 
-import re
 import unicodedata
 
 

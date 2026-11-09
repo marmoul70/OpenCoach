@@ -14,8 +14,8 @@ import json
 import os
 import sys
 import time
-from urllib.parse import urlsplit
 from datetime import datetime, timezone
+from urllib.parse import urlsplit
 from pathlib import Path
 from typing import Any
 
@@ -314,7 +314,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--read-timeout", type=float, default=240.0)
     parser.add_argument("--output-dir", default="data/ai-benchmarks")
     args = parser.parse_args()
-    try:\n        args.base_url = validate_local_base_url(args.base_url)\n    except ValueError as exc:\n        parser.error(str(exc))\n    if args.repetitions < 1 or args.limit < 0:
+    try:
+        args.base_url = validate_local_base_url(args.base_url)
+    except ValueError as exc:
+        parser.error(str(exc))
+    if args.repetitions < 1 or args.limit < 0:
         parser.error("--repetitions doit être >= 1 et --limit doit être >= 0.")
     return args
 

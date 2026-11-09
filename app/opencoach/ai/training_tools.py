@@ -80,7 +80,7 @@ def build_training_history_tool(
             },
             "sessions": {
                 "total": sessions_count,
-                "coros_activities": stats.activities_count,
+                "imported_activities": stats.activities_count,
                 "manual_completed_sessions": stats.manual_sessions_count,
             },
             "metrics": {

@@ -190,3 +190,14 @@ def test_pending_proposal_list_is_scoped_and_excludes_expired_or_resolved(db):
     proposals = list_pending_profile_data_proposals(session, profile.id)
     assert [item.id for item in proposals] == [first.id]
     assert list_pending_profile_data_proposals(session, uuid4()) == []
+
+
+
+def test_duplicate_pending_proposal_reuses_existing_proposal(db):
+    session, profile = db
+    payload = AIDataProposalCreate(field_key="vma", value=15.0)
+    first = create_profile_data_proposal(session, profile.id, payload)
+    second = create_profile_data_proposal(session, profile.id, payload)
+
+    assert second.id == first.id
+    assert session.query(AIDataProposal).count() == 1

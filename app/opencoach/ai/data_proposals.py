@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from opencoach.database.models import AIDataProposal, AthleteProfile
+from opencoach.database.models import AIDataProposal, AthleteProfile, Bike, Shoe, Watch
 from opencoach.schemas.profile import AthletePhysiologySchema, AthleteTrainingSchema
 
 
@@ -32,10 +32,51 @@ PROFILE_FIELD_RULES: dict[str, dict[str, Any]] = {
     "available_days": {"unit": "jours", "kind": "available_days"},
     "experience": {"unit": "", "kind": "experience"},
     "sport_disciplines": {"unit": "", "kind": "sport_disciplines"},
+    "shoe": {"unit": "équipement", "kind": "equipment"},
+    "bike": {"unit": "équipement", "kind": "equipment"},
+    "watch": {"unit": "équipement", "kind": "equipment"},
 }
 INTEGER_FIELDS = {
     key for key, rule in PROFILE_FIELD_RULES.items() if rule["kind"] == "int"
 }
+
+
+class EquipmentProposalValue(BaseModel):
+    """Informations minimales d'un nouvel équipement."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    model: str
+    brand: str | None = None
+    category: str | None = None
+
+    @field_validator("model")
+    @classmethod
+    def validate_model_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value or len(value) > 200:
+            raise ValueError("Le modèle doit contenir 1 à 200 caractères.")
+        return value
+
+    @field_validator("brand")
+    @classmethod
+    def validate_brand(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value or len(value) > 100:
+            raise ValueError("La marque doit contenir 1 à 100 caractères.")
+        return value
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value or len(value) > 50:
+            raise ValueError("La catégorie doit contenir 1 à 50 caractères.")
+        return value
 
 
 class AIDataProposalCreate(BaseModel):
@@ -49,6 +90,7 @@ class AIDataProposalCreate(BaseModel):
         "weekly_sessions", "weekly_duration_minutes", "weekly_distance_km",
         "carbohydrates_per_hour", "fluids_per_hour", "sodium_per_hour",
         "fatigue_threshold", "available_days", "experience", "sport_disciplines",
+        "shoe", "bike", "watch",
     ]
     value: Any
 
@@ -57,7 +99,7 @@ class AIDataProposalCreate(BaseModel):
     def reject_boolean_and_unsupported_types(cls, value: Any) -> Any:
         if isinstance(value, bool):
             raise ValueError("Les booléens ne sont pas des valeurs de profil acceptées.")
-        if not isinstance(value, (int, float, str, list)):
+        if not isinstance(value, (int, float, str, list, dict)):
             raise ValueError("Type de donnée non pris en charge.")
         return value
 
@@ -77,7 +119,12 @@ class AIDataProposalCreate(BaseModel):
                 raise ValueError("La valeur est hors des limites autorisées.")
             return self
 
-        if kind == "experience":
+        if kind == "equipment":
+            equipment = EquipmentProposalValue.model_validate(self.value)
+            if self.field_key == "watch" and equipment.category is not None:
+                raise ValueError("Une montre ne possède pas de catégorie dans le profil.")
+            object.__setattr__(self, "value", equipment.model_dump(exclude_none=True))
+        elif kind == "experience":
             validated = AthleteTrainingSchema(experience=self.value)
             object.__setattr__(self, "value", validated.experience)
         elif kind == "available_days":
@@ -135,7 +182,20 @@ def create_profile_data_proposal(
     if profile is None:
         raise LookupError("Profil sportif introuvable.")
     rule = PROFILE_FIELD_RULES[payload.field_key]
-    current_value = getattr(profile, payload.field_key)
+    current_value = None if rule["kind"] == "equipment" else getattr(profile, payload.field_key)
+    if rule["kind"] == "equipment":
+        equipment_collection = {
+            "shoe": profile.shoes,
+            "bike": profile.bikes,
+            "watch": profile.watches,
+        }[payload.field_key]
+        proposed_brand = (payload.value.get("brand") or "").casefold()
+        if any(
+            item.model.casefold() == payload.value["model"].casefold()
+            and (item.brand or "").casefold() == proposed_brand
+            for item in equipment_collection
+        ):
+            raise ValueError("Cet équipement est déjà présent dans le profil.")
     if current_value == payload.value:
         raise ValueError("Cette valeur est déjà enregistrée dans le profil.")
     now = _now_utc_naive()
@@ -224,12 +284,28 @@ def confirm_profile_data_proposal(
     profile = db.get(AthleteProfile, athlete_profile_id)
     if profile is None:
         raise LookupError("Profil sportif introuvable.")
-    current_value = getattr(profile, proposal.field_key)
+    is_equipment = proposal.field_key in {"shoe", "bike", "watch"}
+    current_value = None if is_equipment else getattr(profile, proposal.field_key)
     if current_value != proposal.existing_value:
         proposal.status = "conflict"
         db.commit()
         raise RuntimeError("La donnée a changé depuis la proposition ; confirmation annulée.")
 
+    if is_equipment:
+        equipment_collection = {
+            "shoe": profile.shoes,
+            "bike": profile.bikes,
+            "watch": profile.watches,
+        }[proposal.field_key]
+        proposed_brand = (proposal.proposed_value.get("brand") or "").casefold()
+        if any(
+            item.model.casefold() == proposal.proposed_value["model"].casefold()
+            and (item.brand or "").casefold() == proposed_brand
+            for item in equipment_collection
+        ):
+            proposal.status = "conflict"
+            db.commit()
+            raise RuntimeError("Cet équipement a été ajouté depuis la création de la proposition.")
     if proposal.field_key in {
         "max_heart_rate", "resting_heart_rate", "threshold_heart_rate_1",
         "threshold_heart_rate_2", "vma",
@@ -257,15 +333,44 @@ def confirm_profile_data_proposal(
         training_values[proposal.field_key] = proposal.proposed_value
         AthleteTrainingSchema(**training_values)
 
-    setattr(profile, proposal.field_key, proposal.proposed_value)
+    if is_equipment:
+        equipment_data = proposal.proposed_value
+        equipment_model = {"shoe": Shoe, "bike": Bike, "watch": Watch}[proposal.field_key]
+        item = equipment_model(
+            id=str(uuid4()),
+            athlete_profile_id=athlete_profile_id,
+            model=equipment_data["model"],
+            brand=equipment_data.get("brand"),
+            **(
+                {"category": equipment_data.get("category")}
+                if proposal.field_key in {"shoe", "bike"}
+                else {}
+            ),
+        )
+        db.add(item)
+    else:
+        setattr(profile, proposal.field_key, proposal.proposed_value)
     profile.updated_at = now
     proposal.status = "confirmed"
     proposal.confirmed_at = now
     db.commit()
     db.refresh(proposal)
     db.refresh(profile)
-    if getattr(profile, proposal.field_key) != proposal.proposed_value:
+    if not is_equipment and getattr(profile, proposal.field_key) != proposal.proposed_value:
         raise RuntimeError("La valeur persistée ne correspond pas à la proposition.")
+    if is_equipment:
+        db.refresh(profile)
+        equipment_collection = {
+            "shoe": profile.shoes,
+            "bike": profile.bikes,
+            "watch": profile.watches,
+        }[proposal.field_key]
+        if not any(
+            item.model == proposal.proposed_value["model"]
+            and item.brand == proposal.proposed_value.get("brand")
+            for item in equipment_collection
+        ):
+            raise RuntimeError("L'équipement n'a pas été persisté correctement.")
     return _to_response(proposal)
 
 

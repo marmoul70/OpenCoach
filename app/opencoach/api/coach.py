@@ -145,7 +145,6 @@ def get_coach_decision_service(
         daily_context_repository=(
             daily_context_repository
         ),
-        provider=None,
     )
 
     daily_training_load_service = (

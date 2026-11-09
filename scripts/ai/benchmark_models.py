@@ -213,6 +213,28 @@ def build_system_prompt(profile: str = "production") -> str:
     raise ValueError(f"Profil de prompt inconnu : {profile}")
 
 
+def filter_cases_for_tool_profile(
+    cases: list[dict[str, Any]], profile: str
+) -> list[dict[str, Any]]:
+    """Évite de noter un profil ciblé sur des scénarios dont les outils sont absents."""
+    if profile not in TOOL_PROFILES:
+        raise ValueError(f"Profil d'outils inconnu : {profile}")
+    if profile == "all":
+        return cases
+
+    allowed_tools = set(TOOL_PROFILES[profile])
+    focused_cases = []
+    for case in cases:
+        expected_tools = {call["tool"] for call in case["expected_tool_calls"]}
+        if expected_tools and expected_tools.issubset(allowed_tools):
+            focused_cases.append(case)
+        elif not expected_tools and case["id"].startswith(
+            ("history_", "load_", "recovery_")
+        ):
+            focused_cases.append(case)
+    return focused_cases
+
+
 def canonical(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
@@ -392,8 +414,11 @@ async def main_async(args: argparse.Namespace) -> int:
     args.base_url = validate_local_base_url(args.base_url)
     fixture_path = ROOT / "tests/fixtures/ai_model_evaluation_cases.json"
     cases = json.loads(fixture_path.read_text(encoding="utf-8"))
+    cases = filter_cases_for_tool_profile(cases, args.tool_profile)
     if args.limit:
         cases = cases[:args.limit]
+    if not cases:
+        raise ValueError(f"Aucun scénario compatible avec le profil d'outils {args.tool_profile}.")
     definitions = build_tool_definitions(args.tool_profile)
     all_rows: list[dict[str, Any]] = []
 

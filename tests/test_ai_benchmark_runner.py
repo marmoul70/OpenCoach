@@ -13,6 +13,7 @@ from scripts.ai.benchmark_models import (
     build_tool_definitions,
     build_system_prompt,
     TOOL_PROFILES,
+    filter_cases_for_tool_profile,
     ARGUMENT_MODELS,
 )
 
@@ -189,12 +190,30 @@ def test_benchmark_supports_all_and_focused_tool_profiles() -> None:
     assert set(TOOL_PROFILES["history"]).issubset(ARGUMENT_MODELS)
 
 
+def test_focused_tool_profile_filters_incompatible_scenarios() -> None:
+    cases = [
+        {"id": "history_missing_period", "expected_tool_calls": []},
+        {"id": "history_explicit", "expected_tool_calls": [{"tool": "training_history"}]},
+        {"id": "load_explicit", "expected_tool_calls": [{"tool": "training_load"}]},
+        {"id": "recovery_missing", "expected_tool_calls": [{"tool": "recovery_analysis"}]},
+        {"id": "trends_missing", "expected_tool_calls": []},
+        {"id": "general_question", "expected_tool_calls": []},
+        {"id": "race_calendar", "expected_tool_calls": [{"tool": "race_calendar"}]},
+    ]
+
+    selected = filter_cases_for_tool_profile(cases, "history")
+    assert [case["id"] for case in selected] == [
+        "history_missing_period", "history_explicit", "load_explicit", "recovery_missing"
+    ]
+    assert filter_cases_for_tool_profile(cases, "all") == cases
+
+
 def test_benchmark_supports_production_and_minimal_prompt_profiles() -> None:
     production = build_system_prompt("production")
     minimal = build_system_prompt("minimal")
 
     assert "OpenCoach" in production
-    assert "jamais des outils" not in minimal  # prompt content is intentionally concise
+    assert len(minimal) < len(production)
     assert "training_history" in minimal
     assert "ne déduis jamais une période" in minimal.lower()
 

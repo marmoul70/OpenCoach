@@ -43,6 +43,7 @@ from opencoach.ai.recovery_tools import (
 from opencoach.ai.trend_tools import TrainingTrendsArguments
 from opencoach.ai.training_tools import TrainingHistoryArguments
 from opencoach.api.ai import _DEFAULT_COACH_PREFERENCES, _coach_system_prompt
+from opencoach.ai.tool_routing import select_coach_tools
 
 
 ARGUMENT_MODELS = {
@@ -177,6 +178,7 @@ def validate_local_base_url(value: str) -> str:
 TOOL_PROFILES = {
     "all": tuple(ARGUMENT_MODELS),
     "history": ("training_history", "training_load", "recovery_analysis"),
+    "production_router": tuple(ARGUMENT_MODELS),
 }
 
 MINIMAL_SYSTEM_PROMPT = """Tu es l'orchestrateur du coach OpenCoach.
@@ -204,6 +206,29 @@ def build_tool_definitions(profile: str = "all") -> list[AIToolDefinition]:
     ]
 
 
+def build_routed_tool_definitions(case: dict[str, Any]) -> list[AIToolDefinition]:
+    """Construit le catalogue réduit par le routeur de production pour un cas."""
+    turns = case.get("conversation") or [
+        {"role": "user", "content": case["prompt"]}
+    ]
+    user_turns = [turn["content"] for turn in turns if turn["role"] == "user"]
+    if not user_turns:
+        selected_names = set(ARGUMENT_MODELS)
+    else:
+        selected_names = set(select_coach_tools(
+            user_turns[-1],
+            history=user_turns[:-1],
+        ))
+    # Le benchmark mesure les 13 outils métier en lecture ; l'outil contrôlé
+    # propose_profile_data n'appartient pas à ce catalogue de mesure.
+    selected_names.intersection_update(ARGUMENT_MODELS)
+    return [
+        definition
+        for definition in build_tool_definitions("all")
+        if definition.name in selected_names
+    ]
+
+
 def build_system_prompt(profile: str = "production") -> str:
     """Retourne le prompt de production ou un prompt minimal de diagnostic."""
     if profile == "production":
@@ -219,7 +244,7 @@ def filter_cases_for_tool_profile(
     """Évite de noter un profil ciblé sur des scénarios dont les outils sont absents."""
     if profile not in TOOL_PROFILES:
         raise ValueError(f"Profil d'outils inconnu : {profile}")
-    if profile == "all":
+    if profile in {"all", "production_router"}:
         return cases
 
     allowed_tools = set(TOOL_PROFILES[profile])
@@ -440,16 +465,23 @@ async def main_async(args: argparse.Namespace) -> int:
         print(f"\n=== Modèle {model} : {len(cases)} scénarios × {args.repetitions} répétitions ===")
         for repetition in range(1, args.repetitions + 1):
             for case in cases:
+                case_definitions = (
+                    build_routed_tool_definitions(case)
+                    if args.tool_profile == "production_router"
+                    else definitions
+                )
                 row = await run_case(
                     client=client,
                     model=model,
                     case=case,
-                    definitions=definitions,
+                    definitions=case_definitions,
                     temperature=args.temperature,
                     num_predict=args.num_predict,
                     prompt_profile=args.prompt_profile,
                 )
                 row["repetition"] = repetition
+                row["exposed_tool_count"] = len(case_definitions)
+                row["exposed_tool_names"] = [item.name for item in case_definitions]
                 all_rows.append(row)
                 marker = "OK" if row["tool_selection_pass"] else "ECHEC"
                 print(
@@ -480,6 +512,10 @@ async def main_async(args: argparse.Namespace) -> int:
         "prompt_profile": args.prompt_profile,
         "tool_profile": args.tool_profile,
         "tool_count": len(definitions),
+        "dynamic_tool_exposure": args.tool_profile == "production_router",
+        "average_exposed_tool_count": round(
+            sum(row["exposed_tool_count"] for row in all_rows) / len(all_rows), 2
+        ) if all_rows else 0,
         "ollama_metrics_note": "Ollama durations are nanoseconds; token throughput uses eval_count / eval_duration.",
         "tool_descriptions": "mirrored_from_production_read_tool_registry",
         "reference_date": "2026-11-09",

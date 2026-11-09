@@ -832,3 +832,15 @@ def test_readiness_does_not_return_a_score_when_all_inputs_are_missing():
         match="aucune mesure exploitable",
     ):
         service.calculate(uuid4(), TARGET_DATE)
+
+
+def test_readiness_rejects_a_day_without_any_usable_recovery_metric():
+    empty_day = WellnessDay(provider="coros", date=TARGET_DATE)
+    repository = FakeWellnessRepository(current=empty_day, history=[])
+    service = create_service(repository)
+
+    with pytest.raises(
+        ReadinessDataUnavailableError,
+        match="aucune mesure exploitable",
+    ):
+        service.calculate(uuid4(), TARGET_DATE)

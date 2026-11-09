@@ -82,6 +82,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] `race_calendar(start_date, horizon_days)` : calendrier des courses et objectifs de préparation.
 - [x] `planned_sessions(start_date, end_date)` : séances prévues, intensité et zone cardiaque, agrégats avec contrôle de couverture.
 - [x] `weekly_plan_context(week_start)` : phase, type de semaine, cible de charge et durée planifiée.
+- [x] `session_execution_review(session_id)` : débriefing prévu/réalisé via le moteur déterministe d'exécution, sans recalcul par le LLM.
 
 **Livrable :** catalogue d'outils métier en lecture seule.
 
@@ -139,7 +140,7 @@ Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Miss
 | Cadrage / roadmap | Réalisé |
 | AI Tool Engine | Implémenté, CI Python/Bash/frontend verte |
 | Historique d'entraînement | Implémenté, contrôles de couverture explicites |
-| Outils complémentaires | 8 outils complémentaires implémentés ; profil, phase hebdomadaire, calendrier, séances planifiées et détail d'activité couverts |
+| Outils complémentaires | 9 outils complémentaires implémentés ; profil, phase hebdomadaire, calendrier, séances planifiées, activité et débriefing couvert |
 | Orchestration IA | Boucle bornée et clarification testées ; validation Ollama réel restante |
 | Benchmark modèles | À démarrer |
 | Observabilité / intégration | À démarrer |
@@ -151,9 +152,10 @@ Dernière mise à jour : 9 novembre 2026.
 - `athlete_training_profile` expose les repères du profil sportif sans identité personnelle ; les zones cardiaques utilisent le calcul existant `get_heart_rate_zone`. Les champs absents restent `null` et sont listés.
 - `race_calendar` lit les courses du seul athlète authentifié sur une fenêtre bornée de 1 à 365 jours.
 - `planned_sessions` lit les séances sur une fenêtre obligatoire de 31 jours maximum ; les descriptions et prescriptions JSON brutes sont exclues. Les agrégats distance/D+ sont masqués si la couverture est incomplète.
-- Les textes libres (titres, noms, lieux) sont bornés et explicitement considérés comme données non fiables.
+- Les textes libres (titres, noms, lieux et messages) sont bornés et explicitement considérés comme données non fiables.
 - Aucun de ces outils ne modifie le profil, le calendrier ou les séances.
 - `weekly_plan_context` expose les objectifs de semaine et la phase sans recalculer le plan ; il retourne `not_found` si aucun plan n'est enregistré.
+- `session_execution_review` réutilise `analyze_session_execution` et les repositories existants ; il exige une activité explicitement liée, ne fait aucun matching automatique et distingue activité non liée / activité inaccessible.
 - Tests dédiés ajoutés pour les valeurs manquantes, la couverture partielle, les fenêtres, la semaine courante et l'isolation par athlète. Validation CI en cours.
 
 ### Mission 3 — détail d'activité

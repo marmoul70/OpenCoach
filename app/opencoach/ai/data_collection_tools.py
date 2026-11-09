@@ -102,6 +102,10 @@ def _evidence_contains_value(
         required = {"energy_rating", "pain_wellness_rating", "illness", "unavailable"}
         if not required.issubset(value):
             return False
+        if not any(term in normalized for term in ("énergie", "forme", "fatigue", "fatigué", "fatiguée")):
+            return False
+        if not any(term in normalized for term in ("douleur", "confort", "gêne", "gene")):
+            return False
         for key in ("energy_rating", "pain_wellness_rating"):
             number = value.get(key)
             if isinstance(number, bool) or not isinstance(number, int) or str(number) not in normalized:

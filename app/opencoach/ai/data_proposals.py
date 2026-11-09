@@ -161,6 +161,26 @@ def _now_utc_naive() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def _equipment_exists(
+    db: Session,
+    athlete_profile_id: UUID,
+    field_key: str,
+    value: dict[str, str],
+) -> bool:
+    equipment_model = {"shoe": Shoe, "bike": Bike, "watch": Watch}[field_key]
+    proposed_brand = (value.get("brand") or "").casefold()
+    items = db.scalars(
+        select(equipment_model).where(
+            equipment_model.athlete_profile_id == athlete_profile_id,
+        )
+    ).all()
+    return any(
+        item.model.casefold() == value["model"].casefold()
+        and (item.brand or "").casefold() == proposed_brand
+        for item in items
+    )
+
+
 def _to_response(proposal: AIDataProposal) -> AIDataProposalResponse:
     return AIDataProposalResponse(
         id=proposal.id,
@@ -183,19 +203,10 @@ def create_profile_data_proposal(
         raise LookupError("Profil sportif introuvable.")
     rule = PROFILE_FIELD_RULES[payload.field_key]
     current_value = None if rule["kind"] == "equipment" else getattr(profile, payload.field_key)
-    if rule["kind"] == "equipment":
-        equipment_collection = {
-            "shoe": profile.shoes,
-            "bike": profile.bikes,
-            "watch": profile.watches,
-        }[payload.field_key]
-        proposed_brand = (payload.value.get("brand") or "").casefold()
-        if any(
-            item.model.casefold() == payload.value["model"].casefold()
-            and (item.brand or "").casefold() == proposed_brand
-            for item in equipment_collection
-        ):
-            raise ValueError("Cet équipement est déjà présent dans le profil.")
+    if rule["kind"] == "equipment" and _equipment_exists(
+        db, athlete_profile_id, payload.field_key, payload.value
+    ):
+        raise ValueError("Cet équipement est déjà présent dans le profil.")
     if current_value == payload.value:
         raise ValueError("Cette valeur est déjà enregistrée dans le profil.")
     now = _now_utc_naive()
@@ -291,21 +302,12 @@ def confirm_profile_data_proposal(
         db.commit()
         raise RuntimeError("La donnée a changé depuis la proposition ; confirmation annulée.")
 
-    if is_equipment:
-        equipment_collection = {
-            "shoe": profile.shoes,
-            "bike": profile.bikes,
-            "watch": profile.watches,
-        }[proposal.field_key]
-        proposed_brand = (proposal.proposed_value.get("brand") or "").casefold()
-        if any(
-            item.model.casefold() == proposal.proposed_value["model"].casefold()
-            and (item.brand or "").casefold() == proposed_brand
-            for item in equipment_collection
-        ):
-            proposal.status = "conflict"
-            db.commit()
-            raise RuntimeError("Cet équipement a été ajouté depuis la création de la proposition.")
+    if is_equipment and _equipment_exists(
+        db, athlete_profile_id, proposal.field_key, proposal.proposed_value
+    ):
+        proposal.status = "conflict"
+        db.commit()
+        raise RuntimeError("Cet équipement a été ajouté depuis la création de la proposition.")
     if proposal.field_key in {
         "max_heart_rate", "resting_heart_rate", "threshold_heart_rate_1",
         "threshold_heart_rate_2", "vma",
@@ -358,19 +360,10 @@ def confirm_profile_data_proposal(
     db.refresh(profile)
     if not is_equipment and getattr(profile, proposal.field_key) != proposal.proposed_value:
         raise RuntimeError("La valeur persistée ne correspond pas à la proposition.")
-    if is_equipment:
-        db.refresh(profile)
-        equipment_collection = {
-            "shoe": profile.shoes,
-            "bike": profile.bikes,
-            "watch": profile.watches,
-        }[proposal.field_key]
-        if not any(
-            item.model == proposal.proposed_value["model"]
-            and item.brand == proposal.proposed_value.get("brand")
-            for item in equipment_collection
-        ):
-            raise RuntimeError("L'équipement n'a pas été persisté correctement.")
+    if is_equipment and not _equipment_exists(
+        db, athlete_profile_id, proposal.field_key, proposal.proposed_value
+    ):
+        raise RuntimeError("L'équipement n'a pas été persisté correctement.")
     return _to_response(proposal)
 
 

@@ -1,9 +1,9 @@
 from opencoach.ai.tool_routing import ALL_COACH_TOOLS, select_coach_tools
 
 
-def test_history_request_exposes_history_tool_and_proposal_only():
+def test_history_request_exposes_history_tool_without_profile_write_tool():
     selected = select_coach_tools("Fais-moi le bilan de mon historique sur 7 jours.")
-    assert selected == frozenset({"training_history", "propose_profile_data"})
+    assert selected == frozenset({"training_history"})
 
 
 def test_recovery_request_does_not_expose_training_history_tool():

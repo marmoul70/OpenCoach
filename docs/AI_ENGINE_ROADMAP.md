@@ -329,3 +329,5 @@ Vérification du chemin de lecture IA sur la branche de développement :
 - [ ] Analyser les échecs de sélection/arguments et compléter le benchmark multi-tours et la revue des réponses libres.
 
 **Limite connue :** le runner mesure la décision du premier tour ; il n'exécute aucun outil métier, ne modifie aucune donnée et ne valide pas la justesse des calculs Python.
+
+- [x] Vérifier la présence des 13 outils en lecture du registre et valider les arguments attendus du corpus contre leurs modèles Pydantic.

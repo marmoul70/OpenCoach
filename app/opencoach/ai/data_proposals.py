@@ -22,13 +22,13 @@ PROFILE_FIELD_RULES: dict[str, dict[str, Any]] = {
     "vma": {"unit": "km/h", "kind": "float", "min": 0.1, "max": 40},
     "threshold_heart_rate_1": {"unit": "bpm", "kind": "int", "min": 1, "max": 250},
     "threshold_heart_rate_2": {"unit": "bpm", "kind": "int", "min": 1, "max": 250},
-    "weekly_sessions": {"unit": "sessions/week", "kind": "int", "min": 0, "max": 21},
-    "weekly_duration_minutes": {"unit": "min/week", "kind": "int", "min": 0, "max": 10080},
-    "weekly_distance_km": {"unit": "km/week", "kind": "float", "min": 0, "max": 500},
-    "carbohydrates_per_hour": {"unit": "g/h", "kind": "float", "min": 0, "max": 150},
-    "fluids_per_hour": {"unit": "ml/h", "kind": "float", "min": 0, "max": 5000},
-    "sodium_per_hour": {"unit": "mg/h", "kind": "float", "min": 0, "max": 3000},
-    "fatigue_threshold": {"unit": "score", "kind": "float", "min": 0, "max": 100},
+    "weekly_sessions": {"unit": "sessions/week", "kind": "int", "min": 0, "max": None},
+    "weekly_duration_minutes": {"unit": "min/week", "kind": "int", "min": 0, "max": None},
+    "weekly_distance_km": {"unit": "km/week", "kind": "float", "min": 0, "max": None},
+    "carbohydrates_per_hour": {"unit": "g/h", "kind": "float", "min": 0, "max": None},
+    "fluids_per_hour": {"unit": "ml/h", "kind": "float", "min": 0, "max": None},
+    "sodium_per_hour": {"unit": "mg/h", "kind": "float", "min": 0, "max": None},
+    "fatigue_threshold": {"unit": "score", "kind": "float", "min": 0, "max": None},
 }
 INTEGER_FIELDS = {
     key for key, rule in PROFILE_FIELD_RULES.items() if rule["kind"] == "int"
@@ -61,7 +61,7 @@ class AIDataProposalCreate(BaseModel):
         rule = PROFILE_FIELD_RULES[self.field_key]
         if self.field_key in INTEGER_FIELDS and not isinstance(self.value, int):
             raise ValueError("Ce champ attend une valeur entière.")
-        if not rule["min"] <= self.value <= rule["max"]:
+        if self.value < rule["min"] or (rule["max"] is not None and self.value > rule["max"]):
             raise ValueError("La valeur est hors des limites autorisées.")
         return self
 

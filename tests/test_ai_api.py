@@ -518,6 +518,7 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
             "weekly_plan_context",
             "race_calendar",
             "planned_sessions",
+            "session_execution_review",
             "activity_detail",
             "training_history",
             "training_load",

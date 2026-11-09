@@ -78,7 +78,13 @@ Pour chaque modèle :
 
 ## 7. Exécution sur la VM
 
-Depuis la racine du dépôt, dans l'environnement virtuel Python :
+Depuis la racine du dépôt, dans l'environnement virtuel Python, vérifier d'abord les tests du runner et du corpus :
+
+```bash
+pytest -q tests/test_ai_benchmark_runner.py tests/test_ai_model_evaluation_fixture.py
+```
+
+Puis, dans l'environnement virtuel Python :
 
 ```bash
 python scripts/ai/benchmark_models.py --models qwen3:8b --repetitions 3

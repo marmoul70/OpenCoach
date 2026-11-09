@@ -76,7 +76,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] `training_load(nb_days)` : charge récente et comparaison prévu/réalisé via `RecentTrainingLoadService`, avec couverture du planning et données absentes explicitées.
 - [x] `planning_comparison(nb_days)` : comparaison prévu/réalisé couverte par `training_load`, avec écarts et couverture.
 - [x] `recovery_status(target_date)` : score Readiness, signaux, baselines, fraîcheur et indisponibilité explicite.
-- [ ] `activity_detail(activity_id)` : détail d'une activité, avec contrôle d'appartenance à l'athlète.
+- [x] `activity_detail(activity_date | activity_id)` : détail d'une activité, sélection par date locale ou identifiant, choix explicite en cas d'ambiguïté et contrôle d'appartenance à l'athlète.
 - [x] `training_trends(nb_days, comparison_days)` : comparaison de deux périodes successives, avec calcul des écarts et contrôle de couverture.
 
 **Livrable :** catalogue d'outils métier en lecture seule.
@@ -135,12 +135,12 @@ Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Miss
 | Cadrage / roadmap | Réalisé |
 | AI Tool Engine | Implémenté, CI Python/Bash/frontend verte |
 | Historique d'entraînement | Implémenté, contrôles de couverture explicites |
-| Outils complémentaires | 3 outils implémentés ; détail d'activité restant |
+| Outils complémentaires | 4 outils implémentés ; détail d'activité inclus, tests dédiés ajoutés |
 | Orchestration IA | Boucle bornée et clarification testées ; validation Ollama réel restante |
 | Benchmark modèles | À démarrer |
 | Observabilité / intégration | À démarrer |
 
-Dernière mise à jour : 9 novembre 2026.
+Dernière mise à jour : 9 novembre 2026.\n\n### Mission 3 — détail d'activité\n\n- L'outil est enregistré dans le registre authentifié de l'athlète et réutilise `SqlActivityDetailRepository`.\n- La sélection se fait par date locale ou identifiant OpenCoach ; si plusieurs séances correspondent, l'outil retourne une liste de choix et demande une clarification.\n- Les données restituées sont filtrées : métriques générales, intervalles bornés à 100 et statistiques de streams (nombre d'échantillons, min/max/moyenne). Aucun JSON COROS brut ni série complète n'est transmis au modèle.\n- Les activités d'un autre profil ne sont pas accessibles ; les détails absents sont explicitement signalés.\n- Tests dédiés ajoutés ; validation CI à effectuer.
 
 ### Reprise sur main 0.8.5
 
@@ -152,5 +152,5 @@ Dernière mise à jour : 9 novembre 2026.
 - [x] Enregistrer les paramètres Ollama locaux dans `.env.example` ; l'IA reste désactivée par défaut.
 - [x] Valider CI Python 3.13, Bash/ShellCheck et frontend sur le commit `de1776e2` (run GitHub Actions `42617922430`).
 - [ ] Valider la migration Alembic sur la VM Debian 13 et effectuer un test réel avec Ollama.
-- [ ] Ajouter `activity_detail`, puis benchmarker les modèles et compléter l'observabilité.
+- [x] Ajouter `activity_detail` avec sélection par date ou identifiant, désambiguïsation et sortie de données filtrée.\n- [ ] Benchmark des modèles et complétion de l'observabilité.
 

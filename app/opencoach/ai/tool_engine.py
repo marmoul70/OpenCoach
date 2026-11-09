@@ -46,7 +46,7 @@ class AITool:
 class AIToolRegistry:
     """Registre en liste blanche et exécuteur synchrone des outils métier."""
 
-    def __init__(self, argument_guard: Callable[[str, dict[str, Any], list[str]], str | None] | None = None) -> None:
+    def __init__(self, argument_guard: Callable[[str, dict[str, Any], list[str], list[str]], str | None] | None = None) -> None:
         self._tools: dict[str, AITool] = {}
         self._argument_guard = argument_guard
         self._execution_results: list[AIToolResult] = []
@@ -79,6 +79,7 @@ class AIToolRegistry:
         arguments: dict[str, Any],
         *,
         user_messages: list[str] | None = None,
+        assistant_messages: list[str] | None = None,
     ) -> AIToolResult:
         """Vérifie la provenance, valide puis exécute un outil enregistré."""
         tool = self._tools.get(name)
@@ -93,7 +94,7 @@ class AIToolRegistry:
             return result
 
         if self._argument_guard is not None:
-            clarification = self._argument_guard(name, arguments, user_messages or [])
+            clarification = self._argument_guard(name, arguments, user_messages or [], assistant_messages or [])
             if clarification:
                 result = AIToolResult(
                     tool=name,

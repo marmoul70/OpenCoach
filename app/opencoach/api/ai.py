@@ -564,6 +564,9 @@ async def ask_local_ai_with_athlete_context(
     user_messages = [
         message.content for message in conversation_messages if message.role == "user"
     ]
+    assistant_messages = [
+        message.content for message in conversation_messages if message.role == "assistant"
+    ]
 
     request = AIChatRequest(
         messages=[
@@ -589,7 +592,7 @@ async def ask_local_ai_with_athlete_context(
     )
 
     try:
-        result = await service.chat_with_tools(request, tool_registry, user_messages=user_messages)
+        result = await service.chat_with_tools(request, tool_registry, user_messages=user_messages, assistant_messages=assistant_messages)
         if not result.done:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,

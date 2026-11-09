@@ -50,6 +50,7 @@ class AIService:
         registry: AIToolRegistry,
         *,
         user_messages: list[str] | None = None,
+        assistant_messages: list[str] | None = None,
     ) -> AIChatResult:
         """Exécute une boucle d'outils bornée et validée côté Python."""
         if not self.settings.enabled:
@@ -90,6 +91,7 @@ class AIService:
                         call.name,
                         call.arguments,
                         user_messages=user_messages or [],
+                        assistant_messages=assistant_messages or [],
                     )
                     if tool_result.status == "needs_clarification":
                         return AIChatResult(

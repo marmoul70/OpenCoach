@@ -156,7 +156,8 @@ def test_argument_evidence_guard_blocks_unrequested_or_out_of_range_periods():
     assert validate_period_argument_evidence("training_history", {"nb_days": 7}, ["Fais-moi le bilan de mon historique."]) == "Sur combien de jours souhaites-tu que j'analyse ton historique ?"
     assert validate_period_argument_evidence("training_history", {"nb_days": 500}, ["Analyse mon historique sur 500 jours."]).startswith("La période demandée (500 jours) dépasse les limites")
     assert validate_period_argument_evidence("training_history", {"nb_days": 7}, ["Analyse mon historique sur 7 jours."]) is None
-    assert validate_period_argument_evidence("training_history", {"nb_days": 7}, ["Fais-moi le bilan de mon historique.", "7"]) is None
+    assert validate_period_argument_evidence("training_history", {"nb_days": 7}, ["Fais-moi le bilan de mon historique.", "7"], ["Sur combien de jours souhaites-tu ton historique ?"]) is None
+    assert validate_period_argument_evidence("training_history", {"nb_days": 14}, ["Donne ma charge sur 14 jours.", "Fais-moi le bilan de mon historique."]) == "Sur combien de jours souhaites-tu que j'analyse ton historique ?"
 
 
 def test_argument_evidence_guard_requires_both_trend_periods():

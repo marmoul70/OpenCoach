@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+from uuid import UUID
 from functools import lru_cache
 from typing import Literal
 
@@ -10,9 +11,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from opencoach.ai.client import AIProviderError
+from opencoach.ai.data_proposals import (
+    AIDataProposalCreate,
+    AIDataProposalResponse,
+    confirm_profile_data_proposal,
+    create_profile_data_proposal,
+    get_profile_data_proposal,
+    reject_profile_data_proposal,
+)
 from opencoach.ai.context import build_athlete_context
 from opencoach.ai.config import AISettings, get_ai_settings
 from opencoach.ai.schemas import AIChatRequest, AIMessage
@@ -337,6 +346,76 @@ def get_ai_tool_registry(
         )
     )
     return registry
+
+
+def _proposal_http_error(exc: Exception) -> HTTPException:
+    if isinstance(exc, LookupError):
+        return HTTPException(status_code=404, detail=str(exc))
+    if isinstance(exc, TimeoutError):
+        return HTTPException(status_code=410, detail=str(exc))
+    if isinstance(exc, ValidationError):
+        return HTTPException(status_code=422, detail="La proposition viole les règles de cohérence du profil.")
+    if isinstance(exc, RuntimeError):
+        return HTTPException(status_code=409, detail=str(exc))
+    if isinstance(exc, ValueError):
+        return HTTPException(status_code=409, detail=str(exc))
+    return HTTPException(status_code=500, detail="Impossible de traiter la proposition de donnée.")
+
+
+@router.post("/data-proposals", response_model=AIDataProposalResponse, status_code=201)
+def propose_profile_data_update(
+    payload: AIDataProposalCreate,
+    athlete_profile_id=Depends(get_current_athlete_profile_id),
+    db: Session = Depends(get_db),
+) -> AIDataProposalResponse:
+    """Crée une proposition en attente ; ne modifie jamais le profil."""
+    try:
+        return create_profile_data_proposal(db, athlete_profile_id, payload)
+    except Exception as exc:
+        raise _proposal_http_error(exc) from exc
+
+
+@router.get("/data-proposals/{proposal_id}", response_model=AIDataProposalResponse)
+def read_profile_data_proposal(
+    proposal_id: UUID,
+    athlete_profile_id=Depends(get_current_athlete_profile_id),
+    db: Session = Depends(get_db),
+) -> AIDataProposalResponse:
+    try:
+        return get_profile_data_proposal(db, athlete_profile_id, proposal_id)
+    except Exception as exc:
+        raise _proposal_http_error(exc) from exc
+
+
+@router.post(
+    "/data-proposals/{proposal_id}/confirm",
+    response_model=AIDataProposalResponse,
+)
+def confirm_profile_data_update(
+    proposal_id: UUID,
+    athlete_profile_id=Depends(get_current_athlete_profile_id),
+    db: Session = Depends(get_db),
+) -> AIDataProposalResponse:
+    """Applique une proposition après action explicite sur cet endpoint."""
+    try:
+        return confirm_profile_data_proposal(db, athlete_profile_id, proposal_id)
+    except Exception as exc:
+        raise _proposal_http_error(exc) from exc
+
+
+@router.post(
+    "/data-proposals/{proposal_id}/reject",
+    response_model=AIDataProposalResponse,
+)
+def reject_profile_data_update(
+    proposal_id: UUID,
+    athlete_profile_id=Depends(get_current_athlete_profile_id),
+    db: Session = Depends(get_db),
+) -> AIDataProposalResponse:
+    try:
+        return reject_profile_data_proposal(db, athlete_profile_id, proposal_id)
+    except Exception as exc:
+        raise _proposal_http_error(exc) from exc
 
 
 @router.get("/status", response_model=AIStatusResponse)

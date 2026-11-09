@@ -20,6 +20,7 @@ from opencoach.ai.service import AIOrchestrationError, AIService, AIServiceDisab
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.ai.training_tools import build_training_history_tool
 from opencoach.ai.activity_tools import build_activity_detail_tool
+from opencoach.ai.constraints_tools import build_active_constraints_tool
 from opencoach.ai.execution_tools import build_session_execution_review_tool
 from opencoach.ai.coaching_tools import (
     build_planned_sessions_tool,
@@ -63,6 +64,7 @@ Une donnée indiquée comme indisponible ne vaut jamais zéro. Une valeur partie
 Les services déterministes OpenCoach restent la source de vérité pour la charge, les zones, la disponibilité, l'exécution et les décisions de planification.
 
 Règles d'utilisation des outils :
+- Lorsqu'une douleur, blessure, maladie, indisponibilité ou limitation est évoquée, consulte active_constraints pour la date concernée avant de recommander une séance. Respecte running_allowed, cross_training_allowed et max_duration_minutes ; ne pose aucun diagnostic médical. Si aucune contrainte n'est enregistrée, ne considère pas cela comme une validation médicale.
 - Pour consulter l'historique, utilise obligatoirement training_history. Son paramètre nb_days est obligatoire : si l'utilisateur ne précise pas la durée, demande-lui sur combien de jours il souhaite le bilan et attends sa réponse. N'utilise jamais une durée supposée.
 - Pour toute zone cardiaque ou recommandation physiologique personnalisée, consulte athlete_training_profile. N'invente pas de zone si le profil est incomplet ou incohérent.
 - Pour les courses et objectifs, consulte race_calendar avant de parler d'échéances, de priorité ou de calendrier de préparation.
@@ -288,6 +290,7 @@ def get_ai_tool_registry(
 
     registry = AIToolRegistry()
     registry.register(build_training_profile_tool(db, athlete_profile_id))
+    registry.register(build_active_constraints_tool(db, athlete_profile_id))
     registry.register(build_weekly_plan_context_tool(db, athlete_profile_id))
     registry.register(build_race_calendar_tool(db, athlete_profile_id))
     registry.register(build_planned_sessions_tool(db, athlete_profile_id))

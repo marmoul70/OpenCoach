@@ -143,8 +143,6 @@ def build_race_preparation_tool(
             missing_race_data.append("distance_km")
         if elevation is None:
             missing_race_data.append("elevation_gain_m")
-        if race.target_time_minutes is None:
-            missing_race_data.append("target_time_minutes")
 
         course_profile = {
             "distance_km": distance,
@@ -185,12 +183,24 @@ def build_race_preparation_tool(
                 "m",
             ),
             "load": {
-                "measured": stats.measured_load,
-                "estimated": stats.estimated_load,
+                "measured": (
+                    stats.measured_load
+                    if included_sessions > 0 and available_load_sessions == included_sessions
+                    else None
+                ),
+                "estimated": (
+                    stats.estimated_load
+                    if included_sessions > 0 and available_load_sessions == included_sessions
+                    else None
+                ),
                 "total": (
                     stats.total_load
-                    if included_sessions > 0
-                    and available_load_sessions == included_sessions
+                    if included_sessions > 0 and available_load_sessions == included_sessions
+                    else None
+                ),
+                "partial_observed_total": (
+                    stats.total_load
+                    if 0 < available_load_sessions < included_sessions
                     else None
                 ),
                 "unit": "load_points",
@@ -224,12 +234,21 @@ def build_race_preparation_tool(
                 if value is None:
                     missing_profile_data.append(key)
 
+        metric_coverage = [
+            recent_training["duration"]["coverage"]["status"],
+            recent_training["distance"]["coverage"]["status"],
+            recent_training["elevation_gain"]["coverage"]["status"],
+            recent_training["load"]["coverage"],
+        ]
+        complete_analysis = (
+            not missing_race_data
+            and not missing_profile_data
+            and included_sessions > 0
+            and all(item == "complete" for item in metric_coverage)
+        )
+
         return {
-            "status": (
-                "ok"
-                if not missing_race_data and included_sessions > 0
-                else "partial"
-            ),
+            "status": "ok" if complete_analysis else "partial",
             "reference_date": reference_date.isoformat(),
             "days_to_race": days_to_race,
             "race": {
@@ -247,6 +266,12 @@ def build_race_preparation_tool(
                 "missing_race_fields": missing_race_data,
                 "missing_profile_fields": missing_profile_data,
                 "sessions_included": included_sessions,
+                "metric_coverage": {
+                    "duration": metric_coverage[0],
+                    "distance": metric_coverage[1],
+                    "elevation_gain": metric_coverage[2],
+                    "load": metric_coverage[3],
+                },
                 "interpretation": (
                     "Les totaux et moyennes hebdomadaires ne sont exposés que si "
                     "toutes les séances incluses disposent de la métrique. Une "

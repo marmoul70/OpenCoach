@@ -261,7 +261,8 @@ Dernière mise à jour : 9 novembre 2026.
 - [x] Appliquer l'agrégation canonique aux services Readiness, Wellness, Coach et au contexte transmis à l'IA.
 - [x] Ajouter des tests multi-fournisseurs, fraîcheur, conflits, absence d'horodatage et couverture.
 - [ ] Vérifier sur la VM que les imports réels COROS et Intervals alimentent bien `wellness_daily` et que le coach n'utilise que cette table.
-- [ ] Définir une déduplication inter-fournisseurs des activités avant d'ajouter Garmin/Apple Health : la contrainte actuelle `provider + provider_activity_id` n'empêche pas qu'une même séance importée par deux plateformes soit comptée deux fois dans `TrainingStatsService`.
+- [x] Confirmer le risque de doublon inter-fournisseurs et documenter l'architecture cible, les règles de rapprochement, la consolidation et les critères de migration dans `docs/ACTIVITY_CANONICAL_IDENTITY.md`.
+- [ ] Implémenter la déduplication canonique après validation de la conception et préparation d'une migration réversible.
 
 **Règle d'architecture :** les intégrations (COROS, Intervals.icu, Garmin, Apple Health ou toute future plateforme) ne sont que des fournisseurs d'import. OpenCoach est l'unique référentiel consulté par le coach et les services de score.
 
@@ -292,3 +293,14 @@ Vérification du chemin de lecture IA sur la branche de développement :
 - [ ] Risque bloquant avant l'extension des intégrations d'activités : `activities` garantit actuellement l'unicité par `provider + provider_activity_id` seulement. Une même séance importée via deux plateformes peut donc être comptée deux fois. Ne pas ajouter Garmin/Apple Health ni présenter les agrégats d'activités multi-fournisseurs comme dédupliqués avant d'avoir défini et testé une identité canonique inter-fournisseurs.
 
 **Périmètre de cet audit :** inspection statique des fichiers et tests présents sur GitHub. Les tests automatisés et les échanges avec Ollama n'ont pas été exécutés sur la VM pendant cet audit ; aucun statut CI vert n'est revendiqué pour le dernier commit.
+
+
+### Lot transversal — identité canonique des activités
+
+- [x] Auditer la contrainte actuelle `provider + provider_activity_id` et confirmer qu'elle ne couvre pas les doublons entre fournisseurs.
+- [x] Rédiger la conception de séparation entre activité canonique OpenCoach et identifiants/métriques d'import dans `docs/ACTIVITY_CANONICAL_IDENTITY.md`.
+- [x] Définir les invariants de non-perte, d'isolation athlète, d'idempotence, de rapprochement conservateur et de consolidation métrique.
+- [ ] Valider la conception et les tolérances sur des exemples d'import réels.
+- [ ] Développer la migration réversible, le backfill, le rapprochement en mode observation et les tests d'agrégats avant activation.
+
+**Garde-fou :** aucun changement de score ni fusion automatique n'est activé par ce lot documentaire.

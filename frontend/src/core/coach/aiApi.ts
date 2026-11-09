@@ -30,6 +30,14 @@ async function readError(response: Response): Promise<string> {
   return `Erreur HTTP ${response.status}`
 }
 
+export async function listPendingAIDataProposals(): Promise<AIDataProposal[]> {
+  const response = await fetch('/api/ai/data-proposals', {
+    headers: { Accept: 'application/json' },
+  })
+  if (!response.ok) throw new Error(await readError(response))
+  return response.json() as Promise<AIDataProposal[]>
+}
+
 export async function askAICoach(
   question: string,
   history: AIChatMessage[],

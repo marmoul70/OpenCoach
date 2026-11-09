@@ -38,6 +38,23 @@ def select_coach_tools(question: str, *, history: list[str] | None = None) -> fr
     if not current:
         return ALL_COACH_TOOLS
 
+    # Questions générales et demandes d'écriture interdites : aucun outil métier.
+    no_tool_patterns = (
+        "explique-moi la difference", "explique moi la difference",
+        "quelle est la difference", "qu'est-ce que", "quest-ce que",
+        "definition de", "explique le principe",
+    )
+    if any(pattern in current for pattern in no_tool_patterns):
+        return frozenset()
+    if any(term in current for term in (
+        "decale automatiquement", "modifie automatiquement",
+        "supprime automatiquement", "ecris directement dans coros",
+        "modifie mon planning", "change mon planning automatiquement",
+    )):
+        return frozenset()
+    if "directement mes donnees coros" in current or "directement coros" in current:
+        return frozenset()
+
     # Les messages antérieurs ne servent qu'à résoudre un suivi très court.
     context = current
     if len(current.split()) <= 5 and history:
@@ -62,10 +79,17 @@ def select_coach_tools(question: str, *, history: list[str] | None = None) -> fr
         if any(keyword in context for keyword in keywords):
             selected.update(tools)
 
-    # Proposition de donnée durable : seule capacité d'écriture contrôlée.
-    selected.add("propose_profile_data")
+    # La proposition de modification du profil n'est exposée que si l'utilisateur
+    # communique explicitement une nouvelle donnée durable.
+    profile_update_terms = (
+        "mon poids est", "je pese", "ma vma est", "ma fc max est",
+        "je change de chaussures", "mon objectif est",
+        "je suis disponible", "je ne suis plus disponible",
+    )
+    if any(term in context for term in profile_update_terms):
+        selected.add("propose_profile_data")
 
-    if not selected or len(selected) == 1:
+    if not selected:
         return ALL_COACH_TOOLS
 
     # Les contraintes sont toujours ajoutées dès qu'une recommandation ou une

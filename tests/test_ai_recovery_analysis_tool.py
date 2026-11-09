@@ -62,6 +62,8 @@ def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():
             stress_avg=20.0 + offset,
             sleep_seconds=7 * 3600 + offset * 60,
             sleep_score=80.0 - offset,
+            sleep_quality=4,
+            spo2=97.0,
             fatigue_atl=65.0 + offset,
             fitness_ctl=72.0,
         )
@@ -92,6 +94,8 @@ def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():
     assert [window["days"] for window in result["windows"]] == [7, 14, 30]
     assert result["windows"][0]["recorded_days"] == 7
     assert result["windows"][0]["metrics"]["sleep_seconds"]["sample_count"] == 7
+    assert result["windows"][0]["metrics"]["sleep_quality"]["current"] == 4.0
+    assert result["windows"][0]["metrics"]["spo2"]["current"] == 97.0
     assert result["daily_context"]["fatigue"] == 4
     assert result["daily_checkin"]["energy_rating"] == 2
     assert result["daily_checkin"]["pain_wellness_rating"] == 4

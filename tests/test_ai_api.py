@@ -464,6 +464,7 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
 
 def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_only_tools():
     from datetime import date
+    from types import SimpleNamespace
     from uuid import UUID
 
     from opencoach.api.ai import get_ai_tool_registry
@@ -500,7 +501,10 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
     )
     definitions = registry.definitions()
 
-    assert [item["name"] for item in definitions] == [\n        "training_history",\n        "training_load",\n    ]
+    assert [item["name"] for item in definitions] == [
+        "training_history",
+        "training_load",
+    ]
     result = registry.execute("training_history", {"nb_days": 1})
 
     assert result.status == "ok"

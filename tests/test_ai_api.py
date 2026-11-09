@@ -460,6 +460,8 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "session_execution_review" in prompt
     assert "athlete_training_profile" in prompt
     assert "active_constraints" in prompt
+    assert "race_preparation_analysis" in prompt
+    assert "ne crée aucun score de préparation" in prompt
     assert "ne conclus jamais que la séance n'a pas été faite" in prompt
     assert "tu ne peux ni modifier un entraînement" in prompt
     assert "Sois très direct et rigoureux" in prompt
@@ -522,6 +524,7 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
             "active_constraints",
             "weekly_plan_context",
             "race_calendar",
+            "race_preparation_analysis",
             "planned_sessions",
             "session_execution_review",
             "activity_detail",

@@ -148,3 +148,59 @@ def test_proposal_tool_uses_only_authenticated_profile_scope():
     finally:
         db.close()
         engine.dispose()
+
+def test_proposal_tool_accepts_structured_days_only_when_evidence_names_each_day():
+    engine, db, profile = _database()
+    try:
+        evidence = "Je suis disponible le lundi, mercredi et vendredi."
+        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        registry = AIToolRegistry()
+        registry.register(tool)
+        result = registry.execute("propose_profile_data", {
+            "field_key": "available_days", "value": [0, 2, 4], "evidence": evidence,
+        })
+        assert result.status == "ok"
+        assert result.data["value"] == [0, 2, 4]
+        assert profile.available_days == []
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_proposal_tool_rejects_structured_value_not_supported_by_evidence():
+    engine, db, profile = _database()
+    try:
+        evidence = "Je suis disponible le lundi et le mercredi."
+        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        registry = AIToolRegistry()
+        registry.register(tool)
+        result = registry.execute("propose_profile_data", {
+            "field_key": "available_days", "value": [0, 2, 4], "evidence": evidence,
+        })
+        assert result.status == "failed"
+        assert db.query(AIDataProposal).count() == 0
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_proposal_tool_accepts_experience_and_discipline_from_french_evidence():
+    engine, db, profile = _database()
+    try:
+        evidence = "Je suis coureur intermédiaire et je pratique le trail."
+        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        registry = AIToolRegistry()
+        registry.register(tool)
+        experience = registry.execute("propose_profile_data", {
+            "field_key": "experience", "value": "intermediate", "evidence": evidence,
+        })
+        discipline = registry.execute("propose_profile_data", {
+            "field_key": "sport_disciplines", "value": ["trail_running"], "evidence": evidence,
+        })
+        assert experience.status == "ok"
+        assert discipline.status == "ok"
+        assert profile.experience == "beginner"
+        assert profile.sport_disciplines == []
+    finally:
+        db.close()
+        engine.dispose()

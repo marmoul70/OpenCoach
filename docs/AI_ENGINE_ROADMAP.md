@@ -47,26 +47,26 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 
 ### Mission 0 — Cadrage et contrats
 - [x] Définir la vision, les principes, les garde-fous et les lots.
-- [ ] Définir le contrat JSON commun des résultats d'outils.
-- [ ] Définir le registre en liste blanche et la validation des arguments.
+- [x] Définir le contrat JSON commun des résultats d'outils (enveloppe initiale `AIToolResult`).
+- [x] Définir le registre en liste blanche et la validation des arguments (`AIToolRegistry`).
 - [ ] Documenter les erreurs, limites et métadonnées attendues.
 
 **Livrable :** contrat d'outil stable et indépendant du fournisseur IA.
 
 ### Mission 1 — Socle AI Tool Engine
-- [ ] Créer un registre explicite des outils autorisés.
-- [ ] Définir un schéma Pydantic par outil.
-- [ ] Normaliser les résultats et erreurs.
-- [ ] Empêcher l'exécution d'un outil inconnu ou d'arguments supplémentaires.
+- [x] Créer un registre explicite des outils autorisés.
+- [x] Définir un schéma Pydantic pour le premier outil (`TrainingHistoryArguments`).
+- [x] Normaliser les résultats et erreurs (statut, données, métadonnées, message contrôlé).
+- [x] Empêcher l'exécution d'un outil inconnu ou d'arguments supplémentaires.
 - [ ] Ajouter tests unitaires du registre, de la validation et du format de résultat.
 
 **Livrable :** moteur d'exécution d'outils Python testable sans Ollama.
 
 ### Mission 2 — Premier outil : historique d'entraînement
-- [ ] Créer `training_history(nb_days)`.
-- [ ] Réutiliser `TrainingStatsService` et ses repositories existants.
-- [ ] Définir clairement la fenêtre inclusive et la date de référence.
-- [ ] Retourner séances, durée, distance, D+, charge mesurée/estimée et couverture des données.
+- [x] Créer `training_history(nb_days)`, borné de 1 à 365 jours.
+- [x] Réutiliser `TrainingStatsService` et ses repositories existants.
+- [x] Définir clairement la fenêtre inclusive et la date de référence.
+- [x] Retourner séances, durée, distance, D+, charge mesurée/estimée et couverture des données.
 - [ ] Distinguer valeur nulle, donnée absente et couverture partielle.
 - [ ] Tester les périodes, bornes, données manquantes et séances manuelles.
 

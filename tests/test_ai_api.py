@@ -320,6 +320,7 @@ def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
     assert response.json()["context_used"] is True
     assert response.json()["data_proposals"] == []
     assert planning_service.profile_id == athlete_profile_id
+    assert "propose_profile_data" in [item["name"] for item in ai_service.registry.definitions()]
     messages = ai_service.request.messages
     assert [message.role for message in messages] == [
         "system",

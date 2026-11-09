@@ -160,3 +160,18 @@ Le routeur ne consulte aucune donnée sportive et ne calcule aucune métrique. I
 - [x] Corriger le scénario de récupération pour tenir compte de la date facultative par défaut du contrat.
 - [ ] Exécuter les trois configurations comparatives sur la VM.
 - [ ] Comparer Qwen3 8B, 4B et 3B et documenter le choix.
+
+
+### Benchmark du routeur de production
+
+Le profil `production_router` applique `select_coach_tools` séparément à chaque scénario du corpus, puis ne transmet à Ollama que les définitions retenues. Le rapport enregistre `exposed_tool_count`, `exposed_tool_names` et `average_exposed_tool_count`. Ce profil permet de comparer la sélection et la latence au catalogue complet avec le même modèle, le même prompt et les mêmes cas. Les scénarios sans outil sont exécutés avec un catalogue vide ; les demandes ambiguës conservent le catalogue complet conformément au comportement de production.
+
+Commande de référence :
+
+```bash
+python scripts/ai/benchmark_models.py \\
+  --models qwen3:8b \\
+  --tool-profile production_router \\
+  --prompt-profile production \\
+  --repetitions 1
+```

@@ -105,3 +105,51 @@ def test_tool_orchestration_executes_validated_tool_then_returns_final_answer():
     assert client.requests[0].tools[0].name == "history"
     assert client.requests[1].messages[-1].role == "tool"
     assert '"days": 7' in client.requests[1].messages[-1].content
+
+
+
+def test_missing_required_tool_argument_is_returned_to_model_for_clarification():
+    from opencoach.ai.schemas import AIToolCall
+    from opencoach.ai.tool_engine import AITool, AIToolRegistry
+    from opencoach.ai.training_tools import TrainingHistoryArguments
+
+    class ClarifyingClient:
+        def __init__(self):
+            self.calls = 0
+            self.follow_up_tool_message = None
+
+        async def chat(self, request):
+            self.calls += 1
+            if self.calls == 1:
+                return AIChatResult(
+                    model="qwen3:8b",
+                    content="",
+                    tool_calls=[AIToolCall(name="training_history", arguments={})],
+                    done=True,
+                )
+            self.follow_up_tool_message = request.messages[-1].content
+            return AIChatResult(
+                model="qwen3:8b",
+                content="Sur combien de jours souhaites-tu ton historique ?",
+                done=True,
+            )
+
+    registry = AIToolRegistry()
+    registry.register(AITool(
+        name="training_history",
+        description="Historique sportif.",
+        arguments_model=TrainingHistoryArguments,
+        handler=lambda args: {"days": args.nb_days},
+    ))
+    client = ClarifyingClient()
+    service = AIService(AISettings(enabled=True), client=client)
+    request = AIChatRequest(messages=[
+        AIMessage(role="user", content="Montre-moi mon historique.")
+    ])
+
+    result = asyncio.run(service.chat_with_tools(request, registry))
+
+    assert result.content == "Sur combien de jours souhaites-tu ton historique ?"
+    assert client.calls == 2
+    assert "invalid_arguments" in client.follow_up_tool_message
+    assert "paramètres" in client.follow_up_tool_message

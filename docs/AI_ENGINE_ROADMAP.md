@@ -77,7 +77,10 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] `planning_comparison(nb_days)` : comparaison prévu/réalisé couverte par `training_load`, avec écarts et couverture.
 - [x] `recovery_status(target_date)` : score Readiness, signaux, baselines, fraîcheur et indisponibilité explicite.
 - [x] `activity_detail(activity_date | activity_id)` : détail d'une activité, sélection par date locale ou identifiant, choix explicite en cas d'ambiguïté et contrôle d'appartenance à l'athlète.
-- [x] `training_trends(nb_days, comparison_days)` : comparaison de deux périodes successives, avec calcul des écarts et contrôle de couverture.\n- [x] `athlete_training_profile()` : repères physiologiques, zones FC, capacité hebdomadaire et cibles de ravitaillement réellement configurés.\n- [x] `race_calendar(start_date, horizon_days)` : calendrier des courses et objectifs de préparation.\n- [x] `planned_sessions(start_date, end_date)` : séances prévues, prescriptions résumées et agrégats avec contrôle de couverture.
+- [x] `training_trends(nb_days, comparison_days)` : comparaison de deux périodes successives, avec calcul des écarts et contrôle de couverture.
+- [x] `athlete_training_profile()` : repères physiologiques, zones FC, capacité hebdomadaire et cibles de ravitaillement réellement configurés.
+- [x] `race_calendar(start_date, horizon_days)` : calendrier des courses et objectifs de préparation.
+- [x] `planned_sessions(start_date, end_date)` : séances prévues, prescriptions résumées et agrégats avec contrôle de couverture.
 
 **Livrable :** catalogue d'outils métier en lecture seule.
 
@@ -140,7 +143,24 @@ Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Miss
 | Benchmark modèles | À démarrer |
 | Observabilité / intégration | À démarrer |
 
-Dernière mise à jour : 9 novembre 2026.\n\n### Mission 3 bis — bibliothèque de coaching\n\n- `athlete_training_profile` expose les repères du profil sportif sans identité personnelle ; les zones cardiaques utilisent le calcul existant `get_heart_rate_zone`. Les champs absents restent `null` et sont listés.\n- `race_calendar` lit les courses du seul athlète authentifié sur une fenêtre bornée de 1 à 365 jours.\n- `planned_sessions` lit les séances sur une fenêtre obligatoire de 31 jours maximum ; les descriptions et prescriptions JSON brutes sont exclues. Les agrégats distance/D+ sont masqués si la couverture est incomplète.\n- Les textes libres (titres, noms, lieux) sont bornés et explicitement considérés comme données non fiables.\n- Aucun de ces outils ne modifie le profil, le calendrier ou les séances.\n- Tests dédiés ajoutés pour les valeurs manquantes, la couverture partielle, les fenêtres et l'isolation par athlète. Validation CI en cours.\n\n### Mission 3 — détail d'activité\n\n- L'outil est enregistré dans le registre authentifié de l'athlète et réutilise `SqlActivityDetailRepository`.\n- La sélection se fait par date locale ou identifiant OpenCoach ; si plusieurs séances correspondent, l'outil retourne une liste de choix et demande une clarification.\n- Les données restituées sont filtrées : métriques générales, intervalles bornés à 40, textes libres tronqués et statistiques de streams (nombre d'échantillons, min/max/moyenne). Aucun JSON COROS brut ni série complète n'est transmis au modèle.\n- Les activités d'un autre profil ne sont pas accessibles ; les détails absents sont explicitement signalés.\n- Tests dédiés ajoutés ; validation CI à effectuer.
+Dernière mise à jour : 9 novembre 2026.
+
+### Mission 3 bis — bibliothèque de coaching
+
+- `athlete_training_profile` expose les repères du profil sportif sans identité personnelle ; les zones cardiaques utilisent le calcul existant `get_heart_rate_zone`. Les champs absents restent `null` et sont listés.
+- `race_calendar` lit les courses du seul athlète authentifié sur une fenêtre bornée de 1 à 365 jours.
+- `planned_sessions` lit les séances sur une fenêtre obligatoire de 31 jours maximum ; les descriptions et prescriptions JSON brutes sont exclues. Les agrégats distance/D+ sont masqués si la couverture est incomplète.
+- Les textes libres (titres, noms, lieux) sont bornés et explicitement considérés comme données non fiables.
+- Aucun de ces outils ne modifie le profil, le calendrier ou les séances.
+- Tests dédiés ajoutés pour les valeurs manquantes, la couverture partielle, les fenêtres et l'isolation par athlète. Validation CI en cours.
+
+### Mission 3 — détail d'activité
+
+- L'outil est enregistré dans le registre authentifié de l'athlète et réutilise `SqlActivityDetailRepository`.
+- La sélection se fait par date locale ou identifiant OpenCoach ; si plusieurs séances correspondent, l'outil retourne une liste de choix et demande une clarification.
+- Les données restituées sont filtrées : métriques générales, intervalles bornés à 40, textes libres tronqués et statistiques de streams (nombre d'échantillons, min/max/moyenne). Aucun JSON COROS brut ni série complète n'est transmis au modèle.
+- Les activités d'un autre profil ne sont pas accessibles ; les détails absents sont explicitement signalés.
+- Tests dédiés ajoutés ; validation CI à effectuer.
 
 ### Reprise sur main 0.8.5
 
@@ -152,5 +172,6 @@ Dernière mise à jour : 9 novembre 2026.\n\n### Mission 3 bis — bibliothèque
 - [x] Enregistrer les paramètres Ollama locaux dans `.env.example` ; l'IA reste désactivée par défaut.
 - [x] Valider CI Python 3.13, Bash/ShellCheck et frontend sur le commit `de1776e2` (run GitHub Actions `42617922430`).
 - [ ] Valider la migration Alembic sur la VM Debian 13 et effectuer un test réel avec Ollama.
-- [x] Ajouter `activity_detail` avec sélection par date ou identifiant, désambiguïsation et sortie de données filtrée.\n- [ ] Benchmark des modèles et complétion de l'observabilité.
+- [x] Ajouter `activity_detail` avec sélection par date ou identifiant, désambiguïsation et sortie de données filtrée.
+- [ ] Benchmark des modèles et complétion de l'observabilité.
 

@@ -153,6 +153,11 @@ def build_athlete_context(context: PlanningContext) -> str:
                 "Restrictions calculées : "
                 + ", ".join(readiness.readiness.training_constraints) + "."
             )
+        if getattr(readiness, "data_conflicts", ()):
+            lines.append(
+                "Attention : certaines métriques Wellness ont été écartées à cause de conflits entre imports OpenCoach : "
+                + ", ".join(readiness.data_conflicts) + "."
+            )
     else:
         lines.append("Disponibilité quotidienne : aucune donnée exploitable.")
 

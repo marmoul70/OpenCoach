@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from opencoach.ai.tool_engine import AITool
@@ -68,16 +68,26 @@ def build_activity_detail_tool(
         )
         if arguments.activity_id is not None:
             query = query.where(ActivityModel.id == arguments.activity_id)
-        else:
-            query = query.order_by(ActivityModel.start_at.desc()).limit(200)
+        elif arguments.activity_date is not None:
+            day_start = datetime.combine(arguments.activity_date, time.min)
+            day_end = day_start + timedelta(days=1)
+            query = query.where(
+                or_(
+                    and_(
+                        ActivityModel.start_at_local.is_not(None),
+                        ActivityModel.start_at_local >= day_start,
+                        ActivityModel.start_at_local < day_end,
+                    ),
+                    and_(
+                        ActivityModel.start_at_local.is_(None),
+                        ActivityModel.start_at >= day_start,
+                        ActivityModel.start_at < day_end,
+                    ),
+                )
+            )
 
+        query = query.order_by(ActivityModel.start_at.desc())
         activities = list(session.scalars(query).all())
-        if arguments.activity_date is not None:
-            activities = [
-                item for item in activities
-                if (item.start_at_local or item.start_at).date()
-                == arguments.activity_date
-            ]
         if arguments.activity_name:
             needle = arguments.activity_name.casefold()
             activities = [

@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from opencoach.database.models import AIDataProposal, AthleteProfile
-from opencoach.schemas.profile import AthletePhysiologySchema
+from opencoach.schemas.profile import AthletePhysiologySchema, AthleteTrainingSchema
 
 
 PROFILE_FIELD_RULES: dict[str, dict[str, Any]] = {
@@ -29,6 +29,9 @@ PROFILE_FIELD_RULES: dict[str, dict[str, Any]] = {
     "fluids_per_hour": {"unit": "ml/h", "kind": "float", "min": 0, "max": None},
     "sodium_per_hour": {"unit": "mg/h", "kind": "float", "min": 0, "max": None},
     "fatigue_threshold": {"unit": "score", "kind": "float", "min": 0, "max": None},
+    "available_days": {"unit": "jours", "kind": "available_days"},
+    "experience": {"unit": "", "kind": "experience"},
+    "sport_disciplines": {"unit": "", "kind": "sport_disciplines"},
 }
 INTEGER_FIELDS = {
     key for key, rule in PROFILE_FIELD_RULES.items() if rule["kind"] == "int"
@@ -36,7 +39,7 @@ INTEGER_FIELDS = {
 
 
 class AIDataProposalCreate(BaseModel):
-    """Proposition d'une valeur de profil ; aucune écriture immédiate."""
+    """Proposition typée ; aucune écriture immédiate dans le profil."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -45,24 +48,53 @@ class AIDataProposalCreate(BaseModel):
         "vma", "threshold_heart_rate_1", "threshold_heart_rate_2",
         "weekly_sessions", "weekly_duration_minutes", "weekly_distance_km",
         "carbohydrates_per_hour", "fluids_per_hour", "sodium_per_hour",
-        "fatigue_threshold",
+        "fatigue_threshold", "available_days", "experience", "sport_disciplines",
     ]
-    value: int | float
+    value: Any
 
     @field_validator("value", mode="before")
     @classmethod
-    def reject_boolean_and_non_numeric(cls, value: Any) -> Any:
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise ValueError("La valeur doit être numérique.")
+    def reject_boolean_and_unsupported_types(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("Les booléens ne sont pas des valeurs de profil acceptées.")
+        if not isinstance(value, (int, float, str, list)):
+            raise ValueError("Type de donnée non pris en charge.")
         return value
 
     @model_validator(mode="after")
     def validate_value(self):
         rule = PROFILE_FIELD_RULES[self.field_key]
-        if self.field_key in INTEGER_FIELDS and not isinstance(self.value, int):
-            raise ValueError("Ce champ attend une valeur entière.")
-        if self.value < rule["min"] or (rule["max"] is not None and self.value > rule["max"]):
-            raise ValueError("La valeur est hors des limites autorisées.")
+        kind = rule["kind"]
+
+        if kind in {"int", "float"}:
+            if not isinstance(self.value, (int, float)):
+                raise ValueError("Ce champ attend une valeur numérique.")
+            if kind == "int" and not isinstance(self.value, int):
+                raise ValueError("Ce champ attend une valeur entière.")
+            if self.value < rule["min"] or (
+                rule["max"] is not None and self.value > rule["max"]
+            ):
+                raise ValueError("La valeur est hors des limites autorisées.")
+            return self
+
+        if kind == "experience":
+            validated = AthleteTrainingSchema(experience=self.value)
+            object.__setattr__(self, "value", validated.experience)
+        elif kind == "available_days":
+            if not isinstance(self.value, list) or any(
+                isinstance(day, bool) or not isinstance(day, int)
+                for day in self.value
+            ):
+                raise ValueError("Les jours disponibles doivent être une liste d'entiers.")
+            validated = AthleteTrainingSchema(available_days=self.value)
+            object.__setattr__(self, "value", validated.available_days)
+        elif kind == "sport_disciplines":
+            if not isinstance(self.value, list) or any(
+                not isinstance(item, str) for item in self.value
+            ):
+                raise ValueError("Les disciplines doivent être une liste de textes.")
+            validated = AthleteTrainingSchema(sport_disciplines=self.value)
+            object.__setattr__(self, "value", validated.sport_disciplines)
         return self
 
 
@@ -71,8 +103,8 @@ class AIDataProposalResponse(BaseModel):
 
     id: UUID
     field_key: str
-    value: int | float
-    existing_value: int | float | None
+    value: Any
+    existing_value: Any | None
     unit: str
     status: str
     expires_at: datetime
@@ -198,17 +230,32 @@ def confirm_profile_data_proposal(
         db.commit()
         raise RuntimeError("La donnée a changé depuis la proposition ; confirmation annulée.")
 
-    # Vérifier les contraintes physiologiques croisées avant toute écriture.
-    physiology_values = {
-        "max_heart_rate": profile.max_heart_rate,
-        "resting_heart_rate": profile.resting_heart_rate,
-        "threshold_heart_rate_1": profile.threshold_heart_rate_1,
-        "threshold_heart_rate_2": profile.threshold_heart_rate_2,
-        "vma": profile.vma,
-    }
-    if proposal.field_key in physiology_values:
+    if proposal.field_key in {
+        "max_heart_rate", "resting_heart_rate", "threshold_heart_rate_1",
+        "threshold_heart_rate_2", "vma",
+    }:
+        physiology_values = {
+            "max_heart_rate": profile.max_heart_rate,
+            "resting_heart_rate": profile.resting_heart_rate,
+            "threshold_heart_rate_1": profile.threshold_heart_rate_1,
+            "threshold_heart_rate_2": profile.threshold_heart_rate_2,
+            "vma": profile.vma,
+        }
         physiology_values[proposal.field_key] = proposal.proposed_value
         AthletePhysiologySchema(**physiology_values)
+
+    if proposal.field_key in {"available_days", "experience", "sport_disciplines"}:
+        training_values = {
+            "weekly_sessions": profile.weekly_sessions,
+            "weekly_duration_minutes": profile.weekly_duration_minutes,
+            "weekly_distance_km": profile.weekly_distance_km,
+            "available_days": profile.available_days,
+            "fatigue_threshold": profile.fatigue_threshold,
+            "experience": profile.experience,
+            "sport_disciplines": profile.sport_disciplines,
+        }
+        training_values[proposal.field_key] = proposal.proposed_value
+        AthleteTrainingSchema(**training_values)
 
     setattr(profile, proposal.field_key, proposal.proposed_value)
     profile.updated_at = now

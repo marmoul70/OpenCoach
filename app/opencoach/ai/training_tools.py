@@ -86,7 +86,7 @@ def build_training_history_tool(
                 "duration_minutes": {
                     "value": metric_value(
                         stats.total_duration_minutes,
-                        stats.duration_data_count,
+                        getattr(stats, "duration_data_count", 0),
                     ),
                     "unit": "minutes",
                     "coverage": coverage(stats.duration_data_count),

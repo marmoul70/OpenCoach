@@ -222,3 +222,15 @@ Dernière mise à jour : 9 novembre 2026.
 - Les agrégats de progression sont fournis uniquement avec couverture complète ; les données partielles sont masquées, sans extrapolation.
 - Le coach ne produit ni score de préparation, ni probabilité de réussite, ni diagnostic médical.
 - Tests dédiés : métriques complètes, couverture partielle, isolation entre athlètes et course passée.
+
+### Mission 4 ter — collecte des équipements
+
+- [x] Ajouter les propositions d'ajout de chaussures, vélos et montres au circuit existant.
+- [x] Limiter les données collectées au modèle, à la marque facultative et à la catégorie lorsque le modèle métier la prévoit.
+- [x] Exiger que les informations textuelles figurent dans une citation exacte de l'utilisateur.
+- [x] Ne créer aucun équipement avant confirmation ; appliquer uniquement les valeurs par défaut métier, sans inventer kilométrage ou usure.
+- [x] Vérifier les doublons lors de la proposition et à nouveau lors de la confirmation, avec détection de conflit.
+- [x] Afficher les propositions d'équipement dans le panneau de validation du coach.
+- [x] Ajouter les tests de validation, preuve utilisateur, confirmation et conflit.
+
+**Livrable :** le coach peut ajouter un équipement au profil sans inventer de caractéristiques ni contourner la confirmation explicite.

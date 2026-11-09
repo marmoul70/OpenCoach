@@ -122,15 +122,18 @@ def test_training_history_tool_uses_injected_athlete_and_inclusive_period():
     assert result.data["metrics"]["training_load"]["total"] == 150.0
 
 
-def test_training_history_tool_rejects_out_of_range_period():
-    service = SimpleNamespace(calculate=lambda *_: None)
+def test_training_history_tool_rejects_out_of_range_period_without_calling_service():
+    calls = []
+    service = SimpleNamespace(calculate=lambda *args: calls.append(args))
     tool = build_training_history_tool(service, uuid4())
     registry = AIToolRegistry()
     registry.register(tool)
 
-    result = registry.execute("training_history", {"nb_days": 366})
+    for nb_days in (366, 500):
+        result = registry.execute("training_history", {"nb_days": nb_days})
+        assert result.status == "invalid_arguments"
 
-    assert result.status == "invalid_arguments"
+    assert calls == []
 
 
 

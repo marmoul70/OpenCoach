@@ -13,6 +13,8 @@ readonly OPENCOACH_REQUIRED_PACKAGES=(
     nodejs
     npm
     nginx
+    curl
+    ca-certificates
 )
 
 readonly OPENCOACH_DEV_PACKAGES=(

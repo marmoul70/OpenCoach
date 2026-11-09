@@ -132,11 +132,11 @@ Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Miss
 
 | Lot | État |
 |---|---|
-| Cadrage / roadmap | En cours de formalisation |
-| AI Tool Engine | Socle implémenté, CI en validation continue |
-| Historique d'entraînement | Outil implémenté ; couverture et agrégats incomplets explicités |
-| Outils complémentaires | À démarrer |
-| Orchestration IA | Boucle Ollama bornée ; clarification des paramètres manquants testée, validation modèle réel restante |
+| Cadrage / roadmap | Réalisé |
+| AI Tool Engine | Implémenté, CI Python/Bash/frontend verte |
+| Historique d'entraînement | Implémenté, contrôles de couverture explicites |
+| Outils complémentaires | 3 outils implémentés ; détail d'activité restant |
+| Orchestration IA | Boucle bornée et clarification testées ; validation Ollama réel restante |
 | Benchmark modèles | À démarrer |
 | Observabilité / intégration | À démarrer |
 

@@ -272,6 +272,7 @@ def get_ai_tool_registry(
     registry.register(
         build_training_load_tool(
             context_service.recent_load_service,
+            training_stats_service,
             athlete_profile_id,
         )
     )

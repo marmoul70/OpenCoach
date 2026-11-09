@@ -156,7 +156,7 @@ Dernière mise à jour : 9 novembre 2026.
 - Aucun de ces outils ne modifie le profil, le calendrier ou les séances.
 - `weekly_plan_context` expose les objectifs de semaine et la phase sans recalculer le plan ; il retourne `not_found` si aucun plan n'est enregistré.
 - `session_execution_review` réutilise `analyze_session_execution` et les repositories existants ; il exige une activité explicitement liée, ne fait aucun matching automatique et distingue activité non liée / activité inaccessible.
-- Tests dédiés ajoutés pour les valeurs manquantes, la couverture partielle, les fenêtres, la semaine courante et l'isolation par athlète. Validation CI en cours.
+- Tests dédiés ajoutés pour les valeurs manquantes, la couverture partielle, les fenêtres, la semaine courante, le prévu/réalisé et l'isolation par athlète. CI verte sur le commit `e73c2345` (run `42627660028`), 2 874 tests Python réussis, Bash et frontend validés.
 
 ### Mission 3 — détail d'activité
 
@@ -164,7 +164,7 @@ Dernière mise à jour : 9 novembre 2026.
 - La sélection se fait par date locale ou identifiant OpenCoach ; si plusieurs séances correspondent, l'outil retourne une liste de choix et demande une clarification.
 - Les données restituées sont filtrées : métriques générales, intervalles bornés à 40, textes libres tronqués et statistiques de streams (nombre d'échantillons, min/max/moyenne). Aucun JSON COROS brut ni série complète n'est transmis au modèle.
 - Les activités d'un autre profil ne sont pas accessibles ; les détails absents sont explicitement signalés.
-- Tests dédiés ajoutés ; validation CI à effectuer.
+- Tests dédiés ajoutés ; validation CI verte sur le commit `e73c2345`.
 
 ### Reprise sur main 0.8.5
 

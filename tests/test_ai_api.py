@@ -499,7 +499,10 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
     registry = get_ai_tool_registry(
         athlete_profile_id=athlete_profile_id,
         training_stats_service=FakeTrainingStatsService(),
-        context_service=SimpleNamespace(\n            recent_load_service=object(),\n            readiness_service=object(),\n        ),
+        context_service=SimpleNamespace(
+            recent_load_service=object(),
+            readiness_service=object(),
+        ),
     )
     definitions = registry.definitions()
 

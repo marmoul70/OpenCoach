@@ -1,7 +1,7 @@
 """add per-user AI coach preferences
 
 Revision ID: c8e4a1b7d203
-Revises: f6a91c2d4e80
+Revises: a4d6f8b2c1e3
 Create Date: 2026-11-08
 """
 

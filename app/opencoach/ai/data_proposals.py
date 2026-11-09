@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from opencoach.database.models import AIDataProposal, AthleteProfile, Bike, Shoe, Watch
+from opencoach.database.models.daily_checkin import DailyCheckIn as DailyCheckInModel
 from opencoach.schemas.profile import AthletePhysiologySchema, AthleteTrainingSchema
 
 
@@ -77,6 +78,41 @@ class EquipmentProposalValue(BaseModel):
         if not value or len(value) > 50:
             raise ValueError("La catégorie doit contenir 1 à 50 caractères.")
         return value
+
+
+class DailyCheckInPainLocation(BaseModel):
+    """Localisation d'une douleur déclarée."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    area: Literal[
+        "head", "neck", "shoulder", "back", "lower_back", "hip", "groin",
+        "thigh", "knee", "calf", "shin", "ankle", "achilles", "foot", "other",
+    ]
+    side: Literal["left", "right", "both", "center", "not_applicable"] = "not_applicable"
+
+
+class DailyCheckInProposalValue(BaseModel):
+    """Check-in complet : aucune valeur booléenne ou note n'est déduite."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    energy_rating: int = Field(ge=1, le=5)
+    pain_wellness_rating: int = Field(ge=1, le=5)
+    illness: bool
+    unavailable: bool
+    pain_locations: list[DailyCheckInPainLocation] = Field(default_factory=list)
+    note: str | None = Field(default=None, max_length=1000)
+
+    @model_validator(mode="after")
+    def validate_pain_locations(self):
+        if self.pain_wellness_rating == 5 and self.pain_locations:
+            raise ValueError("Aucune localisation ne peut être renseignée avec une note douleur de 5.")
+        if self.pain_wellness_rating < 5 and not self.pain_locations:
+            raise ValueError("Une localisation est nécessaire lorsque la note douleur est inférieure à 5.")
+        if self.note is not None and not self.note.strip():
+            raise ValueError("La note ne peut pas être vide.")
+        return self
 
 
 class AIDataProposalCreate(BaseModel):

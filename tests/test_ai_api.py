@@ -215,6 +215,7 @@ class FakePlanningContextService:
         self.context = context
         self.profile_id = None
         self.recent_load_service = object()
+        self.readiness_service = object()
 
     def build(self, athlete_profile_id, planning_date):
         self.profile_id = athlete_profile_id
@@ -498,13 +499,14 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
     registry = get_ai_tool_registry(
         athlete_profile_id=athlete_profile_id,
         training_stats_service=FakeTrainingStatsService(),
-        context_service=SimpleNamespace(recent_load_service=object()),
+        context_service=SimpleNamespace(\n            recent_load_service=object(),\n            readiness_service=object(),\n        ),
     )
     definitions = registry.definitions()
 
     assert [item["name"] for item in definitions] == [
         "training_history",
         "training_load",
+        "recovery_status",
     ]
     result = registry.execute("training_history", {"nb_days": 1})
 

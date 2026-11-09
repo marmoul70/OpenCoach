@@ -91,7 +91,7 @@ def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():
     assert result["daily_checkin"]["pain_wellness_rating"] == 4
 
 
-def test_recovery_analysis_uses_intervals_fallback_without_coros_timeseries():
+def test_recovery_analysis_reads_intervals_after_import_into_opencoach():
     profile_id = uuid4()
     wellness = FakeWellnessRepository([
         WellnessDay(
@@ -101,7 +101,6 @@ def test_recovery_analysis_uses_intervals_fallback_without_coros_timeseries():
             hrv=42.0,
         )
     ])
-    time_series = FakeTimeSeriesRepository()
     tool = build_recovery_analysis_tool(
         wellness,
         FakeDailyContextRepository(),
@@ -115,7 +114,6 @@ def test_recovery_analysis_uses_intervals_fallback_without_coros_timeseries():
     assert result["data_store"] == "OpenCoach"
     assert result["windows"][0]["metrics"]["sleep_seconds"]["current"] == 21600
     assert result["time_series"] == []
-    assert time_series.calls == 0
 
 
 def test_recovery_analysis_keeps_missing_data_unknown_and_requests_subjective_followup():

@@ -247,3 +247,10 @@ def test_structured_training_proposal_detects_conflict_before_confirmation(db):
     session.refresh(profile)
     assert profile.available_days == [0]
     assert session.get(AIDataProposal, proposal.id).status == "conflict"
+
+
+def test_structured_training_profile_rejects_empty_collection_values():
+    with pytest.raises(ValidationError):
+        AIDataProposalCreate(field_key="available_days", value=[])
+    with pytest.raises(ValidationError):
+        AIDataProposalCreate(field_key="sport_disciplines", value=[])

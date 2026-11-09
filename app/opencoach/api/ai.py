@@ -17,7 +17,11 @@ from opencoach.ai.context import build_athlete_context
 from opencoach.ai.config import AISettings, get_ai_settings
 from opencoach.ai.schemas import AIChatRequest, AIMessage
 from opencoach.ai.service import AIService, AIServiceDisabledError
+from opencoach.ai.tool_engine import AIToolRegistry
+from opencoach.ai.training_tools import build_training_history_tool
 from opencoach.database.session import get_db
+from opencoach.api.training_stats import get_training_stats_service
+from opencoach.training import TrainingStatsService
 from opencoach.database.models.ai_coach_preference import AICoachPreference
 from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
@@ -246,6 +250,24 @@ def get_ai_service(
     settings: AISettings = Depends(get_ai_settings),
 ) -> AIService:
     return _cached_ai_service(settings)
+
+
+def get_ai_tool_registry(
+    athlete_profile_id=Depends(get_current_athlete_profile_id),
+    training_stats_service: TrainingStatsService = Depends(
+        get_training_stats_service,
+    ),
+) -> AIToolRegistry:
+    """Construit le registre métier pour le seul athlète authentifié."""
+
+    registry = AIToolRegistry()
+    registry.register(
+        build_training_history_tool(
+            training_stats_service,
+            athlete_profile_id,
+        )
+    )
+    return registry
 
 
 @router.get("/status", response_model=AIStatusResponse)

@@ -14,9 +14,9 @@ _MONTHS = {
     "mai": 5, "juin": 6, "juillet": 7, "aout": 8,
     "septembre": 9, "octobre": 10, "novembre": 11, "decembre": 12,
 }
-_ISO_DATE_RE = re.compile(r"\\b20\\d{2}-\\d{2}-\\d{2}\\b")
+_ISO_DATE_RE = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b")
 _FRENCH_DATE_RANGE_RE = re.compile(
-    r"\\bdu\\s+(?P<start_day>\\d{1,2})(?:\\s+(?P<start_month>janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre))?\\s+au\\s+(?P<end_day>\\d{1,2})\\s+(?P<end_month>janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)\\s+(?P<year>20\\d{2})\\b"
+    r"\bdu\s+(?P<start_day>\d{1,2})(?:\s+(?P<start_month>janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre))?\s+au\s+(?P<end_day>\d{1,2})\s+(?P<end_month>janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)\s+(?P<year>20\d{2})\b"
 )
 _PERIOD_RULES = {
     "training_history": ("nb_days", 1, 365, "historique"),

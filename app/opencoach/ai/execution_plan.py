@@ -50,6 +50,8 @@ def extract_activity_date(value: str, reference_date: date | None = None) -> dat
 
     if "aujourd'hui" in normalized or "aujourd hui" in normalized:
         return reference_date
+    if re.search(r"\bdemain\b", normalized):
+        return reference_date + timedelta(days=1)
     if re.search(r"\bavant-hier\b", normalized):
         return reference_date - timedelta(days=2)
     if re.search(r"\bhier\b", normalized):
@@ -210,9 +212,15 @@ def build_coach_execution_plan(
     # Une blessure ou une douleur impose d'abord la lecture des restrictions enregistrées.
     injury_terms = ("douleur", "mal au", "mal a", "tendon", "blessure", "blesse", "malade", "maladie", "indisponible")
     if "active_constraints" in selected and any(term in normalized for term in injury_terms):
-        safety_calls = [PlannedToolCall("active_constraints", {})]
+        target_date = extract_activity_date(question, reference_date)
+        safety_arguments = (
+            {"target_date": target_date.isoformat()}
+            if target_date is not None and target_date != reference_date
+            else {}
+        )
+        safety_calls = [PlannedToolCall("active_constraints", safety_arguments)]
         if "recovery_status" in selected:
-            safety_calls.append(PlannedToolCall("recovery_status", {}))
+            safety_calls.append(PlannedToolCall("recovery_status", safety_arguments))
         return CoachExecutionPlan(tuple(safety_calls))
 
     # Une mise à jour de profil est proposée uniquement sur preuve textuelle exacte.

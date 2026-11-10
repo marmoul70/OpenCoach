@@ -581,10 +581,16 @@ async def ask_local_ai_with_athlete_context(
                 assistant_messages=assistant_messages,
             )
             tool_results.append(result)
-            if call.name == "active_constraints" and result.status != "ok":
+            if (
+                call.name == "active_constraints" and result.status != "ok"
+            ) or (
+                call.name == "recovery_status"
+                and any(item.name == "active_constraints" for item in plan.calls)
+                and result.status != "ok"
+            ):
                 return AIQuestionResponse(
                     answer=(
-                        "Je n'ai pas pu consulter les contraintes enregistrées dans OpenCoach. "
+                        "Je n'ai pas pu consulter les contraintes ou la récupération dans OpenCoach. "
                         "Je ne peux donc pas te recommander de séance sur cette base. "
                         "Réessaie après vérification de la disponibilité du service."
                     ),

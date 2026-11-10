@@ -242,3 +242,34 @@ def test_trend_period_evidence_combines_two_clarification_turns():
         user_messages,
         assistant_messages,
     ) is None
+
+
+
+def test_planned_sessions_guard_requires_exact_user_date_range():
+    from opencoach.ai.argument_evidence import (
+        extract_explicit_date_range,
+        validate_period_argument_evidence,
+    )
+
+    user_messages = [
+        "Quelles séances sont planifiées du 9 au 15 novembre 2026 ?"
+    ]
+    expected = {"start_date": "2026-11-09", "end_date": "2026-11-15"}
+
+    assert extract_explicit_date_range(user_messages) == (
+        date(2026, 11, 9),
+        date(2026, 11, 15),
+    )
+    assert validate_period_argument_evidence(
+        "planned_sessions", expected, user_messages
+    ) is None
+    assert validate_period_argument_evidence(
+        "planned_sessions",
+        {"start_date": "2026-11-10", "end_date": "2026-11-16"},
+        user_messages,
+    ).startswith("Les dates proposées ne correspondent pas")
+    assert validate_period_argument_evidence(
+        "planned_sessions",
+        expected,
+        ["Quelles sont mes séances planifiées ?"],
+    ).startswith("Quelles sont les dates")

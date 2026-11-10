@@ -29,9 +29,37 @@ ALL_COACH_TOOLS = frozenset({
 })
 
 
+PERIOD_REQUIRED_TOOLS = frozenset({
+    "training_history",
+    "training_load",
+    "training_trends",
+    "race_preparation_analysis",
+})
+
+
 def _normalize(value: str) -> str:
     value = unicodedata.normalize("NFKD", value.lower())
     return "".join(char for char in value if not unicodedata.combining(char))
+
+
+def _filter_period_tools(
+    names: set[str] | frozenset[str],
+    question: str,
+    history: list[str] | None,
+    assistant_history: list[str] | None,
+) -> frozenset[str]:
+    periods = extract_explicit_periods(
+        [*(history or []), question],
+        assistant_history,
+    )
+    filtered = set(names)
+    if len(periods) < 1:
+        filtered.difference_update({
+            "training_history", "training_load", "race_preparation_analysis"
+        })
+    if len(periods) < 2:
+        filtered.discard("training_trends")
+    return frozenset(filtered)
 
 
 def select_coach_tools(
@@ -40,10 +68,12 @@ def select_coach_tools(
     history: list[str] | None = None,
     assistant_history: list[str] | None = None,
 ) -> frozenset[str]:
-    """Sélectionne les outils utiles ; renvoie tout le catalogue si ambigu."""
+    """Sélectionne les outils utiles et masque les outils temporels incomplets."""
     current = _normalize(question.strip())
     if not current:
-        return ALL_COACH_TOOLS
+        return _filter_period_tools(
+            ALL_COACH_TOOLS, question, history, assistant_history
+        )
 
     # Questions générales et demandes d'écriture interdites : aucun outil métier.
     no_tool_patterns = (
@@ -97,7 +127,9 @@ def select_coach_tools(
         selected.add("propose_profile_data")
 
     if not selected:
-        return ALL_COACH_TOOLS
+        return _filter_period_tools(
+            ALL_COACH_TOOLS, question, history, assistant_history
+        )
 
     # Les contraintes sont toujours ajoutées dès qu'une recommandation ou une
     # décision d'entraînement est demandée, même si la douleur est implicite.
@@ -106,22 +138,9 @@ def select_coach_tools(
         selected.add("active_constraints")
         selected.update(("recovery_analysis", "recovery_status"))
 
-    # Les outils dont les paramètres temporels sont obligatoires ne sont
-    # présentés au modèle que si la demande courante apporte les périodes.
-    # Cela évite de laisser le LLM inventer un nb_days pourtant valide au
-    # regard du schéma Pydantic. Une réponse numérique courte n'est reconnue
-    # que si le dernier message assistant a explicitement demandé la durée.
-    periods = extract_explicit_periods(
-        [*(history or []), question],
-        assistant_history,
+    # Même en cas d'intention reconnue, seuls les outils dont les
+    # paramètres temporels sont étayés restent disponibles.
+    return _filter_period_tools(
+        selected, question, history, assistant_history
     )
-    if "training_history" in selected and len(periods) < 1:
-        selected.discard("training_history")
-    if "training_load" in selected and len(periods) < 1:
-        selected.discard("training_load")
-    if "training_trends" in selected and len(periods) < 2:
-        selected.discard("training_trends")
-    if "race_preparation_analysis" in selected and len(periods) < 1:
-        selected.discard("race_preparation_analysis")
 
-    return frozenset(selected)

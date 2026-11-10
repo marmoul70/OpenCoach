@@ -43,6 +43,7 @@ def test_ambiguous_request_keeps_catalog_except_unqualified_period_tools():
             "training_trends",
             "race_preparation_analysis",
             "propose_profile_data",
+            "planned_sessions",
         }
     )
 
@@ -74,6 +75,7 @@ def test_empty_request_does_not_expose_unqualified_period_tools():
             "training_trends",
             "race_preparation_analysis",
             "propose_profile_data",
+            "planned_sessions",
         }
     )
 
@@ -182,3 +184,14 @@ def test_trends_tool_reopens_after_second_period_clarification():
 def test_profile_write_tool_requires_explicit_profile_update_intent():
     assert "propose_profile_data" not in select_coach_tools("Peux-tu m'aider ?")
     assert "propose_profile_data" in select_coach_tools("Mon poids est de 84 kg.")
+
+
+
+def test_planned_sessions_requires_an_explicit_date_range():
+    selected = select_coach_tools("Quelles sont mes séances planifiées ?")
+    assert "planned_sessions" not in selected
+
+    selected = select_coach_tools(
+        "Quelles séances sont planifiées du 9 au 15 novembre 2026 ?"
+    )
+    assert "planned_sessions" in selected

@@ -140,7 +140,7 @@ L'endpoint `/api/ai/coach` applique désormais un routeur Python conservateur av
 - les outils à période obligatoire (`training_history`, `training_load`, `training_trends` et `race_preparation_analysis`) sont masqués tant que les durées requises ne sont pas explicitement présentes dans le tour courant ou dans une réponse courte contextualisée ;
 - une période explicitement fournie dans une demande complète précédente n'est jamais réutilisée pour une nouvelle demande complète ;
 - une demande vide, inconnue ou ambiguë conserve le catalogue général, à l'exception des outils temporels dont les paramètres requis manquent ;
-- `propose_profile_data` reste exposé comme capacité contrôlée de proposition, sans écriture directe dans le profil ;
+- `propose_profile_data` n'est exposé que lorsqu'un message utilisateur fournit explicitement une donnée durable de profil ; il est absent du catalogue de repli ambigu et ne modifie jamais directement le profil ;
 - le registre applique la sélection à la fois aux définitions envoyées au modèle et à l'exécution : un appel à un outil masqué est refusé côté Python ;
 - le contrôle de provenance reste actif avant validation Pydantic et bloque toute période absente, altérée ou hors limites, même si le modèle tente un appel d'outil non attendu.
 

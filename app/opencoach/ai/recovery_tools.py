@@ -286,6 +286,8 @@ def build_recovery_analysis_tool(
             "fournisseurs d’import confondus ; aucune API fournisseur n’est appelée. "
             "Inclut séparément le ressenti du jour provenant du check-in. À utiliser "
             "pour toute discussion sur fatigue, forme, récupération, sommeil ou stress. "
+            "Le seul argument est target_date facultatif ; les fenêtres 7, 14 et 30 jours "
+            "sont calculées automatiquement. N'ajoute aucun paramètre nb_days. "
             "Ne produit aucun diagnostic ni score composite."
         ),
         arguments_model=RecoveryAnalysisArguments,

@@ -298,8 +298,46 @@ def build_case_conversation(case: dict[str, Any]) -> list[AIMessage]:
     ]
 
 
+def _effective_tool_arguments(
+    tool_name: str,
+    arguments: dict[str, Any],
+    reference_date: date,
+) -> dict[str, Any]:
+    """Normalise les arguments validés en incluant leurs valeurs par défaut.
+
+    Les dates implicites utilisent la date de référence synthétique du scénario,
+    et non la date réelle de la machine qui exécute le benchmark.
+    """
+    argument_model = ARGUMENT_MODELS.get(tool_name)
+    if argument_model is None:
+        raise ValueError(f"Outil inconnu : {tool_name}")
+
+    parsed = argument_model.model_validate(arguments)
+    effective = parsed.model_dump(mode="json")
+    for field_name, field in argument_model.model_fields.items():
+        if (
+            field_name not in arguments
+            and field.annotation is date
+            and field.default_factory is not None
+        ):
+            effective[field_name] = reference_date.isoformat()
+    return effective
+
+
 def score_response(case: dict[str, Any], tool_calls: list[dict[str, Any]], content: str) -> dict[str, Any]:
     expected = case["expected_tool_calls"]
+    reference_date = date.fromisoformat(
+        str(case.get("reference_date", "2026-11-09"))
+    )
+    normalized_expected = [
+        {
+            "tool": call["tool"],
+            "arguments": _effective_tool_arguments(
+                call["tool"], call.get("arguments") or {}, reference_date
+            ),
+        }
+        for call in expected
+    ]
     actual = []
     comparable_actual = []
     for call in tool_calls:
@@ -311,15 +349,19 @@ def score_response(case: dict[str, Any], tool_calls: list[dict[str, Any]], conte
                 raise ValueError("Outil inconnu")
             argument_model.model_validate(arguments)
             arguments_valid = True
+            comparable_arguments = _effective_tool_arguments(
+                name, arguments, reference_date
+            )
         except Exception:
             arguments_valid = False
-        comparable_actual.append({"tool": name, "arguments": arguments})
+            comparable_arguments = arguments
+        comparable_actual.append({"tool": name, "arguments": comparable_arguments})
         actual.append({
             "tool": name,
             "arguments": arguments,
             "arguments_valid": arguments_valid,
         })
-    exact_calls = canonical(expected) == canonical(comparable_actual)
+    exact_calls = canonical(normalized_expected) == canonical(comparable_actual)
     argument_validation_pass = (
         all(call["arguments_valid"] for call in actual) if actual else None
     )

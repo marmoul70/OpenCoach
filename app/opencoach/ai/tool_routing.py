@@ -8,7 +8,10 @@ from __future__ import annotations
 
 import unicodedata
 
-from opencoach.ai.argument_evidence import extract_explicit_periods
+from opencoach.ai.argument_evidence import (
+    extract_explicit_date_range,
+    extract_explicit_periods,
+)
 
 
 ALL_COACH_TOOLS = frozenset({
@@ -58,6 +61,12 @@ def _filter_period_tools(
         filtered.difference_update(PERIOD_REQUIRED_TOOLS - {"training_trends"})
     if len(periods) < 2:
         filtered.discard("training_trends")
+    date_range = extract_explicit_date_range(
+        [*(history or []), question],
+        assistant_history,
+    )
+    if date_range is None:
+        filtered.discard("planned_sessions")
     return frozenset(filtered)
 
 

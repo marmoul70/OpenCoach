@@ -121,5 +121,7 @@ def select_coach_tools(
         selected.discard("training_load")
     if "training_trends" in selected and len(periods) < 2:
         selected.discard("training_trends")
+    if "race_preparation_analysis" in selected and len(periods) < 1:
+        selected.discard("race_preparation_analysis")
 
     return frozenset(selected)

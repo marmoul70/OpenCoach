@@ -146,3 +146,15 @@ def test_race_preparation_waits_for_history_period_but_keeps_race_calendar():
     assert select_coach_tools(
         "Analyse ma préparation sur les 30 derniers jours pour ma prochaine course."
     ) == frozenset({"race_calendar", "race_preparation_analysis"})
+
+
+
+def test_trends_tool_reopens_after_second_period_clarification():
+    selected = select_coach_tools(
+        "14 jours",
+        history=["Compare mes tendances sur 7 jours."],
+        assistant_history=[
+            "Pour comparer tes tendances, indique la durée des deux périodes."
+        ],
+    )
+    assert selected == frozenset({"training_trends"})

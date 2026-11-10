@@ -59,7 +59,18 @@ def _filter_period_tools(
     filtered = set(names)
     if len(periods) < 1:
         filtered.difference_update(PERIOD_REQUIRED_TOOLS - {"training_trends"})
-    if len(periods) < 2:
+    else:
+        period_limits = {
+            "training_history": (1, 365),
+            "training_load": (1, 90),
+            "race_preparation_analysis": (7, 180),
+        }
+        for tool_name, (minimum, maximum) in period_limits.items():
+            if tool_name in filtered and not minimum <= periods[-1] <= maximum:
+                filtered.discard(tool_name)
+    if len(periods) < 2 or any(
+        not 1 <= period <= 180 for period in periods[-2:]
+    ):
         filtered.discard("training_trends")
     date_range = extract_explicit_date_range(
         [*(history or []), question],

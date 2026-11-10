@@ -137,7 +137,7 @@ L'endpoint `/api/ai/coach` applique désormais un routeur Python conservateur av
 - les intentions reconnues sélectionnent les familles d'outils correspondantes (historique, charge, récupération, tendances, activité, courses, planning, exécution, contraintes et profil) ;
 - les demandes combinées cumulent les familles détectées ;
 - les suivis courts peuvent s'appuyer sur les derniers messages utilisateur et sur la dernière question de clarification de l'assistant ;
-- les outils à période obligatoire (`training_history`, `training_load`, `training_trends` et `race_preparation_analysis`) sont masqués tant que les durées requises ne sont pas explicitement présentes dans le tour courant ou dans une réponse courte contextualisée ;
+- les outils à paramètres temporels obligatoires (`training_history`, `training_load`, `training_trends`, `race_preparation_analysis` et `planned_sessions`) sont masqués tant que les durées ou la plage de dates requises ne sont pas explicitement présentes dans le tour courant ou dans une réponse courte contextualisée ;
 - une période explicitement fournie dans une demande complète précédente n'est jamais réutilisée pour une nouvelle demande complète ;
 - une demande vide, inconnue ou ambiguë conserve le catalogue général, à l'exception des outils temporels dont les paramètres requis manquent ;
 - `propose_profile_data` n'est exposé que lorsqu'un message utilisateur fournit explicitement une donnée durable de profil ; il est absent du catalogue de repli ambigu et ne modifie jamais directement le profil ;

@@ -4,7 +4,7 @@ import re
 import unicodedata
 
 _DURATION_RE = re.compile(
-    r"\b(?P<value>\d{1,3}|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|quatorze|quinze|vingt|trente)\s*(?P<unit>jours?|j|semaines?|sem\.?|mois)\b",
+    r"\b(?P<value>\d{1,3}|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|quatorze|quinze|vingt|trente)\s*(?:(?:derniers?|dernieres?|precedents?|precedentes?)\s*)?(?P<unit>jours?|j|semaines?|sem\.?|mois)\b",
     re.IGNORECASE,
 )
 _WORD_NUMBERS = {"un": 1, "une": 1, "deux": 2, "trois": 3, "quatre": 4, "cinq": 5, "six": 6, "sept": 7, "huit": 8, "neuf": 9, "dix": 10, "onze": 11, "douze": 12, "quatorze": 14, "quinze": 15, "vingt": 20, "trente": 30}
@@ -52,7 +52,7 @@ def extract_explicit_periods(
             last_assistant,
         )
     )
-    bare_number = re.fullmatch(r"(?:sur\\s+)?(\\d{1,3})", latest)
+    bare_number = re.fullmatch(r"(?:sur\s+)?(\d{1,3})", latest)
     if bare_number and clarification_requested:
         return [int(bare_number.group(1))]
 

@@ -27,7 +27,7 @@ Le modèle n'a aucun accès à la base, aux repositories, aux services métier o
 
 - Un paramètre obligatoire absent entraîne une clarification, jamais une valeur par défaut inventée.
 - Les durées hors limites sont refusées avant tout calcul.
-- Une douleur, blessure, maladie ou indisponibilité déclenche d'abord `active_constraints`.
+- Une douleur, blessure, maladie ou indisponibilité déclenche `active_constraints` en premier, puis `recovery_status` avant toute recommandation de séance.
 - Une demande d'accès direct à COROS, Garmin, Suunto, Apple Health ou Intervals.icu est refusée ; OpenCoach reste le référentiel de lecture.
 - Les demandes générales ne déclenchent aucun outil métier et ne construisent aucun contexte sportif.
 - Une mise à jour de profil ne crée qu'une proposition en attente, fondée sur une citation exacte du message utilisateur. La confirmation reste une action explicite distincte.

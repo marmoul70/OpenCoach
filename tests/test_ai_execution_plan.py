@@ -57,13 +57,14 @@ def test_current_recovery_uses_python_default_date_and_status_tool():
     ]
 
 
-def test_injury_advice_always_executes_constraints_first_and_only():
+def test_injury_advice_executes_constraints_before_recovery_status():
     plan = build_coach_execution_plan(
         "J'ai mal au tendon d'Achille, quelle séance puis-je faire aujourd'hui ?",
         reference_date=REFERENCE_DATE,
     )
     assert [(call.name, call.arguments) for call in plan.calls] == [
-        ("active_constraints", {})
+        ("active_constraints", {}),
+        ("recovery_status", {}),
     ]
 
 
@@ -146,3 +147,13 @@ def test_profile_value_is_proposed_with_exact_user_evidence():
         "value": 15.5,
         "evidence": question,
     }
+
+
+
+def test_ambiguous_help_request_does_not_execute_fallback_catalog():
+    plan = build_coach_execution_plan(
+        "Peux-tu m'aider ?",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.calls == ()
+    assert plan.clarification is None

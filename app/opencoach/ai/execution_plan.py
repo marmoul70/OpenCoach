@@ -141,6 +141,22 @@ def build_coach_execution_plan(
         assistant_history=assistant_history,
     ))
 
+    # Le routeur conserve un catalogue de repli pour les formulations inconnues.
+    # Ce catalogue ne constitue pas une autorisation d'exécuter tous ces outils.
+    intent_context = _normalize(" ".join([*history[-2:], question]))
+    intent_markers = (
+        "historique", "entrainement realise", "mes sorties", "charge", "atl", "ctl",
+        "tsb", "recuperation", "recup", "sommeil", "hrv", "tendance", "evolution",
+        "progression", "compare", "comparaison", "activite", "seance", "sortie du",
+        "course", "ultra", "trail", "dossard", "preparation", "planning", "planifie",
+        "programme", "semaine", "blessure", "douleur", "tendon", "malade", "maladie",
+        "indisponible", "contrainte", "profil", "vma", "fc max", "frequence cardiaque",
+        "zones cardiaques", "zone cardiaque", "etat de forme", "fatigue", "stress",
+        "seuil", "poids", "je pese", "equipement", "chaussures", "mon poids",
+    )
+    if not any(marker in intent_context for marker in intent_markers):
+        return CoachExecutionPlan()
+
     # Les demandes générales ou les intentions inconnues ne déclenchent aucune lecture métier.
     if not selected:
         periods = extract_explicit_periods(conversation_users, assistant_history)
@@ -167,7 +183,10 @@ def build_coach_execution_plan(
     # Une blessure ou une douleur impose d'abord la lecture des restrictions enregistrées.
     injury_terms = ("douleur", "mal au", "mal a", "tendon", "blessure", "blesse", "malade", "maladie", "indisponible")
     if "active_constraints" in selected and any(term in normalized for term in injury_terms):
-        return CoachExecutionPlan((PlannedToolCall("active_constraints", {}),))
+        safety_calls = [PlannedToolCall("active_constraints", {})]
+        if "recovery_status" in selected:
+            safety_calls.append(PlannedToolCall("recovery_status", {}))
+        return CoachExecutionPlan(tuple(safety_calls))
 
     # Une mise à jour de profil est proposée uniquement sur preuve textuelle exacte.
     if "propose_profile_data" in selected:
@@ -241,7 +260,13 @@ def build_coach_execution_plan(
             "end_date": date_range[1].isoformat(),
         }))
 
-    if "weekly_plan_context" in selected:
+    weekly_context_requested = any(
+        term in intent_context
+        for term in ("phase de la semaine", "objectif de la semaine", "cadre de la semaine", "quelle phase")
+    )
+    if "weekly_plan_context" in selected and (
+        "planned_sessions" not in selected or weekly_context_requested
+    ):
         calls.append(PlannedToolCall("weekly_plan_context", {}))
 
     if "athlete_training_profile" in selected and not any(

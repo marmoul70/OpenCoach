@@ -268,11 +268,47 @@ def test_production_router_benchmark_keeps_empty_catalog_for_no_tool_request():
     assert build_routed_tool_definitions(general) == []
 
 
-def test_production_router_benchmark_preserves_compound_intents():
+def test_production_router_benchmark_hides_tools_with_missing_periods():
+    missing = {
+        "id": "history_missing_period",
+        "prompt": "Fais-moi le bilan de mon historique d'entraînement.",
+        "expected_tool_calls": [],
+    }
+    assert build_routed_tool_definitions(missing) == []
+
+
+def test_production_router_benchmark_keeps_explicit_period_tool():
+    explicit = {
+        "id": "history_explicit",
+        "prompt": "Analyse mon historique sur les 7 derniers jours.",
+        "expected_tool_calls": [{"tool": "training_history", "arguments": {"nb_days": 7}}],
+    }
+    assert [item.name for item in build_routed_tool_definitions(explicit)] == [
+        "training_history"
+    ]
+
+
+def test_production_router_benchmark_preserves_assistant_clarification_context():
+    clarified = {
+        "id": "history_clarified",
+        "prompt": "7",
+        "conversation": [
+            {"role": "user", "content": "Fais-moi le bilan de mon historique."},
+            {"role": "assistant", "content": "Sur combien de jours souhaites-tu le bilan ?"},
+            {"role": "user", "content": "7"},
+        ],
+        "expected_tool_calls": [{"tool": "training_history", "arguments": {"nb_days": 7}}],
+    }
+    assert [item.name for item in build_routed_tool_definitions(clarified)] == [
+        "training_history"
+    ]
+
+
+def test_production_router_keeps_non_period_tools_in_compound_request():
     compound = {
         "id": "compound",
         "prompt": "Analyse ma charge et ma récupération, puis compare mon évolution.",
         "expected_tool_calls": [],
     }
     names = {item.name for item in build_routed_tool_definitions(compound)}
-    assert {"training_load", "recovery_analysis", "recovery_status", "training_trends"} <= names
+    assert names == {"recovery_analysis", "recovery_status"}

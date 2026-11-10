@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import unicodedata
 
+from opencoach.ai.argument_evidence import extract_explicit_periods
+
 
 ALL_COACH_TOOLS = frozenset({
     "athlete_training_profile",
@@ -32,7 +34,12 @@ def _normalize(value: str) -> str:
     return "".join(char for char in value if not unicodedata.combining(char))
 
 
-def select_coach_tools(question: str, *, history: list[str] | None = None) -> frozenset[str]:
+def select_coach_tools(
+    question: str,
+    *,
+    history: list[str] | None = None,
+    assistant_history: list[str] | None = None,
+) -> frozenset[str]:
     """Sélectionne les outils utiles ; renvoie tout le catalogue si ambigu."""
     current = _normalize(question.strip())
     if not current:
@@ -98,5 +105,21 @@ def select_coach_tools(question: str, *, history: list[str] | None = None) -> fr
     if any(term in context for term in recommendation_terms):
         selected.add("active_constraints")
         selected.update(("recovery_analysis", "recovery_status"))
+
+    # Les outils dont les paramètres temporels sont obligatoires ne sont
+    # présentés au modèle que si la demande courante apporte les périodes.
+    # Cela évite de laisser le LLM inventer un nb_days pourtant valide au
+    # regard du schéma Pydantic. Une réponse numérique courte n'est reconnue
+    # que si le dernier message assistant a explicitement demandé la durée.
+    periods = extract_explicit_periods(
+        [*(history or []), question],
+        assistant_history,
+    )
+    if "training_history" in selected and len(periods) < 1:
+        selected.discard("training_history")
+    if "training_load" in selected and len(periods) < 1:
+        selected.discard("training_load")
+    if "training_trends" in selected and len(periods) < 2:
+        selected.discard("training_trends")
 
     return frozenset(selected)

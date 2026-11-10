@@ -34,8 +34,16 @@ def test_short_follow_up_uses_recent_user_context():
     assert "training_load" in selected
 
 
-def test_ambiguous_request_falls_back_to_full_catalog():
-    assert select_coach_tools("Peux-tu m'aider ?") == ALL_COACH_TOOLS
+def test_ambiguous_request_keeps_catalog_except_unqualified_period_tools():
+    assert select_coach_tools("Peux-tu m'aider ?") == (
+        ALL_COACH_TOOLS
+        - {
+            "training_history",
+            "training_load",
+            "training_trends",
+            "race_preparation_analysis",
+        }
+    )
 
 
 def test_general_educational_question_exposes_no_tools():
@@ -56,8 +64,16 @@ def test_direct_provider_access_request_exposes_no_tools():
     ) == frozenset()
 
 
-def test_empty_request_falls_back_to_full_catalog():
-    assert select_coach_tools("   ") == ALL_COACH_TOOLS
+def test_empty_request_does_not_expose_unqualified_period_tools():
+    assert select_coach_tools("   ") == (
+        ALL_COACH_TOOLS
+        - {
+            "training_history",
+            "training_load",
+            "training_trends",
+            "race_preparation_analysis",
+        }
+    )
 
 
 

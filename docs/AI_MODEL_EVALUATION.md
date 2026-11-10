@@ -146,7 +146,7 @@ L'endpoint `/api/ai/coach` applique désormais un routeur Python conservateur av
 
 Le routeur ne consulte aucune donnée sportive et ne calcule aucune métrique. Il ne choisit que les outils disponibles ; tous les calculs restent dans les services déterministes OpenCoach. Le routage est couvert par `tests/test_ai_tool_routing.py`, le contrôle de provenance par `tests/test_ai_tool_engine.py` et la simulation du catalogue par `tests/test_ai_benchmark_runner.py`.
 
-**Limite connue :** les dates obligatoires de `planned_sessions` ne sont pas encore couvertes par le même contrôle de provenance temporelle. Le schéma Pydantic valide leur format et leur cohérence, mais une vérification de leur présence explicite dans les messages utilisateur reste à ajouter avant de considérer ce cas comme aussi robuste que les durées ci-dessus.
+Les dates obligatoires de `planned_sessions` sont également contrôlées : le routeur masque l'outil sans plage explicite, et le garde-fou Python vérifie que les dates transmises correspondent exactement à la plage demandée. Les formats couverts sont les plages françaises avec année (par exemple « du 9 au 15 novembre 2026 ») et deux dates ISO.
 
 ## 9. Étapes suivantes
 

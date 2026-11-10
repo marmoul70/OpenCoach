@@ -74,6 +74,52 @@ def test_benchmark_rejects_wrong_arguments_and_extra_tool_calls() -> None:
     assert result["tool_selection_pass"] is False
     assert result["argument_validation_pass"] is True
 
+def test_benchmark_treats_explicit_default_arguments_as_equivalent_to_omission() -> None:
+    cases = [
+        (
+            {"tool": "recovery_status", "arguments": {}},
+            {"name": "recovery_status", "arguments": {"target_date": "2026-11-09"}},
+        ),
+        (
+            {"tool": "active_constraints", "arguments": {}},
+            {"name": "active_constraints", "arguments": {"target_date": "2026-11-09"}},
+        ),
+        (
+            {"tool": "race_calendar", "arguments": {}},
+            {"name": "race_calendar", "arguments": {"horizon_days": 180}},
+        ),
+    ]
+
+    for expected_call, actual_call in cases:
+        result = score_response(
+            {
+                "id": "default_argument",
+                "reference_date": "2026-11-09",
+                "expected_tool_calls": [expected_call],
+                "expected_clarification": None,
+            },
+            [actual_call],
+            "",
+        )
+        assert result["tool_selection_pass"] is True
+        assert result["argument_validation_pass"] is True
+
+
+def test_benchmark_still_rejects_non_default_optional_arguments() -> None:
+    result = score_response(
+        {
+            "id": "race_calendar",
+            "reference_date": "2026-11-09",
+            "expected_tool_calls": [{"tool": "race_calendar", "arguments": {}}],
+            "expected_clarification": None,
+        },
+        [{"name": "race_calendar", "arguments": {"horizon_days": 90}}],
+        "",
+    )
+
+    assert result["tool_selection_pass"] is False
+    assert result["argument_validation_pass"] is True
+
 
 def test_benchmark_marks_out_of_range_generated_arguments_invalid() -> None:
     case = {

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+import json
 from uuid import UUID
 from functools import lru_cache
 from typing import Literal
@@ -24,13 +24,12 @@ from opencoach.ai.data_proposals import (
     list_pending_profile_data_proposals,
     reject_profile_data_proposal,
 )
-from opencoach.ai.context import build_athlete_context
 from opencoach.ai.config import AISettings, get_ai_settings
 from opencoach.ai.schemas import AIChatRequest, AIMessage
-from opencoach.ai.service import AIOrchestrationError, AIService, AIServiceDisabledError
+from opencoach.ai.service import AIService, AIServiceDisabledError
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.ai.argument_evidence import validate_period_argument_evidence
-from opencoach.ai.tool_routing import select_coach_tools
+from opencoach.ai.execution_plan import build_coach_execution_plan
 from opencoach.ai.training_tools import build_training_history_tool
 from opencoach.ai.activity_tools import build_activity_detail_tool
 from opencoach.ai.constraints_tools import build_active_constraints_tool
@@ -516,30 +515,87 @@ async def ask_local_ai_with_athlete_context(
     user_id=Depends(get_current_user_id),
     db: Session = Depends(get_db),
     athlete_profile_id=Depends(get_current_athlete_profile_id),
-    context_service: PlanningContextService = Depends(get_planning_context_service),
     service: AIService = Depends(get_ai_service),
     settings: AISettings = Depends(get_ai_settings),
-    tool_registry: AIToolRegistry = Depends(get_ai_tool_registry),
+    training_stats_service: TrainingStatsService = Depends(get_training_stats_service),
+    context_service: PlanningContextService = Depends(get_planning_context_service),
 ) -> AIQuestionResponse:
-    """Dialogue IA enrichi par contexte et outils déterministes en lecture seule."""
+    """Coach piloté par Python : planification, exécution métier, puis rédaction IA."""
     if not settings.enabled:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Le moteur IA local est désactivé.",
         )
 
-    try:
-        context = await run_in_threadpool(
-            context_service.build,
-            athlete_profile_id,
-            date.today(),
+    conversation_messages = [
+        *[
+            AIMessage(role=message.role, content=message.content)
+            for message in payload.history
+        ],
+        AIMessage(role="user", content=payload.question),
+    ]
+    user_messages = [
+        message.content for message in conversation_messages if message.role == "user"
+    ]
+    assistant_messages = [
+        message.content for message in conversation_messages if message.role == "assistant"
+    ]
+
+    plan = build_coach_execution_plan(
+        payload.question,
+        history=user_messages[:-1],
+        assistant_history=assistant_messages,
+    )
+    if plan.clarification:
+        return AIQuestionResponse(
+            answer=plan.clarification,
+            model=settings.model,
+            context_used=False,
         )
-        athlete_facts = build_athlete_context(context)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Impossible de préparer le contexte sportif OpenCoach.",
-        ) from exc
+
+    tool_results = []
+    if plan.calls:
+        tool_registry = get_ai_tool_registry(
+            db=db,
+            athlete_profile_id=athlete_profile_id,
+            training_stats_service=training_stats_service,
+            context_service=context_service,
+        )
+        # La proposition de profil reste une écriture en attente, jamais une
+        # modification directe. Le registre valide toujours preuve et schéma.
+        tool_registry.register(
+            build_profile_data_proposal_tool(
+                db,
+                athlete_profile_id,
+                user_messages,
+            )
+        )
+        tool_registry.restrict_to({call.name for call in plan.calls})
+
+        for call in plan.calls:
+            result = await run_in_threadpool(
+                tool_registry.execute,
+                call.name,
+                call.arguments,
+                user_messages=user_messages,
+                assistant_messages=assistant_messages,
+            )
+            tool_results.append(result)
+            if result.status == "needs_clarification":
+                return AIQuestionResponse(
+                    answer=result.error or "Une précision est nécessaire avant cette analyse.",
+                    model=settings.model,
+                    context_used=False,
+                )
+            if result.status == "invalid_arguments":
+                return AIQuestionResponse(
+                    answer=(
+                        result.error
+                        or "Les paramètres de cette analyse sont incomplets. Précise ta demande."
+                    ),
+                    model=settings.model,
+                    context_used=False,
+                )
 
     preferences = db.scalar(
         select(AICoachPreference).where(AICoachPreference.user_id == user_id)
@@ -556,73 +612,74 @@ async def ask_local_ai_with_athlete_context(
         else _DEFAULT_COACH_PREFERENCES
     )
 
-    conversation_messages = [
-        *[
-            AIMessage(role=message.role, content=message.content)
-            for message in payload.history
-        ],
-        AIMessage(role="user", content=payload.question),
-    ]
-    user_messages = [
-        message.content for message in conversation_messages if message.role == "user"
-    ]
-    assistant_messages = [
-        message.content for message in conversation_messages if message.role == "assistant"
-    ]
-
-    request = AIChatRequest(
-        messages=[
-            AIMessage(role="system", content=_coach_system_prompt(coach_preferences)),
+    if tool_results:
+        serialized_results = json.dumps(
+            [item.model_dump(mode="json") for item in tool_results],
+            ensure_ascii=False,
+            default=str,
+        )
+        system_prompt = (
+            _coach_system_prompt(coach_preferences)
+            + "\n\nMODE DE RÉDACTION APRÈS EXÉCUTION PYTHON : "
+            "les outils nécessaires ont déjà été sélectionnés et exécutés par OpenCoach. "
+            "Tu ne dois pas choisir d'outil, inventer d'arguments ou prétendre en appeler un. "
+            "Explique uniquement les résultats structurés fournis, leurs périodes, leur "
+            "couverture et leurs limites. Si un résultat est vide, partiel ou indisponible, "
+            "dis-le explicitement. Ne transforme jamais une donnée absente en zéro."
+        )
+        messages = [
+            AIMessage(role="system", content=system_prompt),
+            *conversation_messages,
             AIMessage(
                 role="user",
                 content=(
-                    "CONTEXTE SPORTIF STRUCTURÉ (faits en lecture seule) :\n"
-                    + athlete_facts
+                    "RÉSULTATS STRUCTURÉS DES OUTILS PYTHON OPENCOACH "
+                    "(seules sources factuelles de cette analyse) :\n"
+                    + serialized_results
                 ),
             ),
+        ]
+    else:
+        # Les questions générales ne construisent aucun contexte sportif et
+        # n'exécutent aucun outil métier.
+        messages = [
+            AIMessage(role="system", content=_CHAT_SYSTEM_PROMPT),
             *conversation_messages,
-        ],
+        ]
+
+    request = AIChatRequest(
+        messages=messages,
         temperature=0.2,
-        num_predict=512,
+        num_predict=384,
     )
-    tool_registry.register(
-        build_profile_data_proposal_tool(
-            db,
-            athlete_profile_id,
-            user_messages,
-        )
-    )
-    # Le routeur est conservateur : il ne filtre que les intentions reconnues.
-    # Le registre applique la même liste blanche à l'exposition ET à l'exécution.
-    selected_tools = select_coach_tools(
-        payload.question,
-        history=user_messages[:-1],
-        assistant_history=assistant_messages,
-    )
-    tool_registry.restrict_to(set(selected_tools))
 
     try:
-        result = await service.chat_with_tools(request, tool_registry, user_messages=user_messages, assistant_messages=assistant_messages)
-        if not result.done:
+        result = await service.chat(request)
+        if not result.done or not result.content.strip():
+            raise AIProviderError(
+                "Le moteur IA a interrompu la rédaction avant la fin de la réponse."
+            )
+        answer = result.content
+        model = result.model
+    except AIProviderError as exc:
+        if not tool_results:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Le moteur IA a interrompu la génération avant la fin de la réponse.",
-            )
-    except AIServiceDisabledError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Le moteur IA local est désactivé.",
-        ) from exc
-    except AIOrchestrationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Le moteur IA a dépassé ses limites d'orchestration.",
-        ) from exc
-    except AIProviderError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(exc),
-        ) from exc
+                detail=str(exc),
+            ) from exc
+        # Les calculs Python ont déjà été exécutés : une panne du LLM ne doit
+        # pas masquer les données ni faire échouer toute la consultation.
+        compact_results = json.dumps(
+            [item.model_dump(mode="json") for item in tool_results],
+            ensure_ascii=False,
+            default=str,
+        )
+        answer = (
+            "Les données OpenCoach ont bien été consultées, mais le moteur de rédaction "
+            "local est indisponible. Voici les résultats structurés à titre de consultation :\n"
+            + compact_results[:10_000]
+        )
+        model = settings.model
 
     data_proposals = [
         AIDataProposalResponse(
@@ -634,15 +691,15 @@ async def ask_local_ai_with_athlete_context(
             status=item.data["status"],
             expires_at=item.data["expires_at"],
         )
-        for item in tool_registry.execution_results
+        for item in tool_results
         if item.tool == "propose_profile_data"
         and item.status == "ok"
         and item.data is not None
     ]
 
     return AIQuestionResponse(
-        answer=result.content,
-        model=result.model,
-        context_used=True,
+        answer=answer,
+        model=model,
+        context_used=bool(tool_results),
         data_proposals=data_proposals,
     )

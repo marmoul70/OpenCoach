@@ -247,35 +247,11 @@ def test_ai_coach_skips_athlete_context_when_ai_is_disabled() -> None:
     assert ai_service.request is None
 
 
-def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
-    from datetime import date
-    from types import SimpleNamespace
+def test_ai_coach_uses_python_execution_and_skips_global_athlete_context() -> None:
     from uuid import UUID
 
     athlete_profile_id = UUID("00000000-0000-0000-0000-000000000002")
-    context = SimpleNamespace(
-        planning_date=date.today(),
-        athlete=SimpleNamespace(
-            training=SimpleNamespace(
-                sport_disciplines=["trail_running"],
-                experience="advanced",
-                weekly_sessions=4,
-                weekly_duration_minutes=300,
-                weekly_distance_km=40.0,
-            ),
-            physiology=SimpleNamespace(
-                vma=15.0,
-                max_heart_rate=181,
-                resting_heart_rate=None,
-            ),
-        ),
-        recent_stats=None,
-        recent_load=None,
-        readiness=None,
-        primary_race=None,
-        constraints=(),
-    )
-    planning_service = FakePlanningContextService(context)
+    planning_service = FakePlanningContextService(context=None)
     ai_service = FakeAIService()
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
@@ -319,25 +295,24 @@ def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
     assert response.status_code == 200
     assert response.json()["context_used"] is True
     assert response.json()["data_proposals"] == []
-    assert planning_service.profile_id == athlete_profile_id
-    assert "propose_profile_data" not in [item["name"] for item in ai_service.registry.definitions()]
+    assert planning_service.profile_id is None
     messages = ai_service.request.messages
+    assert ai_service.request.tools == []
     assert [message.role for message in messages] == [
         "system",
         "user",
-        "user",
         "assistant",
+        "user",
         "user",
     ]
     assert "assistant coach local d'OpenCoach" in messages[0].content
     assert "Les services déterministes OpenCoach restent la source de vérité" in messages[0].content
-    assert messages[1].content.startswith(
-        "CONTEXTE SPORTIF STRUCTURÉ (faits en lecture seule) :\n"
+    assert messages[1].content == "J'ai couru hier."
+    assert messages[2].content == "Séance bien enregistrée dans notre échange."
+    assert messages[3].content == "Analyse ma préparation."
+    assert messages[4].content.startswith(
+        "RÉSULTATS STRUCTURÉS DES OUTILS PYTHON OPENCOACH"
     )
-    assert "VMA enregistrée : 15.0 km/h." in messages[1].content
-    assert messages[2].content == "J'ai couru hier."
-    assert messages[3].content == "Séance bien enregistrée dans notre échange."
-    assert messages[4].content == "Analyse ma préparation."
 
     rejected_profile = client.post(
         "/api/ai/coach",
@@ -348,7 +323,6 @@ def test_ai_coach_uses_authenticated_athlete_context_read_only() -> None:
     )
     assert rejected_profile.status_code == 422
     test_engine.dispose()
-
 
 
 def test_ai_chat_rejects_incomplete_provider_generation() -> None:

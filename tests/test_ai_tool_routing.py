@@ -95,3 +95,45 @@ def test_router_never_hides_expected_tools_from_evaluation_fixture():
         selected = select_coach_tools(question, history=history)
         expected = {call["tool"] for call in case["expected_tool_calls"]}
         assert expected.issubset(selected), case["id"]
+
+
+
+def test_missing_history_period_hides_history_tool():
+    assert select_coach_tools(
+        "Fais-moi le bilan de mon historique d'entraînement."
+    ) == frozenset()
+
+
+def test_relative_history_period_exposes_history_tool():
+    assert select_coach_tools(
+        "Analyse mon historique sur les 7 derniers jours."
+    ) == frozenset({"training_history"})
+
+
+def test_short_numeric_clarification_reexposes_history_tool():
+    assert select_coach_tools(
+        "7",
+        history=["Fais-moi le bilan de mon historique."],
+        assistant_history=["Sur combien de jours souhaites-tu le bilan ?"],
+    ) == frozenset({"training_history"})
+
+
+def test_missing_period_hides_only_period_tools_from_compound_request():
+    selected = select_coach_tools("Analyse ma charge et ma récupération.")
+    assert selected == frozenset({"recovery_analysis", "recovery_status"})
+
+
+def test_trends_tool_requires_two_explicit_periods():
+    assert select_coach_tools("Compare mes tendances d'entraînement.") == frozenset()
+    assert select_coach_tools(
+        "Compare mes tendances sur 7 jours et 14 jours."
+    ) == frozenset({"training_trends"})
+
+
+def test_race_preparation_waits_for_history_period_but_keeps_race_calendar():
+    assert select_coach_tools(
+        "Analyse ma préparation pour ma prochaine course."
+    ) == frozenset({"race_calendar"})
+    assert select_coach_tools(
+        "Analyse ma préparation sur les 30 derniers jours pour ma prochaine course."
+    ) == frozenset({"race_calendar", "race_preparation_analysis"})

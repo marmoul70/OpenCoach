@@ -41,10 +41,6 @@ def extract_explicit_periods(
         return []
 
     latest = _normalize(user_messages[-1]).strip()
-    periods = _extract_duration_values(latest)
-    if periods:
-        return periods
-
     last_assistant = _normalize(assistant_messages[-1]) if assistant_messages else ""
     clarification_requested = bool(
         re.search(
@@ -52,6 +48,20 @@ def extract_explicit_periods(
             last_assistant,
         )
     )
+    periods = _extract_duration_values(latest)
+    if periods:
+        # Pour une comparaison, le second tour peut ne contenir que la
+        # deuxième durée : on conserve alors la première durée du tour
+        # précédent uniquement si l'assistant a demandé les deux périodes.
+        if (
+            len(periods) == 1
+            and "duree des deux periodes" in last_assistant
+            and len(user_messages) >= 2
+        ):
+            previous_periods = _extract_duration_values(user_messages[-2])
+            if previous_periods:
+                return [previous_periods[-1], periods[0]]
+        return periods
     bare_number = re.fullmatch(r"(?:sur\s+)?(\d{1,3})", latest)
     if bare_number and clarification_requested:
         return [int(bare_number.group(1))]

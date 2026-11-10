@@ -1,14 +1,14 @@
 # Roadmap — Moteur IA outillé OpenCoach
 
 > **Branche :** `feature/ai-engine-main-integration`  
-> **Statut global :** socle IA réintégré sur la base main 0.8.5 ; extension des outils en cours  
-> **Principe directeur :** Python est la source de vérité métier ; le modèle IA orchestre les outils autorisés et restitue leurs résultats.
+> **Statut global :** orchestration Python implémentée sur `feature/ai-engine-main-integration` ; validation CI automatisée réussie ; test réel sur VM Debian à effectuer.  
+> **Principe directeur :** Python choisit, valide et exécute les outils métier ; le modèle local explique uniquement leurs résultats.
 
 ## 1. Vision et objectifs
 
 Faire évoluer l'assistant OpenCoach d'un modèle qui reçoit un grand contexte sportif vers un moteur IA outillé, local et modulaire.
 
-Le modèle doit comprendre la demande, sélectionner un ou plusieurs outils métier autorisés, fournir des paramètres structurés, puis expliquer les résultats JSON retournés par Python. Si un paramètre requis manque, il doit poser une question ciblée et attendre la réponse. Lorsqu'une donnée de profil manque, il doit pouvoir la collecter et proposer sa sauvegarde durable, mais aucune écriture ne peut avoir lieu sans confirmation explicite de l'utilisateur via l'API/interface. Aucun paramètre métier ne doit être supposé. Il ne doit pas recalculer les statistiques, inventer des données ou prendre seul des décisions métier.
+OpenCoach doit identifier l'intention par un routeur Python, extraire les paramètres explicitement fournis, exécuter les outils métier autorisés, puis demander au modèle local d'expliquer les résultats JSON. Le modèle ne choisit pas les outils et ne construit pas leurs arguments. Si un paramètre requis manque, Python pose une question ciblée et attend la réponse. Lorsqu'une donnée de profil manque, il doit pouvoir la collecter et proposer sa sauvegarde durable, mais aucune écriture ne peut avoir lieu sans confirmation explicite de l'utilisateur via l'API/interface. Aucun paramètre métier ne doit être supposé. Il ne doit pas recalculer les statistiques, inventer des données ou prendre seul des décisions métier.
 
 Objectifs :
 - **Véracité :** toutes les valeurs sportives proviennent des services métier existants.
@@ -21,8 +21,8 @@ Objectifs :
 ## 2. Architecture cible
 
 1. L'utilisateur formule une question.
-2. Le modèle local identifie l'intention et propose un appel d'outil avec des arguments structurés.
-3. OpenCoach valide l'outil et ses arguments via un registre en liste blanche et des schémas Pydantic.
+2. Le routeur et le planificateur Python identifient l'intention et construisent un plan d'exécution à partir des seuls éléments explicitement fournis.
+3. OpenCoach valide le plan et ses arguments via un registre en liste blanche, des schémas Pydantic et des contrôles de provenance.
 4. Le moteur Python exécute le service métier correspondant.
 5. Le résultat est normalisé en JSON : statut, données, période, qualité/couverture, provenance et avertissements.
 6. Le modèle reçoit uniquement les résultats nécessaires et rédige la réponse.
@@ -39,7 +39,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - Chaque résultat temporel porte des dates de début et de fin explicites.
 - Les outils d'analyse restent en lecture seule. Les futures écritures de données de profil passent par un service métier distinct, une liste blanche et une confirmation explicite côté API/interface.
 - Aucun outil IA ne peut créer/modifier/supprimer une séance, modifier le planning ou écrire dans un fournisseur externe.
-- Les arguments du modèle sont validés côté Python : limites de période, identifiants, types et champs autorisés.
+- Les arguments extraits par le planificateur Python sont validés avant exécution : limites de période, identifiants, types et champs autorisés.
 - Les données libres retournées par les outils sont des données non fiables, jamais des instructions système.
 - Le mode sans outil reste disponible pour les questions générales qui ne nécessitent aucune donnée personnelle.
 - L'IA reste locale via Ollama ; aucun LLM cloud.
@@ -89,17 +89,18 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 
 **Livrable :** catalogue d'outils métier en lecture seule.
 
-### Mission 4 — Orchestration IA locale
-- [x] Ajouter le support des tool calls Ollama dans le client, derrière une interface fournisseur.
-- [x] Présenter au modèle uniquement les définitions des outils autorisés.
-- [x] Valider chaque appel avant exécution.
-- [x] Gérer plusieurs appels successifs avec limites de tours, de temps et de taille.
-- [x] Transmettre au modèle les résultats JSON nécessaires, pas le contexte complet de la base.
-- [x] Gérer proprement refus, outil inconnu, arguments invalides et erreurs métier.
+### Mission 4 — Orchestration IA locale pilotée par Python
+- [x] Conserver un client Ollama indépendant du métier pour la rédaction des réponses.
+- [x] Ajouter un planificateur déterministe qui sélectionne les outils et construit les arguments sans tool calling du LLM.
+- [x] Réutiliser le registre en liste blanche et les modèles Pydantic pour valider chaque exécution.
+- [x] Exécuter les handlers Python hors de la boucle asyncio.
+- [x] Envoyer au modèle uniquement les résultats structurés nécessaires, avec une taille totale bornée.
+- [x] Ne pas construire le contexte sportif global pour les questions générales.
+- [x] Retourner une clarification déterministe lorsque les périodes, dates ou identifiants requis manquent.
+- [x] Prévoir un résultat structuré de secours si Ollama tombe après l'exécution métier.
 - [x] Conserver les préférences de coach et les règles de sécurité.
-- [x] Documenter dans le prompt coach les cas d'usage des outils, les enchaînements utiles et les clarifications obligatoires (historique, charge, tendances, séances planifiées).
 
-**Livrable :** assistant coach capable de choisir et utiliser des outils locaux.
+**Livrable :** assistant coach piloté par Python, indépendant de la capacité du modèle à appeler des fonctions.
 
 ### Mission 4 bis — Collecte et sauvegarde contrôlée des données
 
@@ -166,11 +167,11 @@ Ordre recommandé : Mission 0 → Mission 1 → Mission 2 → Mission 3 → Miss
 | AI Tool Engine | Implémenté, CI Python/Bash/frontend verte |
 | Historique d'entraînement | Implémenté, contrôles de couverture explicites |
 | Outils complémentaires | 11 outils complémentaires implémentés ; profil, contraintes, préparation de course, phase hebdomadaire, calendrier, séances planifiées, activité et débriefing couverts |
-| Orchestration IA | Boucle bornée et clarification testées ; validation Ollama réel restante |
-| Benchmark modèles | Runner aligné sur le prompt et les descriptions de production ; exécution VM et analyse des modèles restantes |
+| Orchestration IA | Planification et exécution Python déterministes ; synthèse Ollama sans tool calling ; test réel VM restant |
+| Benchmark modèles | Runner conservé comme outil de diagnostic historique ; la sélection des outils n'est plus évaluée par tool calling en production |
 | Observabilité / intégration | À démarrer |
 
-Dernière mise à jour : 9 novembre 2026.
+Dernière mise à jour : 10 novembre 2026.
 
 ### Mission 3 bis — bibliothèque de coaching
 

@@ -13,11 +13,16 @@ def test_recovery_request_does_not_expose_training_history_tool():
     assert "training_history" not in selected
 
 
-def test_compound_request_keeps_all_required_tool_families():
+def test_compound_request_keeps_only_tools_with_satisfied_period_requirements():
     selected = select_coach_tools(
         "Analyse ma charge et ma récupération, puis compare mon évolution."
     )
-    assert {"training_load", "recovery_analysis", "recovery_status", "training_trends"} <= selected
+    assert selected == frozenset({"recovery_analysis", "recovery_status"})
+
+    selected_with_periods = select_coach_tools(
+        "Analyse ma charge sur 14 jours, ma récupération et compare mon évolution sur 7 jours et 14 jours."
+    )
+    assert {"training_load", "recovery_analysis", "recovery_status", "training_trends"} <= selected_with_periods
 
 
 def test_short_follow_up_uses_recent_user_context():
@@ -86,13 +91,17 @@ def test_router_never_hides_expected_tools_from_evaluation_fixture():
         turns = case.get("conversation") or []
         if turns:
             user_turns = [turn["content"] for turn in turns if turn["role"] == "user"]
+            assistant_turns = [turn["content"] for turn in turns if turn["role"] == "assistant"]
             question = user_turns[-1]
             history = user_turns[:-1]
         else:
             question = case["prompt"]
             history = []
+            assistant_turns = []
 
-        selected = select_coach_tools(question, history=history)
+        selected = select_coach_tools(
+            question, history=history, assistant_history=assistant_turns
+        )
         expected = {call["tool"] for call in case["expected_tool_calls"]}
         assert expected.issubset(selected), case["id"]
 

@@ -176,3 +176,15 @@ def test_planned_sessions_without_dates_asks_before_weekly_context_lookup():
     )
     assert plan.calls == ()
     assert "dates de début et de fin" in plan.clarification
+
+
+
+def test_short_thanks_after_completed_answer_does_not_repeat_previous_tool():
+    plan = build_coach_execution_plan(
+        "Merci !",
+        history=["Analyse mon historique sur les 7 derniers jours."],
+        assistant_history=["Voici ton bilan sur les 7 derniers jours."],
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.calls == ()
+    assert plan.clarification is None

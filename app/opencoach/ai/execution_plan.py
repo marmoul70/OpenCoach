@@ -143,7 +143,17 @@ def build_coach_execution_plan(
 
     # Le routeur conserve un catalogue de repli pour les formulations inconnues.
     # Ce catalogue ne constitue pas une autorisation d'exécuter tous ces outils.
-    intent_context = _normalize(" ".join([*history[-2:], question]))
+    clarification_follow_up = (
+        len(question.split()) <= 5
+        and bool(assistant_history)
+        and any(
+            cue in _normalize(assistant_history[-1])
+            for cue in ("combien de jours", "quelle duree", "quelle date", "quelles dates", "date de debut", "date de fin", "precise la periode")
+        )
+    )
+    intent_context = _normalize(
+        " ".join([history[-1], question]) if clarification_follow_up and history else question
+    )
     intent_markers = (
         "historique", "entrainement realise", "mes sorties", "charge", "atl", "ctl",
         "tsb", "recuperation", "recup", "sommeil", "hrv", "tendance", "evolution",

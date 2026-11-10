@@ -2,7 +2,7 @@
 
 Le routeur ne lit aucune donnée athlète et n'exécute aucun outil. Il réduit
 uniquement le catalogue présenté au modèle à partir de l'intention explicite.
-En cas d'incertitude, il conserve le catalogue complet.
+En cas d'incertitude, il conserve le catalogue général, mais masque les outils dont les paramètres temporels obligatoires ne sont pas étayés.
 """
 from __future__ import annotations
 

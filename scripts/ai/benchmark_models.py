@@ -317,11 +317,19 @@ def _effective_tool_arguments(
     parsed = argument_model.model_validate(arguments)
     effective = parsed.model_dump(mode="json")
     for field_name, field in argument_model.model_fields.items():
-        if (
-            field_name not in arguments
-            and field.annotation is date
-            and field.default_factory is not None
+        if field_name in arguments:
+            continue
+        if field.annotation is date and field.default_factory is not None:
+            effective[field_name] = reference_date.isoformat()
+        elif (
+            field_name == "target_date"
+            and effective.get(field_name) is None
+            and field.default is None
+            and date in getattr(field.annotation, "__args__", ())
         ):
+            # Certains outils interprètent target_date=None comme la date du jour
+            # au moment de l'exécution. Le benchmark remplace ce défaut implicite
+            # par sa date de référence synthétique pour rester déterministe.
             effective[field_name] = reference_date.isoformat()
     return effective
 

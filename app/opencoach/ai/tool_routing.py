@@ -35,6 +35,7 @@ PERIOD_REQUIRED_TOOLS = frozenset({
     "training_trends",
     "race_preparation_analysis",
 })
+FALLBACK_SAFE_TOOLS = ALL_COACH_TOOLS - {"propose_profile_data"}
 
 
 def _normalize(value: str) -> str:
@@ -54,9 +55,7 @@ def _filter_period_tools(
     )
     filtered = set(names)
     if len(periods) < 1:
-        filtered.difference_update({
-            "training_history", "training_load", "race_preparation_analysis"
-        })
+        filtered.difference_update(PERIOD_REQUIRED_TOOLS - {"training_trends"})
     if len(periods) < 2:
         filtered.discard("training_trends")
     return frozenset(filtered)
@@ -72,7 +71,7 @@ def select_coach_tools(
     current = _normalize(question.strip())
     if not current:
         return _filter_period_tools(
-            ALL_COACH_TOOLS, question, history, assistant_history
+            FALLBACK_SAFE_TOOLS, question, history, assistant_history
         )
 
     # Questions générales et demandes d'écriture interdites : aucun outil métier.
@@ -128,7 +127,7 @@ def select_coach_tools(
 
     if not selected:
         return _filter_period_tools(
-            ALL_COACH_TOOLS, question, history, assistant_history
+            FALLBACK_SAFE_TOOLS, question, history, assistant_history
         )
 
     # Les contraintes sont toujours ajoutées dès qu'une recommandation ou une

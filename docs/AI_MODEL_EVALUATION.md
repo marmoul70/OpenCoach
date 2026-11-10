@@ -119,6 +119,7 @@ Le script :
 - injecte une date de référence synthétique fixe, mais ne charge pas le contexte athlète réel construit par `/coach` : le benchmark reste sans accès à la base et n’évalue donc pas l’effet des faits personnalisés ;
 - n'expose pas le tool de proposition de données de profil, car ce runner est limité à la sélection des outils de lecture ;
 - valide séparément les arguments générés contre les modèles Pydantic et marque les appels hors bornes (par exemple 500 jours) ;
+- compare les arguments effectifs après application des valeurs Pydantic par défaut : un argument facultatif explicitement égal à sa valeur par défaut est équivalent à son omission ; les dates implicites utilisent la date de référence synthétique du scénario ;
 - en production, le registre applique un contrôle Python de provenance pour les périodes d'historique, de charge et de tendances ; une période absente, hors bornes ou différente de celle formulée par l'utilisateur bloque l'exécution et retourne une question déterministe ;
 - interroge uniquement l'API Ollama locale (localhost/loopback imposé) ;
 - n'exécute aucun handler métier et ne modifie aucune donnée OpenCoach ;
@@ -138,6 +139,8 @@ L'endpoint `/api/ai/coach` applique désormais un routeur Python conservateur av
 - les demandes combinées cumulent les familles détectées ;
 - les suivis courts peuvent s'appuyer sur les derniers messages utilisateur et sur la dernière question de clarification de l'assistant ;
 - les outils à paramètres temporels obligatoires (`training_history`, `training_load`, `training_trends`, `race_preparation_analysis` et `planned_sessions`) sont masqués tant que les durées ou la plage de dates requises ne sont pas explicitement présentes dans le tour courant ou dans une réponse courte contextualisée ;
+- les fenêtres hors limites sont également masquées avant l'appel au modèle : historique 1–365 jours, charge 1–90 jours, tendances 1–180 jours par période et préparation de course 7–180 jours d'historique ;
+- `recovery_analysis` calcule ses fenêtres fixes de 7, 14 et 30 jours ; son seul argument facultatif est `target_date`, jamais `nb_days` ;
 - une période explicitement fournie dans une demande complète précédente n'est jamais réutilisée pour une nouvelle demande complète ;
 - une demande vide, inconnue ou ambiguë conserve le catalogue général, à l'exception des outils temporels dont les paramètres requis manquent ;
 - `propose_profile_data` n'est exposé que lorsqu'un message utilisateur fournit explicitement une donnée durable de profil ; il est absent du catalogue de repli ambigu et ne modifie jamais directement le profil ;

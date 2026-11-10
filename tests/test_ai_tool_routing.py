@@ -42,6 +42,7 @@ def test_ambiguous_request_keeps_catalog_except_unqualified_period_tools():
             "training_load",
             "training_trends",
             "race_preparation_analysis",
+            "propose_profile_data",
         }
     )
 
@@ -72,6 +73,7 @@ def test_empty_request_does_not_expose_unqualified_period_tools():
             "training_load",
             "training_trends",
             "race_preparation_analysis",
+            "propose_profile_data",
         }
     )
 

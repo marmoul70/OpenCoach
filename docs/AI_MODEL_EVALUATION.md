@@ -136,12 +136,17 @@ L'endpoint `/api/ai/coach` applique désormais un routeur Python conservateur av
 
 - les intentions reconnues sélectionnent les familles d'outils correspondantes (historique, charge, récupération, tendances, activité, courses, planning, exécution, contraintes et profil) ;
 - les demandes combinées cumulent les familles détectées ;
-- les suivis courts peuvent s'appuyer sur les deux derniers messages utilisateur pour conserver le contexte ;
+- les suivis courts peuvent s'appuyer sur les derniers messages utilisateur et sur la dernière question de clarification de l'assistant ;
+- les outils à période obligatoire (`training_history`, `training_load`, `training_trends` et `race_preparation_analysis`) sont masqués tant que les durées requises ne sont pas explicitement présentes dans le tour courant ou dans une réponse courte contextualisée ;
+- une période explicitement fournie dans une demande complète précédente n'est jamais réutilisée pour une nouvelle demande complète ;
 - une demande vide, inconnue ou ambiguë conserve le catalogue complet ;
 - `propose_profile_data` reste exposé comme capacité contrôlée de proposition, sans écriture directe dans le profil ;
-- le registre applique la sélection à la fois aux définitions envoyées au modèle et à l'exécution : un appel à un outil masqué est refusé côté Python.
+- le registre applique la sélection à la fois aux définitions envoyées au modèle et à l'exécution : un appel à un outil masqué est refusé côté Python ;
+- le contrôle de provenance reste actif avant validation Pydantic et bloque toute période absente, altérée ou hors limites, même si le modèle tente un appel d'outil non attendu.
 
-Le routeur ne consulte aucune donnée sportive et ne calcule aucune métrique. Il ne choisit que les outils disponibles ; tous les calculs restent dans les services déterministes OpenCoach. Le routage est couvert par `tests/test_ai_tool_routing.py` et le contrôle d'exécution par `tests/test_ai_tool_engine.py`.
+Le routeur ne consulte aucune donnée sportive et ne calcule aucune métrique. Il ne choisit que les outils disponibles ; tous les calculs restent dans les services déterministes OpenCoach. Le routage est couvert par `tests/test_ai_tool_routing.py`, le contrôle de provenance par `tests/test_ai_tool_engine.py` et la simulation du catalogue par `tests/test_ai_benchmark_runner.py`.
+
+**Limite connue :** les dates obligatoires de `planned_sessions` ne sont pas encore couvertes par le même contrôle de provenance temporelle. Le schéma Pydantic valide leur format et leur cohérence, mais une vérification de leur présence explicite dans les messages utilisateur reste à ajouter avant de considérer ce cas comme aussi robuste que les durées ci-dessus.
 
 ## 9. Étapes suivantes
 

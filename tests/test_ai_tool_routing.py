@@ -176,3 +176,9 @@ def test_trends_tool_reopens_after_second_period_clarification():
         ],
     )
     assert selected == frozenset({"training_trends"})
+
+
+
+def test_profile_write_tool_requires_explicit_profile_update_intent():
+    assert "propose_profile_data" not in select_coach_tools("Peux-tu m'aider ?")
+    assert "propose_profile_data" in select_coach_tools("Mon poids est de 84 kg.")

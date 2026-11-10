@@ -190,3 +190,30 @@ def test_argument_evidence_guard_requires_both_trend_periods():
     assert validate_period_argument_evidence("training_trends", {"nb_days": 7, "comparison_days": 7}, ["Compare mes tendances d'entraînement."]).startswith("Pour comparer tes tendances")
     assert validate_period_argument_evidence("training_trends", {"nb_days": 7, "comparison_days": 14}, ["Compare mes tendances sur 7 jours avec les 14 jours précédents."]) is None
     assert validate_period_argument_evidence("training_trends", {"nb_days": 7, "comparison_days": 7}, ["Compare mes tendances sur 7 jours avec les 14 jours précédents."]).startswith("Les durées proposées")
+
+
+
+def test_argument_evidence_guard_covers_race_preparation_history_days():
+    from opencoach.ai.argument_evidence import validate_period_argument_evidence
+
+    assert validate_period_argument_evidence(
+        "race_preparation_analysis",
+        {"history_days": 30},
+        ["Analyse ma préparation pour ma prochaine course."],
+    ).startswith("Sur combien de jours d'historique")
+    assert validate_period_argument_evidence(
+        "race_preparation_analysis",
+        {"history_days": 30},
+        ["Analyse ma préparation sur les 30 derniers jours pour ma prochaine course."],
+    ) is None
+
+
+def test_argument_evidence_guard_reuses_period_only_for_short_contextual_follow_up():
+    from opencoach.ai.argument_evidence import validate_period_argument_evidence
+
+    assert validate_period_argument_evidence(
+        "training_load",
+        {"nb_days": 14},
+        ["Fais-moi le bilan de mon historique sur 14 jours.", "Et la charge ?"],
+        ["Voici le bilan de ton historique."],
+    ) is None

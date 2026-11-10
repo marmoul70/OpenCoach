@@ -218,3 +218,27 @@ def test_argument_evidence_guard_reuses_period_only_for_short_contextual_follow_
         ["Fais-moi le bilan de mon historique sur 14 jours.", "Et la charge ?"],
         ["Voici le bilan de ton historique."],
     ) is None
+
+
+
+def test_trend_period_evidence_combines_two_clarification_turns():
+    from opencoach.ai.argument_evidence import (
+        extract_explicit_periods,
+        validate_period_argument_evidence,
+    )
+
+    user_messages = [
+        "Compare mes tendances sur 7 jours.",
+        "14 jours",
+    ]
+    assistant_messages = [
+        "Pour comparer tes tendances, indique la durée des deux périodes."
+    ]
+
+    assert extract_explicit_periods(user_messages, assistant_messages) == [7, 14]
+    assert validate_period_argument_evidence(
+        "training_trends",
+        {"nb_days": 7, "comparison_days": 14},
+        user_messages,
+        assistant_messages,
+    ) is None

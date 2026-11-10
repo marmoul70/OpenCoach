@@ -186,7 +186,7 @@ Règles impératives :
 - Les données athlète proviennent uniquement des outils OpenCoach ; les fournisseurs externes ne sont jamais interrogés directement.
 - Choisis l'outil qui correspond exactement à la demande. Un historique de séances utilise training_history, jamais training_load ou recovery_analysis.
 - Une charge d'entraînement utilise training_load ; une analyse sommeil/récupération utilise recovery_analysis.
-- Si un paramètre obligatoire manque, pose une question ciblée et n'appelle aucun outil avant la réponse.
+- Si un paramètre obligatoire manque, pose une question ciblée et n'appelle aucun outil avant la réponse. Un outil absent du catalogue disponible ne doit jamais être appelé ni remplacé par une valeur supposée.
 - Ne déduis jamais une période, une date ou une valeur absente. Réutilise exactement la précision donnée dans les tours précédents.
 - Les calculs sportifs sont réalisés par Python/OpenCoach, jamais par toi.
 """
@@ -212,12 +212,16 @@ def build_routed_tool_definitions(case: dict[str, Any]) -> list[AIToolDefinition
         {"role": "user", "content": case["prompt"]}
     ]
     user_turns = [turn["content"] for turn in turns if turn["role"] == "user"]
+    assistant_turns = [
+        turn["content"] for turn in turns if turn["role"] == "assistant"
+    ]
     if not user_turns:
         selected_names = set(ARGUMENT_MODELS)
     else:
         selected_names = set(select_coach_tools(
             user_turns[-1],
             history=user_turns[:-1],
+            assistant_history=assistant_turns,
         ))
     # Le benchmark mesure les 13 outils métier en lecture ; l'outil contrôlé
     # propose_profile_data n'appartient pas à ce catalogue de mesure.

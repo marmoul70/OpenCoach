@@ -596,6 +596,7 @@ async def ask_local_ai_with_athlete_context(
     selected_tools = select_coach_tools(
         payload.question,
         history=user_messages[:-1],
+        assistant_history=assistant_messages,
     )
     tool_registry.restrict_to(set(selected_tools))
 

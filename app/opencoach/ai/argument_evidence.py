@@ -14,7 +14,7 @@ def _normalize(value: str) -> str:
     decomposed = unicodedata.normalize("NFKD", value.casefold())
     return "".join(char for char in decomposed if not unicodedata.combining(char))
 
-def _extract_periods(
+def extract_explicit_periods(
     user_messages: list[str],
     assistant_messages: list[str] | None = None,
 ) -> list[int]:
@@ -50,7 +50,7 @@ def validate_period_argument_evidence(tool_name: str, arguments: dict, user_mess
     """Bloque les fenêtres temporelles non fournies ou altérées par le modèle."""
     if tool_name not in (*_PERIOD_RULES, "training_trends"):
         return None
-    periods = _extract_periods(user_messages, assistant_messages)
+    periods = extract_explicit_periods(user_messages, assistant_messages)
     if tool_name == "training_trends":
         if len(periods) < 2:
             return "Pour comparer tes tendances, indique la durée des deux périodes (par exemple 7 jours et 14 jours). Je n'ai lancé aucun calcul."

@@ -639,3 +639,21 @@ def test_ai_coach_returns_evidence_verified_pending_data_proposal():
         assert stored_proposals[0].status == "pending"
 
     engine.dispose()
+
+
+
+def test_coach_tool_result_serialization_bounds_large_payloads():
+    from opencoach.ai.tool_engine import AIToolResult
+    from opencoach.api.ai import _serialize_coach_tool_results
+
+    result = AIToolResult(
+        tool="training_history",
+        status="ok",
+        data={"sessions": [{"name": "x" * 12_000}]},
+        metadata={"executed_at": "2026-11-10T12:00:00+00:00"},
+    )
+    serialized = _serialize_coach_tool_results([result])
+
+    assert len(serialized) < 2_000
+    assert '"status": "omitted"' in serialized
+    assert "période plus courte" in serialized

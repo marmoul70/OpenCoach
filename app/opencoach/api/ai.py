@@ -509,6 +509,45 @@ async def ask_local_ai(
     )
 
 
+def _serialize_coach_tool_results(tool_results, *, max_item_chars: int = 10_000, max_total_chars: int = 20_000) -> str:
+    """Borne les résultats envoyés au LLM et conserve un JSON toujours valide."""
+    payloads = [
+        item.model_dump(mode="json")
+        for item in tool_results
+    ]
+    for payload in payloads:
+        encoded = json.dumps(payload, ensure_ascii=False, default=str)
+        if len(encoded) > max_item_chars:
+            payload["data"] = {
+                "status": "omitted",
+                "message": (
+                    "Résultat trop volumineux pour la rédaction IA. "
+                    "Demander une période plus courte ou une analyse plus ciblée."
+                ),
+            }
+
+    serialized = json.dumps(payloads, ensure_ascii=False, default=str)
+    if len(serialized) > max_total_chars:
+        compact = [
+            {
+                "tool": payload.get("tool"),
+                "status": payload.get("status"),
+                "error": payload.get("error"),
+                "metadata": payload.get("metadata", {}),
+                "data": {
+                    "status": "omitted",
+                    "message": (
+                        "Résultats cumulés trop volumineux. "
+                        "Relancer une analyse plus ciblée."
+                    ),
+                },
+            }
+            for payload in payloads
+        ]
+        serialized = json.dumps(compact, ensure_ascii=False, default=str)
+    return serialized
+
+
 @router.post("/coach", response_model=AIQuestionResponse)
 async def ask_local_ai_with_athlete_context(
     payload: AIQuestionRequest,
@@ -629,11 +668,7 @@ async def ask_local_ai_with_athlete_context(
     )
 
     if tool_results:
-        serialized_results = json.dumps(
-            [item.model_dump(mode="json") for item in tool_results],
-            ensure_ascii=False,
-            default=str,
-        )
+        serialized_results = _serialize_coach_tool_results(tool_results)
         system_prompt = (
             _coach_system_prompt(coach_preferences)
             + "\n\nMODE DE RÉDACTION APRÈS EXÉCUTION PYTHON : "
@@ -685,15 +720,11 @@ async def ask_local_ai_with_athlete_context(
             ) from exc
         # Les calculs Python ont déjà été exécutés : une panne du LLM ne doit
         # pas masquer les données ni faire échouer toute la consultation.
-        compact_results = json.dumps(
-            [item.model_dump(mode="json") for item in tool_results],
-            ensure_ascii=False,
-            default=str,
-        )
+        compact_results = _serialize_coach_tool_results(tool_results)
         answer = (
             "Les données OpenCoach ont bien été consultées, mais le moteur de rédaction "
             "local est indisponible. Voici les résultats structurés à titre de consultation :\n"
-            + compact_results[:10_000]
+            + compact_results
         )
         model = settings.model
 

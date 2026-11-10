@@ -157,6 +157,23 @@ def build_coach_execution_plan(
     if not any(marker in intent_context for marker in intent_markers):
         return CoachExecutionPlan()
 
+    periods = extract_explicit_periods(conversation_users, assistant_history)
+    if any(term in intent_context for term in ("historique", "entrainement realise", "mes sorties")) and "training_history" not in selected:
+        if not periods:
+            return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
+        if not 1 <= periods[-1] <= 365:
+            return CoachExecutionPlan(clarification="L'historique doit porter sur une période de 1 à 365 jours. Quelle période valide souhaites-tu ?")
+    if any(term in intent_context for term in ("charge", "mon atl", "ctl", "tsb")) and "training_load" not in selected:
+        if not periods:
+            return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?")
+        if not 1 <= periods[-1] <= 90:
+            return CoachExecutionPlan(clarification="La charge peut être analysée sur 1 à 90 jours. Quelle période valide souhaites-tu ?")
+    if any(term in intent_context for term in ("tendance", "compare mes tendances", "evolution de mon entrainement")) and "training_trends" not in selected:
+        if len(periods) < 2:
+            return CoachExecutionPlan(clarification="Pour comparer tes tendances, indique la durée des deux périodes (par exemple 7 jours et 14 jours).")
+    if any(term in intent_context for term in ("seances planifiees", "seances prevues", "prochaines seances")) and "planned_sessions" not in selected:
+        return CoachExecutionPlan(clarification="Quelles sont les dates de début et de fin à consulter pour tes séances planifiées ?")
+
     # Les demandes générales ou les intentions inconnues ne déclenchent aucune lecture métier.
     if not selected:
         periods = extract_explicit_periods(conversation_users, assistant_history)

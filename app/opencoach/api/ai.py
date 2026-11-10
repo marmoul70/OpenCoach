@@ -581,6 +581,16 @@ async def ask_local_ai_with_athlete_context(
                 assistant_messages=assistant_messages,
             )
             tool_results.append(result)
+            if call.name == "active_constraints" and result.status != "ok":
+                return AIQuestionResponse(
+                    answer=(
+                        "Je n'ai pas pu consulter les contraintes enregistrées dans OpenCoach. "
+                        "Je ne peux donc pas te recommander de séance sur cette base. "
+                        "Réessaie après vérification de la disponibilité du service."
+                    ),
+                    model=settings.model,
+                    context_used=False,
+                )
             if result.status == "needs_clarification":
                 return AIQuestionResponse(
                     answer=result.error or "Une précision est nécessaire avant cette analyse.",

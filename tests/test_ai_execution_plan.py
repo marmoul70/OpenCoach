@@ -157,3 +157,22 @@ def test_ambiguous_help_request_does_not_execute_fallback_catalog():
     )
     assert plan.calls == ()
     assert plan.clarification is None
+
+
+
+def test_compound_charge_and_recovery_asks_for_missing_charge_period_first():
+    plan = build_coach_execution_plan(
+        "Analyse ma charge et ma récupération.",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.calls == ()
+    assert "combien de jours" in plan.clarification
+
+
+def test_planned_sessions_without_dates_asks_before_weekly_context_lookup():
+    plan = build_coach_execution_plan(
+        "Quelles sont mes séances planifiées ?",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.calls == ()
+    assert "dates de début et de fin" in plan.clarification

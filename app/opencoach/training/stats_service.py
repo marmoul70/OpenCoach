@@ -107,6 +107,28 @@ class TrainingStatsService:
             )
         )
 
+        duration_data_count = sum(
+            activity.moving_time_seconds is not None
+            or activity.elapsed_time_seconds is not None
+            for activity in activities
+        ) + sum(
+            session.duration_minutes is not None
+            for session in manual_sessions
+        )
+        distance_data_count = sum(
+            activity.distance_m is not None for activity in activities
+        ) + sum(
+            session.distance_km is not None for session in manual_sessions
+        )
+        elevation_data_count = sum(
+            activity.elevation_gain_m is not None for activity in activities
+        ) + sum(
+            session.elevation_gain_m is not None for session in manual_sessions
+        )
+        measured_load_data_count = sum(
+            activity.training_load is not None for activity in activities
+        )
+
         measured_load = sum(
             activity.training_load or 0.0
             for activity in activities
@@ -147,6 +169,10 @@ class TrainingStatsService:
                 estimated_load,
                 2,
             ),
+            duration_data_count=duration_data_count,
+            distance_data_count=distance_data_count,
+            elevation_data_count=elevation_data_count,
+            measured_load_data_count=measured_load_data_count,
         )
 
     @staticmethod

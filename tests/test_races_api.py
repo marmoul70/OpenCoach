@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from uuid import uuid4
 
 from fastapi.testclient import (
@@ -465,6 +465,38 @@ def test_races_api_keeps_race_when_preparation_is_too_short() -> None:
     assert repository.saved[0][0] == profile_id
     assert len(repository.races) == 1
     assert repository.races[0].name == "Ultra trop proche"
+
+
+def test_races_api_warns_for_short_horizon_without_planner_exception() -> None:
+    repository = FakeRaceRepository()
+    planning_service = FakeCurrentWeekPlanningService()
+
+    client, profile_id = create_client(
+        repository,
+        planning_service=planning_service,
+    )
+
+    response = client.post(
+        "/api/races",
+        json={
+            "date": (date.today() + timedelta(days=30)).isoformat(),
+            "name": "Trail trop proche",
+            "location": "Vosges",
+            "race_type": "trail",
+            "priority": "primary",
+            "distance_km": 50.0,
+            "elevation_gain_m": 2000.0,
+            "status": "planned",
+        },
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["planning_warning"] is not None
+    assert "trop proche" in payload["planning_warning"]
+    assert len(repository.saved) == 1
+    assert repository.saved[0][0] == profile_id
+    assert planning_service.calls == []
 
 
 def test_races_api_updates_race() -> None:

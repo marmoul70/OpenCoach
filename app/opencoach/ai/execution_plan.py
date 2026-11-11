@@ -137,12 +137,6 @@ def build_coach_execution_plan(
             "Sur combien de jours souhaites-tu analyser les données disponibles dans OpenCoach ?"
         ))
 
-    selected = set(select_coach_tools(
-        question,
-        history=history,
-        assistant_history=assistant_history,
-    ))
-
     # Le routeur conserve un catalogue de repli pour les formulations inconnues.
     # Ce catalogue ne constitue pas une autorisation d'exécuter tous ces outils.
     intent_markers = (
@@ -180,15 +174,28 @@ def build_coach_execution_plan(
     # intermédiaires ne contiennent que des paramètres (ex. « 2 jours »).
     prior_intent = ""
     if clarification_follow_up:
-        prior_intent = next(
-            (
-                message
-                for message in reversed(history[-8:])
-                if any(marker in _normalize(message) for marker in intent_markers)
-            ),
-            "",
-        )
+        for message in reversed(history[-8:]):
+            normalized_message = _normalize(message)
+            if any(marker in normalized_message for marker in intent_markers):
+                prior_intent = message
+                break
+            # Seuls les tours intermédiaires contenant un paramètre explicite
+            # (durée ou plage de dates) peuvent être traversés. Un « merci »,
+            # une nouvelle question ou un échange terminé coupe l'héritage.
+            if (
+                extract_explicit_periods([message])
+                or extract_explicit_date_range([message]) is not None
+            ):
+                continue
+            break
+
     intent_context = _normalize(" ".join(part for part in (prior_intent, question) if part))
+    routing_history = [prior_intent] if clarification_follow_up and prior_intent else history
+    selected = set(select_coach_tools(
+        question,
+        history=routing_history,
+        assistant_history=assistant_history,
+    ))
     if not any(marker in intent_context for marker in intent_markers):
         return CoachExecutionPlan()
 

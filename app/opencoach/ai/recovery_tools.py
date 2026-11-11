@@ -258,7 +258,31 @@ def build_recovery_analysis_tool(
             "target_date": target_date.isoformat(),
             "data_store": "OpenCoach",
             "provider": provider if wellness_days else None,
-            "metric_sources": aggregation.metric_sources,
+            # Conserver la provenance sans transmettre une matrice journalière
+            # répétitive qui peut dépasser le budget de contexte du modèle.
+            "metric_sources": {
+                metric: sorted({
+                    source
+                    for day_sources in aggregation.metric_sources.values()
+                    for source in day_sources.get(metric, ())
+                })
+                for metric in sorted({
+                    metric
+                    for day_sources in aggregation.metric_sources.values()
+                    for metric in day_sources
+                })
+            },
+            "metric_source_days": {
+                metric: sum(
+                    1 for day_sources in aggregation.metric_sources.values()
+                    if metric in day_sources
+                )
+                for metric in sorted({
+                    metric
+                    for day_sources in aggregation.metric_sources.values()
+                    for metric in day_sources
+                })
+            },
             "conflicting_metrics": aggregation.conflicts,
             "source_date": payload["source_date"],
             "data_age_days": payload["data_age_days"],

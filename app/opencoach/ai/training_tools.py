@@ -130,7 +130,9 @@ def build_training_history_tool(
             "Retourne le bilan réel des entraînements sur les nb_days derniers "
             "jours calendaires inclusifs : séances, durée, distance, D+ et charge. "
             "nb_days est obligatoire : si la durée manque, demande-la à l'utilisateur "
-            "et attends sa réponse avant tout appel. Les métriques précisent leur couverture."
+            "et attends sa réponse avant tout appel. Les métriques précisent leur couverture. "
+            "Quand la couverture est partielle, observed_value est le sous-total des seules séances "
+            "renseignées : l'annoncer explicitement comme partiel, jamais comme total de période."
         ),
         arguments_model=TrainingHistoryArguments,
         handler=execute,

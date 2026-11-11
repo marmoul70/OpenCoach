@@ -149,3 +149,20 @@ def test_activity_detail_requires_a_selector_and_rejects_extra_fields():
         ActivityDetailArguments()
     with pytest.raises(ValidationError):
         ActivityDetailArguments(activity_date=date(2026, 11, 9), extra="nope")
+
+
+def test_activity_detail_can_select_the_latest_recorded_activity():
+    engine = _database()
+    profile_id = uuid4()
+    with Session(engine) as session:
+        older = _activity(session, profile_id, name="Ancienne sortie", day=8)
+        latest = _activity(session, profile_id, name="Dernière sortie", day=10)
+        tool = build_activity_detail_tool(session, profile_id)
+        result = tool.handler(ActivityDetailArguments(latest=True))
+        latest_id = str(latest.id)
+        older_id = str(older.id)
+
+    assert result["status"] == "ok"
+    assert result["activity"]["activity_id"] == latest_id
+    assert result["activity"]["activity_id"] != older_id
+    engine.dispose()

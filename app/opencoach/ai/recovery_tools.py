@@ -258,7 +258,31 @@ def build_recovery_analysis_tool(
             "target_date": target_date.isoformat(),
             "data_store": "OpenCoach",
             "provider": provider if wellness_days else None,
-            "metric_sources": aggregation.metric_sources,
+            # Conserver la provenance sans transmettre une matrice journalière
+            # répétitive qui peut dépasser le budget de contexte du modèle.
+            "metric_sources": {
+                metric: sorted({
+                    source
+                    for day_sources in aggregation.metric_sources.values()
+                    for source in day_sources.get(metric, ())
+                })
+                for metric in sorted({
+                    metric
+                    for day_sources in aggregation.metric_sources.values()
+                    for metric in day_sources
+                })
+            },
+            "metric_source_days": {
+                metric: sum(
+                    1 for day_sources in aggregation.metric_sources.values()
+                    if metric in day_sources
+                )
+                for metric in sorted({
+                    metric
+                    for day_sources in aggregation.metric_sources.values()
+                    for metric in day_sources
+                })
+            },
             "conflicting_metrics": aggregation.conflicts,
             "source_date": payload["source_date"],
             "data_age_days": payload["data_age_days"],
@@ -267,13 +291,6 @@ def build_recovery_analysis_tool(
             "daily_context": payload["subjective"],
             "daily_checkin": checkin_payload,
             "warnings": warnings,
-            "interpretation_rules": [
-                "Les fenêtres 7, 14 et 30 jours sont calculées séparément.",
-                "Une donnée absente n'est jamais égale à zéro.",
-                "Les métriques objectives et le ressenti subjectif restent distincts.",
-                "Aucun diagnostic médical ni score de forme composite n'est calculé.",
-                "Les mesures analysées sont celles déjà importées et centralisées dans OpenCoach.",
-            ],
         }
 
     return AITool(

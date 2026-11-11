@@ -117,13 +117,15 @@ def test_activity_date_is_extracted_without_asking_the_model():
     ]
 
 
-def test_activity_request_without_a_date_asks_for_clarification():
+def test_latest_activity_request_without_a_date_selects_latest_activity():
     plan = build_coach_execution_plan(
         "Détaille ma dernière activité.",
         reference_date=REFERENCE_DATE,
     )
-    assert plan.calls == ()
-    assert "date exacte" in plan.clarification
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("activity_detail", {"latest": True})
+    ]
+    assert plan.clarification is None
 
 
 def test_general_question_does_not_select_or_execute_any_business_tool():
@@ -239,3 +241,18 @@ def test_injury_for_tomorrow_uses_the_requested_date_for_both_safety_tools():
         ("active_constraints", {"target_date": "2026-11-11"}),
         ("recovery_status", {"target_date": "2026-11-11"}),
     ]
+
+
+def test_new_load_request_does_not_inherit_recovery_button_periods():
+    plan = build_coach_execution_plan(
+        "Analyse ma charge d'entraînement.",
+        history=[
+            "Fais un bilan de mon état de forme et de ma fatigue. Analyse le sommeil, la HRV, la fréquence cardiaque au repos, le stress et la charge sur 7, 14 et 30 jours."
+        ],
+        assistant_history=[
+            "Le bilan de récupération utilise les fenêtres de 7, 14 et 30 jours."
+        ],
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.calls == ()
+    assert "combien de jours" in plan.clarification

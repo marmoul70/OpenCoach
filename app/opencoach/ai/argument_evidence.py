@@ -80,8 +80,19 @@ def extract_explicit_periods(
     # immédiatement précédent, sauf si l'assistant vient de demander une
     # nouvelle précision temporelle. Une nouvelle demande complète ne
     # réutilise jamais une ancienne période.
+    # Ne reprendre une période précédente que pour un vrai suivi conversationnel
+    # (« et la charge ? »). Une nouvelle demande complète (« analyse ma charge »)
+    # doit redemander sa période, même si le tour précédent parlait de 7/14/30 jours.
+    contextual_follow_up = latest.startswith((
+        "et ",
+        "sur la meme periode",
+        "meme periode",
+        "idem",
+        "pareil",
+    ))
     if (
         not clarification_requested
+        and contextual_follow_up
         and len(latest.split()) <= 5
         and len(user_messages) >= 2
     ):

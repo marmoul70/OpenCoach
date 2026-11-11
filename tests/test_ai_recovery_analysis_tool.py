@@ -173,6 +173,8 @@ def test_recovery_analysis_merges_complementary_metrics_from_all_opencoach_impor
     assert current["resting_hr"]["current"] == 47.0
     assert current["stress_avg"]["current"] == 18.0
     assert current["sleep_seconds"]["current"] == 7 * 3600
-    assert result["metric_sources"][TARGET.isoformat()]["hrv"] == ("coros",)
-    assert result["metric_sources"][TARGET.isoformat()]["resting_hr"] == ("intervals",)
+    assert result["metric_sources"]["hrv"] == ["coros", "garmin"]
+    assert result["metric_sources"]["resting_hr"] == ["intervals"]
+    assert result["metric_source_days"]["hrv"] == 2
+    assert result["metric_source_days"]["resting_hr"] == 1
     assert result["windows"][0]["recorded_days"] == 2

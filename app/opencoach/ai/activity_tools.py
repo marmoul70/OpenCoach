@@ -27,6 +27,10 @@ class ActivityDetailArguments(BaseModel):
         default=None,
         description="Date locale de l'activité à consulter.",
     )
+    latest: bool = Field(
+        default=False,
+        description="Sélectionne la dernière activité enregistrée lorsque l'utilisateur demande sa dernière sortie.",
+    )
     activity_name: str | None = Field(
         default=None,
         min_length=1,
@@ -36,8 +40,9 @@ class ActivityDetailArguments(BaseModel):
 
     @model_validator(mode="after")
     def require_selector(self):
-        if self.activity_id is None and self.activity_date is None:
-            raise ValueError("Fournir activity_id ou activity_date.")
+        selectors = sum((self.activity_id is not None, self.activity_date is not None, self.latest))
+        if selectors != 1:
+            raise ValueError("Fournir exactement un sélecteur : activity_id, activity_date ou latest=true.")
         return self
 
 
@@ -93,6 +98,8 @@ def build_activity_detail_tool(
             )
 
         query = query.order_by(ActivityModel.start_at.desc())
+        if arguments.latest:
+            query = query.limit(1)
         activities = list(session.scalars(query).all())
         if arguments.activity_name:
             needle = arguments.activity_name.casefold()
@@ -214,7 +221,7 @@ def build_activity_detail_tool(
         name="activity_detail",
         description=(
             "Consulte une activité réalisée et ses intervalles/streams disponibles. "
-            "Fournis activity_date (date locale) ou activity_id. Si plusieurs activités "
+            "Fournis activity_date (date locale), activity_id ou latest=true pour la dernière activité enregistrée. Si plusieurs activités "
             "correspondent, le résultat retourne des choix : demande à l'utilisateur "
             "de préciser laquelle, puis rappelle l'outil avec son activity_id. "
             "activity_name peut départager plusieurs séances d'une même date. "

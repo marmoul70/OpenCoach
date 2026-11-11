@@ -12,13 +12,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-class InsufficientPreparationTimeError(ValueError):
-    """La course est trop proche pour respecter les phases minimales."""
-
-
 from opencoach.planning.weekly.training_envelope import (
     TrainingPhase,
 )
+
+
+class InsufficientPreparationTimeError(ValueError):
+    """La course est trop proche pour respecter les phases minimales."""
 
 
 @dataclass(frozen=True, slots=True)

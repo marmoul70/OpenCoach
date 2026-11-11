@@ -89,16 +89,28 @@ def build_training_history_tool(
                         stats.total_duration_minutes,
                         duration_available,
                     ),
+                    "observed_value": (
+                        stats.total_duration_minutes if duration_available else None
+                    ),
+                    "observed_value_semantics": "sum_of_sessions_with_available_duration",
                     "unit": "minutes",
                     "coverage": coverage(duration_available),
                 },
                 "distance_km": {
                     "value": metric_value(stats.total_distance_km, stats.distance_data_count),
+                    "observed_value": (
+                        stats.total_distance_km if stats.distance_data_count else None
+                    ),
+                    "observed_value_semantics": "sum_of_sessions_with_available_distance",
                     "unit": "km",
                     "coverage": coverage(stats.distance_data_count),
                 },
                 "elevation_gain_m": {
                     "value": metric_value(stats.total_elevation_gain_m, stats.elevation_data_count),
+                    "observed_value": (
+                        stats.total_elevation_gain_m if stats.elevation_data_count else None
+                    ),
+                    "observed_value_semantics": "sum_of_sessions_with_available_elevation_gain",
                     "unit": "m",
                     "coverage": coverage(stats.elevation_data_count),
                 },

@@ -352,15 +352,9 @@ def build_coach_execution_plan(
             "Quelle période valide souhaites-tu ?"
         ))
 
-    race_id_match = None
     if "race_preparation_analysis" in selected:
         # Une course ne peut être analysée qu'après identification explicite :
         # le calendrier fournit les identifiants, jamais un choix arbitraire.
-        race_ids = list(re.finditer(
-            r"\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b",
-            race_evidence,
-        ))
-        race_id_match = race_ids[-1] if race_ids else None
         if not race_id_match:
             # La consultation du calendrier est conservée ; la sélection de la
             # course devra être confirmée avant toute analyse de préparation.

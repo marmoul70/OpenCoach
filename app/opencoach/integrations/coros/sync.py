@@ -363,6 +363,39 @@ def _build_tool_arguments(
         return None
     return arguments
 
+
+
+def rebuild_coros_activities_from_snapshots(
+    db: Session,
+    profile_id: UUID,
+) -> int:
+    """Réapplique le mapper aux activités COROS déjà archivées localement.
+
+    Cette passe idempotente remet notamment à niveau start_at_local pour les
+    activités importées avant la normalisation du fuseau horaire. Elle ne
+    contacte pas COROS et ne modifie aucune activité d'un autre fournisseur.
+    """
+    snapshots = db.scalars(
+        select(CorosDailyData).where(
+            CorosDailyData.athlete_profile_id == profile_id,
+            CorosDailyData.category == "activities",
+        )
+    ).all()
+    normalized = 0
+    for snapshot in snapshots:
+        payload = snapshot.payload if isinstance(snapshot.payload, dict) else {}
+        stored = payload.get("activities")
+        records = (
+            [item for item in stored if isinstance(item, dict)]
+            if isinstance(stored, list)
+            else ([payload] if payload else [])
+        )
+        for record in records:
+            if upsert_coros_activity(db, profile_id, record):
+                normalized += 1
+    return normalized
+
+
 class CorosImportService:
     """Import incrémental, idempotent et reprenable des données COROS."""
 
@@ -418,11 +451,19 @@ class CorosImportService:
                 continue
             imported[category] = self._import_daily_category(category, tool_name, start, end, saved.get(category))
 
+        normalized_activities = 0
+        if categories.get("activities", True):
+            normalized_activities = rebuild_coros_activities_from_snapshots(
+                self.db,
+                self.profile_id,
+            )
+
         self.db.commit()
         return {
             "start_date": start.isoformat(),
             "end_date": end.isoformat(),
             "imported_snapshots": imported,
+            "normalized_activities": normalized_activities,
             "skipped": skipped,
         }
 

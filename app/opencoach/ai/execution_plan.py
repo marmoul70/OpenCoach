@@ -140,7 +140,7 @@ def build_coach_execution_plan(
     # Le routeur conserve un catalogue de repli pour les formulations inconnues.
     # Ce catalogue ne constitue pas une autorisation d'exécuter tous ces outils.
     intent_markers = (
-        "historique", "entrainement realise", "mes sorties", "charge", "atl", "ctl",
+        "historique", "entrainement realise", "mes entrainements", "mes activites", "mes sorties", "charge", "atl", "ctl",
         "tsb", "recuperation", "recup", "sommeil", "hrv", "tendance", "evolution",
         "progression", "compare", "comparaison", "activite", "seance", "sortie du",
         "course", "ultra", "trail", "dossard", "preparation", "planning", "planifie",
@@ -201,7 +201,7 @@ def build_coach_execution_plan(
         return CoachExecutionPlan()
 
     periods = extract_explicit_periods(conversation_users, assistant_history)
-    if any(term in intent_context for term in ("historique", "entrainement realise", "mes sorties")) and "training_history" not in selected:
+    if any(term in intent_context for term in ("historique", "entrainement realise", "mes entrainements", "mes activites", "mes sorties")) and "training_history" not in selected:
         if not periods:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
         if not 1 <= periods[-1] <= 365:
@@ -220,7 +220,7 @@ def build_coach_execution_plan(
     # Les demandes générales ou les intentions inconnues ne déclenchent aucune lecture métier.
     if not selected:
         periods = extract_explicit_periods(conversation_users, assistant_history)
-        if any(term in normalized for term in ("historique", "entrainement realise", "mes sorties")):
+        if any(term in normalized for term in ("historique", "entrainement realise", "mes entrainements", "mes activites", "mes sorties")):
             if not periods:
                 return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
             if not 1 <= periods[-1] <= 365:
@@ -273,8 +273,15 @@ def build_coach_execution_plan(
         else:
             activity_date = extract_activity_date(question, reference_date)
             if activity_date is None:
-                return CoachExecutionPlan(clarification="Quelle est la date exacte de l'activité à détailler ?")
-            calls.append(PlannedToolCall("activity_detail", {"activity_date": activity_date.isoformat()}))
+                latest_activity = any(
+                    term in normalized
+                    for term in ("derniere activite", "activite la plus recente", "derniere sortie")
+                )
+                if not latest_activity:
+                    return CoachExecutionPlan(clarification="Quelle est la date exacte de l'activité à détailler ?")
+                calls.append(PlannedToolCall("activity_detail", {"latest": True}))
+            else:
+                calls.append(PlannedToolCall("activity_detail", {"activity_date": activity_date.isoformat()}))
 
     if "training_history" in selected:
         if not periods:

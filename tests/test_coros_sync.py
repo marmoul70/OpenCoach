@@ -178,10 +178,24 @@ class SnapshotAwareFakeDb(FakeDb):
     def scalar(self, statement):
         from opencoach.database.models import CorosDailyData
 
+        from opencoach.database.models import Activity
+
         entity = statement.column_descriptions[0].get("entity")
+        params = statement.compile().params
+        if entity is Activity:
+            provider = params.get("provider_1")
+            provider_activity_id = params.get("provider_activity_id_1")
+            return next(
+                (
+                    row for row in self.added
+                    if isinstance(row, Activity)
+                    and row.provider == provider
+                    and row.provider_activity_id == provider_activity_id
+                ),
+                None,
+            )
         if entity is not CorosDailyData:
             return None
-        params = statement.compile().params
         profile_id = params.get("athlete_profile_id_1")
         metric_date = params.get("metric_date_1")
         category = params.get("category_1")

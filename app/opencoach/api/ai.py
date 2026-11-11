@@ -263,25 +263,6 @@ def get_ai_coach_preferences(
     user_id=Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ) -> AICoachPreferencesResponse:
-    failed_tools = [item for item in tool_results if item.status == "failed"]
-    if failed_tools:
-        failed_names = ", ".join(item.tool for item in failed_tools)
-        successful_names = ", ".join(
-            item.tool for item in tool_results if item.status == "ok"
-        )
-        answer = (
-            f"L'analyse n'a pas pu être terminée : échec de {failed_names}. "
-            "Les détails techniques sont consignés dans les journaux du backend. "
-            "Aucune conclusion ne sera tirée à partir de résultats incomplets."
-        )
-        if successful_names:
-            answer += f" Outils exécutés avec succès : {successful_names}."
-        return AIQuestionResponse(
-            answer=answer,
-            model=settings.model,
-            context_used=any(item.status == "ok" for item in tool_results),
-        )
-
     preferences = db.scalar(
         select(AICoachPreference).where(AICoachPreference.user_id == user_id)
     )
@@ -670,6 +651,25 @@ async def ask_local_ai_with_athlete_context(
                     model=settings.model,
                     context_used=False,
                 )
+
+    failed_tools = [item for item in tool_results if item.status == "failed"]
+    if failed_tools:
+        failed_names = ", ".join(item.tool for item in failed_tools)
+        successful_names = ", ".join(
+            item.tool for item in tool_results if item.status == "ok"
+        )
+        answer = (
+            f"L'analyse n'a pas pu être terminée : échec de {failed_names}. "
+            "Les détails techniques sont consignés dans les journaux du backend. "
+            "Aucune conclusion ne sera tirée à partir de résultats incomplets."
+        )
+        if successful_names:
+            answer += f" Outils exécutés avec succès : {successful_names}."
+        return AIQuestionResponse(
+            answer=answer,
+            model=settings.model,
+            context_used=any(item.status == "ok" for item in tool_results),
+        )
 
     preferences = db.scalar(
         select(AICoachPreference).where(AICoachPreference.user_id == user_id)

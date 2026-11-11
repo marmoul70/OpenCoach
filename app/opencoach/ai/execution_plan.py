@@ -145,17 +145,6 @@ def build_coach_execution_plan(
 
     # Le routeur conserve un catalogue de repli pour les formulations inconnues.
     # Ce catalogue ne constitue pas une autorisation d'exécuter tous ces outils.
-    clarification_follow_up = (
-        len(question.split()) <= 5
-        and bool(assistant_history)
-        and any(
-            cue in _normalize(assistant_history[-1])
-            for cue in ("combien de jours", "quelle duree", "quelle date", "quelles dates", "date de debut", "date de fin", "precise la periode")
-        )
-    )
-    intent_context = _normalize(
-        " ".join([history[-1], question]) if clarification_follow_up and history else question
-    )
     intent_markers = (
         "historique", "entrainement realise", "mes sorties", "charge", "atl", "ctl",
         "tsb", "recuperation", "recup", "sommeil", "hrv", "tendance", "evolution",
@@ -166,6 +155,40 @@ def build_coach_execution_plan(
         "zones cardiaques", "zone cardiaque", "etat de forme", "fatigue", "stress",
         "seuil", "poids", "je pese", "equipement", "chaussures", "mon poids",
     )
+    last_assistant = _normalize(assistant_history[-1]) if assistant_history else ""
+    clarification_follow_up = (
+        len(question.split()) <= 5
+        and bool(last_assistant)
+        and any(
+            cue in last_assistant
+            for cue in (
+                "combien de jours",
+                "quelle duree",
+                "duree des deux periodes",
+                "deux periodes",
+                "quelle date",
+                "quelles dates",
+                "date de debut",
+                "date de fin",
+                "precise la periode",
+            )
+        )
+    )
+
+    # Une réponse courte à une demande de clarification doit retrouver
+    # l'intention métier initiale, même si un ou plusieurs tours utilisateur
+    # intermédiaires ne contiennent que des paramètres (ex. « 2 jours »).
+    prior_intent = ""
+    if clarification_follow_up:
+        prior_intent = next(
+            (
+                message
+                for message in reversed(history[-8:])
+                if any(marker in _normalize(message) for marker in intent_markers)
+            ),
+            "",
+        )
+    intent_context = _normalize(" ".join(part for part in (prior_intent, question) if part))
     if not any(marker in intent_context for marker in intent_markers):
         return CoachExecutionPlan()
 

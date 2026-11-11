@@ -224,7 +224,7 @@ class FakeActivityClient:
                 "type": "text",
                 "text": '[{"labelId":"activity-1","sportType":102,"startTimestamp":1790000000}]',
             }]}
-        return {"content": [{"type": "text", "text": '{"laps":[{"lap":1}]}'}]}
+        return {"content": [{"type": "text", "text": '{"laps":[{"lap":1}],"distanceMeters":12500,"totalAscent":640,"avgHr":148,"maxHr":176,"durationSeconds":5400}'}]}
 
 
 def test_activity_details_use_discovered_tool_schema_during_import():
@@ -250,7 +250,21 @@ def test_activity_details_use_discovered_tool_schema_during_import():
         row for row in db.added
         if isinstance(row, CorosDailyData) and row.category == "activities"
     )
-    assert activity_snapshot.payload["activities"][0]["activity_detail"] == {"laps": [{"lap": 1}]}
+    assert activity_snapshot.payload["activities"][0]["activity_detail"] == {
+        "laps": [{"lap": 1}],
+        "distanceMeters": 12500,
+        "totalAscent": 640,
+        "avgHr": 148,
+        "maxHr": 176,
+        "durationSeconds": 5400,
+    }
+    from opencoach.database.models import Activity
+    imported_activity = next(row for row in db.added if isinstance(row, Activity))
+    assert imported_activity.distance_m == 12500
+    assert imported_activity.elevation_gain_m == 640
+    assert imported_activity.average_heart_rate == 148
+    assert imported_activity.max_heart_rate == 176
+    assert imported_activity.elapsed_time_seconds == 5400
 
 
 def test_activity_import_groups_multiple_records_from_the_same_day():

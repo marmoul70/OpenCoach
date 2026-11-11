@@ -27,6 +27,15 @@ SPORT_NAMES = {
 
 
 def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any]) -> bool:
+    # Le résumé COROS et le détail d'activité sont conservés séparément dans
+    # le snapshot brut. Fusionner les champs du détail pour normaliser aussi
+    # les métriques qu'il expose, sans écraser les valeurs du résumé.
+    detail = record.get("activity_detail")
+    detail_values = detail if isinstance(detail, dict) else {}
+    detail_data = detail_values.get("data")
+    if isinstance(detail_data, dict):
+        detail_values = {**detail_data, **detail_values}
+    record = {**detail_values, **record}
     label_id = record.get("labelId") or record.get("label_id")
     if label_id is None:
         return False

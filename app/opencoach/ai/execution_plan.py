@@ -201,7 +201,7 @@ def build_coach_execution_plan(
         return CoachExecutionPlan()
 
     periods = extract_explicit_periods(conversation_users, assistant_history)
-    if any(term in intent_context for term in ("historique", "entrainement realise", "mes entrainements", "mes activites", "mes sorties")) and "training_history" not in selected:
+    if any(term in intent_context for term in ("historique", "entrainement realise", "mes entrainements", "mes activites", "mes sorties", "bilan de ma semaine", "bilan de la semaine", "bilan hebdomadaire")) and "training_history" not in selected:
         if not periods:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
         if not 1 <= periods[-1] <= 365:

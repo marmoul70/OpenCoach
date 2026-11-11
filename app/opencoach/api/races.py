@@ -28,6 +28,9 @@ from opencoach.database.session import (
     get_db,
 )
 from opencoach.models import Race
+from opencoach.planning.trajectory.coaching_phase_allocation import (
+    InsufficientPreparationTimeError,
+)
 from opencoach.races import (
     RaceActualResult,
     RaceResultService,
@@ -64,23 +67,32 @@ def refresh_current_week_for_race(
     race: Race,
     athlete_profile_id: UUID,
     planning_service: CurrentWeekPlanningService,
-) -> None:
-    """Régénère la semaine si la course influence la trajectoire."""
+) -> str | None:
+    """Régénère la semaine et signale une préparation trop courte."""
 
     if not race_affects_current_trajectory(
         race
     ):
-        return
+        return None
 
-    planning_service.refresh(
-        athlete_profile_id=(
-            athlete_profile_id
-        ),
-        reference_date=date.today(),
-        additional_context=(
-            "course principale modifiée",
-        ),
-    )
+    try:
+        planning_service.refresh(
+            athlete_profile_id=(
+                athlete_profile_id
+            ),
+            reference_date=date.today(),
+            additional_context=(
+                "course principale modifiée",
+            ),
+        )
+    except InsufficientPreparationTimeError:
+        return (
+            "Cette course est trop proche pour suivre le rythme "
+            "de progression prévu. Elle est bien enregistrée, "
+            "mais le planning n'a pas pu être recalculé."
+        )
+
+    return None
 
 
 def get_race_repository(
@@ -174,6 +186,7 @@ def to_response(
                 actual_result
             )
         ),
+        planning_warning=planning_warning,
     )
 
 
@@ -182,6 +195,7 @@ def build_race_response(
     *,
     athlete_profile_id: UUID,
     activity_repository: SqlActivityRepository,
+    planning_warning: str | None = None,
 ) -> RaceResponse:
     """Construit la réponse complète d'une course."""
 
@@ -381,7 +395,7 @@ def create_race(
             ),
         ) from exc
 
-    refresh_current_week_for_race(
+    planning_warning = refresh_current_week_for_race(
         race=created_race,
         athlete_profile_id=(
             athlete_profile_id
@@ -399,6 +413,7 @@ def create_race(
         activity_repository=(
             activity_repository
         ),
+        planning_warning=planning_warning,
     )
 
 
@@ -660,7 +675,7 @@ def update_race(
             ),
         ) from exc
 
-    refresh_current_week_for_race(
+    planning_warning = refresh_current_week_for_race(
         race=updated_race,
         athlete_profile_id=(
             athlete_profile_id
@@ -678,6 +693,7 @@ def update_race(
         activity_repository=(
             activity_repository
         ),
+        planning_warning=planning_warning,
     )
 
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from opencoach.integrations.coros.activity_mapper import upsert_coros_activity

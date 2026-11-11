@@ -38,6 +38,45 @@ def test_history_period_is_carried_from_the_clarification_turn():
     ]
 
 
+def test_two_period_trend_clarification_restores_original_intent_after_intermediate_reply():
+    plan = build_coach_execution_plan(
+        "7 jours",
+        history=[
+            "Compare mes tendances de charge d'entraînement.",
+            "2 jours",
+        ],
+        assistant_history=[
+            "Quelles périodes souhaites-tu comparer ?",
+            "Pour comparer ces tendances, indique la durée des deux périodes (par exemple 7 jours et 14 jours).",
+        ],
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("training_load", {"nb_days": 7}),
+        ("training_trends", {"nb_days": 2, "comparison_days": 7}),
+    ]
+
+
+def test_short_clarification_answer_does_not_reuse_unrelated_old_intent():
+    plan = build_coach_execution_plan(
+        "7 jours",
+        history=[
+            "Analyse ma charge sur 14 jours.",
+            "Merci pour cette analyse.",
+        ],
+        assistant_history=[
+            "Voici ton bilan de charge.",
+            "Quelle durée souhaites-tu pour une autre analyse ?",
+        ],
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.calls == ()
+    assert plan.clarification is None
+
+
 def test_out_of_range_history_is_rejected_before_tool_execution():
     plan = build_coach_execution_plan(
         "Analyse mon historique sur 500 jours.",

@@ -317,12 +317,62 @@ def build_coach_execution_plan(
     if "active_constraints" in selected and not calls:
         calls.append(PlannedToolCall("active_constraints", {}))
 
-    if "race_calendar" in selected:
+    race_id_match = None
+    if "race_preparation_analysis" in selected:
+        race_id_match = re.search(
+            r"\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b",
+            normalized,
+        )
+
+    if "race_calendar" in selected and not (
+        "race_preparation_analysis" in selected and race_id_match is not None
+    ):
         horizon = re.search(r"\b(\d{1,3})\s+(?:prochains?\s+)?jours\b", normalized)
         calls.append(PlannedToolCall(
             "race_calendar",
             {"horizon_days": int(horizon.group(1))} if horizon else {},
         ))
+
+    # Une période explicite invalide ne doit pas désactiver silencieusement
+    # l'analyse de préparation : demander une correction sans consulter l'outil.
+    if (
+        "preparation" in intent_context
+        and "race_preparation_analysis" not in selected
+        and periods
+        and not 7 <= periods[-1] <= 180
+    ):
+        return CoachExecutionPlan(clarification=(
+            "L'analyse de préparation nécessite une période de 7 à 180 jours. "
+            "Quelle période valide souhaites-tu ?"
+        ))
+
+    race_id_match = None
+    if "race_preparation_analysis" in selected:
+        # Une course ne peut être analysée qu'après identification explicite :
+        # le calendrier fournit les identifiants, jamais un choix arbitraire.
+        race_id_match = re.search(
+            r"\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b",
+            normalized,
+        )
+        if not race_id_match:
+            # La consultation du calendrier est conservée ; la sélection de la
+            # course devra être confirmée avant toute analyse de préparation.
+            pass
+        elif not periods:
+            return CoachExecutionPlan(clarification=(
+                "Sur combien de jours d'historique souhaites-tu analyser ta préparation "
+                "à cette course (7 à 180 jours) ?"
+            ))
+        elif not 7 <= periods[-1] <= 180:
+            return CoachExecutionPlan(clarification=(
+                "L'analyse de préparation nécessite une période de 7 à 180 jours. "
+                "Quelle période valide souhaites-tu ?"
+            ))
+        else:
+            calls.append(PlannedToolCall("race_preparation_analysis", {
+                "race_id": race_id_match.group(0),
+                "history_days": periods[-1],
+            }))
 
     if "planned_sessions" in selected:
         date_range = extract_explicit_date_range(conversation_users, assistant_history)

@@ -266,3 +266,36 @@ def test_general_trail_explanation_does_not_execute_race_tools():
     )
     assert plan.calls == ()
     assert plan.clarification is None
+
+
+
+def test_race_preparation_uses_explicit_race_id_and_history_period():
+    race_id = "123e4567-e89b-42d3-a456-426614174000"
+    plan = build_coach_execution_plan(
+        f"Analyse ma préparation pour la course {race_id} sur 30 jours.",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.clarification is None
+    assert ("race_preparation_analysis", {
+        "race_id": race_id,
+        "history_days": 30,
+    }) in [(call.name, call.arguments) for call in plan.calls]
+
+
+def test_race_preparation_without_race_id_never_guesses_target():
+    plan = build_coach_execution_plan(
+        "Analyse ma préparation sur les 30 derniers jours pour ma prochaine course.",
+        reference_date=REFERENCE_DATE,
+    )
+    assert all(call.name != "race_preparation_analysis" for call in plan.calls)
+    assert any(call.name == "race_calendar" for call in plan.calls)
+
+
+def test_race_preparation_invalid_history_period_does_not_execute_analysis():
+    race_id = "123e4567-e89b-42d3-a456-426614174000"
+    plan = build_coach_execution_plan(
+        f"Analyse ma préparation pour la course {race_id} sur 200 jours.",
+        reference_date=REFERENCE_DATE,
+    )
+    assert all(call.name != "race_preparation_analysis" for call in plan.calls)
+    assert "7 à 180 jours" in (plan.clarification or "")

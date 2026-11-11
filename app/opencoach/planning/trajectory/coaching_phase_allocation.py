@@ -17,6 +17,10 @@ from opencoach.planning.weekly.training_envelope import (
 )
 
 
+class InsufficientPreparationTimeError(ValueError):
+    """La course est trop proche pour respecter les phases minimales."""
+
+
 @dataclass(frozen=True, slots=True)
 class PhaseDurationPolicy:
     """Durées minimales et préférées d'une phase."""
@@ -200,7 +204,7 @@ def allocate_coaching_phases(
     )
 
     if available_weeks < minimum_total:
-        raise ValueError(
+        raise InsufficientPreparationTimeError(
             "Le délai disponible est insuffisant pour respecter "
             "les durées minimales des phases."
         )
@@ -363,6 +367,20 @@ def allocate_coaching_phases(
         phases=tuple(
             phases
         ),
+    )
+
+
+def calculate_minimum_preparation_weeks(
+    policies: tuple[
+        PhaseDurationPolicy,
+        ...,
+    ] = DEFAULT_PHASE_POLICIES,
+) -> int:
+    """Retourne le minimum absolu de semaines requis pour préparer une course."""
+
+    return sum(
+        policy.minimum_weeks
+        for policy in policies
     )
 
 

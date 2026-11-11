@@ -1,6 +1,7 @@
 import {
   Activity,
   Bell,
+  Brain,
   ChevronRight,
   Database,
   Link2,
@@ -42,9 +43,14 @@ import {
   CorosSection,
 } from './CorosSection'
 
+import {
+  AISettingsSection,
+} from './AISettingsSection'
+
 
 type SettingsPage =
   | 'location'
+  | 'ai'
   | 'intervals'
   | 'coros'
   | 'notifications'
@@ -64,6 +70,14 @@ interface SettingsNavigationItem {
 
 const SETTINGS_NAVIGATION:
 SettingsNavigationItem[] = [
+  {
+    id: 'ai',
+    label: 'Coach IA',
+    shortLabel: 'Coach IA',
+    description: 'Personnalité, motivation et consignes du coach local.',
+    group: 'Intelligence artificielle',
+    icon: Brain,
+  },
   {
     id: 'location',
     label: 'Localisation',
@@ -581,6 +595,9 @@ function renderSettingsPage(
   },
 ) {
   switch (page) {
+    case 'ai':
+      return <AISettingsSection />
+
     case 'coros':
       return (
         <CorosSection />

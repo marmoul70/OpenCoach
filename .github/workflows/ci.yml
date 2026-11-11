@@ -6,11 +6,13 @@ on:
       - main
       - test
       - 'feature/**'
+      - 'fix/**'
 
   pull_request:
     branches:
       - main
       - test
+      - 'feature/**'
 
 
 jobs:

@@ -630,6 +630,9 @@ def test_ai_coach_returns_evidence_verified_pending_data_proposal():
     assert proposals[0]["value"] == 15.5
     assert proposals[0]["unit"] == "km/h"
     assert proposals[0]["status"] == "pending"
+    assert "VMA" in response.json()["answer"]
+    assert "profil n'a pas encore été modifié" in response.json()["answer"]
+    assert "vitesse moyenne à la course" not in response.json()["answer"].lower()
 
     with Session(engine) as db:
         stored_profile = db.get(AthleteProfile, athlete_profile_id)

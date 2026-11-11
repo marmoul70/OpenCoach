@@ -29,6 +29,8 @@ def test_registry_executes_only_registered_tool_and_returns_normalized_result():
     assert result.status == "ok"
     assert result.data == {"value": 3}
     assert result.metadata["executed_at"]
+    assert isinstance(result.metadata["duration_ms"], float)
+    assert result.metadata["duration_ms"] >= 0
     assert registry.definitions()[0]["name"] == "echo"
     assert registry.execution_results == (result,)
 
@@ -49,6 +51,8 @@ def test_registry_rejects_unknown_tool_and_invalid_arguments():
 
     assert unknown.status == "not_found"
     assert invalid.status == "invalid_arguments"
+    assert unknown.metadata["duration_ms"] >= 0
+    assert invalid.metadata["duration_ms"] >= 0
 
 
 def test_registry_restricts_both_visible_and_executable_tools():
@@ -97,6 +101,7 @@ def test_registry_does_not_expose_internal_exception_details(caplog):
     assert result.status == "failed"
     assert "password" not in (result.error or "")
     assert result.metadata["business_tool_executed"] is True
+    assert result.metadata["duration_ms"] >= 0
     assert result.metadata["error_type"] == "RuntimeError"
     assert "Échec d'exécution de l'outil coach 'failure'" in caplog.text
     assert "database password must not leak" in caplog.text

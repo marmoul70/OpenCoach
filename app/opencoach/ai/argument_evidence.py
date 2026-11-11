@@ -83,10 +83,12 @@ def extract_explicit_periods(
     # Ne reprendre une période précédente que pour un vrai suivi conversationnel
     # (« et la charge ? »). Une nouvelle demande complète (« analyse ma charge »)
     # doit redemander sa période, même si le tour précédent parlait de 7/14/30 jours.
-    contextual_follow_up = bool(re.match(
-        r"^(?:et\\s+(?:pour\\s+|la\\s+|le\\s+|cote\\s+)?|"
-        r"sur\\s+la\\s+meme\\s+periode|meme\\s+periode|idem|pareil)\\b",
-        latest,
+    contextual_follow_up = latest.startswith((
+        "et ",
+        "sur la meme periode",
+        "meme periode",
+        "idem",
+        "pareil",
     ))
     if (
         not clarification_requested

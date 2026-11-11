@@ -103,6 +103,8 @@ def select_coach_tools(
     no_tool_patterns = (
         "explique-moi la difference", "explique moi la difference",
         "quelle est la difference", "qu'est-ce que", "quest-ce que",
+        "explique-moi ce qu'est", "explique moi ce qu est",
+        "c'est quoi", "c est quoi", "que signifie",
         "definition de", "explique le principe",
     )
     if any(pattern in current for pattern in no_tool_patterns):

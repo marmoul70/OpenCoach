@@ -322,10 +322,11 @@ def build_coach_execution_plan(
     race_evidence = " ".join(conversation_users).casefold()
     race_id_match = None
     if "race_preparation_analysis" in selected:
-        race_id_match = re.search(
+        race_ids = list(re.finditer(
             r"\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b",
             race_evidence,
-        )
+        ))
+        race_id_match = race_ids[-1] if race_ids else None
 
     if "race_calendar" in selected and not (
         "race_preparation_analysis" in selected and race_id_match is not None
@@ -353,10 +354,11 @@ def build_coach_execution_plan(
     if "race_preparation_analysis" in selected:
         # Une course ne peut être analysée qu'après identification explicite :
         # le calendrier fournit les identifiants, jamais un choix arbitraire.
-        race_id_match = re.search(
+        race_ids = list(re.finditer(
             r"\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b",
             race_evidence,
-        )
+        ))
+        race_id_match = race_ids[-1] if race_ids else None
         if not race_id_match:
             # La consultation du calendrier est conservée ; la sélection de la
             # course devra être confirmée avant toute analyse de préparation.

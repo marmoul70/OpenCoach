@@ -505,7 +505,7 @@ export function AddTrainingSessionModal({
         >
           <button
             type="button"
-            aria-haspopup="listbox"
+            aria-haspopup="menu"
             aria-expanded={modeMenuOpen}
             aria-label="Choisir le mode d'ajout"
             onClick={() => setModeMenuOpen((current) => !current)}
@@ -576,7 +576,7 @@ export function AddTrainingSessionModal({
 
           {modeMenuOpen && (
             <div
-              role="listbox"
+              role="menu"
               aria-label="Modes d'ajout disponibles"
               className="
                 absolute
@@ -595,8 +595,8 @@ export function AddTrainingSessionModal({
             >
               <button
                 type="button"
-                role="option"
-                aria-selected={mode === 'intervals'}
+                role="menuitemradio"
+                aria-checked={mode === 'intervals'}
                 onClick={() => {
                   setMode('intervals')
                   setModeMenuOpen(false)
@@ -626,8 +626,8 @@ export function AddTrainingSessionModal({
 
               <button
                 type="button"
-                role="option"
-                aria-selected={mode === 'coros'}
+                role="menuitemradio"
+                aria-checked={mode === 'coros'}
                 onClick={() => {
                   setMode('coros')
                   setModeMenuOpen(false)
@@ -657,8 +657,8 @@ export function AddTrainingSessionModal({
 
               <button
                 type="button"
-                role="option"
-                aria-selected={mode === 'manual'}
+                role="menuitemradio"
+                aria-checked={mode === 'manual'}
                 onClick={() => {
                   setMode('manual')
                   setModeMenuOpen(false)

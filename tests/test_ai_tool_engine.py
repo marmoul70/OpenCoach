@@ -75,7 +75,9 @@ def test_registry_restricts_both_visible_and_executable_tools():
     assert accepted.status == "ok"
 
 
-def test_registry_does_not_expose_internal_exception_details():
+def test_registry_does_not_expose_internal_exception_details(caplog):
+    import logging
+
     registry = AIToolRegistry()
 
     def fail(_args):
@@ -94,6 +96,10 @@ def test_registry_does_not_expose_internal_exception_details():
 
     assert result.status == "failed"
     assert "password" not in (result.error or "")
+    assert result.metadata["business_tool_executed"] is True
+    assert result.metadata["error_type"] == "RuntimeError"
+    assert "Échec d'exécution de l'outil coach 'failure'" in caplog.text
+    assert "database password must not leak" in caplog.text
 
 
 def test_training_history_tool_uses_injected_athlete_and_inclusive_period():

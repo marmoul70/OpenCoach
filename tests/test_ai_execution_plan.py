@@ -117,13 +117,15 @@ def test_activity_date_is_extracted_without_asking_the_model():
     ]
 
 
-def test_activity_request_without_a_date_asks_for_clarification():
+def test_latest_activity_request_without_a_date_selects_latest_activity():
     plan = build_coach_execution_plan(
         "Détaille ma dernière activité.",
         reference_date=REFERENCE_DATE,
     )
-    assert plan.calls == ()
-    assert "date exacte" in plan.clarification
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("activity_detail", {"latest": True})
+    ]
+    assert plan.clarification is None
 
 
 def test_general_question_does_not_select_or_execute_any_business_tool():

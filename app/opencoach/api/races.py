@@ -143,6 +143,8 @@ def to_actual_result_response(
 def to_response(
     race: Race,
     actual_result: RaceActualResult,
+    *,
+    planning_warning: str | None = None,
 ) -> RaceResponse:
     """Convertit une course métier vers sa réponse API."""
 
@@ -213,6 +215,7 @@ def build_race_response(
     return to_response(
         race,
         actual_result,
+        planning_warning=planning_warning,
     )
 
 

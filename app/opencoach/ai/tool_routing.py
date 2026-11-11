@@ -51,9 +51,13 @@ def _filter_period_tools(
     question: str,
     history: list[str] | None,
     assistant_history: list[str] | None,
+    evidence_history: list[str] | None = None,
 ) -> frozenset[str]:
+    # L'historique de routage peut être réduit à l'intention initiale ;
+    # les preuves temporelles doivent néanmoins conserver tous les tours utilisateur.
+    period_messages = [*(evidence_history if evidence_history is not None else (history or [])), question]
     periods = extract_explicit_periods(
-        [*(history or []), question],
+        period_messages,
         assistant_history,
     )
     filtered = set(names)
@@ -73,7 +77,7 @@ def _filter_period_tools(
     ):
         filtered.discard("training_trends")
     date_range = extract_explicit_date_range(
-        [*(history or []), question],
+        period_messages,
         assistant_history,
     )
     if date_range is None:
@@ -86,12 +90,13 @@ def select_coach_tools(
     *,
     history: list[str] | None = None,
     assistant_history: list[str] | None = None,
+    evidence_history: list[str] | None = None,
 ) -> frozenset[str]:
     """Sélectionne les outils utiles et masque les outils temporels incomplets."""
     current = _normalize(question.strip())
     if not current:
         return _filter_period_tools(
-            FALLBACK_SAFE_TOOLS, question, history, assistant_history
+            FALLBACK_SAFE_TOOLS, question, history, assistant_history, evidence_history
         )
 
     # Questions générales et demandes d'écriture interdites : aucun outil métier.
@@ -160,6 +165,6 @@ def select_coach_tools(
     # Même en cas d'intention reconnue, seuls les outils dont les
     # paramètres temporels sont étayés restent disponibles.
     return _filter_period_tools(
-        selected, question, history, assistant_history
+        selected, question, history, assistant_history, evidence_history
     )
 

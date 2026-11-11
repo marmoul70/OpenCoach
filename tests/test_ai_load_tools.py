@@ -207,3 +207,75 @@ def test_training_load_tool_hides_partial_total_and_marks_daily_status_unreliabl
     assert result["load"]["partial_observed_total"] == 20.0
     assert result["daily"][0]["status"] == "load_data_incomplete"
     assert result["daily"][0]["actual_load"] is None
+
+
+
+def test_training_load_tool_exposes_coros_atl_ctl_separately_from_session_load():
+    athlete_id = uuid4()
+    calls = []
+
+    class EmptyStatsService:
+        def calculate(self, profile_id, start_date, end_date):
+            return SimpleNamespace(
+                sessions_count=2,
+                measured_load_data_count=0,
+                manual_sessions_count=0,
+            )
+
+    class EmptyLoadService:
+        def calculate(self, profile_id, target_date, *, days):
+            return RecentTrainingLoad(
+                days=(),
+                analyzed_days=0,
+                planned_load_total=0.0,
+                actual_load_total=0.0,
+                above_plan_days=0,
+                below_plan_days=0,
+                on_plan_days=0,
+                broken_rest_days=0,
+                respected_rest_days=0,
+                planning_covered_days=0,
+                unplanned_days=7,
+            )
+
+    class WellnessRepository:
+        def list_range(self, profile_id, start_date, end_date, *, provider=None):
+            calls.append((profile_id, start_date, end_date, provider))
+            return [
+                SimpleNamespace(
+                    date=date(2026, 11, 10),
+                    fatigue_atl=77.0,
+                    fitness_ctl=62.0,
+                ),
+                SimpleNamespace(
+                    date=date(2026, 11, 9),
+                    fatigue_atl=57.0,
+                    fitness_ctl=57.0,
+                ),
+            ]
+
+    tool = build_training_load_tool(
+        EmptyLoadService(),
+        EmptyStatsService(),
+        athlete_id,
+        reference_date_provider=lambda: date(2026, 11, 11),
+        wellness_repository=WellnessRepository(),
+    )
+    result = tool.handler(TrainingLoadArguments(nb_days=7))
+
+    assert calls == [(
+        athlete_id,
+        date(2026, 11, 4),
+        date(2026, 11, 10),
+        "coros",
+    )]
+    coros = result["coros_training_load"]
+    assert coros["coverage"] == {
+        "available_days": 2,
+        "expected_days": 7,
+        "status": "partial",
+    }
+    assert coros["latest"]["atl_short_term_load"] == 77.0
+    assert coros["latest"]["ctl_long_term_load"] == 62.0
+    assert coros["latest"]["load_ratio"] == 1.24
+    assert result["load"]["actual_total"] is None

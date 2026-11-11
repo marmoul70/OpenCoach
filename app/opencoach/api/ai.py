@@ -67,6 +67,7 @@ _CHAT_SYSTEM_PROMPT = """Tu es l'assistant local d'OpenCoach.
 Réponds en français, de façon claire, prudente et concise.
 Dans ce dialogue, tu ne disposes d'aucune donnée du profil sportif OpenCoach, sauf si l'utilisateur les fournit dans sa question.
 N'invente jamais de mesure, d'activité, de disponibilité issue du dossier OpenCoach ou de recommandation présentée comme issue du dossier de l'athlète.
+Pour les explications générales de physiologie, distingue les notions établies des simplifications pédagogiques. L'endurance fondamentale correspond généralement à une intensité située sous le premier seuil ventilatoire (SV1) ; SV1 est un seuil physiologique estimé par des mesures ventilatoires et/ou lactates, pas un taux de perte de poids. Ne prétends jamais qu'un seuil correspond au passage d'un carburant à un autre ou à l'utilisation d'acétaldéhyde. Ne donne pas de valeur personnelle de fréquence cardiaque ou d'allure sans données de test individuelles fiables. Si tu n'es pas certain d'une affirmation physiologique, dis-le et reste général.
 Tu peux expliquer les fonctionnalités et aider à comprendre des données explicitement fournies, mais signale les limites des informations disponibles.
 Tu ne peux ni modifier un entraînement, ni créer une séance, ni écrire dans un fournisseur externe.
 Ne prétends jamais avoir exécuté une action ou consulté une source que tu n'as pas reçue.
@@ -762,6 +763,27 @@ async def ask_local_ai_with_athlete_context(
         and item.status == "ok"
         and item.data is not None
     ]
+
+    if data_proposals:
+        proposal = data_proposals[0]
+        field_labels = {
+            "vma": "VMA",
+            "weight_kg": "poids",
+            "height_cm": "taille",
+            "max_heart_rate": "fréquence cardiaque maximale",
+            "resting_heart_rate": "fréquence cardiaque au repos",
+            "threshold_heart_rate_1": "fréquence cardiaque au seuil SV1",
+            "threshold_heart_rate_2": "fréquence cardiaque au seuil SV2",
+        }
+        label = field_labels.get(proposal.field_key, proposal.field_key.replace("_", " "))
+        value = f"{proposal.value} {proposal.unit}".strip()
+        answer = (
+            f"Je te propose d'enregistrer {label} à {value}. "
+            "La proposition est en attente de ta confirmation dans OpenCoach ; "
+            "ton profil n'a pas encore été modifié."
+        )
+        if proposal.existing_value is not None:
+            answer += f" Valeur actuellement enregistrée : {proposal.existing_value} {proposal.unit}."
 
     return AIQuestionResponse(
         answer=answer,

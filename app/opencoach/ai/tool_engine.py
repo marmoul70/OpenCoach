@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 from datetime import datetime, timezone
+from time import perf_counter
 from typing import Any, Callable, Literal, Type
 
 from pydantic import BaseModel, ConfigDict, ValidationError
@@ -100,6 +101,7 @@ class AIToolRegistry:
         assistant_messages: list[str] | None = None,
     ) -> AIToolResult:
         """Vérifie la provenance, valide puis exécute un outil enregistré."""
+        started_at = perf_counter()
         tool = self._tools.get(name)
         if tool is None or (
             self._allowed_tool_names is not None and name not in self._allowed_tool_names
@@ -107,7 +109,7 @@ class AIToolRegistry:
             result = AIToolResult(
                 tool=name,
                 status="not_found",
-                metadata={"executed_at": _utc_now()},
+                metadata=_execution_metadata(started_at),
                 error="Outil non autorisé ou inconnu.",
             )
             self._execution_results.append(result)
@@ -119,7 +121,7 @@ class AIToolRegistry:
                 result = AIToolResult(
                     tool=name,
                     status="needs_clarification",
-                    metadata={"executed_at": _utc_now(), "business_tool_executed": False},
+                    metadata=_execution_metadata(started_at, business_tool_executed=False),
                     error=clarification,
                 )
                 self._execution_results.append(result)
@@ -131,7 +133,7 @@ class AIToolRegistry:
             result = AIToolResult(
                 tool=name,
                 status="invalid_arguments",
-                metadata={"executed_at": _utc_now()},
+                metadata=_execution_metadata(started_at),
                 error="Les paramètres fournis ne respectent pas le schéma de l'outil.",
             )
             self._execution_results.append(result)
@@ -146,11 +148,11 @@ class AIToolRegistry:
             result = AIToolResult(
                 tool=name,
                 status="failed",
-                metadata={
-                    "executed_at": _utc_now(),
-                    "business_tool_executed": True,
-                    "error_type": type(exc).__name__,
-                },
+                metadata=_execution_metadata(
+                    started_at,
+                    business_tool_executed=True,
+                    error_type=type(exc).__name__,
+                ),
                 error="L'exécution de l'outil a échoué.",
             )
             self._execution_results.append(result)
@@ -160,11 +162,16 @@ class AIToolRegistry:
             tool=name,
             status="ok",
             data=data,
-            metadata={"executed_at": _utc_now()},
+            metadata=_execution_metadata(started_at),
         )
         self._execution_results.append(result)
         return result
 
 
-def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+def _execution_metadata(started_at: float, **extra: Any) -> dict[str, Any]:
+    """Ajoute une durée monotone à chaque issue d'exécution, sans donnée métier."""
+    return {
+        "executed_at": datetime.now(timezone.utc).isoformat(),
+        "duration_ms": round((perf_counter() - started_at) * 1000, 3),
+        **extra,
+    }

@@ -170,6 +170,23 @@ class AIQuestionRequest(BaseModel):
         return self
 
 
+class AIRaceOptionResponse(BaseModel):
+    """Course du calendrier proposée pour une sélection explicite."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    race_id: UUID
+    date: str
+    name: str
+    location: str | None = None
+    race_type: str | None = None
+    priority: str | None = None
+    status: str | None = None
+    distance_km: float | None = None
+    elevation_gain_m: float | None = None
+    target_time_minutes: float | None = None
+
+
 class AIQuestionResponse(BaseModel):
     """Réponse générée par le modèle local."""
 
@@ -179,6 +196,7 @@ class AIQuestionResponse(BaseModel):
     model: str
     context_used: bool = False
     data_proposals: list[AIDataProposalResponse] = Field(default_factory=list)
+    race_options: list[AIRaceOptionResponse] = Field(default_factory=list)
 
 
 
@@ -511,6 +529,37 @@ async def ask_local_ai(
     )
 
 
+def _extract_race_options(tool_results) -> list[AIRaceOptionResponse]:
+    """Expose les courses du calendrier au frontend sans laisser le LLM les reconstruire."""
+    options: list[AIRaceOptionResponse] = []
+    for result in tool_results:
+        if result.tool != "race_calendar" or result.status != "ok" or not result.data:
+            continue
+        races = result.data.get("races")
+        if not isinstance(races, list):
+            continue
+        for race in races:
+            if not isinstance(race, dict):
+                continue
+            try:
+                options.append(AIRaceOptionResponse.model_validate({
+                    "race_id": race.get("race_id"),
+                    "date": race.get("date"),
+                    "name": race.get("name") or "Course sans nom",
+                    "location": race.get("location"),
+                    "race_type": race.get("race_type"),
+                    "priority": race.get("priority"),
+                    "status": race.get("status"),
+                    "distance_km": race.get("distance_km"),
+                    "elevation_gain_m": race.get("elevation_gain_m"),
+                    "target_time_minutes": race.get("target_time_minutes"),
+                }))
+            except ValidationError:
+                # Une entrée mal formée ne doit pas empêcher l'affichage des autres courses.
+                continue
+    return options
+
+
 def _serialize_coach_tool_results(tool_results, *, max_item_chars: int = 10_000, max_total_chars: int = 20_000) -> str:
     """Borne les résultats envoyés au LLM et conserve un JSON toujours valide."""
     payloads = [
@@ -791,4 +840,5 @@ async def ask_local_ai_with_athlete_context(
         model=model,
         context_used=bool(tool_results),
         data_proposals=data_proposals,
+        race_options=_extract_race_options(tool_results),
     )

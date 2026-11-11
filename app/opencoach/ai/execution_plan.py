@@ -317,12 +317,18 @@ def build_coach_execution_plan(
     if "active_constraints" in selected and not calls:
         calls.append(PlannedToolCall("active_constraints", {}))
 
+    # L'identifiant peut provenir du tour utilisateur où la course a été
+    # sélectionnée ; il doit survivre à la clarification ultérieure sur la durée.
+    race_evidence = " ".join(
+        part for part in (prior_intent, question) if part
+    ).casefold()
     race_id_match = None
     if "race_preparation_analysis" in selected:
-        race_id_match = re.search(
+        race_ids = list(re.finditer(
             r"\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b",
-            normalized,
-        )
+            race_evidence,
+        ))
+        race_id_match = race_ids[-1] if race_ids else None
 
     if "race_calendar" in selected and not (
         "race_preparation_analysis" in selected and race_id_match is not None
@@ -346,14 +352,9 @@ def build_coach_execution_plan(
             "Quelle période valide souhaites-tu ?"
         ))
 
-    race_id_match = None
     if "race_preparation_analysis" in selected:
         # Une course ne peut être analysée qu'après identification explicite :
         # le calendrier fournit les identifiants, jamais un choix arbitraire.
-        race_id_match = re.search(
-            r"\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b",
-            normalized,
-        )
         if not race_id_match:
             # La consultation du calendrier est conservée ; la sélection de la
             # course devra être confirmée avant toute analyse de préparation.

@@ -299,3 +299,52 @@ def test_race_preparation_invalid_history_period_does_not_execute_analysis():
     )
     assert all(call.name != "race_preparation_analysis" for call in plan.calls)
     assert "7 à 180 jours" in (plan.clarification or "")
+
+
+def test_race_selection_survives_follow_up_history_period_clarification():
+    race_id = "123e4567-e89b-42d3-a456-426614174000"
+    plan = build_coach_execution_plan(
+        "30 jours",
+        history=[f"Analyse ma préparation pour la course {race_id}."],
+        assistant_history=[
+            "Sur combien de jours d'historique souhaites-tu analyser ta préparation à cette course (7 à 180 jours) ?"
+        ],
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("race_preparation_analysis", {
+            "race_id": race_id,
+            "history_days": 30,
+        })
+    ]
+
+
+def test_new_race_selection_supersedes_previous_race_in_conversation_history():
+    previous_race_id = "123e4567-e89b-42d3-a456-426614174000"
+    selected_race_id = "123e4567-e89b-42d3-a456-426614174001"
+    plan = build_coach_execution_plan(
+        f"Analyse ma préparation pour la course {selected_race_id} sur 21 jours.",
+        history=[f"Analyse ma préparation pour la course {previous_race_id}."],
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.clarification is None
+    assert ( "race_preparation_analysis", {
+        "race_id": selected_race_id,
+        "history_days": 21,
+    }) in [(call.name, call.arguments) for call in plan.calls]
+
+
+def test_old_race_id_is_not_reused_for_a_new_unselected_race_request():
+    old_race_id = "123e4567-e89b-42d3-a456-426614174000"
+    plan = build_coach_execution_plan(
+        "Analyse ma préparation pour ma prochaine course sur 30 jours.",
+        history=[f"Analyse ma préparation pour la course {old_race_id}."],
+        assistant_history=["Voici l'analyse de ta course précédente."],
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert all(call.name != "race_preparation_analysis" for call in plan.calls)
+    assert any(call.name == "race_calendar" for call in plan.calls)

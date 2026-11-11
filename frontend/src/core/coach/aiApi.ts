@@ -13,11 +13,25 @@ export interface AIChatMessage {
   content: string
 }
 
+export interface AIRaceOption {
+  race_id: string
+  date: string
+  name: string
+  location: string | null
+  race_type: string | null
+  priority: string | null
+  status: string | null
+  distance_km: number | null
+  elevation_gain_m: number | null
+  target_time_minutes: number | null
+}
+
 export interface AIChatResponse {
   answer: string
   model: string
   context_used: boolean
   data_proposals: AIDataProposal[]
+  race_options: AIRaceOption[]
 }
 
 async function readError(response: Response): Promise<string> {

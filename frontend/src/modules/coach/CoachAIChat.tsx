@@ -11,9 +11,12 @@ import {
 import type {
   AIChatMessage,
   AIDataProposal,
+  AIRaceOption,
 } from '../../core/coach/aiApi'
 
-type DisplayMessage = AIChatMessage
+interface DisplayMessage extends AIChatMessage {
+  raceOptions?: AIRaceOption[]
+}
 
 const FIELD_LABELS: Record<string, string> = {
   height_cm: 'Taille',
@@ -133,7 +136,11 @@ export function CoachAIChat() {
       const response = await askAICoach(normalized, history)
       setMessages((current) => [
         ...current,
-        { role: 'assistant', content: response.answer },
+        {
+          role: 'assistant',
+          content: response.answer,
+          raceOptions: response.race_options?.length ? response.race_options : undefined,
+        },
       ])
       if (response.data_proposals.length > 0) {
         setPendingProposals((current) => {
@@ -266,7 +273,52 @@ export function CoachAIChat() {
               : 'rounded-2xl rounded-bl-md bg-[var(--oc-surface-muted)] px-3.5 py-2.5 text-[12px] leading-5 text-[var(--oc-text)] dark:text-[var(--oc-text-secondary)]'}>
               <p className="whitespace-pre-wrap">{message.content}</p>
             </div>
-
+            {message.raceOptions && message.raceOptions.length > 0 && (
+              <div className="mt-2 space-y-2">
+                {message.raceOptions.map((race) => (
+                  <div
+                    key={race.race_id}
+                    className="rounded-xl border border-[var(--oc-border)] bg-[var(--oc-surface)] p-3 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-semibold text-[var(--oc-text)] dark:text-white">
+                          {race.name}
+                        </p>
+                        <p className="mt-0.5 text-[10px] text-[var(--oc-muted)]">
+                          {new Date(race.date + 'T12:00:00').toLocaleDateString('fr-FR', {
+                            day: '2-digit', month: 'long', year: 'numeric',
+                          })}
+                          {race.location ? ' · ' + race.location : ''}
+                        </p>
+                      </div>
+                      {race.priority === 'primary' && (
+                        <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-semibold text-emerald-700 dark:text-emerald-400">
+                          Objectif principal
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[var(--oc-muted)]">
+                      {race.distance_km !== null && <span>{race.distance_km} km</span>}
+                      {race.elevation_gain_m !== null && <span>{race.elevation_gain_m.toLocaleString('fr-FR')} m D+</span>}
+                      {race.target_time_minutes !== null && (
+                        <span>Objectif {Math.floor(race.target_time_minutes / 60)}h{String(Math.round(race.target_time_minutes % 60)).padStart(2, '0')}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => void submitQuestion(
+                        'Analyse ma préparation pour la course ' + race.race_id + '.',
+                      )}
+                      className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/[0.07] px-3 py-2 text-[10px] font-semibold text-emerald-700 transition hover:bg-emerald-500/[0.13] disabled:opacity-40 dark:text-emerald-400"
+                    >
+                      Analyser cette course
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         {loading && (

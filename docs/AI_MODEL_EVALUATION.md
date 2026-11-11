@@ -1,7 +1,7 @@
 # Évaluation des modèles IA locaux — protocole v1
 
 **Statut :** corpus de référence initial ; exécution Ollama sur VM à réaliser  
-**Modèle actuellement ciblé :** Qwen3 8B (référence provisoire)  
+**Modèle actuellement ciblé :** `qwen2.5:3b` (modèle local de travail ; résultats réels VM à confirmer)  
 **Objectif :** mesurer la fiabilité du modèle comme orchestrateur, et non sa capacité à inventer des analyses sportives.
 
 ## 1. Séparation des responsabilités
@@ -42,7 +42,7 @@ Pour chaque modèle et chaque scénario :
 7. ne pas utiliser de données personnelles réelles dans les fixtures ;
 8. ne pas modifier les données métier pendant le benchmark.
 
-Les modèles candidats doivent être évalués avec le même environnement local : Qwen3 8B, puis variantes 4B/3B compatibles avec l'installation.
+Les modèles candidats doivent être évalués avec le même environnement local : `qwen2.5:3b` comme modèle courant ; les comparaisons avec d'autres modèles ne seront faites que si elles sont explicitement souhaitées et déjà installées.
 
 ## 4. Indicateurs et critères de réussite
 
@@ -88,13 +88,13 @@ pytest -q tests/test_ai_benchmark_runner.py tests/test_ai_model_evaluation_fixtu
 Puis, dans l'environnement virtuel Python :
 
 ```bash
-python scripts/ai/benchmark_models.py --models qwen3:8b --repetitions 3
+python scripts/ai/benchmark_models.py --models qwen2.5:3b --repetitions 3
 ```
 
 Essai court pour vérifier la connexion et le format du rapport :
 
 ```bash
-python scripts/ai/benchmark_models.py --models qwen3:8b --limit 3 --repetitions 1
+python scripts/ai/benchmark_models.py --models qwen2.5:3b --limit 3 --repetitions 1
 ```
 
 Comparer l'impact du catalogue et du prompt sans changer la configuration de production :
@@ -109,7 +109,7 @@ Comparer plusieurs modèles uniquement s'ils sont déjà installés dans Ollama 
 
 ```bash
 ollama list
-python scripts/ai/benchmark_models.py --models qwen3:8b qwen3:4b qwen3:3b --repetitions 3
+python scripts/ai/benchmark_models.py --models qwen2.5:3b --repetitions 3
 ```
 
 Le script :

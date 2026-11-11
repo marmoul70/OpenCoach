@@ -6,10 +6,14 @@ n'exécute jamais de fonction arbitraire fournie par le modèle.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from datetime import datetime, timezone
 from typing import Any, Callable, Literal, Type
 
 from pydantic import BaseModel, ConfigDict, ValidationError
+
+
+logger = logging.getLogger(__name__)
 
 
 ToolStatus = Literal["ok", "invalid_arguments", "needs_clarification", "not_found", "failed"]
@@ -135,12 +139,18 @@ class AIToolRegistry:
 
         try:
             data = tool.handler(validated_arguments)
-        except Exception:
-            # Ne pas transmettre au LLM les détails internes, SQL ou secrets.
+        except Exception as exc:
+            # Garder les détails techniques côté serveur uniquement. Le traceback
+            # permet de diagnostiquer le service sans exposer SQL/secrets au LLM.
+            logger.exception("Échec d'exécution de l'outil coach '%s'", name)
             result = AIToolResult(
                 tool=name,
                 status="failed",
-                metadata={"executed_at": _utc_now()},
+                metadata={
+                    "executed_at": _utc_now(),
+                    "business_tool_executed": True,
+                    "error_type": type(exc).__name__,
+                },
                 error="L'exécution de l'outil a échoué.",
             )
             self._execution_results.append(result)

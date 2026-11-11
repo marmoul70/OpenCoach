@@ -411,7 +411,6 @@ def test_races_api_creates_race() -> None:
     )
 
 
-
 class InsufficientPreparationPlanningService:
     def refresh(
         self,
@@ -428,7 +427,7 @@ class InsufficientPreparationPlanningService:
         )
 
 
-def test_races_api_keeps_race_and_returns_warning_when_preparation_is_too_short() -> None:
+def test_races_api_keeps_race_when_preparation_is_too_short() -> None:
     repository = FakeRaceRepository()
 
     client, profile_id = create_client(
@@ -466,7 +465,6 @@ def test_races_api_keeps_race_and_returns_warning_when_preparation_is_too_short(
     assert repository.saved[0][0] == profile_id
     assert len(repository.races) == 1
     assert repository.races[0].name == "Ultra trop proche"
-
 
 
 def test_races_api_updates_race() -> None:

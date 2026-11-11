@@ -217,7 +217,9 @@ def build_training_load_tool(
             "Retourne la charge d'entraînement réelle et prévue sur les nb_days derniers "
             "jours calendaires inclusifs, avec écarts quotidiens et couverture du planning. "
             "nb_days est obligatoire : demande la période si elle manque et attends la réponse. "
-            "Une charge réelle sans couverture complète n'est jamais présentée comme un total fiable."
+            "Une charge réelle sans couverture complète n'est jamais présentée comme un total fiable. "
+            "Si coros_training_load est disponible, présenter séparément ATL (charge aiguë), "
+            "CTL (charge chronique) et leur ratio ; ne jamais les additionner à la charge des séances."
         ),
         arguments_model=TrainingLoadArguments,
         handler=execute,

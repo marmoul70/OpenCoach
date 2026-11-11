@@ -226,7 +226,7 @@ def build_recovery_analysis_tool(
                         "expected_days": metric.expected_days,
                     }
                     for name, metric in window.metrics.items()
-                    if name in METRICS
+                    if name in METRICS and metric.sample_count > 0
                 },
             })
 

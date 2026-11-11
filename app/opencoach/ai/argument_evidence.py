@@ -59,7 +59,7 @@ def extract_explicit_periods(
         )
     )
     periods = _extract_duration_values(latest)
-    if not periods and re.search(r"\\b(?:bilan de (?:ma|la) semaine|bilan hebdomadaire)\\b", latest):
+    if not periods and re.search(r"\b(?:bilan de (?:ma|la) semaine|bilan hebdomadaire)\b", latest):
         periods = [7]
     if periods:
         # Pour une comparaison, le second tour peut ne contenir que la

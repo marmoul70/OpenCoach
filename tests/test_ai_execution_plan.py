@@ -348,3 +348,14 @@ def test_old_race_id_is_not_reused_for_a_new_unselected_race_request():
 
     assert all(call.name != "race_preparation_analysis" for call in plan.calls)
     assert any(call.name == "race_calendar" for call in plan.calls)
+
+
+def test_next_session_request_builds_a_tool_call_without_date_clarification():
+    plan = build_coach_execution_plan(
+        "Quelle est ma prochaine séance ?",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("next_planned_session", {})
+    ]

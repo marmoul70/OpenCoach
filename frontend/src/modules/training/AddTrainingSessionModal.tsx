@@ -48,6 +48,7 @@ interface AddTrainingSessionModalProps {
 
 type CreationMode =
   | 'intervals'
+  | 'coros'
   | 'manual'
 
 
@@ -183,7 +184,7 @@ export function AddTrainingSessionModal({
               ? caughtError.message
               : (
                   'Impossible de charger les '
-                  + 'activités Intervals.icu.'
+                  + 'activités disponibles.'
                 ),
           )
         } finally {
@@ -212,7 +213,7 @@ export function AddTrainingSessionModal({
   ])
 
 
-  async function addIntervalsActivity(
+  async function addImportedActivity(
     activity: TrainingAvailableActivity,
   ): Promise<void> {
     setSubmittingActivityId(
@@ -242,7 +243,9 @@ export function AddTrainingSessionModal({
           activity.name
           || 'Séance supplémentaire',
         description:
-          'Activité importée depuis Intervals.icu.',
+          activity.provider === 'coros'
+            ? 'Activité importée depuis COROS.'
+            : 'Activité importée depuis Intervals.icu.',
         durationMinutes,
         distanceKm:
           activity.distanceM !== undefined
@@ -483,7 +486,7 @@ export function AddTrainingSessionModal({
           aria-label="Mode d'ajout"
           className="
             grid
-            grid-cols-2
+            grid-cols-3
             rounded-[10px]
             bg-[var(--oc-surface-muted)]
             p-1
@@ -530,6 +533,23 @@ export function AddTrainingSessionModal({
             <Link2 size={14} />
 
             Intervals.icu
+          </button>
+
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'coros'}
+            className={[
+              'flex min-h-9 items-center justify-center gap-1.5 rounded-[8px] px-2 text-[11px] font-semibold transition',
+              mode === 'coros'
+                ? 'bg-[var(--oc-surface)] text-[var(--oc-text)] shadow-sm bg-[var(--oc-surface)]/[0.09]'
+                : 'text-[var(--oc-muted)] hover:text-[var(--oc-text)]',
+            ].join(' ')}
+            onClick={() => setMode('coros')}
+          >
+            <Footprints size={14} />
+            COROS
           </button>
 
 
@@ -599,23 +619,16 @@ export function AddTrainingSessionModal({
         )}
 
 
-        {mode === 'intervals' ? (
+        {mode === 'intervals' || mode === 'coros' ? (
           <IntervalsPanel
-            activities={
-              activities
-            }
-            loading={
-              loadingActivities
-            }
-            submittingActivityId={
-              submittingActivityId
-            }
-            onAdd={
-              addIntervalsActivity
-            }
-            onRefresh={
-              loadActivities
-            }
+            activities={activities.filter(activity =>
+              activity.provider === (mode === 'coros' ? 'coros' : 'intervals')
+            )}
+            providerLabel={mode === 'coros' ? 'COROS' : 'Intervals.icu'}
+            loading={loadingActivities}
+            submittingActivityId={submittingActivityId}
+            onAdd={addImportedActivity}
+            onRefresh={loadActivities}
           />
         ) : (
           <ManualPanel
@@ -641,6 +654,7 @@ export function AddTrainingSessionModal({
 interface IntervalsPanelProps {
   activities:
     TrainingAvailableActivity[]
+  providerLabel: string
   loading: boolean
   submittingActivityId:
     string | null
@@ -656,6 +670,7 @@ interface IntervalsPanelProps {
 
 function IntervalsPanel({
   activities,
+  providerLabel,
   loading,
   submittingActivityId,
   onAdd,
@@ -716,7 +731,7 @@ function IntervalsPanel({
               text-[var(--oc-muted)]
             "
           >
-            Synchronisation avec Intervals.icu
+            Chargement des activités {providerLabel}
           </p>
         </div>
       </div>
@@ -756,7 +771,7 @@ function IntervalsPanel({
               text-[var(--oc-muted)]
             "
           >
-            Importer une activité déjà réalisée
+            Importer une activité déjà réalisée depuis {providerLabel}
           </p>
         </div>
 

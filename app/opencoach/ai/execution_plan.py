@@ -341,7 +341,7 @@ def build_coach_execution_plan(
         # Une course ne peut être analysée qu'après identification explicite :
         # le calendrier fournit les identifiants, jamais un choix arbitraire.
         race_id_match = re.search(
-            r"\\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\b",
+            r"\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b",
             normalized,
         )
         if not race_id_match:

@@ -291,13 +291,6 @@ def build_recovery_analysis_tool(
             "daily_context": payload["subjective"],
             "daily_checkin": checkin_payload,
             "warnings": warnings,
-            "interpretation_rules": [
-                "Fenêtres 7, 14 et 30 jours calculées séparément.",
-                "Une donnée absente n'est jamais égale à zéro.",
-                "Mesures objectives et ressenti restent distincts.",
-                "Aucun diagnostic ni score composite.",
-                "Sources : données déjà importées dans OpenCoach.",
-            ],
         }
 
     return AITool(

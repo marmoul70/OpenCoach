@@ -4,6 +4,7 @@ from opencoach.integrations.coros.sync import (
     CorosImportService,
     _build_tool_arguments,
     _upsert_activity_snapshot,
+    rebuild_coros_activities_from_snapshots,
     six_months_ago,
 )
 
@@ -31,6 +32,16 @@ class FakeDb:
 
     def scalar(self, statement):
         return None
+
+    def scalars(self, statement):
+        class Result:
+            def all(self):
+                return [
+                    row for row in self_db.added
+                    if getattr(row, 'category', None) == 'activities'
+                ]
+        self_db = self
+        return Result()
 
     def add(self, row):
         self.added.append(row)
@@ -839,3 +850,39 @@ Resting Heart Rate: 47 bpm
     assert health_by_metric["respiration_rate"]["value"] == 18
     assert health_by_metric["spo2"]["value"] == 98
     assert health_by_metric["resting_hr"]["value"] == 47
+
+
+
+def test_rebuild_coros_activities_reuses_archived_activity_snapshots():
+    from datetime import datetime, timezone
+    from uuid import uuid4
+    from opencoach.database.models import CorosDailyData, Activity
+
+    profile_id = uuid4()
+    timestamp = datetime(
+        2026, 11, 10, 8, 15, tzinfo=timezone.utc
+    ).timestamp()
+    snapshot = CorosDailyData(
+        athlete_profile_id=profile_id,
+        metric_date=date(2026, 11, 10),
+        category="activities",
+        payload={
+            "activities": [
+                {
+                    "labelId": "archived-coros-activity",
+                    "sportType": 100,
+                    "startTimestamp": timestamp,
+                    "workoutTime": 3600,
+                }
+            ]
+        },
+    )
+    db = FakeDb()
+    db.add(snapshot)
+
+    normalized = rebuild_coros_activities_from_snapshots(db, profile_id)
+
+    assert normalized == 1
+    activities = [row for row in db.added if isinstance(row, Activity)]
+    assert len(activities) == 1
+    assert activities[0].start_at_local == datetime(2026, 11, 10, 9, 15)

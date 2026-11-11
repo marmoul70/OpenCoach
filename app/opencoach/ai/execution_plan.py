@@ -319,7 +319,9 @@ def build_coach_execution_plan(
 
     # L'identifiant peut provenir du tour utilisateur où la course a été
     # sélectionnée ; il doit survivre à la clarification ultérieure sur la durée.
-    race_evidence = " ".join(conversation_users).casefold()
+    race_evidence = " ".join(
+        part for part in (prior_intent, question) if part
+    ).casefold()
     race_id_match = None
     if "race_preparation_analysis" in selected:
         race_ids = list(re.finditer(

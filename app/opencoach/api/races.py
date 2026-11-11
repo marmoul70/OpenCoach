@@ -30,6 +30,7 @@ from opencoach.database.session import (
 from opencoach.models import Race
 from opencoach.planning.trajectory.coaching_phase_allocation import (
     InsufficientPreparationTimeError,
+    calculate_minimum_preparation_weeks,
 )
 from opencoach.races import (
     RaceActualResult,
@@ -74,6 +75,22 @@ def refresh_current_week_for_race(
         race
     ):
         return None
+
+    available_days = (
+        race.date
+        - date.today()
+    ).days
+    available_weeks = max(
+        1,
+        (available_days + 6) // 7,
+    )
+
+    if available_weeks < calculate_minimum_preparation_weeks():
+        return (
+            "Cette course est trop proche pour suivre le rythme "
+            "de progression prévu. Elle est bien enregistrée, "
+            "mais le planning n'a pas pu être recalculé."
+        )
 
     try:
         planning_service.refresh(

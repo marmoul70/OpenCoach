@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from opencoach.integrations.coros.activity_mapper import upsert_coros_activity
@@ -147,3 +147,61 @@ def test_coros_activity_from_another_profile_is_not_modified():
     assert existing.name == "Existing profile run"
     assert existing.elapsed_time_seconds == 5400
     assert existing.distance_m == 12500.0
+
+
+def test_coros_activity_maps_utc_timestamp_to_paris_local_date():
+    db = FakeDb()
+    profile_id = uuid4()
+    timestamp = datetime(
+        2026, 11, 10, 8, 15, tzinfo=timezone.utc
+    ).timestamp()
+
+    saved = upsert_coros_activity(db, profile_id, {
+        "labelId": "activity-local-date",
+        "sportType": 100,
+        "startTimestamp": timestamp,
+        "workoutTime": 3600,
+    })
+
+    assert saved is True
+    activity = db.added[0]
+    assert activity.start_at == datetime(2026, 11, 10, 8, 15)
+    assert activity.start_at_local == datetime(2026, 11, 10, 9, 15)
+    assert activity.moving_time_seconds == 3600
+    assert activity.elapsed_time_seconds == 3600
+
+
+def test_coros_activity_updates_local_timestamp_on_existing_record():
+    from types import SimpleNamespace
+
+    profile_id = uuid4()
+    existing = SimpleNamespace(
+        athlete_profile_id=profile_id,
+        name="Course",
+        sport_type="Course extérieure",
+        start_at=datetime(2026, 11, 10, 8, 15),
+        start_at_local=None,
+        elapsed_time_seconds=None,
+        moving_time_seconds=None,
+        distance_m=None,
+        elevation_gain_m=None,
+        average_heart_rate=None,
+        max_heart_rate=None,
+        average_speed_mps=None,
+        calories=None,
+    )
+
+    class ExistingDb(FakeDb):
+        def scalar(self, statement):
+            return existing
+
+    timestamp = datetime(
+        2026, 11, 10, 8, 15, tzinfo=timezone.utc
+    ).timestamp()
+    assert upsert_coros_activity(ExistingDb(), profile_id, {
+        "labelId": "activity-existing",
+        "sportType": 100,
+        "startTimestamp": timestamp,
+    }) is True
+
+    assert existing.start_at_local == datetime(2026, 11, 10, 9, 15)

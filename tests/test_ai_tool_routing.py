@@ -225,3 +225,8 @@ def test_next_session_request_routes_to_dedicated_read_only_tool():
 def test_next_training_request_routes_to_dedicated_read_only_tool():
     selected = select_coach_tools("Quel est mon prochain entraînement ?")
     assert selected == frozenset({"next_planned_session"})
+
+
+def test_weekly_bilan_routes_to_history_and_week_context():
+    selected = select_coach_tools("Fais-moi le bilan de ma semaine.")
+    assert {"training_history", "weekly_plan_context"} <= selected

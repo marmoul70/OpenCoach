@@ -19,6 +19,13 @@ class TrainingStats:
     measured_load: float
     estimated_load: float
 
+    # Nombre de séances disposant réellement de chaque métrique.
+    # Les valeurs par défaut préservent la compatibilité des constructions historiques.
+    duration_data_count: int = 0
+    distance_data_count: int = 0
+    elevation_data_count: int = 0
+    measured_load_data_count: int = 0
+
     @property
     def sessions_count(self) -> int:
         """Nombre total d'efforts réellement effectués."""

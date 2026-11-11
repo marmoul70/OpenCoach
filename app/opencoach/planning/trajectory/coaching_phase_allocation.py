@@ -370,6 +370,20 @@ def allocate_coaching_phases(
     )
 
 
+def calculate_minimum_preparation_weeks(
+    policies: tuple[
+        PhaseDurationPolicy,
+        ...,
+    ] = DEFAULT_PHASE_POLICIES,
+) -> int:
+    """Retourne le minimum absolu de semaines requis pour préparer une course."""
+
+    return sum(
+        policy.minimum_weeks
+        for policy in policies
+    )
+
+
 def calculate_preferred_preparation_weeks(
     policies: tuple[
         PhaseDurationPolicy,

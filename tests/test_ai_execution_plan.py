@@ -256,3 +256,13 @@ def test_new_load_request_does_not_inherit_recovery_button_periods():
     )
     assert plan.calls == ()
     assert "combien de jours" in plan.clarification
+
+
+
+def test_general_trail_explanation_does_not_execute_race_tools():
+    plan = build_coach_execution_plan(
+        "Explique-moi ce qu'est un trail.",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.calls == ()
+    assert plan.clarification is None

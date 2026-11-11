@@ -209,3 +209,9 @@ def test_router_hides_load_and_race_preparation_tools_for_out_of_range_periods()
 
     assert "training_load" not in load_tools
     assert "race_preparation_analysis" not in race_tools
+
+
+
+def test_general_trail_explanation_does_not_route_to_race_calendar():
+    assert select_coach_tools("Explique-moi ce qu'est un trail.") == frozenset()
+    assert select_coach_tools("C'est quoi un ultra-trail ?") == frozenset()

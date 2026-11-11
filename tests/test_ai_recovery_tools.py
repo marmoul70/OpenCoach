@@ -104,3 +104,56 @@ def test_recovery_status_returns_explicit_unavailable_result():
         "reason": "no_readiness_data",
         "message": "Aucune donnée de récupération exploitable n'est disponible pour cette date.",
     }
+
+
+def test_recovery_analysis_compacts_per_day_metric_provenance(monkeypatch):
+    from datetime import timedelta
+    from types import SimpleNamespace
+
+    from opencoach.ai.recovery_tools import (
+        RecoveryAnalysisArguments,
+        build_recovery_analysis_tool,
+    )
+
+    target_date = date(2026, 11, 10)
+    metric_sources = {
+        (target_date - timedelta(days=offset)).isoformat(): {
+            "hrv": ("coros",),
+            "sleep_seconds": ("coros",),
+        }
+        for offset in range(30)
+    }
+    monkeypatch.setattr(
+        "opencoach.wellness_aggregation.aggregate_wellness_days",
+        lambda _days: SimpleNamespace(days=(), metric_sources=metric_sources, conflicts={}),
+    )
+
+    class EmptyWellnessRepository:
+        def list_range(self, *_args):
+            return []
+
+    class EmptyDailyContextRepository:
+        def get_by_date(self, *_args):
+            return None
+
+    class EmptyDailyCheckinRepository:
+        def get_for_date(self, *_args):
+            return None
+
+    tool = build_recovery_analysis_tool(
+        EmptyWellnessRepository(),
+        EmptyDailyContextRepository(),
+        EmptyDailyCheckinRepository(),
+        uuid4(),
+    )
+    result = tool.handler(RecoveryAnalysisArguments(target_date=target_date))
+
+    assert result["metric_sources"] == {
+        "hrv": ["coros"],
+        "sleep_seconds": ["coros"],
+    }
+    assert result["metric_source_days"] == {
+        "hrv": 30,
+        "sleep_seconds": 30,
+    }
+    assert len(str(result)) < 8_000

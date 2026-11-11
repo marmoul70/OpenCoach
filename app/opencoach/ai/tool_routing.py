@@ -127,7 +127,7 @@ def select_coach_tools(
 
     selected: set[str] = set()
     groups: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
-        (("historique", "seances realisees", "entrainements realises", "mes entrainements", "mes activites", "bilan de mes sorties", "mes sorties"), ("training_history",)),
+        (("historique", "seances realisees", "entrainements realises", "mes entrainements", "mes activites", "bilan de mes sorties", "mes sorties", "bilan de ma semaine", "bilan de la semaine", "bilan hebdomadaire"), ("training_history",)),
         (("charge", "mon atl", "ctl", "tsb", "mon volume", "volume d entrainement"), ("training_load",)),
         (("recuperation", "recup", "sommeil", "hrv", "variabilite", "fatigue", "fatiguee", "fatigue"), ("recovery_analysis", "recovery_status")),
         (("tendance", "evolution", "progression", "compare", "comparaison", "progres"), ("training_trends",)),

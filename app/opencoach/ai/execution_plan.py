@@ -144,7 +144,7 @@ def build_coach_execution_plan(
         "tsb", "recuperation", "recup", "sommeil", "hrv", "tendance", "evolution",
         "progression", "compare", "comparaison", "activite", "seance", "sortie du",
         "course", "ultra", "trail", "dossard", "preparation", "planning", "planifie",
-        "programme", "semaine", "blessure", "douleur", "tendon", "malade", "maladie",
+        "programme", "semaine", "prochaine seance", "prochain entrainement", "seance suivante", "blessure", "douleur", "tendon", "malade", "maladie",
         "indisponible", "contrainte", "profil", "vma", "fc max", "frequence cardiaque",
         "zones cardiaques", "zone cardiaque", "etat de forme", "fatigue", "stress",
         "seuil", "poids", "je pese", "equipement", "chaussures", "mon poids",
@@ -374,6 +374,9 @@ def build_coach_execution_plan(
                 "race_id": race_id_match.group(0),
                 "history_days": periods[-1],
             }))
+
+    if "next_planned_session" in selected:
+        calls.append(PlannedToolCall("next_planned_session", {}))
 
     if "planned_sessions" in selected:
         date_range = extract_explicit_date_range(conversation_users, assistant_history)

@@ -100,9 +100,9 @@ python scripts/ai/benchmark_models.py --models qwen2.5:3b --limit 3 --repetition
 Comparer l'impact du catalogue et du prompt sans changer la configuration de production :
 
 ```bash
-python scripts/ai/benchmark_models.py --models qwen3:8b --tool-profile all --prompt-profile production --repetitions 3
-python scripts/ai/benchmark_models.py --models qwen3:8b --tool-profile history --prompt-profile production --repetitions 3
-python scripts/ai/benchmark_models.py --models qwen3:8b --tool-profile history --prompt-profile minimal --repetitions 3
+python scripts/ai/benchmark_models.py --models qwen2.5:3b --tool-profile all --prompt-profile production --repetitions 3
+python scripts/ai/benchmark_models.py --models qwen2.5:3b --tool-profile history --prompt-profile production --repetitions 3
+python scripts/ai/benchmark_models.py --models qwen2.5:3b --tool-profile history --prompt-profile minimal --repetitions 3
 ```
 
 Comparer plusieurs modèles uniquement s'ils sont déjà installés dans Ollama :
@@ -167,7 +167,7 @@ Les dates obligatoires de `planned_sessions` sont également contrôlées : le r
 - [x] Ajouter des tests de non-exécution en cas de période inventée, altérée ou hors limites.
 - [x] Corriger le scénario de récupération pour tenir compte de la date facultative par défaut du contrat.
 - [ ] Exécuter les trois configurations comparatives sur la VM.
-- [ ] Comparer Qwen3 8B, 4B et 3B et documenter le choix.
+- [ ] Exécuter et analyser le corpus avec `qwen2.5:3b` sur la VM ; ne comparer d'autres modèles que sur demande explicite.
 
 
 ### Benchmark du routeur de production
@@ -178,7 +178,7 @@ Commande de référence :
 
 ```bash
 python scripts/ai/benchmark_models.py \\
-  --models qwen3:8b \\
+  --models qwen2.5:3b \\
   --tool-profile production_router \\
   --prompt-profile production \\
   --repetitions 1

@@ -222,10 +222,17 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
         if math.isfinite(parsed_value) and parsed_value >= 0:
             setattr(activity, attribute, parsed_value)
 
-    # Le détail COROS peut être un rapport texte plutôt qu'un objet JSON.
-    # Le résumé structuré reste prioritaire ; le rapport complète les champs absents.
+    # Le rapport détaillé COROS fournit les durées moving/elapsed explicitement.
+    # Elles priment sur workoutTime du résumé, dont la sémantique peut varier.
+    for attribute in ("moving_time_seconds", "elapsed_time_seconds"):
+        value = report_values.get(attribute)
+        if value is not None:
+            setattr(activity, attribute, value)
+
+    # Les autres métriques du rapport complètent uniquement les champs absents
+    # du résumé structuré ; aucune valeur déjà importée n'est écrasée.
     for attribute, value in report_values.items():
-        if attribute == "moving_average_speed_mps":
+        if attribute in {"moving_time_seconds", "elapsed_time_seconds", "moving_average_speed_mps"}:
             continue
         if value is not None and getattr(activity, attribute, None) is None:
             setattr(activity, attribute, value)

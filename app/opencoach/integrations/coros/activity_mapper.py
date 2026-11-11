@@ -44,7 +44,7 @@ def _report_number(text: str, pattern: str) -> float | None:
 
 def _report_duration(text: str, label: str) -> int | None:
     match = re.search(
-        rf"^\\s*{re.escape(label)}\\s*:\\s*(?:(\\d+)\\s*h\\s*)?(?:(\\d+)\\s*:\\s*)?(\\d+)\\s*(?:min)?\\s*$",
+        rf"^\s*{re.escape(label)}\s*:\s*(?:(\d+)\s*h\s*)?(?:(\d+)\s*:\s*)?(\d+)\s*(?:min)?\s*$",
         text,
         re.IGNORECASE | re.MULTILINE,
     )
@@ -60,7 +60,7 @@ def _report_duration(text: str, label: str) -> int | None:
 
 def _pace_to_speed(text: str, label: str) -> float | None:
     match = re.search(
-        rf"^\\s*{re.escape(label)}\\s*:\\s*(\\d{{1,2}}):(\\d{{2}})\\s*/km\\s*$",
+        rf"^\s*{re.escape(label)}\s*:\s*(\d{{1,2}}):(\d{{2}})\s*/km\s*$",
         text,
         re.IGNORECASE | re.MULTILINE,
     )
@@ -85,20 +85,20 @@ def _parse_activity_report(value: Any) -> dict[str, float | int]:
     if total is not None:
         parsed["elapsed_time_seconds"] = total
     mappings = {
-        "distance_m": (r"^\\s*Distance\\s*:\\s*([\\d.,]+)\\s*km", 1000),
-        "average_heart_rate": (r"^\\s*Average Heart Rate\\s*:\\s*([\\d.,]+)\\s*bpm", 1),
-        "average_cadence": (r"^\\s*Average Cadence\\s*:\\s*([\\d.,]+)\\s*spm", 1),
-        "average_stride_m": (r"^\\s*Average Stride Length\\s*:\\s*([\\d.,]+)\\s*m", 1),
-        "average_power_w": (r"^\\s*Average Power\\s*:\\s*([\\d.,]+)\\s*W", 1),
-        "calories": (r"^\\s*Calories\\s*:\\s*([\\d.,]+)\\s*kcal", 1),
-        "training_load": (r"^\\s*Training Load\\s*:\\s*([\\d.,]+)", 1),
+        "distance_m": (r"^\s*Distance\s*:\s*([\d.,]+)\s*km", 1000),
+        "average_heart_rate": (r"^\s*Average Heart Rate\s*:\s*([\d.,]+)\s*bpm", 1),
+        "average_cadence": (r"^\s*Average Cadence\s*:\s*([\d.,]+)\s*spm", 1),
+        "average_stride_m": (r"^\s*Average Stride Length\s*:\s*([\d.,]+)\s*m", 1),
+        "average_power_w": (r"^\s*Average Power\s*:\s*([\d.,]+)\s*W", 1),
+        "calories": (r"^\s*Calories\s*:\s*([\d.,]+)\s*kcal", 1),
+        "training_load": (r"^\s*Training Load\s*:\s*([\d.,]+)", 1),
     }
     for field, (pattern, multiplier) in mappings.items():
         value_number = _report_number(value, pattern)
         if value_number is not None:
             parsed[field] = round(value_number * multiplier, 3)
     elevation = re.search(
-        r"^\\s*Elevation Gain\\s*/\\s*Loss\\s*:\\s*([\\d.,]+)\\s*m\\s*/\\s*([\\d.,]+)\\s*m",
+        r"^\s*Elevation Gain\s*/\s*Loss\s*:\s*([\d.,]+)\s*m\s*/\s*([\d.,]+)\s*m",
         value,
         re.IGNORECASE | re.MULTILINE,
     )

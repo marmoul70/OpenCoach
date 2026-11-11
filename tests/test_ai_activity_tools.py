@@ -159,8 +159,10 @@ def test_activity_detail_can_select_the_latest_recorded_activity():
         latest = _activity(session, profile_id, name="Dernière sortie", day=10)
         tool = build_activity_detail_tool(session, profile_id)
         result = tool.handler(ActivityDetailArguments(latest=True))
+        latest_id = str(latest.id)
+        older_id = str(older.id)
 
     assert result["status"] == "ok"
-    assert result["activity"]["activity_id"] == str(latest.id)
-    assert result["activity"]["activity_id"] != str(older.id)
+    assert result["activity"]["activity_id"] == latest_id
+    assert result["activity"]["activity_id"] != older_id
     engine.dispose()

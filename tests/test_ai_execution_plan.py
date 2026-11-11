@@ -319,3 +319,19 @@ def test_race_selection_survives_follow_up_history_period_clarification():
             "history_days": 30,
         })
     ]
+
+
+def test_new_race_selection_supersedes_previous_race_in_conversation_history():
+    previous_race_id = "123e4567-e89b-42d3-a456-426614174000"
+    selected_race_id = "123e4567-e89b-42d3-a456-426614174001"
+    plan = build_coach_execution_plan(
+        f"Analyse ma préparation pour la course {selected_race_id} sur 21 jours.",
+        history=[f"Analyse ma préparation pour la course {previous_race_id}."],
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.clarification is None
+    assert ( "race_preparation_analysis", {
+        "race_id": selected_race_id,
+        "history_days": 21,
+    }) in [(call.name, call.arguments) for call in plan.calls]

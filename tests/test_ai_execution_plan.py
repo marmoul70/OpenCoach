@@ -359,3 +359,15 @@ def test_next_session_request_builds_a_tool_call_without_date_clarification():
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("next_planned_session", {})
     ]
+
+
+def test_weekly_bilan_uses_a_seven_day_history_and_week_context():
+    plan = build_coach_execution_plan(
+        "Fais-moi le bilan de ma semaine.",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("training_history", {"nb_days": 7}),
+        ("weekly_plan_context", {}),
+    ]

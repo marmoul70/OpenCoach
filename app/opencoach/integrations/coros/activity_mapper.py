@@ -97,14 +97,18 @@ def _parse_activity_report(value: Any) -> dict[str, float | int]:
         value_number = _report_number(value, pattern)
         if value_number is not None:
             parsed[field] = round(value_number * multiplier, 3)
-    elevation = re.search(
-        r"^\s*Elevation Gain\s*/\s*Loss\s*:\s*([\d.,]+)\s*m\s*/\s*([\d.,]+)\s*m",
+    elevation_gain = _report_number(
         value,
-        re.IGNORECASE | re.MULTILINE,
+        r"^\s*Elevation Gain\s*/\s*Loss\s*:\s*([\d.,]+)\s*m\s*/",
     )
-    if elevation:
-        parsed["elevation_gain_m"] = float(elevation.group(1).replace(",", "."))
-        parsed["elevation_loss_m"] = float(elevation.group(2).replace(",", "."))
+    elevation_loss = _report_number(
+        value,
+        r"^\s*Elevation Gain\s*/\s*Loss\s*:\s*[\d.,]+\s*m\s*/\s*([\d.,]+)\s*m",
+    )
+    if elevation_gain is not None:
+        parsed["elevation_gain_m"] = elevation_gain
+    if elevation_loss is not None:
+        parsed["elevation_loss_m"] = elevation_loss
     average_speed = _pace_to_speed(value, "Average Pace")
     if average_speed is not None:
         parsed["average_speed_mps"] = average_speed

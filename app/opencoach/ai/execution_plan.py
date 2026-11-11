@@ -324,6 +324,19 @@ def build_coach_execution_plan(
             {"horizon_days": int(horizon.group(1))} if horizon else {},
         ))
 
+    # Une période explicite invalide ne doit pas désactiver silencieusement
+    # l'analyse de préparation : demander une correction sans consulter l'outil.
+    if (
+        "preparation" in intent_context
+        and "race_preparation_analysis" not in selected
+        and periods
+        and not 7 <= periods[-1] <= 180
+    ):
+        return CoachExecutionPlan(clarification=(
+            "L'analyse de préparation nécessite une période de 7 à 180 jours. "
+            "Quelle période valide souhaites-tu ?"
+        ))
+
     if "race_preparation_analysis" in selected:
         # Une course ne peut être analysée qu'après identification explicite :
         # le calendrier fournit les identifiants, jamais un choix arbitraire.

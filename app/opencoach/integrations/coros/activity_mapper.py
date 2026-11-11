@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import re
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from typing import Any
@@ -29,6 +30,94 @@ SPORT_NAMES = {
 }
 
 
+
+def _report_number(text: str, pattern: str) -> float | None:
+    match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+    if not match:
+        return None
+    try:
+        value = float(match.group(1).replace(",", "."))
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return value if math.isfinite(value) and value >= 0 else None
+
+
+def _report_duration(text: str, label: str) -> int | None:
+    match = re.search(
+        rf"^\s*{re.escape(label)}\s*:\s*(?:(\d+)\s*h\s*)?(?:(\d+)\s*:\s*)?(\d+)\s*(?:min)?\s*$",
+        text,
+        re.IGNORECASE | re.MULTILINE,
+    )
+    if not match:
+        return None
+    hours = int(match.group(1) or 0)
+    minutes = int(match.group(2) or 0)
+    seconds = int(match.group(3) or 0)
+    if minutes >= 60 or seconds >= 60:
+        return None
+    return hours * 3600 + minutes * 60 + seconds
+
+
+def _pace_to_speed(text: str, label: str) -> float | None:
+    match = re.search(
+        rf"^\s*{re.escape(label)}\s*:\s*(\d{{1,2}}):(\d{{2}})\s*/km\s*$",
+        text,
+        re.IGNORECASE | re.MULTILINE,
+    )
+    if not match:
+        return None
+    minutes, seconds = int(match.group(1)), int(match.group(2))
+    total_seconds = minutes * 60 + seconds
+    if total_seconds <= 0 or seconds >= 60:
+        return None
+    return 1000 / total_seconds
+
+
+def _parse_activity_report(value: Any) -> dict[str, float | int]:
+    """Parse uniquement les métriques explicitement présentes dans le rapport COROS."""
+    if not isinstance(value, str) or not value.strip():
+        return {}
+    parsed: dict[str, float | int] = {}
+    workout = _report_duration(value, "Workout Time")
+    total = _report_duration(value, "Total Time")
+    if workout is not None:
+        parsed["moving_time_seconds"] = workout
+    if total is not None:
+        parsed["elapsed_time_seconds"] = total
+    mappings = {
+        "distance_m": (r"^\s*Distance\s*:\s*([\d.,]+)\s*km", 1000),
+        "average_heart_rate": (r"^\s*Average Heart Rate\s*:\s*([\d.,]+)\s*bpm", 1),
+        "average_cadence": (r"^\s*Average Cadence\s*:\s*([\d.,]+)\s*spm", 1),
+        "average_stride_m": (r"^\s*Average Stride Length\s*:\s*([\d.,]+)\s*m", 1),
+        "average_power_w": (r"^\s*Average Power\s*:\s*([\d.,]+)\s*W", 1),
+        "calories": (r"^\s*Calories\s*:\s*([\d.,]+)\s*kcal", 1),
+        "training_load": (r"^\s*Training Load\s*:\s*([\d.,]+)", 1),
+    }
+    for field, (pattern, multiplier) in mappings.items():
+        value_number = _report_number(value, pattern)
+        if value_number is not None:
+            parsed[field] = round(value_number * multiplier, 3)
+    elevation_gain = _report_number(
+        value,
+        r"^\s*Elevation Gain\s*/\s*Loss\s*:\s*([\d.,]+)\s*m\s*/",
+    )
+    elevation_loss = _report_number(
+        value,
+        r"^\s*Elevation Gain\s*/\s*Loss\s*:\s*[\d.,]+\s*m\s*/\s*([\d.,]+)\s*m",
+    )
+    if elevation_gain is not None:
+        parsed["elevation_gain_m"] = elevation_gain
+    if elevation_loss is not None:
+        parsed["elevation_loss_m"] = elevation_loss
+    average_speed = _pace_to_speed(value, "Average Pace")
+    if average_speed is not None:
+        parsed["average_speed_mps"] = average_speed
+    moving_speed = _pace_to_speed(value, "Moving Average Pace")
+    if moving_speed is not None:
+        parsed["moving_average_speed_mps"] = moving_speed
+    return parsed
+
+
 def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any]) -> bool:
     # Le résumé COROS et le détail d'activité sont conservés séparément dans
     # le snapshot brut. Fusionner les champs du détail pour normaliser aussi
@@ -38,7 +127,8 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
     detail_data = detail_values.get("data")
     if isinstance(detail_data, dict):
         detail_values = {**detail_data, **detail_values}
-    record = {**detail_values, **record}
+    report_values = _parse_activity_report(detail)
+    record = {**report_values, **detail_values, **record}
     label_id = record.get("labelId") or record.get("label_id")
     if label_id is None:
         return False
@@ -135,4 +225,19 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
             continue
         if math.isfinite(parsed_value) and parsed_value >= 0:
             setattr(activity, attribute, parsed_value)
+
+    # Le rapport détaillé COROS fournit les durées moving/elapsed explicitement.
+    # Elles priment sur workoutTime du résumé, dont la sémantique peut varier.
+    for attribute in ("moving_time_seconds", "elapsed_time_seconds"):
+        value = report_values.get(attribute)
+        if value is not None:
+            setattr(activity, attribute, value)
+
+    # Les autres métriques du rapport complètent uniquement les champs absents
+    # du résumé structuré ; aucune valeur déjà importée n'est écrasée.
+    for attribute, value in report_values.items():
+        if attribute in {"moving_time_seconds", "elapsed_time_seconds", "moving_average_speed_mps"}:
+            continue
+        if value is not None and getattr(activity, attribute, None) is None:
+            setattr(activity, attribute, value)
     return True

@@ -350,6 +350,7 @@ def get_ai_tool_registry(
             context_service.recent_load_service,
             training_stats_service,
             athlete_profile_id,
+            wellness_repository=SqlWellnessRepository(db),
         )
     )
     registry.register(

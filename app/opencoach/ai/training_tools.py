@@ -89,16 +89,28 @@ def build_training_history_tool(
                         stats.total_duration_minutes,
                         duration_available,
                     ),
+                    "observed_value": (
+                        stats.total_duration_minutes if duration_available else None
+                    ),
+                    "observed_value_semantics": "sum_of_sessions_with_available_duration",
                     "unit": "minutes",
                     "coverage": coverage(duration_available),
                 },
                 "distance_km": {
                     "value": metric_value(stats.total_distance_km, stats.distance_data_count),
+                    "observed_value": (
+                        stats.total_distance_km if stats.distance_data_count else None
+                    ),
+                    "observed_value_semantics": "sum_of_sessions_with_available_distance",
                     "unit": "km",
                     "coverage": coverage(stats.distance_data_count),
                 },
                 "elevation_gain_m": {
                     "value": metric_value(stats.total_elevation_gain_m, stats.elevation_data_count),
+                    "observed_value": (
+                        stats.total_elevation_gain_m if stats.elevation_data_count else None
+                    ),
+                    "observed_value_semantics": "sum_of_sessions_with_available_elevation_gain",
                     "unit": "m",
                     "coverage": coverage(stats.elevation_data_count),
                 },
@@ -118,7 +130,9 @@ def build_training_history_tool(
             "Retourne le bilan réel des entraînements sur les nb_days derniers "
             "jours calendaires inclusifs : séances, durée, distance, D+ et charge. "
             "nb_days est obligatoire : si la durée manque, demande-la à l'utilisateur "
-            "et attends sa réponse avant tout appel. Les métriques précisent leur couverture."
+            "et attends sa réponse avant tout appel. Les métriques précisent leur couverture. "
+            "Quand la couverture est partielle, observed_value est le sous-total des seules séances "
+            "renseignées : l'annoncer explicitement comme partiel, jamais comme total de période."
         ),
         arguments_model=TrainingHistoryArguments,
         handler=execute,

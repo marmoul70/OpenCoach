@@ -217,14 +217,23 @@ def build_recovery_analysis_tool(
                 "recorded_days": window.recorded_days,
                 "coverage_ratio": round(window.coverage_ratio, 3),
                 "metrics": {
-                    name: {
-                        "current": metric.current,
-                        "average": metric.average,
-                        "median": metric.median,
-                        "sample_count": metric.sample_count,
-                        "coverage_days": metric.coverage_days,
-                        "expected_days": metric.expected_days,
-                    }
+                    name: (
+                        {
+                            "current": metric.current,
+                            "average": metric.average,
+                            "median": metric.median,
+                            "sample_count": metric.sample_count,
+                            "coverage_days": metric.coverage_days,
+                            "expected_days": metric.expected_days,
+                        }
+                        if metric.sample_count > 0
+                        else {
+                            # Garder les métriques canoniques explicitement inconnues,
+                            # sans transmettre les statistiques de couverture vides.
+                            "current": None,
+                            "sample_count": 0,
+                        }
+                    )
                     for name, metric in window.metrics.items()
                     if name in METRICS
                 },
@@ -254,9 +263,31 @@ def build_recovery_analysis_tool(
                 "interpréter les tendances avec prudence."
             )
 
+        metric_definitions = {
+            "hrv": {"label": "Variabilité de la fréquence cardiaque", "unit": "ms"},
+            "hrv_baseline": {"label": "Référence personnelle de variabilité cardiaque", "unit": "ms"},
+            "resting_hr": {"label": "Fréquence cardiaque au repos", "unit": "bpm"},
+            "avg_hr": {"label": "Fréquence cardiaque moyenne", "unit": "bpm"},
+            "min_hr": {"label": "Fréquence cardiaque minimale", "unit": "bpm"},
+            "max_hr": {"label": "Fréquence cardiaque maximale", "unit": "bpm"},
+            "avg_sleeping_hr": {"label": "Fréquence cardiaque moyenne pendant le sommeil", "unit": "bpm"},
+            "stress_avg": {"label": "Stress moyen", "unit": "score COROS"},
+            "sleep_seconds": {"label": "Durée totale de sommeil", "unit": "s"},
+            "sleep_score": {"label": "Score de sommeil", "unit": "score COROS"},
+            "sleep_quality": {"label": "Qualité du sommeil", "unit": "score COROS"},
+            "spo2": {"label": "Saturation périphérique en oxygène", "unit": "%"},
+            "sleep_deep_seconds": {"label": "Sommeil profond", "unit": "s"},
+            "sleep_light_seconds": {"label": "Sommeil léger", "unit": "s"},
+            "sleep_rem_seconds": {"label": "Sommeil paradoxal (REM)", "unit": "s"},
+            "sleep_awake_seconds": {"label": "Temps éveillé", "unit": "s"},
+            "fatigue_atl": {"label": "Charge aiguë COROS (ATL)", "unit": "points COROS"},
+            "fitness_ctl": {"label": "Charge chronique COROS (CTL)", "unit": "points COROS"},
+        }
+
         return {
             "target_date": target_date.isoformat(),
             "data_store": "OpenCoach",
+            "metric_definitions": metric_definitions,
             "provider": provider if wellness_days else None,
             # Conserver la provenance sans transmettre une matrice journalière
             # répétitive qui peut dépasser le budget de contexte du modèle.

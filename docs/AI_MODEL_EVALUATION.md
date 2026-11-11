@@ -114,7 +114,7 @@ python scripts/ai/benchmark_models.py --models qwen2.5:3b --repetitions 3
 
 Le script :
 - propose deux profils de prompt : `production` (prompt réel du coach) et `minimal` (règles de routage réduites, uniquement pour diagnostic) ;
-- propose deux catalogues : `all` (13 outils) et `history` (training_history, training_load, recovery_analysis) ;
+- propose deux catalogues : `all` (14 outils) et `history` (training_history, training_load, recovery_analysis) ;
 - réutilise les schémas Pydantic métier dans les deux catalogues ;
 - injecte une date de référence synthétique fixe, mais ne charge pas le contexte athlète réel construit par `/coach` : le benchmark reste sans accès à la base et n’évalue donc pas l’effet des faits personnalisés ;
 - n'expose pas le tool de proposition de données de profil, car ce runner est limité à la sélection des outils de lecture ;
@@ -155,14 +155,14 @@ Les dates obligatoires de `planned_sessions` sont également contrôlées : le r
 
 - [x] Définir les dimensions d'évaluation et les critères de sécurité.
 - [x] Créer un premier corpus versionné de scénarios de dialogue.
-- [x] Générer les 13 schémas depuis les modèles Pydantic du registre métier et valider les arguments attendus du corpus contre ces schémas (`tests/test_ai_benchmark_runner.py`).
+- [x] Générer les 14 schémas depuis les modèles Pydantic du registre métier et valider les arguments attendus du corpus contre ces schémas (`tests/test_ai_benchmark_runner.py`).
 - [x] Ajouter un runner de sélection d'outils Ollama et un export JSON/CSV des résultats (`scripts/ai/benchmark_models.py`).
 - [x] Ajouter des tests unitaires du scoring, des clarifications et des synthèses (`tests/test_ai_benchmark_runner.py`).
-- [x] Aligner le prompt système et les descriptions des 13 outils de lecture sur le contrat de production, puis fixer la date de référence synthétique.
+- [x] Aligner le prompt système et les descriptions des 14 outils de lecture sur le contrat de production, puis fixer la date de référence synthétique.
 - [x] Valider les arguments réellement générés contre les schémas Pydantic et les exposer dans le rapport.
 - [x] Ajouter un scénario multi-tours vérifiant qu'une période fournie après clarification est réutilisée sans être inventée.
 - [x] Capturer les métriques natives Ollama pour séparer le coût de chargement, du prompt et de la génération.
-- [x] Ajouter les profils comparatifs de catalogue (13 outils / 3 outils ciblés) et de prompt (production / minimal), sans modifier le prompt de production.
+- [x] Ajouter les profils comparatifs de catalogue (14 outils / 3 outils ciblés) et de prompt (production / minimal), sans modifier le prompt de production.
 - [x] Ajouter un garde-fou Python de provenance des périodes : une valeur obligatoire doit correspondre à une durée explicitement fournie par l'utilisateur ; sinon l'outil métier n'est pas exécuté et une clarification déterministe est retournée.
 - [x] Ajouter des tests de non-exécution en cas de période inventée, altérée ou hors limites.
 - [x] Corriger le scénario de récupération pour tenir compte de la date facultative par défaut du contrat.

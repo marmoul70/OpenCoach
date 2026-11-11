@@ -335,3 +335,16 @@ def test_new_race_selection_supersedes_previous_race_in_conversation_history():
         "race_id": selected_race_id,
         "history_days": 21,
     }) in [(call.name, call.arguments) for call in plan.calls]
+
+
+def test_old_race_id_is_not_reused_for_a_new_unselected_race_request():
+    old_race_id = "123e4567-e89b-42d3-a456-426614174000"
+    plan = build_coach_execution_plan(
+        "Analyse ma préparation pour ma prochaine course sur 30 jours.",
+        history=[f"Analyse ma préparation pour la course {old_race_id}."],
+        assistant_history=["Voici l'analyse de ta course précédente."],
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert all(call.name != "race_preparation_analysis" for call in plan.calls)
+    assert any(call.name == "race_calendar" for call in plan.calls)

@@ -411,6 +411,64 @@ def test_races_api_creates_race() -> None:
     )
 
 
+
+class InsufficientPreparationPlanningService:
+    def refresh(
+        self,
+        **kwargs,
+    ):
+        del kwargs
+
+        from opencoach.planning.trajectory.coaching_phase_allocation import (
+            InsufficientPreparationTimeError,
+        )
+
+        raise InsufficientPreparationTimeError(
+            "Le délai disponible est insuffisant."
+        )
+
+
+def test_races_api_keeps_race_and_returns_warning_when_preparation_is_too_short() -> None:
+    repository = FakeRaceRepository()
+
+    client, profile_id = create_client(
+        repository,
+        planning_service=(
+            InsufficientPreparationPlanningService()
+        ),
+    )
+
+    response = client.post(
+        "/api/races",
+        json={
+            "date": "2027-07-10",
+            "name": "Ultra trop proche",
+            "location": "Jura",
+            "race_type": "trail",
+            "priority": "primary",
+            "distance_km": 65.0,
+            "elevation_gain_m": 3100.0,
+            "status": "planned",
+        },
+    )
+
+    assert response.status_code == 201
+
+    payload = response.json()
+
+    assert payload["name"] == "Ultra trop proche"
+    assert payload["planning_warning"] == (
+        "Cette course est trop proche pour suivre le rythme "
+        "de progression prévu. Elle est bien enregistrée, "
+        "mais le planning n'a pas pu être recalculé."
+    )
+    assert len(repository.saved) == 1
+    assert repository.saved[0][0] == profile_id
+    assert len(repository.races) == 1
+    assert repository.races[0].name == "Ultra trop proche"
+
+
+
 def test_races_api_updates_race() -> None:
     repository = FakeRaceRepository()
 

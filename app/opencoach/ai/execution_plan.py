@@ -317,7 +317,9 @@ def build_coach_execution_plan(
     if "active_constraints" in selected and not calls:
         calls.append(PlannedToolCall("active_constraints", {}))
 
-    if "race_calendar" in selected:
+    if "race_calendar" in selected and not (
+        "race_preparation_analysis" in selected and race_id_match is not None
+    ):
         horizon = re.search(r"\b(\d{1,3})\s+(?:prochains?\s+)?jours\b", normalized)
         calls.append(PlannedToolCall(
             "race_calendar",
@@ -337,6 +339,7 @@ def build_coach_execution_plan(
             "Quelle période valide souhaites-tu ?"
         ))
 
+    race_id_match = None
     if "race_preparation_analysis" in selected:
         # Une course ne peut être analysée qu'après identification explicite :
         # le calendrier fournit les identifiants, jamais un choix arbitraire.

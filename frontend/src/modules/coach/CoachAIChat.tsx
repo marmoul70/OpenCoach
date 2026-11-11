@@ -197,8 +197,8 @@ export function CoachAIChat() {
         title="Assistant personnel"
         onClose={() => setOpen(false)}
       >
-        <section className="flex min-h-full flex-col overflow-hidden rounded-[16px] border border-[var(--oc-border)] bg-[var(--oc-surface)] shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-      <div className="flex items-center gap-3 border-b border-[var(--oc-border)] px-4 py-3 sm:px-5">
+        <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[var(--oc-border)] bg-[var(--oc-surface)] shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+      <div className="flex shrink-0 items-center gap-3 border-b border-[var(--oc-border)] px-4 py-3 sm:px-5">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
           <Brain className="h-4 w-4" />
         </div>
@@ -209,7 +209,7 @@ export function CoachAIChat() {
         <span className="ml-auto rounded-full border border-emerald-500/20 bg-emerald-500/[0.06] px-2 py-1 text-[9px] font-semibold text-emerald-700 dark:text-emerald-400">Local</span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--oc-border)] px-4 py-2.5 sm:px-5">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--oc-border)] px-4 py-2.5 sm:px-5">
         <button
           type="button"
           disabled={loading}
@@ -220,7 +220,7 @@ export function CoachAIChat() {
         </button>
       </div>
 
-      <div className="max-h-[420px] space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
         {pendingProposals.length > 0 && (
           <div className="space-y-2">
             <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--oc-muted)]">Données à valider</p>
@@ -283,7 +283,7 @@ export function CoachAIChat() {
         </p>
       )}
 
-      <form onSubmit={sendMessage} className="flex items-end gap-2 border-t border-[var(--oc-border)] p-3 sm:px-5">
+      <form onSubmit={sendMessage} className="flex shrink-0 items-end gap-2 border-t border-[var(--oc-border)] p-3 sm:px-5">
         <textarea
           value={question}
           onChange={(event) => setQuestion(event.target.value)}

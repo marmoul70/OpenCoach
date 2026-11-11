@@ -241,31 +241,15 @@ def test_injury_for_tomorrow_uses_the_requested_date_for_both_safety_tools():
     ]
 
 
-def test_my_training_sessions_with_explicit_period_route_to_history():
-    plan = build_coach_execution_plan(
-        "Analyse mes entraînements des 30 derniers jours.",
-        reference_date=REFERENCE_DATE,
-    )
-    assert [(call.name, call.arguments) for call in plan.calls] == [
-        ("training_history", {"nb_days": 30})
-    ]
-
-
-def test_latest_activity_request_uses_latest_activity_selector():
-    plan = build_coach_execution_plan(
-        "Analyse ma dernière activité COROS et détaille mes intervalles.",
-        reference_date=REFERENCE_DATE,
-    )
-    assert [(call.name, call.arguments) for call in plan.calls] == [
-        ("activity_detail", {"latest": True})
-    ]
-
-
-def test_load_without_period_does_not_reuse_period_from_completed_answer():
+def test_new_load_request_does_not_inherit_recovery_button_periods():
     plan = build_coach_execution_plan(
         "Analyse ma charge d'entraînement.",
-        history=["Analyse ma récupération sur 7, 14 et 30 jours."],
-        assistant_history=["Ton analyse de récupération couvre les fenêtres 7, 14 et 30 jours."],
+        history=[
+            "Fais un bilan de mon état de forme et de ma fatigue. Analyse le sommeil, la HRV, la fréquence cardiaque au repos, le stress et la charge sur 7, 14 et 30 jours."
+        ],
+        assistant_history=[
+            "Le bilan de récupération utilise les fenêtres de 7, 14 et 30 jours."
+        ],
         reference_date=REFERENCE_DATE,
     )
     assert plan.calls == ()

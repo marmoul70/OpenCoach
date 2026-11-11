@@ -254,9 +254,31 @@ def build_recovery_analysis_tool(
                 "interpréter les tendances avec prudence."
             )
 
+        metric_definitions = {
+            "hrv": {"label": "Variabilité de la fréquence cardiaque", "unit": "ms"},
+            "hrv_baseline": {"label": "Référence personnelle de variabilité cardiaque", "unit": "ms"},
+            "resting_hr": {"label": "Fréquence cardiaque au repos", "unit": "bpm"},
+            "avg_hr": {"label": "Fréquence cardiaque moyenne", "unit": "bpm"},
+            "min_hr": {"label": "Fréquence cardiaque minimale", "unit": "bpm"},
+            "max_hr": {"label": "Fréquence cardiaque maximale", "unit": "bpm"},
+            "avg_sleeping_hr": {"label": "Fréquence cardiaque moyenne pendant le sommeil", "unit": "bpm"},
+            "stress_avg": {"label": "Stress moyen", "unit": "score COROS"},
+            "sleep_seconds": {"label": "Durée totale de sommeil", "unit": "s"},
+            "sleep_score": {"label": "Score de sommeil", "unit": "score COROS"},
+            "sleep_quality": {"label": "Qualité du sommeil", "unit": "score COROS"},
+            "spo2": {"label": "Saturation périphérique en oxygène", "unit": "%"},
+            "sleep_deep_seconds": {"label": "Sommeil profond", "unit": "s"},
+            "sleep_light_seconds": {"label": "Sommeil léger", "unit": "s"},
+            "sleep_rem_seconds": {"label": "Sommeil paradoxal (REM)", "unit": "s"},
+            "sleep_awake_seconds": {"label": "Temps éveillé", "unit": "s"},
+            "fatigue_atl": {"label": "Charge aiguë COROS (ATL)", "unit": "points COROS"},
+            "fitness_ctl": {"label": "Charge chronique COROS (CTL)", "unit": "points COROS"},
+        }
+
         return {
             "target_date": target_date.isoformat(),
             "data_store": "OpenCoach",
+            "metric_definitions": metric_definitions,
             "provider": provider if wellness_days else None,
             # Conserver la provenance sans transmettre une matrice journalière
             # répétitive qui peut dépasser le budget de contexte du modèle.

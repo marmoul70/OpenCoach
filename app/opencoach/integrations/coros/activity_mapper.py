@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from typing import Any
 from uuid import UUID
 
@@ -9,6 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from opencoach.database.models import Activity
+
+ATHLETE_TIMEZONE = ZoneInfo("Europe/Paris")
 
 SPORT_NAMES = {
     100: "Course extérieure",
@@ -42,11 +45,29 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
     timestamp = record.get("startTimestamp") or record.get("start_at")
     try:
         if isinstance(timestamp, (int, float)):
-            start_at = datetime.fromtimestamp(timestamp / (1000 if timestamp > 10_000_000_000 else 1), timezone.utc).replace(tzinfo=None)
+            timestamp_seconds = timestamp / (
+                1000 if timestamp > 10_000_000_000 else 1
+            )
+            start_at_aware = datetime.fromtimestamp(
+                timestamp_seconds,
+                timezone.utc,
+            )
         elif isinstance(timestamp, str):
-            start_at = datetime.fromisoformat(timestamp.replace("Z", "+00:00")).replace(tzinfo=None)
+            parsed_timestamp = datetime.fromisoformat(
+                timestamp.replace("Z", "+00:00")
+            )
+            start_at_aware = (
+                parsed_timestamp.replace(tzinfo=timezone.utc)
+                if parsed_timestamp.tzinfo is None
+                else parsed_timestamp.astimezone(timezone.utc)
+            )
         else:
             return False
+        start_at = start_at_aware.replace(tzinfo=None)
+        start_at_local = (
+            start_at_aware.astimezone(ATHLETE_TIMEZONE)
+            .replace(tzinfo=None)
+        )
     except (OverflowError, OSError, ValueError):
         return False
 
@@ -75,11 +96,13 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
             name=str(record.get("name") or sport_type),
             sport_type=sport_type,
             start_at=start_at,
+            start_at_local=start_at_local,
         )
         db.add(activity)
     activity.name = str(record.get("name") or sport_type)
     activity.sport_type = sport_type
     activity.start_at = start_at
+    activity.start_at_local = start_at_local
     duration = next((
         record[key]
         for key in ("workoutTime", "durationSeconds", "elapsed_time_seconds")
@@ -90,6 +113,7 @@ def upsert_coros_activity(db: Session, profile_id: UUID, record: dict[str, Any])
             parsed_duration = int(duration)
             if not isinstance(duration, bool) and parsed_duration >= 0 and float(duration) == parsed_duration:
                 activity.elapsed_time_seconds = parsed_duration
+                activity.moving_time_seconds = parsed_duration
         except (TypeError, ValueError, OverflowError):
             pass
 

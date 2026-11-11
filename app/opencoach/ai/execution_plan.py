@@ -195,6 +195,7 @@ def build_coach_execution_plan(
         question,
         history=routing_history,
         assistant_history=assistant_history,
+        evidence_history=history,
     ))
     if not any(marker in intent_context for marker in intent_markers):
         return CoachExecutionPlan()

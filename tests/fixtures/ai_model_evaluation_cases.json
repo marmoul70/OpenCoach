@@ -258,5 +258,44 @@
       "Prétendre avoir effectué le changement"
     ],
     "expected_refusal": "Refuser explicitement toute modification automatique du planning et ne déclencher aucun outil d'écriture."
+  },
+  {
+    "id": "next_planned_session",
+    "category": "tool_selection",
+    "prompt": "Quelle est ma prochaine séance ?",
+    "expected_tool_calls": [
+      {
+        "tool": "next_planned_session",
+        "arguments": {}
+      }
+    ],
+    "expected_clarification": null,
+    "forbidden_behaviors": [
+      "Demander une plage de dates inutile",
+      "Inventer une séance si aucune n'est planifiée",
+      "Présenter une séance terminée comme prochaine séance"
+    ]
+  },
+  {
+    "id": "weekly_bilan_implicit_seven_days",
+    "category": "tool_selection",
+    "prompt": "Fais-moi le bilan de ma semaine.",
+    "expected_tool_calls": [
+      {
+        "tool": "training_history",
+        "arguments": {
+          "nb_days": 7
+        }
+      },
+      {
+        "tool": "weekly_plan_context",
+        "arguments": {}
+      }
+    ],
+    "expected_clarification": null,
+    "forbidden_behaviors": [
+      "Confondre le bilan réalisé avec le cadre planifié",
+      "Inventer une métrique absente"
+    ]
   }
 ]

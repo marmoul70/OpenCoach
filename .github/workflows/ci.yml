@@ -57,6 +57,7 @@ jobs:
       - name: Frontend deployment script tests
         run: |
           bash ./tests/test-deploy-frontend.sh
+          bash ./tests/test-nginx-bootstrap.sh
 
       - name: OpenCoach bootstrap tests on Debian 13
         run: |

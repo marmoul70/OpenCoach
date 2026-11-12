@@ -307,3 +307,68 @@ def test_registry_emits_correlated_tool_metrics_without_arguments(caplog):
     assert '"status":"ok"' in caplog.text
     assert '"duration_ms":' in caplog.text
     assert '"value":4' not in caplog.text
+
+
+
+def test_registry_reuses_exact_duplicate_call_without_reexecuting_business_handler():
+    calls = []
+    registry = AIToolRegistry(trace_id="duplicate-call-test")
+    registry.register(AITool(
+        name="echo",
+        description="Outil de test.",
+        arguments_model=EchoArguments,
+        handler=lambda args: calls.append(args.value) or {"value": args.value},
+    ))
+
+    first = registry.execute("echo", {"value": 3})
+    replay = registry.execute("echo", {"value": 3})
+
+    assert first.status == replay.status == "ok"
+    assert first.data == replay.data == {"value": 3}
+    assert replay.metadata["replayed"] is True
+    assert replay.metadata["business_tool_executed"] is False
+    assert calls == [3]
+    assert len(registry.execution_results) == 1
+
+
+def test_registry_allows_same_tool_again_with_different_validated_arguments():
+    calls = []
+    registry = AIToolRegistry()
+    registry.register(AITool(
+        name="echo",
+        description="Outil de test.",
+        arguments_model=EchoArguments,
+        handler=lambda args: calls.append(args.value) or {"value": args.value},
+    ))
+
+    first = registry.execute("echo", {"value": 2})
+    second = registry.execute("echo", {"value": 4})
+
+    assert first.data == {"value": 2}
+    assert second.data == {"value": 4}
+    assert calls == [2, 4]
+    assert len(registry.execution_results) == 2
+
+
+def test_registry_does_not_retry_a_failed_exact_invocation():
+    calls = []
+
+    def fail(args):
+        calls.append(args.value)
+        raise RuntimeError("sensitive internal detail")
+
+    registry = AIToolRegistry()
+    registry.register(AITool(
+        name="failure",
+        description="Outil de test.",
+        arguments_model=EchoArguments,
+        handler=fail,
+    ))
+
+    first = registry.execute("failure", {"value": 1})
+    replay = registry.execute("failure", {"value": 1})
+
+    assert first.status == replay.status == "failed"
+    assert replay.metadata["replayed"] is True
+    assert calls == [1]
+    assert len(registry.execution_results) == 1

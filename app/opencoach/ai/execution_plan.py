@@ -310,9 +310,10 @@ def build_coach_execution_plan(
     if "training_load" in selected:
         if not periods:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?")
-        if not 1 <= periods[-1] <= 90:
+        load_period = periods[-2] if trend_comparison_requested and len(periods) >= 2 else periods[-1]
+        if not 1 <= load_period <= 90:
             return CoachExecutionPlan(clarification="La charge peut être analysée sur 1 à 90 jours. Quelle période valide souhaites-tu ?")
-        calls.append(PlannedToolCall("training_load", {"nb_days": periods[-1]}))
+        calls.append(PlannedToolCall("training_load", {"nb_days": load_period}))
 
     if "training_trends" in selected:
         if len(periods) < 2:

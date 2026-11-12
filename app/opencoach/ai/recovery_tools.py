@@ -176,6 +176,28 @@ def build_recovery_analysis_tool(
         hours, minutes = divmod(total_minutes, 60)
         return f"{hours} h {minutes:02d} min"
 
+    def metric_result(name, metric) -> dict:
+        if metric.sample_count <= 0:
+            return {"current": None, "sample_count": 0}
+        if name in {"sleep_seconds", "sleep_deep_seconds", "sleep_rem_seconds"}:
+            return {
+                "current": format_duration(metric.current),
+                "average": format_duration(metric.average),
+                "median": format_duration(metric.median),
+                "unit": "heures et minutes",
+                "sample_count": metric.sample_count,
+                "coverage_days": metric.coverage_days,
+                "expected_days": metric.expected_days,
+            }
+        return {
+            "current": metric.current,
+            "average": metric.average,
+            "median": metric.median,
+            "sample_count": metric.sample_count,
+            "coverage_days": metric.coverage_days,
+            "expected_days": metric.expected_days,
+        }
+
     def execute(arguments: BaseModel) -> dict:
         target_date = arguments.target_date
         start_date = target_date - timedelta(days=29)
@@ -237,35 +259,7 @@ def build_recovery_analysis_tool(
                 "recorded_days": window.recorded_days,
                 "coverage_ratio": round(window.coverage_ratio, 3),
                 "metrics": {
-                    name: (
-                        (
-                            {
-                                "current": format_duration(metric.current),
-                                    "average": format_duration(metric.average),
-                                    "median": format_duration(metric.median),
-                                    "unit": "heures et minutes",
-                                    "sample_count": metric.sample_count,
-                                    "coverage_days": metric.coverage_days,
-                                    "expected_days": metric.expected_days,
-                                }
-                                if name in {"sleep_seconds", "sleep_deep_seconds", "sleep_rem_seconds"}
-                                else {
-                                    "current": metric.current,
-                                    "average": metric.average,
-                                    "median": metric.median,
-                                    "sample_count": metric.sample_count,
-                                    "coverage_days": metric.coverage_days,
-                                    "expected_days": metric.expected_days,
-                                }
-                        )
-                        if metric.sample_count > 0
-                        else {
-                            # Garder les métriques canoniques explicitement inconnues,
-                            # sans transmettre les statistiques de couverture vides.
-                            "current": None,
-                            "sample_count": 0,
-                        }
-                    )
+                    name: metric_result(name, metric)
                     for name, metric in window.metrics.items()
                     if name in analysis_metrics
                 },

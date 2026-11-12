@@ -66,6 +66,16 @@ check_nginx_spa_fallback() {
 }
 
 
+check_nginx_current_release_root() {
+    grep -Fq 'root /var/www/opencoach/current;' "$NGINX_CONFIG"
+}
+
+check_bootstrap_preserves_releases() {
+    ! grep -Fq 'rm -rf' "$INSTALL_SERVICES" \
+        && grep -Fq 'OPENCOACH_FRONTEND_PREBUILT=1' "$INSTALL_SERVICES" \
+        && grep -Fq 'deploy-frontend.sh' "$INSTALL_SERVICES"
+}
+
 check_nginx_installation() {
     grep -Fq \
         'install_nginx_configuration()' \
@@ -99,6 +109,14 @@ check \
 check \
     "le bootstrap installe et valide Nginx" \
     check_nginx_installation
+
+check \
+    "Nginx sert la release frontend active" \
+    check_nginx_current_release_root
+
+check \
+    "le bootstrap conserve les releases et délègue le déploiement" \
+    check_bootstrap_preserves_releases
 
 
 printf '\n'

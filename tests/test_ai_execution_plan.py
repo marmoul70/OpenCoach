@@ -96,6 +96,17 @@ def test_current_recovery_uses_python_default_date_and_status_tool():
     ]
 
 
+def test_recent_recovery_analysis_uses_fixed_windows_without_period_clarification():
+    plan = build_coach_execution_plan(
+        "Analyse ma récupération récente.",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("recovery_analysis", {})
+    ]
+
+
 def test_injury_advice_executes_constraints_before_recovery_status():
     plan = build_coach_execution_plan(
         "J'ai mal au tendon d'Achille, quelle séance puis-je faire aujourd'hui ?",

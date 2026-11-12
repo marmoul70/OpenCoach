@@ -91,3 +91,17 @@ Le stockage des échantillons est un tampon circulaire en mémoire de 5 000 év�
 2. Définir la rétention et les filtres d'accès si une persistance en base est nécessaire.
 3. Ajouter une interface de supervision sans exposer les données personnelles.
 4. Couvrir les scénarios d'indisponibilité Ollama et de repli structuré.
+
+
+## Garde-fou contre les doubles exécutions
+
+Le registre `AIToolRegistry` mémorise les invocations déjà exécutées pendant la durée de vie du registre (donc d'une requête coach). Après validation Pydantic et validation des preuves utilisateur, la clé de déduplication combine le nom de l'outil et ses arguments normalisés.
+
+- Un appel strictement identique réutilise le résultat précédent sans rappeler le handler métier.
+- Le comportement s'applique aussi à un handler qui a échoué : une répétition ne relance pas une opération potentiellement non idempotente.
+- Le même outil reste exécutable avec des arguments différents ; les comparaisons et fenêtres distinctes restent possibles.
+- Les arguments invalides et les demandes de clarification ne sont pas mis en cache.
+- L'événement `tool_execution_reused` indique la réutilisation sans exposer les arguments.
+- Le cache est limité au registre de la requête et n'est ni persistant ni partagé entre utilisateurs.
+
+Cette protection complète la liste blanche, la validation stricte des schémas et le contrôle des preuves utilisateur ; elle ne remplace pas les garanties transactionnelles propres aux handlers qui écrivent en base.

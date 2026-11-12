@@ -68,11 +68,21 @@ sudo journalctl -u opencoach-backend --since "1 hour ago" --no-pager \
 
 Les événements sont émis au niveau des opérations réellement exécutées. Une clarification déterministe du planificateur qui retourne avant tout appel à Ollama ou à un outil ne produit donc pas d'événement de génération ou d'exécution ; elle ne déclenche aucun calcul ni accès au fournisseur.
 
+## Agrégation et endpoint de supervision
+
+L'endpoint authentifié `GET /api/ai/observability?window_hours=24` retourne les agrégats globaux des événements observés depuis le démarrage du processus :
+- nombre d'événements, nombre d'erreurs et taux d'erreur ;
+- latences p50, p95, minimum et maximum ;
+- ventilation par type d'événement et modèle/outil/opération ;
+- fenêtre de 1 à 168 heures.
+
+Le stockage des échantillons est un tampon circulaire en mémoire de 5 000 événements maximum, partagé entre les requêtes du processus. Les échantillons les plus anciens sont évincés quand le tampon est plein. Aucun prompt, argument, identifiant de trace ou donnée sportive n'est retourné.
+
 ## Limites actuelles
 
-- Les événements sont conservés selon la rotation des journaux systemd/journald ; ils ne sont pas encore persistés dans une table dédiée.
-- Les percentiles p50/p95, agrégations par modèle et taux d'erreur sur une fenêtre temporelle ne sont pas encore calculés.
-- Aucune interface de supervision n'est ajoutée dans cette étape.
+- Les agrégats sont volatils : un redémarrage du backend vide les échantillons. Le nombre d'échantillons disponibles est indiqué dans la réponse.
+- Le tampon est local au processus ; en cas de plusieurs workers, chaque worker aurait son propre agrégat. Le déploiement OpenCoach actuel utilise un seul processus backend.
+- Aucune interface de supervision frontend n'est ajoutée dans cette étape.
 - Les événements ne contiennent pas les prompts : l'évaluation qualitative des réponses reste un processus distinct basé sur le corpus synthétique.
 
 ## Suite prévue

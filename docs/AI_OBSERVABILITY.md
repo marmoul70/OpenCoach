@@ -6,7 +6,11 @@
 
 ## Événements émis
 
-OpenCoach émet une ligne JSON `opencoach_ai_observability` pour chaque génération Ollama et chaque exécution d'outil métier.
+OpenCoach émet une ligne JSON `opencoach_ai_observability` pour le routage déterministe du coach, chaque génération Ollama et chaque exécution d'outil métier.
+
+### Routage Python
+
+Le planificateur déterministe émet un événement `coach_router` avec le statut du plan, l'opération `execution_plan` et sa durée. Une demande qui nécessite une clarification est également tracée, sans journaliser le texte de la question.
 
 ### Génération Ollama
 

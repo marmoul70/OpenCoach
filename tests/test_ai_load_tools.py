@@ -279,5 +279,7 @@ def test_training_load_tool_exposes_coros_atl_ctl_separately_from_session_load()
     assert coros["latest"]["ctl_long_term_load"] == 62.0
     assert coros["latest"]["load_ratio"] == 1.24
     assert "aucun seuil individuel" in coros["semantics"]
+    assert "pas un diagnostic" in coros["interpretation_policy"]
+    assert "au-dessus de la normale" in coros["interpretation_policy"]
     assert "Jours sans couverture de planning" in result["planning_coverage"]["meaning"]
     assert result["load"]["actual_total"] is None

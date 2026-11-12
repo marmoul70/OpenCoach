@@ -151,6 +151,13 @@ def build_training_load_tool(
             "sessions": {
                 "planned": planned_sessions,
                 "actual": actual_sessions,
+                "comparison_supported": False,
+                "meaning": (
+                    "Comptages séparés des séances planifiées et réalisées. "
+                    "Ils ne prouvent pas que les séances réalisées correspondent "
+                    "aux séances planifiées ; ne pas calculer de pourcentage "
+                    "de réalisation ou d'adhérence à partir de ces deux nombres."
+                ),
             },
             "coros_training_load": {
                 "source": "COROS Training Load Assessment",

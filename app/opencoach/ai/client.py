@@ -2,13 +2,34 @@
 
 from __future__ import annotations
 
-import httpx
 from time import perf_counter
 
-from opencoach.ai.observability import log_ai_event, ollama_metrics
+import httpx
 
 from opencoach.ai.config import AISettings
+from opencoach.ai.observability import log_ai_event, ollama_metrics
 from opencoach.ai.schemas import AIChatRequest, AIChatResult, AIToolCall
+
+
+def _log_generation(
+    request: AIChatRequest,
+    started_at: float,
+    *,
+    status: str,
+    model: str,
+    error_type: str | None = None,
+    result: AIChatResult | None = None,
+) -> None:
+    fields = {
+        "status": status,
+        "provider": "ollama",
+        "model": model,
+        "duration_ms": round((perf_counter() - started_at) * 1000, 3),
+        "error_type": error_type,
+    }
+    if result is not None:
+        fields.update(ollama_metrics(result))
+    log_ai_event("ollama_generation", trace_id=request.trace_id, **fields)
 
 
 class AIProviderError(RuntimeError):
@@ -77,17 +98,17 @@ class OllamaClient:
                 response.raise_for_status()
                 data = response.json()
         except httpx.TimeoutException as exc:
-            log_ai_event("ollama_generation", trace_id=request.trace_id, status="error", provider="ollama", model=self.settings.model, duration_ms=round((perf_counter() - started_at) * 1000, 3), error_type=type(exc).__name__)
+            _log_generation(request, started_at, status="error", model=self.settings.model, error_type=type(exc).__name__)
             raise AIProviderError(
                 "Le moteur IA local n'a pas répondu dans le délai imparti."
             ) from exc
         except httpx.HTTPStatusError as exc:
-            log_ai_event("ollama_generation", trace_id=request.trace_id, status="error", provider="ollama", model=self.settings.model, duration_ms=round((perf_counter() - started_at) * 1000, 3), error_type=type(exc).__name__)
+            _log_generation(request, started_at, status="error", model=self.settings.model, error_type=type(exc).__name__)
             raise AIProviderError(
                 f"Le moteur IA local a retourné HTTP {exc.response.status_code}."
             ) from exc
         except (httpx.HTTPError, ValueError) as exc:
-            log_ai_event("ollama_generation", trace_id=request.trace_id, status="error", provider="ollama", model=self.settings.model, duration_ms=round((perf_counter() - started_at) * 1000, 3), error_type=type(exc).__name__)
+            _log_generation(request, started_at, status="error", model=self.settings.model, error_type=type(exc).__name__)
             raise AIProviderError(
                 "Impossible de communiquer avec le moteur IA local."
             ) from exc
@@ -113,10 +134,10 @@ class OllamaClient:
                 eval_count=data.get("eval_count"),
                 eval_duration=data.get("eval_duration"),
             )
-            log_ai_event("ollama_generation", trace_id=request.trace_id, status="ok", provider="ollama", model=result.model, duration_ms=round((perf_counter() - started_at) * 1000, 3), **ollama_metrics(result))
+            _log_generation(request, started_at, status="ok", model=result.model, result=result)
             return result
         except (KeyError, TypeError, ValueError) as exc:
-            log_ai_event("ollama_generation", trace_id=request.trace_id, status="error", provider="ollama", model=self.settings.model, duration_ms=round((perf_counter() - started_at) * 1000, 3), error_type=type(exc).__name__)
+            _log_generation(request, started_at, status="error", model=self.settings.model, error_type=type(exc).__name__)
             raise AIProviderError(
                 "La réponse du moteur IA local ne respecte pas le contrat attendu."
             ) from exc

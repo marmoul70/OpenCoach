@@ -63,12 +63,12 @@ def build_training_load_tool(
         elevation_data_count = getattr(stats, "elevation_data_count", 0)
         volume = {
             "duration_minutes": (
-                stats.total_duration_minutes
+                getattr(stats, "total_duration_minutes", None)
                 if actual_sessions > 0 and duration_data_count == actual_sessions
                 else None
             ),
             "partial_duration_minutes": (
-                stats.total_duration_minutes
+                getattr(stats, "total_duration_minutes", None)
                 if duration_data_count > 0 and duration_data_count < actual_sessions
                 else None
             ),
@@ -77,12 +77,12 @@ def build_training_load_tool(
                 "total_sessions": actual_sessions,
             },
             "distance_km": (
-                stats.total_distance_km
+                getattr(stats, "total_distance_km", None)
                 if actual_sessions > 0 and distance_data_count == actual_sessions
                 else None
             ),
             "partial_distance_km": (
-                stats.total_distance_km
+                getattr(stats, "total_distance_km", None)
                 if distance_data_count > 0 and distance_data_count < actual_sessions
                 else None
             ),
@@ -91,12 +91,12 @@ def build_training_load_tool(
                 "total_sessions": actual_sessions,
             },
             "elevation_gain_m": (
-                stats.total_elevation_gain_m
+                getattr(stats, "total_elevation_gain_m", None)
                 if actual_sessions > 0 and elevation_data_count == actual_sessions
                 else None
             ),
             "partial_elevation_gain_m": (
-                stats.total_elevation_gain_m
+                getattr(stats, "total_elevation_gain_m", None)
                 if elevation_data_count > 0 and elevation_data_count < actual_sessions
                 else None
             ),
@@ -104,7 +104,7 @@ def build_training_load_tool(
                 "available_sessions": elevation_data_count,
                 "total_sessions": actual_sessions,
             },
-            "activity_count": stats.activities_count,
+            "activity_count": getattr(stats, "activities_count", actual_sessions - stats.manual_sessions_count),
             "manual_session_count": stats.manual_sessions_count,
         }
 

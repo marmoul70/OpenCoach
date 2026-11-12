@@ -30,7 +30,7 @@ test_project_root_is_resolved_from_script_location() {
         && ! grep -Fq "\$HOME/Projects/OpenCoach" "$SCRIPT"
 }
 
-test_locked_frontend_install_and_checks_run_before_sudo() {
+test_locked_frontend_install_and_checks_run_before_privileged_deployment() {
     local npm_ci lint build sudo_line
     npm_ci="$(grep -nF 'npm ci' "$SCRIPT" | head -n1 | cut -d: -f1)"
     lint="$(grep -nF 'npm run lint' "$SCRIPT" | head -n1 | cut -d: -f1)"
@@ -42,6 +42,14 @@ test_locked_frontend_install_and_checks_run_before_sudo() {
 
 test_failed_build_stops_before_deployment() {
     grep -Fq 'Aucun déploiement effectué.' "$SCRIPT"
+}
+
+test_bootstrap_can_reuse_prebuilt_frontend() {
+    grep -Fq 'OPENCOACH_FRONTEND_PREBUILT' "$SCRIPT"
+}
+
+test_root_execution_builds_as_project_owner() {
+    grep -Fq 'runuser -u "$PROJECT_USER" -- "$@"' "$SCRIPT"
 }
 
 test_release_metadata_is_created() {
@@ -61,8 +69,8 @@ test_release_is_staged_before_atomic_switch() {
 
 test_rollback_is_available_for_failed_nginx_validation_or_reload() {
     grep -Fq "rollback_current \"\$PREVIOUS_TARGET\"" "$SCRIPT" \
-        && grep -Fq 'sudo nginx -t' "$SCRIPT" \
-        && grep -Fq 'sudo systemctl reload nginx' "$SCRIPT"
+        && grep -Fq 'run_privileged nginx -t' "$SCRIPT" \
+        && grep -Fq 'run_privileged systemctl reload nginx' "$SCRIPT"
 }
 
 test_web_root_is_configurable() {
@@ -83,8 +91,10 @@ test_shellcheck_source_is_declared() {
 
 check "les deux points d'entrée de déploiement existent" test_scripts_exist
 check "le chemin du projet est calculé depuis le script" test_project_root_is_resolved_from_script_location
-check "npm ci, lint et build précèdent sudo" test_locked_frontend_install_and_checks_run_before_sudo
+check "npm ci, lint et build précèdent les opérations privilégiées" test_locked_frontend_install_and_checks_run_before_privileged_deployment
 check "un échec de build bloque le déploiement" test_failed_build_stops_before_deployment
+check "le bootstrap peut réutiliser le frontend déjà compilé" test_bootstrap_can_reuse_prebuilt_frontend
+check "une exécution root construit sous le propriétaire du dépôt" test_root_execution_builds_as_project_owner
 check "les métadonnées de release sont créées" test_release_metadata_is_created
 check "la release est préparée avant la bascule atomique" test_release_is_staged_before_atomic_switch
 check "un rollback est prévu si Nginx échoue" test_rollback_is_available_for_failed_nginx_validation_or_reload

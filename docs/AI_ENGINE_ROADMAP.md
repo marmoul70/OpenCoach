@@ -126,7 +126,9 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] Ajouter au runner la validation Pydantic des arguments réellement produits et le taux de conformité du schéma.
 - [x] Aligner le prompt système et les descriptions d'outils du benchmark sur le contrat de production ; injecter une date de référence synthétique fixe, sans données athlète réelles.
 - [x] Ajouter un scénario multi-tours : demander une période, la recevoir au tour suivant et vérifier que le modèle appelle l'outil avec la valeur exacte.
-- [ ] Mesurer séparément latence de sélection, exécution Python et rédaction finale.
+- [x] Mesurer séparément le routage Python, l'exécution des outils et la génération Ollama.
+- [x] Agréger p50/p95, taux d'erreur et volumes par type d'opération dans une fenêtre bornée.
+- [x] Exposer les agrégats via un endpoint authentifié et un panneau de supervision dans le cockpit Coach.
 - [ ] Comparer Qwen3 8B avec des modèles Ollama plus légers (3B/4B notamment).
 - [ ] Évaluer exactitude des appels, respect des périodes, gestion des absences et qualité rédactionnelle sur Ollama.
 - [ ] Choisir le modèle par résultats mesurés, pas uniquement par sa taille.

@@ -469,6 +469,11 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "Une évolution exige deux valeurs comparables" in prompt
     assert "Ne transforme jamais une corrélation en causalité" in prompt
     assert "N'utilise pas de formules génériques" in prompt
+    assert "mets la fenêtre de 7 jours au premier plan" in prompt
+    assert "utilise exclusivement le champ « display »" in prompt
+    assert "Le ratio est descriptif" in prompt
+    assert "Distingue explicitement les jours couverts par le planning" in prompt
+    assert "environ 120 mots maximum" in prompt
     assert "Cette analyse ne nécessite aucune clarification de période" in prompt
     assert "Ne refuse jamais de la résumer au motif que les résultats seraient trop volumineux" in prompt
     assert "sans seuil individuel ou classification explicite" in prompt

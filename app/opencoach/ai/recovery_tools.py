@@ -301,12 +301,13 @@ def build_recovery_analysis_tool(
                     metric
                     for day_sources in aggregation.metric_sources.values()
                     for metric in day_sources
+                    if metric in analysis_metrics
                 })
             },
             "metric_source_days": {
                 metric: sum(
                     1 for day_sources in aggregation.metric_sources.values()
-                    if metric in day_sources
+                    if metric in day_sources and metric in analysis_metrics
                 )
                 for metric in sorted({
                     metric

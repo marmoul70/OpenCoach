@@ -156,4 +156,10 @@ def test_recovery_analysis_compacts_per_day_metric_provenance(monkeypatch):
         "hrv": 30,
         "sleep_seconds": 30,
     }
+    expected_metrics = {
+        "hrv", "resting_hr", "sleep_seconds", "sleep_score",
+        "stress_avg", "spo2", "sleep_deep_seconds",
+        "sleep_rem_seconds", "fatigue_atl", "fitness_ctl",
+    }
+    assert set(result["metric_definitions"]) == expected_metrics
     assert len(str(result)) < 8_000

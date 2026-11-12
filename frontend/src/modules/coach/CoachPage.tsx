@@ -9,8 +9,6 @@ import {
   useState,
 } from 'react'
 
-import { AIObservabilityPanel } from './AIObservabilityPanel'
-
 import {
   SidePanel,
 } from '../../components/ui/SidePanel'
@@ -829,8 +827,6 @@ export function CoachPage() {
           </div>
         </section>
       </div>
-
-      <AIObservabilityPanel />
 
       <SidePanel
         open={

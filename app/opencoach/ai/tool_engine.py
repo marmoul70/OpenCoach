@@ -147,7 +147,7 @@ class AIToolRegistry:
         except Exception as exc:
             # Garder les détails techniques côté serveur uniquement. Le traceback
             # permet de diagnostiquer le service sans exposer SQL/secrets au LLM.
-            logger.exception("Échec d'exécution de l'outil coach '%s'", name)
+            logger.error("Échec d'exécution de l'outil coach '%s' (type=%s)", name, type(exc).__name__)
             result = AIToolResult(
                 tool=name,
                 status="failed",

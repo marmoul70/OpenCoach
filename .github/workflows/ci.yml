@@ -37,6 +37,7 @@ jobs:
           bash -n scripts/deploy-frontend.sh
           bash -n scripts/deploy_frontend.sh
           bash -n scripts/maintenance/check-version-consistency.sh
+          bash -n scripts/maintenance/check-ai-model-config.sh
           bash -n scripts/maintenance/shellcheck.sh
           bash -n tests/test-libraries.sh
           bash -n tests/test-install-ai.sh
@@ -50,6 +51,7 @@ jobs:
       - name: Version consistency
         run: |
           ./scripts/maintenance/check-version-consistency.sh
+          ./scripts/maintenance/check-ai-model-config.sh
 
       - name: Frontend deployment script tests
         run: |

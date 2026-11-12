@@ -28,6 +28,7 @@ versions = {
     "pyproject.toml": tomllib.loads(pyproject_file.read_text(encoding="utf-8"))["project"]["version"],
     "frontend/package.json": json.loads(package_file.read_text(encoding="utf-8"))["version"],
     "frontend/package-lock.json": json.loads(lock_file.read_text(encoding="utf-8"))["version"],
+    "frontend/package-lock.json packages[\"\"]": json.loads(lock_file.read_text(encoding="utf-8"))["packages"][""]["version"],
 }
 
 for name, version in versions.items():

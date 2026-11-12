@@ -14,6 +14,7 @@ from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from opencoach.ai.client import AIProviderError
+from opencoach.ai.observability import new_ai_trace_id
 from opencoach.ai.data_collection_tools import build_profile_data_proposal_tool
 from opencoach.ai.data_proposals import (
     AIDataProposalCreate,
@@ -495,7 +496,9 @@ async def ask_local_ai(
     service: AIService = Depends(get_ai_service),
 ) -> AIQuestionResponse:
     """Dialogue local contrôlé, sans accès direct aux données métier."""
+    trace_id = new_ai_trace_id()
     request = AIChatRequest(
+        trace_id=trace_id,
         messages=[
             AIMessage(role="system", content=_CHAT_SYSTEM_PROMPT),
             *[
@@ -619,6 +622,7 @@ async def ask_local_ai_with_athlete_context(
             detail="Le moteur IA local est désactivé.",
         )
 
+    trace_id = new_ai_trace_id()
     conversation_messages = [
         *[
             AIMessage(role=message.role, content=message.content)
@@ -662,6 +666,7 @@ async def ask_local_ai_with_athlete_context(
                 user_messages,
             )
         )
+        tool_registry.trace_id = trace_id
         tool_registry.restrict_to({call.name for call in plan.calls})
 
         for call in plan.calls:
@@ -774,6 +779,7 @@ async def ask_local_ai_with_athlete_context(
         messages=messages,
         temperature=0.2,
         num_predict=384,
+        trace_id=trace_id,
     )
 
     try:

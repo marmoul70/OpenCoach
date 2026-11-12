@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from time import perf_counter
 from uuid import UUID
 from functools import lru_cache
 from typing import Literal
@@ -14,7 +15,7 @@ from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from opencoach.ai.client import AIProviderError
-from opencoach.ai.observability import new_ai_trace_id
+from opencoach.ai.observability import log_ai_event, new_ai_trace_id
 from opencoach.ai.data_collection_tools import build_profile_data_proposal_tool
 from opencoach.ai.data_proposals import (
     AIDataProposalCreate,
@@ -637,10 +638,18 @@ async def ask_local_ai_with_athlete_context(
         message.content for message in conversation_messages if message.role == "assistant"
     ]
 
+    router_started_at = perf_counter()
     plan = build_coach_execution_plan(
         payload.question,
         history=user_messages[:-1],
         assistant_history=assistant_messages,
+    )
+    log_ai_event(
+        "coach_router",
+        trace_id=trace_id,
+        status="needs_clarification" if plan.clarification else "ok",
+        operation="execution_plan",
+        duration_ms=round((perf_counter() - router_started_at) * 1000, 3),
     )
     if plan.clarification:
         return AIQuestionResponse(

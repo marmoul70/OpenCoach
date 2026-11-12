@@ -675,8 +675,6 @@ def test_coach_tool_result_serialization_bounds_large_payloads():
 
 
 def test_ai_observability_endpoint_returns_aggregates_for_authenticated_user():
-    import logging
-
     from opencoach.ai.observability import (
         _clear_ai_metrics_for_tests,
         log_ai_event,
@@ -706,6 +704,7 @@ def test_ai_observability_endpoint_returns_aggregates_for_authenticated_user():
     _clear_ai_metrics_for_tests()
 
 
+@pytest.mark.real_auth
 def test_ai_observability_endpoint_requires_authentication():
     from opencoach.api.app import create_app
 

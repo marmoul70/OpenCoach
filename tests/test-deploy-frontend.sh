@@ -59,7 +59,7 @@ test_release_metadata_is_created() {
 
 test_release_is_staged_before_atomic_switch() {
     local staging copy move switch
-    staging="$(grep -nF 'sudo mktemp -d' "$SCRIPT" | head -n1 | cut -d: -f1)"
+    staging="$(grep -nF 'run_privileged mktemp -d' "$SCRIPT" | head -n1 | cut -d: -f1)"
     copy="$(grep -nF "sudo cp -a \"\$DIST_DIR/.\"" "$SCRIPT" | head -n1 | cut -d: -f1)"
     move="$(grep -nF "sudo mv \"\$STAGING_DIR\" \"\$RELEASE_DIR\"" "$SCRIPT" | head -n1 | cut -d: -f1)"
     switch="$(grep -nF "sudo mv -Tf \"\$TMP_LINK\" \"\$CURRENT_LINK\"" "$SCRIPT" | head -n1 | cut -d: -f1)"

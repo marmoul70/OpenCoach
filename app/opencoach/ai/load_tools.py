@@ -158,7 +158,9 @@ def build_training_load_tool(
                     "ATL est la charge aiguë à court terme et CTL la charge chronique "
                     "à long terme. Ce sont des indicateurs quotidiens COROS, pas des "
                     "charges par séance ; ils ne sont jamais additionnés aux charges "
-                    "des activités."
+                    "des activités. Les valeurs brutes ne permettent pas, seules, de "
+                    "qualifier la charge de faible, normale ou élevée : aucun seuil "
+                    "individuel de classification n'est fourni par cet outil."
                 ),
                 "coverage": {
                     "available_days": len(coros_load_days),
@@ -199,6 +201,10 @@ def build_training_load_tool(
                 "covered_days": load.planning_covered_days,
                 "unplanned_days": load.unplanned_days,
                 "ratio": load.planning_coverage_ratio,
+                "meaning": (
+                    "Jours sans couverture de planning OpenCoach. Cela ne signifie "
+                    "ni absence d'entraînement, ni absence d'activité importée."
+                ),
             },
             "distribution": {
                 "above_plan_days": load.above_plan_days,

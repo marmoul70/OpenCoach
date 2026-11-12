@@ -717,3 +717,54 @@ def test_ai_observability_endpoint_rejects_out_of_range_window():
         "/api/ai/observability?window_hours=999"
     )
     assert response.status_code == 422
+
+
+def test_ai_coach_returns_deterministic_history_clarification_without_calling_model():
+    """Une période absente est demandée par Python, jamais inventée par le LLM."""
+    from uuid import UUID
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    from opencoach.authentication.dependencies import get_current_user_id
+    from opencoach.database.base import Base
+    from opencoach.database.session import get_db
+
+    user_id = UUID("00000000-0000-0000-0000-000000000011")
+    athlete_profile_id = UUID("00000000-0000-0000-0000-000000000012")
+    ai_service = FakeAIService()
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    TestSession = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+    def override_get_db():
+        with TestSession() as db:
+            yield db
+
+    app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_ai_settings] = lambda: AISettings(enabled=True, model="qwen2.5:3b")
+    app.dependency_overrides[get_ai_service] = lambda: ai_service
+    app.dependency_overrides[get_current_user_id] = lambda: user_id
+    app.dependency_overrides[get_current_athlete_profile_id] = lambda: athlete_profile_id
+    client = TestClient(app)
+    client.cookies.set(COOKIE_NAME, "test-session-token")
+
+    response = client.post(
+        "/api/ai/coach",
+        json={"question": "Fais-moi le bilan de mon historique d'entraînement."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["answer"] == (
+        "Sur combien de jours souhaites-tu que j'analyse ton historique ?"
+    )
+    assert response.json()["context_used"] is False
+    assert ai_service.request is None
+
+    engine.dispose()

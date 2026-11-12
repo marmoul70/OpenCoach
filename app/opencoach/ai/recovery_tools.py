@@ -164,7 +164,7 @@ def build_recovery_analysis_tool(
     # fatigue / sommeil. Les métriques détaillées restent disponibles dans
     # les écrans métier ; elles alourdissent inutilement le contexte du LLM.
     analysis_metrics = {
-        "hrv", "resting_hr", "sleep_seconds", "sleep_score",
+        "hrv", "resting_hr", "sleep_seconds", "sleep_score", "sleep_quality",
         "stress_avg", "spo2", "sleep_deep_seconds",
         "sleep_rem_seconds", "fatigue_atl", "fitness_ctl",
     }
@@ -277,6 +277,7 @@ def build_recovery_analysis_tool(
             "stress_avg": {"label": "Stress moyen", "unit": "score COROS"},
             "sleep_seconds": {"label": "Durée totale de sommeil", "unit": "s"},
             "sleep_score": {"label": "Score de sommeil", "unit": "score COROS"},
+            "sleep_quality": {"label": "Qualité du sommeil", "unit": "score COROS"},
             "spo2": {"label": "Saturation périphérique en oxygène", "unit": "%"},
             "sleep_deep_seconds": {"label": "Sommeil profond", "unit": "s"},
             "sleep_rem_seconds": {"label": "Sommeil paradoxal (REM)", "unit": "s"},

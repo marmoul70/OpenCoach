@@ -54,7 +54,7 @@ def test_two_period_trend_clarification_restores_original_intent_after_intermedi
 
     assert plan.clarification is None
     assert [(call.name, call.arguments) for call in plan.calls] == [
-        ("training_load", {"nb_days": 7}),
+        ("training_load", {"nb_days": 2}),
         ("training_trends", {"nb_days": 2, "comparison_days": 7}),
     ]
 
@@ -163,6 +163,42 @@ def test_trends_requires_two_explicit_periods():
     )
     assert plan.calls == ()
     assert "deux périodes" in plan.clarification
+
+
+def test_charge_comparison_requests_both_periods_across_two_clarification_turns():
+    initial = build_coach_execution_plan(
+        "Analyse ma charge et compare les deux dernières périodes.",
+        reference_date=REFERENCE_DATE,
+    )
+    assert initial.calls == ()
+    assert "durée des deux périodes" in initial.clarification
+
+    first_period = build_coach_execution_plan(
+        "2 jours",
+        history=["Analyse ma charge et compare les deux dernières périodes."],
+        assistant_history=[initial.clarification],
+        reference_date=REFERENCE_DATE,
+    )
+    assert first_period.calls == ()
+    assert "durée des deux périodes" in first_period.clarification
+
+    second_period = build_coach_execution_plan(
+        "7 jours",
+        history=[
+            "Analyse ma charge et compare les deux dernières périodes.",
+            "2 jours",
+        ],
+        assistant_history=[
+            initial.clarification,
+            first_period.clarification,
+        ],
+        reference_date=REFERENCE_DATE,
+    )
+    assert second_period.clarification is None
+    assert [(call.name, call.arguments) for call in second_period.calls] == [
+        ("training_load", {"nb_days": 2}),
+        ("training_trends", {"nb_days": 2, "comparison_days": 7}),
+    ]
 
 
 def test_planned_sessions_uses_the_exact_explicit_date_range():
@@ -348,3 +384,26 @@ def test_old_race_id_is_not_reused_for_a_new_unselected_race_request():
 
     assert all(call.name != "race_preparation_analysis" for call in plan.calls)
     assert any(call.name == "race_calendar" for call in plan.calls)
+
+
+def test_next_session_request_builds_a_tool_call_without_date_clarification():
+    plan = build_coach_execution_plan(
+        "Quelle est ma prochaine séance ?",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("next_planned_session", {})
+    ]
+
+
+def test_weekly_bilan_uses_a_seven_day_history_and_week_context():
+    plan = build_coach_execution_plan(
+        "Fais-moi le bilan de ma semaine.",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("training_history", {"nb_days": 7}),
+        ("weekly_plan_context", {}),
+    ]

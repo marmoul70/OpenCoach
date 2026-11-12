@@ -1,7 +1,7 @@
 # Évaluation des modèles IA locaux — protocole v1
 
 **Statut :** corpus de référence initial ; exécution Ollama sur VM à réaliser  
-**Modèle actuellement ciblé :** Qwen3 8B (référence provisoire)  
+**Modèle actuellement ciblé :** `qwen2.5:3b` (modèle local de travail ; résultats réels VM à confirmer)  
 **Objectif :** mesurer la fiabilité du modèle comme orchestrateur, et non sa capacité à inventer des analyses sportives.
 
 ## 1. Séparation des responsabilités
@@ -42,7 +42,7 @@ Pour chaque modèle et chaque scénario :
 7. ne pas utiliser de données personnelles réelles dans les fixtures ;
 8. ne pas modifier les données métier pendant le benchmark.
 
-Les modèles candidats doivent être évalués avec le même environnement local : Qwen3 8B, puis variantes 4B/3B compatibles avec l'installation.
+Les modèles candidats doivent être évalués avec le même environnement local : `qwen2.5:3b` comme modèle courant ; les comparaisons avec d'autres modèles ne seront faites que si elles sont explicitement souhaitées et déjà installées.
 
 ## 4. Indicateurs et critères de réussite
 
@@ -88,33 +88,33 @@ pytest -q tests/test_ai_benchmark_runner.py tests/test_ai_model_evaluation_fixtu
 Puis, dans l'environnement virtuel Python :
 
 ```bash
-python scripts/ai/benchmark_models.py --models qwen3:8b --repetitions 3
+python scripts/ai/benchmark_models.py --models qwen2.5:3b --repetitions 3
 ```
 
 Essai court pour vérifier la connexion et le format du rapport :
 
 ```bash
-python scripts/ai/benchmark_models.py --models qwen3:8b --limit 3 --repetitions 1
+python scripts/ai/benchmark_models.py --models qwen2.5:3b --limit 3 --repetitions 1
 ```
 
 Comparer l'impact du catalogue et du prompt sans changer la configuration de production :
 
 ```bash
-python scripts/ai/benchmark_models.py --models qwen3:8b --tool-profile all --prompt-profile production --repetitions 3
-python scripts/ai/benchmark_models.py --models qwen3:8b --tool-profile history --prompt-profile production --repetitions 3
-python scripts/ai/benchmark_models.py --models qwen3:8b --tool-profile history --prompt-profile minimal --repetitions 3
+python scripts/ai/benchmark_models.py --models qwen2.5:3b --tool-profile all --prompt-profile production --repetitions 3
+python scripts/ai/benchmark_models.py --models qwen2.5:3b --tool-profile history --prompt-profile production --repetitions 3
+python scripts/ai/benchmark_models.py --models qwen2.5:3b --tool-profile history --prompt-profile minimal --repetitions 3
 ```
 
 Comparer plusieurs modèles uniquement s'ils sont déjà installés dans Ollama :
 
 ```bash
 ollama list
-python scripts/ai/benchmark_models.py --models qwen3:8b qwen3:4b qwen3:3b --repetitions 3
+python scripts/ai/benchmark_models.py --models qwen2.5:3b --repetitions 3
 ```
 
 Le script :
 - propose deux profils de prompt : `production` (prompt réel du coach) et `minimal` (règles de routage réduites, uniquement pour diagnostic) ;
-- propose deux catalogues : `all` (13 outils) et `history` (training_history, training_load, recovery_analysis) ;
+- propose deux catalogues : `all` (14 outils) et `history` (training_history, training_load, recovery_analysis) ;
 - réutilise les schémas Pydantic métier dans les deux catalogues ;
 - injecte une date de référence synthétique fixe, mais ne charge pas le contexte athlète réel construit par `/coach` : le benchmark reste sans accès à la base et n’évalue donc pas l’effet des faits personnalisés ;
 - n'expose pas le tool de proposition de données de profil, car ce runner est limité à la sélection des outils de lecture ;
@@ -155,19 +155,19 @@ Les dates obligatoires de `planned_sessions` sont également contrôlées : le r
 
 - [x] Définir les dimensions d'évaluation et les critères de sécurité.
 - [x] Créer un premier corpus versionné de scénarios de dialogue.
-- [x] Générer les 13 schémas depuis les modèles Pydantic du registre métier et valider les arguments attendus du corpus contre ces schémas (`tests/test_ai_benchmark_runner.py`).
+- [x] Générer les 14 schémas depuis les modèles Pydantic du registre métier et valider les arguments attendus du corpus contre ces schémas (`tests/test_ai_benchmark_runner.py`).
 - [x] Ajouter un runner de sélection d'outils Ollama et un export JSON/CSV des résultats (`scripts/ai/benchmark_models.py`).
 - [x] Ajouter des tests unitaires du scoring, des clarifications et des synthèses (`tests/test_ai_benchmark_runner.py`).
-- [x] Aligner le prompt système et les descriptions des 13 outils de lecture sur le contrat de production, puis fixer la date de référence synthétique.
+- [x] Aligner le prompt système et les descriptions des 14 outils de lecture sur le contrat de production, puis fixer la date de référence synthétique.
 - [x] Valider les arguments réellement générés contre les schémas Pydantic et les exposer dans le rapport.
 - [x] Ajouter un scénario multi-tours vérifiant qu'une période fournie après clarification est réutilisée sans être inventée.
 - [x] Capturer les métriques natives Ollama pour séparer le coût de chargement, du prompt et de la génération.
-- [x] Ajouter les profils comparatifs de catalogue (13 outils / 3 outils ciblés) et de prompt (production / minimal), sans modifier le prompt de production.
+- [x] Ajouter les profils comparatifs de catalogue (14 outils / 3 outils ciblés) et de prompt (production / minimal), sans modifier le prompt de production.
 - [x] Ajouter un garde-fou Python de provenance des périodes : une valeur obligatoire doit correspondre à une durée explicitement fournie par l'utilisateur ; sinon l'outil métier n'est pas exécuté et une clarification déterministe est retournée.
 - [x] Ajouter des tests de non-exécution en cas de période inventée, altérée ou hors limites.
 - [x] Corriger le scénario de récupération pour tenir compte de la date facultative par défaut du contrat.
 - [ ] Exécuter les trois configurations comparatives sur la VM.
-- [ ] Comparer Qwen3 8B, 4B et 3B et documenter le choix.
+- [ ] Exécuter et analyser le corpus avec `qwen2.5:3b` sur la VM ; ne comparer d'autres modèles que sur demande explicite.
 
 
 ### Benchmark du routeur de production
@@ -178,7 +178,7 @@ Commande de référence :
 
 ```bash
 python scripts/ai/benchmark_models.py \\
-  --models qwen3:8b \\
+  --models qwen2.5:3b \\
   --tool-profile production_router \\
   --prompt-profile production \\
   --repetitions 1

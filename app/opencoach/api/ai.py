@@ -36,6 +36,7 @@ from opencoach.ai.constraints_tools import build_active_constraints_tool
 from opencoach.ai.execution_tools import build_session_execution_review_tool
 from opencoach.ai.coaching_tools import (
     build_planned_sessions_tool,
+    build_next_planned_session_tool,
     build_race_calendar_tool,
     build_training_profile_tool,
     build_weekly_plan_context_tool,
@@ -353,6 +354,7 @@ def get_ai_tool_registry(
         build_race_preparation_tool(db, training_stats_service, athlete_profile_id)
     )
     registry.register(build_planned_sessions_tool(db, athlete_profile_id))
+    registry.register(build_next_planned_session_tool(db, athlete_profile_id))
     registry.register(build_session_execution_review_tool(db, athlete_profile_id))
     registry.register(
         build_activity_detail_tool(db, athlete_profile_id)

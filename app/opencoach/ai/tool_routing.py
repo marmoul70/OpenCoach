@@ -21,6 +21,7 @@ ALL_COACH_TOOLS = frozenset({
     "race_calendar",
     "race_preparation_analysis",
     "planned_sessions",
+    "next_planned_session",
     "session_execution_review",
     "activity_detail",
     "training_history",
@@ -126,13 +127,14 @@ def select_coach_tools(
 
     selected: set[str] = set()
     groups: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
-        (("historique", "seances realisees", "entrainements realises", "mes entrainements", "mes activites", "bilan de mes sorties", "mes sorties"), ("training_history",)),
+        (("historique", "seances realisees", "entrainements realises", "mes entrainements", "mes activites", "bilan de mes sorties", "mes sorties", "bilan de ma semaine", "bilan de la semaine", "bilan hebdomadaire"), ("training_history",)),
         (("charge", "mon atl", "ctl", "tsb", "mon volume", "volume d entrainement"), ("training_load",)),
         (("recuperation", "recup", "sommeil", "hrv", "variabilite", "fatigue", "fatiguee", "fatigue"), ("recovery_analysis", "recovery_status")),
         (("tendance", "evolution", "progression", "compare", "comparaison", "progres"), ("training_trends",)),
         (("activite du", "activite", "detail de", "detaille ma seance", "ma seance du", "seance du", "derniere activite", "activite la plus recente", "derniere sortie", "ma sortie du", "intervalles", "fractionne realise"), ("activity_detail",)),
         (("course", "ultra", "trail", "dossard", "competition", "calendrier des courses", "objectif de course"), ("race_calendar",)),
         (("preparation", "preparer", "prepare", "objectif chrono", "temps cible"), ("race_calendar", "race_preparation_analysis")),
+        (("prochaine seance", "prochain entrainement", "quelle seance ensuite", "seance suivante"), ("next_planned_session",)),
         (("planning", "planifie", "programme", "semaine", "seances prevues", "prochaines seances"), ("weekly_plan_context", "planned_sessions")),
         (("seance prevue", "seance realisee", "execution", "respecte mon plan", "ecart au plan"), ("planned_sessions", "session_execution_review")),
         (("blessure", "douleur", "mal au", "tendon", "je suis malade", "maladie", "indisponible", "contrainte", "genant"), ("active_constraints",)),

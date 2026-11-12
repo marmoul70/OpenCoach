@@ -204,7 +204,7 @@ def test_benchmark_exposes_the_complete_production_read_tool_catalog() -> None:
     definitions = build_tool_definitions()
     names = {item.name for item in definitions}
 
-    assert len(definitions) == 13
+    assert len(definitions) == 14
     assert {
         "athlete_training_profile",
         "active_constraints",
@@ -212,6 +212,7 @@ def test_benchmark_exposes_the_complete_production_read_tool_catalog() -> None:
         "race_calendar",
         "race_preparation_analysis",
         "planned_sessions",
+        "next_planned_session",
         "session_execution_review",
         "activity_detail",
         "training_history",
@@ -231,7 +232,7 @@ def test_benchmark_supports_all_and_focused_tool_profiles() -> None:
     all_tools = build_tool_definitions("all")
     focused_tools = build_tool_definitions("history")
 
-    assert len(all_tools) == 13
+    assert len(all_tools) == 14
     assert [tool.name for tool in focused_tools] == [
         "training_history", "training_load", "recovery_analysis"
     ]

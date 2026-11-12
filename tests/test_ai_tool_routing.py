@@ -215,3 +215,18 @@ def test_router_hides_load_and_race_preparation_tools_for_out_of_range_periods()
 def test_general_trail_explanation_does_not_route_to_race_calendar():
     assert select_coach_tools("Explique-moi ce qu'est un trail.") == frozenset()
     assert select_coach_tools("C'est quoi un ultra-trail ?") == frozenset()
+
+
+def test_next_session_request_routes_to_dedicated_read_only_tool():
+    selected = select_coach_tools("Quelle est ma prochaine séance ?")
+    assert selected == frozenset({"next_planned_session"})
+
+
+def test_next_training_request_routes_to_dedicated_read_only_tool():
+    selected = select_coach_tools("Quel est mon prochain entraînement ?")
+    assert selected == frozenset({"next_planned_session"})
+
+
+def test_weekly_bilan_routes_to_history_and_week_context():
+    selected = select_coach_tools("Fais-moi le bilan de ma semaine.")
+    assert {"training_history", "weekly_plan_context"} <= selected

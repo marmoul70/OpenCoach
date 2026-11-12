@@ -196,6 +196,31 @@ def test_argument_evidence_guard_blocks_unrequested_or_out_of_range_periods():
     assert validate_period_argument_evidence("training_history", {"nb_days": 14}, ["Donne ma charge sur 14 jours.", "Fais-moi le bilan de mon historique."]) == "Sur combien de jours souhaites-tu que j'analyse ton historique ?"
 
 
+def test_argument_evidence_guard_accepts_first_period_for_load_in_two_period_comparison():
+    from opencoach.ai.argument_evidence import validate_period_argument_evidence
+
+    user_messages = [
+        "Compare ma charge d'entraînement sur deux périodes.",
+        "7 jours puis 14 jours",
+    ]
+    assistant_messages = [
+        "Pour comparer la charge, indique la durée des deux périodes."
+    ]
+
+    assert validate_period_argument_evidence(
+        "training_load",
+        {"nb_days": 7},
+        user_messages,
+        assistant_messages,
+    ) is None
+    assert validate_period_argument_evidence(
+        "training_trends",
+        {"nb_days": 7, "comparison_days": 14},
+        user_messages,
+        assistant_messages,
+    ) is None
+
+
 def test_argument_evidence_guard_requires_both_trend_periods():
     from opencoach.ai.argument_evidence import validate_period_argument_evidence
 

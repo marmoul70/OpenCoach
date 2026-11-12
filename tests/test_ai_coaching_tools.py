@@ -12,6 +12,7 @@ from opencoach.ai.coaching_tools import (
     RaceCalendarArguments,
     WeeklyPlanContextArguments,
     build_planned_sessions_tool,
+    build_next_planned_session_tool,
     build_race_calendar_tool,
     build_training_profile_tool,
     build_weekly_plan_context_tool,
@@ -315,4 +316,118 @@ def test_weekly_plan_context_does_not_return_another_athletes_plan():
 
     assert result["status"] == "not_found"
     assert result["week_start"] == "2026-11-09"
+    engine.dispose()
+
+
+
+def test_next_planned_session_returns_earliest_today_or_future_session_for_owner_only():
+    engine = _database()
+    reference_date = date(2026, 11, 12)
+    with Session(engine) as session:
+        profile = _profile(session, suffix="next-session-owner")
+        other_profile = _profile(session, suffix="next-session-other")
+        session.add_all([
+            TrainingSessionModel(
+                athlete_profile_id=profile.id,
+                date=date(2026, 11, 11),
+                type="endurance",
+                title="Past session",
+                duration_minutes=45,
+                status="planned",
+            ),
+            TrainingSessionModel(
+                athlete_profile_id=profile.id,
+                date=reference_date,
+                type="intervals",
+                title="Today's planned session",
+                duration_minutes=60,
+                distance_km=10.0,
+                elevation_gain_m=150.0,
+                intensity="hard",
+                heart_rate_zone="Z4",
+                status="planned",
+            ),
+            TrainingSessionModel(
+                athlete_profile_id=profile.id,
+                date=reference_date,
+                type="recovery",
+                title="Today's completed session",
+                duration_minutes=30,
+                status="completed",
+            ),
+            TrainingSessionModel(
+                athlete_profile_id=profile.id,
+                date=date(2026, 11, 13),
+                type="long_run",
+                title="Tomorrow's session",
+                duration_minutes=120,
+                status="planned",
+            ),
+            TrainingSessionModel(
+                athlete_profile_id=other_profile.id,
+                date=reference_date,
+                type="intervals",
+                title="Other athlete session",
+                duration_minutes=90,
+                status="planned",
+            ),
+        ])
+        session.flush()
+
+        result = build_next_planned_session_tool(
+            session,
+            profile.id,
+            reference_date_provider=lambda: reference_date,
+        ).handler(EmptyArguments())
+
+    assert result["status"] == "ok"
+    assert result["reference_date"] == "2026-11-12"
+    assert result["session"]["date"] == "2026-11-12"
+    assert result["session"]["title"] == "Today's planned session"
+    assert result["session"]["duration_minutes"] == 60
+    assert result["session"]["distance_km"] == 10.0
+    assert result["session"]["has_linked_activity"] is False
+    assert "description" not in result["session"]
+    assert "prescription" not in result["session"]
+    engine.dispose()
+
+
+def test_next_planned_session_reports_empty_when_no_future_planned_session_exists():
+    engine = _database()
+    reference_date = date(2026, 11, 12)
+    with Session(engine) as session:
+        profile = _profile(session, suffix="next-session-empty")
+        session.add(
+            TrainingSessionModel(
+                athlete_profile_id=profile.id,
+                date=date(2026, 11, 11),
+                type="endurance",
+                title="Past session",
+                duration_minutes=45,
+                status="planned",
+            )
+        )
+        session.add(
+            TrainingSessionModel(
+                athlete_profile_id=profile.id,
+                date=reference_date,
+                type="recovery",
+                title="Already completed",
+                duration_minutes=30,
+                status="completed",
+            )
+        )
+        session.flush()
+
+        result = build_next_planned_session_tool(
+            session,
+            profile.id,
+            reference_date_provider=lambda: reference_date,
+        ).handler(EmptyArguments())
+
+    assert result == {
+        "status": "empty",
+        "reference_date": "2026-11-12",
+        "message": "Aucune séance au statut planned n'est enregistrée à partir d'aujourd'hui.",
+    }
     engine.dispose()

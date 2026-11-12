@@ -61,7 +61,7 @@ check_nginx_proxy() {
 
 check_nginx_spa_fallback() {
     grep -Fq \
-        'try_files $uri $uri/ /index.html;' \
+        "try_files \$uri \$uri/ /index.html;" \
         "$NGINX_CONFIG"
 }
 

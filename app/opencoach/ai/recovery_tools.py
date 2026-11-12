@@ -161,6 +161,15 @@ def build_recovery_analysis_tool(
         recovery_assessment_to_dict,
     )
 
+    # Ne transmettre que les indicateurs utiles à une synthèse forme /
+    # fatigue / sommeil. Les métriques détaillées restent disponibles dans
+    # les écrans métier ; elles alourdissent inutilement le contexte du LLM.
+    analysis_metrics = {
+        "hrv", "resting_hr", "sleep_seconds", "sleep_score",
+        "stress_avg", "spo2", "sleep_deep_seconds",
+        "sleep_rem_seconds", "fatigue_atl", "fitness_ctl",
+    }
+
     def execute(arguments: BaseModel) -> dict:
         target_date = arguments.target_date
         start_date = target_date - timedelta(days=29)
@@ -235,7 +244,7 @@ def build_recovery_analysis_tool(
                         }
                     )
                     for name, metric in window.metrics.items()
-                    if name in METRICS
+                    if name in analysis_metrics
                 },
             })
 
@@ -265,21 +274,13 @@ def build_recovery_analysis_tool(
 
         metric_definitions = {
             "hrv": {"label": "Variabilité de la fréquence cardiaque", "unit": "ms"},
-            "hrv_baseline": {"label": "Référence personnelle de variabilité cardiaque", "unit": "ms"},
             "resting_hr": {"label": "Fréquence cardiaque au repos", "unit": "bpm"},
-            "avg_hr": {"label": "Fréquence cardiaque moyenne", "unit": "bpm"},
-            "min_hr": {"label": "Fréquence cardiaque minimale", "unit": "bpm"},
-            "max_hr": {"label": "Fréquence cardiaque maximale", "unit": "bpm"},
-            "avg_sleeping_hr": {"label": "Fréquence cardiaque moyenne pendant le sommeil", "unit": "bpm"},
             "stress_avg": {"label": "Stress moyen", "unit": "score COROS"},
             "sleep_seconds": {"label": "Durée totale de sommeil", "unit": "s"},
             "sleep_score": {"label": "Score de sommeil", "unit": "score COROS"},
-            "sleep_quality": {"label": "Qualité du sommeil", "unit": "score COROS"},
             "spo2": {"label": "Saturation périphérique en oxygène", "unit": "%"},
             "sleep_deep_seconds": {"label": "Sommeil profond", "unit": "s"},
-            "sleep_light_seconds": {"label": "Sommeil léger", "unit": "s"},
             "sleep_rem_seconds": {"label": "Sommeil paradoxal (REM)", "unit": "s"},
-            "sleep_awake_seconds": {"label": "Temps éveillé", "unit": "s"},
             "fatigue_atl": {"label": "Charge aiguë COROS (ATL)", "unit": "points COROS"},
             "fitness_ctl": {"label": "Charge chronique COROS (CTL)", "unit": "points COROS"},
         }

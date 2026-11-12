@@ -35,6 +35,8 @@ jobs:
           bash -n scripts/bootstrap/install-ai.sh
           bash -n scripts/bootstrap/check-environment.sh
           bash -n scripts/deploy-frontend.sh
+          bash -n scripts/deploy_frontend.sh
+          bash -n scripts/maintenance/check-version-consistency.sh
           bash -n scripts/maintenance/shellcheck.sh
           bash -n tests/test-libraries.sh
           bash -n tests/test-install-ai.sh
@@ -44,6 +46,14 @@ jobs:
       - name: ShellCheck
         run: |
           ./scripts/maintenance/shellcheck.sh
+
+      - name: Version consistency
+        run: |
+          ./scripts/maintenance/check-version-consistency.sh
+
+      - name: Frontend deployment script tests
+        run: |
+          bash ./tests/test-deploy-frontend.sh
 
       - name: OpenCoach bootstrap tests on Debian 13
         run: |

@@ -152,6 +152,57 @@ def test_benchmark_checks_clarification_only_when_expected_on_first_turn() -> No
     assert result["clarification_pass"] is True
 
 
+def test_benchmark_accepts_imperative_clarification_request() -> None:
+    case = {
+        "id": "clarification_imperative",
+        "expected_tool_calls": [],
+        "expected_clarification": "Demander une période en jours.",
+    }
+
+    result = score_response(
+        case,
+        [],
+        "Veuillez préciser une période d'historique d'entraînement en jours.",
+    )
+
+    assert result["clarification_checkable"] is True
+    assert result["clarification_pass"] is True
+
+
+def test_benchmark_rejects_arbitrary_default_period_as_clarification() -> None:
+    case = {
+        "id": "clarification_default_period",
+        "expected_tool_calls": [],
+        "expected_clarification": "Demander une période en jours.",
+    }
+
+    result = score_response(
+        case,
+        [],
+        "Je vais chercher les données pour la période de 1 à 30 jours. "
+        "Veuillez confirmer si vous souhaitez utiliser cette période par défaut.",
+    )
+
+    assert result["clarification_checkable"] is True
+    assert result["clarification_pass"] is False
+
+
+def test_benchmark_rejects_tool_call_when_clarification_is_required() -> None:
+    case = {
+        "id": "clarification_with_unexpected_tool",
+        "expected_tool_calls": [],
+        "expected_clarification": "Demander une période.",
+    }
+
+    result = score_response(
+        case,
+        [{"name": "training_history", "arguments": {"nb_days": 7}}],
+        "Veuillez préciser une période.",
+    )
+
+    assert result["clarification_pass"] is False
+
+
 def test_benchmark_does_not_score_second_turn_clarification_before_tool_result() -> None:
     case = {
         "id": "race",

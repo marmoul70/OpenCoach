@@ -25,7 +25,7 @@ source "$PROJECT_ROOT/scripts/lib/log.sh"
 
 ENV_FILE="$PROJECT_ROOT/.env"
 OLLAMA_INSTALL_URL="https://ollama.com/install.sh"
-DEFAULT_MODEL="qwen3:8b"
+DEFAULT_MODEL="qwen2.5:3b"
 OLLAMA_API_URL="http://127.0.0.1:11434/api/version"
 
 

@@ -93,6 +93,8 @@ def test_ai_chat_uses_server_owned_system_prompt_and_returns_answer() -> None:
         "model": "qwen3:8b",
     }
     assert service.request is not None
+    assert service.request.trace_id is not None
+    assert len(service.request.trace_id) == 32
     assert [message.role for message in service.request.messages] == [
         "system",
         "user",
@@ -247,9 +249,12 @@ def test_ai_coach_skips_athlete_context_when_ai_is_disabled() -> None:
     assert ai_service.request is None
 
 
-def test_ai_coach_uses_python_execution_and_skips_global_athlete_context() -> None:
+def test_ai_coach_uses_python_execution_and_skips_global_athlete_context(caplog) -> None:
     from uuid import UUID
 
+    import logging
+
+    caplog.set_level(logging.INFO, logger="opencoach.ai.observability")
     athlete_profile_id = UUID("00000000-0000-0000-0000-000000000002")
     planning_service = FakePlanningContextService(context=None)
     ai_service = FakeAIService()
@@ -295,6 +300,11 @@ def test_ai_coach_uses_python_execution_and_skips_global_athlete_context() -> No
     assert response.status_code == 200
     assert response.json()["context_used"] is True
     assert response.json()["data_proposals"] == []
+    assert ai_service.request.trace_id is not None
+    assert len(ai_service.request.trace_id) == 32
+    assert '"event":"coach_router"' in caplog.text
+    assert f'"trace_id":"{ai_service.request.trace_id}"' in caplog.text
+    assert '"operation":"execution_plan"' in caplog.text
     assert planning_service.profile_id is None
     messages = ai_service.request.messages
     assert ai_service.request.tools == []
@@ -661,3 +671,100 @@ def test_coach_tool_result_serialization_bounds_large_payloads():
     assert len(serialized) < 2_000
     assert '"status": "omitted"' in serialized
     assert "période plus courte" in serialized
+
+
+
+def test_ai_observability_endpoint_returns_aggregates_for_authenticated_user():
+    from opencoach.ai.observability import (
+        _clear_ai_metrics_for_tests,
+        log_ai_event,
+    )
+
+    _clear_ai_metrics_for_tests()
+    log_ai_event(
+        "ollama_generation",
+        status="ok",
+        model="qwen3:8b",
+        duration_ms=125.5,
+        prompt="must not be exposed",
+    )
+    response = _client(AISettings(enabled=True)).get(
+        "/api/ai/observability?window_hours=24"
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["window_hours"] == 24
+    assert payload["sample_count"] == 1
+    assert payload["summary"]["latency_ms"]["p50"] == 125.5
+    assert payload["summary"]["latency_ms"]["p95"] == 125.5
+    assert payload["breakdown"][0]["dimension"] == "qwen3:8b"
+    assert "must not be exposed" not in response.text
+    assert "trace_id" not in response.text
+    _clear_ai_metrics_for_tests()
+
+
+@pytest.mark.real_auth
+def test_ai_observability_endpoint_requires_authentication():
+    from opencoach.api.app import create_app
+
+    response = TestClient(create_app()).get("/api/ai/observability")
+    assert response.status_code == 401
+
+
+def test_ai_observability_endpoint_rejects_out_of_range_window():
+    response = _client(AISettings(enabled=True)).get(
+        "/api/ai/observability?window_hours=999"
+    )
+    assert response.status_code == 422
+
+
+def test_ai_coach_returns_deterministic_history_clarification_without_calling_model():
+    """Une période absente est demandée par Python, jamais inventée par le LLM."""
+    from uuid import UUID
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    from opencoach.authentication.dependencies import get_current_user_id
+    from opencoach.database.base import Base
+    from opencoach.database.session import get_db
+
+    user_id = UUID("00000000-0000-0000-0000-000000000011")
+    athlete_profile_id = UUID("00000000-0000-0000-0000-000000000012")
+    ai_service = FakeAIService()
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    TestSession = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+    def override_get_db():
+        with TestSession() as db:
+            yield db
+
+    app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_ai_settings] = lambda: AISettings(enabled=True, model="qwen2.5:3b")
+    app.dependency_overrides[get_ai_service] = lambda: ai_service
+    app.dependency_overrides[get_current_user_id] = lambda: user_id
+    app.dependency_overrides[get_current_athlete_profile_id] = lambda: athlete_profile_id
+    client = TestClient(app)
+    client.cookies.set(COOKIE_NAME, "test-session-token")
+
+    response = client.post(
+        "/api/ai/coach",
+        json={"question": "Fais-moi le bilan de mon historique d'entraînement."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["answer"] == (
+        "Sur combien de jours souhaites-tu que j'analyse ton historique ?"
+    )
+    assert response.json()["context_used"] is False
+    assert ai_service.request is None
+
+    engine.dispose()

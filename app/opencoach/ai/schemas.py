@@ -58,6 +58,8 @@ class AIChatRequest(BaseModel):
     tools: list[AIToolDefinition] = Field(default_factory=list, max_length=15)
     temperature: float = Field(default=0.2, ge=0.0, le=1.0)
     num_predict: int = Field(default=512, ge=1, le=4096)
+    # Identifiant interne de corrélation ; jamais transmis à Ollama.
+    trace_id: str | None = Field(default=None, max_length=64)
 
 
 class AIChatResult(BaseModel):

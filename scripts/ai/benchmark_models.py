@@ -340,6 +340,50 @@ def _effective_tool_arguments(
     return effective
 
 
+def _contains_clarification_request(content: str) -> bool:
+    """Détecte une vraie demande de précision, y compris formulée à l'impératif."""
+    normalized = " ".join(content.casefold().split())
+    patterns = (
+        "?",
+        "sur combien",
+        "quelle durée",
+        "quelle periode",
+        "sur quelle periode",
+        "veuillez préciser",
+        "veuillez preciser",
+        "merci de préciser",
+        "merci de preciser",
+        "précisez",
+        "precisez",
+        "indiquez",
+        "souhaitez-vous",
+        "souhaites-tu",
+        "combien de jours",
+        "veuillez choisir une période",
+        "veuillez choisir une periode",
+    )
+    return any(pattern in normalized for pattern in patterns)
+
+
+def _suggests_unrequested_default_period(content: str) -> bool:
+    """Repère une période arbitraire proposée comme défaut au lieu de la demander."""
+    normalized = " ".join(content.casefold().split())
+    forbidden_patterns = (
+        "par défaut",
+        "periode par defaut",
+        "période par défaut",
+        "de 1 à 30 jours",
+        "de 1 a 30 jours",
+        "1 à 30 jours",
+        "1 a 30 jours",
+        "1-30 jours",
+        "1–30 jours",
+        "30 derniers jours",
+        "30 derniers jours calendaires",
+    )
+    return any(pattern in normalized for pattern in forbidden_patterns)
+
+
 def score_response(case: dict[str, Any], tool_calls: list[dict[str, Any]], content: str) -> dict[str, Any]:
     expected = case["expected_tool_calls"]
     reference_date = date.fromisoformat(
@@ -385,7 +429,9 @@ def score_response(case: dict[str, Any], tool_calls: list[dict[str, Any]], conte
     clarification_expected = case.get("expected_clarification") is not None
     clarification_observable = clarification_expected and clarification_stage == "first_turn"
     clarification_detected = (
-        ("?" in content or "sur combien" in content.lower() or "quelle durée" in content.lower())
+        _contains_clarification_request(content)
+        and not _suggests_unrequested_default_period(content)
+        and not tool_calls
         if clarification_observable and not expected
         else (not clarification_observable or not clarification_expected)
     )
@@ -616,7 +662,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--models",
         nargs="+",
-        default=[os.getenv("OPENCOACH_AI_MODEL", "qwen3:8b")],
+        default=[os.getenv("OPENCOACH_AI_MODEL", "qwen2.5:3b")],
         help="Noms exacts des modèles déjà installés dans Ollama.",
     )
     parser.add_argument("--base-url", default="http://127.0.0.1:11434")

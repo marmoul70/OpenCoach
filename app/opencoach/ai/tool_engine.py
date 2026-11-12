@@ -5,13 +5,16 @@ n'exécute jamais de fonction arbitraire fournie par le modèle.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from time import perf_counter
 from typing import Any, Callable, Literal, Type
 
 from pydantic import BaseModel, ConfigDict, ValidationError
+
+from opencoach.ai.observability import log_ai_event
 
 
 logger = logging.getLogger(__name__)
@@ -51,10 +54,19 @@ class AITool:
 class AIToolRegistry:
     """Registre en liste blanche et exécuteur synchrone des outils métier."""
 
-    def __init__(self, argument_guard: Callable[[str, dict[str, Any], list[str], list[str]], str | None] | None = None) -> None:
+    def __init__(
+        self,
+        argument_guard: Callable[
+            [str, dict[str, Any], list[str], list[str]], str | None
+        ] | None = None,
+        *,
+        trace_id: str | None = None,
+    ) -> None:
+        self.trace_id = trace_id
         self._tools: dict[str, AITool] = {}
         self._argument_guard = argument_guard
         self._execution_results: list[AIToolResult] = []
+        self._execution_cache: dict[tuple[str, str], AIToolResult] = {}
         self._allowed_tool_names: set[str] | None = None
 
     def restrict_to(self, names: set[str]) -> None:
@@ -112,7 +124,7 @@ class AIToolRegistry:
                 metadata=_execution_metadata(started_at),
                 error="Outil non autorisé ou inconnu.",
             )
-            self._execution_results.append(result)
+            self._record_result(result)
             return result
 
         if self._argument_guard is not None:
@@ -124,7 +136,7 @@ class AIToolRegistry:
                     metadata=_execution_metadata(started_at, business_tool_executed=False),
                     error=clarification,
                 )
-                self._execution_results.append(result)
+                self._record_result(result)
                 return result
 
         try:
@@ -136,15 +148,47 @@ class AIToolRegistry:
                 metadata=_execution_metadata(started_at),
                 error="Les paramètres fournis ne respectent pas le schéma de l'outil.",
             )
-            self._execution_results.append(result)
+            self._record_result(result)
             return result
+
+        # Une même invocation exacte ne doit pas déclencher deux fois un
+        # outil métier pendant une seule requête (y compris un outil d'écriture).
+        canonical_arguments = json.dumps(
+            validated_arguments.model_dump(mode="json"),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        cache_key = (name, canonical_arguments)
+        cached_result = self._execution_cache.get(cache_key)
+        if cached_result is not None:
+            log_ai_event(
+                "tool_execution_reused",
+                trace_id=self.trace_id,
+                tool=name,
+                status=cached_result.status,
+                business_tool_executed=False,
+            )
+            return cached_result.model_copy(
+                update={
+                    "metadata": {
+                        **cached_result.metadata,
+                        "replayed": True,
+                        "business_tool_executed": False,
+                    }
+                }
+            )
 
         try:
             data = tool.handler(validated_arguments)
         except Exception as exc:
-            # Garder les détails techniques côté serveur uniquement. Le traceback
-            # permet de diagnostiquer le service sans exposer SQL/secrets au LLM.
-            logger.exception("Échec d'exécution de l'outil coach '%s'", name)
+            # Le message d'exception peut contenir une requête SQL ou des
+            # données métier : ne journaliser que son type.
+            logger.error(
+                "Échec d'exécution de l'outil coach '%s' (type=%s)",
+                name,
+                type(exc).__name__,
+            )
             result = AIToolResult(
                 tool=name,
                 status="failed",
@@ -155,7 +199,8 @@ class AIToolRegistry:
                 ),
                 error="L'exécution de l'outil a échoué.",
             )
-            self._execution_results.append(result)
+            self._record_result(result)
+            self._execution_cache[cache_key] = result
             return result
 
         result = AIToolResult(
@@ -164,8 +209,22 @@ class AIToolRegistry:
             data=data,
             metadata=_execution_metadata(started_at),
         )
-        self._execution_results.append(result)
+        self._record_result(result)
+        self._execution_cache[cache_key] = result
         return result
+
+    def _record_result(self, result: AIToolResult) -> None:
+        """Conserve le résultat et émet une trace expurgée."""
+        self._execution_results.append(result)
+        log_ai_event(
+            "tool_execution",
+            trace_id=self.trace_id,
+            tool=result.tool,
+            status=result.status,
+            duration_ms=result.metadata.get("duration_ms"),
+            business_tool_executed=result.metadata.get("business_tool_executed"),
+            error_type=result.metadata.get("error_type"),
+        )
 
 
 def _execution_metadata(started_at: float, **extra: Any) -> dict[str, Any]:

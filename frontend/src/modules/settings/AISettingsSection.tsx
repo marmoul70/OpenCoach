@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { RotateCcw, Save, Sparkles } from 'lucide-react'
+import { AIObservabilityPanel } from '../coach/AIObservabilityPanel'
 
 type Personality = 'balanced' | 'demanding' | 'severe' | 'motivating' | 'benevolent'
 type ResponseStyle = 'concise' | 'detailed' | 'analytical'
@@ -170,6 +171,14 @@ export function AISettingsSection() {
         />
         <span className="mt-1 block text-right text-[10px] text-[var(--oc-muted)]">{preferences.custom_prompt.length}/6000 caractères</span>
       </label>
+
+      <div className="border-t border-[var(--oc-border)] pt-5">
+        <div className="mb-3">
+          <h3 className="text-sm font-semibold text-[var(--oc-text)] dark:text-white">Supervision et diagnostic</h3>
+          <p className="mt-1 text-xs text-[var(--oc-muted)]">Suivi des performances, des temps de réponse et des erreurs du moteur IA local.</p>
+        </div>
+        <AIObservabilityPanel />
+      </div>
 
       {error && <p role="alert" className="rounded-lg bg-rose-500/10 p-3 text-xs text-rose-600 dark:text-rose-300">{error}</p>}
       {message && <p role="status" className="rounded-lg bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-300">{message}</p>}

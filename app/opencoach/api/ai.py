@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 import json
+from time import perf_counter
 from uuid import UUID
 from functools import lru_cache
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from opencoach.ai.client import AIProviderError
+from opencoach.ai.observability import (
+    get_ai_metrics_snapshot,
+    log_ai_event,
+    new_ai_trace_id,
+)
 from opencoach.ai.data_collection_tools import build_profile_data_proposal_tool
 from opencoach.ai.data_proposals import (
     AIDataProposalCreate,
@@ -102,7 +108,7 @@ Règles de collecte et de persistance des données :
 Règles d'utilisation des outils :
 - Le catalogue d'outils transmis pour ce tour est la liste des seules capacités appelables. Si un outil requis n'est pas présent, son prérequis n'est pas satisfait : demande la précision manquante au lieu de tenter un appel, de choisir une valeur par défaut ou de contourner le catalogue.
 - Lorsqu'une douleur, blessure, maladie, indisponibilité ou limitation est évoquée, consulte active_constraints pour la date concernée avant de recommander une séance. Respecte running_allowed, cross_training_allowed et max_duration_minutes ; ne pose aucun diagnostic médical. Si aucune contrainte n'est enregistrée, ne considère pas cela comme une validation médicale.
-- Pour consulter l'historique, utilise obligatoirement training_history. Son paramètre nb_days est obligatoire et doit être compris entre 1 et 365 : si l'utilisateur ne précise pas une durée valide, demande-lui une période valide et attends sa réponse. N'utilise jamais une durée supposée. Si l'outil n'est pas présent dans le catalogue disponible, cela signifie que le prérequis temporel manque ou que la période est hors limites : pose la question au lieu de tenter un appel ou de choisir une valeur par défaut.
+- Pour consulter l'historique, utilise obligatoirement training_history. Son paramètre nb_days est obligatoire et doit être compris entre 1 et 365 : si l'utilisateur ne précise pas une durée valide, pose uniquement une question ciblée lui demandant combien de jours il souhaite analyser, puis attends sa réponse. N'utilise jamais une durée supposée. INTERDICTION ABSOLUE de proposer une période par défaut, une fourchette arbitraire (par exemple 1 à 30 jours), de commencer à chercher des données sans outil, ou de demander à l'utilisateur de confirmer une période qu'il n'a pas choisie. Ne présente aucune durée comme préselectionnée ou recommandée. Si l'outil n'est pas présent dans le catalogue disponible, cela signifie que le prérequis temporel manque ou que la période est hors limites : pose la question au lieu de tenter un appel ou de choisir une valeur par défaut.
 - Pour toute zone cardiaque ou recommandation physiologique personnalisée, consulte athlete_training_profile. N'invente pas de zone si le profil est incomplet ou incohérent.
 - Pour les courses et objectifs, consulte race_calendar avant de parler d'échéances, de priorité ou de calendrier de préparation. Pour analyser la préparation d'une course future, récupère son race_id via race_calendar puis utilise race_preparation_analysis. history_days est obligatoire (7 à 180) : si l'utilisateur ne précise pas la durée d'historique, demande-la et attends sa réponse. Présente les métriques de progression avec leur couverture ; ne crée aucun score de préparation ni probabilité de réussite. Pour une course passée, oriente vers le bilan de résultat.
 - Pour expliquer le cadre de la semaine, consulte weekly_plan_context. Pour détailler les séances prévues, utilise planned_sessions ; start_date et end_date sont obligatoires. Si l'outil n'est pas disponible ou si la plage de dates manque, demande les deux dates au lieu de choisir arbitrairement une semaine.
@@ -495,7 +501,9 @@ async def ask_local_ai(
     service: AIService = Depends(get_ai_service),
 ) -> AIQuestionResponse:
     """Dialogue local contrôlé, sans accès direct aux données métier."""
+    trace_id = new_ai_trace_id()
     request = AIChatRequest(
+        trace_id=trace_id,
         messages=[
             AIMessage(role="system", content=_CHAT_SYSTEM_PROMPT),
             *[
@@ -619,6 +627,7 @@ async def ask_local_ai_with_athlete_context(
             detail="Le moteur IA local est désactivé.",
         )
 
+    trace_id = new_ai_trace_id()
     conversation_messages = [
         *[
             AIMessage(role=message.role, content=message.content)
@@ -633,10 +642,18 @@ async def ask_local_ai_with_athlete_context(
         message.content for message in conversation_messages if message.role == "assistant"
     ]
 
+    router_started_at = perf_counter()
     plan = build_coach_execution_plan(
         payload.question,
         history=user_messages[:-1],
         assistant_history=assistant_messages,
+    )
+    log_ai_event(
+        "coach_router",
+        trace_id=trace_id,
+        status="needs_clarification" if plan.clarification else "ok",
+        operation="execution_plan",
+        duration_ms=round((perf_counter() - router_started_at) * 1000, 3),
     )
     if plan.clarification:
         return AIQuestionResponse(
@@ -662,6 +679,7 @@ async def ask_local_ai_with_athlete_context(
                 user_messages,
             )
         )
+        tool_registry.trace_id = trace_id
         tool_registry.restrict_to({call.name for call in plan.calls})
 
         for call in plan.calls:
@@ -774,6 +792,7 @@ async def ask_local_ai_with_athlete_context(
         messages=messages,
         temperature=0.2,
         num_predict=384,
+        trace_id=trace_id,
     )
 
     try:
@@ -844,3 +863,13 @@ async def ask_local_ai_with_athlete_context(
         data_proposals=data_proposals,
         race_options=_extract_race_options(tool_results),
     )
+
+
+
+@router.get("/observability")
+def get_ai_observability(
+    window_hours: int = Query(default=24, ge=1, le=168),
+    _user_id=Depends(get_current_user_id),
+) -> dict:
+    """Expose des agrégats techniques sans prompt ni donnée sportive."""
+    return get_ai_metrics_snapshot(window_hours)

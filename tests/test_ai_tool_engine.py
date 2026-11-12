@@ -104,7 +104,7 @@ def test_registry_does_not_expose_internal_exception_details(caplog):
     assert result.metadata["duration_ms"] >= 0
     assert result.metadata["error_type"] == "RuntimeError"
     assert "Échec d'exécution de l'outil coach 'failure'" in caplog.text
-    assert "database password must not leak" in caplog.text
+    assert "database password must not leak" not in caplog.text
 
 
 def test_training_history_tool_uses_injected_athlete_and_inclusive_period():
@@ -284,3 +284,91 @@ def test_planned_sessions_guard_requires_exact_user_date_range():
         expected,
         ["Quelles sont mes séances planifiées ?"],
     ).startswith("Quelles sont les dates")
+
+
+def test_registry_emits_correlated_tool_metrics_without_arguments(caplog):
+    import logging
+
+    caplog.set_level(logging.INFO, logger="opencoach.ai.observability")
+    registry = AIToolRegistry(trace_id="trace-tool-123")
+    registry.register(AITool(
+        name="echo",
+        description="Outil de test.",
+        arguments_model=EchoArguments,
+        handler=lambda args: {"value": args.value},
+    ))
+
+    result = registry.execute("echo", {"value": 4})
+
+    assert result.status == "ok"
+    assert '"trace_id":"trace-tool-123"' in caplog.text
+    assert '"event":"tool_execution"' in caplog.text
+    assert '"tool":"echo"' in caplog.text
+    assert '"status":"ok"' in caplog.text
+    assert '"duration_ms":' in caplog.text
+    assert '"value":4' not in caplog.text
+
+
+
+def test_registry_reuses_exact_duplicate_call_without_reexecuting_business_handler():
+    calls = []
+    registry = AIToolRegistry(trace_id="duplicate-call-test")
+    registry.register(AITool(
+        name="echo",
+        description="Outil de test.",
+        arguments_model=EchoArguments,
+        handler=lambda args: calls.append(args.value) or {"value": args.value},
+    ))
+
+    first = registry.execute("echo", {"value": 3})
+    replay = registry.execute("echo", {"value": 3})
+
+    assert first.status == replay.status == "ok"
+    assert first.data == replay.data == {"value": 3}
+    assert replay.metadata["replayed"] is True
+    assert replay.metadata["business_tool_executed"] is False
+    assert calls == [3]
+    assert len(registry.execution_results) == 1
+
+
+def test_registry_allows_same_tool_again_with_different_validated_arguments():
+    calls = []
+    registry = AIToolRegistry()
+    registry.register(AITool(
+        name="echo",
+        description="Outil de test.",
+        arguments_model=EchoArguments,
+        handler=lambda args: calls.append(args.value) or {"value": args.value},
+    ))
+
+    first = registry.execute("echo", {"value": 2})
+    second = registry.execute("echo", {"value": 4})
+
+    assert first.data == {"value": 2}
+    assert second.data == {"value": 4}
+    assert calls == [2, 4]
+    assert len(registry.execution_results) == 2
+
+
+def test_registry_does_not_retry_a_failed_exact_invocation():
+    calls = []
+
+    def fail(args):
+        calls.append(args.value)
+        raise RuntimeError("sensitive internal detail")
+
+    registry = AIToolRegistry()
+    registry.register(AITool(
+        name="failure",
+        description="Outil de test.",
+        arguments_model=EchoArguments,
+        handler=fail,
+    ))
+
+    first = registry.execute("failure", {"value": 1})
+    replay = registry.execute("failure", {"value": 1})
+
+    assert first.status == replay.status == "failed"
+    assert replay.metadata["replayed"] is True
+    assert calls == [1]
+    assert len(registry.execution_results) == 1

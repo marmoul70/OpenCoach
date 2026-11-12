@@ -55,6 +55,59 @@ def build_training_load_tool(
         )
         planned_sessions = sum(day.planned_sessions_count for day in load.days)
 
+        # Volume réellement effectué, distinct de la charge COROS et des
+        # charges par séance. Masquer un total si toutes les séances ne
+        # disposent pas de la métrique correspondante.
+        duration_data_count = getattr(stats, "duration_data_count", 0)
+        distance_data_count = getattr(stats, "distance_data_count", 0)
+        elevation_data_count = getattr(stats, "elevation_data_count", 0)
+        volume = {
+            "duration_minutes": (
+                stats.total_duration_minutes
+                if actual_sessions > 0 and duration_data_count == actual_sessions
+                else None
+            ),
+            "partial_duration_minutes": (
+                stats.total_duration_minutes
+                if duration_data_count > 0 and duration_data_count < actual_sessions
+                else None
+            ),
+            "duration_coverage": {
+                "available_sessions": duration_data_count,
+                "total_sessions": actual_sessions,
+            },
+            "distance_km": (
+                stats.total_distance_km
+                if actual_sessions > 0 and distance_data_count == actual_sessions
+                else None
+            ),
+            "partial_distance_km": (
+                stats.total_distance_km
+                if distance_data_count > 0 and distance_data_count < actual_sessions
+                else None
+            ),
+            "distance_coverage": {
+                "available_sessions": distance_data_count,
+                "total_sessions": actual_sessions,
+            },
+            "elevation_gain_m": (
+                stats.total_elevation_gain_m
+                if actual_sessions > 0 and elevation_data_count == actual_sessions
+                else None
+            ),
+            "partial_elevation_gain_m": (
+                stats.total_elevation_gain_m
+                if elevation_data_count > 0 and elevation_data_count < actual_sessions
+                else None
+            ),
+            "elevation_coverage": {
+                "available_sessions": elevation_data_count,
+                "total_sessions": actual_sessions,
+            },
+            "activity_count": stats.activities_count,
+            "manual_session_count": stats.manual_sessions_count,
+        }
+
         # ATL/CTL COROS sont des indicateurs quotidiens de charge aiguë/chronique,
         # distincts de la charge individuelle de chaque activité.
         coros_load_days = []
@@ -148,6 +201,7 @@ def build_training_load_tool(
                 "nb_days": nb_days,
                 "inclusive": True,
             },
+            "volume": volume,
             "sessions": {
                 "planned": planned_sessions,
                 "actual": actual_sessions,

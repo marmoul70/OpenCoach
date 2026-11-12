@@ -8,14 +8,18 @@ from uuid import UUID
 from functools import lru_cache
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from opencoach.ai.client import AIProviderError
-from opencoach.ai.observability import log_ai_event, new_ai_trace_id
+from opencoach.ai.observability import (
+    get_ai_metrics_snapshot,
+    log_ai_event,
+    new_ai_trace_id,
+)
 from opencoach.ai.data_collection_tools import build_profile_data_proposal_tool
 from opencoach.ai.data_proposals import (
     AIDataProposalCreate,
@@ -859,3 +863,13 @@ async def ask_local_ai_with_athlete_context(
         data_proposals=data_proposals,
         race_options=_extract_race_options(tool_results),
     )
+
+
+
+@router.get("/observability")
+def get_ai_observability(
+    window_hours: int = Query(default=24, ge=1, le=168),
+    _user_id=Depends(get_current_user_id),
+) -> dict:
+    """Expose des agrégats techniques sans prompt ni donnée sportive."""
+    return get_ai_metrics_snapshot(window_hours)

@@ -7,8 +7,9 @@ Améliorer la pertinence et la fiabilité rédactionnelle des analyses produites
 ## Contrat de synthèse
 
 Le modèle doit :
-- répondre directement à la question ;
-- séparer constats mesurés, interprétation, limites et conseils ;
+- répondre directement avec une voix de coach, sans réciter les résultats bruts des outils ;
+- relier volume, charge, sommeil, récupération, ressenti et phase du programme lorsque ces données sont disponibles ;
+- expliquer la conséquence pratique des faits pour l'entraînement à venir ;
 - rattacher chaque chiffre personnel aux résultats Python du tour ;
 - respecter les périodes et la couverture retournées par les outils ;
 - ne décrire une évolution que si deux valeurs comparables sont disponibles ;
@@ -16,7 +17,7 @@ Le modèle doit :
 - proposer des actions concrètes et proportionnées aux faits ;
 - exposer les contradictions entre résultats sans arbitrage arbitraire.
 
-Le style et la longueur restent modulés par les préférences du coach. Ces préférences ne peuvent jamais affaiblir les règles de sécurité ou de provenance.
+Le style et la longueur restent modulés par les préférences du coach, dans une rédaction conversationnelle de coach sportif. Ces préférences ne peuvent jamais affaiblir les règles de sécurité ou de provenance.
 
 ## Corrections de la validation terrain
 
@@ -31,11 +32,13 @@ Le style et la longueur restent modulés par les préférences du coach. Ces pr�
 - Les durées de sommeil sont transmises au modèle uniquement sous forme de chaînes déjà formatées en heures et minutes par Python ; les secondes brutes ne sont plus exposées.
 - Le ratio ATL/CTL est explicitement descriptif ; il ne constitue pas une classification de charge ou un seuil de risque.
 - La couverture du planning, le nombre de séances et la couverture des charges par séance sont trois notions distinctes. Les nombres de séances planifiées et réalisées ne permettent pas de déduire un taux d'adhérence sans association explicite entre elles.
-- La rédaction est limitée à environ 120 mots et ne doit pas calculer de statistiques absentes des résultats Python.
+- La rédaction privilégie une réponse conversationnelle de 80 à 180 mots, sans liste de métriques brutes.
+- Une analyse de charge avec période explicite expose également le cadre hebdomadaire, les données de récupération et la disponibilité personnelle afin de contextualiser le conseil.
+- L'outil de charge expose le volume réellement effectué (durée, distance, dénivelé) avec couverture par métrique ; les totaux incomplets restent explicitement partiels.
 
 ## Architecture inchangée
 
-- Le routeur Python sélectionne les outils et valide les paramètres.
+- Le routeur Python sélectionne les outils et valide les paramètres. Pour une analyse de charge avec période valide, il ouvre aussi le contexte du plan hebdomadaire et de la récupération.
 - Les outils métier OpenCoach restent les seules sources des faits sportifs.
 - Le LLM intervient uniquement pour rédiger la synthèse des résultats structurés.
 - Aucun accès direct aux fournisseurs externes ni écriture dans le planning n'est ajouté.

@@ -26,8 +26,8 @@ test_scripts_exist() {
 }
 
 test_project_root_is_resolved_from_script_location() {
-    grep -Fq 'dirname -- "${BASH_SOURCE[0]}"' "$SCRIPT" \
-        && ! grep -Fq '$HOME/Projects/OpenCoach' "$SCRIPT"
+    grep -Fq "dirname -- \"\${BASH_SOURCE[0]}\"" "$SCRIPT" \
+        && ! grep -Fq "\$HOME/Projects/OpenCoach" "$SCRIPT"
 }
 
 test_locked_frontend_install_and_checks_run_before_sudo() {
@@ -52,15 +52,15 @@ test_release_metadata_is_created() {
 test_release_is_staged_before_atomic_switch() {
     local staging copy move switch
     staging="$(grep -nF 'sudo mktemp -d' "$SCRIPT" | head -n1 | cut -d: -f1)"
-    copy="$(grep -nF 'sudo cp -a "$DIST_DIR/."' "$SCRIPT" | head -n1 | cut -d: -f1)"
-    move="$(grep -nF 'sudo mv "$STAGING_DIR" "$RELEASE_DIR"' "$SCRIPT" | head -n1 | cut -d: -f1)"
-    switch="$(grep -nF 'sudo mv -Tf "$TMP_LINK" "$CURRENT_LINK"' "$SCRIPT" | head -n1 | cut -d: -f1)"
+    copy="$(grep -nF "sudo cp -a \"\$DIST_DIR/.\"" "$SCRIPT" | head -n1 | cut -d: -f1)"
+    move="$(grep -nF "sudo mv \"\$STAGING_DIR\" \"\$RELEASE_DIR\"" "$SCRIPT" | head -n1 | cut -d: -f1)"
+    switch="$(grep -nF "sudo mv -Tf \"\$TMP_LINK\" \"\$CURRENT_LINK\"" "$SCRIPT" | head -n1 | cut -d: -f1)"
     [[ -n "$staging" && -n "$copy" && -n "$move" && -n "$switch" ]] \
         && (( staging < copy && copy < move && move < switch ))
 }
 
 test_rollback_is_available_for_failed_nginx_validation_or_reload() {
-    grep -Fq 'rollback_current "$PREVIOUS_TARGET"' "$SCRIPT" \
+    grep -Fq "rollback_current \"\$PREVIOUS_TARGET\"" "$SCRIPT" \
         && grep -Fq 'sudo nginx -t' "$SCRIPT" \
         && grep -Fq 'sudo systemctl reload nginx' "$SCRIPT"
 }
@@ -74,7 +74,7 @@ test_no_backend_restart_is_triggered() {
 }
 
 test_legacy_script_delegates_to_canonical_script() {
-    grep -Fq 'exec "$SCRIPT_DIR/deploy-frontend.sh" "$@"' "$LEGACY_SCRIPT"
+    grep -Fq "exec \"\$SCRIPT_DIR/deploy-frontend.sh\" \"\$@\"" "$LEGACY_SCRIPT"
 }
 
 test_shellcheck_source_is_declared() {

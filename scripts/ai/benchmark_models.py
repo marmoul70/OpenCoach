@@ -429,7 +429,9 @@ def score_response(case: dict[str, Any], tool_calls: list[dict[str, Any]], conte
     clarification_expected = case.get("expected_clarification") is not None
     clarification_observable = clarification_expected and clarification_stage == "first_turn"
     clarification_detected = (
-        _contains_clarification_request(content) and not tool_calls
+        _contains_clarification_request(content)
+        and not _suggests_unrequested_default_period(content)
+        and not tool_calls
         if clarification_observable and not expected
         else (not clarification_observable or not clarification_expected)
     )

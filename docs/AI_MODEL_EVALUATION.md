@@ -1,7 +1,7 @@
 # Évaluation des modèles IA locaux — protocole v1
 
 **Statut :** corpus de référence initial ; benchmark Ollama sur VM à réaliser  
-**Modèle actuellement retenu pour la suite :** `qwen2.5:3b` (modèle réellement installé/configuré sur la VM ; qualité à confirmer par benchmark)  
+**Modèle actuellement ciblé :** `qwen2.5:3b` (modèle réellement installé/configuré sur la VM ; qualité à confirmer par benchmark)  
 **Objectif :** mesurer la fiabilité du modèle comme orchestrateur, et non sa capacité à inventer des analyses sportives.
 
 ## 1. Séparation des responsabilités

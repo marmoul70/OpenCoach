@@ -104,7 +104,7 @@ def test_registry_does_not_expose_internal_exception_details(caplog):
     assert result.metadata["duration_ms"] >= 0
     assert result.metadata["error_type"] == "RuntimeError"
     assert "Échec d'exécution de l'outil coach 'failure'" in caplog.text
-    assert "database password must not leak" in caplog.text
+    assert "database password must not leak" not in caplog.text
 
 
 def test_training_history_tool_uses_injected_athlete_and_inclusive_period():
@@ -284,3 +284,26 @@ def test_planned_sessions_guard_requires_exact_user_date_range():
         expected,
         ["Quelles sont mes séances planifiées ?"],
     ).startswith("Quelles sont les dates")
+
+
+def test_registry_emits_correlated_tool_metrics_without_arguments(caplog):
+    import logging
+
+    caplog.set_level(logging.INFO, logger="opencoach.ai.observability")
+    registry = AIToolRegistry(trace_id="trace-tool-123")
+    registry.register(AITool(
+        name="echo",
+        description="Outil de test.",
+        arguments_model=EchoArguments,
+        handler=lambda args: {"value": args.value},
+    ))
+
+    result = registry.execute("echo", {"value": 4})
+
+    assert result.status == "ok"
+    assert '"trace_id":"trace-tool-123"' in caplog.text
+    assert '"event":"tool_execution"' in caplog.text
+    assert '"tool":"echo"' in caplog.text
+    assert '"status":"ok"' in caplog.text
+    assert '"duration_ms":' in caplog.text
+    assert '"value":4' not in caplog.text

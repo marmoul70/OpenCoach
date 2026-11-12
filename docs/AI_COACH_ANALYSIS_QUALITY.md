@@ -25,6 +25,14 @@ Le style et la longueur restent modulés par les préférences du coach. Ces pr�
 - ATL et CTL restent des indicateurs distincts. Sans seuil individuel explicite, le coach ne les qualifie pas de faibles, normaux ou élevés.
 - Les jours sans couverture du planning sont distingués des jours sans entraînement ou sans activité importée.
 
+## Corrections après validation visuelle
+
+- La récupération récente met la fenêtre de 7 jours au premier plan ; les fenêtres 14 et 30 jours restent un contexte facultatif.
+- Les durées de sommeil disposent désormais de valeurs d'affichage en heures et minutes calculées par Python.
+- Le ratio ATL/CTL est explicitement descriptif ; il ne constitue pas une classification de charge ou un seuil de risque.
+- La couverture du planning, le nombre de séances et la couverture des charges par séance sont trois notions distinctes.
+- La rédaction est limitée à environ 120 mots et ne doit pas calculer de statistiques absentes des résultats Python.
+
 ## Architecture inchangée
 
 - Le routeur Python sélectionne les outils et valide les paramètres.

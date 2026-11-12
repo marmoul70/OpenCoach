@@ -154,6 +154,12 @@ def build_training_load_tool(
             },
             "coros_training_load": {
                 "source": "COROS Training Load Assessment",
+                "interpretation_policy": (
+                    "Descriptif uniquement : ATL et CTL sont des valeurs propriétaires COROS. "
+                    "Le ratio ATL/CTL est un rapport numérique, pas un diagnostic ni une "
+                    "classification de charge. Ne jamais conclure « au-dessus de la normale », "
+                    "« élevé », « intense » ou « risque » à partir du seul ratio."
+                ),
                 "semantics": (
                     "ATL est la charge aiguë à court terme et CTL la charge chronique "
                     "à long terme. Ce sont des indicateurs quotidiens COROS, pas des "

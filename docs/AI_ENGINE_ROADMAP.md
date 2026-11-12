@@ -1,6 +1,7 @@
 # Roadmap — Moteur IA outillé OpenCoach
 
-> **Branche :** `feature/ai-engine-main-integration`  
+> **Branche de travail initiale :** `feature/ai-engine-main-integration`  
+> **Branche de stabilisation :** `chore/mission-0-stability`  
 > **Statut global :** orchestration Python implémentée sur `feature/ai-engine-main-integration` ; validation CI automatisée réussie ; test réel sur VM Debian à effectuer.  
 > **Principe directeur :** Python choisit, valide et exécute les outils métier ; le modèle local explique uniquement leurs résultats.
 

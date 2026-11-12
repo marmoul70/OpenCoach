@@ -157,7 +157,7 @@ def test_recovery_analysis_compacts_per_day_metric_provenance(monkeypatch):
         "sleep_seconds": 30,
     }
     expected_metrics = {
-        "hrv", "resting_hr", "sleep_seconds", "sleep_score",
+        "hrv", "resting_hr", "sleep_seconds", "sleep_score", "sleep_quality",
         "stress_avg", "spo2", "sleep_deep_seconds",
         "sleep_rem_seconds", "fatigue_atl", "fitness_ctl",
     }

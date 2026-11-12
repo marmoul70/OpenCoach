@@ -9,6 +9,8 @@ from dataclasses import dataclass
 import logging
 from datetime import datetime, timezone
 from time import perf_counter
+
+from opencoach.ai.observability import log_ai_event
 from typing import Any, Callable, Literal, Type
 
 from pydantic import BaseModel, ConfigDict, ValidationError
@@ -51,7 +53,8 @@ class AITool:
 class AIToolRegistry:
     """Registre en liste blanche et exécuteur synchrone des outils métier."""
 
-    def __init__(self, argument_guard: Callable[[str, dict[str, Any], list[str], list[str]], str | None] | None = None) -> None:
+    def __init__(self, argument_guard: Callable[[str, dict[str, Any], list[str], list[str]], str | None] | None = None, *, trace_id: str | None = None) -> None:
+        self.trace_id = trace_id
         self._tools: dict[str, AITool] = {}
         self._argument_guard = argument_guard
         self._execution_results: list[AIToolResult] = []
@@ -112,7 +115,7 @@ class AIToolRegistry:
                 metadata=_execution_metadata(started_at),
                 error="Outil non autorisé ou inconnu.",
             )
-            self._execution_results.append(result)
+            self._record_result(result)
             return result
 
         if self._argument_guard is not None:
@@ -124,7 +127,7 @@ class AIToolRegistry:
                     metadata=_execution_metadata(started_at, business_tool_executed=False),
                     error=clarification,
                 )
-                self._execution_results.append(result)
+                self._record_result(result)
                 return result
 
         try:
@@ -136,7 +139,7 @@ class AIToolRegistry:
                 metadata=_execution_metadata(started_at),
                 error="Les paramètres fournis ne respectent pas le schéma de l'outil.",
             )
-            self._execution_results.append(result)
+            self._record_result(result)
             return result
 
         try:
@@ -155,7 +158,7 @@ class AIToolRegistry:
                 ),
                 error="L'exécution de l'outil a échoué.",
             )
-            self._execution_results.append(result)
+            self._record_result(result)
             return result
 
         result = AIToolResult(
@@ -164,8 +167,21 @@ class AIToolRegistry:
             data=data,
             metadata=_execution_metadata(started_at),
         )
-        self._execution_results.append(result)
+        self._record_result(result)
         return result
+
+    def _record_result(self, result: AIToolResult) -> None:
+        """Conserve le résultat et émet une trace expurgée."""
+        self._execution_results.append(result)
+        log_ai_event(
+            "tool_execution",
+            trace_id=self.trace_id,
+            tool=result.tool,
+            status=result.status,
+            duration_ms=result.metadata.get("duration_ms"),
+            business_tool_executed=result.metadata.get("business_tool_executed"),
+            error_type=result.metadata.get("error_type"),
+        )
 
 
 def _execution_metadata(started_at: float, **extra: Any) -> dict[str, Any]:

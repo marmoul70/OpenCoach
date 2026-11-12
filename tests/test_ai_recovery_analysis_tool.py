@@ -84,6 +84,7 @@ def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():
     assert [window["days"] for window in result["windows"]] == [7, 14, 30]
     assert result["windows"][0]["recorded_days"] == 7
     assert result["windows"][0]["metrics"]["sleep_seconds"]["sample_count"] == 7
+    assert result["windows"][0]["metrics"]["sleep_seconds"]["display"]["current"] == "7 h 03 min"
     assert result["windows"][0]["metrics"]["sleep_quality"]["current"] == 4.0
     assert result["windows"][0]["metrics"]["spo2"]["current"] == 97.0
     assert result["daily_context"]["fatigue"] == 4

@@ -89,6 +89,10 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
     assert result.data["load"]["actual_total"] == 45.0
     assert result.data["load"]["delta_total"] == 5.0
     assert result.data["planning_coverage"]["ratio"] == 1.0
+    assert result.data["sessions"]["planned"] == 1
+    assert result.data["sessions"]["actual"] == 1
+    assert result.data["sessions"]["comparison_supported"] is False
+    assert "ne pas calculer de pourcentage" in result.data["sessions"]["meaning"]
     assert result.data["daily"][0]["actual_load"] == 45.0
     assert result.data["daily"][1]["actual_load"] is None
 

@@ -129,7 +129,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 - [x] Mesurer séparément le routage Python, l'exécution des outils et la génération Ollama.
 - [x] Agréger p50/p95, taux d'erreur et volumes par type d'opération dans une fenêtre bornée.
 - [x] Exposer les agrégats via un endpoint authentifié et un panneau de supervision dans le cockpit Coach.
-- [ ] Comparer Qwen3 8B avec des modèles Ollama plus légers (3B/4B notamment).
+- [ ] Évaluer `qwen2.5:3b`, modèle actuellement configuré sur la VM, sur le corpus de référence.
 - [ ] Évaluer exactitude des appels, respect des périodes, gestion des absences et qualité rédactionnelle sur Ollama.
 - [ ] Choisir le modèle par résultats mesurés, pas uniquement par sa taille.
 - [ ] Conserver un modèle de référence et un moyen simple de revenir en arrière.

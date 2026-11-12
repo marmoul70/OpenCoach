@@ -238,10 +238,9 @@ def build_recovery_analysis_tool(
                 "coverage_ratio": round(window.coverage_ratio, 3),
                 "metrics": {
                     name: (
-                        {
-                            (
-                                {
-                                    "current": format_duration(metric.current),
+                        (
+                            {
+                                "current": format_duration(metric.current),
                                     "average": format_duration(metric.average),
                                     "median": format_duration(metric.median),
                                     "unit": "heures et minutes",
@@ -258,8 +257,7 @@ def build_recovery_analysis_tool(
                                     "coverage_days": metric.coverage_days,
                                     "expected_days": metric.expected_days,
                                 }
-                            )
-                        }
+                        )
                         if metric.sample_count > 0
                         else {
                             # Garder les métriques canoniques explicitement inconnues,

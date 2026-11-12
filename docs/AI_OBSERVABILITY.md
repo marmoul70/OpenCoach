@@ -60,6 +60,10 @@ sudo journalctl -u opencoach-backend --since "1 hour ago" --no-pager \
   | sed -n 's/^.*opencoach_ai_observability //p'
 ```
 
+## Couverture des traces
+
+Les événements sont émis au niveau des opérations réellement exécutées. Une clarification déterministe du planificateur qui retourne avant tout appel à Ollama ou à un outil ne produit donc pas d'événement de génération ou d'exécution ; elle ne déclenche aucun calcul ni accès au fournisseur.
+
 ## Limites actuelles
 
 - Les événements sont conservés selon la rotation des journaux systemd/journald ; ils ne sont pas encore persistés dans une table dédiée.

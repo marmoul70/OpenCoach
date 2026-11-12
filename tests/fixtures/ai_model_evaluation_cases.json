@@ -81,6 +81,22 @@
         "arguments": {
           "nb_days": 14
         }
+      },
+      {
+        "tool": "weekly_plan_context",
+        "arguments": {}
+      },
+      {
+        "tool": "recovery_analysis",
+        "arguments": {
+          "target_date": "2026-11-09"
+        }
+      },
+      {
+        "tool": "recovery_status",
+        "arguments": {
+          "target_date": "2026-11-09"
+        }
       }
     ],
     "expected_clarification": null,

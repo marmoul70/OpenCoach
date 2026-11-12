@@ -156,7 +156,6 @@ def build_recovery_analysis_tool(
 
     from opencoach.wellness_aggregation import aggregate_wellness_days
     from opencoach.recovery_assessment import (
-        METRICS,
         build_recovery_assessment,
         recovery_assessment_to_dict,
     )
@@ -313,6 +312,7 @@ def build_recovery_analysis_tool(
                     metric
                     for day_sources in aggregation.metric_sources.values()
                     for metric in day_sources
+                    if metric in analysis_metrics
                 })
             },
             "conflicting_metrics": aggregation.conflicts,

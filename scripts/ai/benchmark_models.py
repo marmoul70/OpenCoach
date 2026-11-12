@@ -641,7 +641,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--models",
         nargs="+",
-        default=[os.getenv("OPENCOACH_AI_MODEL", "qwen3:8b")],
+        default=[os.getenv("OPENCOACH_AI_MODEL", "qwen2.5:3b")],
         help="Noms exacts des modèles déjà installés dans Ollama.",
     )
     parser.add_argument("--base-url", default="http://127.0.0.1:11434")

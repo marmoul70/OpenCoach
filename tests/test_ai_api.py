@@ -671,3 +671,50 @@ def test_coach_tool_result_serialization_bounds_large_payloads():
     assert len(serialized) < 2_000
     assert '"status": "omitted"' in serialized
     assert "période plus courte" in serialized
+
+
+
+def test_ai_observability_endpoint_returns_aggregates_for_authenticated_user():
+    import logging
+
+    from opencoach.ai.observability import (
+        _clear_ai_metrics_for_tests,
+        log_ai_event,
+    )
+
+    _clear_ai_metrics_for_tests()
+    log_ai_event(
+        "ollama_generation",
+        status="ok",
+        model="qwen3:8b",
+        duration_ms=125.5,
+        prompt="must not be exposed",
+    )
+    response = _client(AISettings(enabled=True)).get(
+        "/api/ai/observability?window_hours=24"
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["window_hours"] == 24
+    assert payload["sample_count"] == 1
+    assert payload["summary"]["latency_ms"]["p50"] == 125.5
+    assert payload["summary"]["latency_ms"]["p95"] == 125.5
+    assert payload["breakdown"][0]["dimension"] == "qwen3:8b"
+    assert "must not be exposed" not in response.text
+    assert "trace_id" not in response.text
+    _clear_ai_metrics_for_tests()
+
+
+def test_ai_observability_endpoint_requires_authentication():
+    from opencoach.api.app import create_app
+
+    response = TestClient(create_app()).get("/api/ai/observability")
+    assert response.status_code == 401
+
+
+def test_ai_observability_endpoint_rejects_out_of_range_window():
+    response = _client(AISettings(enabled=True)).get(
+        "/api/ai/observability?window_hours=999"
+    )
+    assert response.status_code == 422

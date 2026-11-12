@@ -169,6 +169,13 @@ def build_recovery_analysis_tool(
         "sleep_rem_seconds", "fatigue_atl", "fitness_ctl",
     }
 
+    def format_duration(value: float | int | None) -> str | None:
+        if value is None:
+            return None
+        total_minutes = round(float(value) / 60)
+        hours, minutes = divmod(total_minutes, 60)
+        return f"{hours} h {minutes:02d} min"
+
     def execute(arguments: BaseModel) -> dict:
         target_date = arguments.target_date
         start_date = target_date - timedelta(days=29)
@@ -230,6 +237,16 @@ def build_recovery_analysis_tool(
                             "current": metric.current,
                             "average": metric.average,
                             "median": metric.median,
+                            "display": (
+                                {
+                                    "current": format_duration(metric.current),
+                                    "average": format_duration(metric.average),
+                                    "median": format_duration(metric.median),
+                                    "unit": "heures et minutes",
+                                }
+                                if name in {"sleep_seconds", "sleep_deep_seconds", "sleep_rem_seconds"}
+                                else None
+                            ),
                             "sample_count": metric.sample_count,
                             "coverage_days": metric.coverage_days,
                             "expected_days": metric.expected_days,
@@ -275,12 +292,12 @@ def build_recovery_analysis_tool(
             "hrv": {"label": "Variabilité de la fréquence cardiaque", "unit": "ms"},
             "resting_hr": {"label": "Fréquence cardiaque au repos", "unit": "bpm"},
             "stress_avg": {"label": "Stress moyen", "unit": "score COROS"},
-            "sleep_seconds": {"label": "Durée totale de sommeil", "unit": "s"},
+            "sleep_seconds": {"label": "Durée totale de sommeil", "unit": "h:min", "raw_unit": "s"},
             "sleep_score": {"label": "Score de sommeil", "unit": "score COROS"},
             "sleep_quality": {"label": "Qualité du sommeil", "unit": "score COROS"},
             "spo2": {"label": "Saturation périphérique en oxygène", "unit": "%"},
-            "sleep_deep_seconds": {"label": "Sommeil profond", "unit": "s"},
-            "sleep_rem_seconds": {"label": "Sommeil paradoxal (REM)", "unit": "s"},
+            "sleep_deep_seconds": {"label": "Sommeil profond", "unit": "h:min", "raw_unit": "s"},
+            "sleep_rem_seconds": {"label": "Sommeil paradoxal (REM)", "unit": "h:min", "raw_unit": "s"},
             "fatigue_atl": {"label": "Charge aiguë COROS (ATL)", "unit": "points COROS"},
             "fitness_ctl": {"label": "Charge chronique COROS (CTL)", "unit": "points COROS"},
         }

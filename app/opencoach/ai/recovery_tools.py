@@ -146,7 +146,7 @@ def build_recovery_analysis_tool(
     daily_checkin_repository,
     athlete_profile_id: UUID,
 ) -> AITool:
-    """Expose les données sommeil, physiologie, charge et ressenti sur 7/14/30 jours.
+    """Expose les données sommeil, physiologie, charge et ressenti sur les 7 derniers jours.
 
     Les calculs restent dans recovery_assessment.py. L'outil ne crée aucun score
     composite et conserve séparément données objectives et déclarations athlète.
@@ -224,7 +224,12 @@ def build_recovery_analysis_tool(
             }
 
         windows = []
+        # Une demande de récupération « récente » doit être strictement bornée
+        # à 7 jours. Ne pas exposer les fenêtres 14/30 j au LLM : il privilégiait
+        # régulièrement la fenêtre de 30 jours malgré les consignes du prompt.
         for window in assessment.windows:
+            if window.days != 7:
+                continue
             windows.append({
                 "days": window.days,
                 "start_date": window.start_date.isoformat(),
@@ -347,15 +352,15 @@ def build_recovery_analysis_tool(
     return AITool(
         name="recovery_analysis",
         description=(
-            "Analyse descriptive de la forme et de la récupération : sommeil "
+            "Analyse descriptive récente de la forme et de la récupération : sommeil "
             "(durée, score et phases), HRV, fréquence cardiaque au repos, stress, "
-            "charge ATL/CTL, sur des fenêtres de 7, 14 et 30 jours. Les données "
+            "charge ATL/CTL, sur les 7 derniers jours uniquement. Les données "
             "proviennent exclusivement du stockage centralisé OpenCoach, tous "
             "fournisseurs d’import confondus ; aucune API fournisseur n’est appelée. "
             "Inclut séparément le ressenti du jour provenant du check-in. À utiliser "
             "pour toute discussion sur fatigue, forme, récupération, sommeil ou stress. "
-            "Le seul argument est target_date facultatif ; les fenêtres 7, 14 et 30 jours "
-            "sont calculées automatiquement. N'ajoute aucun paramètre nb_days. "
+            "Le seul argument est target_date facultatif ; la fenêtre de 7 jours "
+            "est calculée automatiquement. N'ajoute aucun paramètre nb_days. "
             "Ne produit aucun diagnostic ni score composite."
         ),
         arguments_model=RecoveryAnalysisArguments,

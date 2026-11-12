@@ -167,9 +167,19 @@ def select_coach_tools(
         selected.add("active_constraints")
         selected.update(("recovery_analysis", "recovery_status"))
 
-    # Même en cas d'intention reconnue, seuls les outils dont les
-    # paramètres temporels sont étayés restent disponibles.
-    return _filter_period_tools(
+    # Une analyse de charge utile au coaching doit disposer du cadre
+    # hebdomadaire et des signaux de récupération. Ces outils n'ont pas de
+    # période obligatoire ; ils ne sont ajoutés que si training_load est
+    # effectivement autorisé par une durée explicitement fournie.
+    filtered = _filter_period_tools(
         selected, question, history, assistant_history, evidence_history
     )
+    if "training_load" in filtered:
+        filtered = frozenset({
+            *filtered,
+            "weekly_plan_context",
+            "recovery_analysis",
+            "recovery_status",
+        })
+    return filtered
 

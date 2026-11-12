@@ -212,6 +212,7 @@ def test_benchmark_exposes_the_complete_production_read_tool_catalog() -> None:
         "race_calendar",
         "race_preparation_analysis",
         "planned_sessions",
+        "next_planned_session",
         "session_execution_review",
         "activity_detail",
         "training_history",

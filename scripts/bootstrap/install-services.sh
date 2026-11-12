@@ -271,8 +271,13 @@ install_nginx_configuration() {
         -m 755 \
         "$NGINX_FRONTEND_DIR"
 
+    if [[ -z "$NGINX_FRONTEND_DIR" || "$NGINX_FRONTEND_DIR" == "/" ]]; then
+        log_error "Répertoire frontend Nginx invalide : $NGINX_FRONTEND_DIR"
+        return 1
+    fi
+
     rm -rf \
-        "$NGINX_FRONTEND_DIR"/*
+        "${NGINX_FRONTEND_DIR:?}"/*
 
     cp -a \
         "$PROJECT_ROOT/frontend/dist/." \

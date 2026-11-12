@@ -239,7 +239,7 @@ def build_recovery_analysis_tool(
                 "metrics": {
                     name: (
                         {
-                            **(
+                            (
                                 {
                                     "current": format_duration(metric.current),
                                     "average": format_duration(metric.average),
@@ -258,7 +258,7 @@ def build_recovery_analysis_tool(
                                     "coverage_days": metric.coverage_days,
                                     "expected_days": metric.expected_days,
                                 }
-                            )**
+                            )
                         }
                         if metric.sample_count > 0
                         else {
@@ -305,8 +305,8 @@ def build_recovery_analysis_tool(
             "sleep_score": {"label": "Score de sommeil", "unit": "score COROS"},
             "sleep_quality": {"label": "Qualité du sommeil", "unit": "score COROS"},
             "spo2": {"label": "Saturation périphérique en oxygène", "unit": "%"},
-            "sleep_deep_seconds": {"label": "Sommeil profond", "unit": "h:min", "raw_unit": "s"},
-            "sleep_rem_seconds": {"label": "Sommeil paradoxal (REM)", "unit": "h:min", "raw_unit": "s"},
+            "sleep_deep_seconds": {"label": "Sommeil profond", "unit": "heures et minutes"},
+            "sleep_rem_seconds": {"label": "Sommeil paradoxal (REM)", "unit": "heures et minutes"},
             "fatigue_atl": {"label": "Charge aiguë COROS (ATL)", "unit": "points COROS"},
             "fitness_ctl": {"label": "Charge chronique COROS (CTL)", "unit": "points COROS"},
         }

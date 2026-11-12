@@ -5,6 +5,7 @@ n'exécute jamais de fonction arbitraire fournie par le modèle.
 """
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -65,6 +66,7 @@ class AIToolRegistry:
         self._tools: dict[str, AITool] = {}
         self._argument_guard = argument_guard
         self._execution_results: list[AIToolResult] = []
+        self._execution_cache: dict[tuple[str, str], AIToolResult] = {}
         self._allowed_tool_names: set[str] | None = None
 
     def restrict_to(self, names: set[str]) -> None:
@@ -149,6 +151,34 @@ class AIToolRegistry:
             self._record_result(result)
             return result
 
+        # Une même invocation exacte ne doit pas déclencher deux fois un
+        # outil métier pendant une seule requête (y compris un outil d'écriture).
+        canonical_arguments = json.dumps(
+            validated_arguments.model_dump(mode="json"),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        cache_key = (name, canonical_arguments)
+        cached_result = self._execution_cache.get(cache_key)
+        if cached_result is not None:
+            log_ai_event(
+                "tool_execution_reused",
+                trace_id=self.trace_id,
+                tool=name,
+                status=cached_result.status,
+                business_tool_executed=False,
+            )
+            return cached_result.model_copy(
+                update={
+                    "metadata": {
+                        **cached_result.metadata,
+                        "replayed": True,
+                        "business_tool_executed": False,
+                    }
+                }
+            )
+
         try:
             data = tool.handler(validated_arguments)
         except Exception as exc:
@@ -170,6 +200,7 @@ class AIToolRegistry:
                 error="L'exécution de l'outil a échoué.",
             )
             self._record_result(result)
+            self._execution_cache[cache_key] = result
             return result
 
         result = AIToolResult(
@@ -179,6 +210,7 @@ class AIToolRegistry:
             metadata=_execution_metadata(started_at),
         )
         self._record_result(result)
+        self._execution_cache[cache_key] = result
         return result
 
     def _record_result(self, result: AIToolResult) -> None:

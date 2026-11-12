@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Activity, AlertTriangle, RefreshCw } from 'lucide-react'
 
 interface LatencySummary {
@@ -55,7 +55,7 @@ export function AIObservabilityPanel() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  async function loadMetrics(hours: number) {
+  const loadMetrics = useCallback(async (hours: number) => {
     setLoading(true)
     setError(null)
     try {
@@ -74,11 +74,11 @@ export function AIObservabilityPanel() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     void loadMetrics(windowHours)
-  }, [windowHours])
+  }, [loadMetrics, windowHours])
 
   return (
     <section className="mt-4 overflow-hidden rounded-[16px] border border-[var(--oc-border)] bg-[var(--oc-surface)] shadow-[0_1px_3px_rgba(15,23,42,0.03)]">

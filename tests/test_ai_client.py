@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 
 import httpx
 import pytest
@@ -225,3 +226,39 @@ def test_tool_calls_are_parsed_and_tool_definitions_are_sent():
     result = asyncio.run(run())
     assert result.tool_calls[0].name == "training_history"
     assert result.tool_calls[0].arguments == {"nb_days": 7}
+
+
+def test_ollama_generation_emits_correlated_privacy_safe_metrics(caplog):
+    caplog.set_level(logging.INFO, logger="opencoach.ai.observability")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content)
+        assert "trace_id" not in payload
+        return httpx.Response(200, json={
+            "model": "test-model",
+            "message": {"role": "assistant", "content": "Texte confidentiel de test."},
+            "done": True,
+            "total_duration": 1_500_000_000,
+            "load_duration": 100_000_000,
+            "prompt_eval_count": 250,
+            "prompt_eval_duration": 200_000_000,
+            "eval_count": 80,
+            "eval_duration": 400_000_000,
+        })
+
+    async def run():
+        client = OllamaClient(
+            AISettings(enabled=True, model="test-model"),
+            transport=httpx.MockTransport(handler),
+        )
+        request = make_request().model_copy(update={"trace_id": "trace-test-123"})
+        return await client.chat(request)
+
+    result = asyncio.run(run())
+    assert result.done is True
+    assert "opencoach_ai_observability" in caplog.text
+    assert '"trace_id":"trace-test-123"' in caplog.text
+    assert '"ollama_total_duration_ms":1500.0' in caplog.text
+    assert '"eval_count":80' in caplog.text
+    assert "Explique ma charge." not in caplog.text
+    assert "Texte confidentiel de test." not in caplog.text

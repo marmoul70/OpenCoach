@@ -17,6 +17,9 @@ Stabiliser le dépôt avant la poursuite des missions IA et rendre les déploiem
 - Centralisation du déploiement frontend dans `scripts/deploy-frontend.sh`.
 - Suppression du chemin local codé en dur dans l'ancien script snake_case ; celui-ci délègue désormais au point d'entrée canonique.
 - Déploiement frontend par releases immuables et bascule atomique du lien `current`.
+- Alignement de la configuration Nginx sur `/var/www/opencoach/current`.
+- Intégration du déploiement canonique dans `install-services.sh` : le bootstrap réutilise le frontend déjà compilé et ne vide jamais le répertoire des releases.
+- Exécution root compatible avec les scripts bootstrap, tout en exécutant npm sous l'identité propriétaire du dépôt.
 - Restauration automatique de la release précédente si la validation Nginx ou le rechargement échoue.
 - Ajout d'une racine web configurable via `OPENCOACH_WEB_ROOT`, avec `/var/www/opencoach` comme valeur par défaut.
 - Ajout d'un contrôle automatisé de cohérence des versions.
@@ -30,7 +33,7 @@ Depuis la racine du dépôt, avec un dépôt Git propre :
 ./scripts/deploy-frontend.sh
 ```
 
-Le script exécute `npm ci`, le lint et le build avant toute opération privilégiée. Il ne redémarre jamais le backend. La release active est conservée dans `/var/www/opencoach/current` et les cinq releases les plus récentes sont conservées.
+En exécution utilisateur, le script exécute `npm ci`, le lint et le build avant toute opération privilégiée. Depuis le bootstrap root, il réutilise le build déjà produit par `install-application.sh` et lance npm sous l'identité du propriétaire du dépôt. Il ne redémarre jamais le backend. La release active est conservée dans `/var/www/opencoach/current` et les cinq releases les plus récentes sont conservées.
 
 Pour un environnement web de test distinct :
 
@@ -60,6 +63,7 @@ La modification des scripts et la CI ne remplacent pas le test opérationnel sur
 - Ne jamais fusionner directement l'ancienne branche IA de 478 commits dans `main` sans audit dédié.
 - Développer chaque mission sur une branche courte issue de la branche validée précédente.
 - Ne pas modifier manuellement les fichiers déployés sous `/var/www/opencoach`.
+- Nginx doit servir `/var/www/opencoach/current` ; ne pas rétablir une racine directe sur `/var/www/opencoach`.
 - Utiliser les scripts du dépôt pour installer, mettre à niveau, tester et déployer.
 - Avant une migration, sauvegarder la base avec le mécanisme prévu dans `scripts/bootstrap/upgrade.sh`.
 - Incrémenter et vérifier les quatre déclarations de version ensemble lors d'une vraie livraison, pas à chaque commit de correction.

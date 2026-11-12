@@ -49,7 +49,7 @@ test_bootstrap_can_reuse_prebuilt_frontend() {
 }
 
 test_root_execution_builds_as_project_owner() {
-    grep -Fq 'runuser -u "$PROJECT_USER" -- "$@"' "$SCRIPT"
+    grep -Fq "runuser -u \"\$PROJECT_USER\" -- \"\$@\"" "$SCRIPT"
 }
 
 test_release_metadata_is_created() {

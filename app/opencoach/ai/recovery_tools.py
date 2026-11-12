@@ -239,22 +239,26 @@ def build_recovery_analysis_tool(
                 "metrics": {
                     name: (
                         {
-                            "current": metric.current,
-                            "average": metric.average,
-                            "median": metric.median,
-                            "display": (
+                            **(
                                 {
                                     "current": format_duration(metric.current),
                                     "average": format_duration(metric.average),
                                     "median": format_duration(metric.median),
                                     "unit": "heures et minutes",
+                                    "sample_count": metric.sample_count,
+                                    "coverage_days": metric.coverage_days,
+                                    "expected_days": metric.expected_days,
                                 }
                                 if name in {"sleep_seconds", "sleep_deep_seconds", "sleep_rem_seconds"}
-                                else None
-                            ),
-                            "sample_count": metric.sample_count,
-                            "coverage_days": metric.coverage_days,
-                            "expected_days": metric.expected_days,
+                                else {
+                                    "current": metric.current,
+                                    "average": metric.average,
+                                    "median": metric.median,
+                                    "sample_count": metric.sample_count,
+                                    "coverage_days": metric.coverage_days,
+                                    "expected_days": metric.expected_days,
+                                }
+                            )**
                         }
                         if metric.sample_count > 0
                         else {
@@ -297,7 +301,7 @@ def build_recovery_analysis_tool(
             "hrv": {"label": "Variabilité de la fréquence cardiaque", "unit": "ms"},
             "resting_hr": {"label": "Fréquence cardiaque au repos", "unit": "bpm"},
             "stress_avg": {"label": "Stress moyen", "unit": "score COROS"},
-            "sleep_seconds": {"label": "Durée totale de sommeil", "unit": "h:min", "raw_unit": "s"},
+            "sleep_seconds": {"label": "Durée totale de sommeil", "unit": "heures et minutes"},
             "sleep_score": {"label": "Score de sommeil", "unit": "score COROS"},
             "sleep_quality": {"label": "Qualité du sommeil", "unit": "score COROS"},
             "spo2": {"label": "Saturation périphérique en oxygène", "unit": "%"},

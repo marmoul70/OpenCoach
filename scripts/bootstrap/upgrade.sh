@@ -124,10 +124,6 @@ resolve_project_owner() {
         stat -c '%U' "$PROJECT_ROOT"
     )"
 
-    OPENCOACH_GROUP="$(
-        stat -c '%G' "$PROJECT_ROOT"
-    )"
-
     if [[ "$OPENCOACH_USER" == "root" ]]; then
         log_error \
             "Le projet OpenCoach ne doit pas appartenir à root."

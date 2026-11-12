@@ -18,6 +18,10 @@ WEB_ROOT="${OPENCOACH_WEB_ROOT:-/var/www/opencoach}"
 RELEASES_DIR="$WEB_ROOT/releases"
 CURRENT_LINK="$WEB_ROOT/current"
 KEEP_RELEASES=5
+STAGING_DIR=""
+PREVIOUS_TARGET=""
+SWITCHED=0
+DEPLOY_SUCCEEDED=0
 
 # shellcheck source=scripts/lib/log.sh
 source "$PROJECT_ROOT/scripts/lib/log.sh"
@@ -42,6 +46,20 @@ rollback_current() {
         sudo systemctl reload nginx || true
     fi
 }
+
+cleanup() {
+    local status=$?
+    trap - EXIT
+    if [[ -n "$STAGING_DIR" ]]; then
+        sudo rm -rf -- "$STAGING_DIR" || true
+    fi
+    if (( SWITCHED == 1 && DEPLOY_SUCCEEDED == 0 )); then
+        log_warning "Déploiement interrompu : restauration de la release précédente."
+        rollback_current "$PREVIOUS_TARGET" || true
+    fi
+    exit "$status"
+}
+trap cleanup EXIT
 
 command -v node >/dev/null 2>&1 || fail "Node.js est requis."
 command -v npm >/dev/null 2>&1 || fail "npm est requis."
@@ -106,7 +124,6 @@ if [[ -e "$CURRENT_LINK" && ! -L "$CURRENT_LINK" ]]; then
     fail "$CURRENT_LINK existe mais n'est pas un lien symbolique. Déploiement annulé."
 fi
 
-PREVIOUS_TARGET=""
 if [[ -L "$CURRENT_LINK" ]]; then
     PREVIOUS_TARGET="$(readlink "$CURRENT_LINK")"
 fi
@@ -126,28 +143,27 @@ TMP_LINK="$WEB_ROOT/.current-new"
 sudo rm -f "$TMP_LINK"
 sudo ln -s "releases/$RELEASE_NAME" "$TMP_LINK"
 sudo mv -Tf "$TMP_LINK" "$CURRENT_LINK"
+SWITCHED=1
 
 if ! sudo test -s "$CURRENT_LINK/index.html" || ! sudo test -s "$CURRENT_LINK/version.json"; then
-    rollback_current "$PREVIOUS_TARGET"
-    fail "La release active est incomplète. La version précédente a été restaurée."
+    fail "La release active est incomplète."
 fi
 
 for asset in "${ASSET_PATHS[@]}"; do
     if ! sudo test -s "$CURRENT_LINK/$asset"; then
-        rollback_current "$PREVIOUS_TARGET"
-        fail "Asset déployé manquant : $asset. La version précédente a été restaurée."
+        fail "Asset déployé manquant : $asset."
     fi
 done
 
 if ! sudo nginx -t; then
-    rollback_current "$PREVIOUS_TARGET"
-    fail "Configuration Nginx invalide. La version précédente a été restaurée."
+    fail "Configuration Nginx invalide."
 fi
 
 if ! sudo systemctl reload nginx; then
-    rollback_current "$PREVIOUS_TARGET"
-    fail "Rechargement Nginx impossible. La version précédente a été restaurée."
+    fail "Rechargement Nginx impossible."
 fi
+
+DEPLOY_SUCCEEDED=1
 
 # Conserver la release active et les plus récentes ; ne jamais supprimer current.
 ACTIVE_RELEASE="$(readlink -f "$CURRENT_LINK")"

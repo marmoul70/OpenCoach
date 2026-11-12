@@ -21,6 +21,13 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
                 sessions_count=1,
                 measured_load_data_count=1,
                 manual_sessions_count=0,
+                activities_count=1,
+                total_duration_minutes=65,
+                total_distance_km=12.5,
+                total_elevation_gain_m=320.0,
+                duration_data_count=1,
+                distance_data_count=1,
+                elevation_data_count=1,
             )
 
     class FakeService:
@@ -87,6 +94,9 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
         "inclusive": True,
     }
     assert result.data["load"]["actual_total"] == 45.0
+    assert result.data["volume"]["duration_minutes"] == 65
+    assert result.data["volume"]["distance_km"] == 12.5
+    assert result.data["volume"]["elevation_gain_m"] == 320.0
     assert result.data["load"]["delta_total"] == 5.0
     assert result.data["planning_coverage"]["ratio"] == 1.0
     assert result.data["sessions"]["planned"] == 1

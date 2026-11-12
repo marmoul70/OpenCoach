@@ -169,6 +169,24 @@ def test_benchmark_accepts_imperative_clarification_request() -> None:
     assert result["clarification_pass"] is True
 
 
+def test_benchmark_rejects_arbitrary_default_period_as_clarification() -> None:
+    case = {
+        "id": "clarification_default_period",
+        "expected_tool_calls": [],
+        "expected_clarification": "Demander une période en jours.",
+    }
+
+    result = score_response(
+        case,
+        [],
+        "Je vais chercher les données pour la période de 1 à 30 jours. "
+        "Veuillez confirmer si vous souhaitez utiliser cette période par défaut.",
+    )
+
+    assert result["clarification_checkable"] is True
+    assert result["clarification_pass"] is False
+
+
 def test_benchmark_rejects_tool_call_when_clarification_is_required() -> None:
     case = {
         "id": "clarification_with_unexpected_tool",

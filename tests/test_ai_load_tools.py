@@ -21,6 +21,13 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
                 sessions_count=1,
                 measured_load_data_count=1,
                 manual_sessions_count=0,
+                activities_count=1,
+                total_duration_minutes=65,
+                total_distance_km=12.5,
+                total_elevation_gain_m=320.0,
+                duration_data_count=1,
+                distance_data_count=1,
+                elevation_data_count=1,
             )
 
     class FakeService:
@@ -87,8 +94,15 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
         "inclusive": True,
     }
     assert result.data["load"]["actual_total"] == 45.0
+    assert result.data["volume"]["duration_minutes"] == 65
+    assert result.data["volume"]["distance_km"] == 12.5
+    assert result.data["volume"]["elevation_gain_m"] == 320.0
     assert result.data["load"]["delta_total"] == 5.0
     assert result.data["planning_coverage"]["ratio"] == 1.0
+    assert result.data["sessions"]["planned"] == 1
+    assert result.data["sessions"]["actual"] == 1
+    assert result.data["sessions"]["comparison_supported"] is False
+    assert "ne pas calculer de pourcentage" in result.data["sessions"]["meaning"]
     assert result.data["daily"][0]["actual_load"] == 45.0
     assert result.data["daily"][1]["actual_load"] is None
 
@@ -278,4 +292,8 @@ def test_training_load_tool_exposes_coros_atl_ctl_separately_from_session_load()
     assert coros["latest"]["atl_short_term_load"] == 77.0
     assert coros["latest"]["ctl_long_term_load"] == 62.0
     assert coros["latest"]["load_ratio"] == 1.24
+    assert "aucun seuil individuel" in coros["semantics"]
+    assert "pas un diagnostic" in coros["interpretation_policy"]
+    assert "au-dessus de la normale" in coros["interpretation_policy"]
+    assert "Jours sans couverture de planning" in result["planning_coverage"]["meaning"]
     assert result["load"]["actual_total"] is None

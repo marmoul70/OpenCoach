@@ -146,7 +146,7 @@ def build_recovery_analysis_tool(
     daily_checkin_repository,
     athlete_profile_id: UUID,
 ) -> AITool:
-    """Expose les données sommeil, physiologie, charge et ressenti sur 7/14/30 jours.
+    """Expose les données sommeil, physiologie, charge et ressenti sur les 7 derniers jours.
 
     Les calculs restent dans recovery_assessment.py. L'outil ne crée aucun score
     composite et conserve séparément données objectives et déclarations athlète.
@@ -156,10 +156,47 @@ def build_recovery_analysis_tool(
 
     from opencoach.wellness_aggregation import aggregate_wellness_days
     from opencoach.recovery_assessment import (
-        METRICS,
         build_recovery_assessment,
         recovery_assessment_to_dict,
     )
+
+    # Ne transmettre que les indicateurs utiles à une synthèse forme /
+    # fatigue / sommeil. Les métriques détaillées restent disponibles dans
+    # les écrans métier ; elles alourdissent inutilement le contexte du LLM.
+    analysis_metrics = {
+        "hrv", "resting_hr", "sleep_seconds", "sleep_score", "sleep_quality",
+        "stress_avg", "spo2", "sleep_deep_seconds",
+        "sleep_rem_seconds", "fatigue_atl", "fitness_ctl",
+    }
+
+    def format_duration(value: float | int | None) -> str | None:
+        if value is None:
+            return None
+        total_minutes = round(float(value) / 60)
+        hours, minutes = divmod(total_minutes, 60)
+        return f"{hours} h {minutes:02d} min"
+
+    def metric_result(name, metric) -> dict:
+        if metric.sample_count <= 0:
+            return {"current": None, "sample_count": 0}
+        if name in {"sleep_seconds", "sleep_deep_seconds", "sleep_rem_seconds"}:
+            return {
+                "current": format_duration(metric.current),
+                "average": format_duration(metric.average),
+                "median": format_duration(metric.median),
+                "unit": "heures et minutes",
+                "sample_count": metric.sample_count,
+                "coverage_days": metric.coverage_days,
+                "expected_days": metric.expected_days,
+            }
+        return {
+            "current": metric.current,
+            "average": metric.average,
+            "median": metric.median,
+            "sample_count": metric.sample_count,
+            "coverage_days": metric.coverage_days,
+            "expected_days": metric.expected_days,
+        }
 
     def execute(arguments: BaseModel) -> dict:
         target_date = arguments.target_date
@@ -209,7 +246,12 @@ def build_recovery_analysis_tool(
             }
 
         windows = []
+        # Une demande de récupération « récente » doit être strictement bornée
+        # à 7 jours. Ne pas exposer les fenêtres 14/30 j au LLM : il privilégiait
+        # régulièrement la fenêtre de 30 jours malgré les consignes du prompt.
         for window in assessment.windows:
+            if window.days != 7:
+                continue
             windows.append({
                 "days": window.days,
                 "start_date": window.start_date.isoformat(),
@@ -217,25 +259,9 @@ def build_recovery_analysis_tool(
                 "recorded_days": window.recorded_days,
                 "coverage_ratio": round(window.coverage_ratio, 3),
                 "metrics": {
-                    name: (
-                        {
-                            "current": metric.current,
-                            "average": metric.average,
-                            "median": metric.median,
-                            "sample_count": metric.sample_count,
-                            "coverage_days": metric.coverage_days,
-                            "expected_days": metric.expected_days,
-                        }
-                        if metric.sample_count > 0
-                        else {
-                            # Garder les métriques canoniques explicitement inconnues,
-                            # sans transmettre les statistiques de couverture vides.
-                            "current": None,
-                            "sample_count": 0,
-                        }
-                    )
+                    name: metric_result(name, metric)
                     for name, metric in window.metrics.items()
-                    if name in METRICS
+                    if name in analysis_metrics
                 },
             })
 
@@ -265,21 +291,14 @@ def build_recovery_analysis_tool(
 
         metric_definitions = {
             "hrv": {"label": "Variabilité de la fréquence cardiaque", "unit": "ms"},
-            "hrv_baseline": {"label": "Référence personnelle de variabilité cardiaque", "unit": "ms"},
             "resting_hr": {"label": "Fréquence cardiaque au repos", "unit": "bpm"},
-            "avg_hr": {"label": "Fréquence cardiaque moyenne", "unit": "bpm"},
-            "min_hr": {"label": "Fréquence cardiaque minimale", "unit": "bpm"},
-            "max_hr": {"label": "Fréquence cardiaque maximale", "unit": "bpm"},
-            "avg_sleeping_hr": {"label": "Fréquence cardiaque moyenne pendant le sommeil", "unit": "bpm"},
             "stress_avg": {"label": "Stress moyen", "unit": "score COROS"},
-            "sleep_seconds": {"label": "Durée totale de sommeil", "unit": "s"},
+            "sleep_seconds": {"label": "Durée totale de sommeil", "unit": "heures et minutes"},
             "sleep_score": {"label": "Score de sommeil", "unit": "score COROS"},
             "sleep_quality": {"label": "Qualité du sommeil", "unit": "score COROS"},
             "spo2": {"label": "Saturation périphérique en oxygène", "unit": "%"},
-            "sleep_deep_seconds": {"label": "Sommeil profond", "unit": "s"},
-            "sleep_light_seconds": {"label": "Sommeil léger", "unit": "s"},
-            "sleep_rem_seconds": {"label": "Sommeil paradoxal (REM)", "unit": "s"},
-            "sleep_awake_seconds": {"label": "Temps éveillé", "unit": "s"},
+            "sleep_deep_seconds": {"label": "Sommeil profond", "unit": "heures et minutes"},
+            "sleep_rem_seconds": {"label": "Sommeil paradoxal (REM)", "unit": "heures et minutes"},
             "fatigue_atl": {"label": "Charge aiguë COROS (ATL)", "unit": "points COROS"},
             "fitness_ctl": {"label": "Charge chronique COROS (CTL)", "unit": "points COROS"},
         }
@@ -301,17 +320,19 @@ def build_recovery_analysis_tool(
                     metric
                     for day_sources in aggregation.metric_sources.values()
                     for metric in day_sources
+                    if metric in analysis_metrics
                 })
             },
             "metric_source_days": {
                 metric: sum(
                     1 for day_sources in aggregation.metric_sources.values()
-                    if metric in day_sources
+                    if metric in day_sources and metric in analysis_metrics
                 )
                 for metric in sorted({
                     metric
                     for day_sources in aggregation.metric_sources.values()
                     for metric in day_sources
+                    if metric in analysis_metrics
                 })
             },
             "conflicting_metrics": aggregation.conflicts,
@@ -327,15 +348,15 @@ def build_recovery_analysis_tool(
     return AITool(
         name="recovery_analysis",
         description=(
-            "Analyse descriptive de la forme et de la récupération : sommeil "
+            "Analyse descriptive récente de la forme et de la récupération : sommeil "
             "(durée, score et phases), HRV, fréquence cardiaque au repos, stress, "
-            "charge ATL/CTL, sur des fenêtres de 7, 14 et 30 jours. Les données "
+            "charge ATL/CTL, sur les 7 derniers jours uniquement. Les données "
             "proviennent exclusivement du stockage centralisé OpenCoach, tous "
             "fournisseurs d’import confondus ; aucune API fournisseur n’est appelée. "
             "Inclut séparément le ressenti du jour provenant du check-in. À utiliser "
             "pour toute discussion sur fatigue, forme, récupération, sommeil ou stress. "
-            "Le seul argument est target_date facultatif ; les fenêtres 7, 14 et 30 jours "
-            "sont calculées automatiquement. N'ajoute aucun paramètre nb_days. "
+            "Le seul argument est target_date facultatif ; la fenêtre de 7 jours "
+            "est calculée automatiquement. N'ajoute aucun paramètre nb_days. "
             "Ne produit aucun diagnostic ni score composite."
         ),
         arguments_model=RecoveryAnalysisArguments,

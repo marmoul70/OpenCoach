@@ -81,9 +81,12 @@ def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():
     assert result["provider"] == "opencoach"
     assert result["data_store"] == "OpenCoach"
     assert result["data_status"] == "fresh"
-    assert [window["days"] for window in result["windows"]] == [7, 14, 30]
+    assert [window["days"] for window in result["windows"]] == [7]
     assert result["windows"][0]["recorded_days"] == 7
+    assert result["windows"][0]["end_date"] == TARGET.isoformat()
     assert result["windows"][0]["metrics"]["sleep_seconds"]["sample_count"] == 7
+    assert result["windows"][0]["metrics"]["sleep_seconds"]["average"] == "7 h 03 min"
+    assert result["windows"][0]["metrics"]["sleep_seconds"]["unit"] == "heures et minutes"
     assert result["windows"][0]["metrics"]["sleep_quality"]["current"] == 4.0
     assert result["windows"][0]["metrics"]["spo2"]["current"] == 97.0
     assert result["daily_context"]["fatigue"] == 4
@@ -112,7 +115,7 @@ def test_recovery_analysis_reads_intervals_after_import_into_opencoach():
 
     assert result["provider"] == "opencoach"
     assert result["data_store"] == "OpenCoach"
-    assert result["windows"][0]["metrics"]["sleep_seconds"]["current"] == 21600
+    assert result["windows"][0]["metrics"]["sleep_seconds"]["current"] == "6 h 00 min"
     assert "time_series" not in result
 
 
@@ -172,7 +175,7 @@ def test_recovery_analysis_merges_complementary_metrics_from_all_opencoach_impor
     assert current["hrv"]["current"] == 52.0
     assert current["resting_hr"]["current"] == 47.0
     assert current["stress_avg"]["current"] == 18.0
-    assert current["sleep_seconds"]["current"] == 7 * 3600
+    assert current["sleep_seconds"]["current"] == "7 h 00 min"
     assert result["metric_sources"]["hrv"] == ["coros", "garmin"]
     assert result["metric_sources"]["resting_hr"] == ["intervals"]
     assert result["metric_source_days"]["hrv"] == 2

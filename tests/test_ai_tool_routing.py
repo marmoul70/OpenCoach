@@ -152,6 +152,22 @@ def test_missing_period_hides_only_period_tools_from_compound_request():
     assert selected == frozenset({"recovery_analysis", "recovery_status"})
 
 
+def test_training_load_request_receives_plan_and_recovery_context_only_with_valid_period():
+    missing_period = select_coach_tools("Analyse ma charge d'entraînement.")
+    assert "training_load" not in missing_period
+    assert "weekly_plan_context" not in missing_period
+
+    with_period = select_coach_tools(
+        "Analyse ma charge d'entraînement sur 10 jours."
+    )
+    assert {
+        "training_load",
+        "weekly_plan_context",
+        "recovery_analysis",
+        "recovery_status",
+    } <= with_period
+
+
 def test_trends_tool_requires_two_explicit_periods():
     assert select_coach_tools("Compare mes tendances d'entraînement.") == frozenset()
     assert select_coach_tools(

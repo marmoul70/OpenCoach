@@ -56,6 +56,9 @@ def test_two_period_trend_clarification_restores_original_intent_after_intermedi
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("training_load", {"nb_days": 2}),
         ("training_trends", {"nb_days": 2, "comparison_days": 7}),
+        ("recovery_analysis", {}),
+        ("recovery_status", {}),
+        ("weekly_plan_context", {}),
     ]
 
 
@@ -93,6 +96,17 @@ def test_current_recovery_uses_python_default_date_and_status_tool():
     )
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("recovery_status", {})
+    ]
+
+
+def test_recent_recovery_analysis_uses_fixed_windows_without_period_clarification():
+    plan = build_coach_execution_plan(
+        "Analyse ma récupération récente.",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("recovery_analysis", {})
     ]
 
 
@@ -152,7 +166,10 @@ def test_load_period_is_planned_with_exact_user_supplied_duration():
         reference_date=REFERENCE_DATE,
     )
     assert [(call.name, call.arguments) for call in plan.calls] == [
-        ("training_load", {"nb_days": 14})
+        ("training_load", {"nb_days": 14}),
+        ("recovery_analysis", {}),
+        ("recovery_status", {}),
+        ("weekly_plan_context", {}),
     ]
 
 
@@ -198,6 +215,9 @@ def test_charge_comparison_requests_both_periods_across_two_clarification_turns(
     assert [(call.name, call.arguments) for call in second_period.calls] == [
         ("training_load", {"nb_days": 2}),
         ("training_trends", {"nb_days": 2, "comparison_days": 7}),
+        ("recovery_analysis", {}),
+        ("recovery_status", {}),
+        ("weekly_plan_context", {}),
     ]
 
 

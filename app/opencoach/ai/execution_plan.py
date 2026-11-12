@@ -323,7 +323,13 @@ def build_coach_execution_plan(
             return CoachExecutionPlan(clarification="Chaque période de comparaison doit être comprise entre 1 et 180 jours.")
         calls.append(PlannedToolCall("training_trends", {"nb_days": first, "comparison_days": second}))
 
-    if "recovery_status" in selected or "recovery_analysis" in selected:
+    if "training_load" in selected:
+        # Une analyse de charge doit être contextualisée par le plan et la
+        # récupération ; ces outils sont déterministes et ne demandent aucun
+        # paramètre de période supplémentaire.
+        calls.append(PlannedToolCall("recovery_analysis", {}))
+        calls.append(PlannedToolCall("recovery_status", {}))
+    elif "recovery_status" in selected or "recovery_analysis" in selected:
         status_request = any(term in normalized for term in ("etat de recuperation", "readiness", "disponibilite aujourd", "suis-je pret"))
         if status_request and "recovery_status" in selected:
             calls.append(PlannedToolCall("recovery_status", {}))

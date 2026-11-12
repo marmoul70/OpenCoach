@@ -55,6 +55,59 @@ def build_training_load_tool(
         )
         planned_sessions = sum(day.planned_sessions_count for day in load.days)
 
+        # Volume réellement effectué, distinct de la charge COROS et des
+        # charges par séance. Masquer un total si toutes les séances ne
+        # disposent pas de la métrique correspondante.
+        duration_data_count = getattr(stats, "duration_data_count", 0)
+        distance_data_count = getattr(stats, "distance_data_count", 0)
+        elevation_data_count = getattr(stats, "elevation_data_count", 0)
+        volume = {
+            "duration_minutes": (
+                getattr(stats, "total_duration_minutes", None)
+                if actual_sessions > 0 and duration_data_count == actual_sessions
+                else None
+            ),
+            "partial_duration_minutes": (
+                getattr(stats, "total_duration_minutes", None)
+                if duration_data_count > 0 and duration_data_count < actual_sessions
+                else None
+            ),
+            "duration_coverage": {
+                "available_sessions": duration_data_count,
+                "total_sessions": actual_sessions,
+            },
+            "distance_km": (
+                getattr(stats, "total_distance_km", None)
+                if actual_sessions > 0 and distance_data_count == actual_sessions
+                else None
+            ),
+            "partial_distance_km": (
+                getattr(stats, "total_distance_km", None)
+                if distance_data_count > 0 and distance_data_count < actual_sessions
+                else None
+            ),
+            "distance_coverage": {
+                "available_sessions": distance_data_count,
+                "total_sessions": actual_sessions,
+            },
+            "elevation_gain_m": (
+                getattr(stats, "total_elevation_gain_m", None)
+                if actual_sessions > 0 and elevation_data_count == actual_sessions
+                else None
+            ),
+            "partial_elevation_gain_m": (
+                getattr(stats, "total_elevation_gain_m", None)
+                if elevation_data_count > 0 and elevation_data_count < actual_sessions
+                else None
+            ),
+            "elevation_coverage": {
+                "available_sessions": elevation_data_count,
+                "total_sessions": actual_sessions,
+            },
+            "activity_count": getattr(stats, "activities_count", actual_sessions - stats.manual_sessions_count),
+            "manual_session_count": stats.manual_sessions_count,
+        }
+
         # ATL/CTL COROS sont des indicateurs quotidiens de charge aiguë/chronique,
         # distincts de la charge individuelle de chaque activité.
         coros_load_days = []
@@ -148,17 +201,33 @@ def build_training_load_tool(
                 "nb_days": nb_days,
                 "inclusive": True,
             },
+            "volume": volume,
             "sessions": {
                 "planned": planned_sessions,
                 "actual": actual_sessions,
+                "comparison_supported": False,
+                "meaning": (
+                    "Comptages séparés des séances planifiées et réalisées. "
+                    "Ils ne prouvent pas que les séances réalisées correspondent "
+                    "aux séances planifiées ; ne pas calculer de pourcentage "
+                    "de réalisation ou d'adhérence à partir de ces deux nombres."
+                ),
             },
             "coros_training_load": {
                 "source": "COROS Training Load Assessment",
+                "interpretation_policy": (
+                    "Descriptif uniquement : ATL et CTL sont des valeurs propriétaires COROS. "
+                    "Le ratio ATL/CTL est un rapport numérique, pas un diagnostic ni une "
+                    "classification de charge. Ne jamais conclure « au-dessus de la normale », "
+                    "« élevé », « intense » ou « risque » à partir du seul ratio."
+                ),
                 "semantics": (
                     "ATL est la charge aiguë à court terme et CTL la charge chronique "
                     "à long terme. Ce sont des indicateurs quotidiens COROS, pas des "
                     "charges par séance ; ils ne sont jamais additionnés aux charges "
-                    "des activités."
+                    "des activités. Les valeurs brutes ne permettent pas, seules, de "
+                    "qualifier la charge de faible, normale ou élevée : aucun seuil "
+                    "individuel de classification n'est fourni par cet outil."
                 ),
                 "coverage": {
                     "available_days": len(coros_load_days),
@@ -199,6 +268,10 @@ def build_training_load_tool(
                 "covered_days": load.planning_covered_days,
                 "unplanned_days": load.unplanned_days,
                 "ratio": load.planning_coverage_ratio,
+                "meaning": (
+                    "Jours sans couverture de planning OpenCoach. Cela ne signifie "
+                    "ni absence d'entraînement, ni absence d'activité importée."
+                ),
             },
             "distribution": {
                 "above_plan_days": load.above_plan_days,

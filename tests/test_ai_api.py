@@ -249,9 +249,12 @@ def test_ai_coach_skips_athlete_context_when_ai_is_disabled() -> None:
     assert ai_service.request is None
 
 
-def test_ai_coach_uses_python_execution_and_skips_global_athlete_context() -> None:
+def test_ai_coach_uses_python_execution_and_skips_global_athlete_context(caplog) -> None:
     from uuid import UUID
 
+    import logging
+
+    caplog.set_level(logging.INFO, logger="opencoach.ai.observability")
     athlete_profile_id = UUID("00000000-0000-0000-0000-000000000002")
     planning_service = FakePlanningContextService(context=None)
     ai_service = FakeAIService()
@@ -299,6 +302,9 @@ def test_ai_coach_uses_python_execution_and_skips_global_athlete_context() -> No
     assert response.json()["data_proposals"] == []
     assert ai_service.request.trace_id is not None
     assert len(ai_service.request.trace_id) == 32
+    assert '"event":"coach_router"' in caplog.text
+    assert f'"trace_id":"{ai_service.request.trace_id}"' in caplog.text
+    assert '"operation":"execution_plan"' in caplog.text
     assert planning_service.profile_id is None
     messages = ai_service.request.messages
     assert ai_service.request.tools == []

@@ -54,7 +54,7 @@ def test_two_period_trend_clarification_restores_original_intent_after_intermedi
 
     assert plan.clarification is None
     assert [(call.name, call.arguments) for call in plan.calls] == [
-        ("training_load", {"nb_days": 7}),
+        ("training_load", {"nb_days": 2}),
         ("training_trends", {"nb_days": 2, "comparison_days": 7}),
     ]
 

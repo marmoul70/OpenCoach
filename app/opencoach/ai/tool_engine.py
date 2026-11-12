@@ -5,15 +5,15 @@ n'exécute jamais de fonction arbitraire fournie par le modèle.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from time import perf_counter
-
-from opencoach.ai.observability import log_ai_event
 from typing import Any, Callable, Literal, Type
 
 from pydantic import BaseModel, ConfigDict, ValidationError
+
+from opencoach.ai.observability import log_ai_event
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,14 @@ class AITool:
 class AIToolRegistry:
     """Registre en liste blanche et exécuteur synchrone des outils métier."""
 
-    def __init__(self, argument_guard: Callable[[str, dict[str, Any], list[str], list[str]], str | None] | None = None, *, trace_id: str | None = None) -> None:
+    def __init__(
+        self,
+        argument_guard: Callable[
+            [str, dict[str, Any], list[str], list[str]], str | None
+        ] | None = None,
+        *,
+        trace_id: str | None = None,
+    ) -> None:
         self.trace_id = trace_id
         self._tools: dict[str, AITool] = {}
         self._argument_guard = argument_guard
@@ -145,9 +152,13 @@ class AIToolRegistry:
         try:
             data = tool.handler(validated_arguments)
         except Exception as exc:
-            # Garder les détails techniques côté serveur uniquement. Le traceback
-            # permet de diagnostiquer le service sans exposer SQL/secrets au LLM.
-            logger.error("Échec d'exécution de l'outil coach '%s' (type=%s)", name, type(exc).__name__)
+            # Le message d'exception peut contenir une requête SQL ou des
+            # données métier : ne journaliser que son type.
+            logger.error(
+                "Échec d'exécution de l'outil coach '%s' (type=%s)",
+                name,
+                type(exc).__name__,
+            )
             result = AIToolResult(
                 tool=name,
                 status="failed",

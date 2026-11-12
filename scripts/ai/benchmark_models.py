@@ -70,8 +70,10 @@ TOOL_DESCRIPTIONS = {
     ),
     "training_load": (
         "Retourne la charge d'entraînement réelle et prévue sur les nb_days derniers "
-        "jours calendaires inclusifs, avec écarts quotidiens et couverture du planning. "
+        "jours calendaires inclusifs, avec volume réellement effectué et couverture des données. "
         "nb_days est obligatoire : demande la période si elle manque et attends la réponse. "
+        "Pour une analyse de charge, combine avec weekly_plan_context, recovery_analysis "
+        "et recovery_status lorsqu'ils sont présents afin de contextualiser les conseils. "
         "Une charge réelle sans couverture complète n'est jamais présentée comme un total fiable."
     ),
     "training_trends": (
@@ -81,15 +83,10 @@ TOOL_DESCRIPTIONS = {
         "calculés que lorsque les deux périodes ont une couverture complète."
     ),
     "recovery_analysis": (
-        "Analyse descriptive de la forme et de la récupération : sommeil "
-        "(durée, score et phases), HRV, fréquence cardiaque au repos, stress, "
-        "charge ATL/CTL, sur des fenêtres de 7, 14 et 30 jours. Les données "
-        "proviennent exclusivement du stockage centralisé OpenCoach, tous "
-        "fournisseurs d’import confondus ; aucune API fournisseur n’est appelée. "
-        "Inclut séparément le ressenti du jour provenant du check-in. À utiliser "
-        "pour toute discussion sur fatigue, forme, récupération, sommeil ou stress. "
-        "Le seul argument est target_date facultatif ; les fenêtres 7, 14 et 30 jours "
-        "sont calculées automatiquement. N'ajoute aucun paramètre nb_days. "
+        "Analyse descriptive de la forme et de la récupération sur les 7 derniers jours "
+        "uniquement : sommeil, HRV, fréquence cardiaque au repos, stress et ressenti. "
+        "Les données proviennent exclusivement du stockage centralisé OpenCoach. "
+        "Le seul argument est target_date facultatif ; n'ajoute aucun nb_days. "
         "Ne produit aucun diagnostic ni score composite."
     ),
     "recovery_status": (

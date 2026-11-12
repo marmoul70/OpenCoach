@@ -62,3 +62,55 @@ def test_ollama_metrics_convert_nanoseconds_to_milliseconds():
         "eval_count": 40,
         "eval_duration_ms": 400.0,
     }
+
+
+
+def test_metrics_snapshot_calculates_percentiles_and_error_rate():
+    from opencoach.ai.observability import (
+        _clear_ai_metrics_for_tests,
+        get_ai_metrics_snapshot,
+    )
+
+    _clear_ai_metrics_for_tests()
+    for index, duration in enumerate((10, 20, 30, 40, 50, 60, 70, 80, 90, 100)):
+        log_ai_event(
+            "ollama_generation",
+            trace_id=f"trace-{index}",
+            status="error" if index == 9 else "ok",
+            model="qwen3:8b",
+            duration_ms=duration,
+        )
+
+    snapshot = get_ai_metrics_snapshot(24)
+    assert snapshot["sample_count"] == 10
+    assert snapshot["summary"]["count"] == 10
+    assert snapshot["summary"]["errors"] == 1
+    assert snapshot["summary"]["error_rate_percent"] == 10.0
+    assert snapshot["summary"]["latency_ms"]["p50"] == 50.0
+    assert snapshot["summary"]["latency_ms"]["p95"] == 100.0
+    assert snapshot["breakdown"][0]["dimension"] == "qwen3:8b"
+    _clear_ai_metrics_for_tests()
+
+
+def test_metrics_snapshot_ignores_events_without_valid_duration():
+    from opencoach.ai.observability import (
+        _clear_ai_metrics_for_tests,
+        get_ai_metrics_snapshot,
+    )
+
+    _clear_ai_metrics_for_tests()
+    log_ai_event("coach_router", status="ok", duration_ms=float("nan"))
+    log_ai_event("coach_router", status="ok", duration_ms=-1)
+    log_ai_event("coach_router", status="ok")
+    assert get_ai_metrics_snapshot()["sample_count"] == 0
+    _clear_ai_metrics_for_tests()
+
+
+def test_metrics_window_validation():
+    import pytest
+    from opencoach.ai.observability import get_ai_metrics_snapshot
+
+    with pytest.raises(ValueError):
+        get_ai_metrics_snapshot(0)
+    with pytest.raises(ValueError):
+        get_ai_metrics_snapshot(169)

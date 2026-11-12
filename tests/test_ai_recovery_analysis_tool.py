@@ -81,8 +81,9 @@ def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():
     assert result["provider"] == "opencoach"
     assert result["data_store"] == "OpenCoach"
     assert result["data_status"] == "fresh"
-    assert [window["days"] for window in result["windows"]] == [7, 14, 30]
+    assert [window["days"] for window in result["windows"]] == [7]
     assert result["windows"][0]["recorded_days"] == 7
+    assert result["windows"][0]["end_date"] == TARGET.isoformat()
     assert result["windows"][0]["metrics"]["sleep_seconds"]["sample_count"] == 7
     assert result["windows"][0]["metrics"]["sleep_seconds"]["display"]["average"] == "7 h 03 min"
     assert result["windows"][0]["metrics"]["sleep_quality"]["current"] == 4.0

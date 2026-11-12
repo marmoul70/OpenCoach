@@ -261,30 +261,20 @@ install_nginx_configuration() {
         return 1
     fi
 
-    log_info \
-        "Déploiement du frontend OpenCoach"
+    if [[ -z "$NGINX_FRONTEND_DIR" || "$NGINX_FRONTEND_DIR" == "/" ]]; then
+        log_error "Répertoire frontend Nginx invalide : $NGINX_FRONTEND_DIR"
+        return 1
+    fi
 
+    # Le répertoire contient les releases immuables et le lien current.
+    # Ne jamais vider ce répertoire : cela détruirait la release active et
+    # empêcherait le rollback du déploiement frontend.
     install \
         -d \
         -o root \
         -g root \
         -m 755 \
         "$NGINX_FRONTEND_DIR"
-
-    rm -rf \
-        "$NGINX_FRONTEND_DIR"/*
-
-    cp -a \
-        "$PROJECT_ROOT/frontend/dist/." \
-        "$NGINX_FRONTEND_DIR/"
-
-    find "$NGINX_FRONTEND_DIR" \
-        -type d \
-        -exec chmod 755 {} +
-
-    find "$NGINX_FRONTEND_DIR" \
-        -type f \
-        -exec chmod 644 {} +
 
     log_info \
         "Installation de la configuration Nginx OpenCoach"
@@ -308,10 +298,14 @@ install_nginx_configuration() {
     fi
 
     systemctl enable nginx
-    systemctl restart nginx
+
+    # install-application.sh a déjà installé les dépendances et construit
+    # le frontend. Le déploiement passe par l'unique script à releases.
+    OPENCOACH_FRONTEND_PREBUILT=1 \
+        "$PROJECT_ROOT/scripts/deploy-frontend.sh"
 
     log_success \
-        "Nginx OpenCoach installé et démarré."
+        "Nginx OpenCoach installé et frontend déployé."
 }
 
 enable_services() {

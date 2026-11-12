@@ -4,6 +4,7 @@ set -Eeuo pipefail
 
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT="$PROJECT_ROOT/scripts/deploy-frontend.sh"
+LEGACY_SCRIPT="$PROJECT_ROOT/scripts/deploy_frontend.sh"
 
 passed=0
 failed=0
@@ -11,78 +12,96 @@ failed=0
 check() {
     local description="$1"
     shift
-
     if "$@"; then
         printf '[ OK ] %s\n' "$description"
-        passed=$((passed + 1))
+        ((passed += 1))
     else
         printf '[FAIL] %s\n' "$description" >&2
-        failed=$((failed + 1))
+        ((failed += 1))
     fi
 }
 
-test_script_exists() {
-    [[ -f "$SCRIPT" ]]
+test_scripts_exist() {
+    [[ -f "$SCRIPT" && -f "$LEGACY_SCRIPT" ]]
 }
 
-test_build_runs_before_privileged_deployment() {
-    local build_line sudo_line
-    build_line="$(grep -nF 'npm run build' "$SCRIPT" | head -n 1 | cut -d: -f1)"
-    sudo_line="$(grep -nF 'sudo -v' "$SCRIPT" | head -n 1 | cut -d: -f1)"
-    [[ -n "$build_line" && -n "$sudo_line" && "$build_line" -lt "$sudo_line" ]]
+test_project_root_is_resolved_from_script_location() {
+    grep -Fq "dirname -- \"\${BASH_SOURCE[0]}\"" "$SCRIPT" \
+        && ! grep -Fq "\$HOME/Projects/OpenCoach" "$SCRIPT"
 }
 
-test_build_failure_stops_deployment() {
-    grep -Fq 'La compilation a échoué. Aucun déploiement effectué.' "$SCRIPT"
+test_locked_frontend_install_and_checks_run_before_privileged_deployment() {
+    local npm_ci lint build sudo_line
+    npm_ci="$(grep -nF 'npm ci' "$SCRIPT" | head -n1 | cut -d: -f1)"
+    lint="$(grep -nF 'npm run lint' "$SCRIPT" | head -n1 | cut -d: -f1)"
+    build="$(grep -nF 'npm run build' "$SCRIPT" | head -n1 | cut -d: -f1)"
+    sudo_line="$(grep -nF 'sudo -v' "$SCRIPT" | head -n1 | cut -d: -f1)"
+    [[ -n "$npm_ci" && -n "$lint" && -n "$build" && -n "$sudo_line" ]] \
+        && (( npm_ci < sudo_line && lint < sudo_line && build < sudo_line ))
 }
 
-test_build_output_is_validated() {
-    grep -Fq "[[ -s \"\$DIST_DIR/index.html\" ]]" "$SCRIPT" \
-        && grep -Fq "[[ -d \"\$DIST_DIR/assets\" ]]" "$SCRIPT" \
-        && grep -Fq 'Aucun fichier JS/CSS référencé' "$SCRIPT"
+test_failed_build_stops_before_deployment() {
+    grep -Fq 'Aucun déploiement effectué.' "$SCRIPT"
 }
 
-test_referenced_assets_are_checked_before_copy() {
-    local validation_line copy_line
-    validation_line="$(grep -nF "[[ -s \"\$DIST_DIR/\$asset\" ]]" "$SCRIPT" | head -n 1 | cut -d: -f1)"
-    copy_line="$(grep -nF 'sudo cp -a' "$SCRIPT" | head -n 1 | cut -d: -f1)"
-    [[ -n "$validation_line" && -n "$copy_line" && "$validation_line" -lt "$copy_line" ]]
+test_bootstrap_can_reuse_prebuilt_frontend() {
+    grep -Fq 'OPENCOACH_FRONTEND_PREBUILT' "$SCRIPT"
 }
 
-test_deployed_index_is_compared() {
-    grep -Fq "cmp -s \"\$DIST_DIR/index.html\" \"\$WEB_ROOT/index.html\"" "$SCRIPT"
+test_root_execution_builds_as_project_owner() {
+    grep -Fq "runuser -u \"\$PROJECT_USER\" -- \"\$@\"" "$SCRIPT"
 }
 
-test_deployed_assets_are_checked() {
-    grep -Fq "sudo test -s \"\$WEB_ROOT/\$asset\"" "$SCRIPT"
+test_release_metadata_is_created() {
+    grep -Fq 'version.json' "$SCRIPT" \
+        && grep -Fq '"built_at"' "$SCRIPT"
 }
 
-test_nginx_config_is_validated_before_reload() {
-    local config_line reload_line
-    config_line="$(grep -nF 'sudo nginx -t' "$SCRIPT" | head -n 1 | cut -d: -f1)"
-    reload_line="$(grep -nF 'sudo systemctl reload nginx' "$SCRIPT" | head -n 1 | cut -d: -f1)"
-    [[ -n "$config_line" && -n "$reload_line" && "$config_line" -lt "$reload_line" ]]
+test_release_is_staged_before_atomic_switch() {
+    local staging copy move switch
+    staging="$(grep -nF 'run_privileged mktemp -d' "$SCRIPT" | head -n1 | cut -d: -f1)"
+    copy="$(grep -nF "run_privileged cp -a \"\$DIST_DIR/.\"" "$SCRIPT" | head -n1 | cut -d: -f1)"
+    move="$(grep -nF "run_privileged mv \"\$STAGING_DIR\" \"\$RELEASE_DIR\"" "$SCRIPT" | head -n1 | cut -d: -f1)"
+    switch="$(grep -nF "run_privileged mv -Tf \"\$TMP_LINK\" \"\$CURRENT_LINK\"" "$SCRIPT" | head -n1 | cut -d: -f1)"
+    [[ -n "$staging" && -n "$copy" && -n "$move" && -n "$switch" ]] \
+        && (( staging < copy && copy < move && move < switch ))
 }
 
-test_only_nginx_is_reloaded() {
-    grep -Fq 'sudo systemctl reload nginx' "$SCRIPT" \
-        && ! grep -Eq 'systemctl (restart|reload) opencoach-backend' "$SCRIPT"
+test_rollback_is_available_for_failed_nginx_validation_or_reload() {
+    grep -Fq "rollback_current \"\$PREVIOUS_TARGET\"" "$SCRIPT" \
+        && grep -Fq 'run_privileged nginx -t' "$SCRIPT" \
+        && grep -Fq 'run_privileged systemctl reload nginx' "$SCRIPT"
 }
 
-test_shellcheck_source_path_is_relative_to_script() {
-    grep -Fq '# shellcheck source=./lib/log.sh' "$SCRIPT"
+test_web_root_is_configurable() {
+    grep -Fq 'OPENCOACH_WEB_ROOT:-/var/www/opencoach' "$SCRIPT"
 }
 
-check "le script de déploiement frontend existe" test_script_exists
-check "le build s'exécute avant toute élévation sudo" test_build_runs_before_privileged_deployment
-check "un échec de build bloque le déploiement" test_build_failure_stops_deployment
-check "les artefacts du build sont validés" test_build_output_is_validated
-check "les assets référencés sont vérifiés avant copie" test_referenced_assets_are_checked_before_copy
-check "le index.html déployé est comparé au build" test_deployed_index_is_compared
-check "les assets déployés sont contrôlés" test_deployed_assets_are_checked
-check "Nginx est validé avant son rechargement" test_nginx_config_is_validated_before_reload
-check "aucun redémarrage du backend n'est déclenché" test_only_nginx_is_reloaded
-check "le chemin ShellCheck de la librairie de logs est cohérent" test_shellcheck_source_path_is_relative_to_script
+test_no_backend_restart_is_triggered() {
+    ! grep -Eq 'systemctl (restart|reload) opencoach-backend' "$SCRIPT"
+}
+
+test_legacy_script_delegates_to_canonical_script() {
+    grep -Fq "exec \"\$SCRIPT_DIR/deploy-frontend.sh\" \"\$@\"" "$LEGACY_SCRIPT"
+}
+
+test_shellcheck_source_is_declared() {
+    grep -Fq '# shellcheck source=scripts/lib/log.sh' "$SCRIPT"
+}
+
+check "les deux points d'entrée de déploiement existent" test_scripts_exist
+check "le chemin du projet est calculé depuis le script" test_project_root_is_resolved_from_script_location
+check "npm ci, lint et build précèdent les opérations privilégiées" test_locked_frontend_install_and_checks_run_before_privileged_deployment
+check "un échec de build bloque le déploiement" test_failed_build_stops_before_deployment
+check "le bootstrap peut réutiliser le frontend déjà compilé" test_bootstrap_can_reuse_prebuilt_frontend
+check "une exécution root construit sous le propriétaire du dépôt" test_root_execution_builds_as_project_owner
+check "les métadonnées de release sont créées" test_release_metadata_is_created
+check "la release est préparée avant la bascule atomique" test_release_is_staged_before_atomic_switch
+check "un rollback est prévu si Nginx échoue" test_rollback_is_available_for_failed_nginx_validation_or_reload
+check "la racine web peut être configurée" test_web_root_is_configurable
+check "le déploiement ne redémarre pas le backend" test_no_backend_restart_is_triggered
+check "l'ancien nom de script délègue au point d'entrée canonique" test_legacy_script_delegates_to_canonical_script
+check "la dépendance ShellCheck est déclarée" test_shellcheck_source_is_declared
 
 printf '\nTests réussis : %d\n' "$passed"
 printf 'Tests échoués : %d\n' "$failed"

@@ -188,10 +188,10 @@ main() {
     if (( WITH_AI_REQUESTED == 1 )); then
         log_info "Installation optionnelle du moteur IA local"
         if ! bash "$BOOTSTRAP_DIR/install-ai.sh"; then
-            log_warning "L'IA locale n'a pas pu être installée. Le bootstrap OpenCoach classique continue."
-        else
-            log_success "Moteur IA local installé. L'intégration applicative reste désactivée."
+            log_error "L'installation du moteur IA demandée avec --with-ai a échoué."
+            return 1
         fi
+        log_success "Moteur IA local installé. L'activation applicative reste désactivée."
     fi
 
 

@@ -18,6 +18,8 @@ def clear_cache():
 
 
 def test_ai_is_disabled_by_default(monkeypatch):
+    from opencoach.ai import config
+
     for key in (
         "OPENCOACH_AI_ENABLED",
         "OPENCOACH_AI_PROVIDER",
@@ -28,6 +30,12 @@ def test_ai_is_disabled_by_default(monkeypatch):
         "OPENCOACH_AI_MAX_CONCURRENCY",
     ):
         monkeypatch.delenv(key, raising=False)
+
+    monkeypatch.setattr(
+        config,
+        "load_environment",
+        lambda: None,
+    )
 
     settings = AISettings.from_environment()
 

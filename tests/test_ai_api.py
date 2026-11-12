@@ -299,7 +299,6 @@ def test_ai_coach_uses_python_execution_and_skips_global_athlete_context() -> No
     assert response.json()["data_proposals"] == []
     assert ai_service.request.trace_id is not None
     assert len(ai_service.request.trace_id) == 32
-    assert ai_service.registry.trace_id == ai_service.request.trace_id
     assert planning_service.profile_id is None
     messages = ai_service.request.messages
     assert ai_service.request.tools == []

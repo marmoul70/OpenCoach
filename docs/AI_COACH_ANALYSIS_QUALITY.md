@@ -18,6 +18,13 @@ Le modèle doit :
 
 Le style et la longueur restent modulés par les préférences du coach. Ces préférences ne peuvent jamais affaiblir les règles de sécurité ou de provenance.
 
+## Corrections de la validation terrain
+
+- L'analyse de récupération utilise directement ses fenêtres fixes de 7, 14 et 30 jours ; elle ne demande pas de durée à l'athlète.
+- Le résultat de récupération ne transmet au LLM que les métriques utiles à la synthèse, avec leur couverture et leur provenance filtrée.
+- ATL et CTL restent des indicateurs distincts. Sans seuil individuel explicite, le coach ne les qualifie pas de faibles, normaux ou élevés.
+- Les jours sans couverture du planning sont distingués des jours sans entraînement ou sans activité importée.
+
 ## Architecture inchangée
 
 - Le routeur Python sélectionne les outils et valide les paramètres.

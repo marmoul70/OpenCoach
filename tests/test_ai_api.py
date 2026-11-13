@@ -804,3 +804,21 @@ def test_ai_coach_returns_deterministic_history_clarification_without_calling_mo
     assert ai_service.request is None
 
     engine.dispose()
+
+
+def test_ai_chat_rejects_generation_stopped_by_token_limit() -> None:
+    truncated = AIChatResult(
+        model="qwen2.5:3b",
+        content="Réponse interrompue par la limite de tokens",
+        done=True,
+        done_reason="length",
+    )
+    response = _client(
+        AISettings(enabled=True),
+        FakeAIService(result=truncated),
+    ).post("/api/ai/chat", json={"question": "Bonjour"})
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == (
+        "Le moteur IA a interrompu la génération avant la fin de la réponse."
+    )

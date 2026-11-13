@@ -796,7 +796,13 @@ async def ask_local_ai_with_athlete_context(
             "Tu ne dois pas choisir d'outil, inventer d'arguments ou prétendre en appeler un. "
             "Explique uniquement les résultats structurés fournis, leurs périodes, leur "
             "couverture et leurs limites. Si un résultat est vide, partiel ou indisponible, "
-            "dis-le explicitement. Ne transforme jamais une donnée absente en zéro."
+            "dis-le explicitement. Ne transforme jamais une donnée absente en zéro. "
+            "Ne calcule un pourcentage que si le numérateur et le dénominateur portent sur "
+            "la même métrique, la même période et le même périmètre. N'assimile jamais "
+            "couverture du planning, réalisation des séances et couverture des mesures. "
+            "Pour une comparaison, présente séparément les deux périodes et leurs écarts "
+            "uniquement lorsque le champ trend.status vaut complete ; sinon explique "
+            "pourquoi la comparaison n'est pas calculable. Ignore tout champ absent."
         )
         messages = [
             AIMessage(role="system", content=system_prompt),
@@ -821,7 +827,7 @@ async def ask_local_ai_with_athlete_context(
     request = AIChatRequest(
         messages=messages,
         temperature=0.2,
-        num_predict=384,
+        num_predict=768,
         trace_id=trace_id,
     )
 

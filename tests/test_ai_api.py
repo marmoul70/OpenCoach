@@ -467,6 +467,12 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "Règles de qualité de l'analyse et de rédaction" in prompt
     assert "Ton rôle est de relier les faits entre eux" in prompt
     assert "verifier si la charge correspond" not in prompt
+    assert "doit être centrée sur le résultat training_load" in prompt
+    assert "ne remplacent jamais le volume, les séances et la charge" in prompt
+    assert "annonce ces fenêtres séparément" in prompt
+    assert "« current » est la mesure actuelle et « baseline » est la référence personnelle historique" in prompt
+    assert "jamais des valeurs « attendues » ou des objectifs" in prompt
+    assert "pas la couverture du planning" in prompt
     assert "Pour une analyse simple de charge récente" in prompt
     assert "Exception : lorsqu'une comparaison de deux périodes est demandée" in prompt
     assert "N'affiche pas systématiquement les titres" in prompt

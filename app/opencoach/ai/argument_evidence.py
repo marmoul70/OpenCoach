@@ -182,7 +182,17 @@ def validate_period_argument_evidence(tool_name: str, arguments: dict, user_mess
         if tool_name == "training_load":
             return "Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?"
         return "Sur combien de jours d'historique souhaites-tu analyser ta préparation à cette course ?"
-    expected = periods[-1]
+
+    # Dans une comparaison, training_load correspond à la première période
+    # (nb_days), tandis que training_trends compare cette première période à
+    # comparison_days. Le garde-fou doit valider le même contrat que le plan
+    # déterministe ; comparer nb_days à la dernière période rejetait à tort
+    # une demande explicite « 7 jours puis 14 jours ».
+    comparison_requested = tool_name == "training_load" and len(periods) >= 2 and any(
+        marker in _normalize(" ".join(user_messages))
+        for marker in ("compare", "comparaison", "deux periodes", "tendances")
+    )
+    expected = periods[-2] if comparison_requested else periods[-1]
     if expected < minimum or expected > maximum:
         return f"La période demandée ({expected} jours) dépasse les limites de cet outil ({minimum} à {maximum} jours). Indique une période valide ; aucune donnée n'a été consultée."
     supplied = arguments.get(argument_name)

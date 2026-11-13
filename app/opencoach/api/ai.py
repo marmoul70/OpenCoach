@@ -800,9 +800,12 @@ async def ask_local_ai_with_athlete_context(
             "Ne calcule un pourcentage que si le numérateur et le dénominateur portent sur "
             "la même métrique, la même période et le même périmètre. N'assimile jamais "
             "couverture du planning, réalisation des séances et couverture des mesures. "
-            "Pour une comparaison, présente séparément les deux périodes et leurs écarts "
-            "uniquement lorsque le champ trend.status vaut complete ; sinon explique "
-            "pourquoi la comparaison n'est pas calculable. Ignore tout champ absent."
+            "Pour une comparaison produite par training_trends, présente séparément les deux périodes. "
+            "Pour chaque métrique, ne présente un écart que si son propre champ "
+            "metrics.<nom_de_métrique>.trend.status vaut complete ; si ce statut vaut "
+            "insufficient_coverage, explique que cette métrique n'est pas comparable. "
+            "Les statuts de couverture sont propres à chaque métrique : n'exige pas un "
+            "statut global trend.status, qui n'existe pas dans le résultat. Ignore tout champ absent."
         )
         messages = [
             AIMessage(role="system", content=system_prompt),

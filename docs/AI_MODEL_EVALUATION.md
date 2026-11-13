@@ -1,6 +1,6 @@
 # Évaluation des modèles IA locaux — protocole v1
 
-**Statut :** corpus de référence initial ; benchmark Ollama sur VM à réaliser  
+**Statut :** corpus de référence initial ; premier benchmark comparatif exécuté sur VM le 13/11/2026  
 **Modèle actuellement ciblé :** `qwen2.5:3b` (modèle réellement installé/configuré sur la VM ; qualité à confirmer par benchmark)  
 **Objectif :** mesurer la fiabilité du modèle comme orchestrateur, et non sa capacité à inventer des analyses sportives.
 
@@ -65,15 +65,9 @@ Le modèle de production reste `qwen2.5:3b`. `qwen3.5:2b` est un candidat de tes
 
 Le runner mesure la sélection des outils, les arguments, les clarifications et la latence sur des scénarios synthétiques. Il n'exécute aucun outil métier, ne lit aucune donnée athlète et ne valide pas à lui seul la qualité de la synthèse finale. Une validation de rédaction doit donc compléter ce benchmark par des scénarios fonctionnels contrôlés.
 
-Après installation du candidat dans Ollama, lancer d'abord un essai court, puis le même corpus pour les deux modèles avec les mêmes paramètres :
+Un benchmark Ollama peut durer plusieurs minutes : `--limit 3` limite le nombre de scénarios, mais ne garantit pas un test rapide. Ne lancer le corpus complet que si le diagnostic le justifie. Le test comparatif a été réalisé ; ses résultats et limites sont consignés à la section 10.
 
-```bash
-ollama pull qwen3.5:2b
-python scripts/ai/benchmark_models.py --models qwen2.5:3b qwen3.5:2b --tool-profile production_router --prompt-profile production --limit 3 --repetitions 1
-python scripts/ai/benchmark_models.py --models qwen2.5:3b qwen3.5:2b --tool-profile production_router --prompt-profile production --repetitions 3
-```
-
-Le modèle candidat doit être déjà présent dans Ollama. Ces commandes passent le nom du modèle directement au runner et ne changent pas `OPENCOACH_AI_MODEL`. Conserver les rapports JSON/CSV des deux modèles. Comparer en priorité :
+Le modèle candidat doit être déjà présent dans Ollama. Ces commandes sont historiques : elles décrivent le protocole utilisé le 13/11/2026 et ne sont pas une recommandation de relancer le benchmark complet. Elles ne changent pas `OPENCOACH_AI_MODEL`.
 - sélection exacte de l'outil et des arguments ;
 - clarification des périodes manquantes et reprise du contexte multi-tour ;
 - respect des scénarios de sécurité ;
@@ -113,7 +107,7 @@ Puis, dans l'environnement virtuel Python :
 python scripts/ai/benchmark_models.py --models qwen2.5:3b --repetitions 3
 ```
 
-Essai court pour vérifier la connexion et le format du rapport :
+Diagnostic réduit (3 scénarios, mais chaque génération Ollama peut encore prendre plusieurs dizaines de secondes) :
 
 ```bash
 python scripts/ai/benchmark_models.py --models qwen2.5:3b --limit 3 --repetitions 1
@@ -194,7 +188,7 @@ Les dates obligatoires de `planned_sessions` sont également contrôlées : le r
 
 ### Benchmark du routeur de production
 
-Le profil `production_router` applique `select_coach_tools` séparément à chaque scénario du corpus, puis ne transmet à Ollama que les définitions retenues. Le rapport enregistre `exposed_tool_count`, `exposed_tool_names` et `average_exposed_tool_count`. Ce profil permet de comparer la sélection et la latence au catalogue complet avec le même modèle, le même prompt et les mêmes cas. Les scénarios sans outil sont exécutés avec un catalogue vide ; les demandes ambiguës conservent le catalogue complet conformément au comportement de production.
+Le profil `production_router` applique `select_coach_tools` séparément à chaque scénario du corpus, puis ne transmet à Ollama que les définitions retenues. Le rapport enregistre `exposed_tool_count`, `exposed_tool_names` et `average_exposed_tool_count`. **Attention : ce runner mesure la capacité d'Ollama à émettre des tool calls dans un catalogue réduit ; il ne mesure pas directement le routage réel de l'endpoint `/api/ai/coach`.** En production, `build_coach_execution_plan` construit les appels métier déterministes en Python avant la synthèse du modèle. Les scores `tool_selection_accuracy` et `argument_validation_accuracy` de ce runner ne doivent donc pas être interprétés comme la fiabilité du routeur Python en production.
 
 Commande de référence :
 
@@ -205,3 +199,21 @@ python scripts/ai/benchmark_models.py \\
   --prompt-profile production \\
   --repetitions 1
 ```
+
+
+## 10. Résultats du benchmark comparatif du 13/11/2026
+
+Le test a comparé `qwen2.5:3b` et `qwen3.5:2b` avec le profil `production_router`, le prompt `production`, 18 scénarios et 3 répétitions (54 générations par modèle).
+
+| Indicateur | qwen2.5:3b | qwen3.5:2b |
+|---|---:|---:|
+| Générations réussies côté fournisseur | 54/54 | 54/54 |
+| Tool selection accuracy du runner | 75,93 % | 33,33 % |
+| Validation des arguments | 90,62 % | Non mesurable |
+| Clarification accuracy (scénarios évaluables) | 25 % | 25 % |
+| Latence médiane | 7,96 s | 14,66 s |
+| Latence P95 | 40,23 s | 36,71 s |
+
+Décision : **ne pas adopter `qwen3.5:2b`**. Sur ce corpus et ce protocole, il est plus lent en médiane et produit nettement moins de tool calls conformes. Le modèle de production reste `qwen2.5:3b`. Aucun changement de configuration ou de modèle actif n'est autorisé par ce benchmark.
+
+Limite méthodologique importante : ces scores proviennent du runner LLM et ne représentent pas les appels réellement préparés par `build_coach_execution_plan` dans l'endpoint de production. Ils servent à comparer le comportement tool-calling brut des modèles, pas à mesurer la fiabilité de l'orchestration Python. La prochaine évaluation doit isoler trois mesures : (1) tests déterministes du plan d'exécution Python, (2) qualité de la synthèse du modèle à partir de résultats métier simulés, (3) latence Ollama. Ne pas relancer le corpus complet pour valider un simple correctif de routage.

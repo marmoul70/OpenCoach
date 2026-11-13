@@ -315,7 +315,7 @@ def test_ai_coach_uses_python_execution_and_skips_global_athlete_context(caplog)
         "user",
         "user",
     ]
-    assert "assistant coach local d'OpenCoach" in messages[0].content
+    assert "entraîneur virtuel personnel" in messages[0].content
     assert "Les services déterministes OpenCoach restent la source de vérité" in messages[0].content
     assert messages[1].content == "J'ai couru hier."
     assert messages[2].content == "Séance bien enregistrée dans notre échange."

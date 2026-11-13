@@ -467,7 +467,8 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "Règles de qualité de l'analyse et de rédaction" in prompt
     assert "Ton rôle est de relier les faits entre eux" in prompt
     assert "verifier si la charge correspond" not in prompt
-    assert "weekly_plan_context afin de vérifier si la charge correspond à la phase" in prompt
+    assert "Pour une analyse simple de charge récente" in prompt
+    assert "Exception : lorsqu'une comparaison de deux périodes est demandée" in prompt
     assert "N'affiche pas systématiquement les titres" in prompt
     assert "Parle comme un entraîneur qui connaît le dossier" in prompt
     assert "Chaque chiffre, date, durée, distance, dénivelé, charge, zone ou tendance personnelle" in prompt

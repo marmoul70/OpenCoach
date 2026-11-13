@@ -551,7 +551,7 @@ async def ask_local_ai(
     )
     try:
         result = await service.chat(request)
-        if not result.done:
+        if not result.done or result.done_reason == "length" or not result.content.strip():
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Le moteur IA a interrompu la génération avant la fin de la réponse.",

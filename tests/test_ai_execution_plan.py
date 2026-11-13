@@ -221,6 +221,20 @@ def test_charge_comparison_requests_both_periods_across_two_clarification_turns(
     ]
 
 
+
+
+def test_explicit_charge_comparison_executes_only_the_two_period_trend_tool():
+    plan = build_coach_execution_plan(
+        "Compare ma charge sur deux périodes : 7 jours puis 14 jours.",
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("training_trends", {"nb_days": 7, "comparison_days": 14})
+    ]
+
+
 def test_planned_sessions_uses_the_exact_explicit_date_range():
     plan = build_coach_execution_plan(
         "Quelles séances sont planifiées du 9 au 15 novembre 2026 ?",

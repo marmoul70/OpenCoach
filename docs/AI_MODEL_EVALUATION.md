@@ -217,3 +217,12 @@ Le test a comparé `qwen2.5:3b` et `qwen3.5:2b` avec le profil `production_route
 Décision : **ne pas adopter `qwen3.5:2b`**. Sur ce corpus et ce protocole, il est plus lent en médiane et produit nettement moins de tool calls conformes. Le modèle de production reste `qwen2.5:3b`. Aucun changement de configuration ou de modèle actif n'est autorisé par ce benchmark.
 
 Limite méthodologique importante : ces scores proviennent du runner LLM et ne représentent pas les appels réellement préparés par `build_coach_execution_plan` dans l'endpoint de production. Ils servent à comparer le comportement tool-calling brut des modèles, pas à mesurer la fiabilité de l'orchestration Python. La prochaine évaluation doit isoler trois mesures : (1) tests déterministes du plan d'exécution Python, (2) qualité de la synthèse du modèle à partir de résultats métier simulés, (3) latence Ollama. Ne pas relancer le corpus complet pour valider un simple correctif de routage.
+
+
+### Détection des générations interrompues par la limite de tokens
+
+Le client Ollama conserve le champ `done_reason` dans le résultat normalisé.
+Les endpoints de conversation et de rédaction du coach rejettent une génération
+dont `done_reason` vaut `length`, même si Ollama indique `done=true`.
+Une réponse vide ou dont la génération n'est pas terminée est également rejetée.
+Ce contrôle évite de présenter une synthèse tronquée comme une réponse complète.

@@ -59,6 +59,28 @@ Les modèles candidats doivent être évalués avec le même environnement local
 
 Un seul échec de sécurité ou une valeur sportive inventée disqualifie le modèle pour le rôle de coach, même si sa moyenne globale est élevée.
 
+## 4 bis. Candidat expérimental : Qwen3.5-2B
+
+Le modèle de production reste `qwen2.5:3b`. `qwen3.5:2b` est un candidat de test uniquement : ne pas modifier `.env`, `.env.example`, la configuration de production ni le modèle actif pour réaliser cette comparaison.
+
+Le runner mesure la sélection des outils, les arguments, les clarifications et la latence sur des scénarios synthétiques. Il n'exécute aucun outil métier, ne lit aucune donnée athlète et ne valide pas à lui seul la qualité de la synthèse finale. Une validation de rédaction doit donc compléter ce benchmark par des scénarios fonctionnels contrôlés.
+
+Après installation du candidat dans Ollama, lancer d'abord un essai court, puis le même corpus pour les deux modèles avec les mêmes paramètres :
+
+```bash
+ollama pull qwen3.5:2b
+python scripts/ai/benchmark_models.py --models qwen2.5:3b qwen3.5:2b --tool-profile production_router --prompt-profile production --limit 3 --repetitions 1
+python scripts/ai/benchmark_models.py --models qwen2.5:3b qwen3.5:2b --tool-profile production_router --prompt-profile production --repetitions 3
+```
+
+Le modèle candidat doit être déjà présent dans Ollama. Ces commandes passent le nom du modèle directement au runner et ne changent pas `OPENCOACH_AI_MODEL`. Conserver les rapports JSON/CSV des deux modèles. Comparer en priorité :
+- sélection exacte de l'outil et des arguments ;
+- clarification des périodes manquantes et reprise du contexte multi-tour ;
+- respect des scénarios de sécurité ;
+- latences p50/p95 et erreurs fournisseur.
+
+Ne pas choisir un modèle sur une moyenne générale seule : tout échec de sécurité, appel métier injustifié ou argument temporel erroné est bloquant. Si Qwen3.5-2B est meilleur sur le routage mais moins bon en rédaction, conserver les rôles séparés et tester la rédaction indépendamment avant toute décision.
+
 ## 5. Rapport à produire
 
 Pour chaque modèle :

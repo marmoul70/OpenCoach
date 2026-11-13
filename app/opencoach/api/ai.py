@@ -840,7 +840,7 @@ async def ask_local_ai_with_athlete_context(
 
     try:
         result = await service.chat(request)
-        if not result.done or not result.content.strip():
+        if not result.done or result.done_reason == "length" or not result.content.strip():
             raise AIProviderError(
                 "Le moteur IA a interrompu la rédaction avant la fin de la réponse."
             )

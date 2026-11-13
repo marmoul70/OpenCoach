@@ -333,7 +333,9 @@ def build_coach_execution_plan(
         # périodes demandées.
         calls.append(PlannedToolCall("recovery_analysis", {}))
         calls.append(PlannedToolCall("recovery_status", {}))
-    elif "recovery_status" in selected or "recovery_analysis" in selected:
+    elif not trend_comparison_requested and (
+        "recovery_status" in selected or "recovery_analysis" in selected
+    ):
         status_request = any(term in normalized for term in ("etat de recuperation", "readiness", "disponibilite aujourd", "suis-je pret"))
         if status_request and "recovery_status" in selected:
             calls.append(PlannedToolCall("recovery_status", {}))
@@ -419,7 +421,7 @@ def build_coach_execution_plan(
         term in intent_context
         for term in ("phase de la semaine", "objectif de la semaine", "cadre de la semaine", "quelle phase")
     )
-    if "weekly_plan_context" in selected and (
+    if not trend_comparison_requested and "weekly_plan_context" in selected and (
         "planned_sessions" not in selected or weekly_context_requested
     ):
         calls.append(PlannedToolCall("weekly_plan_context", {}))

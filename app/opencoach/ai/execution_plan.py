@@ -307,10 +307,14 @@ def build_coach_execution_plan(
             return CoachExecutionPlan(clarification="L'historique doit porter sur une période de 1 à 365 jours. Quelle période valide souhaites-tu ?")
         calls.append(PlannedToolCall("training_history", {"nb_days": periods[-1]}))
 
-    if "training_load" in selected:
+    # Une comparaison utilise training_trends, qui calcule déjà les métriques
+    # des deux fenêtres. Ne lance pas en parallèle training_load : cela ajoute
+    # des données de charge/planning/récupération hors comparaison et brouille
+    # la synthèse demandée.
+    if "training_load" in selected and not trend_comparison_requested:
         if not periods:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?")
-        load_period = periods[-2] if trend_comparison_requested and len(periods) >= 2 else periods[-1]
+        load_period = periods[-1]
         if not 1 <= load_period <= 90:
             return CoachExecutionPlan(clarification="La charge peut être analysée sur 1 à 90 jours. Quelle période valide souhaites-tu ?")
         calls.append(PlannedToolCall("training_load", {"nb_days": load_period}))
@@ -323,13 +327,15 @@ def build_coach_execution_plan(
             return CoachExecutionPlan(clarification="Chaque période de comparaison doit être comprise entre 1 et 180 jours.")
         calls.append(PlannedToolCall("training_trends", {"nb_days": first, "comparison_days": second}))
 
-    if "training_load" in selected:
-        # Une analyse de charge doit être contextualisée par le plan et la
-        # récupération ; ces outils sont déterministes et ne demandent aucun
-        # paramètre de période supplémentaire.
+    if "training_load" in selected and not trend_comparison_requested:
+        # Une analyse de charge simple est contextualisée par le plan et la
+        # récupération. Une comparaison reste strictement limitée aux deux
+        # périodes demandées.
         calls.append(PlannedToolCall("recovery_analysis", {}))
         calls.append(PlannedToolCall("recovery_status", {}))
-    elif "recovery_status" in selected or "recovery_analysis" in selected:
+    elif not trend_comparison_requested and (
+        "recovery_status" in selected or "recovery_analysis" in selected
+    ):
         status_request = any(term in normalized for term in ("etat de recuperation", "readiness", "disponibilite aujourd", "suis-je pret"))
         if status_request and "recovery_status" in selected:
             calls.append(PlannedToolCall("recovery_status", {}))
@@ -415,7 +421,7 @@ def build_coach_execution_plan(
         term in intent_context
         for term in ("phase de la semaine", "objectif de la semaine", "cadre de la semaine", "quelle phase")
     )
-    if "weekly_plan_context" in selected and (
+    if not trend_comparison_requested and "weekly_plan_context" in selected and (
         "planned_sessions" not in selected or weekly_context_requested
     ):
         calls.append(PlannedToolCall("weekly_plan_context", {}))

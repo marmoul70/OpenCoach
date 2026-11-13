@@ -48,6 +48,11 @@ def test_training_trends_compares_adjacent_periods_with_complete_coverage():
         "percent_delta": 11.1,
         "status": "complete",
     }
+    assert "trend" not in result
+    assert all(
+        metric["trend"]["status"] == "complete"
+        for metric in result["metrics"].values()
+    )
 
 
 def test_training_trends_suppresses_delta_when_coverage_is_partial():
@@ -82,3 +87,5 @@ def test_training_trends_suppresses_delta_when_coverage_is_partial():
     assert distance["current_period"]["partial_observed_value"] == 10.0
     assert distance["trend"]["delta"] is None
     assert distance["trend"]["status"] == "insufficient_coverage"
+    assert "trend" not in result
+    assert result["metrics"]["duration_minutes"]["trend"]["status"] == "complete"

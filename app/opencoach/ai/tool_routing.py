@@ -172,9 +172,25 @@ def select_coach_tools(
     # hebdomadaire et des signaux de récupération. Ces outils n'ont pas de
     # période obligatoire ; ils ne sont ajoutés que si training_load est
     # effectivement autorisé par une durée explicitement fournie.
+    coach_overview_request = any(
+        marker in context
+        for marker in (
+            "comment je vais", "comment vais-je", "comment est ma forme",
+            "comment va ma forme", "ou j en suis", "bilan de forme",
+            "suis-je en forme",
+        )
+    )
+    if coach_overview_request:
+        selected.update(("training_history", "athlete_training_profile"))
+
     filtered = _filter_period_tools(
         selected, question, history, assistant_history, evidence_history
     )
+    if coach_overview_request:
+        # Le bilan général applique une fenêtre standard de 7 jours,
+        # explicitée par le plan Python, même si l'utilisateur n'a pas
+        # demandé une durée pour cette question ouverte.
+        filtered = frozenset({*filtered, "training_history", "athlete_training_profile"})
     if "training_load" in filtered:
         filtered = frozenset({
             *filtered,

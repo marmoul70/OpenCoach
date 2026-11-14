@@ -68,7 +68,7 @@ class AIService:
         ]
         messages = list(request.messages)
         async with self._semaphore:
-            for _ in range(self.MAX_TOOL_ROUNDS + 1):
+            for tool_round in range(self.MAX_TOOL_ROUNDS + 1):
                 result = await self.client.chat(
                     request.model_copy(update={"messages": messages, "tools": definitions})
                 )
@@ -86,6 +86,10 @@ class AIService:
                     return result
                 if len(result.tool_calls) > self.MAX_TOOL_CALLS_PER_ROUND:
                     raise AIOrchestrationError("Le modèle a dépassé le nombre d'appels d'outils autorisé.")
+                if tool_round >= self.MAX_TOOL_ROUNDS:
+                    raise AIOrchestrationError(
+                        "Le nombre maximal de tours d'outils a été atteint."
+                    )
                 messages.append(
                     AIMessage(
                         role="assistant",

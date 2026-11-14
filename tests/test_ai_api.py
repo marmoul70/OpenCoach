@@ -507,6 +507,16 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "ne jamais s'arrêter au milieu d'une phrase" in prompt
 
 
+def test_default_detailed_coach_style_remains_conversational():
+    from opencoach.api.ai import AICoachPreferencesPayload, _coach_system_prompt
+
+    prompt = _coach_system_prompt(AICoachPreferencesPayload())
+
+    assert "détaillées mais conversationnelles" in prompt
+    assert "évite les inventaires de métriques" in prompt
+    assert "plan numéroté ou une succession de rubriques" in prompt
+
+
 def test_coach_provider_fallback_never_exposes_structured_tool_payloads():
     from opencoach.api.ai import _coach_provider_unavailable_answer
 

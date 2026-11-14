@@ -254,6 +254,7 @@ def test_truncated_tool_call_is_rejected_before_business_handler_execution():
 
 def test_truncated_final_answer_is_rejected_by_tool_orchestrator():
     from opencoach.ai.service import AIOrchestrationError
+    from opencoach.ai.tool_engine import AIToolRegistry
 
     class TruncatedFinalClient:
         async def chat(self, request):

@@ -139,4 +139,3 @@ def build_training_history_tool(
         arguments_model=TrainingHistoryArguments,
         handler=execute,
     )
-)

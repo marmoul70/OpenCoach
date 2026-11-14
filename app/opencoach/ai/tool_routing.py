@@ -130,6 +130,7 @@ def select_coach_tools(
         (("historique", "seances realisees", "entrainements realises", "mes entrainements", "mes activites", "bilan de mes sorties", "mes sorties", "bilan de ma semaine", "bilan de la semaine", "bilan hebdomadaire"), ("training_history",)),
         (("charge", "mon atl", "ctl", "tsb", "mon volume", "volume d entrainement"), ("training_load",)),
         (("recuperation", "recup", "sommeil", "hrv", "variabilite", "fatigue", "fatiguee", "fatigue"), ("recovery_analysis", "recovery_status")),
+        (("comment je vais", "comment vais-je", "comment est ma forme", "comment va ma forme", "ou j en suis", "bilan de forme", "suis-je en forme"), ("recovery_analysis", "recovery_status", "weekly_plan_context")),
         (("tendance", "evolution", "progression", "compare", "comparaison", "progres"), ("training_trends",)),
         (("activite du", "activite", "detail de", "detaille ma seance", "ma seance du", "seance du", "derniere activite", "activite la plus recente", "derniere sortie", "ma sortie du", "intervalles", "fractionne realise"), ("activity_detail",)),
         (("course", "ultra", "trail", "dossard", "competition", "calendrier des courses", "objectif de course"), ("race_calendar",)),

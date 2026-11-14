@@ -57,6 +57,16 @@ Les tests de prompt vérifient la présence des règles de provenance, de compar
 Ces instructions réduisent les dérives de rédaction mais ne constituent pas une preuve formelle que chaque phrase générée est factuellement correcte. Les tests de conversations réelles et l'évaluation humaine restent nécessaires avant généralisation.
 
 
+## Scénarios de décision sportive
+
+Le corpus d'évaluation comprend désormais des situations concrètes de recommandation :
+- récupération défavorable avant une séance intense planifiée ;
+- Readiness favorable en présence d'une douleur, avec priorité aux restrictions ;
+- charge récente importante avant une sortie longue planifiée ;
+- adaptation d'une séance à l'approche d'un objectif de trail.
+
+Chaque scénario documente les outils attendus, l'action de coaching visée et les comportements interdits. Les tests Python vérifient le contexte collecté et le contrat de ces scénarios ; ils ne prétendent pas valider à eux seuls la décision finale générée par le modèle. Une évaluation comportementale avec le modèle local et une validation fonctionnelle sur VM restent nécessaires.
+
 ## Décisions de séance fondées sur la charge récente
 
 - Toute recommandation de séance collecte désormais une fenêtre déterministe de 7 jours via `training_load`, en plus de l'historique, de la récupération, des contraintes, du planning et du profil.

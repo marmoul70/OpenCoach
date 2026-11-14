@@ -284,6 +284,15 @@ def _preferences_response(
     )
 
 
+def _coach_response_token_budget(response_style: str) -> int:
+    """Borne la génération selon le niveau de détail demandé."""
+    return {
+        "concise": 256,
+        "analytical": 448,
+        "detailed": 768,
+    }.get(response_style, 256)
+
+
 def _coach_system_prompt(preferences: AICoachPreferencesPayload) -> str:
     personality = {
         "balanced": "Adopte une posture équilibrée et objective.",
@@ -849,10 +858,11 @@ async def ask_local_ai_with_athlete_context(
             *conversation_messages,
         ]
 
+    response_style = coach_preferences.response_style if tool_results else "concise"
     request = AIChatRequest(
         messages=messages,
         temperature=0.2,
-        num_predict=768,
+        num_predict=_coach_response_token_budget(response_style),
         trace_id=trace_id,
     )
 

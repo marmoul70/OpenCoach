@@ -36,7 +36,7 @@ Le style par défaut est concis : 3 à 6 phrases courtes (environ 40 à 90 mots)
 - Les durées de sommeil sont transmises au modèle uniquement sous forme de chaînes déjà formatées en heures et minutes par Python ; les secondes brutes ne sont plus exposées.
 - Le ratio ATL/CTL est explicitement descriptif ; il ne constitue pas une classification de charge ou un seuil de risque.
 - La couverture du planning, le nombre de séances et la couverture des charges par séance sont trois notions distinctes. Les nombres de séances planifiées et réalisées ne permettent pas de déduire un taux d'adhérence sans association explicite entre elles.
-- La rédaction privilégie une réponse conversationnelle de 80 à 180 mots, sans liste de métriques brutes.
+- La rédaction privilégie une réponse conversationnelle et hiérarchisée, sans liste de métriques brutes. Le style par défaut est court (3 à 6 phrases, environ 40 à 90 mots) ; un style détaillé ne doit pas réintroduire un inventaire de données.
 - Une analyse de charge avec période explicite expose également le cadre hebdomadaire, les données de récupération et la disponibilité personnelle afin de contextualiser le conseil.
 - L'outil de charge expose le volume réellement effectué (durée, distance, dénivelé) avec couverture par métrique ; les totaux incomplets restent explicitement partiels.
 
@@ -55,3 +55,11 @@ Les tests de prompt vérifient la présence des règles de provenance, de compar
 ## Limites
 
 Ces instructions réduisent les dérives de rédaction mais ne constituent pas une preuve formelle que chaque phrase générée est factuellement correcte. Les tests de conversations réelles et l'évaluation humaine restent nécessaires avant généralisation.
+
+
+## Décisions de coaching avec contraintes physiques
+
+- Une demande de séance accompagnée d'une douleur, blessure, maladie ou indisponibilité consulte toujours les contraintes enregistrées en premier.
+- Si l'athlète demande une recommandation malgré cette contrainte, le plan collecte ensuite l'historique récent, la récupération, le Readiness, la prochaine séance planifiée, le cadre hebdomadaire et le profil sportif.
+- La contrainte enregistrée reste prioritaire : le modèle ne peut pas recommander une séance interdite par les règles OpenCoach. L'absence de contrainte enregistrée ne vaut pas autorisation médicale.
+- Le conseil doit distinguer ce qui est faisable, ce qui est à éviter et ce qui nécessite un avis médical ; il ne pose aucun diagnostic et ne transforme pas une douleur en simple indicateur de fatigue.

@@ -251,3 +251,12 @@ def test_weekly_bilan_routes_to_history_and_week_context():
 def test_general_coach_overview_routes_to_recovery_and_weekly_context():
     selected = select_coach_tools("Comment je vais en ce moment ?")
     assert {"recovery_analysis", "recovery_status", "weekly_plan_context", "training_history", "athlete_training_profile"} <= selected
+
+
+def test_training_recommendation_routes_all_required_athlete_context():
+    selected = select_coach_tools("Quelle séance me conseilles-tu aujourd'hui ?")
+    assert {
+        "active_constraints", "recovery_analysis", "recovery_status",
+        "athlete_training_profile", "weekly_plan_context",
+        "next_planned_session", "training_history",
+    } <= selected

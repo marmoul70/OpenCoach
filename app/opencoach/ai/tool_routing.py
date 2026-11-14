@@ -164,9 +164,13 @@ def select_coach_tools(
     # Les contraintes sont toujours ajoutées dès qu'une recommandation ou une
     # décision d'entraînement est demandée, même si la douleur est implicite.
     recommendation_terms = ("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter")
-    if any(term in context for term in recommendation_terms):
+    recommendation_request = any(term in context for term in recommendation_terms)
+    if recommendation_request:
         selected.add("active_constraints")
-        selected.update(("recovery_analysis", "recovery_status"))
+        selected.update((
+            "recovery_analysis", "recovery_status", "athlete_training_profile",
+            "weekly_plan_context", "next_planned_session", "training_history",
+        ))
 
     # Une analyse de charge utile au coaching doit disposer du cadre
     # hebdomadaire et des signaux de récupération. Ces outils n'ont pas de
@@ -191,6 +195,14 @@ def select_coach_tools(
         # explicitée par le plan Python, même si l'utilisateur n'a pas
         # demandé une durée pour cette question ouverte.
         filtered = frozenset({*filtered, "training_history", "athlete_training_profile"})
+    if recommendation_request:
+        # Une recommandation doit être contextualisée par l'historique récent,
+        # le profil, les contraintes, la récupération et la séance planifiée.
+        filtered = frozenset({
+            *filtered, "training_history", "athlete_training_profile",
+            "weekly_plan_context", "next_planned_session",
+            "recovery_analysis", "recovery_status", "active_constraints",
+        })
     if "training_load" in filtered:
         filtered = frozenset({
             *filtered,

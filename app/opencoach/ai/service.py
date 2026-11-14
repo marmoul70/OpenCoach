@@ -72,7 +72,17 @@ class AIService:
                 result = await self.client.chat(
                     request.model_copy(update={"messages": messages, "tools": definitions})
                 )
+                # Une génération interrompue ne doit jamais déclencher un outil,
+                # même si Ollama a déjà émis un appel partiel dans sa réponse.
+                if not result.done or result.done_reason == "length":
+                    raise AIOrchestrationError(
+                        "Le moteur IA a interrompu la génération avant sa fin."
+                    )
                 if not result.tool_calls:
+                    if not result.content.strip():
+                        raise AIOrchestrationError(
+                            "Le moteur IA a retourné une réponse finale vide."
+                        )
                     return result
                 if len(result.tool_calls) > self.MAX_TOOL_CALLS_PER_ROUND:
                     raise AIOrchestrationError("Le modèle a dépassé le nombre d'appels d'outils autorisé.")

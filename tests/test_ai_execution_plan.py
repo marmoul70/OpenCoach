@@ -448,3 +448,21 @@ def test_general_coach_overview_combines_recovery_and_training_context():
         ("weekly_plan_context", {}),
         ("athlete_training_profile", {}),
     ]
+
+
+def test_training_recommendation_uses_recent_history_profile_and_schedule():
+    plan = build_coach_execution_plan(
+        "Quelle séance me conseilles-tu aujourd'hui ?",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.clarification is None
+    calls = [(call.name, call.arguments) for call in plan.calls]
+    assert calls == [
+        ("training_history", {"nb_days": 7}),
+        ("recovery_analysis", {}),
+        ("recovery_status", {}),
+        ("active_constraints", {}),
+        ("next_planned_session", {}),
+        ("weekly_plan_context", {}),
+        ("athlete_training_profile", {}),
+    ]

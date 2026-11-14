@@ -573,3 +573,27 @@ def test_race_goal_is_preserved_in_session_recommendation_context():
     assert "next_planned_session" in names
     assert "athlete_training_profile" in names
     assert "race_preparation_analysis" not in names
+
+def test_injury_recommendation_preserves_explicit_load_analysis_period():
+    plan = build_coach_execution_plan(
+        "J'ai mal au tendon, quelle séance me conseilles-tu et analyse ma charge sur 14 jours ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.calls[0].name == "active_constraints"
+    load_calls = [
+        (call.name, call.arguments)
+        for call in plan.calls
+        if call.name == "training_load"
+    ]
+    assert load_calls == [("training_load", {"nb_days": 14})]
+
+
+def test_injury_recommendation_does_not_silently_default_explicit_load_period():
+    plan = build_coach_execution_plan(
+        "J'ai mal au tendon, quelle séance me conseilles-tu et analyse aussi ma charge ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.calls == ()
+    assert "combien de jours" in plan.clarification

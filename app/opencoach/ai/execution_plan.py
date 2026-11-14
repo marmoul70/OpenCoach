@@ -303,11 +303,20 @@ def build_coach_execution_plan(
                 calls.append(PlannedToolCall("activity_detail", {"activity_date": activity_date.isoformat()}))
 
     if "training_history" in selected:
-        if not periods:
+        overview_history = any(
+            term in normalized
+            for term in (
+                "comment je vais", "comment vais-je", "comment est ma forme",
+                "comment va ma forme", "ou j en suis", "bilan de forme",
+                "suis-je en forme",
+            )
+        )
+        history_period = 7 if overview_history and not periods else (periods[-1] if periods else None)
+        if history_period is None:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
-        if not 1 <= periods[-1] <= 365:
+        if not 1 <= history_period <= 365:
             return CoachExecutionPlan(clarification="L'historique doit porter sur une période de 1 à 365 jours. Quelle période valide souhaites-tu ?")
-        calls.append(PlannedToolCall("training_history", {"nb_days": periods[-1]}))
+        calls.append(PlannedToolCall("training_history", {"nb_days": history_period}))
 
     # Une comparaison utilise training_trends, qui calcule déjà les métriques
     # des deux fenêtres. Ne lance pas en parallèle training_load : cela ajoute

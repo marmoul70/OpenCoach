@@ -57,6 +57,14 @@ Les tests de prompt vérifient la présence des règles de provenance, de compar
 Ces instructions réduisent les dérives de rédaction mais ne constituent pas une preuve formelle que chaque phrase générée est factuellement correcte. Les tests de conversations réelles et l'évaluation humaine restent nécessaires avant généralisation.
 
 
+## Décisions de séance fondées sur la charge récente
+
+- Toute recommandation de séance collecte désormais une fenêtre déterministe de 7 jours via `training_load`, en plus de l'historique, de la récupération, des contraintes, du planning et du profil.
+- Cette fenêtre sert à confronter le travail réellement observé au cadre de charge OpenCoach ; elle ne remplace pas la fenêtre d'historique ni les fenêtres propres aux outils de récupération.
+- Le modèle doit distinguer charge planifiée, charge réelle, couverture complète/partielle et absence de données. Il ne peut pas assimiler une charge indisponible à une charge nulle.
+- La sortie attendue d'une recommandation est une décision opérationnelle explicite : maintenir, alléger, remplacer par une activité autorisée ou récupérer. Les règles ne reposent pas sur des seuils physiologiques inventés.
+- Une Readiness favorable ne lève jamais une restriction ou une douleur ; une mesure périmée ne peut pas être présentée comme l'état actuel. En cas de contradiction, la recommandation reste prudente et peut demander le ressenti actuel.
+
 ## Décisions de coaching avec contraintes physiques
 
 - Une demande de séance accompagnée d'une douleur, blessure, maladie ou indisponibilité consulte toujours les contraintes enregistrées en premier.

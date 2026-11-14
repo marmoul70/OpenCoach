@@ -213,9 +213,10 @@ def select_coach_tools(
         # Une recommandation doit être contextualisée par l'historique récent,
         # le profil, les contraintes, la récupération et la séance planifiée.
         filtered = frozenset({
-            *filtered, "training_history", "athlete_training_profile",
-            "weekly_plan_context", "next_planned_session",
-            "recovery_analysis", "recovery_status", "active_constraints",
+            *filtered, "training_history", "training_load",
+            "athlete_training_profile", "weekly_plan_context",
+            "next_planned_session", "recovery_analysis",
+            "recovery_status", "active_constraints",
         })
     if "training_load" in filtered:
         filtered = frozenset({

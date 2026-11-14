@@ -479,6 +479,16 @@ def test_general_coach_overview_combines_recovery_and_training_context():
     ]
 
 
+def test_combined_recommendation_and_explicit_load_request_does_not_duplicate_load_tool():
+    plan = build_coach_execution_plan(
+        "Quelle séance me conseilles-tu et analyse ma charge sur les 14 derniers jours ?",
+        reference_date=REFERENCE_DATE,
+    )
+    calls = [(call.name, call.arguments) for call in plan.calls]
+    load_calls = [call for call in calls if call[0] == "training_load"]
+    assert load_calls == [("training_load", {"nb_days": 14})]
+
+
 def test_training_recommendation_uses_recent_history_profile_and_schedule():
     plan = build_coach_execution_plan(
         "Quelle séance me conseilles-tu aujourd'hui ?",

@@ -345,10 +345,12 @@ def build_coach_execution_plan(
         if not 1 <= history_period <= 365:
             return CoachExecutionPlan(clarification="L'historique doit porter sur une période de 1 à 365 jours. Quelle période valide souhaites-tu ?")
         calls.append(PlannedToolCall("training_history", {"nb_days": history_period}))
-        if recommendation_history:
+        if recommendation_history and "training_load" not in selected:
             # Une décision de séance doit aussi connaître la charge réellement
             # observée sur une fenêtre récente fixe, distincte de l'historique
             # descriptif. Sept jours sont préparés par Python, sans choix du LLM.
+            # Si l'utilisateur demande aussi une analyse de charge explicite,
+            # l'appel borné à sa période remplit déjà ce besoin.
             calls.append(PlannedToolCall("training_load", {"nb_days": 7}))
 
     # Une comparaison utilise training_trends, qui calcule déjà les métriques

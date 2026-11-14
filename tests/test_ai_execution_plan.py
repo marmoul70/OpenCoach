@@ -431,7 +431,10 @@ def test_weekly_bilan_uses_a_seven_day_history_and_week_context():
     assert plan.clarification is None
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("training_history", {"nb_days": 7}),
+        ("recovery_analysis", {}),
+        ("recovery_status", {}),
         ("weekly_plan_context", {}),
+        ("athlete_training_profile", {}),
     ]
 
 

@@ -60,6 +60,8 @@ def test_empty_period_reports_metrics_as_unavailable_not_zero():
         assert metric["coverage"]["status"] == "no_sessions"
 
     load = result["metrics"]["training_load"]
+    assert load["measured"] is None
+    assert load["estimated"] is None
     assert load["total"] is None
     assert load["coverage"]["status"] == "no_sessions"
 

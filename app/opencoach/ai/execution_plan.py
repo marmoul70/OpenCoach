@@ -311,7 +311,14 @@ def build_coach_execution_plan(
                 "suis-je en forme",
             )
         )
-        history_period = 7 if overview_history and not periods else (periods[-1] if periods else None)
+        recommendation_history = any(
+            term in normalized
+            for term in ("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter")
+        )
+        history_period = (
+            7 if (overview_history or recommendation_history) and not periods
+            else (periods[-1] if periods else None)
+        )
         if history_period is None:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
         if not 1 <= history_period <= 365:

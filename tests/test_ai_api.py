@@ -474,6 +474,8 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "ne remplacent jamais le volume, les séances et la charge" in prompt
     assert "annonce ces fenêtres séparément" in prompt
     assert "« current » est la mesure actuelle et « baseline » est la référence personnelle historique" in prompt
+    assert "Si la fraîcheur vaut `stale`, ne présente jamais le score ou les métriques comme l'état actuel du jour" in prompt
+    assert "ne recommande pas une séance sur cette seule base" in prompt
     assert "jamais des valeurs « attendues » ou des objectifs" in prompt
     assert "pas la couverture du planning" in prompt
     assert "Pour une analyse simple de charge récente" in prompt

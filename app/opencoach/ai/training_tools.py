@@ -66,8 +66,9 @@ def build_training_history_tool(
         )
 
         def metric_value(value: float | int, available: int):
+            # Une période sans séance ne constitue pas une mesure égale à zéro.
             # Une somme partielle ne doit jamais être présentée comme un total fiable.
-            if sessions_count and available < sessions_count:
+            if sessions_count == 0 or available < sessions_count:
                 return None
             return value
 

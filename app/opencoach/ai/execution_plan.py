@@ -269,7 +269,26 @@ def build_coach_execution_plan(
             else {}
         )
         safety_calls = [PlannedToolCall("active_constraints", safety_arguments)]
-        if "recovery_status" in selected:
+        recommendation_request = any(
+            term in normalized
+            for term in (
+                "quelle seance", "quel entrainement", "que faire",
+                "conseille", "recommande", "adapter", "ajuste",
+            )
+        )
+        if recommendation_request:
+            # La restriction reste toujours le premier résultat consulté.
+            # Une demande de séance avec douleur exige ensuite le contexte complet
+            # pour adapter le conseil, pas seulement un statut Readiness isolé.
+            safety_calls.extend((
+                PlannedToolCall("training_history", {"nb_days": 7}),
+                PlannedToolCall("recovery_analysis", {}),
+                PlannedToolCall("recovery_status", safety_arguments),
+                PlannedToolCall("next_planned_session", {}),
+                PlannedToolCall("weekly_plan_context", {}),
+                PlannedToolCall("athlete_training_profile", {}),
+            ))
+        elif "recovery_status" in selected:
             safety_calls.append(PlannedToolCall("recovery_status", safety_arguments))
         return CoachExecutionPlan(tuple(safety_calls))
 

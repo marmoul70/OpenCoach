@@ -316,6 +316,13 @@ def build_coach_execution_plan(
         return CoachExecutionPlan((PlannedToolCall("propose_profile_data", proposal or {}),))
 
     periods = extract_explicit_periods(conversation_users, assistant_history)
+    recommendation_history = any(
+        term in normalized
+        for term in (
+            "que faire", "quelle seance", "quel entrainement",
+            "conseille", "recommande", "ajuste", "adapter",
+        )
+    )
 
     if "activity_detail" in selected:
         activity_id = re.search(
@@ -347,10 +354,6 @@ def build_coach_execution_plan(
                 "bilan de la semaine", "bilan hebdomadaire",
             )
         )
-        recommendation_history = any(
-            term in normalized
-            for term in ("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter")
-        )
         history_period = (
             7 if (overview_history or recommendation_history) and not periods
             else (periods[-1] if periods else None)
@@ -372,7 +375,13 @@ def build_coach_execution_plan(
     # des deux fenêtres. Ne lance pas en parallèle training_load : cela ajoute
     # des données de charge/planning/récupération hors comparaison et brouille
     # la synthèse demandée.
-    if "training_load" in selected and not trend_comparison_requested:
+    if (
+        "training_load" in selected
+        and not trend_comparison_requested
+        and not (recommendation_history and not periods)
+    ):
+        # Une recommandation sans période explicite utilise la fenêtre de 7 jours
+        # ajoutée plus haut ; ne pas redemander une durée pour cette même charge.
         if not periods:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?")
         load_period = periods[-1]

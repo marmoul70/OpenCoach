@@ -70,6 +70,7 @@ Chaque scénario documente les outils attendus, l'action de coaching visée et l
 ## Décisions de séance fondées sur la charge récente
 
 - Toute recommandation de séance collecte désormais une fenêtre déterministe de 7 jours via `training_load`, en plus de l'historique, de la récupération, des contraintes, du planning et du profil.
+- Cette fenêtre de 7 jours est un contexte interne standard de recommandation : elle ne déclenche pas une demande de période à l'utilisateur. Une durée est demandée uniquement si l'utilisateur sollicite explicitement une analyse de charge sans la préciser.
 - Si une demande avec douleur inclut aussi une analyse de charge sur une durée explicite, cette durée est conservée ; si elle manque ou sort de la plage autorisée, le coach demande une précision au lieu de substituer silencieusement 7 jours.
 - Cette fenêtre sert à confronter le travail réellement observé au cadre de charge OpenCoach ; elle ne remplace pas la fenêtre d'historique ni les fenêtres propres aux outils de récupération.
 - Le modèle doit distinguer charge planifiée, charge réelle, couverture complète/partielle et absence de données. Il ne peut pas assimiler une charge indisponible à une charge nulle.

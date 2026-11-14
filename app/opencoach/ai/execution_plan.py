@@ -308,7 +308,11 @@ def build_coach_execution_plan(
             for term in (
                 "comment je vais", "comment vais-je", "comment est ma forme",
                 "comment va ma forme", "ou j en suis", "bilan de forme",
-                "suis-je en forme", "bilan de ma semaine",\n                "bilan de la semaine", "bilan hebdomadaire",\n            )\n        )\n        recommendation_history = any(
+                "suis-je en forme", "bilan de ma semaine",
+                "bilan de la semaine", "bilan hebdomadaire",
+            )
+        )
+        recommendation_history = any(
             term in normalized
             for term in ("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter")
         )

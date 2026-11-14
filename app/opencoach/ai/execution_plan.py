@@ -282,6 +282,7 @@ def build_coach_execution_plan(
             # pour adapter le conseil, pas seulement un statut Readiness isolé.
             safety_calls.extend((
                 PlannedToolCall("training_history", {"nb_days": 7}),
+                PlannedToolCall("training_load", {"nb_days": 7}),
                 PlannedToolCall("recovery_analysis", {}),
                 PlannedToolCall("recovery_status", safety_arguments),
                 PlannedToolCall("next_planned_session", {}),
@@ -344,6 +345,11 @@ def build_coach_execution_plan(
         if not 1 <= history_period <= 365:
             return CoachExecutionPlan(clarification="L'historique doit porter sur une période de 1 à 365 jours. Quelle période valide souhaites-tu ?")
         calls.append(PlannedToolCall("training_history", {"nb_days": history_period}))
+        if recommendation_history:
+            # Une décision de séance doit aussi connaître la charge réellement
+            # observée sur une fenêtre récente fixe, distincte de l'historique
+            # descriptif. Sept jours sont préparés par Python, sans choix du LLM.
+            calls.append(PlannedToolCall("training_load", {"nb_days": 7}))
 
     # Une comparaison utilise training_trends, qui calcule déjà les métriques
     # des deux fenêtres. Ne lance pas en parallèle training_load : cela ajoute

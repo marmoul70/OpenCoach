@@ -188,17 +188,24 @@ def select_coach_tools(
             "suis-je en forme",
         )
     )
-    if coach_overview_request:
-        selected.update(("training_history", "athlete_training_profile"))
+    weekly_review_request = any(
+        marker in context
+        for marker in ("bilan de ma semaine", "bilan de la semaine", "bilan hebdomadaire")
+    )
+    if coach_overview_request or weekly_review_request:
+        selected.update((
+            "training_history", "athlete_training_profile",
+            "recovery_analysis", "recovery_status", "weekly_plan_context",
+        ))
 
     filtered = _filter_period_tools(
         selected, question, history, assistant_history, evidence_history
     )
-    if coach_overview_request:
-        # Le bilan général applique une fenêtre standard de 7 jours,
+    if coach_overview_request or weekly_review_request:
+        # Le bilan général ou hebdomadaire applique une fenêtre standard de 7 jours,
         # explicitée par le plan Python, même si l'utilisateur n'a pas
         # demandé une durée pour cette question ouverte.
-        filtered = frozenset({*filtered, "training_history", "athlete_training_profile"})
+        filtered = frozenset({\n            *filtered, "training_history", "athlete_training_profile",\n            "recovery_analysis", "recovery_status", "weekly_plan_context",\n        })
     if recommendation_request:
         # Une recommandation doit être contextualisée par l'historique récent,
         # le profil, les contraintes, la récupération et la séance planifiée.

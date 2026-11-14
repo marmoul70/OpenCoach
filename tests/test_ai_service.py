@@ -3,6 +3,7 @@
 import asyncio
 
 import pytest
+from pydantic import BaseModel
 
 from opencoach.ai.config import AISettings
 from opencoach.ai.schemas import AIChatRequest, AIChatResult, AIMessage

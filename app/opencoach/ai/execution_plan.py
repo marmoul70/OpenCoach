@@ -360,7 +360,8 @@ def build_coach_execution_plan(
             for term in (
                 "comment je vais", "comment vais-je", "comment est ma forme",
                 "comment va ma forme", "ou j en suis", "bilan de forme",
-                "suis-je en forme",
+                "suis-je en forme", "bilan de ma semaine",
+                "bilan de la semaine", "bilan hebdomadaire",
             )
         )
         status_request = any(term in normalized for term in ("etat de recuperation", "readiness", "disponibilite aujourd", "suis-je pret"))

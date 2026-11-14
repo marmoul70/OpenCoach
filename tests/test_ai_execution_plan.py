@@ -307,6 +307,7 @@ def test_injury_for_tomorrow_keeps_full_coaching_context_and_requested_safety_da
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("active_constraints", {"target_date": "2026-11-11"}),
         ("training_history", {"nb_days": 7}),
+        ("training_load", {"nb_days": 7}),
         ("recovery_analysis", {}),
         ("recovery_status", {"target_date": "2026-11-11"}),
         ("next_planned_session", {}),
@@ -487,6 +488,7 @@ def test_training_recommendation_uses_recent_history_profile_and_schedule():
     calls = [(call.name, call.arguments) for call in plan.calls]
     assert calls == [
         ("training_history", {"nb_days": 7}),
+        ("training_load", {"nb_days": 7}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
         ("active_constraints", {}),

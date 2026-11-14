@@ -208,3 +208,72 @@ def test_tool_orchestration_rejects_period_not_matching_user_request():
     result = asyncio.run(service.chat_with_tools(request, registry, user_messages=["Analyse mon historique sur 7 jours."]))
     assert "Tu as indiqué 7 jours" in result.content
     assert executions == []
+
+
+def test_truncated_tool_call_is_rejected_before_business_handler_execution():
+    from opencoach.ai.schemas import AIToolCall
+    from opencoach.ai.service import AIOrchestrationError
+    from opencoach.ai.tool_engine import AITool, AIToolRegistry
+
+    executions = []
+
+    class TruncatedToolCallingClient:
+        async def chat(self, request):
+            return AIChatResult(
+                model="qwen2.5:3b",
+                content="",
+                tool_calls=[
+                    AIToolCall(name="write_data", arguments={"value": 3})
+                ],
+                done=True,
+                done_reason="length",
+            )
+
+    registry = AIToolRegistry()
+    registry.register(AITool(
+        name="write_data",
+        description="Écriture de test.",
+        arguments_model=EchoArgsForTruncationTest,
+        handler=lambda args: executions.append(args.value) or {"saved": True},
+    ))
+    service = AIService(
+        AISettings(enabled=True),
+        client=TruncatedToolCallingClient(),
+    )
+    request = AIChatRequest(
+        messages=[AIMessage(role="user", content="Enregistre la valeur 3.")]
+    )
+
+    with pytest.raises(AIOrchestrationError, match="interrompu"):
+        asyncio.run(service.chat_with_tools(request, registry))
+
+    assert executions == []
+    assert registry.execution_results == ()
+
+
+def test_truncated_final_answer_is_rejected_by_tool_orchestrator():
+    from opencoach.ai.service import AIOrchestrationError
+
+    class TruncatedFinalClient:
+        async def chat(self, request):
+            return AIChatResult(
+                model="qwen2.5:3b",
+                content="Analyse partielle",
+                done=True,
+                done_reason="length",
+            )
+
+    service = AIService(
+        AISettings(enabled=True),
+        client=TruncatedFinalClient(),
+    )
+    request = AIChatRequest(
+        messages=[AIMessage(role="user", content="Fais le bilan.")]
+    )
+
+    with pytest.raises(AIOrchestrationError, match="interrompu"):
+        asyncio.run(service.chat_with_tools(request, AIToolRegistry()))
+
+
+class EchoArgsForTruncationTest(BaseModel):
+    value: int

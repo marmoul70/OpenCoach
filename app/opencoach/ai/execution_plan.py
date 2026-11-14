@@ -149,7 +149,7 @@ def build_coach_execution_plan(
         "zones cardiaques", "zone cardiaque", "etat de forme", "fatigue", "stress",
         "seuil", "poids", "je pese", "equipement", "chaussures", "mon poids",
         "comment je vais", "comment vais-je", "comment est ma forme", "comment va ma forme",
-        "ou j en suis", "bilan de forme", "suis-je en forme",
+        "ou j en suis", "bilan de forme", "suis-je en forme", "bilan de ma semaine", "bilan de la semaine", "bilan hebdomadaire",
     )
     last_assistant = _normalize(assistant_history[-1]) if assistant_history else ""
     clarification_follow_up = (

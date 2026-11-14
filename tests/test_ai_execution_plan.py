@@ -433,3 +433,16 @@ def test_weekly_bilan_uses_a_seven_day_history_and_week_context():
         ("training_history", {"nb_days": 7}),
         ("weekly_plan_context", {}),
     ]
+
+
+def test_general_coach_overview_combines_recovery_and_training_context():
+    plan = build_coach_execution_plan(
+        "Comment je vais en ce moment ?",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("recovery_analysis", {}),
+        ("recovery_status", {}),
+        ("weekly_plan_context", {}),
+    ]

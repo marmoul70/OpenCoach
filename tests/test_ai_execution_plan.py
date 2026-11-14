@@ -442,7 +442,9 @@ def test_general_coach_overview_combines_recovery_and_training_context():
     )
     assert plan.clarification is None
     assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("training_history", {"nb_days": 7}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
         ("weekly_plan_context", {}),
+        ("athlete_training_profile", {}),
     ]

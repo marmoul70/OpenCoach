@@ -148,6 +148,8 @@ def build_coach_execution_plan(
         "indisponible", "contrainte", "profil", "vma", "fc max", "frequence cardiaque",
         "zones cardiaques", "zone cardiaque", "etat de forme", "fatigue", "stress",
         "seuil", "poids", "je pese", "equipement", "chaussures", "mon poids",
+        "comment je vais", "comment vais-je", "comment est ma forme", "comment va ma forme",
+        "ou j en suis", "bilan de forme", "suis-je en forme",
     )
     last_assistant = _normalize(assistant_history[-1]) if assistant_history else ""
     clarification_follow_up = (
@@ -336,8 +338,21 @@ def build_coach_execution_plan(
     elif not trend_comparison_requested and (
         "recovery_status" in selected or "recovery_analysis" in selected
     ):
+        coach_overview_request = any(
+            term in normalized
+            for term in (
+                "comment je vais", "comment vais-je", "comment est ma forme",
+                "comment va ma forme", "ou j en suis", "bilan de forme",
+                "suis-je en forme",
+            )
+        )
         status_request = any(term in normalized for term in ("etat de recuperation", "readiness", "disponibilite aujourd", "suis-je pret"))
-        if status_request and "recovery_status" in selected:
+        if coach_overview_request:
+            if "recovery_analysis" in selected:
+                calls.append(PlannedToolCall("recovery_analysis", {}))
+            if "recovery_status" in selected:
+                calls.append(PlannedToolCall("recovery_status", {}))
+        elif status_request and "recovery_status" in selected:
             calls.append(PlannedToolCall("recovery_status", {}))
         elif "recovery_analysis" in selected:
             calls.append(PlannedToolCall("recovery_analysis", {}))

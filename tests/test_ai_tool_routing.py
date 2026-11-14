@@ -250,4 +250,4 @@ def test_weekly_bilan_routes_to_history_and_week_context():
 
 def test_general_coach_overview_routes_to_recovery_and_weekly_context():
     selected = select_coach_tools("Comment je vais en ce moment ?")
-    assert {"recovery_analysis", "recovery_status", "weekly_plan_context"} <= selected
+    assert {"recovery_analysis", "recovery_status", "weekly_plan_context", "training_history", "athlete_training_profile"} <= selected

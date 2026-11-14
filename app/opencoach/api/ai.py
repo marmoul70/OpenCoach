@@ -857,7 +857,6 @@ async def ask_local_ai_with_athlete_context(
             ) from exc
         # Les calculs Python ont déjà été exécutés : une panne du LLM ne doit
         # pas masquer les données ni faire échouer toute la consultation.
-        compact_results = _serialize_coach_tool_results(tool_results)
         answer = (
             "J'ai bien récupéré les éléments disponibles dans ton dossier OpenCoach, "
             "mais mon moteur de rédaction local est momentanément indisponible. "

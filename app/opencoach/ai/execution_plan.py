@@ -148,6 +148,8 @@ def build_coach_execution_plan(
         "indisponible", "contrainte", "profil", "vma", "fc max", "frequence cardiaque",
         "zones cardiaques", "zone cardiaque", "etat de forme", "fatigue", "stress",
         "seuil", "poids", "je pese", "equipement", "chaussures", "mon poids",
+        "comment je vais", "comment vais-je", "comment est ma forme", "comment va ma forme",
+        "ou j en suis", "bilan de forme", "suis-je en forme",
     )
     last_assistant = _normalize(assistant_history[-1]) if assistant_history else ""
     clarification_follow_up = (
@@ -301,11 +303,27 @@ def build_coach_execution_plan(
                 calls.append(PlannedToolCall("activity_detail", {"activity_date": activity_date.isoformat()}))
 
     if "training_history" in selected:
-        if not periods:
+        overview_history = any(
+            term in normalized
+            for term in (
+                "comment je vais", "comment vais-je", "comment est ma forme",
+                "comment va ma forme", "ou j en suis", "bilan de forme",
+                "suis-je en forme",
+            )
+        )
+        recommendation_history = any(
+            term in normalized
+            for term in ("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter")
+        )
+        history_period = (
+            7 if (overview_history or recommendation_history) and not periods
+            else (periods[-1] if periods else None)
+        )
+        if history_period is None:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
-        if not 1 <= periods[-1] <= 365:
+        if not 1 <= history_period <= 365:
             return CoachExecutionPlan(clarification="L'historique doit porter sur une période de 1 à 365 jours. Quelle période valide souhaites-tu ?")
-        calls.append(PlannedToolCall("training_history", {"nb_days": periods[-1]}))
+        calls.append(PlannedToolCall("training_history", {"nb_days": history_period}))
 
     # Une comparaison utilise training_trends, qui calcule déjà les métriques
     # des deux fenêtres. Ne lance pas en parallèle training_load : cela ajoute
@@ -336,15 +354,34 @@ def build_coach_execution_plan(
     elif not trend_comparison_requested and (
         "recovery_status" in selected or "recovery_analysis" in selected
     ):
+        coach_overview_request = any(
+            term in normalized
+            for term in (
+                "comment je vais", "comment vais-je", "comment est ma forme",
+                "comment va ma forme", "ou j en suis", "bilan de forme",
+                "suis-je en forme",
+            )
+        )
         status_request = any(term in normalized for term in ("etat de recuperation", "readiness", "disponibilite aujourd", "suis-je pret"))
-        if status_request and "recovery_status" in selected:
+        recommendation_request = any(
+            term in normalized
+            for term in ("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter")
+        )
+        if coach_overview_request or recommendation_request:
+            # Un bilan ou un conseil de séance doit croiser la tendance de
+            # récupération et l'état Readiness courant, pas choisir l'un des deux.
+            if "recovery_analysis" in selected:
+                calls.append(PlannedToolCall("recovery_analysis", {}))
+            if "recovery_status" in selected:
+                calls.append(PlannedToolCall("recovery_status", {}))
+        elif status_request and "recovery_status" in selected:
             calls.append(PlannedToolCall("recovery_status", {}))
         elif "recovery_analysis" in selected:
             calls.append(PlannedToolCall("recovery_analysis", {}))
         elif "recovery_status" in selected:
             calls.append(PlannedToolCall("recovery_status", {}))
 
-    if "active_constraints" in selected and not calls:
+    if "active_constraints" in selected and not any(call.name == "active_constraints" for call in calls):
         calls.append(PlannedToolCall("active_constraints", {}))
 
     # L'identifiant peut provenir du tour utilisateur où la course a été

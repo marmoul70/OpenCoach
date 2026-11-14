@@ -127,6 +127,7 @@ class OllamaClient:
                 content=message.get("content", ""),
                 tool_calls=tool_calls,
                 done=data["done"],
+                done_reason=data.get("done_reason"),
                 total_duration=data.get("total_duration"),
                 load_duration=data.get("load_duration"),
                 prompt_eval_count=data.get("prompt_eval_count"),

@@ -66,8 +66,9 @@ def build_training_history_tool(
         )
 
         def metric_value(value: float | int, available: int):
+            # Une période sans séance ne constitue pas une mesure égale à zéro.
             # Une somme partielle ne doit jamais être présentée comme un total fiable.
-            if sessions_count and available < sessions_count:
+            if sessions_count == 0 or available < sessions_count:
                 return None
             return value
 
@@ -115,8 +116,9 @@ def build_training_history_tool(
                     "coverage": coverage(stats.elevation_data_count),
                 },
                 "training_load": {
-                    "measured": stats.measured_load,
-                    "estimated": stats.estimated_load,
+                    # Sans séance, 0 serait une fausse mesure : aucun effort n'a été observé.
+                    "measured": stats.measured_load if sessions_count else None,
+                    "estimated": stats.estimated_load if sessions_count else None,
                     "total": metric_value(stats.total_load, load_available),
                     "unit": "load_points",
                     "coverage": coverage(load_available),

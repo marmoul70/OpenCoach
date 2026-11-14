@@ -129,7 +129,12 @@ def select_coach_tools(
     groups: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
         (("historique", "seances realisees", "entrainements realises", "mes entrainements", "mes activites", "bilan de mes sorties", "mes sorties", "bilan de ma semaine", "bilan de la semaine", "bilan hebdomadaire"), ("training_history",)),
         (("charge", "mon atl", "ctl", "tsb", "mon volume", "volume d entrainement"), ("training_load",)),
+        # Les recommandations constituent une intention métier à part entière :
+        # les reconnaître avant le catalogue de repli évite d'exposer
+        # session_execution_review et de masquer l'historique sans période.
+        (("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter"), ("recovery_analysis", "recovery_status")),
         (("recuperation", "recup", "sommeil", "hrv", "variabilite", "fatigue", "fatiguee", "fatigue"), ("recovery_analysis", "recovery_status")),
+        (("comment je vais", "comment vais-je", "comment est ma forme", "comment va ma forme", "ou j en suis", "bilan de forme", "suis-je en forme"), ("recovery_analysis", "recovery_status", "weekly_plan_context")),
         (("tendance", "evolution", "progression", "compare", "comparaison", "progres"), ("training_trends",)),
         (("activite du", "activite", "detail de", "detaille ma seance", "ma seance du", "seance du", "derniere activite", "activite la plus recente", "derniere sortie", "ma sortie du", "intervalles", "fractionne realise"), ("activity_detail",)),
         (("course", "ultra", "trail", "dossard", "competition", "calendrier des courses", "objectif de course"), ("race_calendar",)),
@@ -163,17 +168,45 @@ def select_coach_tools(
     # Les contraintes sont toujours ajoutées dès qu'une recommandation ou une
     # décision d'entraînement est demandée, même si la douleur est implicite.
     recommendation_terms = ("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter")
-    if any(term in context for term in recommendation_terms):
+    recommendation_request = any(term in context for term in recommendation_terms)
+    if recommendation_request:
         selected.add("active_constraints")
-        selected.update(("recovery_analysis", "recovery_status"))
+        selected.update((
+            "recovery_analysis", "recovery_status", "athlete_training_profile",
+            "weekly_plan_context", "next_planned_session", "training_history",
+        ))
 
     # Une analyse de charge utile au coaching doit disposer du cadre
     # hebdomadaire et des signaux de récupération. Ces outils n'ont pas de
     # période obligatoire ; ils ne sont ajoutés que si training_load est
     # effectivement autorisé par une durée explicitement fournie.
+    coach_overview_request = any(
+        marker in context
+        for marker in (
+            "comment je vais", "comment vais-je", "comment est ma forme",
+            "comment va ma forme", "ou j en suis", "bilan de forme",
+            "suis-je en forme",
+        )
+    )
+    if coach_overview_request:
+        selected.update(("training_history", "athlete_training_profile"))
+
     filtered = _filter_period_tools(
         selected, question, history, assistant_history, evidence_history
     )
+    if coach_overview_request:
+        # Le bilan général applique une fenêtre standard de 7 jours,
+        # explicitée par le plan Python, même si l'utilisateur n'a pas
+        # demandé une durée pour cette question ouverte.
+        filtered = frozenset({*filtered, "training_history", "athlete_training_profile"})
+    if recommendation_request:
+        # Une recommandation doit être contextualisée par l'historique récent,
+        # le profil, les contraintes, la récupération et la séance planifiée.
+        filtered = frozenset({
+            *filtered, "training_history", "athlete_training_profile",
+            "weekly_plan_context", "next_planned_session",
+            "recovery_analysis", "recovery_status", "active_constraints",
+        })
     if "training_load" in filtered:
         filtered = frozenset({
             *filtered,

@@ -375,7 +375,7 @@ def build_coach_execution_plan(
         elif "recovery_status" in selected:
             calls.append(PlannedToolCall("recovery_status", {}))
 
-    if "active_constraints" in selected and not calls:
+    if "active_constraints" in selected and not any(call.name == "active_constraints" for call in calls):
         calls.append(PlannedToolCall("active_constraints", {}))
 
     # L'identifiant peut provenir du tour utilisateur où la course a été

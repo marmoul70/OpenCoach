@@ -516,9 +516,17 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
 
 
 def test_default_concise_coach_style_is_actionable():
-    from opencoach.api.ai import AICoachPreferencesPayload, _coach_system_prompt
+    from opencoach.api.ai import (
+        AICoachPreferencesPayload,
+        _coach_system_prompt,
+        _preferences_response,
+    )
 
-    prompt = _coach_system_prompt(AICoachPreferencesPayload())
+    preferences = AICoachPreferencesPayload()
+    assert preferences.response_style == "concise"
+    assert _preferences_response(None).response_style == "concise"
+
+    prompt = _coach_system_prompt(preferences)
 
     assert "réponses courtes et directement actionnables" in prompt
     assert "3 à 6 phrases courtes" in prompt

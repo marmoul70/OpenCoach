@@ -507,3 +507,69 @@ def test_training_recommendation_uses_recent_history_profile_and_schedule():
         ("weekly_plan_context", {}),
         ("athlete_training_profile", {}),
     ]
+
+def test_low_recovery_before_planned_intensity_collects_all_decision_context():
+    plan = build_coach_execution_plan(
+        "Ma récupération est mauvaise et j'ai une séance de fractionné prévue demain. Que me conseilles-tu ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    calls = [(call.name, call.arguments) for call in plan.calls]
+    assert calls == [
+        ("training_history", {"nb_days": 7}),
+        ("training_load", {"nb_days": 7}),
+        ("recovery_analysis", {}),
+        ("recovery_status", {}),
+        ("active_constraints", {}),
+        ("next_planned_session", {}),
+        ("weekly_plan_context", {}),
+        ("athlete_training_profile", {}),
+    ]
+
+
+def test_positive_readiness_never_skips_constraints_when_pain_is_reported():
+    plan = build_coach_execution_plan(
+        "Ma Readiness est excellente mais j'ai mal au genou. Quelle séance puis-je faire ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.calls[0].name == "active_constraints"
+    assert [call.name for call in plan.calls] == [
+        "active_constraints",
+        "training_history",
+        "training_load",
+        "recovery_analysis",
+        "recovery_status",
+        "next_planned_session",
+        "weekly_plan_context",
+        "athlete_training_profile",
+    ]
+
+
+def test_high_recent_load_and_tomorrows_long_session_are_both_in_context():
+    plan = build_coach_execution_plan(
+        "J'ai déjà beaucoup couru cette semaine et une sortie longue de 2 heures est prévue demain. Que me conseilles-tu ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    calls = [(call.name, call.arguments) for call in plan.calls]
+    assert ("training_history", {"nb_days": 7}) in calls
+    assert ("training_load", {"nb_days": 7}) in calls
+    assert ("next_planned_session", {}) in calls
+    assert ("weekly_plan_context", {}) in calls
+    assert "recovery_status" in [name for name, _ in calls]
+
+
+def test_race_goal_is_preserved_in_session_recommendation_context():
+    plan = build_coach_execution_plan(
+        "J'ai un trail dans 3 semaines. Comment adapter ma séance de demain pour cet objectif ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    names = [call.name for call in plan.calls]
+    assert "race_calendar" in names
+    assert "training_history" in names
+    assert "training_load" in names
+    assert "next_planned_session" in names
+    assert "athlete_training_profile" in names
+    assert "race_preparation_analysis" not in names

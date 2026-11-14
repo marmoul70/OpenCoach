@@ -226,3 +226,10 @@ Les endpoints de conversation et de rédaction du coach rejettent une générati
 dont `done_reason` vaut `length`, même si Ollama indique `done=true`.
 Une réponse vide ou dont la génération n'est pas terminée est également rejetée.
 Ce contrôle évite de présenter une synthèse tronquée comme une réponse complète.
+
+
+### Historique vide et couverture des métriques
+
+Une période sans séance enregistrée (`sessions.total = 0`) ne constitue pas une mesure à zéro. L'outil `training_history` retourne désormais `null` pour les métriques de durée, distance, dénivelé et charge, avec une couverture `no_sessions`. Cette règle évite qu'une absence d'activité soit interprétée comme un volume ou une charge mesurés à zéro.
+
+Lorsque des séances existent mais que certaines métriques manquent, la valeur complète reste masquée ; le sous-total observé n'est exposé que comme `observed_value`, accompagné de sa couverture `partial`. Une métrique complètement renseignée reste exploitable même si une autre métrique de la période est partielle.

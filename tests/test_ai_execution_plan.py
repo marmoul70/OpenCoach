@@ -299,14 +299,19 @@ def test_short_thanks_after_completed_answer_does_not_repeat_previous_tool():
 
 
 
-def test_injury_for_tomorrow_uses_the_requested_date_for_both_safety_tools():
+def test_injury_for_tomorrow_keeps_full_coaching_context_and_requested_safety_date():
     plan = build_coach_execution_plan(
         "J'ai mal au tendon, quelle séance puis-je faire demain ?",
         reference_date=REFERENCE_DATE,
     )
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("active_constraints", {"target_date": "2026-11-11"}),
+        ("training_history", {"nb_days": 7}),
+        ("recovery_analysis", {}),
         ("recovery_status", {"target_date": "2026-11-11"}),
+        ("next_planned_session", {}),
+        ("weekly_plan_context", {}),
+        ("athlete_training_profile", {}),
     ]
 
 

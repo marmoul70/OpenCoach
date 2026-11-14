@@ -114,6 +114,7 @@ def test_injury_advice_executes_constraints_before_recovery_status():
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("active_constraints", {}),
         ("training_history", {"nb_days": 7}),
+        ("training_load", {"nb_days": 7}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
         ("next_planned_session", {}),

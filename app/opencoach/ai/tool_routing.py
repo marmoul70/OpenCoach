@@ -129,6 +129,10 @@ def select_coach_tools(
     groups: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
         (("historique", "seances realisees", "entrainements realises", "mes entrainements", "mes activites", "bilan de mes sorties", "mes sorties", "bilan de ma semaine", "bilan de la semaine", "bilan hebdomadaire"), ("training_history",)),
         (("charge", "mon atl", "ctl", "tsb", "mon volume", "volume d entrainement"), ("training_load",)),
+        # Les recommandations constituent une intention métier à part entière :
+        # les reconnaître avant le catalogue de repli évite d'exposer
+        # session_execution_review et de masquer l'historique sans période.
+        (("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter"), ("recovery_analysis", "recovery_status")),
         (("recuperation", "recup", "sommeil", "hrv", "variabilite", "fatigue", "fatiguee", "fatigue"), ("recovery_analysis", "recovery_status")),
         (("comment je vais", "comment vais-je", "comment est ma forme", "comment va ma forme", "ou j en suis", "bilan de forme", "suis-je en forme"), ("recovery_analysis", "recovery_status", "weekly_plan_context")),
         (("tendance", "evolution", "progression", "compare", "comparaison", "progres"), ("training_trends",)),

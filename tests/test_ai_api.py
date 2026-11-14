@@ -495,7 +495,7 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "Python transmet directement les champs current, average et median déjà formatés" in prompt
     assert "Le ratio est descriptif" in prompt
     assert "Distingue explicitement les jours couverts par le planning" in prompt
-    assert "Fournis des explications détaillées mais conversationnelles" in prompt
+    assert "Une réponse détaillée doit rester conversationnelle" in prompt
     assert "Il fournit la fenêtre des 7 derniers jours uniquement" in prompt
     assert "sélectionne uniquement celles qui expliquent réellement le conseil" in prompt
     assert "sans seuil individuel ou classification explicite" in prompt

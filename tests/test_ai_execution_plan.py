@@ -438,6 +438,21 @@ def test_weekly_bilan_uses_a_seven_day_history_and_week_context():
     ]
 
 
+def test_weekly_review_includes_recovery_status_and_athlete_profile():
+    plan = build_coach_execution_plan(
+        "Fais-moi un bilan hebdomadaire.",
+        reference_date=REFERENCE_DATE,
+    )
+
+    calls = [(call.name, call.arguments) for call in plan.calls]
+    assert plan.clarification is None
+    assert ("training_history", {"nb_days": 7}) in calls
+    assert ("recovery_analysis", {}) in calls
+    assert ("recovery_status", {}) in calls
+    assert ("weekly_plan_context", {}) in calls
+    assert ("athlete_training_profile", {}) in calls
+
+
 def test_general_coach_overview_combines_recovery_and_training_context():
     plan = build_coach_execution_plan(
         "Comment je vais en ce moment ?",

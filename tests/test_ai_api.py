@@ -391,7 +391,7 @@ def test_ai_coach_preferences_can_be_saved_loaded_and_reset() -> None:
         "personality": "balanced",
         "firmness": 3,
         "motivation": 3,
-        "response_style": "detailed",
+        "response_style": "concise",
         "custom_prompt": "",
     }
 
@@ -506,6 +506,7 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "Chaque conseil doit découler d'un fait disponible" in prompt
     assert "ne jamais s'arrêter au milieu d'une phrase" in prompt
     assert "Exception : lorsqu'une comparaison de deux périodes est demandée" in prompt
+    assert "le plan d'exécution déterministe Python peut déjà fournir explicitement nb_days=7" in prompt
 
     assert "entraîneur virtuel personnel" in prompt
     assert "L'objectif n'est pas de réciter des champs JSON" in prompt
@@ -514,13 +515,14 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "ne jamais s'arrêter au milieu d'une phrase" in prompt
 
 
-def test_default_detailed_coach_style_remains_conversational():
+def test_default_concise_coach_style_is_actionable():
     from opencoach.api.ai import AICoachPreferencesPayload, _coach_system_prompt
 
     prompt = _coach_system_prompt(AICoachPreferencesPayload())
 
-    assert "détaillées mais conversationnelles" in prompt
-    assert "évite les inventaires de métriques" in prompt
+    assert "réponses courtes et directement actionnables" in prompt
+    assert "3 à 6 phrases courtes" in prompt
+    assert "N’affiche ni tableau ni liste de métriques" in prompt
     assert "plan numéroté ou une succession de rubriques" in prompt
 
 

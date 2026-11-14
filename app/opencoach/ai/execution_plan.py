@@ -280,9 +280,24 @@ def build_coach_execution_plan(
             # La restriction reste toujours le premier résultat consulté.
             # Une demande de séance avec douleur exige ensuite le contexte complet
             # pour adapter le conseil, pas seulement un statut Readiness isolé.
+            explicit_load_request = any(
+                term in normalized for term in ("charge", "mon atl", "ctl", "tsb")
+            )
+            requested_periods = extract_explicit_periods(
+                conversation_users, assistant_history
+            )
+            if explicit_load_request and not requested_periods:
+                return CoachExecutionPlan(clarification=(
+                    "Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?"
+                ))
+            load_period = requested_periods[-1] if explicit_load_request else 7
+            if not 1 <= load_period <= 90:
+                return CoachExecutionPlan(clarification=(
+                    "La charge peut être analysée sur 1 à 90 jours. Quelle période valide souhaites-tu ?"
+                ))
             safety_calls.extend((
                 PlannedToolCall("training_history", {"nb_days": 7}),
-                PlannedToolCall("training_load", {"nb_days": 7}),
+                PlannedToolCall("training_load", {"nb_days": load_period}),
                 PlannedToolCall("recovery_analysis", {}),
                 PlannedToolCall("recovery_status", safety_arguments),
                 PlannedToolCall("next_planned_session", {}),

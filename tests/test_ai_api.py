@@ -481,6 +481,13 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "« current » est la mesure actuelle et « baseline » est la référence personnelle historique" in prompt
     assert "Si la fraîcheur vaut `stale`, ne présente jamais le score ou les métriques comme l'état actuel du jour" in prompt
     assert "ne recommande pas une séance sur cette seule base" in prompt
+    assert "maintenir la séance prévue" in prompt
+    assert "réduire son volume ou son intensité" in prompt
+    assert "remplacer l'intensité par une séance facile/croisée autorisée" in prompt
+    assert "recommander la récupération" in prompt
+    assert "Une Readiness favorable ne neutralise jamais une douleur ou une restriction" in prompt
+    assert "une charge absente ou partielle comme une charge faible ou nulle" in prompt
+    assert "demande le ressenti actuel" in prompt
     assert "jamais des valeurs « attendues » ou des objectifs" in prompt
     assert "pas la couverture du planning" in prompt
     assert "Pour une analyse simple de charge récente" in prompt

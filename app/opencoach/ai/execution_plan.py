@@ -363,7 +363,13 @@ def build_coach_execution_plan(
             )
         )
         status_request = any(term in normalized for term in ("etat de recuperation", "readiness", "disponibilite aujourd", "suis-je pret"))
-        if coach_overview_request:
+        recommendation_request = any(
+            term in normalized
+            for term in ("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter")
+        )
+        if coach_overview_request or recommendation_request:
+            # Un bilan ou un conseil de séance doit croiser la tendance de
+            # récupération et l'état Readiness courant, pas choisir l'un des deux.
             if "recovery_analysis" in selected:
                 calls.append(PlannedToolCall("recovery_analysis", {}))
             if "recovery_status" in selected:

@@ -607,6 +607,17 @@ def _extract_race_options(tool_results) -> list[AIRaceOptionResponse]:
     return options
 
 
+def _coach_provider_unavailable_answer() -> str:
+    """Réponse de secours lisible : ne jamais exposer les payloads métier bruts."""
+    return (
+        "J'ai bien récupéré les éléments disponibles dans ton dossier OpenCoach, "
+        "mais mon moteur de rédaction local est momentanément indisponible. "
+        "Je préfère ne pas te présenter une succession de chiffres sans pouvoir "
+        "les interpréter correctement. Réessaie dans quelques instants : je pourrai "
+        "alors te donner un véritable bilan de coach et une conduite à tenir."
+    )
+
+
 def _serialize_coach_tool_results(tool_results, *, max_item_chars: int = 10_000, max_total_chars: int = 20_000) -> str:
     """Borne les résultats envoyés au LLM et conserve un JSON toujours valide."""
     payloads = [
@@ -857,13 +868,7 @@ async def ask_local_ai_with_athlete_context(
             ) from exc
         # Les calculs Python ont déjà été exécutés : une panne du LLM ne doit
         # pas masquer les données ni faire échouer toute la consultation.
-        answer = (
-            "J'ai bien récupéré les éléments disponibles dans ton dossier OpenCoach, "
-            "mais mon moteur de rédaction local est momentanément indisponible. "
-            "Je préfère ne pas te présenter une succession de chiffres sans pouvoir "
-            "les interpréter correctement. Réessaie dans quelques instants : je pourrai "
-            "alors te donner un véritable bilan de coach et une conduite à tenir."
-        )
+        answer = _coach_provider_unavailable_answer()
         model = settings.model
 
     data_proposals = [

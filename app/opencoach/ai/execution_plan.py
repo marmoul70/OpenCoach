@@ -296,7 +296,10 @@ def build_coach_execution_plan(
                     "La charge peut être analysée sur 1 à 90 jours. Quelle période valide souhaites-tu ?"
                 ))
             safety_calls.extend((
-                PlannedToolCall("training_history", {"nb_days": 7}),
+                PlannedToolCall(
+                    "training_history",
+                    {"nb_days": 7, "exclude_current_day": True},
+                ),
                 PlannedToolCall("training_load", {"nb_days": load_period}),
                 PlannedToolCall("recovery_analysis", {}),
                 PlannedToolCall("recovery_status", safety_arguments),
@@ -367,7 +370,12 @@ def build_coach_execution_plan(
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
         if not 1 <= history_period <= 365:
             return CoachExecutionPlan(clarification="L'historique doit porter sur une période de 1 à 365 jours. Quelle période valide souhaites-tu ?")
-        calls.append(PlannedToolCall("training_history", {"nb_days": history_period}))
+        history_arguments = {"nb_days": history_period}
+        if recommendation_history:
+            # training_load porte sur les jours complets précédant la date cible ;
+            # l'historique doit utiliser exactement la même fenêtre.
+            history_arguments["exclude_current_day"] = True
+        calls.append(PlannedToolCall("training_history", history_arguments))
         if recommendation_history and (not periods or "training_load" not in selected):
             # Une décision de séance doit aussi connaître la charge réellement
             # observée sur une fenêtre récente fixe, distincte de l'historique

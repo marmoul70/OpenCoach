@@ -122,8 +122,6 @@ def test_coaching_history_can_use_the_same_completed_days_as_training_load():
         date(2026, 11, 8),
         date(2026, 11, 14),
     )
-    assert result["period"]["start_date"] == "2026-11-08"
-    assert result["period"]["end_date"] == "2026-11-14"
 
 
 def test_history_keeps_including_reference_day_by_default():

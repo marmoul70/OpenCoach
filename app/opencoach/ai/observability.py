@@ -12,6 +12,16 @@ from typing import Any
 from uuid import uuid4
 
 logger = logging.getLogger("opencoach.ai.observability")
+# Uvicorn configure ses propres loggers, mais le logger applicatif personnalisé
+# peut ne pas avoir de handler dans le service systemd. Dans ce cas ses INFO
+# disparaissent malgré un niveau global INFO. On garantit une sortie stderr,
+# récupérée par journald, sans dépendre de la configuration de lancement.
+if not logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(levelname)s: %(name)s %(message)s"))
+    logger.addHandler(_handler)
+logger.setLevel(logging.INFO)
+logger.propagate = False
 
 _METRIC_CAPACITY = 5_000
 _metric_lock = Lock()

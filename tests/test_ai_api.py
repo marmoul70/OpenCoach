@@ -1074,3 +1074,27 @@ def test_coach_output_gate_recognizes_natural_judgments_and_quality_fallback():
     fallback = _coach_response_quality_fallback_answer()
     assert "n'ai pas réussi à formuler une synthèse de coach" in fallback
     assert "moteur de rédaction local est momentanément indisponible" not in fallback
+
+
+
+def test_ai_observability_counts_truncated_generation_as_error():
+    from opencoach.ai.observability import (
+        _clear_ai_metrics_for_tests,
+        get_ai_metrics_snapshot,
+        log_ai_event,
+    )
+
+    _clear_ai_metrics_for_tests()
+    log_ai_event(
+        "ollama_generation",
+        status="truncated",
+        model="qwen2.5:3b",
+        duration_ms=53_420,
+    )
+
+    snapshot = get_ai_metrics_snapshot(window_hours=24)
+
+    assert snapshot["summary"]["errors"] == 1
+    assert snapshot["summary"]["error_rate_percent"] == 100.0
+    assert snapshot["breakdown"][0]["errors"] == 1
+    _clear_ai_metrics_for_tests()

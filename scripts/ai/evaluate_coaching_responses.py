@@ -70,13 +70,13 @@ def score_coaching_response(case: dict[str, Any], content: str) -> dict[str, Any
         # Mentionner une récupération dégradée ne suffit pas : la réponse doit
         # formuler une modification concrète de la séance ou du niveau d'effort.
         actionable_recommendation = bool(re.search(
-            r"(?:\\b(?:je te conseille|je recommande|privil[eé]gie|choisis|"
+            r"(?:\b(?:je te conseille|je recommande|privil[eé]gie|choisis|"
             r"remplace|remplacer|reporte|reporter|all[eé]ge|all[eé]ger|"
             r"r[eé]duis|r[eé]duire|annule|annuler|supprime|supprimer|"
-            r"prends|prendre|fais|faire|opte pour|[eé]vite)\\b"
-            r".{0,70}\\b(?:repos|journ[eé]e|s[eé]ance|fractionn[eé]|sortie|"
-            r"intensit[eé]|volume|footing|marche|endurance)\\b|"
-            r"\\bpas de fractionn[eé]\\b)",
+            r"prends|prendre|fais|faire|opte pour|[eé]vite)\b"
+            r".{0,70}\b(?:repos|journ[eé]e|s[eé]ance|fractionn[eé]|sortie|"
+            r"intensit[eé]|volume|footing|marche|endurance)\b|"
+            r"\bpas de fractionn[eé]\b)",
             normalized,
         ))
         action_pass = actionable_recommendation

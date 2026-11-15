@@ -24,7 +24,11 @@ from opencoach.database.repositories import (
     SqlTrainingSessionRepository,
     SqlWeeklyTrainingPlanRepository,
 )
-from opencoach.services import ProfileService, TrainingProfileContextService, PlannedTrainingService
+from opencoach.services import (
+    PlannedTrainingService,
+    ProfileService,
+    TrainingProfileContextService,
+)
 from opencoach.database.models import (
     AthleteProfile as AthleteProfileModel,
     Race as RaceModel,
@@ -78,7 +82,11 @@ def test_training_profile_returns_recorded_values_and_personal_hr_zones():
     engine = _database()
     with Session(engine) as session:
         profile = _profile(session)
-        tool = build_training_profile_tool(TrainingProfileContextService(ProfileService(SqlProfileRepository(session, profile.user_id))))
+        tool = build_training_profile_tool(
+            TrainingProfileContextService(
+                ProfileService(SqlProfileRepository(session, profile.user_id))
+            )
+        )
         result = tool.handler(EmptyArguments())
 
     assert result["status"] == "ok"
@@ -106,7 +114,9 @@ def test_training_profile_reports_missing_fields_without_estimating_them():
         profile.heart_rate_zones = {}
         session.flush()
         result = build_training_profile_tool(
-            TrainingProfileContextService(ProfileService(SqlProfileRepository(session, profile.user_id)))
+            TrainingProfileContextService(
+                ProfileService(SqlProfileRepository(session, profile.user_id))
+            )
         ).handler(EmptyArguments())
 
     assert result["status"] == "partial"
@@ -226,7 +236,10 @@ def test_planned_sessions_returns_bounded_fields_and_partial_aggregates():
         ])
         session.flush()
         result = build_planned_sessions_tool(
-            PlannedTrainingService(SqlTrainingSessionRepository(session), profile.id)
+            PlannedTrainingService(
+                SqlTrainingSessionRepository(session),
+                profile.id,
+            )
         ).handler(PlannedSessionsArguments(
             start_date=date(2026, 11, 9),
             end_date=date(2026, 11, 11),

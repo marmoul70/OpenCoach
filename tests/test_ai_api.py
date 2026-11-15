@@ -1201,3 +1201,51 @@ def test_coach_output_gate_accepts_direct_recommendation_without_fixed_phrase():
     )
 
     assert _coach_response_needs_rewrite("Quelle séance me conseilles-tu ?", answer) is False
+
+
+def test_coach_analysis_periods_only_expose_explicit_successful_tool_windows() -> None:
+    from types import SimpleNamespace
+
+    from opencoach.api.ai import _extract_coach_analysis_periods
+
+    results = [
+        SimpleNamespace(
+            tool="training_trends",
+            status="ok",
+            data={
+                "current_period": {
+                    "start_date": "2026-11-01",
+                    "end_date": "2026-11-14",
+                    "nb_days": 14,
+                },
+                "comparison_period": {
+                    "start_date": "2026-10-18",
+                    "end_date": "2026-10-31",
+                    "nb_days": 14,
+                },
+            },
+        ),
+        SimpleNamespace(
+            tool="recovery_analysis",
+            status="failed",
+            data={"period": {"start_date": "2026-11-01", "end_date": "2026-11-15"}},
+        ),
+        SimpleNamespace(
+            tool="athlete_training_profile",
+            status="ok",
+            data={"physiology": {"vma_kmh": 15}},
+        ),
+    ]
+
+    periods = _extract_coach_analysis_periods(results)
+
+    assert len(periods) == 2
+    assert periods[0] == {
+        "tool": "training_trends",
+        "label": "current period",
+        "start_date": "2026-11-01",
+        "end_date": "2026-11-14",
+        "days": 14,
+    }
+    assert periods[1]["start_date"] == "2026-10-18"
+    assert periods[1]["end_date"] == "2026-10-31"

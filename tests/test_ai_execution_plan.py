@@ -487,7 +487,11 @@ def test_combined_recommendation_and_explicit_load_request_does_not_duplicate_lo
     )
     calls = [(call.name, call.arguments) for call in plan.calls]
     load_calls = [call for call in calls if call[0] == "training_load"]
+    history_calls = [call for call in calls if call[0] == "training_history"]
     assert load_calls == [("training_load", {"nb_days": 14})]
+    assert history_calls == [
+        ("training_history", {"nb_days": 14, "exclude_current_day": True})
+    ]
 
 
 def test_training_recommendation_uses_recent_history_profile_and_schedule():

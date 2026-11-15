@@ -134,3 +134,43 @@ def test_pain_scenario_fails_when_response_only_mentions_the_restriction():
         "La douleur au genou est à surveiller et une restriction est enregistrée.",
     )
     assert result["checks"]["action_pass"] is False
+
+
+
+def test_coach_style_accepts_a_natural_judgment_without_metric_dump():
+    item = cases()[0]
+    response = (
+        "Ta semaine est cohérente, mais ta récupération ne permet pas d'assimiler "
+        "une nouvelle séance intense. Je te conseille de remplacer le fractionné "
+        "par un footing facile et de retrouver de la fraîcheur avant de remettre "
+        "de l'intensité."
+    )
+    result = score_coaching_response(item, response)
+    assert result["checks"]["coaching_style_pass"] is True
+    assert result["pass"] is True
+
+
+def test_coach_style_rejects_a_coros_like_list_of_metrics():
+    item = cases()[0]
+    response = (
+        "Voici une analyse des données fournies :\n"
+        "- Durée : 5.8 heures\n"
+        "- Distance : 48 km\n"
+        "- Dénivelé : 1250 m\n"
+        "- Sommeil : 5.1 heures\n"
+        "La récupération est mauvaise."
+    )
+    result = score_coaching_response(item, response)
+    assert result["checks"]["coaching_style_pass"] is False
+    assert result["pass"] is False
+
+
+def test_coach_style_allows_explicit_numeric_data_requests():
+    item = dict(cases()[0])
+    item["response_mode"] = "data"
+    response = (
+        "Sur la période, tu as réalisé 48 km en 5.8 heures. "
+        "Le dénivelé cumulé est de 1250 m."
+    )
+    result = score_coaching_response(item, response)
+    assert result["checks"]["coaching_style_pass"] is True

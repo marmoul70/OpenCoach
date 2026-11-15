@@ -641,8 +641,12 @@ _COACH_OPENING_JUDGMENT = re.compile(
     r"ton entraînement (?:est|reste|semble)|la charge (?:est|reste|semble)|"
     r"ta charge (?:est|reste|semble)|la récupération (?:est|reste|semble)|"
     r"ta récupération (?:est|reste|semble)|"
-    r"je (?:garderais|maintiendrais|réduirais|remplacerais|reporterais)|"
+    r"je (?:garderais|maintiendrais|réduirais|remplacerais|reporterais|"
+    r"partirais|privilégierais)|"
     r"tu peux (?:maintenir|alléger|réduire|remplacer|reporter)|"
+    r"tu as (?:bien|correctement|difficilement|mal) "
+    r"(?:géré|absorbé|encaissé|récupéré|enchaîné|respecté|toléré)|"
+    r"globalement,? (?:ta|ton) |à ta place,? je |"
     r"il vaut mieux|le point (?:positif|de vigilance)|"
     r"c'est (?:une semaine|cohérent|adapté|trop))\b",
     re.IGNORECASE,

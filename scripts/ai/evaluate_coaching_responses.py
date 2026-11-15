@@ -127,10 +127,10 @@ def score_coaching_response(case: dict[str, Any], content: str) -> dict[str, Any
     restrictions = case.get("context", {}).get("active_constraints", {}).get("restrictions", [])
     if action == "respect_pain_constraints" and "avoid_running" in restrictions:
         positive_running_advice = re.search(
-            r"(?:\\b(?:faire|effectuer|maintenir|conserver|privil[eé]gier|"
-            r"choisir|programmer)\\b.{0,60}\\b(?:course|footing|endurance|sortie)\\b|"
-            r"\\b(?:tu peux|tu pourrais|je te conseille de|je recommande de)\\b"
-            r".{0,50}\\b(?:courir|faire une s[eé]ance d'endurance|faire un footing)\\b)",
+            r"(?:\b(?:faire|effectuer|maintenir|conserver|privil[eé]gier|"
+            r"choisir|programmer)\b.{0,60}\b(?:course|footing|endurance|sortie)\b|"
+            r"\b(?:tu peux|tu pourrais|je te conseille de|je recommande de)\b"
+            r".{0,50}\b(?:courir|faire une s[eé]ance d'endurance|faire un footing)\b)",
             normalized,
         )
         if positive_running_advice:

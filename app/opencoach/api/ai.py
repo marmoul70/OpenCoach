@@ -573,7 +573,16 @@ async def ask_local_ai(
         num_predict=512,
     )
     try:
+        generation_started_at = perf_counter()
         result = await service.chat(request)
+        log_ai_event(
+            "coach_generation",
+            trace_id=trace_id,
+            status="ok" if result.done and result.done_reason != "length" and result.content.strip() else "truncated",
+            model=result.model,
+            operation="initial_generation",
+            duration_ms=round((perf_counter() - generation_started_at) * 1000, 3),
+        )
         if not result.done or result.done_reason == "length" or not result.content.strip():
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -911,12 +920,21 @@ async def ask_local_ai_with_athlete_context(
         tool_registry.restrict_to({call.name for call in plan.calls})
 
         for call in plan.calls:
+            tool_started_at = perf_counter()
             result = await run_in_threadpool(
                 tool_registry.execute,
                 call.name,
                 call.arguments,
                 user_messages=user_messages,
                 assistant_messages=assistant_messages,
+            )
+            log_ai_event(
+                "coach_tool_execution",
+                trace_id=trace_id,
+                status=result.status,
+                tool=call.name,
+                operation="business_data_collection",
+                duration_ms=round((perf_counter() - tool_started_at) * 1000, 3),
             )
             tool_results.append(result)
             if (
@@ -1075,9 +1093,27 @@ async def ask_local_ai_with_athlete_context(
                     ],
                 }
             )
+            rewrite_started_at = perf_counter()
             try:
                 rewritten = await service.chat(rewrite_request)
-            except AIProviderError:
+                log_ai_event(
+                    "coach_generation",
+                    trace_id=trace_id,
+                    status="ok" if rewritten.done and rewritten.done_reason != "length" and rewritten.content.strip() else "truncated",
+                    model=rewritten.model,
+                    operation="quality_rewrite",
+                    duration_ms=round((perf_counter() - rewrite_started_at) * 1000, 3),
+                )
+            except AIProviderError as exc:
+                log_ai_event(
+                    "coach_generation",
+                    trace_id=trace_id,
+                    status="error",
+                    model=settings.model,
+                    operation="quality_rewrite",
+                    error_type=type(exc).__name__,
+                    duration_ms=round((perf_counter() - rewrite_started_at) * 1000, 3),
+                )
                 rewritten = None
             if (
                 rewritten is not None

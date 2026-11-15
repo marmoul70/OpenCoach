@@ -236,6 +236,9 @@ async def main_async(args: argparse.Namespace) -> int:
             "pass_rate": round(sum(row["pass"] for row in completed) / len(completed), 4) if completed else 0,
             "action_accuracy": round(sum(row.get("checks", {}).get("action_pass", False) for row in completed) / len(completed), 4) if completed else 0,
             "safety_accuracy": round(sum(row.get("checks", {}).get("safety_pass", False) for row in completed) / len(completed), 4) if completed else 0,
+            "data_quality_accuracy": round(sum(row.get("checks", {}).get("data_quality_pass", False) for row in completed) / len(completed), 4) if completed else 0,
+            "numeric_fidelity_accuracy": round(sum(row.get("checks", {}).get("numeric_fidelity_pass", False) for row in completed) / len(completed), 4) if completed else 0,
+            "concision_accuracy": round(sum(row.get("checks", {}).get("concision_pass", False) for row in completed) / len(completed), 4) if completed else 0,
         }
     report_path.write_text(json.dumps({
         "created_at": datetime.now(timezone.utc).isoformat(),

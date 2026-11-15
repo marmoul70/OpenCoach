@@ -208,3 +208,64 @@ def test_synthesis_prompt_explicitly_enforces_avoid_running_restriction():
     assert "avoid_running" in system_prompt
     assert "aucune course" in system_prompt
     assert "cross_training_allowed" in system_prompt
+
+
+def _constraints_result(*constraints):
+    from opencoach.ai.tool_engine import AIToolResult
+
+    return AIToolResult(
+        tool="active_constraints",
+        status="ok",
+        data={"constraints": list(constraints)},
+        metadata={},
+    )
+
+
+def test_production_guard_blocks_running_when_forbidden():
+    from opencoach.api.ai import _coach_running_restriction_answer
+
+    result = _constraints_result(
+        {"running_allowed": False, "cross_training_allowed": True}
+    )
+    answer = _coach_running_restriction_answer(
+        "Quelle séance me conseilles-tu demain ?", [result]
+    )
+    assert answer is not None
+    assert "interdit" in answer
+    assert "course à pied" in answer
+    assert "indolore" in answer
+
+
+def test_production_guard_does_not_offer_unauthorized_cross_training():
+    from opencoach.api.ai import _coach_running_restriction_answer
+
+    result = _constraints_result(
+        {"running_allowed": False, "cross_training_allowed": False}
+    )
+    answer = _coach_running_restriction_answer(
+        "Puis-je courir demain ?", [result]
+    )
+    assert answer is not None
+    assert "sans autorisation explicite" in answer
+    assert "Une activité croisée peut être envisagée" not in answer
+
+
+def test_production_guard_respects_all_constraints_and_non_recommendation_questions():
+    from opencoach.api.ai import _coach_running_restriction_answer
+
+    mixed = _constraints_result(
+        {"running_allowed": False, "cross_training_allowed": True},
+        {"running_allowed": True, "cross_training_allowed": False},
+    )
+    assert "sans autorisation explicite" in _coach_running_restriction_answer(
+        "Quelle séance demain ?", [mixed]
+    )
+    assert _coach_running_restriction_answer(
+        "Quel est mon profil ?", [mixed]
+    ) is None
+    allowed = _constraints_result(
+        {"running_allowed": True, "cross_training_allowed": True}
+    )
+    assert _coach_running_restriction_answer(
+        "Quelle séance demain ?", [allowed]
+    ) is None

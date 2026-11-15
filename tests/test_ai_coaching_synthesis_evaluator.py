@@ -101,7 +101,8 @@ def test_synthesis_evaluator_rejects_invented_numeric_claims_and_verbose_answers
         "Ta récupération est insuffisante. Réduis la séance demain. "
         "Tu dois courir 90 km et 3000 m de dénivelé. "
         "Cette recommandation est importante. Fais attention. "
-        "Reviens progressivement."
+        "Reviens progressivement. " 
+        "Puis vérifie tes sensations. Enfin, ajuste la suite selon leur évolution."
     )
     result = score_coaching_response(item, invented)
     assert result["checks"]["numeric_fidelity_pass"] is False

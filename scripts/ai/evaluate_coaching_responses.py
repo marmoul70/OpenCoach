@@ -52,18 +52,18 @@ ACTION_PATTERNS = {
 
 UNIT_CLAIM = re.compile(
     r"(?<![\w])(?P<number>\d+(?:[.,]\d+)?)\s*"
-    r"(?P<unit>km/h|km|m\\b|heures?|h\\b|minutes?|min\\b|bpm|%|jours?|semaines?)",
+    r"(?P<unit>km/h|km|m\b|heures?|h\b|minutes?|min\b|bpm|%|jours?|semaines?)",
     re.IGNORECASE,
 )
-BULLET_LINE = re.compile(r"(?m)^\\s*(?:[-*•]|\\d+[.)])\\s+")
-STRUCTURED_DATA = re.compile(r"(?:\\{\\s*[\"']?[a-z_]+[\"']?\\s*:|[\"'][a-z_]+[\"']?\\s*:\\s*(?:\\d|[\"'{]))", re.IGNORECASE)
+BULLET_LINE = re.compile(r"(?m)^\s*(?:[-*•]|\d+[.)])\s+")
+STRUCTURED_DATA = re.compile(r"(?:\{\s*[\"']?[a-z_]+[\"']?\s*:|[\"'][a-z_]+[\"']?\s*:\s*(?:\d|[\"'{]))", re.IGNORECASE)
 COACH_JUDGMENT = re.compile(
-    r"\\b(?:mon avis|je te conseille|je recommande|je privilégie|"
+    r"\b(?:mon avis|je te conseille|je recommande|je privilégie|"
     r"je garderais|je remplacerais|je réduirais|je reporterais|"
     r"je maintiendrais|ta semaine|ton entraînement|ta charge|"
     r"tu as bien|tu as réussi|le point positif|le point de vigilance|"
     r"ce n'est pas|c'est cohérent|c'est trop|c'est adapté|"
-    r"la priorité|pour progresser|pour préserver)\\b",
+    r"la priorité|pour progresser|pour préserver)\b",
     re.IGNORECASE,
 )
 
@@ -157,14 +157,14 @@ def score_coaching_response(case: dict[str, Any], content: str) -> dict[str, Any
     response_mode = case.get("response_mode", "coach")
     metric_claim_count = len(list(UNIT_CLAIM.finditer(content)))
     if response_mode == "coach":
-        first_sentence = re.split(r"(?<=[.!?])\\s+", content.strip(), maxsplit=1)[0]
+        first_sentence = re.split(r"(?<=[.!?])\s+", content.strip(), maxsplit=1)[0]
         coaching_style_pass = (
             bool(COACH_JUDGMENT.search(content))
             and metric_claim_count <= 2
             and not BULLET_LINE.search(content)
             and not STRUCTURED_DATA.search(content)
             and not re.match(
-                r"^(?:voici|données?|statistiques?|bilan chiffré|résumé des métriques)\\b",
+                r"^(?:voici|données?|statistiques?|bilan chiffré|résumé des métriques)\b",
                 first_sentence.strip(),
                 re.IGNORECASE,
             )

@@ -559,6 +559,61 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "ne jamais s'arrêter au milieu d'une phrase" in prompt
 
 
+def test_coach_quality_gate_rejects_ungrounded_health_and_load_claims():
+    from types import SimpleNamespace
+
+    from opencoach.api.ai import _coach_response_has_ungrounded_risk_claims
+
+    empty_results = [
+        SimpleNamespace(tool="recovery_status", status="ok", data={"signals": []}),
+        SimpleNamespace(tool="recovery_analysis", status="ok", data={"windows": []}),
+        SimpleNamespace(tool="training_load", status="ok", data={"load": {"coverage": {"status": "complete"}}}),
+        SimpleNamespace(tool="active_constraints", status="ok, data={"constraints": []}),
+        SimpleNamespace(tool="athlete_training_profile", status="ok", data={"status": "partial", "missing_profile_fields": ["vma"]}),
+    ]
+    answer = (
+        "Ta fatigue est en baisse et ton stress est en alerte. "
+        "La charge de travail est basse et ton profil est correctement défini. "
+        "Je te conseille de ne pas prendre cette prochaine séance."
+    )
+
+    assert _coach_response_has_ungrounded_risk_claims(answer, empty_results) is True
+
+
+def test_coach_quality_gate_rejects_session_cancellation_without_running_restriction():
+    from types import SimpleNamespace
+
+    from opencoach.api.ai import _coach_response_has_ungrounded_risk_claims
+
+    results = [
+        SimpleNamespace(tool="active_constraints", status="ok", data={"constraints": []}),
+    ]
+
+    assert _coach_response_has_ungrounded_risk_claims(
+        "Je te conseille de ne pas prendre cette prochaine séance.",
+        results,
+    ) is True
+
+
+def test_coach_quality_gate_accepts_explicit_running_restriction():
+    from types import SimpleNamespace
+
+    from opencoach.api.ai import _coach_response_has_ungrounded_risk_claims
+
+    results = [
+        SimpleNamespace(
+            tool="active_constraints",
+            status="ok",
+            data={"constraints": [{"running_allowed": False}]},
+        ),
+    ]
+
+    assert _coach_response_has_ungrounded_risk_claims(
+        "La restriction enregistrée interdit cette séance de course.",
+        results,
+    ) is False
+
+
 def test_coach_synthesis_prompt_is_compact_and_preserves_safety_rules():
     from opencoach.api.ai import (
         AICoachPreferencesPayload,

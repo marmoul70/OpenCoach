@@ -9,9 +9,11 @@ from opencoach.ai.activity_tools import (
     build_activity_detail_tool,
 )
 from opencoach.database.base import Base
-from opencoach.database.repositories import SqlActivityRepository, SqlActivityDetailRepository
+from opencoach.database.repositories import (
+    SqlActivityDetailRepository,
+    SqlActivityRepository,
+)
 from opencoach.database.models import Activity as ActivityModel
-from opencoach.database.repositories import SqlActivityDetailRepository
 from opencoach.models import ActivityDetail, ActivityInterval, ActivityStream, ActivityStreams
 
 
@@ -100,7 +102,11 @@ def test_activity_detail_requests_clarification_when_date_matches_multiple_activ
     with Session(engine) as session:
         _activity(session, profile_id, name="Sortie matin")
         _activity(session, profile_id, name="Sortie soir")
-        tool = build_activity_detail_tool(session, profile_id)
+        tool = build_activity_detail_tool(
+            SqlActivityRepository(session),
+            SqlActivityDetailRepository(session),
+            profile_id,
+        )
         result = tool.handler(
             ActivityDetailArguments(activity_date=date(2026, 11, 9))
         )
@@ -131,7 +137,11 @@ def test_activity_detail_reports_missing_detail_without_inventing_streams():
     profile_id = uuid4()
     with Session(engine) as session:
         _activity(session, profile_id)
-        tool = build_activity_detail_tool(session, profile_id)
+        tool = build_activity_detail_tool(
+            SqlActivityRepository(session),
+            SqlActivityDetailRepository(session),
+            profile_id,
+        )
         result = tool.handler(
             ActivityDetailArguments(activity_date=date(2026, 11, 9))
         )
@@ -158,7 +168,11 @@ def test_activity_detail_can_select_the_latest_recorded_activity():
     with Session(engine) as session:
         older = _activity(session, profile_id, name="Ancienne sortie", day=8)
         latest = _activity(session, profile_id, name="Dernière sortie", day=10)
-        tool = build_activity_detail_tool(session, profile_id)
+        tool = build_activity_detail_tool(
+            SqlActivityRepository(session),
+            SqlActivityDetailRepository(session),
+            profile_id,
+        )
         result = tool.handler(ActivityDetailArguments(latest=True))
         latest_id = str(latest.id)
         older_id = str(older.id)

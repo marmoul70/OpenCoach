@@ -1,0 +1,161 @@
+# Audit architectural OpenCoach — branche de remise à plat
+
+**Branche :** `refactor/architecture-cleanup`  
+**Socle initial :** `fix/ai-coach-analysis-semantics`  
+**Commit initial :** `a0f90644cd943c16efe1988601bd713b216f2706`  
+**Date de l'audit :** 15 novembre 2026  
+**Statut :** audit en cours — aucune fonctionnalité supprimée.
+
+## 1. Objectif et règles
+
+Cette branche sert à remettre le dépôt en ordre sans repartir d'un `main` qui ferait perdre les développements métier plus récents.
+
+Règles :
+- `main` et les branches sources ne sont pas modifiées par cette mission.
+- Aucun comportement métier n'est supprimé sans preuve qu'il est redondant, inutilisé et couvert par un remplacement.
+- Toute suppression doit être précédée d'un inventaire des appels, routes API, écrans, migrations, scripts, tests et intégrations concernés.
+- Le moteur métier Python reste l'unique source de vérité pour les calculs et décisions sportives.
+- Le LLM local ne calcule pas les indicateurs, ne décide pas des adaptations et ne modifie pas le planning ou les fournisseurs.
+- Chaque étape de refactoring doit conserver des tests de caractérisation et ajouter des tests de non-régression.
+
+## 2. Socle retenu provisoirement
+
+La branche a été créée à partir du commit `a0f90644cd943c16efe1988601bd713b216f2706`, tête de la PR #37.
+
+Motif : ce socle contient les développements métier et infrastructure présents dans la chaîne de développement récente, en plus des évolutions IA. Repartir directement de `main` ferait perdre des changements identifiés dans COROS, readiness/récupération, wellness, courses, entraînement, déploiement et interface.
+
+Ce choix est provisoire : il ne signifie pas que tout le contenu de cette branche est validé ni qu'il faut conserver toute la couche IA.
+
+## 3. État de validation observé
+
+Au commit initial, les contrôles GitHub Actions visibles sont terminés avec succès :
+- Bash validation : success
+- Python 3.13 tests : success
+- Frontend validation : success
+
+Ces résultats prouvent que les jobs CI de ce commit ont réussi. Ils ne remplacent pas une validation opérationnelle sur la VM Debian 13, une migration de base existante, une synchronisation COROS réelle ou des tests exploratoires de l'interface.
+
+## 4. Fonctionnalités à préserver et auditer
+
+| Domaine | Éléments identifiés | Traitement |
+|---|---|---|
+| Authentification et profils | comptes, sessions, profils athlètes, paramètres | conserver, auditer sécurité et isolation multi-profil |
+| Entraînement | séances, historique, exécution, statistiques | conserver, vérifier source de vérité et contrats |
+| Planification | génération, adaptation quotidienne/hebdomadaire, trajectoire, contraintes | conserver, cartographier les services et responsabilités |
+| Charge et récupération | charge récente, readiness, wellness, évaluations | conserver, consolider les définitions et éviter les doubles calculs |
+| Courses | calendrier, objectifs, préparation, impact sur la trajectoire | conserver |
+| COROS | OAuth, synchronisation activités/wellness, push des séances | conserver ; réconcilier explicitement la PR #21 |
+| Intervals.icu | import activités, wellness et synchronisation des séances | conserver |
+| Notifications | centre persistant, push, rappels | conserver |
+| Frontend Pulse | navigation, coach, entraînement, courses, paramètres, PWA | conserver et contrôler les parcours |
+| Infrastructure | bootstrap Debian, systemd, Nginx, sauvegarde, migrations, déploiement | conserver, réduire les points d'entrée concurrents |
+| IA locale | chat, outils, routage, planification d'exécution, observabilité, évaluateurs | refactoriser après cartographie des usages |
+
+Cette liste est un inventaire de périmètre, pas une validation ligne par ligne.
+
+## 5. Risques et constats concrets
+
+### 5.1 Couche IA
+
+- `app/opencoach/api/ai.py` : 1 532 lignes.
+- `app/opencoach/ai/execution_plan.py` : 554 lignes.
+- `app/opencoach/ai/tool_routing.py` : environ 230 lignes.
+- `app/opencoach/ai/tool_engine.py` : environ 237 lignes.
+- `app/opencoach/ai/service.py` : environ 130 lignes.
+
+Le point de vigilance est le cumul des responsabilités : API, assemblage des outils, routage par texte, extraction des périodes, validation, orchestration et synthèse. La cible doit réduire les mécanismes, pas créer de nouvelles couches pour les envelopper.
+
+Cible fonctionnelle :
+1. l'application identifie les données et services métier nécessaires ;
+2. les services métier OpenCoach calculent et valident les résultats ;
+3. le modèle local formule une explication à partir de résultats structurés ;
+4. les actions d'écriture restent dans des parcours explicites avec confirmation.
+
+Avant de supprimer un outil, vérifier ses usages, ses routes, ses tests, son exposition frontend et les besoins de conversation qu'il couvre.
+
+### 5.2 Déploiement frontend
+
+Sur le socle retenu :
+- `scripts/deploy-frontend.sh` est le point d'entrée canonique et gère les releases atomiques ;
+- `scripts/deploy_frontend.sh` est un alias de compatibilité de 10 lignes qui délègue au script canonique.
+
+Il ne s'agit donc plus de deux implémentations concurrentes sur cette branche. Ne pas supprimer l'alias sans rechercher les références dans les documentations, scripts bootstrap et procédures utilisateur.
+
+### 5.3 Version
+
+Sur le socle retenu, `VERSION` et `pyproject.toml` indiquent tous deux `0.8.5`. Le décalage précédemment observé sur `main` n'existe pas sur cette branche. Ne pas incrémenter la version pour un simple audit/refactoring non livré.
+
+### 5.4 PR COROS #21
+
+La PR #21 est encore ouverte et en brouillon. Elle traite un cas de création COROS dont la réponse est incertaine (séance créée à distance mais identifiant non retourné). Le correctif cherche à réconcilier la séance existante avant toute nouvelle création, afin d'éviter les doublons.
+
+Ce comportement est critique pour l'intégrité des données et doit être évalué et intégré dans le plan de préservation. Il ne faut ni l'ignorer ni le fusionner sans revue et tests de non-régression.
+
+### 5.5 PR IA #33 à #37
+
+Les PR forment une chaîne de dépendances et non cinq lots indépendants :
+- #33 : observabilité IA ;
+- #34 : qualité des analyses ;
+- #35 et #36 : conversation, synthèse et comparaisons ;
+- #37 : sémantique charge/récupération.
+
+La PR #37 modifie aussi les statistiques d'entraînement. Toute remise à plat doit comparer les contrats et tests de ces statistiques avec le comportement antérieur pour ne pas perdre une correction métier utile.
+
+## 6. Architecture cible minimale
+
+- **API** : authentification, validation des entrées, appel des services, sérialisation des réponses.
+- **Services métier** : règles, calculs, décisions et orchestration métier.
+- **Intégrations** : adaptateurs COROS/Intervals et synchronisation.
+- **IA** : compréhension/rédaction et appels contrôlés aux services nécessaires, sans deuxième moteur métier.
+- **Frontend** : présentation et interactions, sans règles métier dupliquées.
+- **Infrastructure** : un point d'entrée canonique par opération.
+
+Ne pas créer un module ou une abstraction si une fonction existante, correctement placée et testée, remplit déjà le besoin.
+
+## 7. Plan d'exécution
+
+### Phase A — Inventaire exhaustif
+- [ ] cartographier tous les packages Python et leurs dépendances ;
+- [ ] cartographier les routes FastAPI et leurs services ;
+- [ ] cartographier modèles SQLAlchemy, repositories et migrations Alembic ;
+- [ ] cartographier les pages, composants, stores et clients API frontend ;
+- [ ] cartographier les intégrations, tâches planifiées, commandes et scripts ;
+- [ ] établir la matrice des fonctionnalités et leur couverture de tests.
+
+### Phase B — Audit de qualité
+- [ ] rechercher duplications, fonctions mortes, imports inutilisés et cycles ;
+- [ ] repérer les modules trop couplés et les responsabilités mixtes ;
+- [ ] contrôler la gestion des erreurs, transactions et idempotence ;
+- [ ] contrôler isolation multi-athlète et autorisations ;
+- [ ] vérifier migrations, sauvegarde/restauration et compatibilité des données ;
+- [ ] relever les problèmes de performance et requêtes N+1.
+
+### Phase C — Préservation des fonctions hors IA
+- [ ] auditer les PR non fusionnées et leurs dépendances ;
+- [ ] revoir la PR #21 COROS et ses scénarios de réconciliation ;
+- [ ] établir une matrice de non-régression par domaine ;
+- [ ] exécuter la suite complète et comparer les résultats au socle ;
+- [ ] valider les parcours sur la VM avant toute intégration vers main.
+
+### Phase D — Simplification
+- [ ] supprimer uniquement le code prouvé mort ou redondant ;
+- [ ] fusionner les responsabilités réellement dupliquées ;
+- [ ] réduire la surface de l'API IA ;
+- [ ] conserver les contrats publics et les fonctionnalités existantes ;
+- [ ] documenter les décisions structurantes dans des ADR courts.
+
+## 8. Critères d'acceptation
+
+La remise à plat n'est pas terminée tant que :
+- toutes les fonctionnalités existantes ont une correspondance dans la matrice de préservation ;
+- aucune route, migration, commande ou action frontend utile n'a disparu sans remplacement ;
+- les tests métier et d'intégration passent ;
+- les synchronisations COROS/Intervals et la réconciliation des créations incertaines sont couvertes ;
+- le frontend lint et build ;
+- le bootstrap, le déploiement, le rollback et les sauvegardes sont validés ;
+- l'architecture IA n'embarque pas de calcul ou de décision métier ;
+- le code supprimé est justifié par des preuves d'inutilisation ou de redondance.
+
+## 9. Limites de cet état initial
+
+Ce document est le journal du premier passage. Il ne prétend pas certifier l'ensemble du code. Les analyses statiques et exécutions locales complètes doivent être réalisées avant toute suppression structurelle. Aucune branche source, PR ou branche `main` n'a été modifiée par la création de cette branche d'audit.

@@ -223,3 +223,41 @@ Avant tout ajout ou modification du Coach :
 - Refaire une suite CI complète sur le HEAD final de la branche.
 
 Ne pas fusionner, rebaser sur `main`, supprimer de branche, déployer ou incrémenter `VERSION` sans accord explicite.
+
+
+## 11. Suite du refactoring IA et réutilisation des primitives Coach
+
+**HEAD validé :** `7a2ff3161dfece35249d3f09b6db3a242e8ec303`
+
+### Découpage de l'API IA
+
+- Le contenu de l'ancien `get_ai_tool_registry` a été déplacé vers `ai/registry.py`. L'API conserve uniquement la fonction de dépendances HTTP qui délègue au constructeur du registre. Les repositories communs (activité, détails, séances) sont créés une seule fois et réutilisés.
+- Les prompts système et leur construction sont dans `ai/prompts.py`.
+- Les contrats de conversation et de préférences sont dans `ai/schemas.py`.
+- Les fonctions de synthèse, de contrôle de qualité, de garde-fous et de sérialisation sont dans `ai/response_synthesis.py`.
+- `api/ai.py` passe d'environ 1 530 lignes à environ 700 lignes ; les routes HTTP et l'orchestration de la requête restent dans l'API, sans déplacer les calculs métier dans le LLM.
+- Les noms importés dans `api/ai.py` sont conservés lorsque nécessaire pour préserver les contrats de tests existants.
+
+### Nouvelle réutilisation de primitives existantes
+
+- L'audit de `activity_tools.py` a trouvé `_number` dans `training/session_execution/stream_analysis.py`, qui appliquait déjà la validation des échantillons numériques finis.
+- Cette normalisation est maintenant portée par `normalize_stream_number` dans le modèle `ActivityStream` et réutilisée par l'analyse temporelle existante.
+- Le résumé min/max/moyenne est une propriété `ActivityStream.summary`. L'adaptateur IA ne recalcule plus ces agrégats ; il sérialise la propriété du modèle Coach.
+- Tests ajoutés pour les échantillons manquants, booléens, NaN et infinis, ainsi que pour un stream vide.
+
+### Validation CI du HEAD
+
+- Commit : `7a2ff3161dfece35249d3f09b6db3a242e8ec303`
+- Python 3.13 : **3 141 tests passés**, 2 avertissements de dépendances.
+- Bash validation : succès.
+- Frontend lint et build : succès.
+
+### Prochaines vérifications
+
+1. `ai/data_proposals.py` contient toujours le cycle de persistance SQL des propositions de profil. C'est un workflow applicatif existant : conserver ses validations et son contrat, rechercher les repositories/services existants avant de déplacer quoi que ce soit, et ne pas réécrire le workflow.
+2. Continuer la réduction de `api/ai.py` seulement après audit des responsabilités restantes. `AIService` est la façade du fournisseur LLM ; `CoachDecisionService` porte la décision d'entraînement quotidienne. Ne pas les détourner pour y placer une orchestration conversationnelle qui ne leur appartient pas.
+3. Achever l'audit du code mort et des dépendances sur backend, frontend, scripts et infrastructure ; chaque suppression doit être justifiée par les usages et imports dynamiques.
+4. Vérifier les contrats d'API et les parcours frontend après les extractions.
+5. Relancer la CI sur le HEAD final avant la recette.
+
+La règle de non-duplication de la section 10 reste impérative. Aucun merge, déploiement, suppression de branche ou incrément de version n'est autorisé dans ce chantier.

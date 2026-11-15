@@ -1135,6 +1135,49 @@ def test_ai_observability_counts_truncated_generation_as_error():
     _clear_ai_metrics_for_tests()
 
 
+def test_ai_observability_separates_coach_collection_and_generation_timings():
+    from opencoach.ai.observability import (
+        _clear_ai_metrics_for_tests,
+        get_ai_metrics_snapshot,
+        log_ai_event,
+    )
+
+    _clear_ai_metrics_for_tests()
+    log_ai_event(
+        "coach_tool_execution",
+        status="ok",
+        tool="training_load",
+        operation="business_data_collection",
+        duration_ms=125.0,
+    )
+    log_ai_event(
+        "coach_generation",
+        status="ok",
+        model="qwen2.5:3b",
+        operation="initial_generation",
+        duration_ms=4_500.0,
+    )
+    log_ai_event(
+        "coach_generation",
+        status="ok",
+        model="qwen2.5:3b",
+        operation="quality_rewrite",
+        duration_ms=4_200.0,
+    )
+
+    snapshot = get_ai_metrics_snapshot(window_hours=24)
+    coach_events = [item for item in snapshot["breakdown"] if item["event"].startswith("coach_")]
+
+    assert snapshot["sample_count"] == 3
+    assert {item["dimension"] for item in coach_events} == {
+        "business_data_collection",
+        "initial_generation",
+        "quality_rewrite",
+    }
+    assert all(item["count"] == 1 for item in coach_events)
+    _clear_ai_metrics_for_tests()
+
+
 
 def test_coach_output_gate_accepts_natural_first_person_training_judgment():
     from opencoach.api.ai import _coach_response_needs_rewrite

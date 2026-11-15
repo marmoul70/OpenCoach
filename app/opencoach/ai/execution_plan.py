@@ -273,7 +273,7 @@ def build_coach_execution_plan(
         )
         safety_calls = [PlannedToolCall("active_constraints", safety_arguments)]
         recommendation_request = any(
-            term in normalized
+            term in intent_context
             for term in (
                 "quelle seance", "quel entrainement", "que faire",
                 "conseille", "recommande", "adapter", "ajuste",
@@ -298,10 +298,11 @@ def build_coach_execution_plan(
                 return CoachExecutionPlan(clarification=(
                     "La charge peut être analysée sur 1 à 90 jours. Quelle période valide souhaites-tu ?"
                 ))
+            history_period = load_period if explicit_load_request else 7
             safety_calls.extend((
                 PlannedToolCall(
                     "training_history",
-                    {"nb_days": 7, "exclude_current_day": True},
+                    {"nb_days": history_period, "exclude_current_day": True},
                 ),
                 PlannedToolCall("training_load", {"nb_days": load_period}),
                 PlannedToolCall("recovery_analysis", {}),

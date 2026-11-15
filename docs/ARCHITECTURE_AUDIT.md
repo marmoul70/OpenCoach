@@ -211,6 +211,10 @@ Le répertoire `.refactor-backup/20260831-231419/` contenait six anciens fichier
 
 Les six copies ont donc été supprimées de la branche de nettoyage. L'historique Git conserve les contenus si une comparaison historique est nécessaire. Aucune source frontend active n'a été supprimée.
 
+### Autre sauvegarde accidentellement versionnée
+
+Le fichier `app/opencoach/backup/restore.py.before-rollback-20260831-112557` était une copie pré-rollback de l'implémentation de restauration. Il n'avait aucune référence détectée, était couvert par la règle `.gitignore` `*.before-*`, et différait du module actif `restore.py` (407 lignes contre 528). Il a été retiré de la branche ; l'implémentation active et les données de sauvegarde utilisateur ne sont pas concernées. Le contenu historique reste accessible dans Git.
+
 ## 6. Architecture cible minimale
 
 - **API** : authentification, validation des entrées, appel des services, sérialisation des réponses.

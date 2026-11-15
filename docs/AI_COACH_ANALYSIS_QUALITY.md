@@ -102,3 +102,6 @@ Ce garde-fou est volontairement conservateur et lexical : il bloque les formats 
 Pour une recommandation d'entraînement, l'historique descriptif et la charge récente doivent couvrir les mêmes journées complètes. L'outil `training_load` analyse les jours précédant la date de référence, sans inclure la journée en cours. Le planificateur transmet donc `exclude_current_day=true` à `training_history` pour les recommandations, y compris après une clarification de période en plusieurs tours.
 
 Les consultations ordinaires de l'historique conservent leur comportement historique et incluent la date de référence. Le paramètre est explicite, testé et ne modifie pas le calcul métier de charge.
+
+
+Une demande explicite d'analyse de charge sans période ne doit pas être silencieusement réduite à une recommandation générique : le planificateur demande la durée avant toute exécution. La période fournie dans la réponse de clarification est rattachée à l'intention initiale, puis appliquée aux deux sources. Les comparaisons de tendances conservent leurs propres bornes (jusqu'à 180 jours par fenêtre) et ne sont pas limitées par la borne de 90 jours de l'outil de charge simple.

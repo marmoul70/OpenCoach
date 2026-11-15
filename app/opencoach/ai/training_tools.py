@@ -20,6 +20,13 @@ class TrainingHistoryArguments(BaseModel):
         le=365,
         description="Nombre de jours calendaires inclus dans la période.",
     )
+    exclude_current_day: bool = Field(
+        default=False,
+        description=(
+            "Si vrai, termine la période à la veille de la date de référence "
+            "pour comparer des journées entièrement écoulées."
+        ),
+    )
 
 
 def build_training_history_tool(
@@ -36,7 +43,12 @@ def build_training_history_tool(
 
     def execute(arguments: BaseModel) -> dict:
         nb_days = arguments.nb_days
-        end_date = reference_date_provider()
+        reference_date = reference_date_provider()
+        end_date = (
+            reference_date - timedelta(days=1)
+            if arguments.exclude_current_day
+            else reference_date
+        )
         start_date = end_date - timedelta(days=nb_days - 1)
         stats = service.calculate(
             athlete_profile_id,
@@ -132,7 +144,9 @@ def build_training_history_tool(
             "Retourne le bilan réel des entraînements sur les nb_days derniers "
             "jours calendaires inclusifs : séances, durée, distance, D+ et charge. "
             "nb_days est obligatoire : si la durée manque, demande-la à l'utilisateur "
-            "et attends sa réponse avant tout appel. Les métriques précisent leur couverture. "
+            "et attends sa réponse avant tout appel. Par défaut, la date de référence est incluse ; "
+            "exclude_current_day=true permet d'analyser uniquement les jours entièrement écoulés. "
+            "Les métriques précisent leur couverture. "
             "Quand la couverture est partielle, observed_value est le sous-total des seules séances "
             "renseignées : l'annoncer explicitement comme partiel, jamais comme total de période."
         ),

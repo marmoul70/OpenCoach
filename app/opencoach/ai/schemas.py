@@ -84,3 +84,22 @@ class AIChatResult(BaseModel):
         if not self.content.strip() and not self.tool_calls:
             raise ValueError("La réponse IA ne contient ni texte ni appel d'outil.")
         return self
+
+
+class AICoachPreferencesPayload(BaseModel):
+    """Préférences de style du coach ; les règles de sécurité restent fixes."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    personality: Literal["balanced", "demanding", "severe", "motivating", "benevolent"] = "balanced"
+    firmness: int = Field(default=3, ge=1, le=5)
+    motivation: int = Field(default=3, ge=1, le=5)
+    response_style: Literal["concise", "detailed", "analytical"] = "concise"
+    custom_prompt: str = Field(default="", max_length=6000)
+
+
+class AICoachPreferencesResponse(AICoachPreferencesPayload):
+    """Préférences effectivement enregistrées pour l'utilisateur."""
+
+    pass
+

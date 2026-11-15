@@ -178,12 +178,12 @@ def build_activity_detail_tool(
             ],
             "intervals_truncated": len(detail.intervals) > 40,
             "streams": {
-                "time": streams.time.summary if streams.time is not None else None),
-                "distance": streams.distance.summary if streams.distance is not None else None),
-                "heartrate": streams.heartrate.summary if streams.heartrate is not None else None),
-                "velocity_smooth": streams.velocity_smooth.summary if streams.velocity_smooth is not None else None),
-                "cadence": streams.cadence.summary if streams.cadence is not None else None),
-                "watts": streams.watts.summary if streams.watts is not None else None),
+                "time": streams.time.summary if streams.time is not None else None,
+                "distance": streams.distance.summary if streams.distance is not None else None,
+                "heartrate": streams.heartrate.summary if streams.heartrate is not None else None,
+                "velocity_smooth": streams.velocity_smooth.summary if streams.velocity_smooth is not None else None,
+                "cadence": streams.cadence.summary if streams.cadence is not None else None,
+                "watts": streams.watts.summary if streams.watts is not None else None,
             },
         }
         return result

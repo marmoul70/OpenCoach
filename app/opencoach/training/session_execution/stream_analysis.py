@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import isfinite
-from numbers import Real
 from typing import Sequence
 
 from opencoach.models.activity_detail import normalize_stream_number

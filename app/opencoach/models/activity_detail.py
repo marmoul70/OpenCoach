@@ -111,6 +111,7 @@ class ActivityStream:
             "average": round(sum(values) / len(values), 2) if values else None,
         }
 
+
 @dataclass(frozen=True, slots=True)
 class ActivityStreams:
     """Streams utiles à l'analyse d'une activité."""

@@ -562,10 +562,10 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
 def test_coach_generation_budget_matches_requested_response_style():
     from opencoach.api.ai import _coach_response_token_budget
 
-    assert _coach_response_token_budget("concise") == 384
-    assert _coach_response_token_budget("analytical") == 640
-    assert _coach_response_token_budget("detailed") == 896
-    assert _coach_response_token_budget("unknown") == 384
+    assert _coach_response_token_budget("concise") == 640
+    assert _coach_response_token_budget("analytical") == 896
+    assert _coach_response_token_budget("detailed") == 1152
+    assert _coach_response_token_budget("unknown") == 640
 
 
 def test_default_concise_coach_style_is_actionable():

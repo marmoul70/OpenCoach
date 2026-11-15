@@ -57,8 +57,6 @@ def _extract_coach_analysis_periods(tool_results) -> list[dict[str, str | int]]:
     return periods
 
 
-_DEFAULT_COACH_PREFERENCES = AICoachPreferencesPayload()
-
 
 def _extract_race_options(tool_results) -> list[AIRaceOptionResponse]:
     """Expose les courses du calendrier au frontend sans laisser le LLM les reconstruire."""

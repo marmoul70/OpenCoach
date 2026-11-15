@@ -74,6 +74,9 @@ from opencoach.ai.response_synthesis import (
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
+_DEFAULT_COACH_PREFERENCES = AICoachPreferencesPayload()
+
+
 def _preferences_response(
     preferences: AICoachPreference | None,
 ) -> AICoachPreferencesResponse:

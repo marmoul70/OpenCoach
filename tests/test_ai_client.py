@@ -285,3 +285,30 @@ def test_length_done_reason_is_preserved_for_truncation_detection():
     result = asyncio.run(run())
     assert result.done is True
     assert result.done_reason == "length"
+
+
+
+def test_truncated_generation_is_logged_with_truncated_status(caplog):
+    caplog.set_level(logging.INFO, logger="opencoach.ai.observability")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={
+            "model": "test-model",
+            "message": {"role": "assistant", "content": "Réponse incomplète"},
+            "done": True,
+            "done_reason": "length",
+            "eval_count": 256,
+        })
+
+    async def run():
+        client = OllamaClient(
+            AISettings(enabled=True, model="test-model"),
+            transport=httpx.MockTransport(handler),
+        )
+        return await client.chat(make_request())
+
+    result = asyncio.run(run())
+
+    assert result.done_reason == "length"
+    assert '"status":"truncated"' in caplog.text
+    assert '"eval_count":256' in caplog.text

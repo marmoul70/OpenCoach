@@ -11,7 +11,7 @@ from opencoach.ai.race_tools import (
 )
 from opencoach.database.base import Base
 from opencoach.database.repositories import SqlProfileRepository, SqlRaceRepository
-from opencoach.services import ProfileService
+from opencoach.services import ProfileService, RacePreparationService
 from opencoach.database.models import AthleteProfile, Race, User
 from opencoach.models import Activity
 from opencoach.training.stats import TrainingStats
@@ -132,11 +132,13 @@ def test_race_preparation_analysis_returns_course_and_complete_training_metrics(
         stats = _stats()
         service = FakeTrainingStatsService([activity], manual, stats)
         result = build_race_preparation_tool(
-            SqlRaceRepository(session),
-            ProfileService(SqlProfileRepository(session, profile.user_id)),
-            service,
-            profile.id,
-            reference_date_provider=lambda: date(2026, 11, 9),
+            RacePreparationService(
+                SqlRaceRepository(session),
+                ProfileService(SqlProfileRepository(session, profile.user_id)),
+                service,
+                profile.id,
+                reference_date_provider=lambda: date(2026, 11, 9),
+            )
         ).handler(
             RacePreparationArguments(race_id=race.id, history_days=28)
         )
@@ -197,11 +199,13 @@ def test_race_preparation_masks_partial_metrics_instead_of_extrapolating():
         )
         service = FakeTrainingStatsService([activity], manual, partial_stats)
         result = build_race_preparation_tool(
-            SqlRaceRepository(session),
-            ProfileService(SqlProfileRepository(session, profile.user_id)),
-            service,
-            profile.id,
-            reference_date_provider=lambda: date(2026, 11, 9),
+            RacePreparationService(
+                SqlRaceRepository(session),
+                ProfileService(SqlProfileRepository(session, profile.user_id)),
+                service,
+                profile.id,
+                reference_date_provider=lambda: date(2026, 11, 9),
+            )
         ).handler(
             RacePreparationArguments(race_id=race.id, history_days=28)
         )
@@ -223,11 +227,13 @@ def test_race_preparation_does_not_expose_another_athletes_race():
         race = _race(session, owner.id)
         service = FakeTrainingStatsService([], [], _stats())
         result = build_race_preparation_tool(
-            SqlRaceRepository(session),
-            ProfileService(SqlProfileRepository(session, other.user_id)),
-            service,
-            other.id,
-            reference_date_provider=lambda: date(2026, 11, 9),
+            RacePreparationService(
+                SqlRaceRepository(session),
+                ProfileService(SqlProfileRepository(session, other.user_id)),
+                service,
+                other.id,
+                reference_date_provider=lambda: date(2026, 11, 9),
+            )
         ).handler(
             RacePreparationArguments(race_id=race.id, history_days=28)
         )
@@ -244,11 +250,13 @@ def test_race_preparation_refuses_to_analyse_past_race_as_future_goal():
         race = _race(session, profile.id, race_date=date(2026, 11, 8))
         service = FakeTrainingStatsService([], [], _stats())
         result = build_race_preparation_tool(
-            SqlRaceRepository(session),
-            ProfileService(SqlProfileRepository(session, profile.user_id)),
-            service,
-            profile.id,
-            reference_date_provider=lambda: date(2026, 11, 9),
+            RacePreparationService(
+                SqlRaceRepository(session),
+                ProfileService(SqlProfileRepository(session, profile.user_id)),
+                service,
+                profile.id,
+                reference_date_provider=lambda: date(2026, 11, 9),
+            )
         ).handler(
             RacePreparationArguments(race_id=race.id, history_days=28)
         )

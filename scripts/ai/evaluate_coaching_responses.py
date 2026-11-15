@@ -164,12 +164,24 @@ async def main_async(args: argparse.Namespace) -> int:
                 started = time.perf_counter()
                 try:
                     response = await client.chat(build_request(case, args.temperature, args.num_predict))
-                    result = score_coaching_response(case, response.content)
-                    row = {
-                        "model": model, "case_id": case["id"], "repetition": repetition,
-                        "status": "ok", "latency_ms": round((time.perf_counter()-started)*1000, 2),
-                        **result,
-                    }
+                    elapsed = round((time.perf_counter()-started)*1000, 2)
+                    if not response.done or response.done_reason == "length":
+                        row = {
+                            "model": model, "case_id": case["id"], "repetition": repetition,
+                            "status": "incomplete_generation", "latency_ms": elapsed,
+                            "pass": False, "done_reason": response.done_reason,
+                            "error": "Génération interrompue ou tronquée.",
+                        }
+                    else:
+                        result = score_coaching_response(case, response.content)
+                        row = {
+                            "model": model, "case_id": case["id"], "repetition": repetition,
+                            "status": "ok", "latency_ms": elapsed,
+                            "done_reason": response.done_reason,
+                            "prompt_eval_count": response.prompt_eval_count,
+                            "eval_count": response.eval_count,
+                            **result,
+                        }
                 except AIProviderError as exc:
                     row = {
                         "model": model, "case_id": case["id"], "repetition": repetition,

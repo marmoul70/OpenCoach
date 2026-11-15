@@ -9,6 +9,7 @@ from opencoach.ai.activity_tools import (
     build_activity_detail_tool,
 )
 from opencoach.database.base import Base
+from opencoach.database.repositories import SqlActivityRepository, SqlActivityDetailRepository
 from opencoach.database.models import Activity as ActivityModel
 from opencoach.database.repositories import SqlActivityDetailRepository
 from opencoach.models import ActivityDetail, ActivityInterval, ActivityStream, ActivityStreams
@@ -73,7 +74,7 @@ def test_activity_detail_returns_curated_activity_and_interval_data():
                 provider_lap_count=1,
             ),
         )
-        tool = build_activity_detail_tool(session, profile_id)
+        tool = build_activity_detail_tool(SqlActivityRepository(session), SqlActivityDetailRepository(session), profile_id)
         result = tool.handler(
             ActivityDetailArguments(activity_date=date(2026, 11, 9))
         )
@@ -116,7 +117,7 @@ def test_activity_detail_does_not_expose_another_athletes_activity():
     other_profile_id = uuid4()
     with Session(engine) as session:
         activity = _activity(session, owner_id)
-        tool = build_activity_detail_tool(session, other_profile_id)
+        tool = build_activity_detail_tool(SqlActivityRepository(session), SqlActivityDetailRepository(session), other_profile_id)
         result = tool.handler(
             ActivityDetailArguments(activity_id=activity.id)
         )

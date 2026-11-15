@@ -568,7 +568,7 @@ def test_coach_quality_gate_rejects_ungrounded_health_and_load_claims():
         SimpleNamespace(tool="recovery_status", status="ok", data={"signals": []}),
         SimpleNamespace(tool="recovery_analysis", status="ok", data={"windows": []}),
         SimpleNamespace(tool="training_load", status="ok", data={"load": {"coverage": {"status": "complete"}}}),
-        SimpleNamespace(tool="active_constraints", status="ok, data={"constraints": []}),
+        SimpleNamespace(tool="active_constraints", status="ok", data={"constraints": []}),
         SimpleNamespace(tool="athlete_training_profile", status="ok", data={"status": "partial", "missing_profile_fields": ["vma"]}),
     ]
     answer = (

@@ -5,8 +5,6 @@ from __future__ import annotations
 import json
 import re
 from datetime import date
-from uuid import UUID
-from typing import Any
 
 from opencoach.ai.schemas import AIRaceOptionResponse
 

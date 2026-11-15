@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-import json
-import re
 from time import perf_counter
 from uuid import UUID
 from functools import lru_cache
-from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+from pydantic import ValidationError
 
 from opencoach.ai.client import AIProviderError
 from opencoach.ai.observability import (
@@ -34,9 +31,7 @@ from opencoach.ai.data_proposals import (
 from opencoach.ai.config import AISettings, get_ai_settings
 from opencoach.ai.schemas import (
     AIStatusResponse,
-    AIConversationMessage,
     AIQuestionRequest,
-    AIRaceOptionResponse,
     AIQuestionResponse,
     AIChatRequest,
     AIMessage,
@@ -45,7 +40,6 @@ from opencoach.ai.schemas import (
 )
 from opencoach.ai.prompts import (
     _CHAT_SYSTEM_PROMPT,
-    _COACH_SYSTEM_PROMPT,
     _coach_response_token_budget,
     _coach_synthesis_system_prompt,
     _coach_system_prompt,

@@ -2,7 +2,7 @@
 
 **Dernière mise à jour :** 15 novembre 2026  
 **Branche de travail :** `refactor/architecture-cleanup`  
-**Dernier HEAD vérifié avant cette note :** `d7915c756589c22ff4d7030e1d7c02785202192d`  
+**HEAD de travail au 15 novembre 2026 :** `e87f413e782df882dd64d2a03370d81bdbcbc422`  
 **Dépôt :** `marmoul70/OpenCoach`
 
 Ce document est le point de reprise à lire en premier lors d'une nouvelle discussion.
@@ -135,3 +135,40 @@ Vérification du code fournisseur :
 - Run 43761859578 — completed / success — `5dd1c83f90beb91e0d310db6e4c5d844f8c6cb0d`
 
 Ne pas considérer la refonte complète tant que les accès SQL directs et calculs métier des adaptateurs IA n'ont pas été retirés, que la suite de tests et CI ne sont pas vertes sur le HEAD final et que les intégrations ont été validées sur la VM.
+
+
+## 9. Mise à jour du chantier — refactor Coach/IA
+
+**HEAD de travail :** `e87f413e782df882dd64d2a03370d81bdbcbc422`  
+**Branche :** `refactor/architecture-cleanup`
+
+### Modifications poussées sur la branche
+
+- `services/training_profile_context.py` : le service Coach construit désormais le contexte physiologique, les zones cardiaques, les champs manquants et les capacités hebdomadaires. `ai/coaching_tools.py` ne reconstruit plus les objets physiologiques et délègue au service.
+- `services/race_preparation.py` : l'analyse de préparation d'une course est déplacée hors de l'adaptateur IA. Le service utilise `RaceRepository`, `ProfileService` et `TrainingStatsService`; `ai/race_tools.py` conserve le schéma d'arguments et délègue au service.
+- `services/planned_training.py` : la consultation des séances, les agrégats de durée/distance/D+ et la sélection de la prochaine séance planifiée sont centralisés dans le Coach.
+- Le registre de `api/ai.py` injecte ces services avec l'identifiant de l'athlète provenant du contexte authentifié.
+- Les tests de contrats existants `test_ai_coaching_tools.py` et `test_ai_race_tools.py` ont été adaptés aux nouveaux points d'injection. Les assertions de résultats et de cloisonnement par athlète sont conservées.
+
+### Frontière obtenue
+
+Les adaptateurs `ai/race_tools.py` et les outils de profil/planning dans `ai/coaching_tools.py` ne contiennent plus les calculs métier déplacés et ne font aucune requête SQLAlchemy directe. Ils restent responsables de la validation des arguments, de l'appel du service et de la sérialisation limitée destinée au modèle.
+
+### Points restant à traiter
+
+1. `ai/execution_tools.py` construit encore des repositories SQL à partir d'une `Session` dans l'adaptateur. Déplacer l'orchestration de lecture et le débrief métier dans un service Coach dédié, puis injecter ce service.
+2. `ai/data_collection_tools.py` porte la validation de preuve conversationnelle (qui doit rester côté adaptateur) mais appelle directement la persistance des propositions avec une `Session`. Introduire une frontière de service applicatif pour la création de proposition.
+3. Auditer les agrégations/états de couverture dans `ai/load_tools.py`, `ai/trend_tools.py` et `ai/recovery_tools.py`. Conserver les règles de couverture et les sémantiques de données manquantes ; les déplacer vers les services Coach lorsque ce sont des règles métier, pas lorsqu'il s'agit seulement de formatage du contexte LLM.
+4. Découper `api/ai.py` (API, registre, orchestration, prompts, préférences et propositions) après stabilisation des contrats des services.
+5. Refaire un audit global des usages et du code mort sur backend, frontend, scripts, infrastructure, migrations et CI. Aucune suppression supplémentaire ne doit être faite sur une simple intuition.
+6. Ajouter des tests unitaires directs pour les nouveaux services, en complément des tests de contrat des adaptateurs.
+7. Exécuter la suite complète, le lint/build frontend et la CI sur le HEAD final.
+
+### Validation de ce lot
+
+- Les modifications sont commitées sur `refactor/architecture-cleanup`, pas sur `main`.
+- Les appels GitHub de statut combiné et de runs de workflow n'ont retourné aucun statut/run consultable pour le HEAD `e87f413...`. Cela ne prouve ni un succès ni un échec de CI.
+- Aucun test Python, lint ou build frontend n'a été exécuté dans un environnement de checkout pendant ce lot. Ne pas présenter la branche comme validée ou prête au déploiement avant ces contrôles.
+- Le workflow `.github/workflows/ci.yml` déclenche bien sur les pushes de branches `refactor/**`, mais le connecteur utilisé ici ne fournit pas la liste générale des runs de push.
+
+Le prochain lot doit poursuivre le déplacement des responsabilités métier vers le Coach, puis réaliser l'audit frontend/scripts/infrastructure. Ne pas fusionner, rebaser sur `main`, supprimer de branche ou incrémenter `VERSION` dans ce chantier.

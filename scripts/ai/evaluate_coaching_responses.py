@@ -60,7 +60,8 @@ STRUCTURED_DATA = re.compile(r"(?:\{\s*[\"']?[a-z_]+[\"']?\s*:|[\"'][a-z_]+[\"']
 COACH_JUDGMENT = re.compile(
     r"\b(?:mon avis|je te conseille|je recommande|je privilégie|"
     r"je garderais|je remplacerais|je réduirais|je reporterais|"
-    r"je maintiendrais|ta semaine|ton entraînement|ta charge|"
+    r"je maintiendrais|ta semaine|la semaine|ton entraînement|ta charge|"
+    r"la charge|ta récupération|la récupération|ta readiness|la douleur|ton trail|la séance|"
     r"tu as bien|tu as réussi|le point positif|le point de vigilance|"
     r"ce n'est pas|c'est cohérent|c'est trop|c'est adapté|"
     r"la priorité|pour progresser|pour préserver)\b",

@@ -345,6 +345,16 @@ def get_ai_coach_preferences(
     user_id=Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ) -> AICoachPreferencesResponse:
+    # Les interdictions de course sont des contraintes métier, pas une
+    # préférence rédactionnelle du LLM. Décision sûre avant génération.
+    restricted_answer = _coach_running_restriction_answer(payload.question, tool_results)
+    if restricted_answer is not None:
+        return AIQuestionResponse(
+            answer=restricted_answer,
+            model=settings.model,
+            context_used=True,
+        )
+
     preferences = db.scalar(
         select(AICoachPreference).where(AICoachPreference.user_id == user_id)
     )
@@ -680,8 +690,8 @@ def _coach_running_restriction_answer(question: str, tool_results) -> str | None
     exclusivement running_allowed / cross_training_allowed issus d'OpenCoach.
     """
     if not re.search(
-        r"\\b(?:s[eé]ance|entra[iî]nement|courir|course|footing|sortie|"
-        r"que faire|conseill|recommand|adapter|ajuster)\\b",
+        r"\b(?:s[eé]ance|entra[iî]nement|courir|course|footing|sortie|"
+        r"que faire|conseill|recommand|adapter|ajuster)\b",
         question,
         re.IGNORECASE,
     ):
@@ -895,16 +905,6 @@ async def ask_local_ai_with_athlete_context(
                     model=settings.model,
                     context_used=False,
                 )
-
-    # Les interdictions de course sont des contraintes métier, pas une
-    # préférence rédactionnelle du LLM. Décision sûre avant génération.
-    restricted_answer = _coach_running_restriction_answer(payload.question, tool_results)
-    if restricted_answer is not None:
-        return AIQuestionResponse(
-            answer=restricted_answer,
-            model=settings.model,
-            context_used=True,
-        )
 
     failed_tools = [item for item in tool_results if item.status == "failed"]
     if failed_tools:

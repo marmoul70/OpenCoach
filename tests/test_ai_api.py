@@ -925,3 +925,21 @@ def test_coach_output_gate_accepts_natural_coaching_and_explicit_data_requests()
 
     assert _coach_response_needs_rewrite("Analyse ma semaine.", coaching_answer) is False
     assert _coach_response_needs_rewrite("Combien de kilomètres ai-je couru ?", numeric_answer) is False
+
+
+
+def test_coach_output_gate_recognizes_natural_judgments_and_quality_fallback():
+    from opencoach.api.ai import (
+        _coach_response_needs_rewrite,
+        _coach_response_quality_fallback_answer,
+    )
+
+    assert _coach_response_needs_rewrite(
+        "Analyse ma semaine.",
+        "La semaine a été solide, mais la récupération reste à surveiller. "
+        "Je garderais la prochaine sortie facile.",
+    ) is False
+
+    fallback = _coach_response_quality_fallback_answer()
+    assert "n'ai pas réussi à formuler une synthèse de coach" in fallback
+    assert "moteur de rédaction local est momentanément indisponible" not in fallback

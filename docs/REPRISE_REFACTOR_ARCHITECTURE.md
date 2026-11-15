@@ -111,3 +111,27 @@ Candidat sûr à un nettoyage d'import (conserver l'import combiné).
 Aucun changement de comportement sportif n'est autorisé implicitement par ce chantier. Si un service Coach existant ne couvre pas exactement le contrat actuel d'un outil IA, ajouter ou compléter le service métier avec des tests plutôt que déplacer le calcul dans l'IA ou le supprimer.
 
 Les données textuelles libres provenant des profils, courses, activités et notes restent des données non fiables ; conserver les protections et les limites de sortie des outils IA.
+
+## 8. Mise à jour du chantier — 15 novembre 2026
+
+**HEAD après ajout de l'ADR et de l'audit des flux :** `8320e45dbed65bad4e0718fe85460c9008a57672`
+
+Nouveaux documents :
+- `docs/architecture/adr/0002-coach-central-data-and-ai-boundary.md` : décision d'architecture sur le référentiel canonique et la frontière Coach/IA.
+- `docs/ARCHITECTURE_AUDIT.md` : vérification documentée des flux COROS, Intervals.icu, Wellness et TrainingStats.
+
+Vérification du code fournisseur :
+- COROS et Intervals.icu écrivent tous deux les activités dans le référentiel Activity OpenCoach et le Wellness dans le référentiel Wellness OpenCoach.
+- `ReadinessService` et `TrainingStatsService` consomment ces repositories centraux.
+- Ce socle de centralisation est donc déjà en place pour activités et Wellness ; il ne faut pas le remplacer par une nouvelle couche de stockage.
+
+**Refactorisation de code restant à réaliser :** les outils `ai/coaching_tools.py` et `ai/race_tools.py` utilisent encore SQLAlchemy directement et embarquent des transformations/agrégations. Le prochain lot doit les faire consommer les repositories et services métier du Coach, en conservant les contrats des outils et en ajoutant des tests de non-régression. Les autres outils IA doivent ensuite être audités selon la même règle.
+
+**Derniers runs observés :**
+- Run 43762288603 — in_progress — `8320e45dbed65bad4e0718fe85460c9008a57672`
+- Run 43762267050 — in_progress — `da577534f3b3acb32a0ff302ce8e10ef6075c6a0`
+- Run 43761886512 — completed / success — `b3cadb4ea83bb7fbb7f4359d6a2aa125d8bf6ec8`
+- Run 43761873370 — completed / success — `47c1a10cb2e3ba2d200e38a802013bd417c994e3`
+- Run 43761859578 — completed / success — `5dd1c83f90beb91e0d310db6e4c5d844f8c6cb0d`
+
+Ne pas considérer la refonte complète tant que les accès SQL directs et calculs métier des adaptateurs IA n'ont pas été retirés, que la suite de tests et CI ne sont pas vertes sur le HEAD final et que les intégrations ont été validées sur la VM.

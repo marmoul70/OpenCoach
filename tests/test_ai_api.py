@@ -797,6 +797,86 @@ def test_coach_tool_result_serialization_bounds_large_payloads():
 
 
 
+
+def test_coach_running_restriction_guard_blocks_running_and_respects_cross_training_permission():
+    from types import SimpleNamespace
+
+    from opencoach.api.ai import _coach_running_restriction_answer
+
+    result = SimpleNamespace(
+        tool="active_constraints",
+        status="ok",
+        data={
+            "constraints": [
+                {
+                    "running_allowed": False,
+                    "cross_training_allowed": True,
+                }
+            ]
+        },
+    )
+
+    answer = _coach_running_restriction_answer(
+        "Quelle séance me conseilles-tu aujourd'hui ?",
+        [result],
+    )
+
+    assert answer is not None
+    assert "interdit actuellement la course à pied" in answer
+    assert "activité croisée peut être envisagée" in answer
+
+
+def test_coach_running_restriction_guard_does_not_authorize_cross_training_by_default():
+    from types import SimpleNamespace
+
+    from opencoach.api.ai import _coach_running_restriction_answer
+
+    result = SimpleNamespace(
+        tool="active_constraints",
+        status="ok",
+        data={
+            "constraints": [
+                {
+                    "running_allowed": False,
+                    "cross_training_allowed": False,
+                }
+            ]
+        },
+    )
+
+    answer = _coach_running_restriction_answer(
+        "Quelle séance me conseilles-tu aujourd'hui ?",
+        [result],
+    )
+
+    assert answer is not None
+    assert "ne peux pas non plus te proposer une activité croisée" in answer
+
+
+def test_coach_running_restriction_guard_ignores_unrelated_questions():
+    from types import SimpleNamespace
+
+    from opencoach.api.ai import _coach_running_restriction_answer
+
+    result = SimpleNamespace(
+        tool="active_constraints",
+        status="ok",
+        data={
+            "constraints": [
+                {
+                    "running_allowed": False,
+                    "cross_training_allowed": False,
+                }
+            ]
+        },
+    )
+
+    assert _coach_running_restriction_answer(
+        "Explique-moi la différence entre SV1 et SV2.",
+        [result],
+    ) is None
+
+
 def test_ai_observability_endpoint_returns_aggregates_for_authenticated_user():
     from opencoach.ai.observability import (
         _clear_ai_metrics_for_tests,

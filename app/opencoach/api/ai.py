@@ -690,8 +690,8 @@ def _coach_running_restriction_answer(question: str, tool_results) -> str | None
     exclusivement running_allowed / cross_training_allowed issus d'OpenCoach.
     """
     if not re.search(
-        r"\b(?:s[eé]ance|entra[iî]nement|courir|course|footing|sortie|"
-        r"que faire|conseill|recommand|adapter|ajuster)\b",
+        r"\b(?:s[eé]ance|entra[iî]n\w*|courir|course|footing|sortie|"
+        r"que faire|dois-je faire|conseill\w*|recommand\w*|adapt\w*|ajust\w*)\b",
         question,
         re.IGNORECASE,
     ):

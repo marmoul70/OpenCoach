@@ -324,7 +324,7 @@ def test_ai_coach_uses_python_execution_and_skips_global_athlete_context(caplog)
     assert response.status_code == 200
     assert response.json()["context_used"] is True
     assert response.json()["tools_used"]
-    assert "training_history" in response.json()["tools_used"]
+    assert "race_calendar" in response.json()["tools_used"]
     assert response.json()["data_proposals"] == []
     assert response.json()["answer"].startswith("Ta semaine est cohérente")
     assert len(ai_service.requests) == 2

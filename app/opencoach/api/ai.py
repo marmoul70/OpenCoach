@@ -244,18 +244,27 @@ class AIRaceOptionResponse(BaseModel):
 def _extract_coach_analysis_periods(tool_results) -> list[dict[str, str | int]]:
     """Expose uniquement les fenêtres datées explicitement retournées par les outils."""
     periods: list[dict[str, str | int]] = []
-    seen: set[tuple[str, str, str]] = set()
+    seen: set[tuple[str, str]] = set()
+    label_by_path = {
+        "current_period": "période récente",
+        "comparison_period": "période précédente",
+        "baseline_period": "période de référence",
+        "windows": "fenêtre analysée",
+        "week": "semaine analysée",
+        "period": "période analysée",
+    }
 
     def visit(tool: str, value, path: str = "") -> None:
         if isinstance(value, dict):
             start = value.get("start_date")
             end = value.get("end_date")
             if isinstance(start, str) and isinstance(end, str):
-                key = (tool, start, end)
+                key = (start, end)
                 if key not in seen:
+                    path_key = path.split()[-1] if path else "period"
                     item: dict[str, str | int] = {
                         "tool": tool,
-                        "label": path.replace("_", " ").strip() or "période analysée",
+                        "label": label_by_path.get(path_key, "période analysée"),
                         "start_date": start,
                         "end_date": end,
                     }
@@ -692,7 +701,10 @@ _COACH_OPENING_JUDGMENT = re.compile(
     r"ta charge (?:est|reste|semble)|la récupération (?:est|reste|semble)|"
     r"ta récupération (?:est|reste|semble)|"
     r"je (?:garderais|maintiendrais|réduirais|remplacerais|reporterais|"
-    r"partirais|privilégierais)|"
+    r"partirais|privilégierais|te conseille|te propose|partirais sur)|"
+    r"(?:aujourd'hui|pour aujourd'hui|pour ta prochaine séance),? "
+    r"(?:je |tu peux |privilégie |pars sur |opte pour )|"
+    r"la séance (?:du jour|d'aujourd'hui|idéale)|"
     r"tu peux (?:maintenir|alléger|réduire|remplacer|reporter)|"
     r"tu as (?:bien|correctement|difficilement|mal) "
     r"(?:géré|absorbé|encaissé|récupéré|enchaîné|respecté|toléré)|"

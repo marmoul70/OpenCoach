@@ -57,11 +57,15 @@ def build_training_load_tool(
         )
         planned_sessions = sum(day.planned_sessions_count for day in load.days)
 
-        # Volume réellement effectué et charge par séance. Masquer un total si toutes les métriques
-        # disposent pas de la métrique correspondante.
-        duration_data_count = getattr(stats, "duration_data_count", 0)
-        distance_data_count = getattr(stats, "distance_data_count", 0)
-        elevation_data_count = getattr(stats, "elevation_data_count", 0)
+        # La couverture est calculée par le modèle métier TrainingStats,
+        # puis seulement présentée ici dans le contrat conversationnel.
+        duration_data_count = stats.duration_data_count
+        distance_data_count = stats.distance_data_count
+        elevation_data_count = stats.elevation_data_count
+        load_coverage = stats.coverage(available_load_sessions)
+        duration_coverage = stats.coverage(duration_data_count)
+        distance_coverage = stats.coverage(distance_data_count)
+        elevation_coverage = stats.coverage(elevation_data_count)
         volume = {
             "duration_minutes": (
                 getattr(stats, "total_duration_minutes", None)
@@ -73,10 +77,7 @@ def build_training_load_tool(
                 if duration_data_count > 0 and duration_data_count < actual_sessions
                 else None
             ),
-            "duration_coverage": {
-                "available_sessions": duration_data_count,
-                "total_sessions": actual_sessions,
-            },
+            "duration_coverage": duration_coverage,
             "distance_km": (
                 getattr(stats, "total_distance_km", None)
                 if actual_sessions > 0 and distance_data_count == actual_sessions
@@ -87,10 +88,7 @@ def build_training_load_tool(
                 if distance_data_count > 0 and distance_data_count < actual_sessions
                 else None
             ),
-            "distance_coverage": {
-                "available_sessions": distance_data_count,
-                "total_sessions": actual_sessions,
-            },
+            "distance_coverage": distance_coverage,
             "elevation_gain_m": (
                 getattr(stats, "total_elevation_gain_m", None)
                 if actual_sessions > 0 and elevation_data_count == actual_sessions
@@ -101,23 +99,12 @@ def build_training_load_tool(
                 if elevation_data_count > 0 and elevation_data_count < actual_sessions
                 else None
             ),
-            "elevation_coverage": {
-                "available_sessions": elevation_data_count,
-                "total_sessions": actual_sessions,
-            },
+            "elevation_coverage": elevation_coverage,
             "activity_count": getattr(stats, "activities_count", actual_sessions - stats.manual_sessions_count),
             "manual_session_count": stats.manual_sessions_count,
         }
 
-        if actual_sessions == 0:
-            coverage_status = "no_sessions"
-        elif available_load_sessions == 0:
-            coverage_status = "unavailable"
-        elif available_load_sessions < actual_sessions:
-            coverage_status = "partial"
-        else:
-            coverage_status = "complete"
-
+        coverage_status = load_coverage["status"]
         has_complete_load = coverage_status == "complete"
 
         daily = [
@@ -184,26 +171,18 @@ def build_training_load_tool(
             },
             "load": {
                 "planned_total": load.planned_load_total,
-                "actual_total": load.actual_load_total if has_complete_load else None,
+                "actual_total": stats.total_load if has_complete_load else None,
                 "partial_observed_total": (
-                    load.actual_load_total if coverage_status == "partial" else None
+                    stats.total_load if coverage_status == "partial" else None
                 ),
-                "measured_total": (
-                    round(sum(day.measured_load for day in load.days), 2)
-                    if has_complete_load else None
-                ),
-                "estimated_total": (
-                    round(sum(day.estimated_load for day in load.days), 2)
-                    if has_complete_load else None
-                ),
+                "measured_total": stats.measured_load if has_complete_load else None,
+                "estimated_total": stats.estimated_load if has_complete_load else None,
                 "delta_total": load.load_delta_total if has_complete_load else None,
                 "ratio": load.load_ratio if has_complete_load else None,
                 "coverage": {
-                    "available_sessions": available_load_sessions,
+                    **load_coverage,
                     "measured_sessions": stats.measured_load_data_count,
                     "estimated_manual_sessions": estimated_load_data_count,
-                    "total_sessions": actual_sessions,
-                    "status": coverage_status,
                 },
                 "unit": "load_points",
             },

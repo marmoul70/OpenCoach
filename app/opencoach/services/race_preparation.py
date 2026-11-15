@@ -83,18 +83,11 @@ class RacePreparationService:
         available_load_sessions = (
             stats.measured_load_data_count + stats.estimated_load_data_count
         )
+        load_coverage = stats.coverage(available_load_sessions)
 
         def metric(value: float | int, available: int, unit: str) -> dict:
-            if included_sessions == 0:
-                coverage_status = "no_sessions"
-            elif available == 0:
-                coverage_status = "unavailable"
-            elif available < included_sessions:
-                coverage_status = "partial"
-            else:
-                coverage_status = "complete"
-        
-            reliable_value = value if coverage_status == "complete" else None
+            coverage = stats.coverage(available)
+            reliable_value = value if coverage["status"] == "complete" else None
             return {
                 "total": reliable_value,
                 "weekly_equivalent": (
@@ -102,11 +95,7 @@ class RacePreparationService:
                     if reliable_value is not None else None
                 ),
                 "unit": unit,
-                "coverage": {
-                    "available_sessions": available,
-                    "total_sessions": included_sessions,
-                    "status": coverage_status,
-                },
+                "coverage": coverage,
             }
         
         profile = profile_service.get_profile()
@@ -161,7 +150,7 @@ class RacePreparationService:
             "load": {
                 "measured": (
                     stats.measured_load
-                    if included_sessions > 0 and available_load_sessions == included_sessions
+                    if load_coverage["status"] == "complete"
                     else None
                 ),
                 "estimated": (
@@ -176,16 +165,14 @@ class RacePreparationService:
                 ),
                 "partial_observed_total": (
                     stats.total_load
-                    if 0 < available_load_sessions < included_sessions
+                    if load_coverage["status"] == "partial"
                     else None
                 ),
                 "unit": "load_points",
                 "coverage": (
-                    "no_sessions"
-                    if included_sessions == 0
-                    else "complete"
-                    if available_load_sessions == included_sessions
-                    else "partial_or_unavailable"
+                    "partial_or_unavailable"
+                    if load_coverage["status"] in {"partial", "unavailable"}
+                    else load_coverage["status"]
                 ),
             },
         }

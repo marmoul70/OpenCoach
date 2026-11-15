@@ -224,3 +224,49 @@ def test_training_stats_do_not_count_manual_session_without_duration_as_estimate
     assert result.manual_sessions_count == 1
     assert result.estimated_load == 0.0
     assert result.estimated_load_data_count == 0
+
+
+
+def test_training_stats_exposes_shared_metric_coverage_statuses() -> None:
+    from opencoach.training import TrainingStats
+
+    stats = TrainingStats(
+        start_date=START_DATE,
+        end_date=END_DATE,
+        activities_count=2,
+        manual_sessions_count=1,
+        total_duration_minutes=120,
+        total_distance_km=20.0,
+        total_elevation_gain_m=300.0,
+        measured_load=40.0,
+        estimated_load=20.0,
+    )
+
+    assert stats.coverage(0) == {
+        "available_sessions": 0,
+        "total_sessions": 3,
+        "status": "unavailable",
+    }
+    assert stats.coverage(2) == {
+        "available_sessions": 2,
+        "total_sessions": 3,
+        "status": "partial",
+    }
+    assert stats.coverage(3) == {
+        "available_sessions": 3,
+        "total_sessions": 3,
+        "status": "complete",
+    }
+
+    empty = TrainingStats(
+        start_date=START_DATE,
+        end_date=END_DATE,
+        activities_count=0,
+        manual_sessions_count=0,
+        total_duration_minutes=0,
+        total_distance_km=0.0,
+        total_elevation_gain_m=0.0,
+        measured_load=0.0,
+        estimated_load=0.0,
+    )
+    assert empty.coverage(0)["status"] == "no_sessions"

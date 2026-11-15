@@ -62,27 +62,15 @@ def build_training_trends_tool(
             available: int,
             unit: str,
         ) -> dict:
-            total = stats.sessions_count
-            if total == 0:
-                coverage_status = "no_sessions"
-            elif available == 0:
-                coverage_status = "unavailable"
-            elif available < total:
-                coverage_status = "partial"
-            else:
-                coverage_status = "complete"
-
+            coverage = stats.coverage(available)
+            coverage_status = coverage["status"]
             return {
                 "value": value if coverage_status == "complete" else None,
                 "partial_observed_value": (
                     value if coverage_status == "partial" else None
                 ),
                 "unit": unit,
-                "coverage": {
-                    "available_sessions": available,
-                    "total_sessions": total,
-                    "status": coverage_status,
-                },
+                "coverage": coverage,
             }
 
         def trend(current_metric: dict, comparison_metric: dict) -> dict:

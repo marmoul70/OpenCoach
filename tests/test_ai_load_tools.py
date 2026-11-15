@@ -1,5 +1,4 @@
 from datetime import date
-from types import SimpleNamespace
 from uuid import uuid4
 
 from opencoach.ai.load_tools import (
@@ -7,7 +6,38 @@ from opencoach.ai.load_tools import (
     build_training_load_tool,
 )
 from opencoach.ai.tool_engine import AIToolRegistry
-from opencoach.training import RecentTrainingLoad, TrainingLoadComparison
+from opencoach.training import RecentTrainingLoad, TrainingLoadComparison, TrainingStats
+
+
+
+def _training_stats(**values):
+    sessions_count = values.pop("sessions_count", None)
+    manual_sessions_count = values.get("manual_sessions_count", 0)
+    activities_count = values.pop(
+        "activities_count",
+        sessions_count - manual_sessions_count if sessions_count is not None else 0,
+    )
+    total_load = values.pop("total_load", None)
+    if total_load is not None and "measured_load" not in values:
+        values["measured_load"] = total_load
+    defaults = {
+        "start_date": date(2026, 11, 1),
+        "end_date": date(2026, 11, 8),
+        "activities_count": activities_count,
+        "manual_sessions_count": manual_sessions_count,
+        "total_duration_minutes": 0,
+        "total_distance_km": 0.0,
+        "total_elevation_gain_m": 0.0,
+        "measured_load": 0.0,
+        "estimated_load": 0.0,
+        "duration_data_count": 0,
+        "distance_data_count": 0,
+        "elevation_data_count": 0,
+        "measured_load_data_count": 0,
+        "estimated_load_data_count": 0,
+    }
+    defaults.update(values)
+    return TrainingStats(**defaults)
 
 
 def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
@@ -17,7 +47,7 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
 
     class FakeTrainingStatsService:
         def calculate(self, profile_id, start_date, end_date):
-            return SimpleNamespace(
+            return _training_stats(
                 sessions_count=1,
                 measured_load_data_count=1,
                 estimated_load_data_count=0,

@@ -35,6 +35,28 @@ class TrainingStats:
             + self.manual_sessions_count
         )
 
+    def coverage(self, available_sessions: int) -> dict[str, int | str]:
+        """Retourne le statut canonique de couverture d'une métrique."""
+        total_sessions = self.sessions_count
+        if available_sessions < 0 or available_sessions > total_sessions:
+            raise ValueError(
+                "Le nombre de séances couvertes doit être compris entre zéro "
+                "et le nombre total de séances."
+            )
+        if total_sessions == 0:
+            status = "no_sessions"
+        elif available_sessions == 0:
+            status = "unavailable"
+        elif available_sessions < total_sessions:
+            status = "partial"
+        else:
+            status = "complete"
+        return {
+            "available_sessions": available_sessions,
+            "total_sessions": total_sessions,
+            "status": status,
+        }
+
     @property
     def total_load(self) -> float:
         """Charge totale mesurée et estimée."""

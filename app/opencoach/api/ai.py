@@ -673,6 +673,55 @@ def _coach_response_needs_rewrite(question: str, answer: str) -> bool:
         or not _COACH_OPENING_JUDGMENT.search(first_sentence)
     )
 
+def _coach_running_restriction_answer(question: str, tool_results) -> str | None:
+    """Bloque une recommandation de course quand une contrainte métier l'interdit.
+
+    Cette règle Python est indépendante de la rédaction Ollama et utilise
+    exclusivement running_allowed / cross_training_allowed issus d'OpenCoach.
+    """
+    if not re.search(
+        r"\\b(?:s[eé]ance|entra[iî]nement|courir|course|footing|sortie|"
+        r"que faire|conseill|recommand|adapter|ajuster)\\b",
+        question,
+        re.IGNORECASE,
+    ):
+        return None
+
+    constraints = [
+        constraint
+        for item in tool_results
+        if item.tool == "active_constraints" and item.status == "ok"
+        for constraint in (item.data or {}).get("constraints", [])
+        if isinstance(constraint, dict)
+    ]
+    if not any(constraint.get("running_allowed") is False for constraint in constraints):
+        return None
+
+    cross_training_allowed = all(
+        constraint.get("cross_training_allowed") is True
+        for constraint in constraints
+    )
+    answer = (
+        "La restriction enregistrée dans OpenCoach interdit actuellement "
+        "la course à pied pour la date concernée, même si ta Readiness est favorable. "
+        "Je ne peux donc pas te conseiller de maintenir une séance en courant. "
+    )
+    if cross_training_allowed:
+        answer += (
+            "Une activité croisée peut être envisagée uniquement si elle reste "
+            "indolore et respecte les autres limites enregistrées. "
+        )
+    else:
+        answer += (
+            "Je ne peux pas non plus te proposer une activité croisée sans "
+            "autorisation explicite dans tes contraintes. "
+        )
+    return answer + (
+        "Vérifie l'évolution de la douleur et fais réévaluer la restriction "
+        "si nécessaire avant de reprendre la course."
+    )
+
+
 def _coach_response_quality_fallback_answer() -> str:
     """Ne masque pas un échec de rédaction par un faux diagnostic de panne."""
     return (
@@ -846,6 +895,16 @@ async def ask_local_ai_with_athlete_context(
                     model=settings.model,
                     context_used=False,
                 )
+
+    # Les interdictions de course sont des contraintes métier, pas une
+    # préférence rédactionnelle du LLM. Décision sûre avant génération.
+    restricted_answer = _coach_running_restriction_answer(payload.question, tool_results)
+    if restricted_answer is not None:
+        return AIQuestionResponse(
+            answer=restricted_answer,
+            model=settings.model,
+            context_used=True,
+        )
 
     failed_tools = [item for item in tool_results if item.status == "failed"]
     if failed_tools:

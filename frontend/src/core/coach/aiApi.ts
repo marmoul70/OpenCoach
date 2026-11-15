@@ -32,6 +32,7 @@ export interface AIChatResponse {
   context_used: boolean
   data_proposals: AIDataProposal[]
   race_options: AIRaceOption[]
+  tools_used: string[]
 }
 
 async function readError(response: Response): Promise<string> {

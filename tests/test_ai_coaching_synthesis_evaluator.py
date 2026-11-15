@@ -64,7 +64,8 @@ def test_low_recovery_without_a_concrete_training_decision_fails():
     item = cases()[0]
     response = (
         "Ta récupération est mauvaise et ta fatigue reste élevée. "
-        "Surveille tes sensations et pense à bien dormir."
+        "Le repos ou une séance facile seraient des options à envisager, "
+        "mais surveille tes sensations et pense à bien dormir."
     )
     result = score_coaching_response(item, response)
     assert result["checks"]["action_pass"] is False

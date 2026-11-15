@@ -10,6 +10,7 @@ from opencoach.ai.constraints_tools import (
 )
 from opencoach.database.base import Base
 from opencoach.database.models import AthleteConstraint, AthleteProfile, User
+from opencoach.database.repositories import SqlAthleteConstraintRepository
 
 
 def _database():
@@ -56,7 +57,7 @@ def test_active_constraints_returns_only_constraints_covering_target_date():
         ])
         session.flush()
         tool = build_active_constraints_tool(
-            session,
+            SqlAthleteConstraintRepository(session),
             profile.id,
             reference_date_provider=lambda: date(2026, 11, 9),
         )
@@ -90,7 +91,7 @@ def test_active_constraints_is_scoped_to_athlete_and_empty_is_explicit():
         )
         session.flush()
         result = build_active_constraints_tool(
-            session,
+            SqlAthleteConstraintRepository(session),
             other.id,
             reference_date_provider=lambda: date(2026, 11, 9),
         ).handler(ActiveConstraintsArguments())
@@ -118,7 +119,7 @@ def test_active_constraints_accepts_an_explicit_target_date():
         )
         session.flush()
         result = build_active_constraints_tool(
-            session,
+            SqlAthleteConstraintRepository(session),
             profile.id,
             reference_date_provider=lambda: date(2026, 11, 9),
         ).handler(ActiveConstraintsArguments(target_date=date(2026, 11, 10)))

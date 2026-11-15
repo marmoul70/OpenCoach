@@ -143,6 +143,35 @@ Les PR forment une chaîne de dépendances et non cinq lots indépendants :
 
 La PR #37 modifie aussi les statistiques d'entraînement. Toute remise à plat doit comparer les contrats et tests de ces statistiques avec le comportement antérieur pour ne pas perdre une correction métier utile.
 
+## 5 bis. Premières vérifications de responsabilités métier
+
+### Policy de saison : séparation justifiée, pas de doublon à supprimer
+
+Les fichiers `policy_evaluation.py`, `policy_evaluator.py` et `policy_evaluators.py` ont des rôles distincts :
+- `policy_evaluation.py` définit les objets de résultat et les états d'évaluation ;
+- `policy_evaluator.py` orchestre l'évaluation de toutes les règles d'une policy ;
+- `policy_evaluators.py` route chaque type de paramètre vers l'évaluateur correspondant.
+
+Leurs imports sont utilisés par `strategy_gate.py`, `planning/__init__.py` et les tests de policy. La similitude des noms ne justifie donc pas une suppression. Une éventuelle simplification devra conserver les contrats publics et les règles de sécurité (notamment une hard limit non évaluable qui bloque la proposition).
+
+### Réconciliation de charge : temporalités différentes
+
+`planning/weekly/load_reconciliation.py` traite l'écart d'une semaine. `planning/history/load_reconciliation.py` analyse plusieurs semaines pour détecter une dérive durable et proposer un réancrage de référence. Le module historique consomme les résultats contextualisés du module hebdomadaire. Ce sont deux niveaux d'analyse complémentaires, pas deux implémentations du même calcul.
+
+### Charge quotidienne, comparaison et projection
+
+Les services observés ont des responsabilités distinctes :
+- `DailyTrainingLoadService` calcule la charge réellement effectuée à une date ;
+- `TrainingLoadComparisonService` compare le réel au programme OpenCoach ;
+- `RecentTrainingLoadService` agrège les comparaisons sur une période ;
+- `WeeklyLoadProjectionService` projette le réalisé et les séances restantes de la semaine.
+
+Il ne faut pas fusionner ces services sur la seule base du mot « charge ». En revanche, les chemins de composition FastAPI construisent plusieurs fois la chaîne `DailyTrainingLoadService -> TrainingLoadComparisonService -> RecentTrainingLoadService`. C'est une duplication d'assemblage à mesurer, mais pas une preuve de duplication du calcul métier. Une simplification éventuelle devra centraliser la composition sans ajouter une couche abstraite inutile.
+
+### API Coach : premier nettoyage sans effet fonctionnel
+
+`app/opencoach/api/coach.py` importait deux fois `get_db` depuis `opencoach.database.session`. Le doublon d'import a été supprimé dans un commit dédié. Aucun endpoint, contrat ou calcul métier n'a été modifié.
+
 ## 6. Architecture cible minimale
 
 - **API** : authentification, validation des entrées, appel des services, sérialisation des réponses.

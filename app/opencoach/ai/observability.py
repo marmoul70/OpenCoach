@@ -54,7 +54,9 @@ def get_ai_metrics_snapshot(window_hours: int = 24) -> dict[str, Any]:
 
     groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for item in events:
-        dimension = item.get("model") or item.get("tool") or item.get("operation") or "global"
+        # L'opération prime pour distinguer les étapes d'une même génération
+        # (première réponse vs réécriture), puis le modèle et l'outil.
+        dimension = item.get("operation") or item.get("model") or item.get("tool") or "global"
         groups.setdefault((item["event"], str(dimension)), []).append(item)
 
     def summarize(items: list[dict[str, Any]]) -> dict[str, Any]:

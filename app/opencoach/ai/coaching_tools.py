@@ -11,7 +11,10 @@ from opencoach.database.repositories import (
     RaceRepository,
     WeeklyTrainingPlanRepository,
 )
-from opencoach.services import TrainingProfileContextService, PlannedTrainingService
+from opencoach.services import (
+    PlannedTrainingService,
+    TrainingProfileContextService,
+)
 
 
 class EmptyArguments(BaseModel):

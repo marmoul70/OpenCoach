@@ -345,16 +345,6 @@ def get_ai_coach_preferences(
     user_id=Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ) -> AICoachPreferencesResponse:
-    # Les interdictions de course sont des contraintes métier, pas une
-    # préférence rédactionnelle du LLM. Décision sûre avant génération.
-    restricted_answer = _coach_running_restriction_answer(payload.question, tool_results)
-    if restricted_answer is not None:
-        return AIQuestionResponse(
-            answer=restricted_answer,
-            model=settings.model,
-            context_used=True,
-        )
-
     preferences = db.scalar(
         select(AICoachPreference).where(AICoachPreference.user_id == user_id)
     )
@@ -923,6 +913,17 @@ async def ask_local_ai_with_athlete_context(
             answer=answer,
             model=settings.model,
             context_used=any(item.status == "ok" for item in tool_results),
+        )
+
+    # Les interdictions de course sont des contraintes métier, pas une
+    # préférence rédactionnelle du LLM. Elles sont appliquées après la collecte
+    # Python et avant toute génération Ollama.
+    restricted_answer = _coach_running_restriction_answer(payload.question, tool_results)
+    if restricted_answer is not None:
+        return AIQuestionResponse(
+            answer=restricted_answer,
+            model=settings.model,
+            context_used=True,
         )
 
     preferences = db.scalar(

@@ -725,21 +725,40 @@ _COACH_STRUCTURED_DATA = re.compile(
 )
 
 
+_COACH_ACTIONABLE_GUIDANCE = re.compile(
+    r"\\b(?:je te conseille|je recommande|je propose|je privilégie|"
+    r"tu peux|tu devrais|il vaut mieux|"
+    r"garde|maintiens|réduis|allège|remplace|reporte|"
+    r"pars sur|opte pour|privilégie|évite|"
+    r"séance facile|endurance fondamentale|récupération active|"
+    r"repos|footing|fractionné|renforcement)\\b",
+    re.IGNORECASE,
+)
+
+
 def _coach_response_needs_rewrite(question: str, answer: str) -> bool:
-    """Détecte les sorties manifestement incompatibles avec une réponse de coach."""
+    """Rejette les tableaux de bord, pas les formulations naturelles du coach."""
     if _EXPLICIT_COACH_DATA_REQUEST.search(question):
         return False
 
     content = answer.strip()
     if not content:
         return True
-    first_sentence = re.split(r"(?<=[.!?])\s+", content, maxsplit=1)[0]
-    return (
-        bool(_COACH_BULLET_LINE.search(content))
-        or bool(_COACH_STRUCTURED_DATA.search(content))
-        or len(_COACH_UNIT_CLAIM.findall(content)) > 2
-        or not _COACH_OPENING_JUDGMENT.search(first_sentence)
-    )
+
+    # Les défauts réellement bloquants sont structurels : inventaire ou données brutes.
+    if _COACH_BULLET_LINE.search(content) or _COACH_STRUCTURED_DATA.search(content):
+        return True
+
+    unit_claims = len(_COACH_UNIT_CLAIM.findall(content))
+    has_actionable_guidance = bool(_COACH_ACTIONABLE_GUIDANCE.search(content))
+    first_sentence = re.split(r"(?<=[.!?])\\s+", content, maxsplit=1)[0]
+    has_coach_opening = bool(_COACH_OPENING_JUDGMENT.search(first_sentence))
+
+    # Une recommandation concrète peut être formulée après une phrase de contexte.
+    # Le seuil numérique ne s'applique qu'aux réponses qui restent descriptives.
+    if unit_claims > 2 and not has_actionable_guidance:
+        return True
+    return not (has_coach_opening or has_actionable_guidance)
 
 def _coach_running_restriction_answer(question: str, tool_results) -> str | None:
     """Bloque une recommandation de course quand une contrainte métier l'interdit.

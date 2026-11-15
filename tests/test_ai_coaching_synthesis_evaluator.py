@@ -60,6 +60,17 @@ def test_recovery_recommendation_requires_an_explicit_adaptation():
     assert score_coaching_response(item, bad)["checks"]["action_pass"] is False
 
 
+def test_low_recovery_without_a_concrete_training_decision_fails():
+    item = cases()[0]
+    response = (
+        "Ta récupération est mauvaise et ta fatigue reste élevée. "
+        "Surveille tes sensations et pense à bien dormir."
+    )
+    result = score_coaching_response(item, response)
+    assert result["checks"]["action_pass"] is False
+    assert result["pass"] is False
+
+
 def test_pain_constraint_overrides_positive_readiness_and_avoids_diagnosis():
     item = next(x for x in cases() if x["expected_action"] == "respect_pain_constraints")
     good = (

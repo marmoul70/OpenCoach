@@ -200,6 +200,8 @@ def build_training_load_tool(
                 "ratio": load.load_ratio if has_complete_load else None,
                 "coverage": {
                     "available_sessions": available_load_sessions,
+                    "measured_sessions": stats.measured_load_data_count,
+                    "estimated_manual_sessions": estimated_load_data_count,
                     "total_sessions": actual_sessions,
                     "status": coverage_status,
                 },

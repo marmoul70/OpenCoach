@@ -62,6 +62,8 @@ from opencoach.database.repositories.sql_daily_checkin import SqlDailyCheckInRep
 from opencoach.database.repositories import (
     SqlAthleteConstraintRepository,
     SqlWeeklyTrainingPlanRepository,
+    SqlActivityRepository,
+    SqlActivityDetailRepository,
 )
 from opencoach.api.training_stats import get_training_stats_service
 from opencoach.training import TrainingStatsService
@@ -561,7 +563,11 @@ def get_ai_tool_registry(
     ))
     registry.register(build_session_execution_review_tool(db, athlete_profile_id))
     registry.register(
-        build_activity_detail_tool(db, athlete_profile_id)
+        build_activity_detail_tool(
+            SqlActivityRepository(db),
+            SqlActivityDetailRepository(db),
+            athlete_profile_id,
+        )
     )
     registry.register(
         build_training_history_tool(

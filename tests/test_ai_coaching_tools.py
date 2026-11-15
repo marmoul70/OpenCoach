@@ -166,7 +166,7 @@ def test_race_calendar_reports_empty_period_explicitly():
     with Session(engine) as session:
         profile = _profile(session)
         result = build_race_calendar_tool(
-            session,
+            SqlRaceRepository(session),
             profile.id,
             reference_date_provider=lambda: date(2026, 11, 9),
         ).handler(RaceCalendarArguments(horizon_days=7))
@@ -427,7 +427,7 @@ def test_next_planned_session_reports_empty_when_no_future_planned_session_exist
         session.flush()
 
         result = build_next_planned_session_tool(
-            session,
+            SqlTrainingSessionRepository(session),
             profile.id,
             reference_date_provider=lambda: reference_date,
         ).handler(EmptyArguments())

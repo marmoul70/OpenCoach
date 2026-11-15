@@ -234,6 +234,9 @@ def test_production_guard_blocks_running_when_forbidden():
     assert "interdit" in answer
     assert "course à pied" in answer
     assert "indolore" in answer
+    assert _coach_running_restriction_answer(
+        "Que me conseilles-tu aujourd'hui ?", [result]
+    ) is not None
 
 
 def test_production_guard_does_not_offer_unauthorized_cross_training():

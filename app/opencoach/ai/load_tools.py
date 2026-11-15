@@ -49,8 +49,11 @@ def build_training_load_tool(
         )
 
         actual_sessions = stats.sessions_count
+        estimated_load_data_count = getattr(
+            stats, "estimated_load_data_count", stats.manual_sessions_count
+        )
         available_load_sessions = (
-            stats.measured_load_data_count + stats.manual_sessions_count
+            stats.measured_load_data_count + estimated_load_data_count
         )
         planned_sessions = sum(day.planned_sessions_count for day in load.days)
 

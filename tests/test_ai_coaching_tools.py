@@ -24,7 +24,7 @@ from opencoach.database.repositories import (
     SqlTrainingSessionRepository,
     SqlWeeklyTrainingPlanRepository,
 )
-from opencoach.services import ProfileService, TrainingProfileContextService
+from opencoach.services import ProfileService, TrainingProfileContextService, PlannedTrainingService
 from opencoach.database.models import (
     AthleteProfile as AthleteProfileModel,
     Race as RaceModel,
@@ -226,7 +226,7 @@ def test_planned_sessions_returns_bounded_fields_and_partial_aggregates():
         ])
         session.flush()
         result = build_planned_sessions_tool(
-            SqlTrainingSessionRepository(session), profile.id
+            PlannedTrainingService(SqlTrainingSessionRepository(session), profile.id)
         ).handler(PlannedSessionsArguments(
             start_date=date(2026, 11, 9),
             end_date=date(2026, 11, 11),
@@ -382,9 +382,11 @@ def test_next_planned_session_returns_earliest_today_or_future_session_for_owner
         session.flush()
 
         result = build_next_planned_session_tool(
-            SqlTrainingSessionRepository(session),
-            profile.id,
-            reference_date_provider=lambda: reference_date,
+            PlannedTrainingService(
+                SqlTrainingSessionRepository(session),
+                profile.id,
+                reference_date_provider=lambda: reference_date,
+            )
         ).handler(EmptyArguments())
 
     assert result["status"] == "ok"
@@ -427,9 +429,11 @@ def test_next_planned_session_reports_empty_when_no_future_planned_session_exist
         session.flush()
 
         result = build_next_planned_session_tool(
-            SqlTrainingSessionRepository(session),
-            profile.id,
-            reference_date_provider=lambda: reference_date,
+            PlannedTrainingService(
+                SqlTrainingSessionRepository(session),
+                profile.id,
+                reference_date_provider=lambda: reference_date,
+            )
         ).handler(EmptyArguments())
 
     assert result == {

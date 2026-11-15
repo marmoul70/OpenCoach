@@ -223,6 +223,13 @@ class FakePlanningContextService:
         self.profile_id = None
         self.recent_load_service = object()
         self.readiness_service = object()
+        from types import SimpleNamespace
+        from opencoach.models import AthleteProfile
+        self.profile_service = SimpleNamespace(get_profile=lambda: AthleteProfile())
+        self.race_repository = SimpleNamespace(
+            list_races_between=lambda athlete_profile_id, start_date, end_date: [],
+            get_race=lambda athlete_profile_id, race_id: None,
+        )
 
     def build(self, athlete_profile_id, planning_date):
         self.profile_id = athlete_profile_id
@@ -793,6 +800,11 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
     calls = []
 
     class FakeTrainingStatsService:
+        def __init__(self, session):
+            from opencoach.database.repositories import SqlTrainingSessionRepository
+            self.training_session_repository = SqlTrainingSessionRepository(session)
+            self.activity_repository = SimpleNamespace(list_activities_between=lambda *args: [])
+
         def calculate(self, profile_id, start_date, end_date):
             calls.append((profile_id, start_date, end_date))
             from types import SimpleNamespace
@@ -824,10 +836,17 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
         registry = get_ai_tool_registry(
             db=db,
             athlete_profile_id=athlete_profile_id,
-            training_stats_service=FakeTrainingStatsService(),
+            training_stats_service=FakeTrainingStatsService(db),
             context_service=SimpleNamespace(
                 recent_load_service=object(),
                 readiness_service=object(),
+                profile_service=SimpleNamespace(
+                    get_profile=lambda: __import__("opencoach.models", fromlist=["AthleteProfile"]).AthleteProfile()
+                ),
+                race_repository=SimpleNamespace(
+                    list_races_between=lambda *args: [],
+                    get_race=lambda *args: None,
+                ),
             ),
         )
         definitions = registry.definitions()

@@ -1098,3 +1098,26 @@ def test_ai_observability_counts_truncated_generation_as_error():
     assert snapshot["summary"]["error_rate_percent"] == 100.0
     assert snapshot["breakdown"][0]["errors"] == 1
     _clear_ai_metrics_for_tests()
+
+
+
+def test_coach_output_gate_accepts_natural_first_person_training_judgment():
+    from opencoach.api.ai import _coach_response_needs_rewrite
+
+    answer = (
+        "Tu as bien encaissé cette semaine malgré la sortie longue. "
+        "Je privilégierais une séance facile demain pour consolider la récupération."
+    )
+
+    assert _coach_response_needs_rewrite("Comment va ma semaine ?", answer) is False
+
+
+def test_coach_output_gate_accepts_direct_recommendation_without_fixed_phrase():
+    from opencoach.api.ai import _coach_response_needs_rewrite
+
+    answer = (
+        "À ta place, je remplacerais le fractionné par un footing très souple. "
+        "La fatigue récente ne justifie pas de forcer aujourd'hui."
+    )
+
+    assert _coach_response_needs_rewrite("Quelle séance me conseilles-tu ?", answer) is False

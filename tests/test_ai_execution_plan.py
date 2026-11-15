@@ -597,3 +597,17 @@ def test_injury_recommendation_does_not_silently_default_explicit_load_period():
 
     assert plan.calls == ()
     assert "combien de jours" in plan.clarification
+
+
+def test_injury_recommendation_keeps_upcoming_race_in_coaching_context():
+    plan = build_coach_execution_plan(
+        "J'ai mal au tendon et j'ai un trail dans 3 semaines. Quelle séance me conseilles-tu ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    names = [call.name for call in plan.calls]
+    assert names[0] == "active_constraints"
+    assert "race_calendar" in names
+    assert "training_history" in names
+    assert "training_load" in names
+    assert "next_planned_session" in names

@@ -634,11 +634,15 @@ _EXPLICIT_COACH_DATA_REQUEST = re.compile(
 )
 _COACH_OPENING_JUDGMENT = re.compile(
     r"\b(?:mon avis|je te conseille|je recommande|je privilégie|"
-    r"ta semaine (?:est|reste|semble|montre)|cette semaine (?:est|reste|semble)|"
+    r"ta semaine (?:est|reste|semble|montre|a été)|"
+    r"la semaine (?:est|reste|semble|a été)|cette semaine (?:est|reste|semble|a été)|"
     r"ton entraînement (?:est|reste|semble)|la charge (?:est|reste|semble)|"
     r"ta charge (?:est|reste|semble)|la récupération (?:est|reste|semble)|"
     r"ta récupération (?:est|reste|semble)|"
-    r"le point (?:positif|de vigilance)|c'est (?:une semaine|cohérent|adapté|trop))\b",
+    r"je (?:garderais|maintiendrais|réduirais|remplacerais|reporterais)|"
+    r"tu peux (?:maintenir|alléger|réduire|remplacer|reporter)|"
+    r"il vaut mieux|le point (?:positif|de vigilance)|"
+    r"c'est (?:une semaine|cohérent|adapté|trop))\b",
     re.IGNORECASE,
 )
 _COACH_UNIT_CLAIM = re.compile(
@@ -668,6 +672,16 @@ def _coach_response_needs_rewrite(question: str, answer: str) -> bool:
         or len(_COACH_UNIT_CLAIM.findall(content)) > 2
         or not _COACH_OPENING_JUDGMENT.search(first_sentence)
     )
+
+def _coach_response_quality_fallback_answer() -> str:
+    """Ne masque pas un échec de rédaction par un faux diagnostic de panne."""
+    return (
+        "J'ai récupéré les éléments utiles de ton dossier, mais je n'ai pas réussi "
+        "à formuler une synthèse de coach suffisamment claire. Je préfère ne pas "
+        "te renvoyer un inventaire de chiffres mal interprété. Reformule ta demande "
+        "ou réessaie dans un instant."
+    )
+
 
 def _coach_provider_unavailable_answer() -> str:
     """Réponse de secours lisible : ne jamais exposer les payloads métier bruts."""

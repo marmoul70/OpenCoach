@@ -18,6 +18,13 @@ from opencoach.ai.coaching_tools import (
     build_weekly_plan_context_tool,
 )
 from opencoach.database.base import Base
+from opencoach.database.repositories import (
+    SqlProfileRepository,
+    SqlRaceRepository,
+    SqlTrainingSessionRepository,
+    SqlWeeklyTrainingPlanRepository,
+)
+from opencoach.services import ProfileService
 from opencoach.database.models import (
     AthleteProfile as AthleteProfileModel,
     Race as RaceModel,
@@ -71,7 +78,7 @@ def test_training_profile_returns_recorded_values_and_personal_hr_zones():
     engine = _database()
     with Session(engine) as session:
         profile = _profile(session)
-        tool = build_training_profile_tool(session, profile.id)
+        tool = build_training_profile_tool(ProfileService(SqlProfileRepository(session, profile.user_id)))
         result = tool.handler(EmptyArguments())
 
     assert result["status"] == "ok"
@@ -99,7 +106,7 @@ def test_training_profile_reports_missing_fields_without_estimating_them():
         profile.heart_rate_zones = {}
         session.flush()
         result = build_training_profile_tool(
-            session, profile.id
+            ProfileService(SqlProfileRepository(session, profile.user_id))
         ).handler(EmptyArguments())
 
     assert result["status"] == "partial"
@@ -141,7 +148,7 @@ def test_race_calendar_returns_only_authenticated_athletes_races_inclusive():
         ])
         session.flush()
         result = build_race_calendar_tool(
-            session,
+            SqlRaceRepository(session),
             profile.id,
             reference_date_provider=lambda: date(2026, 11, 9),
         ).handler(RaceCalendarArguments(horizon_days=30))
@@ -219,7 +226,7 @@ def test_planned_sessions_returns_bounded_fields_and_partial_aggregates():
         ])
         session.flush()
         result = build_planned_sessions_tool(
-            session, profile.id
+            SqlTrainingSessionRepository(session), profile.id
         ).handler(PlannedSessionsArguments(
             start_date=date(2026, 11, 9),
             end_date=date(2026, 11, 11),
@@ -276,7 +283,7 @@ def test_weekly_plan_context_returns_targets_for_current_monday():
         )
         session.flush()
         result = build_weekly_plan_context_tool(
-            session,
+            SqlWeeklyTrainingPlanRepository(session),
             profile.id,
             reference_date_provider=lambda: date(2026, 11, 11),
         ).handler(WeeklyPlanContextArguments())
@@ -309,7 +316,7 @@ def test_weekly_plan_context_does_not_return_another_athletes_plan():
         )
         session.flush()
         result = build_weekly_plan_context_tool(
-            session,
+            SqlWeeklyTrainingPlanRepository(session),
             other.id,
             reference_date_provider=lambda: date(2026, 11, 11),
         ).handler(WeeklyPlanContextArguments())
@@ -375,7 +382,7 @@ def test_next_planned_session_returns_earliest_today_or_future_session_for_owner
         session.flush()
 
         result = build_next_planned_session_tool(
-            session,
+            SqlTrainingSessionRepository(session),
             profile.id,
             reference_date_provider=lambda: reference_date,
         ).handler(EmptyArguments())

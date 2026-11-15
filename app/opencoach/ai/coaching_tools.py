@@ -13,7 +13,7 @@ from opencoach.database.repositories import (
 )
 from opencoach.services import (
     PlannedTrainingService,
-    TrainingProfileContextService,
+    ProfileService,
 )
 
 
@@ -67,12 +67,12 @@ def _safe_text(value: str | None, limit: int = 120) -> str | None:
 
 
 def build_training_profile_tool(
-    training_profile_service: TrainingProfileContextService,
+    profile_service: ProfileService,
 ) -> AITool:
     """Expose le contexte d'entraînement préparé par le service Coach."""
 
     def execute(_: BaseModel) -> dict:
-        return training_profile_service.build()
+        return profile_service.build_training_context()
 
     return AITool(
         name="athlete_training_profile",

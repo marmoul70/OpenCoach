@@ -291,6 +291,7 @@ class AIQuestionResponse(BaseModel):
     data_proposals: list[AIDataProposalResponse] = Field(default_factory=list)
     race_options: list[AIRaceOptionResponse] = Field(default_factory=list)
     tools_used: list[str] = Field(default_factory=list)
+    analysis_periods: list[dict[str, str | int]] = Field(default_factory=list)
 
 
 
@@ -1221,6 +1222,7 @@ async def ask_local_ai_with_athlete_context(
         data_proposals=data_proposals,
         race_options=_extract_race_options(tool_results),
         tools_used=[item.tool for item in tool_results if item.status == "ok"],
+        analysis_periods=_extract_coach_analysis_periods(tool_results),
     )
 
 

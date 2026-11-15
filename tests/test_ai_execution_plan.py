@@ -630,7 +630,7 @@ def test_injury_recommendation_does_not_silently_default_explicit_load_period():
         "exclude_current_day": True,
     }) in calls
     assert ("training_load", {"nb_days": 14}) in calls
-    assert ("recovery_status", {"target_date": "2026-11-11"}) in calls
+    assert ("recovery_status", {}) in calls
 
 
 def test_injury_recommendation_keeps_upcoming_race_in_coaching_context():
@@ -684,3 +684,19 @@ def test_long_load_trend_comparison_uses_trend_period_limits_not_load_limit():
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("training_trends", {"nb_days": 100, "comparison_days": 150})
     ]
+
+
+
+def test_future_injury_recommendation_uses_current_recovery_not_session_date():
+    plan = build_coach_execution_plan(
+        "J'ai mal au tendon, quelle séance me conseilles-tu demain ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    calls = [(call.name, call.arguments) for call in plan.calls]
+    assert calls[0] == (
+        "active_constraints",
+        {"target_date": "2026-11-11"},
+    )
+    assert ("recovery_analysis", {}) in calls
+    assert ("recovery_status", {}) in calls

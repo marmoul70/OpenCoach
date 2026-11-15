@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from opencoach.ai.data_proposals import (
     AIDataProposalCreate,
-    create_profile_data_proposal,
 )
 from opencoach.ai.tool_engine import AITool
-from sqlalchemy.orm import Session
 
 
 class ProposeProfileDataArguments(BaseModel):
@@ -173,11 +171,10 @@ def _evidence_contains_value(
 
 
 def build_profile_data_proposal_tool(
-    db: Session,
-    athlete_profile_id: UUID,
+    proposal_creator: Callable[[AIDataProposalCreate], Any],
     user_messages: list[str],
 ) -> AITool:
-    """Construit un outil limité au profil authentifié et à la preuve utilisateur."""
+    """Valide la preuve utilisateur puis délègue la persistance au service applicatif."""
     user_text = "\n".join(user_messages)
 
     def handler(arguments: ProposeProfileDataArguments) -> dict:
@@ -189,13 +186,11 @@ def build_profile_data_proposal_tool(
             arguments.value,
         ):
             raise ValueError("La valeur proposée n'est pas étayée par la preuve utilisateur.")
-        proposal = create_profile_data_proposal(
-            db,
-            athlete_profile_id,
+        proposal = proposal_creator(
             AIDataProposalCreate(
                 field_key=arguments.field_key,
                 value=arguments.value,
-            ),
+            )
         )
         return {
             "proposal_id": str(proposal.id),

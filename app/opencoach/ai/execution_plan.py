@@ -325,7 +325,7 @@ def build_coach_execution_plan(
 
     periods = extract_explicit_periods(conversation_users, assistant_history)
     recommendation_history = any(
-        term in normalized
+        term in intent_context
         for term in (
             "que faire", "quelle seance", "quel entrainement",
             "conseille", "recommande", "ajuste", "adapter",

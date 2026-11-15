@@ -90,7 +90,7 @@ def test_training_trends_compares_adjacent_periods_with_complete_coverage():
 def test_training_trends_suppresses_delta_when_coverage_is_partial():
     class PartialStatsService:
         def calculate(self, profile_id, start_date, end_date):
-            return SimpleNamespace(
+            return _training_stats(
                 start_date=start_date,
                 end_date=end_date,
                 sessions_count=2,

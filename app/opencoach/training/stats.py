@@ -94,16 +94,32 @@ class TrainingStats:
 
         metrics = {}
         warnings = []
-        for name, (unit, current_count, previous_count, current_value, previous_value) in definitions.items():
+        for name, (
+            unit,
+            current_count,
+            previous_count,
+            current_value,
+            previous_value,
+        ) in definitions.items():
             current_coverage = self.coverage(current_count)
             previous_coverage = previous.coverage(previous_count)
-            current_reliable = current_value if current_coverage["status"] == "complete" else None
-            previous_reliable = previous_value if previous_coverage["status"] == "complete" else None
+            current_reliable = (
+                current_value
+                if current_coverage["status"] == "complete"
+                else None
+            )
+            previous_reliable = (
+                previous_value
+                if previous_coverage["status"] == "complete"
+                else None
+            )
 
             current_metric = {
                 "value": current_reliable,
                 "partial_observed_value": (
-                    current_value if current_coverage["status"] == "partial" else None
+                    current_value
+                    if current_coverage["status"] == "partial"
+                    else None
                 ),
                 "unit": unit,
                 "coverage": current_coverage,
@@ -111,7 +127,9 @@ class TrainingStats:
             previous_metric = {
                 "value": previous_reliable,
                 "partial_observed_value": (
-                    previous_value if previous_coverage["status"] == "partial" else None
+                    previous_value
+                    if previous_coverage["status"] == "partial"
+                    else None
                 ),
                 "unit": unit,
                 "coverage": previous_coverage,
@@ -124,7 +142,8 @@ class TrainingStats:
                     "status": "insufficient_coverage",
                 }
                 warnings.append(
-                    f"Tendance {name} non calculée : couverture incomplète sur au moins une période."
+                    f"Tendance {name} non calculée : couverture incomplète "
+                    "sur au moins une période."
                 )
             else:
                 delta = round(current_reliable - previous_reliable, 2)

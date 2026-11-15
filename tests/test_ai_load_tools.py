@@ -170,7 +170,7 @@ def test_training_load_tool_never_reports_missing_actual_load_as_zero():
 
     class EmptyStatsService:
         def calculate(self, profile_id, start_date, end_date):
-            return SimpleNamespace(
+            return _training_stats(
                 sessions_count=0,
                 measured_load_data_count=0,
                 estimated_load_data_count=0,
@@ -206,7 +206,7 @@ def test_training_load_arguments_reject_out_of_range_periods():
 def test_training_load_tool_hides_partial_total_and_marks_daily_status_unreliable():
     class PartialStatsService:
         def calculate(self, profile_id, start_date, end_date):
-            return SimpleNamespace(
+            return _training_stats(
                 sessions_count=2,
                 measured_load_data_count=1,
                 estimated_load_data_count=0,
@@ -274,7 +274,7 @@ def test_training_load_tool_uses_only_opencoach_training_services():
 def test_training_load_coverage_does_not_treat_manual_session_without_duration_as_available():
     class OneIncompleteManualSessionStats:
         def calculate(self, profile_id, start_date, end_date):
-            return SimpleNamespace(
+            return _training_stats(
                 sessions_count=1,
                 activities_count=0,
                 manual_sessions_count=1,

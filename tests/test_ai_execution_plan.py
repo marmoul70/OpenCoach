@@ -498,7 +498,7 @@ def test_training_recommendation_uses_recent_history_profile_and_schedule():
     assert plan.clarification is None
     calls = [(call.name, call.arguments) for call in plan.calls]
     assert calls == [
-        ("training_history", {"nb_days": 7}),
+        ("training_history", {"nb_days": 7, "exclude_current_day": True}),
         ("training_load", {"nb_days": 7}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
@@ -516,7 +516,7 @@ def test_low_recovery_before_planned_intensity_collects_all_decision_context():
 
     calls = [(call.name, call.arguments) for call in plan.calls]
     assert calls == [
-        ("training_history", {"nb_days": 7}),
+        ("training_history", {"nb_days": 7, "exclude_current_day": True}),
         ("training_load", {"nb_days": 7}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),

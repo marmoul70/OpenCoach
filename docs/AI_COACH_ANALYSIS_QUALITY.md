@@ -83,3 +83,15 @@ Chaque scénario documente les outils attendus, l'action de coaching visée et l
 - Si l'athlète demande une recommandation malgré cette contrainte, le plan collecte ensuite l'historique récent, la récupération, le Readiness, la prochaine séance planifiée, le cadre hebdomadaire et le profil sportif.
 - La contrainte enregistrée reste prioritaire : le modèle ne peut pas recommander une séance interdite par les règles OpenCoach. L'absence de contrainte enregistrée ne vaut pas autorisation médicale.
 - Le conseil doit distinguer ce qui est faisable, ce qui est à éviter et ce qui nécessite un avis médical ; il ne pose aucun diagnostic et ne transforme pas une douleur en simple indicateur de fatigue.
+
+
+## Contrôle de qualité de la réponse en production
+
+La route `/api/ai/coach` applique désormais un garde-fou après la première génération, lorsque des résultats métier ont été exécutés :
+
+- une réponse qui commence sans avis de coach, contient des puces ou une structure de données, ou accumule plus de deux valeurs chiffrées avec unité est considérée comme une synthèse à reprendre ;
+- OpenCoach demande alors au modèle une seule réécriture en prose, centrée sur le jugement et la décision, sans ajouter de faits ni de chiffres ;
+- les demandes explicites de statistiques, de chiffres, de tableaux ou de listes sont exemptées de ce contrôle de style afin de préserver la réponse attendue ;
+- si la seconde génération reste manifestement non conforme ou échoue, OpenCoach affiche un message de repli qui n'expose pas les résultats bruts et ne prétend pas qu'Ollama est en panne.
+
+Ce garde-fou est volontairement conservateur et lexical : il bloque les formats manifestement inadaptés, mais ne prouve pas la justesse physiologique du conseil. Les règles de sécurité, de provenance et de cohérence des données restent portées par Python et le prompt système. Une revue humaine des réponses réelles reste indispensable.

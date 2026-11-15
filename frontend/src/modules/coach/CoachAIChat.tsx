@@ -11,12 +11,12 @@ import {
 import type {
   AIChatMessage,
   AIDataProposal,
-  AIRaceOption,
+  AIRaceOption,\n  AIAnalysisPeriod,
 } from '../../core/coach/aiApi'
 
 interface DisplayMessage extends AIChatMessage {
   raceOptions?: AIRaceOption[]
-  toolsUsed?: string[]
+  toolsUsed?: string[]\n  analysisPeriods?: AIAnalysisPeriod[]
 }
 
 const FIELD_LABELS: Record<string, string> = {

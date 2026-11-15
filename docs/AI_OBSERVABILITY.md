@@ -105,3 +105,7 @@ Le registre `AIToolRegistry` mémorise les invocations déjà exécutées pendan
 - Le cache est limité au registre de la requête et n'est ni persistant ni partagé entre utilisateurs.
 
 Cette protection complète la liste blanche, la validation stricte des schémas et le contrôle des preuves utilisateur ; elle ne remplace pas les garanties transactionnelles propres aux handlers qui écrivent en base.
+
+## Transparence des outils dans la conversation
+
+La réponse de `POST /api/ai/coach` expose `tools_used`, une liste des noms canoniques des outils dont le résultat est `ok` pour le tour courant. Le frontend affiche ces outils sous la réponse sous forme de repères discrets. Cette liste ne contient ni arguments, ni résultats, ni identifiants de profil. Elle décrit uniquement les outils effectivement exécutés avec succès ; elle ne doit pas être interprétée comme une liste de fournisseurs externes consultés.

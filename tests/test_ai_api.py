@@ -1209,6 +1209,17 @@ def test_coach_output_gate_accepts_direct_recommendation_without_fixed_phrase():
     assert _coach_response_needs_rewrite("Quelle séance me conseilles-tu ?", answer) is False
 
 
+def test_coach_output_gate_accepts_recommendations_for_today():
+    from opencoach.api.ai import _coach_response_needs_rewrite
+
+    answer = (
+        "Aujourd'hui, je te conseille une séance d'endurance facile pour préserver "
+        "ta récupération. Garde une intensité confortable et arrête si une douleur apparaît."
+    )
+
+    assert _coach_response_needs_rewrite("Quelle séance me conseilles-tu aujourd'hui ?", answer) is False
+
+
 def test_coach_analysis_periods_only_expose_explicit_successful_tool_windows() -> None:
     from types import SimpleNamespace
 
@@ -1248,10 +1259,16 @@ def test_coach_analysis_periods_only_expose_explicit_successful_tool_windows() -
     assert len(periods) == 2
     assert periods[0] == {
         "tool": "training_trends",
-        "label": "current period",
+        "label": "période récente",
         "start_date": "2026-11-01",
         "end_date": "2026-11-14",
         "days": 14,
     }
     assert periods[1]["start_date"] == "2026-10-18"
     assert periods[1]["end_date"] == "2026-10-31"
+    duplicated = SimpleNamespace(
+        tool="weekly_plan_context",
+        status="ok",
+        data={"period": {"start_date": "2026-11-01", "end_date": "2026-11-14", "days": 14}},
+    )
+    assert len(_extract_coach_analysis_periods([*results, duplicated])) == 2

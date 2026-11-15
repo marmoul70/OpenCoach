@@ -30,6 +30,14 @@ class RecentTrainingLoad:
     unplanned_days: int = 0
 
     @property
+    def planned_sessions_count(self) -> int:
+        """Nombre de séances prescrites dans la période analysée."""
+        return sum(
+            day.planned_sessions_count
+            for day in self.days
+        )
+
+    @property
     def planning_coverage_ratio(self) -> float:
         """Part des jours couverts par une prescription OpenCoach."""
 

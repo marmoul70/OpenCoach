@@ -55,7 +55,7 @@ def build_training_load_tool(
         available_load_sessions = (
             stats.measured_load_data_count + estimated_load_data_count
         )
-        planned_sessions = sum(day.planned_sessions_count for day in load.days)
+        planned_sessions = load.planned_sessions_count
 
         # La couverture est calculée par le modèle métier TrainingStats,
         # puis seulement présentée ici dans le contrat conversationnel.

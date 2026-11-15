@@ -215,6 +215,20 @@ Les six copies ont donc été supprimées de la branche de nettoyage. L'historiq
 
 Le fichier `app/opencoach/backup/restore.py.before-rollback-20260831-112557` était une copie pré-rollback de l'implémentation de restauration. Il n'avait aucune référence détectée, était couvert par la règle `.gitignore` `*.before-*`, et différait du module actif `restore.py` (407 lignes contre 528). Il a été retiré de la branche ; l'implémentation active et les données de sauvegarde utilisateur ne sont pas concernées. Le contenu historique reste accessible dans Git.
 
+## 5 quinquies. Vérification des flux de données fournisseurs
+
+Les implémentations consultées confirment un point important de la cible :
+- COROS (`integrations/coros/sync.py`) normalise les activités via `upsert_coros_activity` et enregistre les jours Wellness via `SqlWellnessRepository.save_wellness_day`.
+- Intervals.icu (`integrations/intervals/sync.py`) enregistre les activités via `ActivityRepository.save_activity` et le Wellness via `WellnessRepository.save_wellness_day`.
+- `ReadinessService` lit le référentiel `WellnessRepository`, agrège les imports et calcule les indicateurs indépendamment du fournisseur.
+- `TrainingStatsService` lit les `ActivityRepository` et `TrainingSessionRepository` pour construire l'historique d'entraînement.
+
+Cela établit déjà une centralisation effective pour les activités et le Wellness. Il faut préserver cette architecture et étendre le même principe aux autres domaines, plutôt que créer un stockage parallèle spécifique à chaque source.
+
+Un ADR dédié est ajouté : `docs/architecture/adr/0002-coach-central-data-and-ai-boundary.md`.
+
+Écart encore visible : `ai/coaching_tools.py` et `ai/race_tools.py` effectuent plusieurs lectures SQL directes et des agrégations/sérialisations métier. Elles doivent être progressivement converties en adaptateurs de services Coach. La centralisation des activités et Wellness ne signifie donc pas que l'ensemble du moteur est déjà découplé de l'IA.
+
 ## 6. Architecture cible minimale
 
 - **API** : authentification, validation des entrées, appel des services, sérialisation des réponses.

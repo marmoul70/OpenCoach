@@ -880,3 +880,16 @@ def test_ai_chat_rejects_generation_stopped_by_token_limit() -> None:
     assert response.json()["detail"] == (
         "Le moteur IA a interrompu la génération avant la fin de la réponse."
     )
+
+
+
+def test_detailed_coach_style_expands_explanation_without_returning_to_metric_lists():
+    from opencoach.api.ai import AICoachPreferencesPayload, _coach_system_prompt
+
+    prompt = _coach_system_prompt(
+        AICoachPreferencesPayload(response_style="detailed")
+    )
+
+    assert "Le style détaillé peut développer davantage l'explication" in prompt
+    assert "ne doit jamais redevenir un inventaire de métriques" in prompt
+    assert "N’affiche ni tableau ni liste de métriques" in prompt

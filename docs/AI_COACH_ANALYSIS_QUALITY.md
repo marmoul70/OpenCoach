@@ -95,3 +95,10 @@ La route `/api/ai/coach` applique désormais un garde-fou après la première g�
 - si la seconde génération reste manifestement non conforme ou échoue, OpenCoach affiche un message de repli qui n'expose pas les résultats bruts et ne prétend pas qu'Ollama est en panne.
 
 Ce garde-fou est volontairement conservateur et lexical : il bloque les formats manifestement inadaptés, mais ne prouve pas la justesse physiologique du conseil. Les règles de sécurité, de provenance et de cohérence des données restent portées par Python et le prompt système. Une revue humaine des réponses réelles reste indispensable.
+
+
+## Cohérence temporelle entre historique et charge
+
+Pour une recommandation d'entraînement, l'historique descriptif et la charge récente doivent couvrir les mêmes journées complètes. L'outil `training_load` analyse les jours précédant la date de référence, sans inclure la journée en cours. Le planificateur transmet donc `exclude_current_day=true` à `training_history` pour les recommandations, y compris après une clarification de période en plusieurs tours.
+
+Les consultations ordinaires de l'historique conservent leur comportement historique et incluent la date de référence. Le paramètre est explicite, testé et ne modifie pas le calcul métier de charge.

@@ -109,3 +109,8 @@ Cette protection complète la liste blanche, la validation stricte des schémas 
 ## Transparence des outils dans la conversation
 
 La réponse de `POST /api/ai/coach` expose `tools_used`, une liste des noms canoniques des outils dont le résultat est `ok` pour le tour courant. Le frontend affiche ces outils sous la réponse sous forme de repères discrets. Cette liste ne contient ni arguments, ni résultats, ni identifiants de profil. Elle décrit uniquement les outils effectivement exécutés avec succès ; elle ne doit pas être interprétée comme une liste de fournisseurs externes consultés.
+
+
+## Périodes d'analyse exposées au coach
+
+La réponse de `POST /api/ai/coach` expose `analysis_periods`. Chaque entrée est extraite des seules données retournées par un outil métier exécuté avec succès et contient le nom de l'outil, le libellé du sous-résultat, les dates inclusives de début et de fin et, lorsqu'il est fourni, le nombre de jours. Les outils en échec et les résultats sans fenêtre explicite sont ignorés. Aucun intervalle n'est reconstitué par le modèle de langage.

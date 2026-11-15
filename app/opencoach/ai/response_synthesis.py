@@ -6,6 +6,8 @@ import json
 import re
 from datetime import date
 
+from pydantic import ValidationError
+
 from opencoach.ai.schemas import AIRaceOptionResponse
 
 

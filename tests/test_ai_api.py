@@ -15,19 +15,24 @@ from opencoach.authentication.auth import COOKIE_NAME
 
 
 class FakeAIService:
-    def __init__(self, result=None, error=None):
+    def __init__(self, result=None, error=None, results=None):
         self.result = result or AIChatResult(
             model="qwen3:8b",
             content="Réponse locale de test.",
             done=True,
         )
+        self.results = list(results or [])
         self.error = error
         self.request = None
+        self.requests = []
 
     async def chat(self, request):
         self.request = request
+        self.requests.append(request)
         if self.error:
             raise self.error
+        if self.results:
+            return self.results.pop(0)
         return self.result
 
     async def chat_with_tools(self, request, registry, *, user_messages=None, assistant_messages=None):
@@ -257,7 +262,26 @@ def test_ai_coach_uses_python_execution_and_skips_global_athlete_context(caplog)
     caplog.set_level(logging.INFO, logger="opencoach.ai.observability")
     athlete_profile_id = UUID("00000000-0000-0000-0000-000000000002")
     planning_service = FakePlanningContextService(context=None)
-    ai_service = FakeAIService()
+    ai_service = FakeAIService(
+        results=[
+            AIChatResult(
+                model="qwen3:8b",
+                content=(
+                    "Voici ton bilan :\\n- Distance : 48 km\\n"
+                    "- Durée : 5,8 heures\\n- Dénivelé : 1 250 m"
+                ),
+                done=True,
+            ),
+            AIChatResult(
+                model="qwen3:8b",
+                content=(
+                    "Ta semaine est cohérente, mais je garderais une marge "
+                    "de récupération avant de reprendre l'intensité."
+                ),
+                done=True,
+            ),
+        ]
+    )
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.pool import StaticPool
@@ -300,13 +324,18 @@ def test_ai_coach_uses_python_execution_and_skips_global_athlete_context(caplog)
     assert response.status_code == 200
     assert response.json()["context_used"] is True
     assert response.json()["data_proposals"] == []
-    assert ai_service.request.trace_id is not None
-    assert len(ai_service.request.trace_id) == 32
+    assert response.json()["answer"].startswith("Ta semaine est cohérente")
+    assert len(ai_service.requests) == 2
+    assert ai_service.requests[0].trace_id is not None
+    assert len(ai_service.requests[0].trace_id) == 32
     assert '"event":"coach_router"' in caplog.text
-    assert f'"trace_id":"{ai_service.request.trace_id}"' in caplog.text
+    assert f'"trace_id":"{ai_service.requests[0].trace_id}"' in caplog.text
     assert '"operation":"execution_plan"' in caplog.text
     assert planning_service.profile_id is None
-    messages = ai_service.request.messages
+    messages = ai_service.requests[0].messages
+    rewrite_messages = ai_service.requests[1].messages
+    assert rewrite_messages[-2].role == "assistant"
+    assert "Réécris entièrement ta réponse" in rewrite_messages[-1].content
     assert ai_service.request.tools == []
     assert [message.role for message in messages] == [
         "system",

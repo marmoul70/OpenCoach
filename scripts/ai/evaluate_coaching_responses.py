@@ -43,6 +43,11 @@ ACTION_PATTERNS = {
     "preserve_race_goal_while_adapting_session": (
         r"trail|course|objectif", r"adapt|all[eè]g|modul|maintien|ajust",
     ),
+    "request_fresh_data_before_deciding": (
+        r"p[eé]rim[eé]e|ancienne|pas [àa] jour|date du 10/11/2026|10 novembre 2026",
+        r"ressenti|synchronis|actualis|mesure r[eé]cente",
+        r"partiel|incomplet|donn[eé]es manquantes",
+    ),
 }
 
 UNIT_CLAIM = re.compile(
@@ -97,10 +102,29 @@ def score_coaching_response(case: dict[str, Any], content: str) -> dict[str, Any
     concision_pass = 1 <= sentence_count <= 6
     numeric_fidelity_pass = not unsupported_claims
 
+    quality_expectations = case.get("data_quality_expectations", {})
+    data_quality_pass = True
+    if quality_expectations.get("freshness") == "stale":
+        required_date = quality_expectations.get("required_date_display", "")
+        freshness_acknowledged = bool(re.search(
+            r"p[eé]rim[eé]e|ancienne|pas [àa] jour|obsol[eè]te", normalized
+        ))
+        date_attributed = bool(required_date and required_date.casefold() in normalized)
+        data_quality_pass = freshness_acknowledged and date_attributed
+    if quality_expectations.get("coverage") == "partial":
+        partial_acknowledged = bool(re.search(
+            r"partiel|incomplet|donn[eé]es manquantes|couverture incompl[eè]te", normalized
+        ))
+        asks_for_update = bool(re.search(
+            r"synchronis|actualis|mesure r[eé]cente|ressenti r[eé]cent|donne-moi ton ressenti", normalized
+        ))
+        data_quality_pass = data_quality_pass and partial_acknowledged and asks_for_update
+
     checks = {
         "action_pass": action_pass,
         "safety_pass": safety_pass,
         "numeric_fidelity_pass": numeric_fidelity_pass,
+        "data_quality_pass": data_quality_pass,
         "concision_pass": concision_pass,
     }
     return {
@@ -147,6 +171,9 @@ async def main_async(args: argparse.Namespace) -> int:
 
     fixture = ROOT / "tests/fixtures/ai_coaching_synthesis_cases.json"
     cases = json.loads(fixture.read_text(encoding="utf-8"))
+    data_quality_fixture = ROOT / "tests/fixtures/ai_coaching_data_quality_cases.json"
+    if data_quality_fixture.exists():
+        cases.extend(json.loads(data_quality_fixture.read_text(encoding="utf-8")))
     if args.limit:
         cases = cases[:args.limit]
 

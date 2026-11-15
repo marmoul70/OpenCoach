@@ -6,16 +6,13 @@ from datetime import date, timedelta
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from opencoach.ai.tool_engine import AITool
-from opencoach.database.models import (
-    AthleteProfile as AthleteProfileModel,
-    Race as RaceModel,
-    TrainingSession as TrainingSessionModel,
-    WeeklyTrainingPlan as WeeklyTrainingPlanModel,
+from opencoach.database.repositories import (
+    RaceRepository,
+    TrainingSessionRepository,
+    WeeklyTrainingPlanRepository,
 )
+from opencoach.services import ProfileService
 from opencoach.models import AthletePhysiology, HeartRateZone, HeartRateZones
 from opencoach.physiology.heart_rate_zones import get_heart_rate_zone
 
@@ -70,24 +67,19 @@ def _safe_text(value: str | None, limit: int = 120) -> str | None:
 
 
 def build_training_profile_tool(
-    session: Session,
-    athlete_profile_id: UUID,
+    profile_service: ProfileService,
 ) -> AITool:
     """Expose uniquement les paramètres sportifs utiles au coaching."""
 
     def execute(_: BaseModel) -> dict:
-        profile = session.scalar(
-            select(AthleteProfileModel).where(
-                AthleteProfileModel.id == athlete_profile_id,
-            )
-        )
+        profile = profile_service.get_profile()
         if profile is None:
             return {
                 "status": "unavailable",
                 "message": "Le profil sportif de cet athlète est introuvable.",
             }
 
-        raw_zones = profile.heart_rate_zones or {}
+        raw_zones = profile.physiology.heart_rate_zones or {}
         zone_values = {}
         for name in ("z1", "z2", "z3", "z4", "z5"):
             raw_zone = raw_zones.get(name) if isinstance(raw_zones, dict) else None
@@ -102,11 +94,11 @@ def build_training_profile_tool(
             )
         zones = HeartRateZones(**zone_values)
         physiology = AthletePhysiology(
-            max_heart_rate=profile.max_heart_rate,
-            resting_heart_rate=profile.resting_heart_rate,
-            vma=profile.vma,
-            threshold_heart_rate_1=profile.threshold_heart_rate_1,
-            threshold_heart_rate_2=profile.threshold_heart_rate_2,
+            max_heart_rate=profile.physiology.max_heart_rate,
+            resting_heart_rate=profile.physiology.resting_heart_rate,
+            vma=profile.physiology.vma,
+            threshold_heart_rate_1=profile.physiology.threshold_heart_rate_1,
+            threshold_heart_rate_2=profile.physiology.threshold_heart_rate_2,
             heart_rate_zones=zones,
         )
 
@@ -129,10 +121,10 @@ def build_training_profile_tool(
         missing = [
             name
             for name, value in (
-                ("vma", profile.vma),
-                ("max_heart_rate", profile.max_heart_rate),
-                ("threshold_heart_rate_1", profile.threshold_heart_rate_1),
-                ("threshold_heart_rate_2", profile.threshold_heart_rate_2),
+                ("vma", profile.physiology.vma),
+                ("max_heart_rate", profile.physiology.max_heart_rate),
+                ("threshold_heart_rate_1", profile.physiology.threshold_heart_rate_1),
+                ("threshold_heart_rate_2", profile.physiology.threshold_heart_rate_2),
             )
             if value is None
         ]
@@ -144,27 +136,27 @@ def build_training_profile_tool(
         return {
             "status": "partial" if missing else "ok",
             "physiology": {
-                "vma_kmh": profile.vma,
-                "max_heart_rate_bpm": profile.max_heart_rate,
-                "resting_heart_rate_bpm": profile.resting_heart_rate,
-                "threshold_heart_rate_1_bpm": profile.threshold_heart_rate_1,
-                "threshold_heart_rate_2_bpm": profile.threshold_heart_rate_2,
+                "vma_kmh": profile.physiology.vma,
+                "max_heart_rate_bpm": profile.physiology.max_heart_rate,
+                "resting_heart_rate_bpm": profile.physiology.resting_heart_rate,
+                "threshold_heart_rate_1_bpm": profile.physiology.threshold_heart_rate_1,
+                "threshold_heart_rate_2_bpm": profile.physiology.threshold_heart_rate_2,
                 "heart_rate_zones": heart_rate_zones,
                 "heart_rate_zones_order_valid": not invalid_zone_order,
             },
             "training_capacity": {
-                "experience": profile.experience,
-                "sport_disciplines": list(profile.sport_disciplines or []),
-                "weekly_sessions_target": profile.weekly_sessions,
-                "weekly_duration_target_minutes": profile.weekly_duration_minutes,
-                "weekly_distance_target_km": profile.weekly_distance_km,
-                "available_days": list(profile.available_days or []),
-                "fatigue_threshold": profile.fatigue_threshold,
+                "experience": profile.training.experience,
+                "sport_disciplines": list(profile.training.sport_disciplines or []),
+                "weekly_sessions_target": profile.training.weekly_sessions,
+                "weekly_duration_target_minutes": profile.training.weekly_duration_minutes,
+                "weekly_distance_target_km": profile.training.weekly_distance_km,
+                "available_days": list(profile.training.available_days or []),
+                "fatigue_threshold": profile.training.fatigue_threshold,
             },
             "fueling_targets": {
-                "carbohydrates_g_per_hour": profile.carbohydrates_per_hour,
-                "fluids_per_hour": profile.fluids_per_hour,
-                "sodium_per_hour": profile.sodium_per_hour,
+                "carbohydrates_g_per_hour": profile.nutrition.carbohydrates_per_hour,
+                "fluids_per_hour": profile.nutrition.fluids_per_hour,
+                "sodium_per_hour": profile.nutrition.sodium_per_hour,
             },
             "missing_profile_fields": missing,
             "interpretation_rules": [
@@ -189,7 +181,7 @@ def build_training_profile_tool(
 
 
 def build_race_calendar_tool(
-    session: Session,
+    race_repository: RaceRepository,
     athlete_profile_id: UUID,
     *,
     reference_date_provider=date.today,
@@ -199,15 +191,11 @@ def build_race_calendar_tool(
     def execute(arguments: BaseModel) -> dict:
         start_date = arguments.start_date or reference_date_provider()
         end_date = start_date + timedelta(days=arguments.horizon_days - 1)
-        races = session.scalars(
-            select(RaceModel)
-            .where(
-                RaceModel.athlete_profile_id == athlete_profile_id,
-                RaceModel.date >= start_date,
-                RaceModel.date <= end_date,
-            )
-            .order_by(RaceModel.date.asc(), RaceModel.id.asc())
-        ).all()
+        races = race_repository.list_races_between(
+            athlete_profile_id,
+            start_date,
+            end_date,
+        )
 
         return {
             "status": "ok" if races else "empty",
@@ -259,24 +247,17 @@ def build_race_calendar_tool(
 
 
 def build_planned_sessions_tool(
-    session: Session,
+    training_session_repository: TrainingSessionRepository,
     athlete_profile_id: UUID,
 ) -> AITool:
     """Expose les séances planifiées sur une fenêtre explicitement demandée."""
 
     def execute(arguments: BaseModel) -> dict:
-        sessions = session.scalars(
-            select(TrainingSessionModel)
-            .where(
-                TrainingSessionModel.athlete_profile_id == athlete_profile_id,
-                TrainingSessionModel.date >= arguments.start_date,
-                TrainingSessionModel.date <= arguments.end_date,
-            )
-            .order_by(
-                TrainingSessionModel.date.asc(),
-                TrainingSessionModel.id.asc(),
-            )
-        ).all()
+        sessions = training_session_repository.list_sessions_between(
+            athlete_profile_id,
+            arguments.start_date,
+            arguments.end_date,
+        )
 
         distance_values = [
             item.distance_km for item in sessions if item.distance_km is not None
@@ -350,7 +331,7 @@ def build_planned_sessions_tool(
 
 
 def build_next_planned_session_tool(
-    session: Session,
+    training_session_repository: TrainingSessionRepository,
     athlete_profile_id: UUID,
     *,
     reference_date_provider=date.today,
@@ -359,15 +340,14 @@ def build_next_planned_session_tool(
 
     def execute(_: BaseModel) -> dict:
         reference_date = reference_date_provider()
-        item = session.scalar(
-            select(TrainingSessionModel)
-            .where(
-                TrainingSessionModel.athlete_profile_id == athlete_profile_id,
-                TrainingSessionModel.date >= reference_date,
-                TrainingSessionModel.status == "planned",
-            )
-            .order_by(TrainingSessionModel.date.asc(), TrainingSessionModel.id.asc())
-            .limit(1)
+        candidates = training_session_repository.list_sessions_between(
+            athlete_profile_id,
+            reference_date,
+            reference_date + timedelta(days=365),
+        )
+        item = next(
+            (candidate for candidate in candidates if candidate.status == "planned"),
+            None,
         )
         if item is None:
             return {
@@ -408,7 +388,7 @@ def build_next_planned_session_tool(
 
 
 def build_weekly_plan_context_tool(
-    session: Session,
+    weekly_plan_repository: WeeklyTrainingPlanRepository,
     athlete_profile_id: UUID,
     *,
     reference_date_provider=date.today,
@@ -420,11 +400,9 @@ def build_weekly_plan_context_tool(
         week_start = arguments.week_start or (
             reference_date - timedelta(days=reference_date.weekday())
         )
-        plan = session.scalar(
-            select(WeeklyTrainingPlanModel).where(
-                WeeklyTrainingPlanModel.athlete_profile_id == athlete_profile_id,
-                WeeklyTrainingPlanModel.week_start == week_start,
-            )
+        plan = weekly_plan_repository.get_plan_for_week(
+            athlete_profile_id,
+            week_start,
         )
         if plan is None:
             return {

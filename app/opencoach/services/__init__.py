@@ -8,7 +8,6 @@ from .intervals_sync import (
 from .profile import ProfileService
 from .planned_training import PlannedTrainingService
 from .race_preparation import RacePreparationService
-from .training_profile_context import TrainingProfileContextService
 from .integration_connection import (
     IntegrationConnectionService,
     IntegrationConnectionServiceError,
@@ -25,7 +24,6 @@ __all__ = [
     "IntervalsInitialSyncAlreadyCompletedError",
     "IntervalsSyncResult",
     "ProfileService",
-    "TrainingProfileContextService",
     "RacePreparationService",
     "PlannedTrainingService",
     "IntegrationConnectionService",

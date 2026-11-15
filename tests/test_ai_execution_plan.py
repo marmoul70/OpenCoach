@@ -310,7 +310,7 @@ def test_injury_for_tomorrow_keeps_full_coaching_context_and_requested_safety_da
         ("training_history", {"nb_days": 7, "exclude_current_day": True}),
         ("training_load", {"nb_days": 7}),
         ("recovery_analysis", {}),
-        ("recovery_status", {"target_date": "2026-11-11"}),
+        ("recovery_status", {}),
         ("next_planned_session", {}),
         ("weekly_plan_context", {}),
         ("athlete_training_profile", {}),

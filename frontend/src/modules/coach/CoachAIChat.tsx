@@ -16,6 +16,7 @@ import type {
 
 interface DisplayMessage extends AIChatMessage {
   raceOptions?: AIRaceOption[]
+  toolsUsed?: string[]
 }
 
 const FIELD_LABELS: Record<string, string> = {
@@ -140,6 +141,7 @@ export function CoachAIChat() {
           role: 'assistant',
           content: response.answer,
           raceOptions: response.race_options?.length ? response.race_options : undefined,
+          toolsUsed: response.tools_used?.length ? response.tools_used : undefined,
         },
       ])
       if (response.data_proposals.length > 0) {
@@ -273,6 +275,16 @@ export function CoachAIChat() {
               : 'rounded-2xl rounded-bl-md bg-[var(--oc-surface-muted)] px-3.5 py-2.5 text-[12px] leading-5 text-[var(--oc-text)] dark:text-[var(--oc-text-secondary)]'}>
               <p className="whitespace-pre-wrap">{message.content}</p>
             </div>
+            {message.toolsUsed && message.toolsUsed.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5" aria-label="Outils OpenCoach utilisés">
+                <span className="text-[9px] font-medium text-[var(--oc-muted)]">Analysé avec</span>
+                {message.toolsUsed.map((tool) => (
+                  <span key={tool} className="rounded-full border border-[var(--oc-border)] bg-[var(--oc-surface)] px-2 py-0.5 text-[9px] text-[var(--oc-muted)]">
+                    {tool.replaceAll("_", " ")}
+                  </span>
+                ))}
+              </div>
+            )}
             {message.raceOptions && message.raceOptions.length > 0 && (
               <div className="mt-2 space-y-2">
                 {message.raceOptions.map((race) => (

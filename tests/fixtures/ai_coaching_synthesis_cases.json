@@ -1,0 +1,215 @@
+[
+  {
+    "id": "synthesis_low_recovery_before_intensity",
+    "category": "recovery",
+    "prompt": "Ma récupération est mauvaise et j'ai une séance de fractionné prévue demain. Que me conseilles-tu ?",
+    "expected_action": "adapt_or_recover",
+    "context": {
+      "reference_date": "2026-11-15",
+      "training_history": {
+        "period_days": 7,
+        "sessions": 4,
+        "duration_hours": 5.8,
+        "distance_km": 48,
+        "elevation_gain_m": 1250,
+        "coverage": "complete"
+      },
+      "training_load": {
+        "actual_load": "moderate_to_high",
+        "coverage": "complete",
+        "planned_load": "intensity_session_tomorrow"
+      },
+      "recovery_analysis": {
+        "sleep_last_night_hours": 5.1,
+        "recent_hrv_trend": "below_personal_baseline",
+        "subjective_fatigue": "high"
+      },
+      "recovery_status": {
+        "readiness": "unfavorable",
+        "data_date": "2026-11-15",
+        "freshness": "current"
+      },
+      "active_constraints": {
+        "restrictions": []
+      },
+      "next_planned_session": {
+        "type": "intervals",
+        "date": "2026-11-16",
+        "duration_minutes": 60
+      },
+      "weekly_plan_context": {
+        "phase": "development",
+        "week_target": "normal_load"
+      },
+      "athlete_training_profile": {
+        "vma_kmh": 15,
+        "max_heart_rate_bpm": 181
+      }
+    },
+    "forbidden_phrases": [
+      "fractionné à maintenir coûte que coûte",
+      "tu es parfaitement récupéré",
+      "aucun risque"
+    ]
+  },
+  {
+    "id": "synthesis_pain_overrides_positive_readiness",
+    "category": "pain_constraint",
+    "prompt": "Ma Readiness est excellente mais j'ai mal au genou. Quelle séance puis-je faire ?",
+    "expected_action": "respect_pain_constraints",
+    "context": {
+      "reference_date": "2026-11-15",
+      "training_history": {
+        "period_days": 7,
+        "sessions": 3,
+        "duration_hours": 3.2,
+        "distance_km": 27,
+        "elevation_gain_m": 600,
+        "coverage": "complete"
+      },
+      "training_load": {
+        "actual_load": "low_to_moderate",
+        "coverage": "complete"
+      },
+      "recovery_status": {
+        "readiness": "favorable",
+        "score": 92,
+        "data_date": "2026-11-15",
+        "freshness": "current"
+      },
+      "active_constraints": {
+        "restrictions": [
+          "avoid_running"
+        ],
+        "allowed_cross_training": "pain_free_only",
+        "note": "knee pain reported by athlete; no diagnosis"
+      },
+      "next_planned_session": {
+        "type": "easy_run",
+        "date": "2026-11-16",
+        "duration_minutes": 45
+      },
+      "weekly_plan_context": {
+        "phase": "recovery"
+      },
+      "athlete_training_profile": {
+        "vma_kmh": 15
+      }
+    },
+    "forbidden_phrases": [
+      "la readiness annule la douleur",
+      "cours normalement",
+      "c'est une tendinite",
+      "tu as une inflammation"
+    ]
+  },
+  {
+    "id": "synthesis_high_load_before_long_run",
+    "category": "load_management",
+    "prompt": "J'ai déjà beaucoup couru cette semaine et une sortie longue de 2 heures est prévue demain. Que me conseilles-tu ?",
+    "expected_action": "evaluate_load_absorption_before_maintaining",
+    "context": {
+      "reference_date": "2026-11-15",
+      "training_history": {
+        "period_days": 7,
+        "sessions": 5,
+        "duration_hours": 7.1,
+        "distance_km": 63,
+        "elevation_gain_m": 1900,
+        "coverage": "complete"
+      },
+      "training_load": {
+        "actual_load": "high_for_current_week",
+        "coverage": "complete",
+        "quality_sessions": 2
+      },
+      "recovery_analysis": {
+        "subjective_fatigue": "moderate",
+        "sleep_trend": "slightly_reduced"
+      },
+      "recovery_status": {
+        "readiness": "neutral",
+        "data_date": "2026-11-15",
+        "freshness": "current"
+      },
+      "active_constraints": {
+        "restrictions": []
+      },
+      "next_planned_session": {
+        "type": "long_run",
+        "date": "2026-11-16",
+        "duration_minutes": 120
+      },
+      "weekly_plan_context": {
+        "phase": "development",
+        "week_target": "6_to_7_hours"
+      },
+      "athlete_training_profile": {
+        "vma_kmh": 15
+      }
+    },
+    "forbidden_phrases": [
+      "ajoute encore du volume",
+      "la charge est faible",
+      "tu dois absolument faire les deux heures"
+    ]
+  },
+  {
+    "id": "synthesis_race_goal_preserved",
+    "category": "race_preparation",
+    "prompt": "J'ai un trail dans 3 semaines. Comment adapter ma séance de demain pour cet objectif ?",
+    "expected_action": "preserve_race_goal_while_adapting_session",
+    "context": {
+      "reference_date": "2026-11-15",
+      "race_calendar": [
+        {
+          "name": "Trail objectif",
+          "date": "2026-12-06",
+          "distance_km": 50,
+          "elevation_gain_m": 2500,
+          "priority": "A"
+        }
+      ],
+      "training_history": {
+        "period_days": 7,
+        "sessions": 4,
+        "duration_hours": 5.4,
+        "distance_km": 46,
+        "elevation_gain_m": 1400,
+        "coverage": "complete"
+      },
+      "training_load": {
+        "actual_load": "moderate",
+        "coverage": "complete"
+      },
+      "recovery_analysis": {
+        "subjective_fatigue": "moderate"
+      },
+      "recovery_status": {
+        "readiness": "neutral",
+        "data_date": "2026-11-15",
+        "freshness": "current"
+      },
+      "active_constraints": {
+        "restrictions": []
+      },
+      "next_planned_session": {
+        "type": "tempo_trail",
+        "date": "2026-11-16",
+        "duration_minutes": 75
+      },
+      "weekly_plan_context": {
+        "phase": "specific_preparation",
+        "week_target": "maintain_specificity_without_fatigue_spike"
+      },
+      "athlete_training_profile": {
+        "vma_kmh": 15
+      }
+    },
+    "forbidden_phrases": [
+      "garantis ton chrono",
+      "modifie automatiquement ton plan",
+      "tu es prêt à 100 %"
+    ]
+  }
+]

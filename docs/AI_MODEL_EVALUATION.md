@@ -1,6 +1,6 @@
 # Évaluation des modèles IA locaux — protocole v1
 
-**Statut :** corpus de référence initial ; benchmark Ollama sur VM à réaliser  
+**Statut :** corpus de référence initial ; premier benchmark comparatif exécuté sur VM le 13/11/2026  
 **Modèle actuellement ciblé :** `qwen2.5:3b` (modèle réellement installé/configuré sur la VM ; qualité à confirmer par benchmark)  
 **Objectif :** mesurer la fiabilité du modèle comme orchestrateur, et non sa capacité à inventer des analyses sportives.
 
@@ -59,6 +59,22 @@ Les modèles candidats doivent être évalués avec le même environnement local
 
 Un seul échec de sécurité ou une valeur sportive inventée disqualifie le modèle pour le rôle de coach, même si sa moyenne globale est élevée.
 
+## 4 bis. Candidat expérimental : Qwen3.5-2B
+
+Le modèle de production reste `qwen2.5:3b`. `qwen3.5:2b` est un candidat de test uniquement : ne pas modifier `.env`, `.env.example`, la configuration de production ni le modèle actif pour réaliser cette comparaison.
+
+Le runner mesure la sélection des outils, les arguments, les clarifications et la latence sur des scénarios synthétiques. Il n'exécute aucun outil métier, ne lit aucune donnée athlète et ne valide pas à lui seul la qualité de la synthèse finale. Une validation de rédaction doit donc compléter ce benchmark par des scénarios fonctionnels contrôlés.
+
+Un benchmark Ollama peut durer plusieurs minutes : `--limit 3` limite le nombre de scénarios, mais ne garantit pas un test rapide. Ne lancer le corpus complet que si le diagnostic le justifie. Le test comparatif a été réalisé ; ses résultats et limites sont consignés à la section 10.
+
+Le modèle candidat doit être déjà présent dans Ollama. Ces commandes sont historiques : elles décrivent le protocole utilisé le 13/11/2026 et ne sont pas une recommandation de relancer le benchmark complet. Elles ne changent pas `OPENCOACH_AI_MODEL`.
+- sélection exacte de l'outil et des arguments ;
+- clarification des périodes manquantes et reprise du contexte multi-tour ;
+- respect des scénarios de sécurité ;
+- latences p50/p95 et erreurs fournisseur.
+
+Ne pas choisir un modèle sur une moyenne générale seule : tout échec de sécurité, appel métier injustifié ou argument temporel erroné est bloquant. Si Qwen3.5-2B est meilleur sur le routage mais moins bon en rédaction, conserver les rôles séparés et tester la rédaction indépendamment avant toute décision.
+
 ## 5. Rapport à produire
 
 Pour chaque modèle :
@@ -91,7 +107,7 @@ Puis, dans l'environnement virtuel Python :
 python scripts/ai/benchmark_models.py --models qwen2.5:3b --repetitions 3
 ```
 
-Essai court pour vérifier la connexion et le format du rapport :
+Diagnostic réduit (3 scénarios, mais chaque génération Ollama peut encore prendre plusieurs dizaines de secondes) :
 
 ```bash
 python scripts/ai/benchmark_models.py --models qwen2.5:3b --limit 3 --repetitions 1
@@ -167,12 +183,12 @@ Les dates obligatoires de `planned_sessions` sont également contrôlées : le r
 - [x] Ajouter des tests de non-exécution en cas de période inventée, altérée ou hors limites.
 - [x] Corriger le scénario de récupération pour tenir compte de la date facultative par défaut du contrat.
 - [ ] Exécuter les trois configurations comparatives sur la VM.
-- [ ] Exécuter et analyser le corpus avec `qwen2.5:3b` sur la VM ; ne comparer d'autres modèles que sur demande explicite.
+- [x] Exécuter et analyser le corpus avec `qwen2.5:3b` sur la VM ; résultats et limites consignés à la section 10.
 
 
 ### Benchmark du routeur de production
 
-Le profil `production_router` applique `select_coach_tools` séparément à chaque scénario du corpus, puis ne transmet à Ollama que les définitions retenues. Le rapport enregistre `exposed_tool_count`, `exposed_tool_names` et `average_exposed_tool_count`. Ce profil permet de comparer la sélection et la latence au catalogue complet avec le même modèle, le même prompt et les mêmes cas. Les scénarios sans outil sont exécutés avec un catalogue vide ; les demandes ambiguës conservent le catalogue complet conformément au comportement de production.
+Le profil `production_router` applique `select_coach_tools` séparément à chaque scénario du corpus, puis ne transmet à Ollama que les définitions retenues. Le rapport enregistre `exposed_tool_count`, `exposed_tool_names` et `average_exposed_tool_count`. **Attention : ce runner mesure la capacité d'Ollama à émettre des tool calls dans un catalogue réduit ; il ne mesure pas directement le routage réel de l'endpoint `/api/ai/coach`.** En production, `build_coach_execution_plan` construit les appels métier déterministes en Python avant la synthèse du modèle. Les scores `tool_selection_accuracy` et `argument_validation_accuracy` de ce runner ne doivent donc pas être interprétés comme la fiabilité du routeur Python en production.
 
 Commande de référence :
 
@@ -183,3 +199,85 @@ python scripts/ai/benchmark_models.py \\
   --prompt-profile production \\
   --repetitions 1
 ```
+
+
+## 10. Résultats du benchmark comparatif du 13/11/2026
+
+Le test a comparé `qwen2.5:3b` et `qwen3.5:2b` avec le profil `production_router`, le prompt `production`, 18 scénarios et 3 répétitions (54 générations par modèle).
+
+| Indicateur | qwen2.5:3b | qwen3.5:2b |
+|---|---:|---:|
+| Générations réussies côté fournisseur | 54/54 | 54/54 |
+| Tool selection accuracy du runner | 75,93 % | 33,33 % |
+| Validation des arguments | 90,62 % | Non mesurable |
+| Clarification accuracy (scénarios évaluables) | 25 % | 25 % |
+| Latence médiane | 7,96 s | 14,66 s |
+| Latence P95 | 40,23 s | 36,71 s |
+
+Décision : **ne pas adopter `qwen3.5:2b`**. Sur ce corpus et ce protocole, il est plus lent en médiane et produit nettement moins de tool calls conformes. Le modèle de production reste `qwen2.5:3b`. Aucun changement de configuration ou de modèle actif n'est autorisé par ce benchmark.
+
+Limite méthodologique importante : ces scores proviennent du runner LLM et ne représentent pas les appels réellement préparés par `build_coach_execution_plan` dans l'endpoint de production. Ils servent à comparer le comportement tool-calling brut des modèles, pas à mesurer la fiabilité de l'orchestration Python. La prochaine évaluation doit isoler trois mesures : (1) tests déterministes du plan d'exécution Python, (2) qualité de la synthèse du modèle à partir de résultats métier simulés, (3) latence Ollama. Ne pas relancer le corpus complet pour valider un simple correctif de routage.
+
+
+### Détection des générations interrompues par la limite de tokens
+
+Le client Ollama conserve le champ `done_reason` dans le résultat normalisé.
+Les endpoints de conversation et de rédaction du coach rejettent une génération
+dont `done_reason` vaut `length`, même si Ollama indique `done=true`.
+Une réponse vide ou dont la génération n'est pas terminée est également rejetée.
+Ce contrôle évite de présenter une synthèse tronquée comme une réponse complète.
+
+
+### Historique vide et couverture des métriques
+
+Une période sans séance enregistrée (`sessions.total = 0`) ne constitue pas une mesure à zéro. L'outil `training_history` retourne désormais `null` pour les métriques de durée, distance, dénivelé et charge, avec une couverture `no_sessions`. Cette règle évite qu'une absence d'activité soit interprétée comme un volume ou une charge mesurés à zéro.
+
+Lorsque des séances existent mais que certaines métriques manquent, la valeur complète reste masquée ; le sous-total observé n'est exposé que comme `observed_value`, accompagné de sa couverture `partial`. Une métrique complètement renseignée reste exploitable même si une autre métrique de la période est partielle.
+
+## 8. Évaluation de la synthèse finale du coach
+
+Le runner `scripts/ai/evaluate_coaching_responses.py` complète le benchmark de routage. Il injecte des résultats métier **synthétiques** dans le prompt de production, sans outil actif, sans base de données et sans accès à un dossier athlète réel.
+
+Le corpus `tests/fixtures/ai_coaching_synthesis_cases.json` couvre quatre décisions :
+- récupération défavorable avant une séance intense ;
+- douleur malgré une Readiness favorable ;
+- charge récente importante avant une sortie longue ;
+- objectif de trail proche avec adaptation de la séance.
+
+Pour les demandes de coaching (bilan, récupération, charge ou adaptation), le mode `coach` est appliqué par défaut. Il ajoute un contrôle `coaching_style_pass` : présence d'un jugement de coach, au plus deux valeurs avec unité, absence de listes à puces et de données structurées brutes, et absence d'une introduction de type « voici les données ». Les demandes explicitement chiffrées peuvent déclarer `response_mode: "data"` dans leur scénario afin de ne pas être pénalisées pour une réponse en chiffres.
+
+L'évaluateur vérifie de façon déterministe :
+- présence d'une décision cohérente avec l'action attendue ;
+- respect des contraintes et absence de formulations explicitement interdites ;
+- absence de chiffres accompagnés d'unités qui ne figurent pas dans les données du scénario ;
+- concision de la réponse (1 à 6 phrases) ;
+- style de coaching : un avis formulé dès l'ouverture, des métriques limitées aux éléments utiles, sans inventaire COROS ni tableau de bord textuel.
+
+Tests locaux du contrat et des garde-fous :
+
+```bash
+pytest -q tests/test_ai_coaching_synthesis_evaluator.py
+```
+
+Exécution sur la VM avec le modèle local configuré :
+
+```bash
+python scripts/ai/evaluate_coaching_responses.py --models qwen2.5:3b --repetitions 1
+```
+
+Diagnostic sur un seul scénario :
+
+```bash
+python scripts/ai/evaluate_coaching_responses.py --models qwen2.5:3b --limit 1 --repetitions 1
+```
+
+**Limite importante :** ce score lexical mesure des garde-fous observables, pas la justesse physiologique complète. Il peut manquer une formulation correcte ou accepter une formulation maladroite. Il ne remplace ni une revue humaine, ni une validation avec les données de test de la VM. Le rapport expose séparément les taux de décision, sécurité, qualité des données, fidélité numérique et concision. Les résultats doivent être interprétés par critère, jamais uniquement via le taux global.
+
+Le corpus inclut également un scénario de Readiness périmée et d'historique partiel (`ai_coaching_data_quality_cases.json`). Pour réussir ce cas, le modèle doit dater explicitement la dernière mesure, reconnaître la couverture incomplète et demander une synchronisation ou un ressenti récent avant de trancher sur la séance. Une Readiness favorable mais datée ne peut pas être présentée comme l'état actuel ; une charge non calculable ne peut pas être assimilée à zéro.
+
+Test ciblé :
+
+```bash
+pytest -q tests/test_ai_coaching_data_quality.py tests/test_ai_coaching_synthesis_evaluator.py
+```
+

@@ -17,7 +17,7 @@ const DEFAULTS: CoachPreferences = {
   personality: 'balanced',
   firmness: 3,
   motivation: 3,
-  response_style: 'detailed',
+  response_style: 'concise',
   custom_prompt: '',
 }
 

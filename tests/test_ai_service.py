@@ -3,6 +3,7 @@
 import asyncio
 
 import pytest
+from pydantic import BaseModel
 
 from opencoach.ai.config import AISettings
 from opencoach.ai.schemas import AIChatRequest, AIChatResult, AIMessage
@@ -208,3 +209,115 @@ def test_tool_orchestration_rejects_period_not_matching_user_request():
     result = asyncio.run(service.chat_with_tools(request, registry, user_messages=["Analyse mon historique sur 7 jours."]))
     assert "Tu as indiqué 7 jours" in result.content
     assert executions == []
+
+
+def test_truncated_tool_call_is_rejected_before_business_handler_execution():
+    from opencoach.ai.schemas import AIToolCall
+    from opencoach.ai.service import AIOrchestrationError
+    from opencoach.ai.tool_engine import AITool, AIToolRegistry
+
+    executions = []
+
+    class TruncatedToolCallingClient:
+        async def chat(self, request):
+            return AIChatResult(
+                model="qwen2.5:3b",
+                content="",
+                tool_calls=[
+                    AIToolCall(name="write_data", arguments={"value": 3})
+                ],
+                done=True,
+                done_reason="length",
+            )
+
+    registry = AIToolRegistry()
+    registry.register(AITool(
+        name="write_data",
+        description="Écriture de test.",
+        arguments_model=EchoArgsForTruncationTest,
+        handler=lambda args: executions.append(args.value) or {"saved": True},
+    ))
+    service = AIService(
+        AISettings(enabled=True),
+        client=TruncatedToolCallingClient(),
+    )
+    request = AIChatRequest(
+        messages=[AIMessage(role="user", content="Enregistre la valeur 3.")]
+    )
+
+    with pytest.raises(AIOrchestrationError, match="interrompu"):
+        asyncio.run(service.chat_with_tools(request, registry))
+
+    assert executions == []
+    assert registry.execution_results == ()
+
+
+def test_truncated_final_answer_is_rejected_by_tool_orchestrator():
+    from opencoach.ai.service import AIOrchestrationError
+    from opencoach.ai.tool_engine import AIToolRegistry
+
+    class TruncatedFinalClient:
+        async def chat(self, request):
+            return AIChatResult(
+                model="qwen2.5:3b",
+                content="Analyse partielle",
+                done=True,
+                done_reason="length",
+            )
+
+    service = AIService(
+        AISettings(enabled=True),
+        client=TruncatedFinalClient(),
+    )
+    request = AIChatRequest(
+        messages=[AIMessage(role="user", content="Fais le bilan.")]
+    )
+
+    with pytest.raises(AIOrchestrationError, match="interrompu"):
+        asyncio.run(service.chat_with_tools(request, AIToolRegistry()))
+
+
+class EchoArgsForTruncationTest(BaseModel):
+    value: int
+
+def test_tool_orchestration_never_executes_more_than_maximum_rounds():
+    from opencoach.ai.schemas import AIToolCall
+    from opencoach.ai.service import AIOrchestrationError
+    from opencoach.ai.tool_engine import AITool, AIToolRegistry
+
+    executions = []
+
+    class RepeatingToolCallingClient:
+        def __init__(self):
+            self.calls = 0
+
+        async def chat(self, request):
+            self.calls += 1
+            return AIChatResult(
+                model="qwen2.5:3b",
+                content="",
+                tool_calls=[AIToolCall(name="record", arguments={"value": self.calls})],
+                done=True,
+            )
+
+    class RecordArguments(BaseModel):
+        value: int
+
+    registry = AIToolRegistry()
+    registry.register(AITool(
+        name="record",
+        description="Enregistre une valeur de test.",
+        arguments_model=RecordArguments,
+        handler=lambda args: executions.append(args.value) or {"saved": True},
+    ))
+    client = RepeatingToolCallingClient()
+    service = AIService(AISettings(enabled=True), client=client)
+    request = AIChatRequest(
+        messages=[AIMessage(role="user", content="Lance le test.")],
+    )
+
+    with pytest.raises(AIOrchestrationError, match="nombre maximal de tours"):
+        asyncio.run(service.chat_with_tools(request, registry))
+
+    assert client.calls == service.MAX_TOOL_ROUNDS + 1
+    assert len(executions) == service.MAX_TOOL_ROUNDS

@@ -148,6 +148,8 @@ def build_coach_execution_plan(
         "indisponible", "contrainte", "profil", "vma", "fc max", "frequence cardiaque",
         "zones cardiaques", "zone cardiaque", "etat de forme", "fatigue", "stress",
         "seuil", "poids", "je pese", "equipement", "chaussures", "mon poids",
+        "comment je vais", "comment vais-je", "comment est ma forme", "comment va ma forme",
+        "ou j en suis", "bilan de forme", "suis-je en forme", "bilan de ma semaine", "bilan de la semaine", "bilan hebdomadaire",
     )
     last_assistant = _normalize(assistant_history[-1]) if assistant_history else ""
     clarification_follow_up = (
@@ -226,7 +228,10 @@ def build_coach_execution_plan(
                 "Pour comparer la charge sur deux périodes, indique la durée des deux périodes "
                 "(par exemple 7 jours puis 14 jours)."
             ))
-    if any(term in intent_context for term in ("charge", "mon atl", "ctl", "tsb")) and "training_load" not in selected:
+    explicit_load_analysis_request = any(
+        term in intent_context for term in ("charge", "mon atl", "ctl", "tsb")
+    )
+    if explicit_load_analysis_request and not trend_comparison_requested:
         if not periods:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?")
         if not 1 <= periods[-1] <= 90:
@@ -259,15 +264,62 @@ def build_coach_execution_plan(
 
     # Une blessure ou une douleur impose d'abord la lecture des restrictions enregistrées.
     injury_terms = ("douleur", "mal au", "mal a", "tendon", "blessure", "blesse", "malade", "maladie", "indisponible")
-    if "active_constraints" in selected and any(term in normalized for term in injury_terms):
-        target_date = extract_activity_date(question, reference_date)
+    if "active_constraints" in selected and any(term in intent_context for term in injury_terms):
+        target_date = extract_activity_date(intent_context, reference_date)
         safety_arguments = (
             {"target_date": target_date.isoformat()}
             if target_date is not None and target_date != reference_date
             else {}
         )
         safety_calls = [PlannedToolCall("active_constraints", safety_arguments)]
-        if "recovery_status" in selected:
+        recommendation_request = any(
+            term in intent_context
+            for term in (
+                "quelle seance", "quel entrainement", "que faire",
+                "conseille", "recommande", "adapter", "ajuste",
+            )
+        )
+        if recommendation_request:
+            # La restriction reste toujours le premier résultat consulté.
+            # Une demande de séance avec douleur exige ensuite le contexte complet
+            # pour adapter le conseil, pas seulement un statut Readiness isolé.
+            explicit_load_request = any(
+                term in intent_context for term in ("charge", "mon atl", "ctl", "tsb")
+            )
+            requested_periods = extract_explicit_periods(
+                conversation_users, assistant_history
+            )
+            if explicit_load_request and not requested_periods:
+                return CoachExecutionPlan(clarification=(
+                    "Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?"
+                ))
+            load_period = requested_periods[-1] if explicit_load_request else 7
+            if not 1 <= load_period <= 90:
+                return CoachExecutionPlan(clarification=(
+                    "La charge peut être analysée sur 1 à 90 jours. Quelle période valide souhaites-tu ?"
+                ))
+            history_period = load_period if explicit_load_request else 7
+            safety_calls.extend((
+                PlannedToolCall(
+                    "training_history",
+                    {"nb_days": history_period, "exclude_current_day": True},
+                ),
+                PlannedToolCall("training_load", {"nb_days": load_period}),
+                PlannedToolCall("recovery_analysis", {}),
+                # La date cible de la séance/douleur sert aux contraintes,
+                # mais la décision d'entraînement doit s'appuyer sur la
+                # récupération disponible aujourd'hui, comme recovery_analysis.
+                PlannedToolCall("recovery_status", {}),
+                PlannedToolCall("next_planned_session", {}),
+                PlannedToolCall("weekly_plan_context", {}),
+                PlannedToolCall("athlete_training_profile", {}),
+            ))
+            # Une douleur ne doit pas faire disparaître l'objectif de course :
+            # le calendrier reste nécessaire pour adapter la séance sans perdre
+            # la perspective de l'échéance sportive.
+            if "race_calendar" in selected:
+                safety_calls.append(PlannedToolCall("race_calendar", {}))
+        elif "recovery_status" in selected:
             safety_calls.append(PlannedToolCall("recovery_status", safety_arguments))
         return CoachExecutionPlan(tuple(safety_calls))
 
@@ -279,6 +331,13 @@ def build_coach_execution_plan(
         return CoachExecutionPlan((PlannedToolCall("propose_profile_data", proposal or {}),))
 
     periods = extract_explicit_periods(conversation_users, assistant_history)
+    recommendation_history = any(
+        term in intent_context
+        for term in (
+            "que faire", "quelle seance", "quel entrainement",
+            "conseille", "recommande", "ajuste", "adapter",
+        )
+    )
 
     if "activity_detail" in selected:
         activity_id = re.search(
@@ -301,17 +360,48 @@ def build_coach_execution_plan(
                 calls.append(PlannedToolCall("activity_detail", {"activity_date": activity_date.isoformat()}))
 
     if "training_history" in selected:
-        if not periods:
+        overview_history = any(
+            term in normalized
+            for term in (
+                "comment je vais", "comment vais-je", "comment est ma forme",
+                "comment va ma forme", "ou j en suis", "bilan de forme",
+                "suis-je en forme", "bilan de ma semaine",
+                "bilan de la semaine", "bilan hebdomadaire",
+            )
+        )
+        history_period = (
+            7 if (overview_history or recommendation_history) and not periods
+            else (periods[-1] if periods else None)
+        )
+        if history_period is None:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
-        if not 1 <= periods[-1] <= 365:
+        if not 1 <= history_period <= 365:
             return CoachExecutionPlan(clarification="L'historique doit porter sur une période de 1 à 365 jours. Quelle période valide souhaites-tu ?")
-        calls.append(PlannedToolCall("training_history", {"nb_days": periods[-1]}))
+        history_arguments = {"nb_days": history_period}
+        if recommendation_history:
+            # training_load porte sur les jours complets précédant la date cible ;
+            # l'historique doit utiliser exactement la même fenêtre.
+            history_arguments["exclude_current_day"] = True
+        calls.append(PlannedToolCall("training_history", history_arguments))
+        if recommendation_history and (not periods or "training_load" not in selected):
+            # Une décision de séance doit aussi connaître la charge réellement
+            # observée sur une fenêtre récente fixe, distincte de l'historique
+            # descriptif. Sept jours sont préparés par Python, sans choix du LLM.
+            # Si une période explicite a déjà autorisé training_load, l'appel
+            # correspondant est ajouté plus bas avec la durée demandée.
+            calls.append(PlannedToolCall("training_load", {"nb_days": 7}))
 
     # Une comparaison utilise training_trends, qui calcule déjà les métriques
     # des deux fenêtres. Ne lance pas en parallèle training_load : cela ajoute
     # des données de charge/planning/récupération hors comparaison et brouille
     # la synthèse demandée.
-    if "training_load" in selected and not trend_comparison_requested:
+    if (
+        "training_load" in selected
+        and not trend_comparison_requested
+        and not (recommendation_history and not periods)
+    ):
+        # Une recommandation sans période explicite utilise la fenêtre de 7 jours
+        # ajoutée plus haut ; ne pas redemander une durée pour cette même charge.
         if not periods:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?")
         load_period = periods[-1]
@@ -336,15 +426,35 @@ def build_coach_execution_plan(
     elif not trend_comparison_requested and (
         "recovery_status" in selected or "recovery_analysis" in selected
     ):
+        coach_overview_request = any(
+            term in normalized
+            for term in (
+                "comment je vais", "comment vais-je", "comment est ma forme",
+                "comment va ma forme", "ou j en suis", "bilan de forme",
+                "suis-je en forme", "bilan de ma semaine",
+                "bilan de la semaine", "bilan hebdomadaire",
+            )
+        )
         status_request = any(term in normalized for term in ("etat de recuperation", "readiness", "disponibilite aujourd", "suis-je pret"))
-        if status_request and "recovery_status" in selected:
+        recommendation_request = any(
+            term in normalized
+            for term in ("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter")
+        )
+        if coach_overview_request or recommendation_request:
+            # Un bilan ou un conseil de séance doit croiser la tendance de
+            # récupération et l'état Readiness courant, pas choisir l'un des deux.
+            if "recovery_analysis" in selected:
+                calls.append(PlannedToolCall("recovery_analysis", {}))
+            if "recovery_status" in selected:
+                calls.append(PlannedToolCall("recovery_status", {}))
+        elif status_request and "recovery_status" in selected:
             calls.append(PlannedToolCall("recovery_status", {}))
         elif "recovery_analysis" in selected:
             calls.append(PlannedToolCall("recovery_analysis", {}))
         elif "recovery_status" in selected:
             calls.append(PlannedToolCall("recovery_status", {}))
 
-    if "active_constraints" in selected and not calls:
+    if "active_constraints" in selected and not any(call.name == "active_constraints" for call in calls):
         calls.append(PlannedToolCall("active_constraints", {}))
 
     # L'identifiant peut provenir du tour utilisateur où la course a été

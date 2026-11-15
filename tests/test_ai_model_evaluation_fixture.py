@@ -51,3 +51,22 @@ def test_ai_model_evaluation_corpus_covers_critical_safety_categories() -> None:
         "authorization",
         "no_tool",
     }.issubset(categories)
+
+def test_coaching_decision_scenarios_define_explicit_actions_and_guardrails() -> None:
+    cases = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+    scenarios = [
+        case for case in cases
+        if case["id"].startswith("coach_")
+    ]
+
+    assert len(scenarios) >= 4
+    allowed_actions = {
+        "adapt_or_recover",
+        "respect_pain_constraints",
+        "evaluate_load_absorption_before_maintaining",
+        "preserve_race_goal_while_adapting_session",
+    }
+    for case in scenarios:
+        assert case["expected_coaching_action"] in allowed_actions
+        assert case["expected_tool_calls"]
+        assert case["forbidden_behaviors"]

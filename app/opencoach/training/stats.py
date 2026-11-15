@@ -25,6 +25,7 @@ class TrainingStats:
     distance_data_count: int = 0
     elevation_data_count: int = 0
     measured_load_data_count: int = 0
+    estimated_load_data_count: int = 0
 
     @property
     def sessions_count(self) -> int:

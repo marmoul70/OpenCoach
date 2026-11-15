@@ -20,6 +20,7 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
             return SimpleNamespace(
                 sessions_count=1,
                 measured_load_data_count=1,
+                estimated_load_data_count=0,
                 manual_sessions_count=0,
                 activities_count=1,
                 total_duration_minutes=65,
@@ -142,6 +143,7 @@ def test_training_load_tool_never_reports_missing_actual_load_as_zero():
             return SimpleNamespace(
                 sessions_count=0,
                 measured_load_data_count=0,
+                estimated_load_data_count=0,
                 manual_sessions_count=0,
             )
 
@@ -177,6 +179,7 @@ def test_training_load_tool_hides_partial_total_and_marks_daily_status_unreliabl
             return SimpleNamespace(
                 sessions_count=2,
                 measured_load_data_count=1,
+                estimated_load_data_count=0,
                 manual_sessions_count=0,
             )
 
@@ -224,23 +227,36 @@ def test_training_load_tool_hides_partial_total_and_marks_daily_status_unreliabl
 
 
 
-def test_training_load_tool_exposes_coros_atl_ctl_separately_from_session_load():
-    athlete_id = uuid4()
-    calls = []
 
-    class EmptyStatsService:
+def test_training_load_tool_uses_only_opencoach_training_services():
+    import inspect
+
+    parameters = inspect.signature(build_training_load_tool).parameters
+    assert "wellness_repository" not in parameters
+
+    # L'outil ne dépend pas d'un dépôt ou d'un fournisseur externe : il construit
+    # son analyse depuis les services métier centralisés d'OpenCoach.
+    assert "COROS" not in inspect.getsource(build_training_load_tool)
+    assert "coros_training_load" not in inspect.getsource(build_training_load_tool)
+
+
+
+def test_training_load_coverage_does_not_treat_manual_session_without_duration_as_available():
+    class OneIncompleteManualSessionStats:
         def calculate(self, profile_id, start_date, end_date):
             return SimpleNamespace(
-                sessions_count=2,
+                sessions_count=1,
+                activities_count=0,
+                manual_sessions_count=1,
                 measured_load_data_count=0,
-                manual_sessions_count=0,
+                estimated_load_data_count=0,
             )
 
-    class EmptyLoadService:
+    class NoLoadService:
         def calculate(self, profile_id, target_date, *, days):
             return RecentTrainingLoad(
                 days=(),
-                analyzed_days=0,
+                analyzed_days=1,
                 planned_load_total=0.0,
                 actual_load_total=0.0,
                 above_plan_days=0,
@@ -249,51 +265,26 @@ def test_training_load_tool_exposes_coros_atl_ctl_separately_from_session_load()
                 broken_rest_days=0,
                 respected_rest_days=0,
                 planning_covered_days=0,
-                unplanned_days=7,
+                unplanned_days=1,
             )
 
-    class WellnessRepository:
-        def list_range(self, profile_id, start_date, end_date, *, provider=None):
-            calls.append((profile_id, start_date, end_date, provider))
-            return [
-                SimpleNamespace(
-                    date=date(2026, 11, 10),
-                    fatigue_atl=77.0,
-                    fitness_ctl=62.0,
-                ),
-                SimpleNamespace(
-                    date=date(2026, 11, 9),
-                    fatigue_atl=57.0,
-                    fitness_ctl=57.0,
-                ),
-            ]
-
     tool = build_training_load_tool(
-        EmptyLoadService(),
-        EmptyStatsService(),
-        athlete_id,
-        reference_date_provider=lambda: date(2026, 11, 11),
-        wellness_repository=WellnessRepository(),
+        NoLoadService(),
+        OneIncompleteManualSessionStats(),
+        uuid4(),
+        reference_date_provider=lambda: date(2026, 11, 9),
     )
-    result = tool.handler(TrainingLoadArguments(nb_days=7))
 
-    assert calls == [(
-        athlete_id,
-        date(2026, 11, 4),
-        date(2026, 11, 10),
-        "coros",
-    )]
-    coros = result["coros_training_load"]
-    assert coros["coverage"] == {
-        "available_days": 2,
-        "expected_days": 7,
-        "status": "partial",
+    result = tool.handler(TrainingLoadArguments(nb_days=1))
+
+    assert result["sessions"]["actual"] == 1
+    assert result["load"]["coverage"] == {
+        "available_sessions": 0,
+        "measured_sessions": 0,
+        "estimated_manual_sessions": 0,
+        "total_sessions": 1,
+        "status": "unavailable",
     }
-    assert coros["latest"]["atl_short_term_load"] == 77.0
-    assert coros["latest"]["ctl_long_term_load"] == 62.0
-    assert coros["latest"]["load_ratio"] == 1.24
-    assert "aucun seuil individuel" in coros["semantics"]
-    assert "pas un diagnostic" in coros["interpretation_policy"]
-    assert "au-dessus de la normale" in coros["interpretation_policy"]
-    assert "Jours sans couverture de planning" in result["planning_coverage"]["meaning"]
     assert result["load"]["actual_total"] is None
+    assert result["load"]["delta_total"] is None
+    assert any("Aucune charge exploitable" in warning for warning in result["warnings"])

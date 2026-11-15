@@ -113,7 +113,13 @@ def test_injury_advice_executes_constraints_before_recovery_status():
     )
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("active_constraints", {}),
+        ("training_history", {"nb_days": 7, "exclude_current_day": True}),
+        ("training_load", {"nb_days": 7}),
+        ("recovery_analysis", {}),
         ("recovery_status", {}),
+        ("next_planned_session", {}),
+        ("weekly_plan_context", {}),
+        ("athlete_training_profile", {}),
     ]
 
 
@@ -294,14 +300,20 @@ def test_short_thanks_after_completed_answer_does_not_repeat_previous_tool():
 
 
 
-def test_injury_for_tomorrow_uses_the_requested_date_for_both_safety_tools():
+def test_injury_for_tomorrow_keeps_full_coaching_context_and_requested_safety_date():
     plan = build_coach_execution_plan(
         "J'ai mal au tendon, quelle séance puis-je faire demain ?",
         reference_date=REFERENCE_DATE,
     )
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("active_constraints", {"target_date": "2026-11-11"}),
-        ("recovery_status", {"target_date": "2026-11-11"}),
+        ("training_history", {"nb_days": 7, "exclude_current_day": True}),
+        ("training_load", {"nb_days": 7}),
+        ("recovery_analysis", {}),
+        ("recovery_status", {}),
+        ("next_planned_session", {}),
+        ("weekly_plan_context", {}),
+        ("athlete_training_profile", {}),
     ]
 
 
@@ -431,5 +443,260 @@ def test_weekly_bilan_uses_a_seven_day_history_and_week_context():
     assert plan.clarification is None
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("training_history", {"nb_days": 7}),
+        ("recovery_analysis", {}),
+        ("recovery_status", {}),
         ("weekly_plan_context", {}),
+        ("athlete_training_profile", {}),
     ]
+
+
+def test_weekly_review_includes_recovery_status_and_athlete_profile():
+    plan = build_coach_execution_plan(
+        "Fais-moi un bilan hebdomadaire.",
+        reference_date=REFERENCE_DATE,
+    )
+
+    calls = [(call.name, call.arguments) for call in plan.calls]
+    assert plan.clarification is None
+    assert ("training_history", {"nb_days": 7}) in calls
+    assert ("recovery_analysis", {}) in calls
+    assert ("recovery_status", {}) in calls
+    assert ("weekly_plan_context", {}) in calls
+    assert ("athlete_training_profile", {}) in calls
+
+
+def test_general_coach_overview_combines_recovery_and_training_context():
+    plan = build_coach_execution_plan(
+        "Comment je vais en ce moment ?",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("training_history", {"nb_days": 7}),
+        ("recovery_analysis", {}),
+        ("recovery_status", {}),
+        ("weekly_plan_context", {}),
+        ("athlete_training_profile", {}),
+    ]
+
+
+def test_combined_recommendation_and_explicit_load_request_does_not_duplicate_load_tool():
+    plan = build_coach_execution_plan(
+        "Quelle séance me conseilles-tu et analyse ma charge sur les 14 derniers jours ?",
+        reference_date=REFERENCE_DATE,
+    )
+    calls = [(call.name, call.arguments) for call in plan.calls]
+    load_calls = [call for call in calls if call[0] == "training_load"]
+    history_calls = [call for call in calls if call[0] == "training_history"]
+    assert load_calls == [("training_load", {"nb_days": 14})]
+    assert history_calls == [
+        ("training_history", {"nb_days": 14, "exclude_current_day": True})
+    ]
+
+
+def test_training_recommendation_uses_recent_history_profile_and_schedule():
+    plan = build_coach_execution_plan(
+        "Quelle séance me conseilles-tu aujourd'hui ?",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.clarification is None
+    calls = [(call.name, call.arguments) for call in plan.calls]
+    assert calls == [
+        ("training_history", {"nb_days": 7, "exclude_current_day": True}),
+        ("training_load", {"nb_days": 7}),
+        ("recovery_analysis", {}),
+        ("recovery_status", {}),
+        ("active_constraints", {}),
+        ("next_planned_session", {}),
+        ("weekly_plan_context", {}),
+        ("athlete_training_profile", {}),
+    ]
+
+def test_low_recovery_before_planned_intensity_collects_all_decision_context():
+    plan = build_coach_execution_plan(
+        "Ma récupération est mauvaise et j'ai une séance de fractionné prévue demain. Que me conseilles-tu ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    calls = [(call.name, call.arguments) for call in plan.calls]
+    assert calls == [
+        ("training_history", {"nb_days": 7, "exclude_current_day": True}),
+        ("training_load", {"nb_days": 7}),
+        ("recovery_analysis", {}),
+        ("recovery_status", {}),
+        ("active_constraints", {}),
+        ("next_planned_session", {}),
+        ("weekly_plan_context", {}),
+        ("athlete_training_profile", {}),
+    ]
+
+
+def test_positive_readiness_never_skips_constraints_when_pain_is_reported():
+    plan = build_coach_execution_plan(
+        "Ma Readiness est excellente mais j'ai mal au genou. Quelle séance puis-je faire ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.calls[0].name == "active_constraints"
+    assert [call.name for call in plan.calls] == [
+        "active_constraints",
+        "training_history",
+        "training_load",
+        "recovery_analysis",
+        "recovery_status",
+        "next_planned_session",
+        "weekly_plan_context",
+        "athlete_training_profile",
+    ]
+
+
+def test_high_recent_load_and_tomorrows_long_session_are_both_in_context():
+    plan = build_coach_execution_plan(
+        "J'ai déjà beaucoup couru cette semaine et une sortie longue de 2 heures est prévue demain. Que me conseilles-tu ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    calls = [(call.name, call.arguments) for call in plan.calls]
+    assert ("training_history", {"nb_days": 7, "exclude_current_day": True}) in calls
+    assert ("training_load", {"nb_days": 7}) in calls
+    assert ("next_planned_session", {}) in calls
+    assert ("weekly_plan_context", {}) in calls
+    assert "recovery_status" in [name for name, _ in calls]
+
+
+def test_race_goal_is_preserved_in_session_recommendation_context():
+    plan = build_coach_execution_plan(
+        "J'ai un trail dans 3 semaines. Comment adapter ma séance de demain pour cet objectif ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    names = [call.name for call in plan.calls]
+    assert "race_calendar" in names
+    assert "training_history" in names
+    assert "training_load" in names
+    assert "next_planned_session" in names
+    assert "athlete_training_profile" in names
+    assert "race_preparation_analysis" not in names
+
+def test_injury_recommendation_preserves_explicit_load_analysis_period():
+    plan = build_coach_execution_plan(
+        "J'ai mal au tendon, quelle séance me conseilles-tu et analyse ma charge sur 14 jours ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.calls[0].name == "active_constraints"
+    load_calls = [
+        (call.name, call.arguments)
+        for call in plan.calls
+        if call.name == "training_load"
+    ]
+    assert load_calls == [("training_load", {"nb_days": 14})]
+    history_calls = [
+        (call.name, call.arguments)
+        for call in plan.calls
+        if call.name == "training_history"
+    ]
+    assert history_calls == [
+        ("training_history", {"nb_days": 14, "exclude_current_day": True})
+    ]
+
+
+def test_injury_recommendation_does_not_silently_default_explicit_load_period():
+    plan = build_coach_execution_plan(
+        "J'ai mal au tendon, quelle séance me conseilles-tu et analyse aussi ma charge ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.calls == ()
+    assert "combien de jours" in plan.clarification
+
+    follow_up = build_coach_execution_plan(
+        "14 jours",
+        history=[
+            "J'ai mal au tendon, quelle séance me conseilles-tu demain et analyse aussi ma charge ?"
+        ],
+        assistant_history=[
+            "Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?"
+        ],
+        reference_date=REFERENCE_DATE,
+    )
+    calls = [(call.name, call.arguments) for call in follow_up.calls]
+    assert calls[0] == (
+        "active_constraints",
+        {"target_date": "2026-11-11"},
+    )
+    assert ("training_history", {
+        "nb_days": 14,
+        "exclude_current_day": True,
+    }) in calls
+    assert ("training_load", {"nb_days": 14}) in calls
+    assert ("recovery_status", {}) in calls
+
+
+def test_injury_recommendation_keeps_upcoming_race_in_coaching_context():
+    plan = build_coach_execution_plan(
+        "J'ai mal au tendon et j'ai un trail dans 3 semaines. Quelle séance me conseilles-tu ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    names = [call.name for call in plan.calls]
+    assert names[0] == "active_constraints"
+    assert "race_calendar" in names
+    assert "training_history" in names
+    assert "training_load" in names
+    assert "next_planned_session" in names
+
+
+
+def test_recommendation_period_clarification_keeps_completed_day_window_alignment():
+    initial = build_coach_execution_plan(
+        "Quelle séance me conseilles-tu et analyse aussi ma charge ?",
+        reference_date=REFERENCE_DATE,
+    )
+    assert initial.calls == ()
+    assert "combien de jours" in initial.clarification
+
+    follow_up = build_coach_execution_plan(
+        "14 jours",
+        history=["Quelle séance me conseilles-tu et analyse aussi ma charge ?"],
+        assistant_history=[
+            "Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?"
+        ],
+        reference_date=REFERENCE_DATE,
+    )
+
+    calls = [(call.name, call.arguments) for call in follow_up.calls]
+    assert ("training_history", {
+        "nb_days": 14,
+        "exclude_current_day": True,
+    }) in calls
+    assert ("training_load", {"nb_days": 14}) in calls
+
+
+
+def test_long_load_trend_comparison_uses_trend_period_limits_not_load_limit():
+    plan = build_coach_execution_plan(
+        "Compare mes tendances de charge sur 100 jours et 150 jours.",
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("training_trends", {"nb_days": 100, "comparison_days": 150})
+    ]
+
+
+
+def test_future_injury_recommendation_uses_current_recovery_not_session_date():
+    plan = build_coach_execution_plan(
+        "J'ai mal au tendon, quelle séance me conseilles-tu demain ?",
+        reference_date=REFERENCE_DATE,
+    )
+
+    calls = [(call.name, call.arguments) for call in plan.calls]
+    assert calls[0] == (
+        "active_constraints",
+        {"target_date": "2026-11-11"},
+    )
+    assert ("recovery_analysis", {}) in calls
+    assert ("recovery_status", {}) in calls

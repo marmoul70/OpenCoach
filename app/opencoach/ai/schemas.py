@@ -71,6 +71,7 @@ class AIChatResult(BaseModel):
     content: str = Field(default="", max_length=40_000)
     tool_calls: list[AIToolCall] = Field(default_factory=list, max_length=5)
     done: bool
+    done_reason: str | None = Field(default=None, max_length=40)
     total_duration: int | None = Field(default=None, ge=0)
     load_duration: int | None = Field(default=None, ge=0)
     prompt_eval_count: int | None = Field(default=None, ge=0)

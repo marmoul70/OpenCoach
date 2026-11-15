@@ -193,3 +193,34 @@ def test_training_stats_use_completed_manual_session_without_activity() -> None:
     assert result.distance_data_count == 1
     assert result.elevation_data_count == 1
     assert result.measured_load_data_count == 0
+    assert result.estimated_load_data_count == 1
+
+
+def test_training_stats_do_not_count_manual_session_without_duration_as_estimated_load():
+    session = TrainingSession(
+        id=uuid4(),
+        date=START_DATE,
+        type="easy",
+        sport_type="Run",
+        title="Séance manuelle incomplète",
+        description="Durée non renseignée.",
+        duration_minutes=0,
+        distance_km=None,
+        elevation_gain_m=None,
+        intensity="easy",
+        heart_rate_zone=None,
+        status="completed",
+        activity_id=None,
+    )
+
+    service = TrainingStatsService(
+        FakeActivityRepository([]),
+        FakeTrainingSessionRepository([session]),
+    )
+
+    result = service.calculate(uuid4(), START_DATE, END_DATE)
+
+    assert result.sessions_count == 1
+    assert result.manual_sessions_count == 1
+    assert result.estimated_load == 0.0
+    assert result.estimated_load_data_count == 0

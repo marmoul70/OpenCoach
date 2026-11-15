@@ -33,6 +33,7 @@ def test_chat_sends_expected_payload_and_parses_response():
                 "model": "test-model",
                 "message": {"role": "assistant", "content": "Analyse disponible."},
                 "done": True,
+                "done_reason": "stop",
             },
         )
 
@@ -46,6 +47,7 @@ def test_chat_sends_expected_payload_and_parses_response():
     assert result.content == "Analyse disponible."
     assert result.model == "test-model"
     assert result.done is True
+    assert result.done_reason == "stop"
 
 
 def test_ollama_runtime_metrics_are_preserved():
@@ -262,3 +264,51 @@ def test_ollama_generation_emits_correlated_privacy_safe_metrics(caplog):
     assert '"eval_count":80' in caplog.text
     assert "Explique ma charge." not in caplog.text
     assert "Texte confidentiel de test." not in caplog.text
+
+
+def test_length_done_reason_is_preserved_for_truncation_detection():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={
+            "model": "test-model",
+            "message": {"role": "assistant", "content": "Réponse tronquée"},
+            "done": True,
+            "done_reason": "length",
+        })
+
+    async def run():
+        client = OllamaClient(
+            AISettings(enabled=True, model="test-model"),
+            transport=httpx.MockTransport(handler),
+        )
+        return await client.chat(make_request())
+
+    result = asyncio.run(run())
+    assert result.done is True
+    assert result.done_reason == "length"
+
+
+
+def test_truncated_generation_is_logged_with_truncated_status(caplog):
+    caplog.set_level(logging.INFO, logger="opencoach.ai.observability")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={
+            "model": "test-model",
+            "message": {"role": "assistant", "content": "Réponse incomplète"},
+            "done": True,
+            "done_reason": "length",
+            "eval_count": 256,
+        })
+
+    async def run():
+        client = OllamaClient(
+            AISettings(enabled=True, model="test-model"),
+            transport=httpx.MockTransport(handler),
+        )
+        return await client.chat(make_request())
+
+    result = asyncio.run(run())
+
+    assert result.done_reason == "length"
+    assert '"status":"truncated"' in caplog.text
+    assert '"eval_count":256' in caplog.text

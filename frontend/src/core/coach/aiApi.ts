@@ -26,12 +26,22 @@ export interface AIRaceOption {
   target_time_minutes: number | null
 }
 
+export interface AIAnalysisPeriod {
+  tool: string
+  label: string
+  start_date: string
+  end_date: string
+  days?: number
+}
+
 export interface AIChatResponse {
   answer: string
   model: string
   context_used: boolean
   data_proposals: AIDataProposal[]
   race_options: AIRaceOption[]
+  tools_used: string[]
+  analysis_periods: AIAnalysisPeriod[]
 }
 
 async function readError(response: Response): Promise<string> {

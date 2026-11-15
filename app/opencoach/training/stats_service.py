@@ -128,6 +128,10 @@ class TrainingStatsService:
         measured_load_data_count = sum(
             activity.training_load is not None for activity in activities
         )
+        estimated_load_data_count = sum(
+            session.duration_minutes is not None and session.duration_minutes > 0
+            for session in manual_sessions
+        )
 
         measured_load = sum(
             activity.training_load or 0.0
@@ -173,6 +177,7 @@ class TrainingStatsService:
             distance_data_count=distance_data_count,
             elevation_data_count=elevation_data_count,
             measured_load_data_count=measured_load_data_count,
+            estimated_load_data_count=estimated_load_data_count,
         )
 
     @staticmethod

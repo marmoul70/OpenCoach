@@ -28,7 +28,6 @@ def build_training_load_tool(
     athlete_profile_id: UUID,
     *,
     reference_date_provider=date.today,
-    wellness_repository=None,
 ) -> AITool:
     """Construit l'outil de charge pour l'athlète authentifié."""
 
@@ -50,13 +49,15 @@ def build_training_load_tool(
         )
 
         actual_sessions = stats.sessions_count
+        estimated_load_data_count = getattr(
+            stats, "estimated_load_data_count", 0
+        )
         available_load_sessions = (
-            stats.measured_load_data_count + stats.manual_sessions_count
+            stats.measured_load_data_count + estimated_load_data_count
         )
         planned_sessions = sum(day.planned_sessions_count for day in load.days)
 
-        # Volume réellement effectué, distinct de la charge COROS et des
-        # charges par séance. Masquer un total si toutes les séances ne
+        # Volume réellement effectué et charge par séance. Masquer un total si toutes les métriques
         # disposent pas de la métrique correspondante.
         duration_data_count = getattr(stats, "duration_data_count", 0)
         distance_data_count = getattr(stats, "distance_data_count", 0)
@@ -108,32 +109,6 @@ def build_training_load_tool(
             "manual_session_count": stats.manual_sessions_count,
         }
 
-        # ATL/CTL COROS sont des indicateurs quotidiens de charge aiguë/chronique,
-        # distincts de la charge individuelle de chaque activité.
-        coros_load_days = []
-        if wellness_repository is not None:
-            for wellness_day in wellness_repository.list_range(
-                athlete_profile_id,
-                start_date,
-                end_date,
-                provider="coros",
-            ):
-                atl = wellness_day.fatigue_atl
-                ctl = wellness_day.fitness_ctl
-                if atl is None and ctl is None:
-                    continue
-                coros_load_days.append({
-                    "date": wellness_day.date.isoformat(),
-                    "atl_short_term_load": atl,
-                    "ctl_long_term_load": ctl,
-                    "load_ratio": (
-                        round(atl / ctl, 2)
-                        if atl is not None and ctl is not None and ctl > 0
-                        else None
-                    ),
-                })
-        coros_load_days.sort(key=lambda item: item["date"])
-
         if actual_sessions == 0:
             coverage_status = "no_sessions"
         elif available_load_sessions == 0:
@@ -175,12 +150,6 @@ def build_training_load_tool(
             warnings.append(
                 f"Le planning OpenCoach ne couvre pas {load.unplanned_days} jour(s) de la période."
             )
-        if coros_load_days and coverage_status in {"unavailable", "partial"}:
-            warnings.append(
-                "La charge par séance est absente ou partielle. Les indicateurs COROS ATL/CTL "
-                "sont disponibles séparément et ne doivent pas être additionnés aux charges de séance."
-            )
-
         if coverage_status == "no_sessions":
             warnings.append(
                 "Aucune séance réalisée enregistrée : la charge réelle est indisponible, pas égale à zéro."
@@ -213,34 +182,6 @@ def build_training_load_tool(
                     "de réalisation ou d'adhérence à partir de ces deux nombres."
                 ),
             },
-            "coros_training_load": {
-                "source": "COROS Training Load Assessment",
-                "interpretation_policy": (
-                    "Descriptif uniquement : ATL et CTL sont des valeurs propriétaires COROS. "
-                    "Le ratio ATL/CTL est un rapport numérique, pas un diagnostic ni une "
-                    "classification de charge. Ne jamais conclure « au-dessus de la normale », "
-                    "« élevé », « intense » ou « risque » à partir du seul ratio."
-                ),
-                "semantics": (
-                    "ATL est la charge aiguë à court terme et CTL la charge chronique "
-                    "à long terme. Ce sont des indicateurs quotidiens COROS, pas des "
-                    "charges par séance ; ils ne sont jamais additionnés aux charges "
-                    "des activités. Les valeurs brutes ne permettent pas, seules, de "
-                    "qualifier la charge de faible, normale ou élevée : aucun seuil "
-                    "individuel de classification n'est fourni par cet outil."
-                ),
-                "coverage": {
-                    "available_days": len(coros_load_days),
-                    "expected_days": nb_days,
-                    "status": (
-                        "complete" if len(coros_load_days) == nb_days
-                        else "partial" if coros_load_days
-                        else "unavailable"
-                    ),
-                },
-                "daily": coros_load_days,
-                "latest": coros_load_days[-1] if coros_load_days else None,
-            },
             "load": {
                 "planned_total": load.planned_load_total,
                 "actual_total": load.actual_load_total if has_complete_load else None,
@@ -259,6 +200,8 @@ def build_training_load_tool(
                 "ratio": load.load_ratio if has_complete_load else None,
                 "coverage": {
                     "available_sessions": available_load_sessions,
+                    "measured_sessions": stats.measured_load_data_count,
+                    "estimated_manual_sessions": estimated_load_data_count,
                     "total_sessions": actual_sessions,
                     "status": coverage_status,
                 },
@@ -291,8 +234,7 @@ def build_training_load_tool(
             "jours calendaires inclusifs, avec écarts quotidiens et couverture du planning. "
             "nb_days est obligatoire : demande la période si elle manque et attends la réponse. "
             "Une charge réelle sans couverture complète n'est jamais présentée comme un total fiable. "
-            "Si coros_training_load est disponible, présenter séparément ATL (charge aiguë), "
-            "CTL (charge chronique) et leur ratio ; ne jamais les additionner à la charge des séances."
+            "Les résultats proviennent exclusivement des services métier et des données centralisées dans OpenCoach."
         ),
         arguments_model=TrainingLoadArguments,
         handler=execute,

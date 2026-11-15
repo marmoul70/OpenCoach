@@ -22,7 +22,7 @@ class AICoachPreference(Base):
     personality: Mapped[str] = mapped_column(String(24), nullable=False, default="balanced")
     firmness: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
     motivation: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
-    response_style: Mapped[str] = mapped_column(String(24), nullable=False, default="detailed")
+    response_style: Mapped[str] = mapped_column(String(24), nullable=False, default="concise")
     custom_prompt: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)

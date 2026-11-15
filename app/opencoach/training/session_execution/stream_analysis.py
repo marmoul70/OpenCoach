@@ -7,6 +7,8 @@ from math import isfinite
 from numbers import Real
 from typing import Sequence
 
+from opencoach.models.activity_detail import normalize_stream_number
+
 
 StreamSample = int | float | None
 
@@ -70,7 +72,7 @@ def calculate_time_in_range(
     for index in range(
         common_length - 1
     ):
-        current_time = _number(
+        current_time = normalize_stream_number(
             time_values[index]
         )
 

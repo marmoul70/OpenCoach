@@ -49,19 +49,6 @@ def _safe_text(value: str | None, limit: int) -> str | None:
     return value[:limit]
 
 
-def _stream_summary(stream) -> dict | None:
-    if stream is None:
-        return None
-    values = [value for value in stream.data if isinstance(value, (int, float))]
-    return {
-        "samples": len(stream.data),
-        "valid_samples": len(values),
-        "minimum": min(values) if values else None,
-        "maximum": max(values) if values else None,
-        "average": round(sum(values) / len(values), 2) if values else None,
-    }
-
-
 def build_activity_detail_tool(
     activity_repository: ActivityRepository,
     detail_repository: ActivityDetailRepository,
@@ -191,12 +178,12 @@ def build_activity_detail_tool(
             ],
             "intervals_truncated": len(detail.intervals) > 40,
             "streams": {
-                "time": _stream_summary(streams.time),
-                "distance": _stream_summary(streams.distance),
-                "heartrate": _stream_summary(streams.heartrate),
-                "velocity_smooth": _stream_summary(streams.velocity_smooth),
-                "cadence": _stream_summary(streams.cadence),
-                "watts": _stream_summary(streams.watts),
+                "time": streams.time.summary if streams.time is not None else None),
+                "distance": streams.distance.summary if streams.distance is not None else None),
+                "heartrate": streams.heartrate.summary if streams.heartrate is not None else None),
+                "velocity_smooth": streams.velocity_smooth.summary if streams.velocity_smooth is not None else None),
+                "cadence": streams.cadence.summary if streams.cadence is not None else None),
+                "watts": streams.watts.summary if streams.watts is not None else None),
             },
         }
         return result

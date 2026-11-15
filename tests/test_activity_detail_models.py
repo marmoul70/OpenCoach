@@ -91,3 +91,31 @@ def test_activity_detail_is_immutable() -> None:
         FrozenInstanceError,
     ):
         detail.provider_activity_id = "i456"
+
+
+
+def test_activity_stream_summary_reuses_finite_numeric_sample_rules() -> None:
+    stream = ActivityStream(
+        stream_type="heartrate",
+        data=(120, None, 140.5, True, float("nan"), float("inf")),
+    )
+
+    assert stream.summary == {
+        "samples": 6,
+        "valid_samples": 2,
+        "minimum": 120.0,
+        "maximum": 140.5,
+        "average": 130.25,
+    }
+
+
+def test_empty_activity_stream_summary_keeps_metrics_unavailable() -> None:
+    stream = ActivityStream(stream_type="watts", data=())
+
+    assert stream.summary == {
+        "samples": 0,
+        "valid_samples": 0,
+        "minimum": None,
+        "maximum": None,
+        "average": None,
+    }

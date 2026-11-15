@@ -105,3 +105,6 @@ Les consultations ordinaires de l'historique conservent leur comportement histor
 
 
 Une demande explicite d'analyse de charge sans période ne doit pas être silencieusement réduite à une recommandation générique : le planificateur demande la durée avant toute exécution. La période fournie dans la réponse de clarification est rattachée à l'intention initiale, puis appliquée aux deux sources. Les comparaisons de tendances conservent leurs propres bornes (jusqu'à 180 jours par fenêtre) et ne sont pas limitées par la borne de 90 jours de l'outil de charge simple.
+
+
+Pour une demande avec douleur ou blessure, la clarification d'une période conserve également le contexte de sécurité initial : restriction active en premier, date cible demandée, historique, charge, récupération, séance prévue et calendrier de course. Si une période de charge est explicitement demandée, l'historique et la charge utilisent cette même durée ; sans période explicite, la recommandation utilise leur fenêtre standard de 7 jours complets.

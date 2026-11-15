@@ -59,7 +59,7 @@ def get_ai_metrics_snapshot(window_hours: int = 24) -> dict[str, Any]:
 
     def summarize(items: list[dict[str, Any]]) -> dict[str, Any]:
         durations = [item["duration_ms"] for item in items]
-        errors = sum(item["status"] == "error" or item["status"] == "failed" for item in items)
+        errors = sum(item["status"] in {"error", "failed", "truncated"} for item in items)
         return {
             "count": len(items),
             "errors": errors,

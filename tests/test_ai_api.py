@@ -554,10 +554,10 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
 def test_coach_generation_budget_matches_requested_response_style():
     from opencoach.api.ai import _coach_response_token_budget
 
-    assert _coach_response_token_budget("concise") == 256
-    assert _coach_response_token_budget("analytical") == 448
-    assert _coach_response_token_budget("detailed") == 768
-    assert _coach_response_token_budget("unknown") == 256
+    assert _coach_response_token_budget("concise") == 384
+    assert _coach_response_token_budget("analytical") == 640
+    assert _coach_response_token_budget("detailed") == 896
+    assert _coach_response_token_budget("unknown") == 384
 
 
 def test_default_concise_coach_style_is_actionable():
@@ -589,6 +589,28 @@ def test_coach_provider_fallback_never_exposes_structured_tool_payloads():
     assert "{" not in answer
     assert '"tool"' not in answer
     assert "succession de chiffres" in answer
+
+def test_truncated_coach_generation_is_not_reported_as_provider_outage():
+    from opencoach.ai.client import AIProviderError
+    from opencoach.api.ai import _coach_generation_failure_answer
+
+    answer = _coach_generation_failure_answer(
+        AIProviderError("Le moteur IA a interrompu la rédaction avant la fin de la réponse.")
+    )
+
+    assert "n'ai pas réussi à formuler une synthèse de coach" in answer
+    assert "moteur de rédaction local est momentanément indisponible" not in answer
+
+
+def test_actual_coach_provider_failure_keeps_provider_fallback():
+    from opencoach.ai.client import AIProviderError
+    from opencoach.api.ai import _coach_generation_failure_answer
+
+    answer = _coach_generation_failure_answer(
+        AIProviderError("Impossible de communiquer avec le moteur IA local.")
+    )
+
+    assert "moteur de rédaction local est momentanément indisponible" in answer
 
 def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_only_tools():
     from datetime import date

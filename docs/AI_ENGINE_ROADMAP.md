@@ -338,3 +338,8 @@ Vérification du chemin de lecture IA sur la branche de développement :
 
 **Limite connue :** le runner mesure la décision du premier tour ; il n'exécute aucun outil métier, ne modifie aucune donnée et ne valide pas la justesse des calculs Python.
 
+
+
+### Transparence des analyses (PR #37)
+- [x] Outils réellement exécutés affichés dans la conversation.
+- [x] Périodes explicitement retournées par les outils affichées dans la conversation.

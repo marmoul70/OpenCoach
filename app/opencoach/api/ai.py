@@ -59,7 +59,10 @@ from opencoach.database.session import get_db
 from opencoach.database.repositories.sql_wellness import SqlWellnessRepository
 from opencoach.database.repositories.sql_daily_context import SqlDailyContextRepository
 from opencoach.database.repositories.sql_daily_checkin import SqlDailyCheckInRepository
-from opencoach.database.repositories import SqlAthleteConstraintRepository
+from opencoach.database.repositories import (
+    SqlAthleteConstraintRepository,
+    SqlWeeklyTrainingPlanRepository,
+)
 from opencoach.api.training_stats import get_training_stats_service
 from opencoach.training import TrainingStatsService
 from opencoach.database.models.ai_coach_preference import AICoachPreference
@@ -527,18 +530,35 @@ def get_ai_tool_registry(
     """Construit le registre métier pour le seul athlète authentifié."""
 
     registry = AIToolRegistry(argument_guard=validate_period_argument_evidence)
-    registry.register(build_training_profile_tool(db, athlete_profile_id))
+    registry.register(build_training_profile_tool(context_service.profile_service))
     registry.register(build_active_constraints_tool(
             SqlAthleteConstraintRepository(db),
             athlete_profile_id,
         ))
-    registry.register(build_weekly_plan_context_tool(db, athlete_profile_id))
-    registry.register(build_race_calendar_tool(db, athlete_profile_id))
+    registry.register(build_weekly_plan_context_tool(
+        SqlWeeklyTrainingPlanRepository(db),
+        athlete_profile_id,
+    ))
+    registry.register(build_race_calendar_tool(
+        context_service.race_repository,
+        athlete_profile_id,
+    ))
     registry.register(
-        build_race_preparation_tool(db, training_stats_service, athlete_profile_id)
+        build_race_preparation_tool(
+            context_service.race_repository,
+            context_service.profile_service,
+            training_stats_service,
+            athlete_profile_id,
+        )
     )
-    registry.register(build_planned_sessions_tool(db, athlete_profile_id))
-    registry.register(build_next_planned_session_tool(db, athlete_profile_id))
+    registry.register(build_planned_sessions_tool(
+        training_stats_service.training_session_repository,
+        athlete_profile_id,
+    ))
+    registry.register(build_next_planned_session_tool(
+        training_stats_service.training_session_repository,
+        athlete_profile_id,
+    ))
     registry.register(build_session_execution_review_tool(db, athlete_profile_id))
     registry.register(
         build_activity_detail_tool(db, athlete_profile_id)

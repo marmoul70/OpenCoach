@@ -736,6 +736,42 @@ def test_truncated_coach_generation_is_not_reported_as_provider_outage():
     assert "moteur de rédaction local est momentanément indisponible" not in answer
 
 
+def test_truncated_coach_generation_uses_recorded_planned_session():
+    from types import SimpleNamespace
+
+    from opencoach.ai.client import AIProviderError
+    from opencoach.api.ai import _coach_generation_failure_answer
+
+    results = [
+        SimpleNamespace(
+            tool="next_planned_session",
+            status="ok",
+            data={
+                "status": "ok",
+                "reference_date": "2026-11-15",
+                "session": {
+                    "date": "2026-11-15",
+                    "title": "Sortie longue",
+                    "sport_type": "TrailRun",
+                    "duration_minutes": 60,
+                    "intensity": "Endurance fondamentale",
+                },
+            },
+        ),
+    ]
+
+    answer = _coach_generation_failure_answer(
+        AIProviderError("Le moteur IA a interrompu la rédaction avant la fin de la réponse."),
+        "Quelle séance me conseilles-tu aujourd'hui ?",
+        results,
+    )
+
+    assert "TrailRun" in answer
+    assert "60 minutes" in answer
+    assert "Endurance fondamentale" in answer
+    assert "planning" in answer
+
+
 def test_actual_coach_provider_failure_keeps_provider_fallback():
     from opencoach.ai.client import AIProviderError
     from opencoach.api.ai import _coach_generation_failure_answer

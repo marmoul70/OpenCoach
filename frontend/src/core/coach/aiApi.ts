@@ -26,7 +26,7 @@ export interface AIRaceOption {
   target_time_minutes: number | null
 }
 
-export interface AIChatResponse {
+export interface AIAnalysisPeriod {\n  tool: string\n  label: string\n  start_date: string\n  end_date: string\n  days?: number\n}\n\nexport interface AIChatResponse {
   answer: string
   model: string
   context_used: boolean

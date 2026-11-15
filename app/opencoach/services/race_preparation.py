@@ -290,4 +290,3 @@ class RacePreparationService:
                 "Si les données de course, de profil ou d'entraînement sont incomplètes, les demander ou annoncer explicitement la limite.",
             ],
         }
-        

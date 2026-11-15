@@ -197,7 +197,8 @@ def test_race_preparation_masks_partial_metrics_instead_of_extrapolating():
         )
         service = FakeTrainingStatsService([activity], manual, partial_stats)
         result = build_race_preparation_tool(
-            session,
+            SqlRaceRepository(session),
+            ProfileService(SqlProfileRepository(session, profile.user_id)),
             service,
             profile.id,
             reference_date_provider=lambda: date(2026, 11, 9),

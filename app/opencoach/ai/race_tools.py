@@ -44,4 +44,3 @@ def build_race_preparation_tool(service: RacePreparationService) -> AITool:
         arguments_model=RacePreparationArguments,
         handler=execute,
     )
-)

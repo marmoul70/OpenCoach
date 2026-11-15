@@ -33,3 +33,6 @@ from .push_notification import (
     PushDeliveryReport,
     PushNotificationService,
 )
+
+from .training_profile_context import TrainingProfileContextService
+__all__.append("TrainingProfileContextService")

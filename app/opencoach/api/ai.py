@@ -574,7 +574,14 @@ def get_ai_tool_registry(
     )
     registry.register(build_planned_sessions_tool(planned_training_service))
     registry.register(build_next_planned_session_tool(planned_training_service))
-    registry.register(build_session_execution_review_tool(db, athlete_profile_id))
+    registry.register(
+        build_session_execution_review_tool(
+            SqlTrainingSessionRepository(db),
+            SqlActivityRepository(db),
+            SqlActivityDetailRepository(db),
+            athlete_profile_id,
+        )
+    )
     registry.register(
         build_activity_detail_tool(
             SqlActivityRepository(db),
@@ -1236,9 +1243,12 @@ async def ask_local_ai_with_athlete_context(
         # modification directe. Le registre valide toujours preuve et schéma.
         tool_registry.register(
             build_profile_data_proposal_tool(
-                db,
-                athlete_profile_id,
-                user_messages,
+                proposal_creator=lambda payload: create_profile_data_proposal(
+                    db,
+                    athlete_profile_id,
+                    payload,
+                ),
+                user_messages=user_messages,
             )
         )
         tool_registry.trace_id = trace_id

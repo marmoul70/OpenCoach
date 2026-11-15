@@ -112,7 +112,7 @@ def test_coaching_history_can_use_the_same_completed_days_as_training_load():
         reference_date_provider=lambda: reference_date,
     )
 
-    result = tool.handler(TrainingHistoryArguments(
+    tool.handler(TrainingHistoryArguments(
         nb_days=7,
         exclude_current_day=True,
     ))

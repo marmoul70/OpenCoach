@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from time import perf_counter
 from uuid import UUID
 from functools import lru_cache
@@ -624,6 +625,51 @@ def _extract_race_options(tool_results) -> list[AIRaceOptionResponse]:
     return options
 
 
+_EXPLICIT_COACH_DATA_REQUEST = re.compile(
+    r"\\b(?:combien|chiffres?|statistiques?|tableau|liste(?:-moi)?|"
+    r"d[eé]tail(?:le|l|s)? les donn[eé]es|valeurs exactes|"
+    r"donne(?:-moi)? les (?:distances|dur[eé]es|donn[eé]es|m[eé]triques)|"
+    r"r[eé]capitulatif chiffr[eé})\\b",
+    re.IGNORECASE,
+)
+_COACH_OPENING_JUDGMENT = re.compile(
+    r"\\b(?:mon avis|je te conseille|je recommande|je privil[eè]gie|"
+    r"ta semaine (?:est|reste|semble|montre)|cette semaine (?:est|reste|semble)|"
+    r"ton entra[iî]nement (?:est|reste|semble)|la charge (?:est|reste|semble)|"
+    r"ta charge (?:est|reste|semble)|la r[eé]cup[eé]ration (?:est|reste|semble)|"
+    r"ta r[eé]cup[eé]ration (?:est|reste|semble)|"
+    r"le point (?:positif|de vigilance)|c'est (?:une semaine|coh[eé]rent|adapt[eé]|trop))\\b",
+    re.IGNORECASE,
+)
+_COACH_UNIT_CLAIM = re.compile(
+    r"(?<![\\w])\\d+(?:[.,]\\d+)?\\s*(?:km/h|km|m\\b|heures?|h\\b|"
+    r"minutes?|min\\b|bpm|%|jours?|semaines?)",
+    re.IGNORECASE,
+)
+_COACH_BULLET_LINE = re.compile(r"(?m)^\\s*(?:[-*•]|\\d+[.)])\\s+")
+_COACH_STRUCTURED_DATA = re.compile(
+    r"(?:\\{\\s*[\"']?[a-z_]+[\"']?\\s*:|[\"'][a-z_]+[\"']?\\s*:\\s*(?:\\d|[\"'{]))",
+    re.IGNORECASE,
+)
+
+
+def _coach_response_needs_rewrite(question: str, answer: str) -> bool:
+    """Détecte les sorties manifestement incompatibles avec une réponse de coach."""
+    if _EXPLICIT_COACH_DATA_REQUEST.search(question):
+        return False
+
+    content = answer.strip()
+    if not content:
+        return True
+    first_sentence = re.split(r"(?<=[.!?])\\s+", content, maxsplit=1)[0]
+    return (
+        bool(_COACH_BULLET_LINE.search(content))
+        or bool(_COACH_STRUCTURED_DATA.search(content))
+        or len(_COACH_UNIT_CLAIM.findall(content)) > 2
+        or not _COACH_OPENING_JUDGMENT.search(first_sentence)
+    )
+
+
 def _coach_provider_unavailable_answer() -> str:
     """Réponse de secours lisible : ne jamais exposer les payloads métier bruts."""
     return (
@@ -878,6 +924,44 @@ async def ask_local_ai_with_athlete_context(
             )
         answer = result.content
         model = result.model
+        if tool_results and _coach_response_needs_rewrite(payload.question, answer):
+            # Une seule tentative de correction : ne pas laisser passer un
+            # tableau de bord textuel lorsque l'athlète demande un conseil.
+            rewrite_request = request.model_copy(
+                update={
+                    "messages": [
+                        *messages,
+                        AIMessage(role="assistant", content=answer),
+                        AIMessage(
+                            role="user",
+                            content=(
+                                "Réécris entièrement ta réponse comme un entraîneur qui "
+                                "s'adresse à son athlète. Commence par ton avis et ta décision, "
+                                "explique uniquement les faits décisifs, en prose naturelle. "
+                                "Supprime les puces, tableaux, JSON et inventaires de métriques. "
+                                "N'ajoute aucun chiffre qui ne figure pas dans les résultats. "
+                                "Si la question demande explicitement des données chiffrées, "
+                                "réponds précisément à cette demande."
+                            ),
+                        ),
+                    ],
+                }
+            )
+            try:
+                rewritten = await service.chat(rewrite_request)
+            except AIProviderError:
+                rewritten = None
+            if (
+                rewritten is not None
+                and rewritten.done
+                and rewritten.done_reason != "length"
+                and rewritten.content.strip()
+                and not _coach_response_needs_rewrite(payload.question, rewritten.content)
+            ):
+                answer = rewritten.content
+                model = rewritten.model
+            else:
+                answer = _coach_provider_unavailable_answer()
     except AIProviderError as exc:
         if not tool_results:
             raise HTTPException(

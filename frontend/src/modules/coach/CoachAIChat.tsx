@@ -141,7 +141,7 @@ export function CoachAIChat() {
           role: 'assistant',
           content: response.answer,
           raceOptions: response.race_options?.length ? response.race_options : undefined,
-          toolsUsed: response.tools_used?.length ? response.tools_used : undefined,
+          toolsUsed: response.tools_used?.length ? response.tools_used : undefined,\n          analysisPeriods: response.analysis_periods?.length ? response.analysis_periods : undefined,
         },
       ])
       if (response.data_proposals.length > 0) {
@@ -282,6 +282,18 @@ export function CoachAIChat() {
                   <span key={tool} className="rounded-full border border-[var(--oc-border)] bg-[var(--oc-surface)] px-2 py-0.5 text-[9px] text-[var(--oc-muted)]">
                     {tool.replaceAll("_", " ")}
                   </span>
+                ))}
+              </div>
+            )}
+            {message.analysisPeriods && message.analysisPeriods.length > 0 && (
+              <div className="mt-2 space-y-1" aria-label="Périodes réellement analysées">
+                <p className="text-[9px] font-medium text-[var(--oc-muted)]">Périodes analysées</p>
+                {message.analysisPeriods.map((period) => (
+                  <div key={period.tool + period.start_date + period.end_date} className="flex flex-wrap items-center gap-x-2 rounded-lg border border-[var(--oc-border)] bg-[var(--oc-surface)] px-2.5 py-1.5 text-[10px] text-[var(--oc-muted)]">
+                    <span className="font-medium text-[var(--oc-text)]">{period.label}</span>
+                    <span>{period.start_date} → {period.end_date}</span>
+                    {period.days ? <span>({period.days} jours)</span> : null}
+                  </div>
                 ))}
               </div>
             )}

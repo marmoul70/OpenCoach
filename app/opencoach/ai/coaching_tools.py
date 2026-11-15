@@ -82,9 +82,18 @@ def build_training_profile_tool(
         raw_zones = profile.physiology.heart_rate_zones or {}
         zone_values = {}
         for name in ("z1", "z2", "z3", "z4", "z5"):
-            raw_zone = raw_zones.get(name) if isinstance(raw_zones, dict) else None
+            raw_zone = (
+                raw_zones.get(name)
+                if isinstance(raw_zones, dict)
+                else getattr(raw_zones, name, None)
+            )
             try:
-                max_bpm = int(raw_zone["max_bpm"]) if isinstance(raw_zone, dict) else None
+                raw_max_bpm = (
+                    raw_zone.get("max_bpm")
+                    if isinstance(raw_zone, dict)
+                    else getattr(raw_zone, "max_bpm", None)
+                )
+                max_bpm = int(raw_max_bpm) if raw_max_bpm is not None else None
             except (TypeError, ValueError):
                 max_bpm = None
             zone_values[name] = (

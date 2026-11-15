@@ -64,7 +64,9 @@ def score_coaching_response(case: dict[str, Any], content: str) -> dict[str, Any
     if action == "adapt_or_recover":
         action_pass = any(action_hits)
     elif action == "respect_pain_constraints":
-        action_pass = any(action_hits[1:])
+        explicit_run_restriction = any(action_hits[1:4])
+        cross_training_with_pain_guard = action_hits[5] and action_hits[6]
+        action_pass = explicit_run_restriction or cross_training_with_pain_guard
     else:
         action_pass = all(action_hits)
 

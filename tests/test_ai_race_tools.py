@@ -244,7 +244,8 @@ def test_race_preparation_refuses_to_analyse_past_race_as_future_goal():
         race = _race(session, profile.id, race_date=date(2026, 11, 8))
         service = FakeTrainingStatsService([], [], _stats())
         result = build_race_preparation_tool(
-            session,
+            SqlRaceRepository(session),
+            ProfileService(SqlProfileRepository(session, profile.user_id)),
             service,
             profile.id,
             reference_date_provider=lambda: date(2026, 11, 9),

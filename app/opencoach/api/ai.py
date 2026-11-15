@@ -292,10 +292,12 @@ def _preferences_response(
 def _coach_response_token_budget(response_style: str) -> int:
     """Borne la génération selon le niveau de détail demandé."""
     return {
-        "concise": 256,
-        "analytical": 448,
-        "detailed": 768,
-    }.get(response_style, 256)
+        # 256 tokens were repeatedly exhausted by normal coaching syntheses
+        # after Python had already collected the athlete's context.
+        "concise": 384,
+        "analytical": 640,
+        "detailed": 896,
+    }.get(response_style, 384)
 
 
 def _coach_system_prompt(preferences: AICoachPreferencesPayload) -> str:

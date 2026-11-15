@@ -9,6 +9,11 @@ from opencoach.ai.execution_tools import (
     build_session_execution_review_tool,
 )
 from opencoach.database.base import Base
+from opencoach.database.repositories import (
+    SqlActivityDetailRepository,
+    SqlActivityRepository,
+    SqlTrainingSessionRepository,
+)
 from opencoach.database.models import (
     Activity as ActivityModel,
     AthleteProfile as AthleteProfileModel,
@@ -94,7 +99,10 @@ def test_session_execution_review_uses_deterministic_engine_and_scoped_repositor
             activity_id=activity.id,
         )
         result = build_session_execution_review_tool(
-            session, profile.id
+            SqlTrainingSessionRepository(session),
+            SqlActivityRepository(session),
+            SqlActivityDetailRepository(session),
+            profile.id,
         ).handler(SessionExecutionReviewArguments(session_id=planned.id))
 
     assert result["status"] == "ok"
@@ -121,7 +129,10 @@ def test_session_execution_review_asks_for_activity_link_instead_of_guessing():
         profile = _profile(session, "unlinked")
         planned = _planned_session(session, profile.id)
         result = build_session_execution_review_tool(
-            session, profile.id
+            SqlTrainingSessionRepository(session),
+            SqlActivityRepository(session),
+            SqlActivityDetailRepository(session),
+            profile.id,
         ).handler(SessionExecutionReviewArguments(session_id=planned.id))
 
     assert result["status"] == "activity_not_linked"
@@ -137,7 +148,10 @@ def test_session_execution_review_does_not_expose_another_athletes_session():
         other = _profile(session, "review-other")
         planned = _planned_session(session, owner.id)
         result = build_session_execution_review_tool(
-            session, other.id
+            SqlTrainingSessionRepository(session),
+            SqlActivityRepository(session),
+            SqlActivityDetailRepository(session),
+            other.id,
         ).handler(SessionExecutionReviewArguments(session_id=planned.id))
 
     assert result["status"] == "not_found"

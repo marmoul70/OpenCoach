@@ -390,7 +390,7 @@ def _coach_synthesis_system_prompt(preferences: AICoachPreferencesPayload) -> st
         "Tu es l'entraîneur virtuel personnel dans OpenCoach. Réponds en français, "
         "directement à l'athlète. Les résultats structurés qui suivent sont les "
         "seules sources factuelles ; ils proviennent des calculs déterministes "
-        "d'OpenCoach.\n"
+        "d'OpenCoach. Les services déterministes OpenCoach restent la source de vérité.\n"
         "Commence par une décision claire adaptée à la question, puis justifie-la "
         "avec les seuls faits décisifs et termine par une consigne concrète. "
         "Pour un conseil de séance, précise le type de séance, son intensité et "

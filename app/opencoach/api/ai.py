@@ -1135,14 +1135,42 @@ async def ask_local_ai_with_athlete_context(
     )
 
     try:
+        generation_started_at = perf_counter()
         result = await service.chat(request)
-        if not result.done or result.done_reason == "length" or not result.content.strip():
+        initial_generation_ok = (
+            result.done and result.done_reason != "length" and bool(result.content.strip())
+        )
+        log_ai_event(
+            "coach_generation",
+            trace_id=trace_id,
+            status="ok" if initial_generation_ok else "truncated",
+            model=result.model,
+            operation="initial_generation",
+            duration_ms=round((perf_counter() - generation_started_at) * 1000, 3),
+        )
+        if not initial_generation_ok:
             raise AIProviderError(
                 "Le moteur IA a interrompu la rédaction avant la fin de la réponse."
             )
         answer = result.content
         model = result.model
-        if tool_results and _coach_response_needs_rewrite(payload.question, answer):
+        if tool_results:
+            initial_rejected = _coach_response_needs_rewrite(payload.question, answer)
+            log_ai_event(
+                "coach_quality_gate",
+                trace_id=trace_id,
+                status="rejected" if initial_rejected else "accepted",
+                model=model,
+                operation=(
+                    "initial_rejected"
+                    if initial_rejected
+                    else "initial_accepted"
+                ),
+                duration_ms=0.001,
+            )
+        else:
+            initial_rejected = False
+        if tool_results and initial_rejected:
             # Une seule tentative de correction : ne pas laisser passer un
             # tableau de bord textuel lorsque l'athlète demande un conseil.
             rewrite_request = request.model_copy(
@@ -1187,13 +1215,26 @@ async def ask_local_ai_with_athlete_context(
                     duration_ms=round((perf_counter() - rewrite_started_at) * 1000, 3),
                 )
                 rewritten = None
-            if (
+            rewrite_accepted = (
                 rewritten is not None
                 and rewritten.done
                 and rewritten.done_reason != "length"
-                and rewritten.content.strip()
+                and bool(rewritten.content.strip())
                 and not _coach_response_needs_rewrite(payload.question, rewritten.content)
-            ):
+            )
+            log_ai_event(
+                "coach_quality_gate",
+                trace_id=trace_id,
+                status="accepted" if rewrite_accepted else "rejected",
+                model=rewritten.model if rewritten is not None else settings.model,
+                operation=(
+                    "rewrite_accepted"
+                    if rewrite_accepted
+                    else "rewrite_rejected"
+                ),
+                duration_ms=0.001,
+            )
+            if rewrite_accepted:
                 answer = rewritten.content
                 model = rewritten.model
             else:

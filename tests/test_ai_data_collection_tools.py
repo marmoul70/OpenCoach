@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from opencoach.ai.data_collection_tools import build_profile_data_proposal_tool
+from opencoach.ai.data_proposals import create_profile_data_proposal
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.database.base import Base
 from opencoach.database.models import AIDataProposal, AthleteProfile, User
@@ -32,9 +33,10 @@ def test_proposal_tool_requires_exact_user_evidence_and_creates_pending_only():
     engine, db, profile = _database()
     try:
         tool = build_profile_data_proposal_tool(
-            db,
-            profile.id,
-            ["Ma VMA mesurée est de 15,5 km/h."],
+            proposal_creator=lambda payload: create_profile_data_proposal(
+                db, profile.id, payload
+            ),
+            user_messages=["Ma VMA mesurée est de 15,5 km/h."],
         )
         registry = AIToolRegistry()
         registry.register(tool)
@@ -64,9 +66,10 @@ def test_proposal_tool_rejects_evidence_not_present_in_user_messages():
     engine, db, profile = _database()
     try:
         tool = build_profile_data_proposal_tool(
-            db,
-            profile.id,
-            ["Je ne connais pas ma VMA."],
+            proposal_creator=lambda payload: create_profile_data_proposal(
+                db, profile.id, payload
+            ),
+            user_messages=["Je ne connais pas ma VMA."],
         )
         registry = AIToolRegistry()
         registry.register(tool)
@@ -92,9 +95,10 @@ def test_proposal_tool_rejects_value_not_contained_in_evidence():
     engine, db, profile = _database()
     try:
         tool = build_profile_data_proposal_tool(
-            db,
-            profile.id,
-            ["Ma VMA est de 15 km/h."],
+            proposal_creator=lambda payload: create_profile_data_proposal(
+                db, profile.id, payload
+            ),
+            user_messages=["Ma VMA est de 15 km/h."],
         )
         registry = AIToolRegistry()
         registry.register(tool)
@@ -126,9 +130,10 @@ def test_proposal_tool_uses_only_authenticated_profile_scope():
         db.commit()
 
         tool = build_profile_data_proposal_tool(
-            db,
-            profile.id,
-            ["Je pèse 82 kg."],
+            proposal_creator=lambda payload: create_profile_data_proposal(
+                db, profile.id, payload
+            ),
+            user_messages=["Je pèse 82 kg."],
         )
         registry = AIToolRegistry()
         registry.register(tool)
@@ -153,7 +158,12 @@ def test_proposal_tool_accepts_structured_days_only_when_evidence_names_each_day
     engine, db, profile = _database()
     try:
         evidence = "Je suis disponible le lundi, mercredi et vendredi."
-        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        tool = build_profile_data_proposal_tool(
+            proposal_creator=lambda payload: create_profile_data_proposal(
+                db, profile.id, payload
+            ),
+            user_messages=[evidence],
+        )
         registry = AIToolRegistry()
         registry.register(tool)
         result = registry.execute("propose_profile_data", {
@@ -171,7 +181,12 @@ def test_proposal_tool_rejects_structured_value_not_supported_by_evidence():
     engine, db, profile = _database()
     try:
         evidence = "Je suis disponible le lundi et le mercredi."
-        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        tool = build_profile_data_proposal_tool(
+            proposal_creator=lambda payload: create_profile_data_proposal(
+                db, profile.id, payload
+            ),
+            user_messages=[evidence],
+        )
         registry = AIToolRegistry()
         registry.register(tool)
         result = registry.execute("propose_profile_data", {
@@ -188,7 +203,12 @@ def test_proposal_tool_accepts_experience_and_discipline_from_french_evidence():
     engine, db, profile = _database()
     try:
         evidence = "Je suis coureur intermédiaire et je pratique le trail."
-        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        tool = build_profile_data_proposal_tool(
+            proposal_creator=lambda payload: create_profile_data_proposal(
+                db, profile.id, payload
+            ),
+            user_messages=[evidence],
+        )
         registry = AIToolRegistry()
         registry.register(tool)
         experience = registry.execute("propose_profile_data", {
@@ -209,7 +229,12 @@ def test_equipment_proposal_requires_brand_and_model_in_exact_evidence():
     engine, db, profile = _database()
     try:
         evidence = "J'ai acheté des Asics Trabuco 14 pour le trail."
-        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        tool = build_profile_data_proposal_tool(
+            proposal_creator=lambda payload: create_profile_data_proposal(
+                db, profile.id, payload
+            ),
+            user_messages=[evidence],
+        )
         registry = AIToolRegistry()
         registry.register(tool)
         result = registry.execute("propose_profile_data", {
@@ -229,7 +254,12 @@ def test_equipment_proposal_rejects_invented_brand():
     engine, db, profile = _database()
     try:
         evidence = "J'ai acheté des Trabuco 14."
-        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        tool = build_profile_data_proposal_tool(
+            proposal_creator=lambda payload: create_profile_data_proposal(
+                db, profile.id, payload
+            ),
+            user_messages=[evidence],
+        )
         registry = AIToolRegistry()
         registry.register(tool)
         result = registry.execute("propose_profile_data", {
@@ -248,7 +278,12 @@ def test_daily_checkin_tool_requires_explicit_evidence_and_creates_pending_propo
     engine, db, profile = _database()
     try:
         evidence = "Énergie 3/5, douleur 4/5, pas malade, disponible, gêne au genou gauche."
-        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        tool = build_profile_data_proposal_tool(
+            proposal_creator=lambda payload: create_profile_data_proposal(
+                db, profile.id, payload
+            ),
+            user_messages=[evidence],
+        )
         registry = AIToolRegistry()
         registry.register(tool)
         result = registry.execute("propose_profile_data", {
@@ -278,7 +313,12 @@ def test_daily_checkin_tool_rejects_missing_illness_evidence():
     engine, db, profile = _database()
     try:
         evidence = "Énergie 3/5, douleur 5/5, disponible."
-        tool = build_profile_data_proposal_tool(db, profile.id, [evidence])
+        tool = build_profile_data_proposal_tool(
+            proposal_creator=lambda payload: create_profile_data_proposal(
+                db, profile.id, payload
+            ),
+            user_messages=[evidence],
+        )
         registry = AIToolRegistry()
         registry.register(tool)
         result = registry.execute("propose_profile_data", {

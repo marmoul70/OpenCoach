@@ -202,6 +202,15 @@ Dans `api/coach.py`, les deux imports distincts depuis `api.coaching.dependencie
 
 Les imports locaux de `api/coaching/dependencies.py` sont volontairement placés dans certaines fonctions de composition. Ils peuvent éviter des imports circulaires ou retarder le chargement de composants optionnels ; ils ne doivent pas être remontés globalement sans analyse des dépendances.
 
+## 5 quater. Suppression de sauvegardes frontend versionnées
+
+Le répertoire `.refactor-backup/20260831-231419/` contenait six anciens fichiers frontend (App, Connections, index Connections, Profile, Settings et SettingsSections). Ils étaient des copies de sauvegarde, pas des sources de build :
+- ils vivaient hors de `frontend/src`, qui est le périmètre compilé par Vite/TypeScript ;
+- aucune référence à ce répertoire ou à son horodatage n'a été trouvée dans la recherche du dépôt ;
+- la règle `.gitignore` `.refactor-backup/` indique explicitement que ces sauvegardes sont locales et ne doivent pas être versionnées.
+
+Les six copies ont donc été supprimées de la branche de nettoyage. L'historique Git conserve les contenus si une comparaison historique est nécessaire. Aucune source frontend active n'a été supprimée.
+
 ## 6. Architecture cible minimale
 
 - **API** : authentification, validation des entrées, appel des services, sérialisation des réponses.

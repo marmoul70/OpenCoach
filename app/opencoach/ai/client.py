@@ -135,7 +135,17 @@ class OllamaClient:
                 eval_count=data.get("eval_count"),
                 eval_duration=data.get("eval_duration"),
             )
-            _log_generation(request, started_at, status="ok", model=result.model, result=result)
+            _log_generation(
+                request,
+                started_at,
+                status=(
+                    "truncated"
+                    if not result.done or result.done_reason == "length"
+                    else "ok"
+                ),
+                model=result.model,
+                result=result,
+            )
             return result
         except (KeyError, TypeError, ValueError) as exc:
             _log_generation(request, started_at, status="error", model=self.settings.model, error_type=type(exc).__name__)

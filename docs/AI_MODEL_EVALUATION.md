@@ -233,3 +233,39 @@ Ce contrôle évite de présenter une synthèse tronquée comme une réponse com
 Une période sans séance enregistrée (`sessions.total = 0`) ne constitue pas une mesure à zéro. L'outil `training_history` retourne désormais `null` pour les métriques de durée, distance, dénivelé et charge, avec une couverture `no_sessions`. Cette règle évite qu'une absence d'activité soit interprétée comme un volume ou une charge mesurés à zéro.
 
 Lorsque des séances existent mais que certaines métriques manquent, la valeur complète reste masquée ; le sous-total observé n'est exposé que comme `observed_value`, accompagné de sa couverture `partial`. Une métrique complètement renseignée reste exploitable même si une autre métrique de la période est partielle.
+
+## 8. Évaluation de la synthèse finale du coach
+
+Le runner `scripts/ai/evaluate_coaching_responses.py` complète le benchmark de routage. Il injecte des résultats métier **synthétiques** dans le prompt de production, sans outil actif, sans base de données et sans accès à un dossier athlète réel.
+
+Le corpus `tests/fixtures/ai_coaching_synthesis_cases.json` couvre quatre décisions :
+- récupération défavorable avant une séance intense ;
+- douleur malgré une Readiness favorable ;
+- charge récente importante avant une sortie longue ;
+- objectif de trail proche avec adaptation de la séance.
+
+L'évaluateur vérifie de façon déterministe :
+- présence d'une décision cohérente avec l'action attendue ;
+- respect des contraintes et absence de formulations explicitement interdites ;
+- absence de chiffres accompagnés d'unités qui ne figurent pas dans les données du scénario ;
+- concision de la réponse (1 à 6 phrases).
+
+Tests locaux du contrat et des garde-fous :
+
+```bash
+pytest -q tests/test_ai_coaching_synthesis_evaluator.py
+```
+
+Exécution sur la VM avec le modèle local configuré :
+
+```bash
+python scripts/ai/evaluate_coaching_responses.py --models qwen2.5:3b --repetitions 1
+```
+
+Diagnostic sur un seul scénario :
+
+```bash
+python scripts/ai/evaluate_coaching_responses.py --models qwen2.5:3b --limit 1 --repetitions 1
+```
+
+**Limite importante :** ce score lexical mesure des garde-fous observables, pas la justesse physiologique complète. Il peut manquer une formulation correcte ou accepter une formulation maladroite. Il ne remplace ni une revue humaine, ni une validation avec les données de test de la VM. Les résultats doivent être interprétés par critère (action, sécurité, fidélité numérique, concision), jamais uniquement via le taux global.

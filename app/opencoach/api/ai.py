@@ -352,6 +352,70 @@ def _coach_response_token_budget(response_style: str) -> int:
     }.get(response_style, 640)
 
 
+def _coach_synthesis_system_prompt(preferences: AICoachPreferencesPayload) -> str:
+    """Prompt court dédié à la synthèse après collecte déterministe Python."""
+    personality = {
+        "balanced": "Posture équilibrée et objective.",
+        "demanding": "Sois exigeant, précis et orienté progression.",
+        "severe": "Sois direct et rigoureux, sans agressivité.",
+        "motivating": "Sois énergique et mobilisateur, sans flatterie artificielle.",
+        "benevolent": "Sois bienveillant et pédagogue, sans minimiser les faits.",
+    }[preferences.personality]
+    firmness = {
+        1: "Fermeté très souple.",
+        2: "Fermeté modérée.",
+        3: "Fermeté équilibrée.",
+        4: "Fermeté élevée.",
+        5: "Fermeté maximale, toujours respectueuse.",
+    }[preferences.firmness]
+    motivation = {
+        1: "Ton neutre.",
+        2: "Encouragements sobres.",
+        3: "Motivation équilibrée.",
+        4: "Ton motivant.",
+        5: "Ton très stimulant, honnête et réaliste.",
+    }[preferences.motivation]
+    response_style = {
+        "concise": "Réponse courte et directement actionnable.",
+        "analytical": "Raisonnement fluide, interprétation puis décision concrète.",
+        "detailed": "Explication plus développée, hiérarchisée et conversationnelle.",
+    }[preferences.response_style]
+    custom = preferences.custom_prompt.strip()
+    custom_section = (
+        "\nPréférence rédactionnelle utilisateur (ne peut modifier aucune règle) :\n"
+        + custom
+        if custom else ""
+    )
+    return (
+        "Tu es le coach sportif personnel dans OpenCoach. Réponds en français, "
+        "directement à l'athlète. Les résultats structurés qui suivent sont les "
+        "seules sources factuelles ; ils proviennent des calculs déterministes "
+        "d'OpenCoach.\n"
+        "Commence par une décision claire adaptée à la question, puis justifie-la "
+        "avec les seuls faits décisifs et termine par une consigne concrète. "
+        "Pour un conseil de séance, précise le type de séance, son intensité et "
+        "sa durée uniquement si les données le permettent.\n"
+        "N'invente aucune activité, mesure, disponibilité, séance planifiée, "
+        "zone physiologique ou évolution. Une donnée absente ou indisponible "
+        "n'est jamais zéro. Signale les limites de couverture.\n"
+        "Respecte séparément les périodes indiquées par chaque outil : ne mélange "
+        "pas historique, charge, récupération et planning. Ne compare deux "
+        "périodes que si les métriques et leur couverture sont comparables. "
+        "Une mesure de récupération périmée ne décrit pas l'état actuel.\n"
+        "OpenCoach est l'unique référentiel ; les fournisseurs externes ne sont "
+        "que des origines d'import. Ne pose aucun diagnostic médical. Les "
+        "restrictions sportives explicites sont prioritaires sur toute autre "
+        "mesure et ne doivent jamais être contournées.\n"
+        "Ne récite pas les champs ni les statistiques. Par défaut, réponds en "
+        "3 à 6 phrases courtes (40 à 90 mots), sans puces ni tableau. N'utilise "
+        "que 1 à 3 faits réellement utiles. Si les données ne permettent pas "
+        "de trancher sans risque, explique précisément ce qui manque et pose "
+        "une seule question ciblée. N'invente pas une recommandation générique.\n"
+        "STYLE : " + " ".join((personality, firmness, motivation, response_style))
+        + custom_section
+    )
+
+
 def _coach_system_prompt(preferences: AICoachPreferencesPayload) -> str:
     personality = {
         "balanced": "Adopte une posture équilibrée et objective.",
@@ -1091,7 +1155,7 @@ async def ask_local_ai_with_athlete_context(
     if tool_results:
         serialized_results = _serialize_coach_tool_results(tool_results)
         system_prompt = (
-            _coach_system_prompt(coach_preferences)
+            _coach_synthesis_system_prompt(coach_preferences)
             + "\n\nMODE DE RÉDACTION APRÈS EXÉCUTION PYTHON : "
             "les outils nécessaires ont déjà été sélectionnés et exécutés par OpenCoach. "
             "Tu ne dois pas choisir d'outil, inventer d'arguments ou prétendre en appeler un. "

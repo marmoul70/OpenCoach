@@ -67,7 +67,15 @@ def score_coaching_response(case: dict[str, Any], content: str) -> dict[str, Any
     patterns = ACTION_PATTERNS[action]
     action_hits = [bool(re.search(pattern, normalized)) for pattern in patterns]
     if action == "adapt_or_recover":
-        action_pass = any(action_hits)
+        # Mentionner une récupération dégradée ne suffit pas : la réponse doit
+        # formuler une modification concrète de la séance ou du niveau d'effort.
+        actionable_recommendation = bool(re.search(
+            r"\\b(repos|journ[eé]e de repos|s[eé]ance facile|footing facile|"
+            r"marche|remplace|remplacer|reporter|reporte|all[eé]ge|all[eé]ger|"
+            r"r[eé]duis|r[eé]duire|annule|annuler|pas de fractionn[eé])\\b",
+            normalized,
+        ))
+        action_pass = actionable_recommendation
     elif action == "respect_pain_constraints":
         explicit_run_restriction = any(action_hits[1:4])
         cross_training_with_pain_guard = action_hits[5] and action_hits[6]

@@ -68,7 +68,7 @@ from opencoach.database.repositories import (
 )
 from opencoach.api.training_stats import get_training_stats_service
 from opencoach.training import TrainingStatsService
-from opencoach.services import TrainingProfileContextService
+from opencoach.services import TrainingProfileContextService, RacePreparationService
 from opencoach.database.models.ai_coach_preference import AICoachPreference
 from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
@@ -551,10 +551,12 @@ def get_ai_tool_registry(
     ))
     registry.register(
         build_race_preparation_tool(
-            context_service.race_repository,
-            context_service.profile_service,
-            training_stats_service,
-            athlete_profile_id,
+            RacePreparationService(
+                context_service.race_repository,
+                context_service.profile_service,
+                training_stats_service,
+                athlete_profile_id,
+            )
         )
     )
     registry.register(build_planned_sessions_tool(

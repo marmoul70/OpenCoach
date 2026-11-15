@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from typing import Any, Callable, Literal
-from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 

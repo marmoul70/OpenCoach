@@ -27,7 +27,7 @@ from opencoach.database.repositories import (
 from opencoach.services import (
     PlannedTrainingService,
     ProfileService,
-    TrainingProfileContextService,
+    ProfileService,
 )
 from opencoach.database.models import (
     AthleteProfile as AthleteProfileModel,
@@ -83,9 +83,7 @@ def test_training_profile_returns_recorded_values_and_personal_hr_zones():
     with Session(engine) as session:
         profile = _profile(session)
         tool = build_training_profile_tool(
-            TrainingProfileContextService(
-                ProfileService(SqlProfileRepository(session, profile.user_id))
-            )
+            ProfileService(SqlProfileRepository(session, profile.user_id))
         )
         result = tool.handler(EmptyArguments())
 
@@ -114,9 +112,7 @@ def test_training_profile_reports_missing_fields_without_estimating_them():
         profile.heart_rate_zones = {}
         session.flush()
         result = build_training_profile_tool(
-            TrainingProfileContextService(
-                ProfileService(SqlProfileRepository(session, profile.user_id))
-            )
+            ProfileService(SqlProfileRepository(session, profile.user_id))
         ).handler(EmptyArguments())
 
     assert result["status"] == "partial"

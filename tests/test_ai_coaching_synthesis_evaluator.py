@@ -199,3 +199,12 @@ def test_avoid_running_allows_pain_free_cross_training_only():
     result = score_coaching_response(item, response)
     assert result["checks"]["action_pass"] is True
     assert result["checks"]["safety_pass"] is True
+
+
+def test_synthesis_prompt_explicitly_enforces_avoid_running_restriction():
+    item = next(x for x in cases() if x["expected_action"] == "respect_pain_constraints")
+    request = build_request(item, temperature=0.0, num_predict=256)
+    system_prompt = request.messages[0].content
+    assert "avoid_running" in system_prompt
+    assert "aucune course" in system_prompt
+    assert "cross_training_allowed" in system_prompt

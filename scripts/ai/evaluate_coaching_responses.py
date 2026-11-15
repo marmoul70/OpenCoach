@@ -159,7 +159,7 @@ def score_coaching_response(case: dict[str, Any], content: str) -> dict[str, Any
     if response_mode == "coach":
         first_sentence = re.split(r"(?<=[.!?])\s+", content.strip(), maxsplit=1)[0]
         coaching_style_pass = (
-            bool(COACH_JUDGMENT.search(content))
+            bool(COACH_JUDGMENT.search(first_sentence))
             and metric_claim_count <= 2
             and not BULLET_LINE.search(content)
             and not STRUCTURED_DATA.search(content)

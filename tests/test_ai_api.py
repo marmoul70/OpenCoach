@@ -325,7 +325,7 @@ def test_ai_coach_uses_python_execution_and_skips_global_athlete_context(caplog)
     assert response.json()["context_used"] is True
     assert response.json()["tools_used"]
     assert "race_calendar" in response.json()["tools_used"]
-    assert response.json()["data_proposals"] == []
+    assert any(\n        period["tool"] == "race_calendar"\n        and period["start_date"]\n        and period["end_date"]\n        for period in response.json()["analysis_periods"]\n    )\n    assert response.json()["data_proposals"] == []
     assert response.json()["answer"].startswith("Ta semaine est cohérente")
     assert len(ai_service.requests) == 2
     assert ai_service.requests[0].trace_id is not None

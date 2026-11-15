@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from datetime import date
 from uuid import UUID
 
-from opencoach.models import Race
 from opencoach.models import Activity, Race
 
 class RaceRepository(ABC):

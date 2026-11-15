@@ -955,6 +955,63 @@ def _coach_running_restriction_answer(question: str, tool_results) -> str | None
     )
 
 
+def _coach_planned_session_fallback_answer(question: str, tool_results) -> str | None:
+    """Builds a minimal, grounded answer when LLM synthesis fails quality checks."""
+    if not re.search(
+        r"\b(?:quelle|que|qu[e']?est-ce que|dois-je|conseill\w*|recommand\w*)\b"
+        r".{0,90}\b(?:s[eé]ance|entra[iî]n\w*|aujourd'hui|aujourd hui)\b",
+        question,
+        re.IGNORECASE,
+    ):
+        return None
+
+    results = {
+        item.tool: item.data
+        for item in tool_results
+        if item.status == "ok" and isinstance(item.data, dict)
+    }
+    planned = results.get("next_planned_session") or {}
+    if planned.get("status") != "ok":
+        return None
+    session = planned.get("session")
+    if not isinstance(session, dict):
+        return None
+
+    session_date = session.get("date")
+    reference_date = planned.get("reference_date")
+    if not session_date or not reference_date:
+        return None
+
+    duration = session.get("duration_minutes")
+    title = session.get("title")
+    sport = session.get("sport_type") or session.get("type")
+    intensity = session.get("intensity")
+    details = []
+    if sport:
+        details.append(str(sport))
+    if title and title.casefold() != str(sport or "").casefold():
+        details.append(str(title))
+    description = " – ".join(details) if details else "séance planifiée"
+    if duration:
+        description += f" de {duration} minutes"
+    if intensity:
+        description += f", intensité prévue : {intensity}"
+
+    if session_date == reference_date:
+        return (
+            f"Pour aujourd'hui, conserve la séance déjà inscrite dans ton planning : "
+            f"{description}. Je ne te propose pas de la durcir ni de la supprimer "
+            f"sans élément fiable qui le justifie. Si tu ressens une douleur, un "
+            f"symptôme inhabituel ou une fatigue nettement différente de ton état "
+            f"habituel, ne force pas et fais le point avant de partir."
+        )
+    return (
+        f"La prochaine séance enregistrée dans ton planning est prévue le "
+        f"{session_date} : {description}. Je n'ai pas de séance planifiée pour "
+        f"aujourd'hui dans les données consultées ; je préfère ne pas en inventer une."
+    )
+
+
 def _coach_response_quality_fallback_answer() -> str:
     """Ne masque pas un échec de rédaction par un faux diagnostic de panne."""
     return (
@@ -1394,7 +1451,10 @@ async def ask_local_ai_with_athlete_context(
                 answer = rewritten.content
                 model = rewritten.model
             else:
-                answer = _coach_response_quality_fallback_answer()
+                answer = (
+                    _coach_planned_session_fallback_answer(payload.question, tool_results)
+                    or _coach_response_quality_fallback_answer()
+                )
     except AIProviderError as exc:
         if not tool_results:
             raise HTTPException(

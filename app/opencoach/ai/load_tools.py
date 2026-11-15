@@ -50,7 +50,7 @@ def build_training_load_tool(
 
         actual_sessions = stats.sessions_count
         estimated_load_data_count = getattr(
-            stats, "estimated_load_data_count", stats.manual_sessions_count
+            stats, "estimated_load_data_count", 0
         )
         available_load_sessions = (
             stats.measured_load_data_count + estimated_load_data_count

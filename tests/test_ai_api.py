@@ -559,6 +559,23 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "ne jamais s'arrêter au milieu d'une phrase" in prompt
 
 
+def test_coach_synthesis_prompt_is_compact_and_preserves_safety_rules():
+    from opencoach.api.ai import (
+        AICoachPreferencesPayload,
+        _coach_synthesis_system_prompt,
+    )
+
+    prompt = _coach_synthesis_system_prompt(AICoachPreferencesPayload())
+
+    assert len(prompt) < 2_500
+    assert "seules sources factuelles" in prompt
+    assert "Une donnée absente ou indisponible n'est jamais zéro" in prompt
+    assert "ne mélange pas" in prompt
+    assert "restrictions sportives explicites" in prompt
+    assert "3 à 6 phrases courtes" in prompt
+    assert "propose_profile_data" not in prompt
+
+
 def test_coach_generation_budget_matches_requested_response_style():
     from opencoach.api.ai import _coach_response_token_budget
 

@@ -113,7 +113,7 @@ def test_injury_advice_executes_constraints_before_recovery_status():
     )
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("active_constraints", {}),
-        ("training_history", {"nb_days": 7}),
+        ("training_history", {"nb_days": 7, "exclude_current_day": True}),
         ("training_load", {"nb_days": 7}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
@@ -307,7 +307,7 @@ def test_injury_for_tomorrow_keeps_full_coaching_context_and_requested_safety_da
     )
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("active_constraints", {"target_date": "2026-11-11"}),
-        ("training_history", {"nb_days": 7}),
+        ("training_history", {"nb_days": 7, "exclude_current_day": True}),
         ("training_load", {"nb_days": 7}),
         ("recovery_analysis", {}),
         ("recovery_status", {"target_date": "2026-11-11"}),
@@ -553,7 +553,7 @@ def test_high_recent_load_and_tomorrows_long_session_are_both_in_context():
     )
 
     calls = [(call.name, call.arguments) for call in plan.calls]
-    assert ("training_history", {"nb_days": 7}) in calls
+    assert ("training_history", {"nb_days": 7, "exclude_current_day": True}) in calls
     assert ("training_load", {"nb_days": 7}) in calls
     assert ("next_planned_session", {}) in calls
     assert ("weekly_plan_context", {}) in calls

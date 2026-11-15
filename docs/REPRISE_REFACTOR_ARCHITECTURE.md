@@ -172,3 +172,54 @@ Les adaptateurs `ai/race_tools.py` et les outils de profil/planning dans `ai/coa
 - Le workflow `.github/workflows/ci.yml` déclenche bien sur les pushes de branches `refactor/**`, mais le connecteur utilisé ici ne fournit pas la liste générale des runs de push.
 
 Le prochain lot doit poursuivre le déplacement des responsabilités métier vers le Coach, puis réaliser l'audit frontend/scripts/infrastructure. Ne pas fusionner, rebaser sur `main`, supprimer de branche ou incrémenter `VERSION` dans ce chantier.
+
+
+## 10. Règle de non-duplication et état du refactoring — 15 novembre 2026
+
+**Branche de travail :** `refactor/architecture-cleanup`  
+**HEAD validé à ce point :** `b65ac998e27337c8106035fbf526732633d61ba1`  
+**État de `main` :** `58b962292bdcb134f6e693befa24006f8b5c5136` (restauré à son HEAD antérieur après une écriture GitHub mal ciblée ; les changements du chantier sont réappliqués sur la branche dédiée).
+
+### Règle impérative pour les prochains lots
+
+Avant tout ajout ou modification du Coach :
+
+1. Rechercher la capacité par responsabilité, pas uniquement par nom de classe.
+2. Cartographier les services, méthodes, repositories, routes et tests qui la couvrent déjà.
+3. Réutiliser la fonction existante si elle répond au besoin.
+4. Si une règle manque, étendre la fonction ou le service existant et conserver ses contrats.
+5. Ne créer une nouvelle classe/service que si aucun point d'extension existant n'est cohérent ; documenter alors pourquoi les services existants ne conviennent pas.
+6. Ajouter des tests de caractérisation et de non-régression avant de considérer le déplacement terminé.
+
+### Modifications validées sur la branche
+
+- Suppression de `TrainingProfileContextService`, qui n'était qu'un wrapper de `ProfileService`. La méthode `ProfileService.build_training_context()` étend désormais le service déjà présent.
+- `RacePreparationService` réutilise maintenant les compteurs canoniques de `TrainingStatsService.calculate()` pour le nombre de séances et la couverture des métriques. Il ne relit plus les repositories et ne recalcule plus ces compteurs.
+- `TrainingStats.coverage()` centralise les statuts `no_sessions`, `unavailable`, `partial` et `complete`. Les outils charge, tendances et préparation de course réutilisent cette règle.
+- `TrainingStats.compare_to()` centralise les comparaisons de périodes et masque les deltas lorsque l'une des périodes a une couverture incomplète. `ai/trend_tools.py` ne calcule plus les deltas.
+- `RecentTrainingLoad.planned_sessions_count` centralise le comptage des séances prescrites ; l'adaptateur charge ne le recalcule plus.
+- Les outils d'exécution utilisent les repositories injectés et le moteur existant `analyze_session_execution`. Les outils profil/planning et course délèguent leurs traitements métier aux services.
+- Les tests utilisent désormais les modèles Coach réels pour les statistiques plutôt que des objets simplifiés qui ne reflétaient pas les contrats réels.
+
+### Justification des services spécifiques conservés
+
+- `RacePreparationService` : capacité spécifique d'analyse d'une course future à partir de son profil de parcours, du profil athlète et des statistiques récentes. L'audit n'a pas trouvé de service existant couvrant ce cas ; les statistiques restent déléguées à `TrainingStatsService`.
+- `PlannedTrainingService` : consultation et synthèse des séances planifiées, distinctes des statistiques d'entraînement réalisé. L'audit a trouvé le repository et les routes de séances, mais pas de service Coach existant qui porte les agrégats de séances planifiées et la sélection de la prochaine séance.
+
+### Résultats CI
+
+- Commit `6f746a6ba7a57d4e1d31838a534896f07d6cab35` : Python, Bash et frontend validés.
+- Commit `d46615d2c55768f285cafc803c7acbaaf7b5d740` : Python, Bash et frontend validés.
+- Commit `b65ac998e27337c8106035fbf526732633d61ba1` : Python 3.13 **3 139 tests passés**, Bash validé et frontend validé.
+- Les runs intermédiaires en échec correspondent à des commits partiels qui ont été corrigés ensuite ; ils ne représentent pas le HEAD de travail actuel.
+- La CI du HEAD suivant les ajouts de documentation devra être vérifiée avant de déclarer ce point stable.
+
+### Audit restant
+
+- `app/opencoach/ai/data_proposals.py` contient encore la persistance SQL des propositions de données de profil (création, consultation, confirmation, rejet). C'est le principal écart restant à examiner dans la frontière IA/application. Réutiliser le cycle existant et ses règles ; ne pas réécrire le workflow ni dupliquer les validations.
+- Auditer les agrégations de `activity_tools.py` et les éventuels helpers existants de résumé des streams avant tout déplacement.
+- Découper `api/ai.py` après stabilisation des contrats et de la composition des services.
+- Continuer l'audit global frontend, scripts, infrastructure, imports dynamiques, dépendances, migrations et code mort.
+- Refaire une suite CI complète sur le HEAD final de la branche.
+
+Ne pas fusionner, rebaser sur `main`, supprimer de branche, déployer ou incrémenter `VERSION` sans accord explicite.

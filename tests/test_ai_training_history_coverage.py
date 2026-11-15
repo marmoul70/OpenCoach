@@ -13,8 +13,10 @@ from opencoach.ai.training_tools import (
 class FakeTrainingStatsService:
     def __init__(self, stats):
         self.stats = stats
+        self.calls = []
 
     def calculate(self, athlete_profile_id, start_date, end_date):
+        self.calls.append((athlete_profile_id, start_date, end_date))
         return self.stats
 
 
@@ -98,3 +100,45 @@ def test_partial_history_keeps_only_explicit_partial_subtotals():
     load = result["metrics"]["training_load"]
     assert load["total"] is None
     assert load["coverage"]["status"] == "partial"
+
+
+
+def test_coaching_history_can_use_the_same_completed_days_as_training_load():
+    reference_date = date(2026, 11, 15)
+    service = FakeTrainingStatsService(make_stats())
+    tool = build_training_history_tool(
+        service,
+        uuid4(),
+        reference_date_provider=lambda: reference_date,
+    )
+
+    result = tool.handler(TrainingHistoryArguments(
+        nb_days=7,
+        exclude_current_day=True,
+    ))
+
+    _, start_date, end_date = service.calls[0]
+    assert (start_date, end_date) == (
+        date(2026, 11, 8),
+        date(2026, 11, 14),
+    )
+    assert result["period"]["start_date"] == "2026-11-08"
+    assert result["period"]["end_date"] == "2026-11-14"
+
+
+def test_history_keeps_including_reference_day_by_default():
+    reference_date = date(2026, 11, 15)
+    service = FakeTrainingStatsService(make_stats())
+    tool = build_training_history_tool(
+        service,
+        uuid4(),
+        reference_date_provider=lambda: reference_date,
+    )
+
+    tool.handler(TrainingHistoryArguments(nb_days=7))
+
+    _, start_date, end_date = service.calls[0]
+    assert (start_date, end_date) == (
+        date(2026, 11, 9),
+        date(2026, 11, 15),
+    )

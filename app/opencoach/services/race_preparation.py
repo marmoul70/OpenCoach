@@ -73,40 +73,17 @@ class RacePreparationService:
             end_date,
         )
         
-        activities = training_stats_service.activity_repository.list_activities_between(
-            athlete_profile_id,
-            start_date,
-            end_date,
+        # TrainingStatsService est la source canonique des totaux et de leur
+        # couverture. Ne pas relire les repositories ni reconstruire ces
+        # comptages ici : cela risquerait de diverger de ses règles métier.
+        included_sessions = stats.sessions_count
+        duration_coverage = stats.duration_data_count
+        distance_coverage = stats.distance_data_count
+        elevation_coverage = stats.elevation_data_count
+        available_load_sessions = (
+            stats.measured_load_data_count + stats.estimated_load_data_count
         )
-        sessions = training_stats_service.training_session_repository.list_sessions_between(
-            athlete_profile_id,
-            start_date,
-            end_date,
-        )
-        manual_sessions = [
-            item for item in sessions
-            if item.status == "completed"
-            and item.activity_id is None
-            and item.type != "rest"
-        ]
-        included_sessions = len(activities) + len(manual_sessions)
-        
-        duration_coverage = sum(
-            1 for item in activities
-            if item.moving_time_seconds is not None
-            or item.elapsed_time_seconds is not None
-        ) + len(manual_sessions)
-        distance_coverage = sum(
-            1 for item in activities if item.distance_m is not None
-        ) + sum(
-            1 for item in manual_sessions if item.distance_km is not None
-        )
-        elevation_coverage = sum(
-            1 for item in activities if item.elevation_gain_m is not None
-        ) + sum(
-            1 for item in manual_sessions if item.elevation_gain_m is not None
-        )
-        
+
         def metric(value: float | int, available: int, unit: str) -> dict:
             if included_sessions == 0:
                 coverage_status = "no_sessions"
@@ -157,10 +134,6 @@ class RacePreparationService:
             ),
             "target_time_minutes": race.target_time_minutes,
         }
-        
-        available_load_sessions = sum(
-            1 for item in activities if item.training_load is not None
-        ) + len(manual_sessions)
         
         recent_training = {
             "period": {

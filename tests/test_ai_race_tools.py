@@ -29,9 +29,7 @@ class FakeRepository:
 
 
 class FakeTrainingStatsService:
-    def __init__(self, activities, sessions, stats):
-        self.activity_repository = FakeRepository(activities)
-        self.training_session_repository = FakeRepository(sessions)
+    def __init__(self, stats):
         self.stats = stats
         self.request = None
 
@@ -74,6 +72,11 @@ def _stats():
         total_elevation_gain_m=1800.0,
         measured_load=120.0,
         estimated_load=90.0,
+        duration_data_count=3,
+        distance_data_count=3,
+        elevation_data_count=3,
+        measured_load_data_count=1,
+        estimated_load_data_count=2,
     )
 
 
@@ -130,7 +133,7 @@ def test_race_preparation_analysis_returns_course_and_complete_training_metrics(
             ),
         ]
         stats = _stats()
-        service = FakeTrainingStatsService([activity], manual, stats)
+        service = FakeTrainingStatsService(stats)
         result = build_race_preparation_tool(
             RacePreparationService(
                 SqlRaceRepository(session),
@@ -196,8 +199,13 @@ def test_race_preparation_masks_partial_metrics_instead_of_extrapolating():
             total_elevation_gain_m=500.0,
             measured_load=0.0,
             estimated_load=90.0,
+            duration_data_count=2,
+            distance_data_count=1,
+            elevation_data_count=2,
+            measured_load_data_count=0,
+            estimated_load_data_count=1,
         )
-        service = FakeTrainingStatsService([activity], manual, partial_stats)
+        service = FakeTrainingStatsService(partial_stats)
         result = build_race_preparation_tool(
             RacePreparationService(
                 SqlRaceRepository(session),
@@ -225,7 +233,7 @@ def test_race_preparation_does_not_expose_another_athletes_race():
         owner = _profile(session, "race-owner")
         other = _profile(session, "race-other")
         race = _race(session, owner.id)
-        service = FakeTrainingStatsService([], [], _stats())
+        service = FakeTrainingStatsService(_stats())
         result = build_race_preparation_tool(
             RacePreparationService(
                 SqlRaceRepository(session),
@@ -248,7 +256,7 @@ def test_race_preparation_refuses_to_analyse_past_race_as_future_goal():
     with Session(engine) as session:
         profile = _profile(session, "race-past")
         race = _race(session, profile.id, race_date=date(2026, 11, 8))
-        service = FakeTrainingStatsService([], [], _stats())
+        service = FakeTrainingStatsService(_stats())
         result = build_race_preparation_tool(
             RacePreparationService(
                 SqlRaceRepository(session),

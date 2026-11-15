@@ -143,7 +143,8 @@ export function CoachAIChat() {
           role: 'assistant',
           content: response.answer,
           raceOptions: response.race_options?.length ? response.race_options : undefined,
-          toolsUsed: response.tools_used?.length ? response.tools_used : undefined,\n          analysisPeriods: response.analysis_periods?.length ? response.analysis_periods : undefined,
+          toolsUsed: response.tools_used?.length ? response.tools_used : undefined,
+          analysisPeriods: response.analysis_periods?.length ? response.analysis_periods : undefined,
         },
       ])
       if (response.data_proposals.length > 0) {

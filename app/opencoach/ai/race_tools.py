@@ -6,11 +6,9 @@ from datetime import date, timedelta
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from opencoach.ai.tool_engine import AITool
-from opencoach.database.models import AthleteProfile, Race
+from opencoach.database.repositories import RaceRepository
+from opencoach.services import ProfileService
 from opencoach.training import TrainingStatsService
 
 
@@ -26,7 +24,8 @@ class RacePreparationArguments(BaseModel):
 
 
 def build_race_preparation_tool(
-    session: Session,
+    race_repository: RaceRepository,
+    profile_service: ProfileService,
     training_stats_service: TrainingStatsService,
     athlete_profile_id: UUID,
     *,
@@ -36,11 +35,9 @@ def build_race_preparation_tool(
 
     def execute(arguments: BaseModel) -> dict:
         reference_date = reference_date_provider()
-        race = session.scalar(
-            select(Race).where(
-                Race.id == arguments.race_id,
-                Race.athlete_profile_id == athlete_profile_id,
-            )
+        race = race_repository.get_race(
+            athlete_profile_id,
+            arguments.race_id,
         )
         if race is None:
             return {
@@ -131,9 +128,7 @@ def build_race_preparation_tool(
                 },
             }
 
-        profile = session.scalar(
-            select(AthleteProfile).where(AthleteProfile.id == athlete_profile_id)
-        )
+        profile = profile_service.get_profile()
         days_to_race = (race.date - reference_date).days
         distance = race.distance_km
         elevation = race.elevation_gain_m
@@ -224,16 +219,16 @@ def build_race_preparation_tool(
             capacity = None
         else:
             capacity = {
-                "weekly_sessions_target": profile.weekly_sessions,
-                "weekly_duration_target_minutes": profile.weekly_duration_minutes,
-                "weekly_distance_target_km": profile.weekly_distance_km,
-                "experience": profile.experience,
-                "sport_disciplines": list(profile.sport_disciplines or []),
+                "weekly_sessions_target": profile.training.weekly_sessions,
+                "weekly_duration_target_minutes": profile.training.weekly_duration_minutes,
+                "weekly_distance_target_km": profile.training.weekly_distance_km,
+                "experience": profile.training.experience,
+                "sport_disciplines": list(profile.training.sport_disciplines or []),
             }
             for key, value in (
-                ("weekly_sessions", profile.weekly_sessions),
-                ("weekly_duration_minutes", profile.weekly_duration_minutes),
-                ("weekly_distance_km", profile.weekly_distance_km),
+                ("weekly_sessions", profile.training.weekly_sessions),
+                ("weekly_duration_minutes", profile.training.weekly_duration_minutes),
+                ("weekly_distance_km", profile.training.weekly_distance_km),
             ):
                 if value is None:
                     missing_profile_data.append(key)

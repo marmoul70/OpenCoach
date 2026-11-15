@@ -23,7 +23,11 @@ class PlannedTrainingService:
         self.athlete_profile_id = athlete_profile_id
         self.reference_date_provider = reference_date_provider
 
-    def list_between(self, start_date: date, end_date: date) -> tuple[list[TrainingSession], dict]:
+    def list_between(
+        self,
+        start_date: date,
+        end_date: date,
+    ) -> tuple[list[TrainingSession], dict]:
         sessions = self.repository.list_sessions_between(
             self.athlete_profile_id,
             start_date,

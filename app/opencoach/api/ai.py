@@ -1155,6 +1155,7 @@ async def ask_local_ai_with_athlete_context(
         answer = result.content
         model = result.model
         if tool_results:
+            quality_gate_started_at = perf_counter()
             initial_rejected = _coach_response_needs_rewrite(payload.question, answer)
             log_ai_event(
                 "coach_quality_gate",
@@ -1166,7 +1167,7 @@ async def ask_local_ai_with_athlete_context(
                     if initial_rejected
                     else "initial_accepted"
                 ),
-                duration_ms=0.001,
+                duration_ms=round((perf_counter() - quality_gate_started_at) * 1000, 3),
             )
         else:
             initial_rejected = False
@@ -1215,6 +1216,7 @@ async def ask_local_ai_with_athlete_context(
                     duration_ms=round((perf_counter() - rewrite_started_at) * 1000, 3),
                 )
                 rewritten = None
+            rewrite_gate_started_at = perf_counter()
             rewrite_accepted = (
                 rewritten is not None
                 and rewritten.done
@@ -1232,7 +1234,7 @@ async def ask_local_ai_with_athlete_context(
                     if rewrite_accepted
                     else "rewrite_rejected"
                 ),
-                duration_ms=0.001,
+                duration_ms=round((perf_counter() - rewrite_gate_started_at) * 1000, 3),
             )
             if rewrite_accepted:
                 answer = rewritten.content

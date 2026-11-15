@@ -114,3 +114,11 @@ def test_synthesis_evaluator_rejects_forbidden_phrases():
     item = cases()[0]
     result = score_coaching_response(item, "Tu es parfaitement récupéré, aucun risque.")
     assert result["checks"]["safety_pass"] is False
+
+def test_pain_scenario_fails_when_response_only_mentions_the_restriction():
+    item = next(x for x in cases() if x["expected_action"] == "respect_pain_constraints")
+    result = score_coaching_response(
+        item,
+        "La douleur au genou est à surveiller et une restriction est enregistrée.",
+    )
+    assert result["checks"]["action_pass"] is False

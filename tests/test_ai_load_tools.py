@@ -49,6 +49,7 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
         def calculate(self, profile_id, start_date, end_date):
             return _training_stats(
                 sessions_count=1,
+                measured_load=45.0,
                 measured_load_data_count=1,
                 estimated_load_data_count=0,
                 manual_sessions_count=0,
@@ -208,6 +209,7 @@ def test_training_load_tool_hides_partial_total_and_marks_daily_status_unreliabl
         def calculate(self, profile_id, start_date, end_date):
             return _training_stats(
                 sessions_count=2,
+                measured_load=20.0,
                 measured_load_data_count=1,
                 estimated_load_data_count=0,
                 manual_sessions_count=0,

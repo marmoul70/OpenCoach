@@ -6,9 +6,9 @@ from .intervals_sync import (
     IntervalsSyncResult,
 )
 from .profile import ProfileService
-from .training_profile_context import TrainingProfileContextService
-from .race_preparation import RacePreparationService
 from .planned_training import PlannedTrainingService
+from .race_preparation import RacePreparationService
+from .training_profile_context import TrainingProfileContextService
 from .integration_connection import (
     IntegrationConnectionService,
     IntegrationConnectionServiceError,

@@ -1,4 +1,4 @@
-"""Outil de lecture des contraintes temporaires de l'athlète."""
+"""Outil de lecture des contraintes temporaires via le repository métier."""
 
 from __future__ import annotations
 
@@ -6,11 +6,9 @@ from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from opencoach.ai.tool_engine import AITool
-from opencoach.database.models import AthleteConstraint
+from opencoach.database.repositories import AthleteConstraintRepository
 
 
 class ActiveConstraintsArguments(BaseModel):
@@ -20,28 +18,20 @@ class ActiveConstraintsArguments(BaseModel):
 
 
 def build_active_constraints_tool(
-    session: Session,
+    repository: AthleteConstraintRepository,
     athlete_profile_id: UUID,
     *,
     reference_date_provider=date.today,
 ) -> AITool:
-    """Retourne les contraintes qui recouvrent la date demandée."""
+    """Retourne les contraintes de l'athlète pour une date donnée."""
 
     def execute(arguments: BaseModel) -> dict:
         target_date = arguments.target_date or reference_date_provider()
-        constraints = session.scalars(
-            select(AthleteConstraint)
-            .where(
-                AthleteConstraint.athlete_profile_id == athlete_profile_id,
-                AthleteConstraint.start_date <= target_date,
-                AthleteConstraint.end_date >= target_date,
-            )
-            .order_by(
-                AthleteConstraint.start_date.asc(),
-                AthleteConstraint.end_date.asc(),
-                AthleteConstraint.id.asc(),
-            )
-        ).all()
+        constraints = repository.list_overlapping(
+            athlete_profile_id,
+            target_date,
+            target_date,
+        )
 
         return {
             "status": "ok" if constraints else "empty",

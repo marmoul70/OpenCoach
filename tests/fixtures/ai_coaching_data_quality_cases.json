@@ -6,8 +6,12 @@
     "expected_action": "request_fresh_data_before_deciding",
     "data_quality_expectations": {
       "freshness": "stale",
-      "required_date_display": "10/11/2026",
-      "coverage": "partial"
+      "coverage": "partial",
+      "required_date_displays": [
+        "10/11/2026",
+        "10 novembre 2026",
+        "2026-11-10"
+      ]
     },
     "context": {
       "reference_date": "2026-11-15",

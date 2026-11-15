@@ -641,3 +641,16 @@ def test_recommendation_period_clarification_keeps_completed_day_window_alignmen
         "exclude_current_day": True,
     }) in calls
     assert ("training_load", {"nb_days": 14}) in calls
+
+
+
+def test_long_load_trend_comparison_uses_trend_period_limits_not_load_limit():
+    plan = build_coach_execution_plan(
+        "Compare mes tendances de charge sur 100 jours et 150 jours.",
+        reference_date=REFERENCE_DATE,
+    )
+
+    assert plan.clarification is None
+    assert [(call.name, call.arguments) for call in plan.calls] == [
+        ("training_trends", {"nb_days": 100, "comparison_days": 150})
+    ]

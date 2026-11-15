@@ -13,9 +13,7 @@ from opencoach.database.models import (
     Race as RaceModel,
 )
 
-from opencoach.database.session import (
-    get_db,
-)
+from opencoach.database.session import get_db
 
 from opencoach.database.repositories.sql_weekly_training_plan import (
     SqlWeeklyTrainingPlanRepository,
@@ -56,7 +54,6 @@ from opencoach.database.repositories import (
     TrainingSessionRepositoryError,
     WellnessRepositoryError,
 )
-from opencoach.database.session import get_db
 from opencoach.readiness import (
     ReadinessAssessment,
     ReadinessDataUnavailableError,

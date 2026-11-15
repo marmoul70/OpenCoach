@@ -615,3 +615,29 @@ def test_injury_recommendation_keeps_upcoming_race_in_coaching_context():
     assert "training_history" in names
     assert "training_load" in names
     assert "next_planned_session" in names
+
+
+
+def test_recommendation_period_clarification_keeps_completed_day_window_alignment():
+    initial = build_coach_execution_plan(
+        "Quelle séance me conseilles-tu et analyse aussi ma charge ?",
+        reference_date=REFERENCE_DATE,
+    )
+    assert initial.calls == ()
+    assert "combien de jours" in initial.clarification
+
+    follow_up = build_coach_execution_plan(
+        "14 jours",
+        history=["Quelle séance me conseilles-tu et analyse aussi ma charge ?"],
+        assistant_history=[
+            "Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?"
+        ],
+        reference_date=REFERENCE_DATE,
+    )
+
+    calls = [(call.name, call.arguments) for call in follow_up.calls]
+    assert ("training_history", {
+        "nb_days": 14,
+        "exclude_current_day": True,
+    }) in calls
+    assert ("training_load", {"nb_days": 14}) in calls

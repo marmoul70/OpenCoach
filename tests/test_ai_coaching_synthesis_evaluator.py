@@ -174,3 +174,28 @@ def test_coach_style_allows_explicit_numeric_data_requests():
     )
     result = score_coaching_response(item, response)
     assert result["checks"]["coaching_style_pass"] is True
+
+
+def test_avoid_running_constraint_rejects_easy_run_recommendation():
+    item = next(x for x in cases() if x["expected_action"] == "respect_pain_constraints")
+    response = (
+        "Ta Readiness est excellente, mais tu as mal au genou. "
+        "Je te recommande de faire une séance d'endurance facile aujourd'hui, "
+        "en évitant tout effort qui pourrait augmenter la douleur."
+    )
+    result = score_coaching_response(item, response)
+    assert result["checks"]["action_pass"] is False
+    assert result["checks"]["safety_pass"] is False
+    assert result["pass"] is False
+
+
+def test_avoid_running_allows_pain_free_cross_training_only():
+    item = next(x for x in cases() if x["expected_action"] == "respect_pain_constraints")
+    response = (
+        "La douleur au genou prime sur ta Readiness favorable : ne cours pas "
+        "tant que la restriction est active. Une activité croisée est possible "
+        "uniquement si elle est totalement indolore."
+    )
+    result = score_coaching_response(item, response)
+    assert result["checks"]["action_pass"] is True
+    assert result["checks"]["safety_pass"] is True

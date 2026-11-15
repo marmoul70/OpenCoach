@@ -20,6 +20,7 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
             return SimpleNamespace(
                 sessions_count=1,
                 measured_load_data_count=1,
+                estimated_load_data_count=0,
                 manual_sessions_count=0,
                 activities_count=1,
                 total_duration_minutes=65,
@@ -142,6 +143,7 @@ def test_training_load_tool_never_reports_missing_actual_load_as_zero():
             return SimpleNamespace(
                 sessions_count=0,
                 measured_load_data_count=0,
+                estimated_load_data_count=0,
                 manual_sessions_count=0,
             )
 
@@ -177,6 +179,7 @@ def test_training_load_tool_hides_partial_total_and_marks_daily_status_unreliabl
             return SimpleNamespace(
                 sessions_count=2,
                 measured_load_data_count=1,
+                estimated_load_data_count=0,
                 manual_sessions_count=0,
             )
 
@@ -235,3 +238,53 @@ def test_training_load_tool_uses_only_opencoach_training_services():
     # son analyse depuis les services métier centralisés d'OpenCoach.
     assert "COROS" not in inspect.getsource(build_training_load_tool)
     assert "coros_training_load" not in inspect.getsource(build_training_load_tool)
+
+
+
+def test_training_load_coverage_does_not_treat_manual_session_without_duration_as_available():
+    class OneIncompleteManualSessionStats:
+        def calculate(self, profile_id, start_date, end_date):
+            return SimpleNamespace(
+                sessions_count=1,
+                activities_count=0,
+                manual_sessions_count=1,
+                measured_load_data_count=0,
+                estimated_load_data_count=0,
+            )
+
+    class NoLoadService:
+        def calculate(self, profile_id, target_date, *, days):
+            return RecentTrainingLoad(
+                days=(),
+                analyzed_days=1,
+                planned_load_total=0.0,
+                actual_load_total=0.0,
+                above_plan_days=0,
+                below_plan_days=0,
+                on_plan_days=0,
+                broken_rest_days=0,
+                respected_rest_days=0,
+                planning_covered_days=0,
+                unplanned_days=1,
+            )
+
+    tool = build_training_load_tool(
+        NoLoadService(),
+        OneIncompleteManualSessionStats(),
+        uuid4(),
+        reference_date_provider=lambda: date(2026, 11, 9),
+    )
+
+    result = tool.handler(TrainingLoadArguments(nb_days=1))
+
+    assert result["sessions"]["actual"] == 1
+    assert result["load"]["coverage"] == {
+        "available_sessions": 0,
+        "measured_sessions": 0,
+        "estimated_manual_sessions": 0,
+        "total_sessions": 1,
+        "status": "unavailable",
+    }
+    assert result["load"]["actual_total"] is None
+    assert result["load"]["delta_total"] is None
+    assert any("Aucune charge exploitable" in warning for warning in result["warnings"])

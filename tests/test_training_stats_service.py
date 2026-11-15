@@ -193,6 +193,7 @@ def test_training_stats_use_completed_manual_session_without_activity() -> None:
     assert result.distance_data_count == 1
     assert result.elevation_data_count == 1
     assert result.measured_load_data_count == 0
+    assert result.estimated_load_data_count == 1
 
 
 def test_training_stats_do_not_count_manual_session_without_duration_as_estimated_load():

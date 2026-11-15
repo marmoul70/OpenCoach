@@ -117,11 +117,18 @@ def score_coaching_response(case: dict[str, Any], content: str) -> dict[str, Any
     quality_expectations = case.get("data_quality_expectations", {})
     data_quality_pass = True
     if quality_expectations.get("freshness") == "stale":
-        required_date = quality_expectations.get("required_date_display", "")
+        required_dates = quality_expectations.get(
+            "required_date_displays",
+            [quality_expectations.get("required_date_display", "")],
+        )
+        if isinstance(required_dates, str):
+            required_dates = [required_dates]
         freshness_acknowledged = bool(re.search(
             r"p[eé]rim[eé]e|ancienne|pas [àa] jour|obsol[eè]te", normalized
         ))
-        date_attributed = bool(required_date and required_date.casefold() in normalized)
+        date_attributed = any(
+            value and value.casefold() in normalized for value in required_dates
+        )
         data_quality_pass = freshness_acknowledged and date_attributed
     if quality_expectations.get("coverage") == "partial":
         partial_acknowledged = bool(re.search(

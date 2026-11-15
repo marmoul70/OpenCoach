@@ -64,6 +64,7 @@ from opencoach.database.repositories import (
     SqlWeeklyTrainingPlanRepository,
     SqlActivityRepository,
     SqlActivityDetailRepository,
+    SqlTrainingSessionRepository,
 )
 from opencoach.api.training_stats import get_training_stats_service
 from opencoach.training import TrainingStatsService
@@ -554,7 +555,11 @@ def get_ai_tool_registry(
         )
     )
     registry.register(build_planned_sessions_tool(
-        training_stats_service.training_session_repository,
+        getattr(
+            training_stats_service,
+            "training_session_repository",
+            SqlTrainingSessionRepository(db),
+        ),
         athlete_profile_id,
     ))
     registry.register(build_next_planned_session_tool(

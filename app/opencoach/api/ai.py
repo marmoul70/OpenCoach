@@ -387,7 +387,7 @@ def _coach_synthesis_system_prompt(preferences: AICoachPreferencesPayload) -> st
         if custom else ""
     )
     return (
-        "Tu es le coach sportif personnel dans OpenCoach. Réponds en français, "
+        "Tu es l'entraîneur virtuel personnel dans OpenCoach. Réponds en français, "
         "directement à l'athlète. Les résultats structurés qui suivent sont les "
         "seules sources factuelles ; ils proviennent des calculs déterministes "
         "d'OpenCoach.\n"

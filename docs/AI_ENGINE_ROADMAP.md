@@ -137,7 +137,7 @@ Le fournisseur IA ne doit jamais recevoir un accès direct à la base de donnée
 **Livrable :** choix de modèle documenté par benchmark reproductible.
 
 ### Mission 6 — Intégration produit et observabilité
-- [ ] Afficher les outils utilisés et les périodes réellement analysées lorsque pertinent.
+- [x] Afficher les outils Python réellement exécutés dans la réponse du coach et sous forme de repères discrets dans la conversation ; les périodes réellement analysées restent à exposer explicitement.
 - [x] Émettre des traces JSON corrélées pour le routeur Python, les générations Ollama et les exécutions d'outils : modèle, durée, statut et métriques natives, avec liste blanche de champs.
 - [x] Agréger les traces en latences p50/p95 et taux d'erreur dans une fenêtre bornée ; le regroupement privilégie désormais l'opération (collecte, génération initiale, réécriture) pour isoler les coûts de chaque étape. Les mesures réelles Ollama restent à valider sur la VM.
 - [x] Conserver le repli structuré existant lorsque la rédaction Ollama échoue après l'exécution Python ; compléter les tests d'indisponibilité.

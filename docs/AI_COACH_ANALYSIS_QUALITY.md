@@ -108,3 +108,6 @@ Une demande explicite d'analyse de charge sans période ne doit pas être silenc
 
 
 Pour une demande avec douleur ou blessure, la clarification d'une période conserve également le contexte de sécurité initial : restriction active en premier, date cible demandée, historique, charge, récupération, séance prévue et calendrier de course. Si une période de charge est explicitement demandée, l'historique et la charge utilisent cette même durée ; sans période explicite, la recommandation utilise leur fenêtre standard de 7 jours complets.
+
+
+Pour une recommandation portant sur une séance future, la date future est utilisée pour consulter les contraintes actives à cette échéance, mais pas pour décaler artificiellement la récupération. `recovery_analysis` et `recovery_status` évaluent toutes deux les données disponibles aujourd'hui ; les contraintes restent, elles, ancrées sur la date de la séance ou de la douleur explicitement mentionnée. Cela évite de comparer une récupération actuelle à un Readiness calculé sur une date future.

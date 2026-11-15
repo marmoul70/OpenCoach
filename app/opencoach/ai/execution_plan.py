@@ -231,7 +231,7 @@ def build_coach_execution_plan(
     explicit_load_analysis_request = any(
         term in intent_context for term in ("charge", "mon atl", "ctl", "tsb")
     )
-    if explicit_load_analysis_request:
+    if explicit_load_analysis_request and not trend_comparison_requested:
         if not periods:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?")
         if not 1 <= periods[-1] <= 90:

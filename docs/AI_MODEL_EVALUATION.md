@@ -244,11 +244,14 @@ Le corpus `tests/fixtures/ai_coaching_synthesis_cases.json` couvre quatre décis
 - charge récente importante avant une sortie longue ;
 - objectif de trail proche avec adaptation de la séance.
 
+Pour les demandes de coaching (bilan, récupération, charge ou adaptation), le mode `coach` est appliqué par défaut. Il ajoute un contrôle `coaching_style_pass` : présence d'un jugement de coach, au plus deux valeurs avec unité, absence de listes à puces et de données structurées brutes, et absence d'une introduction de type « voici les données ». Les demandes explicitement chiffrées peuvent déclarer `response_mode: "data"` dans leur scénario afin de ne pas être pénalisées pour une réponse en chiffres.
+
 L'évaluateur vérifie de façon déterministe :
 - présence d'une décision cohérente avec l'action attendue ;
 - respect des contraintes et absence de formulations explicitement interdites ;
 - absence de chiffres accompagnés d'unités qui ne figurent pas dans les données du scénario ;
-- concision de la réponse (1 à 6 phrases).
+- concision de la réponse (1 à 6 phrases) ;
+- style de coaching : un avis formulé dès l'ouverture, des métriques limitées aux éléments utiles, sans inventaire COROS ni tableau de bord textuel.
 
 Tests locaux du contrat et des garde-fous :
 

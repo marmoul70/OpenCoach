@@ -70,7 +70,7 @@ def calculate_time_in_range(
     for index in range(
         common_length - 1
     ):
-        current_time = normalize_streamnormalize_stream_number(
+        current_time = normalize_stream_number(
             time_values[index]
         )
 

@@ -269,3 +269,12 @@ python scripts/ai/evaluate_coaching_responses.py --models qwen2.5:3b --limit 1 -
 ```
 
 **Limite importante :** ce score lexical mesure des garde-fous observables, pas la justesse physiologique complète. Il peut manquer une formulation correcte ou accepter une formulation maladroite. Il ne remplace ni une revue humaine, ni une validation avec les données de test de la VM. Les résultats doivent être interprétés par critère (action, sécurité, fidélité numérique, concision), jamais uniquement via le taux global.
+
+Le corpus inclut également un scénario de Readiness périmée et d'historique partiel (`ai_coaching_data_quality_cases.json`). Pour réussir ce cas, le modèle doit dater explicitement la dernière mesure, reconnaître la couverture incomplète et demander une synchronisation ou un ressenti récent avant de trancher sur la séance. Une Readiness favorable mais datée ne peut pas être présentée comme l'état actuel ; une charge non calculable ne peut pas être assimilée à zéro.
+
+Test ciblé :
+
+```bash
+pytest -q tests/test_ai_coaching_data_quality.py tests/test_ai_coaching_synthesis_evaluator.py
+```
+

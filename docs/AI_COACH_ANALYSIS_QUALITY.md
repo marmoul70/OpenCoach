@@ -111,3 +111,8 @@ Pour une demande avec douleur ou blessure, la clarification d'une période conse
 
 
 Pour une recommandation portant sur une séance future, la date future est utilisée pour consulter les contraintes actives à cette échéance, mais pas pour décaler artificiellement la récupération. `recovery_analysis` et `recovery_status` évaluent toutes deux les données disponibles aujourd'hui ; les contraintes restent, elles, ancrées sur la date de la séance ou de la douleur explicitement mentionnée. Cela évite de comparer une récupération actuelle à un Readiness calculé sur une date future.
+
+
+## Fiabilité de la couverture de charge
+
+Une séance manuelle terminée ne compte comme charge estimée exploitable que si sa durée est strictement positive. Le nombre de séances manuelles terminées reste disponible dans les statistiques de volume, mais il ne suffit plus à déclarer la couverture de charge complète. Les séances importées exigent toujours une charge mesurée non nulle au sens de disponibilité (`training_load is not None`). Si la couverture est inconnue ou incomplète, le total réel complet est masqué.

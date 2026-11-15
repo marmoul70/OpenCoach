@@ -30,6 +30,17 @@ def test_stale_readiness_and_partial_history_require_fresh_context():
     assert result["pass"] is True
 
 
+def test_stale_readiness_accepts_equivalent_french_date_format():
+    item = case()
+    response = (
+        "Ta Readiness est périmée : la mesure date du 10 novembre 2026. "
+        "L'historique est partiel ; synchronise les séances et indique ton ressenti "
+        "récent avant de décider pour demain."
+    )
+    result = score_coaching_response(item, response)
+    assert result["checks"]["data_quality_pass"] is True
+
+
 def test_stale_readiness_must_be_explicitly_dated():
     item = case()
     response = (

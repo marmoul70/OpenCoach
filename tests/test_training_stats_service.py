@@ -270,3 +270,50 @@ def test_training_stats_exposes_shared_metric_coverage_statuses() -> None:
         estimated_load=0.0,
     )
     assert empty.coverage(0)["status"] == "no_sessions"
+
+
+
+def test_training_stats_compare_to_uses_shared_coverage_and_suppresses_unreliable_deltas() -> None:
+    from opencoach.training import TrainingStats
+
+    current = TrainingStats(
+        start_date=START_DATE,
+        end_date=END_DATE,
+        activities_count=2,
+        manual_sessions_count=0,
+        total_duration_minutes=120,
+        total_distance_km=20.0,
+        total_elevation_gain_m=400.0,
+        measured_load=80.0,
+        estimated_load=0.0,
+        duration_data_count=2,
+        distance_data_count=1,
+        elevation_data_count=2,
+        measured_load_data_count=2,
+    )
+    previous = TrainingStats(
+        start_date=START_DATE,
+        end_date=END_DATE,
+        activities_count=2,
+        manual_sessions_count=0,
+        total_duration_minutes=100,
+        total_distance_km=18.0,
+        total_elevation_gain_m=350.0,
+        measured_load=70.0,
+        estimated_load=0.0,
+        duration_data_count=2,
+        distance_data_count=2,
+        elevation_data_count=2,
+        measured_load_data_count=2,
+    )
+
+    result = current.compare_to(previous)
+    assert result["metrics"]["duration_minutes"]["trend"]["delta"] == 20
+    assert result["metrics"]["distance_km"]["current_period"]["value"] is None
+    assert result["metrics"]["distance_km"]["current_period"]["partial_observed_value"] == 20.0
+    assert result["metrics"]["distance_km"]["trend"] == {
+        "delta": None,
+        "percent_delta": None,
+        "status": "insufficient_coverage",
+    }
+    assert len(result["warnings"]) == 1

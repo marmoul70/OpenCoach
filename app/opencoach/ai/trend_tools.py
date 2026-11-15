@@ -55,96 +55,7 @@ def build_training_trends_tool(
             comparison_end,
         )
 
-        def metric_snapshot(
-            stats,
-            *,
-            value: float | int,
-            available: int,
-            unit: str,
-        ) -> dict:
-            coverage = stats.coverage(available)
-            coverage_status = coverage["status"]
-            return {
-                "value": value if coverage_status == "complete" else None,
-                "partial_observed_value": (
-                    value if coverage_status == "partial" else None
-                ),
-                "unit": unit,
-                "coverage": coverage,
-            }
-
-        def trend(current_metric: dict, comparison_metric: dict) -> dict:
-            current_value = current_metric["value"]
-            comparison_value = comparison_metric["value"]
-            if current_value is None or comparison_value is None:
-                return {
-                    "delta": None,
-                    "percent_delta": None,
-                    "status": "insufficient_coverage",
-                }
-
-            delta = round(current_value - comparison_value, 2)
-            percent_delta = (
-                round(delta / comparison_value * 100, 1)
-                if comparison_value != 0
-                else None
-            )
-            return {
-                "delta": delta,
-                "percent_delta": percent_delta,
-                "status": "complete",
-            }
-
-        metric_definitions = {
-            "duration_minutes": (
-                "minutes",
-                lambda stats: stats.duration_data_count,
-                lambda stats: stats.total_duration_minutes,
-            ),
-            "distance_km": (
-                "km",
-                lambda stats: stats.distance_data_count,
-                lambda stats: stats.total_distance_km,
-            ),
-            "elevation_gain_m": (
-                "m",
-                lambda stats: stats.elevation_data_count,
-                lambda stats: stats.total_elevation_gain_m,
-            ),
-            "training_load": (
-                "load_points",
-                lambda stats: stats.measured_load_data_count + stats.manual_sessions_count,
-                lambda stats: stats.total_load,
-            ),
-        }
-
-        metrics = {}
-        warnings = []
-        for name, (unit, available_count, value_getter) in metric_definitions.items():
-            current_metric = metric_snapshot(
-                current,
-                value=value_getter(current),
-                available=available_count(current),
-                unit=unit,
-            )
-            comparison_metric = metric_snapshot(
-                comparison,
-                value=value_getter(comparison),
-                available=available_count(comparison),
-                unit=unit,
-            )
-            metrics[name] = {
-                "current_period": current_metric,
-                "comparison_period": comparison_metric,
-                "trend": trend(current_metric, comparison_metric),
-            }
-            if (
-                current_metric["coverage"]["status"] != "complete"
-                or comparison_metric["coverage"]["status"] != "complete"
-            ):
-                warnings.append(
-                    f"Tendance {name} non calculée : couverture incomplète sur au moins une période."
-                )
+        comparison_result = current.compare_to(comparison)
 
         return {
             "current_period": {
@@ -159,8 +70,8 @@ def build_training_trends_tool(
                 "nb_days": arguments.comparison_days,
                 "sessions": comparison.sessions_count,
             },
-            "metrics": metrics,
-            "warnings": warnings,
+            "metrics": comparison_result["metrics"],
+            "warnings": comparison_result["warnings"],
         }
 
     return AITool(

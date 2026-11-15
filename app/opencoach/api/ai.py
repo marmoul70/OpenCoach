@@ -68,6 +68,7 @@ from opencoach.database.repositories import (
 )
 from opencoach.api.training_stats import get_training_stats_service
 from opencoach.training import TrainingStatsService
+from opencoach.services import TrainingProfileContextService
 from opencoach.database.models.ai_coach_preference import AICoachPreference
 from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
@@ -533,7 +534,9 @@ def get_ai_tool_registry(
     """Construit le registre métier pour le seul athlète authentifié."""
 
     registry = AIToolRegistry(argument_guard=validate_period_argument_evidence)
-    registry.register(build_training_profile_tool(context_service.profile_service))
+    registry.register(build_training_profile_tool(
+        TrainingProfileContextService(context_service.profile_service)
+    ))
     registry.register(build_active_constraints_tool(
             SqlAthleteConstraintRepository(db),
             athlete_profile_id,

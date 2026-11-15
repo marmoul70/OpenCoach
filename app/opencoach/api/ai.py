@@ -342,12 +342,14 @@ def _preferences_response(
 def _coach_response_token_budget(response_style: str) -> int:
     """Borne la génération selon le niveau de détail demandé."""
     return {
-        # 256 tokens were repeatedly exhausted by normal coaching syntheses
-        # after Python had already collected the athlete's context.
-        "concise": 384,
-        "analytical": 640,
-        "detailed": 896,
-    }.get(response_style, 384)
+        # Qwen2.5:3b exhausted the previous 384-token concise budget on a
+        # normal daily-session recommendation (Ollama done_reason=length).
+        # Keep concise responses bounded, but leave enough room for a complete
+        # recommendation, its rationale and a concrete execution instruction.
+        "concise": 640,
+        "analytical": 896,
+        "detailed": 1152,
+    }.get(response_style, 640)
 
 
 def _coach_system_prompt(preferences: AICoachPreferencesPayload) -> str:

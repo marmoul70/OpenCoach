@@ -5,12 +5,12 @@ from __future__ import annotations
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.orm import Session
-
 from opencoach.ai.tool_engine import AITool
-from opencoach.database.repositories.sql_activity import SqlActivityRepository
-from opencoach.database.repositories.sql_activity_detail import SqlActivityDetailRepository
-from opencoach.database.repositories.sql_training_session import SqlTrainingSessionRepository
+from opencoach.database.repositories import (
+    ActivityDetailRepository,
+    ActivityRepository,
+    TrainingSessionRepository,
+)
 from opencoach.training.session_execution import analyze_session_execution
 
 
@@ -29,14 +29,12 @@ def _safe_text(value: str | None, limit: int = 240) -> str | None:
 
 
 def build_session_execution_review_tool(
-    session: Session,
+    training_repository: TrainingSessionRepository,
+    activity_repository: ActivityRepository,
+    detail_repository: ActivityDetailRepository,
     athlete_profile_id: UUID,
 ) -> AITool:
-    """Construit un débriefing strictement limité aux données de l'athlète."""
-
-    training_repository = SqlTrainingSessionRepository(session)
-    activity_repository = SqlActivityRepository(session)
-    detail_repository = SqlActivityDetailRepository(session)
+    """Construit un débriefing strictement limité aux repositories injectés."""
 
     def execute(arguments: BaseModel) -> dict:
         planned = training_repository.get_session(

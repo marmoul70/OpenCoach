@@ -768,11 +768,13 @@ def _trim_coach_payload(value, *, max_chars: int):
         return value[:max(0, max_chars - len(marker))] + marker
     if isinstance(value, list):
         kept = []
+        item_budget = max(128, (max_chars - 80) // max(1, min(len(value), 8)))
         for item in value:
-            candidate = [*kept, item]
+            candidate_item = _trim_coach_payload(item, max_chars=item_budget)
+            candidate = [*kept, candidate_item]
             if len(encode(candidate)) > max_chars - 80:
                 break
-            kept.append(item)
+            kept.append(candidate_item)
         if len(kept) < len(value):
             kept.append(marker)
         return kept

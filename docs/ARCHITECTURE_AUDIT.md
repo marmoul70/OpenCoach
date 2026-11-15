@@ -26,6 +26,48 @@ Motif : ce socle contient les développements métier et infrastructure présent
 
 Ce choix est provisoire : il ne signifie pas que tout le contenu de cette branche est validé ni qu'il faut conserver toute la couche IA.
 
+## 2 bis. Inventaire quantitatif du socle
+
+L'arbre Git contient environ 1 165 fichiers :
+- 503 fichiers Python sous `app/opencoach` ;
+- 164 fichiers source frontend sous `frontend/src` ;
+- 380 fichiers sous `tests` ;
+- 30 documents sous `docs` ;
+- 38 fichiers sous `scripts`.
+
+Les principaux ensembles backend sont :
+- `planning` : 127 fichiers Python ;
+- `database` : 116 ;
+- `coaching` : 54 ;
+- `training` : 48 ;
+- `api` : 27 ;
+- `ai` : 22 ;
+- `integrations` : 19.
+
+Ce volume confirme que le chantier doit être conduit par domaines avec une cartographie des dépendances. Il ne faut pas interpréter le nombre de fichiers comme une mesure directe de qualité ou de code inutile.
+
+### Gros fichiers à examiner en priorité
+
+Backend :
+- `app/opencoach/api/ai.py` (~86 Ko) ;
+- `app/opencoach/api/coros.py` (~82 Ko) ;
+- `app/opencoach/api/training_sessions.py` (~40 Ko) ;
+- `app/opencoach/integrations/coros/workout_mapper.py` (~41 Ko) ;
+- `app/opencoach/planning/sessions/prescription/intervals.py` (~36 Ko).
+
+Frontend :
+- `frontend/src/modules/profile/AthleteProfileSections.tsx` (~96 Ko) ;
+- `frontend/src/modules/weather/WeatherPage.tsx` (~53 Ko) ;
+- `frontend/src/modules/training/TrainingDetails.tsx` (~53 Ko) ;
+- `frontend/src/modules/activities/ActivityPage.tsx` (~51 Ko) ;
+- `frontend/src/modules/races/RaceDetails.tsx` (~51 Ko).
+
+Ces fichiers sont des candidats à une revue de responsabilités et de lisibilité, pas des candidats automatiques à la découpe. Toute extraction doit réduire le couplage et non déplacer simplement des lignes.
+
+### Sauvegarde frontend suivie par Git
+
+Le dépôt contient `.refactor-backup/20260831-231419/`, avec d'anciennes versions de plusieurs écrans frontend (App, Connections, Profile, Settings). Ce répertoire n'est pas une source d'exécution applicative d'après son chemin, mais il est suivi par Git. Il peut être utile comme archive de récupération ; avant suppression, comparer chaque fichier avec son équivalent courant et vérifier qu'aucune fonctionnalité unique n'y subsiste.
+
 ## 3. État de validation observé
 
 Au commit initial, les contrôles GitHub Actions visibles sont terminés avec succès :

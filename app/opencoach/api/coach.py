@@ -43,6 +43,7 @@ from opencoach.coaching.weekly_assessment_service import (
 )
 from opencoach.api.coaching.dependencies import (
     get_coach_weekly_assessment_service,
+    get_weekly_planning_context_builder,
 )
 from opencoach.database.repositories import (
     ActivityRepositoryError,
@@ -85,10 +86,6 @@ from opencoach.schemas.coach import (
     CoachTrajectoryWeekResponse,
 )
 
-
-from opencoach.api.coaching.dependencies import (
-    get_weekly_planning_context_builder,
-)
 from opencoach.coaching.generation.context import (
     WeeklyPlanningContextBuilder,
     WeeklyPlanningContextError,

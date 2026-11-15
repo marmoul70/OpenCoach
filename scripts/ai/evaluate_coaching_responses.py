@@ -52,7 +52,18 @@ ACTION_PATTERNS = {
 
 UNIT_CLAIM = re.compile(
     r"(?<![\w])(?P<number>\d+(?:[.,]\d+)?)\s*"
-    r"(?P<unit>km/h|km|m\b|heures?|h\b|minutes?|min\b|bpm|%|jours?|semaines?)",
+    r"(?P<unit>km/h|km|m\\b|heures?|h\\b|minutes?|min\\b|bpm|%|jours?|semaines?)",
+    re.IGNORECASE,
+)
+BULLET_LINE = re.compile(r"(?m)^\\s*(?:[-*•]|\\d+[.)])\\s+")
+STRUCTURED_DATA = re.compile(r"(?:\\{\\s*[\"']?[a-z_]+[\"']?\\s*:|[\"'][a-z_]+[\"']?\\s*:\\s*(?:\\d|[\"'{]))", re.IGNORECASE)
+COACH_JUDGMENT = re.compile(
+    r"\\b(?:mon avis|je te conseille|je recommande|je privilégie|"
+    r"je garderais|je remplacerais|je réduirais|je reporterais|"
+    r"je maintiendrais|ta semaine|ton entraînement|ta charge|"
+    r"tu as bien|tu as réussi|le point positif|le point de vigilance|"
+    r"ce n'est pas|c'est cohérent|c'est trop|c'est adapté|"
+    r"la priorité|pour progresser|pour préserver)\\b",
     re.IGNORECASE,
 )
 
@@ -139,17 +150,42 @@ def score_coaching_response(case: dict[str, Any], content: str) -> dict[str, Any
         ))
         data_quality_pass = data_quality_pass and partial_acknowledged and asks_for_update
 
+    # Une réponse de coaching doit ressembler à un avis argumenté, pas à un
+    # export COROS. On contrôle la densité des chiffres et les formats bruts,
+    # sans interdire les listes lorsqu'une question demande explicitement des
+    # données ou un relevé chiffré.
+    response_mode = case.get("response_mode", "coach")
+    metric_claim_count = len(list(UNIT_CLAIM.finditer(content)))
+    if response_mode == "coach":
+        first_sentence = re.split(r"(?<=[.!?])\\s+", content.strip(), maxsplit=1)[0]
+        coaching_style_pass = (
+            bool(COACH_JUDGMENT.search(content))
+            and metric_claim_count <= 2
+            and not BULLET_LINE.search(content)
+            and not STRUCTURED_DATA.search(content)
+            and not re.match(
+                r"^(?:voici|données?|statistiques?|bilan chiffré|résumé des métriques)\\b",
+                first_sentence.strip(),
+                re.IGNORECASE,
+            )
+        )
+    else:
+        coaching_style_pass = True
+
     checks = {
         "action_pass": action_pass,
         "safety_pass": safety_pass,
         "numeric_fidelity_pass": numeric_fidelity_pass,
         "data_quality_pass": data_quality_pass,
         "concision_pass": concision_pass,
+        "coaching_style_pass": coaching_style_pass,
     }
     return {
         "pass": all(checks.values()),
         "checks": checks,
         "sentence_count": sentence_count,
+        "metric_claim_count": metric_claim_count,
+        "response_mode": response_mode,
         "unsupported_numeric_claims": unsupported_claims,
         "forbidden_phrase_hits": forbidden_hits,
         "response_excerpt": content[:1600],
@@ -258,6 +294,7 @@ async def main_async(args: argparse.Namespace) -> int:
             "data_quality_accuracy": round(sum(row.get("checks", {}).get("data_quality_pass", False) for row in completed) / len(completed), 4) if completed else 0,
             "numeric_fidelity_accuracy": round(sum(row.get("checks", {}).get("numeric_fidelity_pass", False) for row in completed) / len(completed), 4) if completed else 0,
             "concision_accuracy": round(sum(row.get("checks", {}).get("concision_pass", False) for row in completed) / len(completed), 4) if completed else 0,
+            "coaching_style_accuracy": round(sum(row.get("checks", {}).get("coaching_style_pass", False) for row in completed) / len(completed), 4) if completed else 0,
         }
     report_path.write_text(json.dumps({
         "created_at": datetime.now(timezone.utc).isoformat(),

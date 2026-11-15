@@ -755,44 +755,85 @@ def _coach_generation_failure_answer(error: AIProviderError) -> str:
     return _coach_provider_unavailable_answer()
 
 
+def _trim_coach_payload(value, *, max_chars: int):
+    """Réduit récursivement un résultat en conservant sa structure et ses premières données."""
+    marker = "… données complémentaires omises"
+
+    def encode(item):
+        return json.dumps(item, ensure_ascii=False, default=str)
+
+    if len(encode(value)) <= max_chars:
+        return value
+    if isinstance(value, str):
+        return value[:max(0, max_chars - len(marker))] + marker
+    if isinstance(value, list):
+        kept = []
+        for item in value:
+            candidate = [*kept, item]
+            if len(encode(candidate)) > max_chars - 80:
+                break
+            kept.append(item)
+        if len(kept) < len(value):
+            kept.append(marker)
+        return kept
+    if isinstance(value, dict):
+        trimmed = {}
+        for key, item in value.items():
+            trimmed[key] = _trim_coach_payload(
+                item,
+                max_chars=max(256, max_chars // max(1, len(value))),
+            )
+            if len(encode(trimmed)) > max_chars:
+                trimmed.pop(key, None)
+                break
+        if len(trimmed) < len(value):
+            trimmed["_truncated"] = True
+        return trimmed
+    return value
+
+
 def _serialize_coach_tool_results(tool_results, *, max_item_chars: int = 10_000, max_total_chars: int = 20_000) -> str:
-    """Borne les résultats envoyés au LLM et conserve un JSON toujours valide."""
-    payloads = [
-        item.model_dump(mode="json")
-        for item in tool_results
-    ]
+    """Borne les résultats envoyés au LLM sans effacer tout le contexte utile."""
+    payloads = [item.model_dump(mode="json") for item in tool_results]
+
     for payload in payloads:
         encoded = json.dumps(payload, ensure_ascii=False, default=str)
         if len(encoded) > max_item_chars:
-            payload["data"] = {
-                "status": "omitted",
-                "message": (
-                    "Résultat trop volumineux pour la rédaction IA. "
-                    "Demander une période plus courte ou une analyse plus ciblée."
-                ),
-            }
+            payload["data"] = _trim_coach_payload(
+                payload.get("data"),
+                max_chars=max(256, max_item_chars - 1_000),
+            )
 
     serialized = json.dumps(payloads, ensure_ascii=False, default=str)
     if len(serialized) > max_total_chars:
+        # Répartit le budget entre les résultats au lieu de supprimer toutes
+        # les données dès qu'un seul outil fait dépasser le plafond global.
+        per_item_budget = max(512, (max_total_chars - 2 * len(payloads)) // max(1, len(payloads)))
+        compact = []
+        for payload in payloads:
+            item = dict(payload)
+            item["data"] = _trim_coach_payload(
+                item.get("data"),
+                max_chars=per_item_budget,
+            )
+            compact.append(item)
+        serialized = json.dumps(compact, ensure_ascii=False, default=str)
+
+    if len(serialized) > max_total_chars:
+        # Ultime garde-fou : préserver au minimum l'identité et le statut de
+        # chaque outil, ainsi que ses métadonnées compactes.
         compact = [
             {
-                "tool": payload.get("tool"),
-                "status": payload.get("status"),
-                "error": payload.get("error"),
-                "metadata": payload.get("metadata", {}),
-                "data": {
-                    "status": "omitted",
-                    "message": (
-                        "Résultats cumulés trop volumineux. "
-                        "Relancer une analyse plus ciblée."
-                    ),
-                },
+                "tool": item.get("tool"),
+                "status": item.get("status"),
+                "error": item.get("error"),
+                "metadata": _trim_coach_payload(item.get("metadata", {}), max_chars=512),
+                "data": _trim_coach_payload(item.get("data"), max_chars=256),
             }
-            for payload in payloads
+            for item in payloads
         ]
         serialized = json.dumps(compact, ensure_ascii=False, default=str)
     return serialized
-
 
 @router.post("/coach", response_model=AIQuestionResponse)
 async def ask_local_ai_with_athlete_context(

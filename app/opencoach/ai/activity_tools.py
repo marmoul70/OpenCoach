@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from sqlalchemy import and_, or_, select
-from sqlalchemy.orm import Session
 
 from opencoach.ai.tool_engine import AITool
-from opencoach.database.models import Activity as ActivityModel
-from opencoach.database.repositories import SqlActivityDetailRepository
+from opencoach.database.repositories import ActivityRepository, ActivityDetailRepository
 
 
 class ActivityDetailArguments(BaseModel):
@@ -66,41 +62,28 @@ def _stream_summary(stream) -> dict | None:
 
 
 def build_activity_detail_tool(
-    session: Session,
+    activity_repository: ActivityRepository,
+    detail_repository: ActivityDetailRepository,
     athlete_profile_id: UUID,
 ) -> AITool:
     """Construit un outil strictement limité aux activités de l'athlète connecté."""
 
-    detail_repository = SqlActivityDetailRepository(session)
-
     def execute(arguments: BaseModel) -> dict:
-        query = select(ActivityModel).where(
-            ActivityModel.athlete_profile_id == athlete_profile_id,
-        )
         if arguments.activity_id is not None:
-            query = query.where(ActivityModel.id == arguments.activity_id)
-        elif arguments.activity_date is not None:
-            day_start = datetime.combine(arguments.activity_date, time.min)
-            day_end = day_start + timedelta(days=1)
-            query = query.where(
-                or_(
-                    and_(
-                        ActivityModel.start_at_local.is_not(None),
-                        ActivityModel.start_at_local >= day_start,
-                        ActivityModel.start_at_local < day_end,
-                    ),
-                    and_(
-                        ActivityModel.start_at_local.is_(None),
-                        ActivityModel.start_at >= day_start,
-                        ActivityModel.start_at < day_end,
-                    ),
-                )
+            activity = activity_repository.get_activity(
+                athlete_profile_id,
+                arguments.activity_id,
+            )
+            activities = [activity] if activity is not None else []
+        elif arguments.latest:
+            activities = activity_repository.list_activities(athlete_profile_id)[:1]
+        else:
+            activities = activity_repository.list_activities_between(
+                athlete_profile_id,
+                arguments.activity_date,
+                arguments.activity_date,
             )
 
-        query = query.order_by(ActivityModel.start_at.desc())
-        if arguments.latest:
-            query = query.limit(1)
-        activities = list(session.scalars(query).all())
         if arguments.activity_name:
             needle = arguments.activity_name.casefold()
             activities = [

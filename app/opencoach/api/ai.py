@@ -241,6 +241,45 @@ class AIRaceOptionResponse(BaseModel):
     target_time_minutes: float | None = None
 
 
+def _extract_coach_analysis_periods(tool_results) -> list[dict[str, str | int]]:
+    """Expose uniquement les fenêtres datées explicitement retournées par les outils."""
+    periods: list[dict[str, str | int]] = []
+    seen: set[tuple[str, str, str]] = set()
+
+    def visit(tool: str, value, path: str = "") -> None:
+        if isinstance(value, dict):
+            start = value.get("start_date")
+            end = value.get("end_date")
+            if isinstance(start, str) and isinstance(end, str):
+                key = (tool, start, end)
+                if key not in seen:
+                    item: dict[str, str | int] = {
+                        "tool": tool,
+                        "label": path.replace("_", " ").strip() or "période analysée",
+                        "start_date": start,
+                        "end_date": end,
+                    }
+                    for duration_key in ("nb_days", "days", "horizon_days"):
+                        duration = value.get(duration_key)
+                        if isinstance(duration, int) and not isinstance(duration, bool) and duration > 0:
+                            item["days"] = duration
+                            break
+                    periods.append(item)
+                    seen.add(key)
+            for key, child in value.items():
+                if isinstance(child, (dict, list)):
+                    visit(tool, child, f"{path} {key}".strip())
+        elif isinstance(value, list):
+            for child in value:
+                if isinstance(child, (dict, list)):
+                    visit(tool, child, path)
+
+    for result in tool_results:
+        if result.status == "ok" and isinstance(result.data, dict):
+            visit(result.tool, result.data)
+    return periods
+
+
 class AIQuestionResponse(BaseModel):
     """Réponse générée par le modèle local."""
 

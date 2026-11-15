@@ -1272,3 +1272,33 @@ def test_coach_analysis_periods_only_expose_explicit_successful_tool_windows() -
         data={"period": {"start_date": "2026-11-01", "end_date": "2026-11-14", "days": 14}},
     )
     assert len(_extract_coach_analysis_periods([*results, duplicated])) == 2
+
+
+
+def test_coach_output_gate_accepts_actionable_advice_after_context_sentence():
+    from opencoach.api.ai import _coach_response_needs_rewrite
+
+    answer = (
+        "Les données de récupération sont plutôt rassurantes et la charge récente "
+        "reste à surveiller. Pour aujourd'hui, je te conseille une séance facile "
+        "et de reporter le travail intense."
+    )
+
+    assert _coach_response_needs_rewrite(
+        "Quelle séance me conseilles-tu aujourd'hui ?",
+        answer,
+    ) is False
+
+
+def test_coach_output_gate_still_rejects_uninterpreted_metric_paragraph():
+    from opencoach.api.ai import _coach_response_needs_rewrite
+
+    answer = (
+        "La distance est de 42 km, le dénivelé de 1 200 m, "
+        "la durée de 5 heures et la charge de 380 points."
+    )
+
+    assert _coach_response_needs_rewrite(
+        "Quelle séance me conseilles-tu aujourd'hui ?",
+        answer,
+    ) is True

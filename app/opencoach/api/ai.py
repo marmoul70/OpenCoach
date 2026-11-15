@@ -744,6 +744,12 @@ def _coach_provider_unavailable_answer() -> str:
         "alors te donner un véritable bilan de coach et une conduite à tenir."
     )
 
+def _coach_generation_failure_answer(error: AIProviderError) -> str:
+    """Distingue une génération tronquée d'une véritable indisponibilité fournisseur."""
+    if "interrompu la rédaction" in str(error):
+        return _coach_response_quality_fallback_answer()
+    return _coach_provider_unavailable_answer()
+
 
 def _serialize_coach_tool_results(tool_results, *, max_item_chars: int = 10_000, max_total_chars: int = 20_000) -> str:
     """Borne les résultats envoyés au LLM et conserve un JSON toujours valide."""
@@ -1045,7 +1051,7 @@ async def ask_local_ai_with_athlete_context(
             ) from exc
         # Les calculs Python ont déjà été exécutés : une panne du LLM ne doit
         # pas masquer les données ni faire échouer toute la consultation.
-        answer = _coach_provider_unavailable_answer()
+        answer = _coach_generation_failure_answer(exc)
         model = settings.model
 
     data_proposals = [

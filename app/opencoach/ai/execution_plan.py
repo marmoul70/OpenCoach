@@ -228,7 +228,10 @@ def build_coach_execution_plan(
                 "Pour comparer la charge sur deux périodes, indique la durée des deux périodes "
                 "(par exemple 7 jours puis 14 jours)."
             ))
-    if any(term in intent_context for term in ("charge", "mon atl", "ctl", "tsb")) and "training_load" not in selected:
+    explicit_load_analysis_request = any(
+        term in intent_context for term in ("charge", "mon atl", "ctl", "tsb")
+    )
+    if explicit_load_analysis_request:
         if not periods:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?")
         if not 1 <= periods[-1] <= 90:

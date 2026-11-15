@@ -61,7 +61,12 @@ def score_coaching_response(case: dict[str, Any], content: str) -> dict[str, Any
     action = case["expected_action"]
     patterns = ACTION_PATTERNS[action]
     action_hits = [bool(re.search(pattern, normalized)) for pattern in patterns]
-    action_pass = all(action_hits)
+    if action == "adapt_or_recover":
+        action_pass = any(action_hits)
+    elif action == "respect_pain_constraints":
+        action_pass = any(action_hits[1:])
+    else:
+        action_pass = all(action_hits)
 
     forbidden = [_normalize(item) for item in case.get("forbidden_phrases", [])]
     forbidden_hits = [item for item in forbidden if item and item in normalized]

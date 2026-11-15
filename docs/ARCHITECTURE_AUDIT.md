@@ -273,3 +273,19 @@ La remise à plat n'est pas terminée tant que :
 ## 9. Limites de cet état initial
 
 Ce document est le journal du premier passage. Il ne prétend pas certifier l'ensemble du code. Les analyses statiques et exécutions locales complètes doivent être réalisées avant toute suppression structurelle. Aucune branche source, PR ou branche `main` n'a été modifiée par la création de cette branche d'audit.
+
+## 6. Décision d'architecture confirmée — Coach autonome, IA adaptateur
+
+Décision confirmée le 15 novembre 2026 à la demande de l'utilisateur : les calculs et décisions doivent être directement rattachés au moteur Coach OpenCoach, jamais à l'IA.
+
+Le Coach doit fournir les résultats métier à l'application, même en l'absence d'Ollama. L'IA est une interface conversationnelle qui comprend la demande, appelle les capacités métier existantes et explique leurs résultats. Elle ne recalcule pas les indicateurs, ne prend pas les décisions sportives et ne pilote pas directement les modifications du planning.
+
+Conséquences de conception :
+- les services Coach sont les propriétaires des règles et calculs ;
+- les API et écrans peuvent appeler ces services sans dépendance à l'IA ;
+- les outils IA sont des adaptateurs fins (validation d'entrée, appel du service, sérialisation contrôlée) ;
+- les accès SQL directs et agrégations métier dans les modules `opencoach.ai` sont des écarts à corriger progressivement ;
+- préserver les noms, schémas d'arguments et payloads des outils durant les refactorings lorsque possible ;
+- si aucun service métier existant ne couvre un besoin, créer/compléter un service dans le domaine Coach, avec tests, plutôt que coder le calcul dans l'IA.
+
+Le plan détaillé de reprise, l'état Git et les constats techniques sont consignés dans `docs/REPRISE_REFACTOR_ARCHITECTURE.md`.

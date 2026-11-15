@@ -304,6 +304,11 @@ def build_coach_execution_plan(
                 PlannedToolCall("weekly_plan_context", {}),
                 PlannedToolCall("athlete_training_profile", {}),
             ))
+            # Une douleur ne doit pas faire disparaître l'objectif de course :
+            # le calendrier reste nécessaire pour adapter la séance sans perdre
+            # la perspective de l'échéance sportive.
+            if "race_calendar" in selected:
+                safety_calls.append(PlannedToolCall("race_calendar", {}))
         elif "recovery_status" in selected:
             safety_calls.append(PlannedToolCall("recovery_status", safety_arguments))
         return CoachExecutionPlan(tuple(safety_calls))

@@ -264,8 +264,8 @@ def build_coach_execution_plan(
 
     # Une blessure ou une douleur impose d'abord la lecture des restrictions enregistrées.
     injury_terms = ("douleur", "mal au", "mal a", "tendon", "blessure", "blesse", "malade", "maladie", "indisponible")
-    if "active_constraints" in selected and any(term in normalized for term in injury_terms):
-        target_date = extract_activity_date(question, reference_date)
+    if "active_constraints" in selected and any(term in intent_context for term in injury_terms):
+        target_date = extract_activity_date(intent_context, reference_date)
         safety_arguments = (
             {"target_date": target_date.isoformat()}
             if target_date is not None and target_date != reference_date
@@ -284,7 +284,7 @@ def build_coach_execution_plan(
             # Une demande de séance avec douleur exige ensuite le contexte complet
             # pour adapter le conseil, pas seulement un statut Readiness isolé.
             explicit_load_request = any(
-                term in normalized for term in ("charge", "mon atl", "ctl", "tsb")
+                term in intent_context for term in ("charge", "mon atl", "ctl", "tsb")
             )
             requested_periods = extract_explicit_periods(
                 conversation_users, assistant_history

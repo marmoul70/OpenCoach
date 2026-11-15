@@ -893,3 +893,35 @@ def test_detailed_coach_style_expands_explanation_without_returning_to_metric_li
     assert "Le style détaillé peut développer davantage l'explication" in prompt
     assert "ne doit jamais redevenir un inventaire de métriques" in prompt
     assert "N’affiche ni tableau ni liste de métriques" in prompt
+
+
+
+def test_coach_output_gate_rejects_metric_lists_and_uninterpreted_openings():
+    from opencoach.api.ai import _coach_response_needs_rewrite
+
+    metric_dump = (
+        "Voici ton bilan :\n"
+        "- Distance : 48 km\n"
+        "- Durée : 5,8 heures\n"
+        "- Dénivelé : 1 250 m"
+    )
+    assert _coach_response_needs_rewrite("Analyse ma semaine.", metric_dump) is True
+    assert _coach_response_needs_rewrite(
+        "Analyse ma semaine.",
+        "La distance est de 48 km et la durée de 5,8 heures.",
+    ) is True
+
+
+def test_coach_output_gate_accepts_natural_coaching_and_explicit_data_requests():
+    from opencoach.api.ai import _coach_response_needs_rewrite
+
+    coaching_answer = (
+        "Ta semaine est cohérente, mais ta récupération reste insuffisante. "
+        "Je te conseille de remplacer le fractionné par un footing facile."
+    )
+    numeric_answer = (
+        "Tu as réalisé 48 km en 5,8 heures, avec 1 250 m de dénivelé."
+    )
+
+    assert _coach_response_needs_rewrite("Analyse ma semaine.", coaching_answer) is False
+    assert _coach_response_needs_rewrite("Combien de kilomètres ai-je couru ?", numeric_answer) is False

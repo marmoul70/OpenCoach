@@ -306,7 +306,10 @@ def build_coach_execution_plan(
                 ),
                 PlannedToolCall("training_load", {"nb_days": load_period}),
                 PlannedToolCall("recovery_analysis", {}),
-                PlannedToolCall("recovery_status", safety_arguments),
+                # La date cible de la séance/douleur sert aux contraintes,
+                # mais la décision d'entraînement doit s'appuyer sur la
+                # récupération disponible aujourd'hui, comme recovery_analysis.
+                PlannedToolCall("recovery_status", {}),
                 PlannedToolCall("next_planned_session", {}),
                 PlannedToolCall("weekly_plan_context", {}),
                 PlannedToolCall("athlete_training_profile", {}),

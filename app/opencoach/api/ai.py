@@ -648,7 +648,7 @@ _COACH_UNIT_CLAIM = re.compile(
 )
 _COACH_BULLET_LINE = re.compile(r"(?m)^\s*(?:[-*•]|\d+[.)])\s+")
 _COACH_STRUCTURED_DATA = re.compile(
-    r"(?:\{\s*["']?[a-z_]+["']?\s*:|["'][a-z_]+["']?\s*:\s*(?:\d|["'{]))",
+    r"""(?:\{\s*["']?[a-z_]+["']?\s*:|["'][a-z_]+["']?\s*:\s*(?:\d|["'{]))""",
     re.IGNORECASE,
 )
 

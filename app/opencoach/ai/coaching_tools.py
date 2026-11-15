@@ -9,10 +9,9 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from opencoach.ai.tool_engine import AITool
 from opencoach.database.repositories import (
     RaceRepository,
-    TrainingSessionRepository,
     WeeklyTrainingPlanRepository,
 )
-from opencoach.services import TrainingProfileContextService
+from opencoach.services import TrainingProfileContextService, PlannedTrainingService
 
 
 class EmptyArguments(BaseModel):
@@ -153,24 +152,15 @@ def build_race_calendar_tool(
 
 
 def build_planned_sessions_tool(
-    training_session_repository: TrainingSessionRepository,
-    athlete_profile_id: UUID,
+    planned_training_service: PlannedTrainingService,
 ) -> AITool:
     """Expose les séances planifiées sur une fenêtre explicitement demandée."""
 
     def execute(arguments: BaseModel) -> dict:
-        sessions = training_session_repository.list_sessions_between(
-            athlete_profile_id,
+        sessions, summary = planned_training_service.list_between(
             arguments.start_date,
             arguments.end_date,
         )
-
-        distance_values = [
-            item.distance_km for item in sessions if item.distance_km is not None
-        ]
-        elevation_values = [
-            item.elevation_gain_m for item in sessions if item.elevation_gain_m is not None
-        ]
         return {
             "status": "ok" if sessions else "empty",
             "period": {
@@ -179,19 +169,7 @@ def build_planned_sessions_tool(
                 "inclusive": True,
             },
             "session_count": len(sessions),
-            "summary": {
-                "duration_minutes": sum(item.duration_minutes for item in sessions),
-                "distance_km": (
-                    round(sum(distance_values), 2)
-                    if sessions and len(distance_values) == len(sessions) else None
-                ),
-                "distance_coverage": f"{len(distance_values)}/{len(sessions)}",
-                "elevation_gain_m": (
-                    round(sum(elevation_values), 1)
-                    if sessions and len(elevation_values) == len(sessions) else None
-                ),
-                "elevation_coverage": f"{len(elevation_values)}/{len(sessions)}",
-            },
+            "summary": summary,
             "sessions": [
                 {
                     "session_id": str(item.id),
@@ -237,24 +215,12 @@ def build_planned_sessions_tool(
 
 
 def build_next_planned_session_tool(
-    training_session_repository: TrainingSessionRepository,
-    athlete_profile_id: UUID,
-    *,
-    reference_date_provider=date.today,
+    planned_training_service: PlannedTrainingService,
 ) -> AITool:
     """Retourne la prochaine séance encore planifiée de l'athlète."""
 
     def execute(_: BaseModel) -> dict:
-        reference_date = reference_date_provider()
-        candidates = training_session_repository.list_sessions_between(
-            athlete_profile_id,
-            reference_date,
-            reference_date + timedelta(days=365),
-        )
-        item = next(
-            (candidate for candidate in candidates if candidate.status == "planned"),
-            None,
-        )
+        reference_date, item = planned_training_service.next_planned()
         if item is None:
             return {
                 "status": "empty",

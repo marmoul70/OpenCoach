@@ -172,6 +172,36 @@ Il ne faut pas fusionner ces services sur la seule base du mot « charge ». En 
 
 `app/opencoach/api/coach.py` importait deux fois `get_db` depuis `opencoach.database.session`. Le doublon d'import a été supprimé dans un commit dédié. Aucun endpoint, contrat ou calcul métier n'a été modifié.
 
+## 5 ter. Audit ciblé de l'entrée IA et du routage
+
+### Constat sur `api/ai.py`
+
+Le module fait 1 532 lignes et mélange plusieurs responsabilités vérifiées dans le fichier :
+- modèles Pydantic de requêtes/réponses et préférences ;
+- construction des prompts et budgets de réponse ;
+- composition du registre d'outils ;
+- endpoints de préférences, statut, propositions de données et chat ;
+- orchestration des appels et traitement des réponses ;
+- règles de qualité, fallbacks, filtrage et sérialisation des résultats.
+
+C'est un candidat prioritaire pour une réduction de responsabilités, mais une extraction massive immédiate serait risquée : les fallbacks et garde-fous sont directement liés au comportement conversationnel et aux données métier. Le premier lot devra extraire uniquement des blocs autonomes, conserver les routes et fonctions importées par les tests, et vérifier les contrats HTTP.
+
+### Routage et plan d'exécution
+
+`tool_routing.py` sélectionne le catalogue d'outils à présenter au modèle et filtre les outils qui exigent une période explicite. `execution_plan.py` construit des appels déterministes et leurs arguments. Leurs rôles ne sont donc pas identiques.
+
+Les deux modules possèdent toutefois chacun leur fonction de normalisation Unicode, et importent tous deux les fonctions d'extraction de preuves temporelles. Il faut vérifier les différences de normalisation et les usages avant de mutualiser quoi que ce soit. La priorité est d'éviter deux interprétations divergentes d'une même demande, sans perdre les contrôles conservateurs du routeur.
+
+### Registre d'outils
+
+`tool_engine.py` constitue une liste blanche explicite, valide les arguments, limite les outils autorisés, conserve les résultats et gère un cache d'exécution. Ce composant est une frontière de sécurité ; il ne doit pas être fusionné avec le routeur ou l'API. Toute simplification devra préserver l'interdiction d'exécuter une fonction arbitraire fournie par le modèle.
+
+### Nettoyage complémentaire
+
+Dans `api/coach.py`, les deux imports distincts depuis `api.coaching.dependencies` ont été regroupés en un seul bloc. Le contrôle statique des imports exacts ne détecte plus de doublon dans `api/coach.py` ni `api/ai.py`.
+
+Les imports locaux de `api/coaching/dependencies.py` sont volontairement placés dans certaines fonctions de composition. Ils peuvent éviter des imports circulaires ou retarder le chargement de composants optionnels ; ils ne doivent pas être remontés globalement sans analyse des dépendances.
+
 ## 6. Architecture cible minimale
 
 - **API** : authentification, validation des entrées, appel des services, sérialisation des réponses.

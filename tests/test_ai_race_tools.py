@@ -1,5 +1,4 @@
-from datetime import date, datetime
-from types import SimpleNamespace
+from datetime import date
 from uuid import uuid4
 
 from sqlalchemy import create_engine
@@ -13,19 +12,7 @@ from opencoach.database.base import Base
 from opencoach.database.repositories import SqlProfileRepository, SqlRaceRepository
 from opencoach.services import ProfileService, RacePreparationService
 from opencoach.database.models import AthleteProfile, Race, User
-from opencoach.models import Activity
 from opencoach.training.stats import TrainingStats
-
-
-class FakeRepository:
-    def __init__(self, items):
-        self.items = items
-
-    def list_activities_between(self, athlete_profile_id, start_date, end_date):
-        return self.items
-
-    def list_sessions_between(self, athlete_profile_id, start_date, end_date):
-        return self.items
 
 
 class FakeTrainingStatsService:
@@ -103,35 +90,6 @@ def test_race_preparation_analysis_returns_course_and_complete_training_metrics(
     with Session(engine) as session:
         profile = _profile(session, "race-prep")
         race = _race(session, profile.id)
-        activity = Activity(
-            provider="coros",
-            provider_activity_id="activity-1",
-            name="Sortie trail",
-            sport_type="trail_running",
-            start_at=datetime(2026, 11, 8, 8, 0),
-            moving_time_seconds=7200,
-            distance_m=15000,
-            elevation_gain_m=700,
-            training_load=60,
-        )
-        manual = [
-            SimpleNamespace(
-                status="completed",
-                activity_id=None,
-                type="trail",
-                duration_minutes=90,
-                distance_km=12,
-                elevation_gain_m=500,
-            ),
-            SimpleNamespace(
-                status="completed",
-                activity_id=None,
-                type="endurance",
-                duration_minutes=90,
-                distance_km=15,
-                elevation_gain_m=600,
-            ),
-        ]
         stats = _stats()
         service = FakeTrainingStatsService(stats)
         result = build_race_preparation_tool(
@@ -168,27 +126,6 @@ def test_race_preparation_masks_partial_metrics_instead_of_extrapolating():
     with Session(engine) as session:
         profile = _profile(session, "race-partial")
         race = _race(session, profile.id)
-        activity = Activity(
-            provider="coros",
-            provider_activity_id="activity-1",
-            name="Sortie incomplète",
-            sport_type="trail_running",
-            start_at=datetime(2026, 11, 8, 8, 0),
-            moving_time_seconds=3600,
-            distance_m=None,
-            elevation_gain_m=300,
-            training_load=None,
-        )
-        manual = [
-            SimpleNamespace(
-                status="completed",
-                activity_id=None,
-                type="trail",
-                duration_minutes=60,
-                distance_km=10,
-                elevation_gain_m=200,
-            )
-        ]
         partial_stats = TrainingStats(
             start_date=date(2026, 10, 13),
             end_date=date(2026, 11, 9),

@@ -27,7 +27,6 @@ from opencoach.database.repositories import (
 from opencoach.services import (
     PlannedTrainingService,
     ProfileService,
-    ProfileService,
 )
 from opencoach.database.models import (
     AthleteProfile as AthleteProfileModel,

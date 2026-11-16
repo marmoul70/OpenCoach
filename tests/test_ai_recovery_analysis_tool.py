@@ -169,7 +169,7 @@ def test_recovery_analysis_merges_complementary_metrics_from_all_opencoach_impor
             sleep_seconds=6 * 3600,
         ),
     ])
-    tool = build_recovery_analysis_tool(
+    tool = build_tool(
         wellness,
         FakeDailyContextRepository(),
         FakeDailyCheckInRepository(),

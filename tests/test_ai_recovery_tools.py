@@ -2,7 +2,9 @@ from datetime import date
 from types import SimpleNamespace
 from uuid import uuid4
 
-from opencoach.ai.recovery_tools import (
+from opencoach.readiness import ReadinessService
+
+        from opencoach.ai.recovery_tools import (
     RecoveryStatusArguments,
     build_recovery_status_tool,
 )
@@ -124,7 +126,7 @@ def test_recovery_analysis_compacts_per_day_metric_provenance(monkeypatch):
         for offset in range(30)
     }
     monkeypatch.setattr(
-        "opencoach.wellness_aggregation.aggregate_wellness_days",
+        "opencoach.readiness.service.aggregate_wellness_days",
         lambda _days: SimpleNamespace(days=(), metric_sources=metric_sources, conflicts={}),
     )
 
@@ -140,12 +142,12 @@ def test_recovery_analysis_compacts_per_day_metric_provenance(monkeypatch):
         def get_for_date(self, *_args):
             return None
 
-    tool = build_recovery_analysis_tool(
+    service = ReadinessService(
         EmptyWellnessRepository(),
-        EmptyDailyContextRepository(),
-        EmptyDailyCheckinRepository(),
-        uuid4(),
+        daily_context_repository=EmptyDailyContextRepository(),
+        daily_checkin_repository=EmptyDailyCheckinRepository(),
     )
+    tool = build_recovery_analysis_tool(service, uuid4())
     result = tool.handler(RecoveryAnalysisArguments(target_date=target_date))
 
     assert result["metric_sources"] == {

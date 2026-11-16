@@ -9,7 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from opencoach.ai.data_proposals import (
+from opencoach.coaching.profile_data_proposals import (
     AIDataProposalCreate,
     confirm_profile_data_proposal,
     create_profile_data_proposal,

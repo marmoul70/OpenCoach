@@ -7,7 +7,7 @@ from typing import Any, Callable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from opencoach.ai.data_proposals import (
+from opencoach.coaching.profile_data_proposals import (
     AIDataProposalCreate,
 )
 from opencoach.ai.tool_engine import AITool

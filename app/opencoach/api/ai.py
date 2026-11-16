@@ -19,7 +19,7 @@ from opencoach.ai.observability import (
     new_ai_trace_id,
 )
 from opencoach.ai.data_collection_tools import build_profile_data_proposal_tool
-from opencoach.ai.data_proposals import (
+from opencoach.coaching.profile_data_proposals import (
     AIDataProposalCreate,
     AIDataProposalResponse,
     confirm_profile_data_proposal,

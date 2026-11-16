@@ -29,6 +29,7 @@ from opencoach.ai.activity_tools import ActivityDetailArguments
 from opencoach.ai.constraints_tools import ActiveConstraintsArguments
 from opencoach.ai.execution_tools import SessionExecutionReviewArguments
 from opencoach.ai.coaching_tools import (
+    CoachDecisionArguments,
     EmptyArguments,
     PlannedSessionsArguments,
     RaceCalendarArguments,
@@ -60,6 +61,7 @@ ARGUMENT_MODELS = {
     "activity_detail": ActivityDetailArguments,
     "planned_sessions": PlannedSessionsArguments,
     "next_planned_session": EmptyArguments,
+    "coach_decision": CoachDecisionArguments,
     "session_execution_review": SessionExecutionReviewArguments,
     "weekly_plan_context": WeeklyPlanContextArguments,
 }
@@ -140,6 +142,11 @@ TOOL_DESCRIPTIONS = {
         "Retourne la prochaine séance future ou du jour au statut planned, "
         "pour l’athlète authentifié. Aucun paramètre requis. Si aucune séance "
         "n’est planifiée, indique-le sans inventer de séance."
+    ),
+    "coach_decision": (
+        "Retourne la décision calculée par CoachDecisionService pour la prochaine séance "
+        "ou une date demandée : conserver, réduire, remplacer ou repos. Ne recalcule pas "
+        "les seuils et ne modifie pas l'action déterminée par le Coach."
     ),
     "planned_sessions": (
         "Retourne les séances planifiées ou enregistrées dans OpenCoach entre "

@@ -170,7 +170,7 @@ def build_coach_execution_plan(
     if clarification_follow_up:
         for message in reversed(history[-8:]):
             normalized_message = _normalize(message)
-            if any(marker in normalized_message for marker in intent_markers):
+            if has_coach_intent(normalized_message):
                 prior_intent = message
                 break
             # Seuls les tours intermédiaires contenant un paramètre explicite

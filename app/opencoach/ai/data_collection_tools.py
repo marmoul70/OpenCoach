@@ -6,7 +6,7 @@ from typing import Any, Callable
 
 from pydantic import Field
 
-from opencoach.ai.tool_engine import AITool
+from opencoach.coaching.capabilities.registry import CoachCapability as AITool
 from opencoach.coaching.profile_data_evidence import validate_profile_proposal_evidence
 from opencoach.coaching.profile_data_proposals import AIDataProposalCreate
 

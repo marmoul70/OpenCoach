@@ -31,5 +31,10 @@ class AIService:
             raise AIServiceDisabledError(
                 "Le moteur IA est désactivé. Activez OPENCOACH_AI_ENABLED explicitement."
             )
+        if request.tools:
+            raise ValueError(
+                "Le moteur IA ne peut pas sélectionner ni exécuter les capacités Coach. "
+                "Le plan d'exécution déterministe doit fournir les résultats à synthétiser."
+            )
         async with self._semaphore:
             return await self.client.chat(request)

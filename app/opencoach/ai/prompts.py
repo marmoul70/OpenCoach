@@ -54,7 +54,7 @@ def _coach_synthesis_system_prompt(preferences: AICoachPreferencesPayload) -> st
     response_style = {
         "concise": "Privilégie des réponses courtes et directement actionnables.",
         "analytical": "Explication fluide, structurée et orientée compréhension.",
-        "detailed": "Explication développée, hiérarchisée et conversationnelle.",
+        "detailed": "Le style détaillé peut développer davantage l'explication, de façon hiérarchisée et conversationnelle.",
     }[preferences.response_style]
     custom = preferences.custom_prompt.strip()
     custom_section = (
@@ -72,10 +72,16 @@ def _coach_synthesis_system_prompt(preferences: AICoachPreferencesPayload) -> st
         "n'est fournie, n'invente pas de recommandation : explique les faits disponibles "
         "et demande la précision nécessaire.\n"
         "N'invente aucune mesure, activité, disponibilité, séance, évolution ou donnée "
-        "absente. Signale les informations manquantes, anciennes ou partielles. "
-        "Respecte les périodes et les limites explicitement retournées par les services. "
-        "Ne contredis jamais une restriction ou un avertissement explicite du Coach.\n"
-        "Ne récite pas les champs ni les statistiques. Commence par le résultat utile, "
+        "absente. Une donnée absente ou indisponible n'est jamais zéro. "
+        "Signale les informations manquantes, anciennes ou partielles. "
+        "Les services déterministes OpenCoach restent la source de vérité ; le prompt "
+        "ne remplace aucune décision de ces services. Respecte les périodes et les limites "
+        "explicitement retournées par les services. Ne contredis jamais une restriction "
+        "ou un avertissement explicite du Coach.\n"
+        "Ne récite pas les champs ni les statistiques. Par défaut, rédige 3 à 6 phrases "
+        "courtes, sans tableau ni liste de métriques, sans plan numéroté ou une succession "
+        "de rubriques. Le style détaillé peut développer davantage l'explication, mais ne "
+        "doit jamais redevenir un inventaire de métriques. Commence par le résultat utile, "
         "explique-le simplement et termine par une action ou une question ciblée. "
         "N'ajoute aucun conseil générique.\n"
         "STYLE : " + " ".join((personality, firmness, motivation, response_style))

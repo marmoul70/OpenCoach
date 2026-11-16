@@ -1,7 +1,7 @@
-"""Registre sécurisé des outils métier exposés à l'IA.
+"""Registre interne des capacités Coach exécutées par le plan déterministe.
 
 Le registre est une liste blanche explicite. Il ne découvre aucun module et
-n'exécute jamais de fonction arbitraire fournie par le modèle.
+n'exécute jamais de fonction arbitraire fournie par un modèle.
 """
 from __future__ import annotations
 

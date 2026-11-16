@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from opencoach.ai.tool_engine import AITool
+from opencoach.coaching.capabilities.registry import CoachCapability as AITool
 from opencoach.planning import PlanningContextService
 
 

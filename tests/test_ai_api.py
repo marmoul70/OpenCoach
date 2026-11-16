@@ -779,6 +779,7 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
             "race_preparation_analysis",
             "planned_sessions",
             "next_planned_session",
+            "coach_decision",
             "session_execution_review",
             "activity_detail",
             "training_history",

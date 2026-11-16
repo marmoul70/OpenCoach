@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from uuid import UUID
 
 from opencoach.database.repositories import (
@@ -179,6 +179,51 @@ class TrainingStatsService:
             measured_load_data_count=measured_load_data_count,
             estimated_load_data_count=estimated_load_data_count,
         )
+
+    def compare_adjacent_periods(
+        self,
+        athlete_profile_id: UUID,
+        *,
+        reference_date: date,
+        current_days: int,
+        comparison_days: int,
+    ) -> dict:
+        """Compare deux périodes successives de statistiques d'entraînement.
+
+        Les fenêtres sont ancrées sur la veille de reference_date afin de ne
+        comparer que des journées entièrement écoulées. La couverture et les
+        écarts restent ceux du modèle TrainingStats.
+        """
+        if not 1 <= current_days <= 180:
+            raise ValueError("La période récente doit être comprise entre 1 et 180 jours.")
+        if not 1 <= comparison_days <= 180:
+            raise ValueError("La période de comparaison doit être comprise entre 1 et 180 jours.")
+
+        current_end = reference_date - timedelta(days=1)
+        current_start = current_end - timedelta(days=current_days - 1)
+        comparison_end = current_start - timedelta(days=1)
+        comparison_start = comparison_end - timedelta(days=comparison_days - 1)
+
+        current = self.calculate(athlete_profile_id, current_start, current_end)
+        comparison = self.calculate(athlete_profile_id, comparison_start, comparison_end)
+        comparison_result = current.compare_to(comparison)
+
+        return {
+            "current_period": {
+                "start_date": current.start_date.isoformat(),
+                "end_date": current.end_date.isoformat(),
+                "nb_days": current_days,
+                "sessions": current.sessions_count,
+            },
+            "comparison_period": {
+                "start_date": comparison.start_date.isoformat(),
+                "end_date": comparison.end_date.isoformat(),
+                "nb_days": comparison_days,
+                "sessions": comparison.sessions_count,
+            },
+            "metrics": comparison_result["metrics"],
+            "warnings": comparison_result["warnings"],
+        }
 
     @staticmethod
     def _is_manual_completed_session(

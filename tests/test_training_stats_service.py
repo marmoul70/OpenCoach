@@ -317,3 +317,52 @@ def test_training_stats_compare_to_uses_shared_coverage_and_suppresses_unreliabl
         "status": "insufficient_coverage",
     }
     assert len(result["warnings"]) == 1
+
+
+
+def test_compare_adjacent_periods_owns_window_calculation_and_comparison():
+    athlete_id = uuid4()
+    activity_repository = FakeActivityRepository([])
+    session_repository = FakeTrainingSessionRepository([])
+    service = TrainingStatsService(activity_repository, session_repository)
+
+    result = service.compare_adjacent_periods(
+        athlete_id,
+        reference_date=date(2026, 11, 9),
+        current_days=7,
+        comparison_days=14,
+    )
+
+    assert result["current_period"] == {
+        "start_date": "2026-11-02",
+        "end_date": "2026-11-08",
+        "nb_days": 7,
+        "sessions": 0,
+    }
+    assert result["comparison_period"] == {
+        "start_date": "2026-10-19",
+        "end_date": "2026-11-01",
+        "nb_days": 14,
+        "sessions": 0,
+    }
+    assert activity_repository.calls == [
+        (athlete_id, date(2026, 11, 2), date(2026, 11, 8)),
+        (athlete_id, date(2026, 10, 19), date(2026, 11, 1)),
+    ]
+    assert result["metrics"]["distance_km"]["trend"]["status"] == "insufficient_coverage"
+
+
+def test_compare_adjacent_periods_rejects_invalid_domain_windows():
+    import pytest
+
+    service = TrainingStatsService(
+        FakeActivityRepository([]),
+        FakeTrainingSessionRepository([]),
+    )
+    with pytest.raises(ValueError):
+        service.compare_adjacent_periods(
+            uuid4(),
+            reference_date=date(2026, 11, 9),
+            current_days=0,
+            comparison_days=7,
+        )

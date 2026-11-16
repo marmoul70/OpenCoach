@@ -40,6 +40,10 @@ def recommendation_execution_block_message(
 
     constraints = results["active_constraints"].data
     restriction = constraints.get("running_restriction")
-    return blocked_running_recommendation_message(
-        restriction if isinstance(restriction, Mapping) else None
-    )
+    if not isinstance(restriction, Mapping) or type(restriction.get("blocked")) is not bool:
+        return (
+            "Les contraintes OpenCoach n'ont pas fourni un état de restriction "
+            "exploitable. Je ne peux pas recommander de séance avant de pouvoir "
+            "vérifier ces informations."
+        )
+    return blocked_running_recommendation_message(restriction)

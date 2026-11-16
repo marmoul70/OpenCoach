@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 from uuid import UUID
 
+from opencoach.coaching.constraint_impact import evaluate_running_restriction
 from opencoach.database.repositories import (
     AthleteConstraintRepository,
     RaceRepository,
@@ -155,10 +156,16 @@ class PlanningContextService:
             effective_date,
             effective_date,
         )
+        restriction = evaluate_running_restriction(tuple(constraints))
         return {
             "status": "ok" if constraints else "empty",
             "target_date": effective_date.isoformat(),
             "constraint_count": len(constraints),
+            "running_restriction": {
+                "blocked": restriction.blocked,
+                "cross_training_allowed": restriction.cross_training_allowed,
+                "message": restriction.message,
+            },
             "constraints": [
                 {
                     "constraint_id": str(item.id),

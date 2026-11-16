@@ -46,7 +46,7 @@ from opencoach.ai.prompts import (
 )
 from opencoach.ai.service import AIService, AIServiceDisabledError
 from opencoach.ai.tool_engine import AIToolRegistry
-from opencoach.ai.execution_plan import build_coach_execution_plan
+from opencoach.coaching.assistant.execution_plan import build_coach_execution_plan
 from opencoach.database.session import get_db
 from opencoach.database.repositories import SqlActivityDetailRepository
 from opencoach.services import (

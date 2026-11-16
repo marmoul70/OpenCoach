@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from opencoach.ai.tool_engine import AITool
-from opencoach.database.repositories import DailyCheckInRepository
+from opencoach.database.repositories.daily_checkin import DailyCheckInRepository
 from opencoach.readiness import (
     ReadinessDataUnavailableError,
     ReadinessService,

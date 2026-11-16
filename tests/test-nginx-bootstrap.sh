@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
-
 set -Eeuo pipefail
 
-PROJECT_ROOT="$(
-    cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
-    pwd
-)"
-
+PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 PACKAGES="$PROJECT_ROOT/scripts/lib/packages.sh"
 INSTALL_APP="$PROJECT_ROOT/scripts/bootstrap/install-application.sh"
 INSTALL_SERVICES="$PROJECT_ROOT/scripts/bootstrap/install-services.sh"
@@ -16,11 +11,9 @@ NGINX_CONFIG="$PROJECT_ROOT/nginx/opencoach.conf"
 passed=0
 failed=0
 
-
 check() {
     local description="$1"
     shift
-
     if "$@"; then
         printf '[ OK ] %s\n' "$description"
         passed=$((passed + 1))
@@ -30,84 +23,48 @@ check() {
     fi
 }
 
-
 check_nginx_package() {
-    grep -Eq \
-        '^[[:space:]]+nginx$' \
-        "$PACKAGES"
+    grep -Eq '^[[:space:]]+nginx$' "$PACKAGES"
 }
-
 
 check_frontend_build() {
-    grep -Fq \
-        'npm run build' \
-        "$INSTALL_APP"
+    grep -Fq 'npm run build' "$INSTALL_APP"
 }
-
 
 check_backend_loopback() {
-    grep -Fq \
-        -- '--host 127.0.0.1 --port 8000' \
-        "$BACKEND_SERVICE"
+    grep -Fq -- '--host 127.0.0.1 --port 8000' "$BACKEND_SERVICE"
 }
-
 
 check_nginx_proxy() {
-    grep -Fq \
-        'proxy_pass http://127.0.0.1:8000;' \
-        "$NGINX_CONFIG"
+    grep -Fq 'proxy_pass http://127.0.0.1:8000;' "$NGINX_CONFIG"
 }
-
 
 check_nginx_spa_fallback() {
-    grep -Fq \
-        'try_files $uri $uri/ /index.html;' \
-        "$NGINX_CONFIG"
+    grep -Fq 'try_files $uri $uri/ /index.html;' "$NGINX_CONFIG"
 }
 
+check_nginx_api_upload_limit() {
+    grep -A 5 -F 'location /api/ {' "$NGINX_CONFIG" | grep -Fq 'client_max_body_size 100m;'
+}
 
 check_nginx_installation() {
-    grep -Fq \
-        'install_nginx_configuration()' \
-        "$INSTALL_SERVICES" \
-        && grep -Fq \
-            'nginx -t' \
-            "$INSTALL_SERVICES"
+    grep -Fq 'install_nginx_configuration()' "$INSTALL_SERVICES" &&
+        grep -Fq 'nginx -t' "$INSTALL_SERVICES"
 }
 
+check "nginx est une dépendance système" check_nginx_package
+check "le frontend est compilé pendant le bootstrap" check_frontend_build
+check "FastAPI production écoute uniquement sur localhost" check_backend_loopback
+check "Nginx proxifie /api vers FastAPI" check_nginx_proxy
+check "Nginx supporte le fallback SPA" check_nginx_spa_fallback
+check "les routes API acceptent les archives de sauvegarde jusqu'à 100 Mo" check_nginx_api_upload_limit
+check "le bootstrap installe et valide Nginx" check_nginx_installation
 
-check \
-    "nginx est une dépendance système" \
-    check_nginx_package
-
-check \
-    "le frontend est compilé pendant le bootstrap" \
-    check_frontend_build
-
-check \
-    "FastAPI production écoute uniquement sur localhost" \
-    check_backend_loopback
-
-check \
-    "Nginx proxifie /api vers FastAPI" \
-    check_nginx_proxy
-
-check \
-    "Nginx supporte le fallback SPA" \
-    check_nginx_spa_fallback
-
-check \
-    "le bootstrap installe et valide Nginx" \
-    check_nginx_installation
-
-
-printf '\n'
-printf 'Tests réussis : %d\n' "$passed"
+printf '\nTests réussis : %d\n' "$passed"
 printf 'Tests échoués : %d\n' "$failed"
 
 if (( failed > 0 )); then
     exit 1
 fi
 
-printf '\n'
-printf '[ OK ] Tous les tests Nginx sont réussis.\n'
+printf '\n[ OK ] Tous les tests Nginx sont réussis.\n'

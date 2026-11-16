@@ -1,6 +1,6 @@
 from datetime import date
 
-from opencoach.ai.execution_plan import build_coach_execution_plan
+from opencoach.coaching.assistant.execution_plan import build_coach_execution_plan
 
 
 REFERENCE_DATE = date(2026, 11, 10)

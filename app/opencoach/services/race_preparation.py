@@ -13,6 +13,8 @@ from opencoach.training import TrainingStatsService
 
 
 class RacePreparationService:
+    DEFAULT_CALENDAR_HORIZON_DAYS = 180
+
     """Confronte les exigences d'une course à l'entraînement réellement observé."""
 
     def __init__(
@@ -37,7 +39,7 @@ class RacePreparationService:
         horizon_days: int | None = None,
     ) -> dict:
         """Retourne le calendrier de courses de l'athlète sur une fenêtre inclusive."""
-        effective_horizon = 180 if horizon_days is None else horizon_days
+        effective_horizon = self.DEFAULT_CALENDAR_HORIZON_DAYS if horizon_days is None else horizon_days
         if not 1 <= effective_horizon <= 365:
             raise ValueError("L'horizon du calendrier doit être compris entre 1 et 365 jours.")
 

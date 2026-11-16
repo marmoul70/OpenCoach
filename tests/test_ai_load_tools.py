@@ -221,6 +221,10 @@ def test_training_load_argument_schema_delegates_period_limits_to_coach_service(
     assert TrainingLoadArguments(nb_days=0).nb_days == 0
     assert TrainingLoadArguments(nb_days=91).nb_days == 91
 
+def test_training_load_argument_schema_leaves_default_period_to_domain():
+    assert TrainingLoadArguments().nb_days is None
+
+
 
 def test_training_load_tool_hides_partial_total_and_marks_daily_status_unreliable():
     class PartialStatsService(_CalculateDaysMixin):

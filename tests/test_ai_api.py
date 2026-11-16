@@ -557,7 +557,7 @@ def test_coach_prompt_keeps_fixed_rules_and_applies_custom_style() -> None:
     assert "Chaque conseil doit découler d'un fait disponible" in prompt
     assert "ne jamais s'arrêter au milieu d'une phrase" in prompt
     assert "Exception : lorsqu'une comparaison de deux périodes est demandée" in prompt
-    assert "le plan d'exécution déterministe Python peut déjà fournir explicitement nb_days=7" in prompt
+    assert "le domaine Coach applique alors sa fenêtre par défaut" in prompt
 
     assert "entraîneur virtuel personnel" in prompt
     assert "L'objectif n'est pas de réciter des champs JSON" in prompt

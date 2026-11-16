@@ -13,7 +13,7 @@ def test_history_period_is_extracted_and_planned_without_model_tool_calling():
     )
     assert plan.clarification is None
     assert [(call.name, call.arguments) for call in plan.calls] == [
-        ("training_history", {})
+        ("training_history", {"nb_days": 7})
     ]
 
 
@@ -34,7 +34,7 @@ def test_history_period_is_carried_from_the_clarification_turn():
         reference_date=REFERENCE_DATE,
     )
     assert [(call.name, call.arguments) for call in plan.calls] == [
-        ("training_history", {})
+        ("training_history", {"nb_days": 7})
     ]
 
 

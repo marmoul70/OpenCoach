@@ -201,13 +201,15 @@ def test_avoid_running_allows_pain_free_cross_training_only():
     assert result["checks"]["safety_pass"] is True
 
 
-def test_synthesis_prompt_explicitly_enforces_avoid_running_restriction():
+def test_synthesis_prompt_transmits_restriction_as_coach_data_not_prompt_policy():
     item = next(x for x in cases() if x["expected_action"] == "respect_pain_constraints")
     request = build_request(item, temperature=0.0, num_predict=256)
     system_prompt = request.messages[0].content
-    assert "avoid_running" in system_prompt
-    assert "aucune course" in system_prompt
-    assert "cross_training_allowed" in system_prompt
+    # La restriction provient du contexte structuré du Coach, pas d'une règle
+    # sportive codée dans le prompt de génération.
+    assert '"avoid_running"' in system_prompt
+    assert "Ne contredis jamais une restriction" in system_prompt
+    assert "cross_training_allowed" not in system_prompt
 
 
 def test_domain_guard_blocks_running_when_forbidden():

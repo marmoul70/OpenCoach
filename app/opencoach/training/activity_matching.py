@@ -211,9 +211,18 @@ def _normalize_sport(
 
     aliases = {
         "running": "run",
+        "run": "run",
         "trailrun": "run",
+        "trail run": "run",
         "trail running": "run",
         "trail": "run",
+        "course": "run",
+        "course a pied": "run",
+        "course à pied": "run",
+        "course extérieure": "run",
+        "course exterieure": "run",
+        "course sur tapis": "run",
+        "treadmill running": "run",
         "virtualride": "ride",
         "virtual ride": "ride",
         "cycling": "ride",

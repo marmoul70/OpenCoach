@@ -132,10 +132,11 @@ def get_recent_training_load_service(
 def get_coach_decision_service(
     readiness_service: ReadinessService = Depends(get_readiness_service),
     recent_load_service: RecentTrainingLoadService = Depends(get_recent_training_load_service),
+    training_stats_service: TrainingStatsService = Depends(get_training_stats_service),
 ) -> CoachDecisionService:
     """Construit la décision quotidienne à partir des services Coach canoniques."""
     return CoachDecisionService(
-        recent_load_service.comparison_service.training_session_repository,
+        training_stats_service.training_session_repository,
         readiness_service,
         recent_load_service=recent_load_service,
     )

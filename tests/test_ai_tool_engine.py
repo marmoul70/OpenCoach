@@ -423,3 +423,28 @@ def test_registry_does_not_retry_a_failed_exact_invocation():
     assert replay.metadata["replayed"] is True
     assert calls == [1]
     assert len(registry.execution_results) == 1
+
+
+
+def test_legacy_ai_tool_engine_is_a_strict_alias_of_coach_contract():
+    from typing import get_args
+
+    from opencoach.ai.tool_engine import ToolStatus as LegacyToolStatus
+    from opencoach.coaching.capabilities import (
+        CoachCapability as DomainCapability,
+        CoachCapabilityRegistry as DomainRegistry,
+        CoachCapabilityResult as DomainResult,
+        ToolStatus as DomainToolStatus,
+    )
+
+    assert AITool is DomainCapability
+    assert AIToolRegistry is DomainRegistry
+    assert LegacyToolStatus is DomainToolStatus
+    assert get_args(DomainToolStatus) == (
+        "ok",
+        "invalid_arguments",
+        "needs_clarification",
+        "not_found",
+        "failed",
+    )
+    assert DomainResult.__module__ == "opencoach.coaching.capabilities.registry"

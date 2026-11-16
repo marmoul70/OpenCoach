@@ -62,7 +62,10 @@ from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
     get_current_user_id,
 )
-from opencoach.api.coaching.dependencies import get_planning_context_service
+from opencoach.api.coaching.dependencies import (
+    build_coach_decision_service,
+    get_planning_context_service,
+)
 from opencoach.planning.service import PlanningContextService
 from opencoach.ai.registry import build_ai_tool_registry
 from opencoach.ai.response_synthesis import (
@@ -168,14 +171,22 @@ def get_ai_tool_registry(
     activity_repository = training_stats_service.activity_repository
     activity_detail_repository = SqlActivityDetailRepository(db)
 
+    planned_training_service = PlannedTrainingService(
+        training_session_repository,
+        athlete_profile_id,
+    )
+    coach_decision_service = build_coach_decision_service(
+        training_stats_service,
+        context_service.readiness_service,
+        context_service.recent_load_service,
+        planned_training_service=planned_training_service,
+    )
+
     return build_ai_tool_registry(
         athlete_profile_id=athlete_profile_id,
         training_stats_service=training_stats_service,
         context_service=context_service,
-        planned_training_service=PlannedTrainingService(
-            training_session_repository,
-            athlete_profile_id,
-        ),
+        planned_training_service=planned_training_service,
         race_preparation_service=RacePreparationService(
             context_service.race_repository,
             context_service.profile_service,
@@ -191,6 +202,7 @@ def get_ai_tool_registry(
             activity_repository=activity_repository,
             activity_detail_repository=activity_detail_repository,
         ),
+        coach_decision_service=coach_decision_service,
     )
 
 

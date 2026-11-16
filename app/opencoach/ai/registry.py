@@ -8,6 +8,7 @@ from opencoach.ai.argument_evidence import validate_period_argument_evidence
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.ai.activity_tools import build_activity_detail_tool
 from opencoach.ai.coaching_tools import (
+    build_coach_decision_tool,
     build_next_planned_session_tool,
     build_planned_sessions_tool,
     build_race_calendar_tool,
@@ -24,6 +25,7 @@ from opencoach.ai.recovery_tools import (
 )
 from opencoach.ai.training_tools import build_training_history_tool
 from opencoach.ai.trend_tools import build_training_trends_tool
+from opencoach.coaching import CoachDecisionService
 from opencoach.planning.service import PlanningContextService
 from opencoach.services import (
     ActivityDetailService,
@@ -45,6 +47,7 @@ def build_ai_tool_registry(
     race_preparation_service: RacePreparationService,
     activity_detail_service: ActivityDetailService,
     execution_review_service: ValidateTrainingSessionService,
+    coach_decision_service: CoachDecisionService,
 ) -> AIToolRegistry:
     """Assemble uniquement les adaptateurs ; la composition des repositories reste dans l'API."""
     registry = AIToolRegistry(argument_guard=validate_period_argument_evidence)
@@ -56,6 +59,7 @@ def build_ai_tool_registry(
     registry.register(build_race_preparation_tool(race_preparation_service))
     registry.register(build_planned_sessions_tool(planned_training_service))
     registry.register(build_next_planned_session_tool(planned_training_service))
+    registry.register(build_coach_decision_tool(coach_decision_service, athlete_profile_id))
     registry.register(
         build_session_execution_review_tool(
             execution_review_service,

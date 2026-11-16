@@ -159,3 +159,33 @@ def validate_profile_proposal_evidence(
     if not evidence or evidence not in "\\n".join(user_messages):
         return False
     return evidence_supports_profile_value(field_key, evidence, value)
+
+_NUMERIC_PROFILE_PROPOSAL_PATTERNS = (
+    (r"\\bma\\s+vma\\s+est\\s+de\\s+(\\d+(?:[.,]\\d+)?)\\s*km/?h\\b", "vma", "float"),
+    (r"\\b(?:mon\\s+poids\\s+est\\s+de|je\\s+pese)\\s+(\\d+(?:[.,]\\d+)?)\\s*kg\\b", "weight_kg", "float"),
+    (r"\\bma\\s+fc\\s+max(?:imale)?\\s+est\\s+de\\s+(\\d{2,3})\\s*(?:bpm)?\\b", "max_heart_rate", "int"),
+    (r"\\bma\\s+fc\\s+au\\s+repos\\s+est\\s+de\\s+(\\d{2,3})\\s*(?:bpm)?\\b", "resting_heart_rate", "int"),
+    (r"\\bje\\s+mesure\\s+(\\d{2,3})\\s*cm\\b", "height_cm", "int"),
+)
+
+
+def extract_numeric_profile_proposal(
+    message: str,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Construit une proposition numérique uniquement depuis une formulation explicite."""
+    normalized = message.casefold()
+    for pattern, field_key, value_type in _NUMERIC_PROFILE_PROPOSAL_PATTERNS:
+        match = re.search(pattern, normalized)
+        if match:
+            raw = match.group(1).replace(",", ".")
+            value = float(raw) if value_type == "float" else int(raw)
+            return {
+                "field_key": field_key,
+                "value": value,
+                "evidence": message.strip()[:200],
+            }, None
+    return None, (
+        "Je n'ai pas identifié de valeur de profil exploitable avec certitude. "
+        "Indique le champ et sa valeur avec son unité ; aucune donnée n'a été proposée."
+    )
+

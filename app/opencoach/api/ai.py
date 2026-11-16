@@ -45,7 +45,7 @@ from opencoach.ai.prompts import (
     _coach_synthesis_system_prompt,
 )
 from opencoach.ai.service import AIService, AIServiceDisabledError
-from opencoach.ai.tool_engine import AIToolRegistry
+from opencoach.coaching.capabilities.registry import CoachCapabilityRegistry as AIToolRegistry
 from opencoach.coaching.assistant.execution_plan import build_coach_execution_plan
 from opencoach.coaching.assistant.execution_safety import (
     recommendation_execution_block_message,
@@ -432,7 +432,6 @@ async def ask_local_ai_with_athlete_context(
                 user_messages=user_messages,
             )
         )
-        tool_registry.trace_id = trace_id
         tool_registry.restrict_to({call.name for call in plan.calls})
 
         for call in plan.calls:

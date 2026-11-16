@@ -15,6 +15,13 @@ from opencoach.services import (
 )
 
 
+def _safe_text(value: str | None, limit: int = 120) -> str | None:
+    """Limite les champs textuels transmis dans le contrat de transport."""
+    if value is None:
+        return None
+    return value[:limit]
+
+
 class EmptyArguments(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 

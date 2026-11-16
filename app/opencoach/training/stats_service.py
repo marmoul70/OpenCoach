@@ -25,11 +25,14 @@ class TrainingStatsService:
         self,
         activity_repository: ActivityRepository,
         training_session_repository: TrainingSessionRepository,
+        *,
+        reference_date_provider=date.today,
     ) -> None:
         self.activity_repository = activity_repository
         self.training_session_repository = (
             training_session_repository
         )
+        self.reference_date_provider = reference_date_provider
 
     def calculate(
         self,
@@ -184,7 +187,7 @@ class TrainingStatsService:
         self,
         athlete_profile_id: UUID,
         *,
-        reference_date: date,
+        reference_date: date | None = None,
         current_days: int,
         comparison_days: int,
     ) -> dict:
@@ -194,6 +197,7 @@ class TrainingStatsService:
         comparer que des journées entièrement écoulées. La couverture et les
         écarts restent ceux du modèle TrainingStats.
         """
+        reference_date = reference_date or self.reference_date_provider()
         if not 1 <= current_days <= 180:
             raise ValueError("La période récente doit être comprise entre 1 et 180 jours.")
         if not 1 <= comparison_days <= 180:
@@ -228,12 +232,13 @@ class TrainingStatsService:
     def calculate_days(
         self,
         athlete_profile_id: UUID,
-        reference_date: date,
+        reference_date: date | None = None,
         *,
         days: int = 7,
         include_reference_day: bool = True,
     ) -> TrainingStats:
         """Calcule une fenêtre calendaire inclusive à partir d'une date d'ancrage."""
+        reference_date = reference_date or self.reference_date_provider()
         if not 1 <= days <= 365:
             raise ValueError("La période doit être comprise entre 1 et 365 jours (au moins un jour).")
         end_date = reference_date if include_reference_day else reference_date - timedelta(days=1)

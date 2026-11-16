@@ -64,19 +64,22 @@ class ReadinessService:
         daily_context_repository: DailyContextRepository | None = None,
         daily_checkin_repository: DailyCheckInRepository | None = None,
         thresholds: ThresholdSettings | None = None,
+        reference_date_provider=date.today,
     ) -> None:
         self.repository = repository
         self.daily_context_repository = daily_context_repository
         self.daily_checkin_repository = daily_checkin_repository
         self.thresholds = thresholds if thresholds is not None else get_threshold_settings()
+        self.reference_date_provider = reference_date_provider
 
     def calculate(
         self,
         athlete_profile_id: UUID,
-        target_date: date,
+        target_date: date | None = None,
     ) -> ReadinessAssessment:
         """Calcule le Readiness à partir de toutes les données importées dans OpenCoach."""
 
+        target_date = target_date or self.reference_date_provider()
         latest_import = self.repository.get_latest_on_or_before(
             athlete_profile_id,
             target_date,
@@ -178,7 +181,7 @@ class ReadinessService:
     def describe_recovery(
         self,
         athlete_profile_id: UUID,
-        target_date: date,
+        target_date: date | None = None,
         *,
         include_checkin: bool = False,
     ) -> tuple[RecoveryAssessment, WellnessAggregation, AthleteDailyCheckIn | None]:
@@ -187,6 +190,7 @@ class ReadinessService:
         Cette capacité réutilise le repository, l'agrégation multi-fournisseurs
         et le contexte quotidien déjà détenus par ReadinessService.
         """
+        target_date = target_date or self.reference_date_provider()
         start_date = target_date - timedelta(days=29)
         imported = self.repository.list_range(
             athlete_profile_id,

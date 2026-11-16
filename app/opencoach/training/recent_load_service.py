@@ -15,20 +15,24 @@ class RecentTrainingLoadService:
     def __init__(
         self,
         comparison_service: TrainingLoadComparisonService,
+        *,
+        reference_date_provider=date.today,
     ) -> None:
         self.comparison_service = (
             comparison_service
         )
+        self.reference_date_provider = reference_date_provider
 
     def calculate(
         self,
         athlete_profile_id: UUID,
-        target_date: date,
+        target_date: date | None = None,
         *,
         days: int = 7,
     ) -> RecentTrainingLoad:
         """Analyse les jours précédant la date cible."""
 
+        target_date = target_date or self.reference_date_provider()
         if not 1 <= days <= 90:
             raise ValueError(
                 "La période de charge doit être comprise entre 1 et 90 jours (au moins un jour)."

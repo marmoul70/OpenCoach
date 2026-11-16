@@ -195,17 +195,28 @@ def test_training_history_tool_delegates_period_limits_to_domain_service():
 
 
 
-def test_training_history_tool_requires_explicit_period():
-    tool = build_training_history_tool(
-        SimpleNamespace(calculate=lambda *_: None),
-        uuid4(),
-    )
-    registry = AIToolRegistry()
-    registry.register(tool)
+def test_training_history_tool_uses_domain_default_period_when_omitted():
+    calls = []
 
+    class DomainService:
+        def calculate_days(
+            self,
+            profile_id,
+            reference_date,
+            *,
+            days=7,
+            include_reference_day=True,
+        ):
+            calls.append((days, include_reference_day))
+            return SimpleNamespace(history_summary=lambda: {"status": "ok"})
+
+    registry = AIToolRegistry()
+    registry.register(build_training_history_tool(DomainService(), uuid4()))
     result = registry.execute("training_history", {})
 
-    assert result.status == "invalid_arguments"
+    assert result.status == "ok"
+    assert result.data == {"status": "ok"}
+    assert calls == [(7, True)]
 
 
 def test_argument_evidence_guard_blocks_unrequested_or_out_of_range_periods():

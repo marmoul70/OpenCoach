@@ -13,7 +13,7 @@ def test_history_period_is_extracted_and_planned_without_model_tool_calling():
     )
     assert plan.clarification is None
     assert [(call.name, call.arguments) for call in plan.calls] == [
-        ("training_history", {"nb_days": 7})
+        ("training_history", {})
     ]
 
 
@@ -34,7 +34,7 @@ def test_history_period_is_carried_from_the_clarification_turn():
         reference_date=REFERENCE_DATE,
     )
     assert [(call.name, call.arguments) for call in plan.calls] == [
-        ("training_history", {"nb_days": 7})
+        ("training_history", {})
     ]
 
 
@@ -114,8 +114,8 @@ def test_injury_advice_executes_constraints_before_recovery_status():
     )
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("active_constraints", {}),
-        ("training_history", {"nb_days": 7, "exclude_current_day": True}),
-        ("training_load", {"nb_days": 7}),
+        ("training_history", {"exclude_current_day": True}),
+        ("training_load", {}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
         ("next_planned_session", {}),
@@ -318,8 +318,8 @@ def test_injury_for_tomorrow_keeps_full_coaching_context_and_requested_safety_da
     )
     assert [(call.name, call.arguments) for call in plan.calls] == [
         ("active_constraints", {"target_date": "2026-11-11"}),
-        ("training_history", {"nb_days": 7, "exclude_current_day": True}),
-        ("training_load", {"nb_days": 7}),
+        ("training_history", {"exclude_current_day": True}),
+        ("training_load", {}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
         ("next_planned_session", {}),
@@ -455,7 +455,7 @@ def test_weekly_bilan_uses_a_seven_day_history_and_week_context():
     )
     assert plan.clarification is None
     assert [(call.name, call.arguments) for call in plan.calls] == [
-        ("training_history", {"nb_days": 7}),
+        ("training_history", {}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
         ("weekly_plan_context", {}),
@@ -471,7 +471,7 @@ def test_weekly_review_includes_recovery_status_and_athlete_profile():
 
     calls = [(call.name, call.arguments) for call in plan.calls]
     assert plan.clarification is None
-    assert ("training_history", {"nb_days": 7}) in calls
+    assert ("training_history", {}) in calls
     assert ("recovery_analysis", {}) in calls
     assert ("recovery_status", {}) in calls
     assert ("weekly_plan_context", {}) in calls
@@ -485,7 +485,7 @@ def test_general_coach_overview_combines_recovery_and_training_context():
     )
     assert plan.clarification is None
     assert [(call.name, call.arguments) for call in plan.calls] == [
-        ("training_history", {"nb_days": 7}),
+        ("training_history", {}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
         ("weekly_plan_context", {}),
@@ -515,8 +515,8 @@ def test_training_recommendation_uses_recent_history_profile_and_schedule():
     assert plan.clarification is None
     calls = [(call.name, call.arguments) for call in plan.calls]
     assert calls == [
-        ("training_history", {"nb_days": 7, "exclude_current_day": True}),
-        ("training_load", {"nb_days": 7}),
+        ("training_history", {"exclude_current_day": True}),
+        ("training_load", {}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
         ("active_constraints", {}),
@@ -533,8 +533,8 @@ def test_low_recovery_before_planned_intensity_collects_all_decision_context():
 
     calls = [(call.name, call.arguments) for call in plan.calls]
     assert calls == [
-        ("training_history", {"nb_days": 7, "exclude_current_day": True}),
-        ("training_load", {"nb_days": 7}),
+        ("training_history", {"exclude_current_day": True}),
+        ("training_load", {}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
         ("active_constraints", {}),
@@ -570,8 +570,8 @@ def test_high_recent_load_and_tomorrows_long_session_are_both_in_context():
     )
 
     calls = [(call.name, call.arguments) for call in plan.calls]
-    assert ("training_history", {"nb_days": 7, "exclude_current_day": True}) in calls
-    assert ("training_load", {"nb_days": 7}) in calls
+    assert ("training_history", {"exclude_current_day": True}) in calls
+    assert ("training_load", {}) in calls
     assert ("next_planned_session", {}) in calls
     assert ("weekly_plan_context", {}) in calls
     assert "recovery_status" in [name for name, _ in calls]

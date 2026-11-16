@@ -66,13 +66,13 @@ ARGUMENT_MODELS = {
 
 TOOL_DESCRIPTIONS = {
     "training_history": (
-        "Retourne le bilan réel des entraînements sur les nb_days derniers jours calendaires inclusifs : séances, durée, distance, D+ et charge. "
-        "nb_days est obligatoire : si la durée manque, demande-la à l'utilisateur et attends sa réponse avant tout appel. Les métriques précisent leur couverture."
+        "Retourne le bilan réel des entraînements sur la période demandée : séances, durée, distance, D+ et charge. "
+        "nb_days est facultatif ; en son absence, le Coach applique sa fenêtre par défaut. Les métriques précisent leur couverture."
     ),
     "training_load": (
         "Retourne la charge d'entraînement réelle et prévue sur les nb_days derniers "
         "jours calendaires inclusifs, avec volume réellement effectué et couverture des données. "
-        "nb_days est obligatoire : demande la période si elle manque et attends la réponse. "
+        "nb_days est facultatif ; en son absence, le Coach applique sa fenêtre par défaut. "
         "Pour une analyse de charge, combine avec weekly_plan_context, recovery_analysis "
         "et recovery_status lorsqu'ils sont présents afin de contextualiser les conseils. "
         "Une charge réelle sans couverture complète n'est jamais présentée comme un total fiable."

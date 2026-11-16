@@ -54,9 +54,9 @@ def build_training_load_tool(
     return AITool(
         name="training_load",
         description=(
-            "Retourne la charge d'entraînement réelle et prévue sur les nb_days derniers "
-            "jours calendaires inclusifs, avec écarts quotidiens et couverture du planning. "
-            "nb_days est obligatoire : demande la période si elle manque et attends la réponse. "
+            "Retourne la charge d'entraînement réelle et prévue sur la période demandée, "
+            "avec écarts quotidiens et couverture du planning. "
+            "nb_days est facultatif : en son absence, le domaine applique sa fenêtre par défaut. "
             "Une charge réelle sans couverture complète n'est jamais présentée comme un total fiable. "
             "Les résultats proviennent exclusivement des services métier et des données centralisées dans OpenCoach."
         ),

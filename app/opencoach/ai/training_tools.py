@@ -53,10 +53,9 @@ def build_training_history_tool(
     return AITool(
         name="training_history",
         description=(
-            "Retourne le bilan réel des entraînements sur les nb_days derniers "
-            "jours calendaires inclusifs : séances, durée, distance, D+ et charge. "
-            "nb_days est obligatoire : si la durée manque, demande-la à l'utilisateur "
-            "et attends sa réponse avant tout appel. Par défaut, la date de référence est incluse ; "
+            "Retourne le bilan réel des entraînements sur la période demandée. "
+            "nb_days est facultatif : en son absence, le domaine applique sa fenêtre par défaut. "
+            "Par défaut, la date de référence est incluse ; "
             "exclude_current_day=true permet d'analyser uniquement les jours entièrement écoulés. "
             "Les métriques précisent leur couverture. "
             "Quand la couverture est partielle, observed_value est le sous-total des seules séances "

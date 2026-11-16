@@ -185,7 +185,8 @@ def get_planning_context_service(
 
     recent_load_service = (
         RecentTrainingLoadService(
-            load_comparison_service
+            load_comparison_service,
+            training_stats_service=training_stats_service,
         )
     )
 

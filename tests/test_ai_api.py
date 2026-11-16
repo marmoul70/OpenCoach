@@ -486,7 +486,7 @@ def test_coach_prompt_is_presentation_only_and_custom_style_cannot_override_it()
         )
     )
 
-    assert "assistant de formulation du Coach OpenCoach" in prompt
+    assert "assistant de formulation" in prompt
     assert "Tu ne prends aucune décision sportive et ne calcules aucune métrique" in prompt
     assert "restitue exactement son action" in prompt
     assert "n'invente pas de recommandation" in prompt

@@ -40,12 +40,34 @@ def _training_stats(**values):
     return TrainingStats(**defaults)
 
 
+
+
+class _CalculateDaysMixin:
+    def calculate_days(
+        self,
+        profile_id,
+        reference_date,
+        *,
+        days,
+        include_reference_day=True,
+    ):
+        from datetime import timedelta
+
+        end_date = (
+            reference_date
+            if include_reference_day
+            else reference_date - timedelta(days=1)
+        )
+        start_date = end_date - timedelta(days=days - 1)
+        return self.calculate(profile_id, start_date, end_date)
+
+
 def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
     athlete_id = uuid4()
     reference_date = date(2026, 11, 9)
     calls = []
 
-    class FakeTrainingStatsService:
+    class FakeTrainingStatsService(_CalculateDaysMixin):
         def calculate(self, profile_id, start_date, end_date):
             return _training_stats(
                 start_date=start_date,
@@ -171,7 +193,7 @@ def test_training_load_tool_never_reports_missing_actual_load_as_zero():
                 unplanned_days=0,
             )
 
-    class EmptyStatsService:
+    class EmptyStatsService(_CalculateDaysMixin):
         def calculate(self, profile_id, start_date, end_date):
             return _training_stats(
                 sessions_count=0,
@@ -207,7 +229,7 @@ def test_training_load_arguments_reject_out_of_range_periods():
 
 
 def test_training_load_tool_hides_partial_total_and_marks_daily_status_unreliable():
-    class PartialStatsService:
+    class PartialStatsService(_CalculateDaysMixin):
         def calculate(self, profile_id, start_date, end_date):
             return _training_stats(
                 sessions_count=2,
@@ -276,7 +298,7 @@ def test_training_load_tool_uses_only_opencoach_training_services():
 
 
 def test_training_load_coverage_does_not_treat_manual_session_without_duration_as_available():
-    class OneIncompleteManualSessionStats:
+    class OneIncompleteManualSessionStats(_CalculateDaysMixin):
         def calculate(self, profile_id, start_date, end_date):
             return _training_stats(
                 sessions_count=1,

@@ -1,7 +1,7 @@
 """Outil de synthèse de charge récente, basé sur les services métier existants."""
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -34,18 +34,16 @@ def build_training_load_tool(
     def execute(arguments: BaseModel) -> dict:
         nb_days = arguments.nb_days
         target_date = reference_date_provider()
-        start_date = target_date - timedelta(days=nb_days)
-        end_date = target_date - timedelta(days=1)
-
         load = service.calculate(
             athlete_profile_id,
             target_date,
             days=nb_days,
         )
-        stats = training_stats_service.calculate(
+        stats = training_stats_service.calculate_days(
             athlete_profile_id,
-            start_date,
-            end_date,
+            target_date,
+            days=nb_days,
+            include_reference_day=False,
         )
 
         return load.analysis_summary(stats)

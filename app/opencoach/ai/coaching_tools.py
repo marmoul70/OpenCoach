@@ -6,7 +6,7 @@ from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-from opencoach.ai.tool_engine import AITool
+from opencoach.coaching.capabilities.registry import CoachCapability as AITool
 from opencoach.services import (
     PlannedTrainingService,
     ProfileService,

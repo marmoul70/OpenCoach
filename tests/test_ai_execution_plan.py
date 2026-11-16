@@ -557,7 +557,7 @@ def test_positive_readiness_never_skips_constraints_when_pain_is_reported():
         "training_load",
         "recovery_analysis",
         "recovery_status",
-        "next_planned_session",
+        "coach_decision",
         "weekly_plan_context",
         "athlete_training_profile",
     ]
@@ -572,7 +572,7 @@ def test_high_recent_load_and_tomorrows_long_session_are_both_in_context():
     calls = [(call.name, call.arguments) for call in plan.calls]
     assert ("training_history", {"exclude_current_day": True}) in calls
     assert ("training_load", {}) in calls
-    assert ("next_planned_session", {}) in calls
+    assert ("coach_decision", {}) in calls
     assert ("weekly_plan_context", {}) in calls
     assert "recovery_status" in [name for name, _ in calls]
 
@@ -587,7 +587,7 @@ def test_race_goal_is_preserved_in_session_recommendation_context():
     assert "race_calendar" in names
     assert "training_history" in names
     assert "training_load" in names
-    assert "next_planned_session" in names
+    assert "coach_decision" in names
     assert "athlete_training_profile" in names
     assert "race_preparation_analysis" not in names
 
@@ -657,7 +657,7 @@ def test_injury_recommendation_keeps_upcoming_race_in_coaching_context():
     assert "race_calendar" in names
     assert "training_history" in names
     assert "training_load" in names
-    assert "next_planned_session" in names
+    assert "coach_decision" in names
 
 
 

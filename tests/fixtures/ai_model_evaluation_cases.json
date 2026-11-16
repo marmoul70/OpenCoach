@@ -344,7 +344,7 @@
         "arguments": {}
       },
       {
-        "tool": "next_planned_session",
+        "tool": "coach_decision",
         "arguments": {}
       },
       {
@@ -394,7 +394,7 @@
         "arguments": {}
       },
       {
-        "tool": "next_planned_session",
+        "tool": "coach_decision",
         "arguments": {}
       },
       {
@@ -444,7 +444,7 @@
         "arguments": {}
       },
       {
-        "tool": "next_planned_session",
+        "tool": "coach_decision",
         "arguments": {}
       },
       {
@@ -498,7 +498,7 @@
         "arguments": {}
       },
       {
-        "tool": "next_planned_session",
+        "tool": "coach_decision",
         "arguments": {}
       },
       {

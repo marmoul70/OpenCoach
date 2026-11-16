@@ -1,4 +1,4 @@
-from opencoach.ai.tool_routing import ALL_COACH_TOOLS, select_coach_tools
+from opencoach.coaching.assistant.tool_routing import ALL_COACH_TOOLS, select_coach_tools
 
 
 def test_history_request_exposes_history_tool_without_profile_write_tool():

@@ -6,6 +6,7 @@ on:
       - main
       - test
       - 'feature/**'
+      - 'fix/**'
 
   pull_request:
     branches:
@@ -34,6 +35,7 @@ jobs:
           bash -n scripts/deploy-frontend.sh
           bash -n scripts/maintenance/shellcheck.sh
           bash -n tests/test-libraries.sh
+          bash -n tests/test-nginx-bootstrap.sh
 
       - name: ShellCheck
         run: |
@@ -41,10 +43,10 @@ jobs:
 
       - name: OpenCoach bootstrap tests on Debian 13
         run: |
-          docker run --rm \
-            -v "$GITHUB_WORKSPACE:/workspace" \
-            -w /workspace \
-            debian:13 \
+          docker run --rm \\
+            -v "$GITHUB_WORKSPACE:/workspace" \\
+            -w /workspace \\
+            debian:13 \\
             bash -c '
               set -Eeuo pipefail
 
@@ -52,6 +54,7 @@ jobs:
               apt-get install -y bash git
 
               ./tests/test-libraries.sh
+              ./tests/test-nginx-bootstrap.sh
             '
 
 
@@ -61,7 +64,7 @@ jobs:
 
     env:
       # Secrets de test uniquement : valeurs déterministes sans lien avec une instance réelle.
-      OPENCOACH_SECRET_KEY: "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="
+      OPENCOACH_SECRET_KEY: "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="
       OPENCOACH_AUTH_SESSION_SECRET: "opencoach-ci-session-secret-not-for-production"
 
     steps:

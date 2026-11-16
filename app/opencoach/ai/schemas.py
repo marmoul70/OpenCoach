@@ -177,23 +177,6 @@ class AIRaceOptionResponse(BaseModel):
     target_time_minutes: float | None = None
 
 
-class AIRaceOptionResponse(BaseModel):
-    """Course du calendrier proposée pour une sélection explicite."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    race_id: UUID
-    date: str
-    name: str
-    location: str | None = None
-    race_type: str | None = None
-    priority: str | None = None
-    status: str | None = None
-    distance_km: float | None = None
-    elevation_gain_m: float | None = None
-    target_time_minutes: float | None = None
-
-
 class AIQuestionResponse(BaseModel):
     """Réponse générée par le modèle local."""
 

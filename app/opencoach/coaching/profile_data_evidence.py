@@ -147,3 +147,15 @@ def evidence_supports_profile_value(
             for item in evidence_values
         )
     return False
+
+
+def validate_profile_proposal_evidence(
+    field_key: str,
+    evidence: str,
+    value: Any,
+    user_messages: list[str],
+) -> bool:
+    """Valide l'appartenance et la suffisance de la preuve utilisateur."""
+    if not evidence or evidence not in "\\n".join(user_messages):
+        return False
+    return evidence_supports_profile_value(field_key, evidence, value)

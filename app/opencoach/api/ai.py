@@ -47,8 +47,8 @@ from opencoach.ai.prompts import (
 from opencoach.ai.service import AIService, AIServiceDisabledError
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.coaching.assistant.execution_plan import build_coach_execution_plan
-from opencoach.coaching.recommendation_safety import (
-    blocked_running_recommendation_message,
+from opencoach.coaching.assistant.execution_safety import (
+    recommendation_execution_block_message,
 )
 from opencoach.coaching.assistant.response_safety import (
     coach_response_has_ungrounded_risk_claims,
@@ -451,22 +451,6 @@ async def ask_local_ai_with_athlete_context(
                 duration_ms=round((perf_counter() - tool_started_at) * 1000, 3),
             )
             tool_results.append(result)
-            if (
-                call.name == "active_constraints" and result.status != "ok"
-            ) or (
-                call.name == "recovery_status"
-                and any(item.name == "active_constraints" for item in plan.calls)
-                and result.status != "ok"
-            ):
-                return AIQuestionResponse(
-                    answer=(
-                        "Je n'ai pas pu consulter les contraintes ou la récupération dans OpenCoach. "
-                        "Je ne peux donc pas te recommander de séance sur cette base. "
-                        "Réessaie après vérification de la disponibilité du service."
-                    ),
-                    model=settings.model,
-                    context_used=False,
-                )
             if result.status == "needs_clarification":
                 return AIQuestionResponse(
                     answer=result.error or "Une précision est nécessaire avant cette analyse.",
@@ -502,31 +486,17 @@ async def ask_local_ai_with_athlete_context(
             context_used=any(item.status == "ok" for item in tool_results),
         )
 
-    # Les interdictions de course sont des contraintes métier, pas une
-    # préférence rédactionnelle du LLM. Elles sont appliquées après la collecte
-    # Python et avant toute génération Ollama.
-    if plan.recommendation_request:
-        constraints_result = next(
-            (
-                item for item in tool_results
-                if item.tool == "active_constraints" and item.status == "ok"
-                and isinstance(item.data, dict)
-            ),
-            None,
+    # Le Coach valide les prérequis métier avant toute rédaction IA.
+    execution_block = recommendation_execution_block_message(
+        plan.recommendation_request,
+        tool_results,
+    )
+    if execution_block is not None:
+        return AIQuestionResponse(
+            answer=execution_block,
+            model=settings.model,
+            context_used=any(item.status == "ok" for item in tool_results),
         )
-        restriction = (
-            constraints_result.data.get("running_restriction")
-            if constraints_result is not None else None
-        )
-        restriction_message = blocked_running_recommendation_message(
-            restriction if isinstance(restriction, dict) else None
-        )
-        if restriction_message is not None:
-            return AIQuestionResponse(
-                answer=restriction_message,
-                model=settings.model,
-                context_used=True,
-            )
 
     preferences = db.scalar(
         select(AICoachPreference).where(AICoachPreference.user_id == user_id)

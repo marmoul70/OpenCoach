@@ -121,7 +121,7 @@ def test_benchmark_still_rejects_non_default_optional_arguments() -> None:
     assert result["argument_validation_pass"] is True
 
 
-def test_benchmark_marks_out_of_range_generated_arguments_invalid() -> None:
+def test_benchmark_does_not_duplicate_domain_period_limits() -> None:
     case = {
         "id": "history_out_of_range",
         "expected_tool_calls": [],
@@ -135,8 +135,8 @@ def test_benchmark_marks_out_of_range_generated_arguments_invalid() -> None:
     )
 
     assert result["tool_selection_pass"] is False
-    assert result["argument_validation_pass"] is False
-    assert result["actual_tool_calls"][0]["arguments_valid"] is False
+    assert result["argument_validation_pass"] is True
+    assert result["actual_tool_calls"][0]["arguments_valid"] is True
 
 
 def test_benchmark_checks_clarification_only_when_expected_on_first_turn() -> None:

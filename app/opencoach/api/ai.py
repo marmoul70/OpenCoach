@@ -40,6 +40,7 @@ from opencoach.ai.schemas import (
 )
 from opencoach.ai.prompts import (
     _CHAT_SYSTEM_PROMPT,
+    _coach_system_prompt,  # Compatibility for evaluation scripts.
     _coach_response_token_budget,
     _coach_synthesis_system_prompt,
 )

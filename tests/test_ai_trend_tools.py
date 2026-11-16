@@ -62,7 +62,11 @@ def test_training_trends_delegates_periods_and_returns_coach_result():
     assert result is expected
 
 
-def test_training_trends_argument_schema_does_not_own_domain_period_limits():
-    arguments = TrainingTrendsArguments(nb_days=0, comparison_days=181)
-    assert arguments.nb_days == 0
-    assert arguments.comparison_days == 181
+def test_training_trends_arguments_reject_invalid_periods():
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        TrainingTrendsArguments(nb_days=0, comparison_days=7)
+    with pytest.raises(ValidationError):
+        TrainingTrendsArguments(nb_days=7, comparison_days=181)

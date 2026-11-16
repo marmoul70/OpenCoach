@@ -16,6 +16,8 @@ class TrainingLoadArguments(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     nb_days: int = Field(
+        ge=1,
+        le=90,
         description="Nombre de jours calendaires précédant la date de référence.",
     )
 

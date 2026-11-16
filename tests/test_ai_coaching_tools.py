@@ -2,6 +2,7 @@ from datetime import date
 from uuid import uuid4
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -292,7 +293,8 @@ def test_planned_sessions_period_limits_are_enforced_by_coach_service():
             date(2026, 11, 1),
             date(2026, 12, 2),
         )
-    assert RaceCalendarArguments(horizon_days=366).horizon_days == 366
+    with pytest.raises(ValidationError):
+        RaceCalendarArguments(horizon_days=366)
     with pytest.raises(ValueError, match="365 jours"):
         RacePreparationService(
             object(),

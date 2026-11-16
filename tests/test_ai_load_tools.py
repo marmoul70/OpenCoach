@@ -217,9 +217,15 @@ def test_training_load_tool_never_reports_missing_actual_load_as_zero():
     ]
 
 
-def test_training_load_argument_schema_does_not_own_domain_period_limits():
-    assert TrainingLoadArguments(nb_days=0).nb_days == 0
-    assert TrainingLoadArguments(nb_days=91).nb_days == 91
+def test_training_load_arguments_reject_out_of_range_periods():
+    from pydantic import ValidationError
+
+    import pytest
+
+    with pytest.raises(ValidationError):
+        TrainingLoadArguments(nb_days=0)
+    with pytest.raises(ValidationError):
+        TrainingLoadArguments(nb_days=91)
 
 
 def test_training_load_tool_hides_partial_total_and_marks_daily_status_unreliable():

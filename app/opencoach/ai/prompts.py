@@ -75,7 +75,7 @@ def _coach_synthesis_system_prompt(preferences: AICoachPreferencesPayload) -> st
         "absente. Une donnée absente ou indisponible n'est jamais zéro. "
         "Signale les informations manquantes, anciennes ou partielles. "
         "Les services déterministes OpenCoach restent la source de vérité ; le prompt "
-        "ne remplace aucune décision de ces services. Respecte les périodes et les limites "
+        "ne remplace aucune décision de ces services. Ne mélange pas les périodes. Respecte les limites "
         "explicitement retournées par les services. Ne contredis jamais une restriction "
         "ou un avertissement explicite du Coach.\n"
         "Ne récite pas les champs ni les statistiques. Par défaut, rédige 3 à 6 phrases "

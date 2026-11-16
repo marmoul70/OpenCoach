@@ -481,3 +481,73 @@ def test_recent_training_load_enforces_the_domain_maximum_window():
             TARGET_DATE,
             days=91,
         )
+
+
+
+def test_recent_training_load_service_owns_combined_load_and_volume_summary():
+    from opencoach.training import TrainingStats
+
+    comparison_date = TARGET_DATE - timedelta(days=1)
+    comparison = create_comparison(
+        comparison_date=comparison_date,
+        planned_load=35.0,
+        actual_load=42.0,
+        status="above_plan",
+    )
+    comparison_service = FakeTrainingLoadComparisonService({
+        comparison_date: comparison,
+    })
+    stats_calls = []
+
+    class FakeTrainingStatsService:
+        def calculate_days(
+            self,
+            athlete_profile_id,
+            reference_date,
+            *,
+            days=7,
+            include_reference_day=True,
+        ):
+            stats_calls.append(
+                (athlete_profile_id, reference_date, days, include_reference_day)
+            )
+            end_date = reference_date if include_reference_day else reference_date - timedelta(days=1)
+            start_date = end_date - timedelta(days=days - 1)
+            return TrainingStats(
+                start_date=start_date,
+                end_date=end_date,
+                activities_count=1,
+                manual_sessions_count=0,
+                total_duration_minutes=60,
+                total_distance_km=10.0,
+                total_elevation_gain_m=250.0,
+                measured_load=42.0,
+                estimated_load=0.0,
+                duration_data_count=1,
+                distance_data_count=1,
+                elevation_data_count=1,
+                measured_load_data_count=1,
+                estimated_load_data_count=0,
+            )
+
+    athlete_id = uuid4()
+    service = RecentTrainingLoadService(
+        comparison_service,
+        reference_date_provider=lambda: TARGET_DATE,
+        training_stats_service=FakeTrainingStatsService(),
+    )
+
+    result = service.analysis_summary(athlete_id, days=1)
+
+    assert result["period"] == {
+        "start_date": comparison_date.isoformat(),
+        "end_date": comparison_date.isoformat(),
+        "nb_days": 1,
+        "inclusive": True,
+    }
+    assert result["load"]["planned_total"] == 35.0
+    assert result["load"]["actual_total"] == 42.0
+    assert result["volume"]["duration_minutes"] == 60
+    assert result["volume"]["distance_km"] == 10.0
+    assert comparison_service.calls == [comparison_date]
+    assert stats_calls == [(athlete_id, TARGET_DATE, 1, False)]

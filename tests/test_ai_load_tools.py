@@ -1,345 +1,59 @@
-from datetime import date
 from uuid import uuid4
 
 from opencoach.ai.load_tools import (
     TrainingLoadArguments,
     build_training_load_tool,
 )
-from opencoach.ai.tool_engine import AIToolRegistry
-from opencoach.training import RecentTrainingLoad, TrainingLoadComparison, TrainingStats
 
 
-
-def _training_stats(**values):
-    sessions_count = values.pop("sessions_count", None)
-    manual_sessions_count = values.get("manual_sessions_count", 0)
-    activities_count = values.pop(
-        "activities_count",
-        sessions_count - manual_sessions_count if sessions_count is not None else 0,
-    )
-    total_load = values.pop("total_load", None)
-    if total_load is not None and "measured_load" not in values:
-        values["measured_load"] = total_load
-    defaults = {
-        "start_date": date(2026, 11, 1),
-        "end_date": date(2026, 11, 8),
-        "activities_count": activities_count,
-        "manual_sessions_count": manual_sessions_count,
-        "total_duration_minutes": 0,
-        "total_distance_km": 0.0,
-        "total_elevation_gain_m": 0.0,
-        "measured_load": 0.0,
-        "estimated_load": 0.0,
-        "duration_data_count": 0,
-        "distance_data_count": 0,
-        "elevation_data_count": 0,
-        "measured_load_data_count": 0,
-        "estimated_load_data_count": 0,
-    }
-    defaults.update(values)
-    return TrainingStats(**defaults)
-
-
-
-
-class _CalculateDaysMixin:
-    def calculate_days(
-        self,
-        profile_id,
-        reference_date=None,
-        *,
-        days,
-        include_reference_day=True,
-    ):
-        from datetime import timedelta
-
-        reference_date = reference_date or date(2026, 11, 9)
-        end_date = (
-            reference_date
-            if include_reference_day
-            else reference_date - timedelta(days=1)
-        )
-        start_date = end_date - timedelta(days=days - 1)
-        return self.calculate(profile_id, start_date, end_date)
-
-
-def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
+def test_training_load_tool_delegates_complete_analysis_to_coach_service():
     athlete_id = uuid4()
-    reference_date = date(2026, 11, 9)
+    expected = {
+        "status": "ok",
+        "period": {"start_date": "2026-11-08", "end_date": "2026-11-08"},
+        "load": {"actual_total": 42.0},
+    }
     calls = []
 
-    class FakeTrainingStatsService(_CalculateDaysMixin):
-        def calculate(self, profile_id, start_date, end_date):
-            return _training_stats(
-                start_date=start_date,
-                end_date=end_date,
-                sessions_count=1,
-                measured_load=45.0,
-                measured_load_data_count=1,
-                estimated_load_data_count=0,
-                manual_sessions_count=0,
-                activities_count=1,
-                total_duration_minutes=65,
-                total_distance_km=12.5,
-                total_elevation_gain_m=320.0,
-                duration_data_count=1,
-                distance_data_count=1,
-                elevation_data_count=1,
-            )
+    class FakeRecentLoadService:
+        def analysis_summary(self, profile_id, *, days=None):
+            calls.append((profile_id, days))
+            return expected
 
-    class FakeService:
-        def calculate(self, profile_id, *, days):
-            target_date = date(2026, 11, 9)
-            calls.append((profile_id, target_date, days))
-            comparisons = (
-                TrainingLoadComparison(
-                    date=date(2026, 11, 8),
-                    planned_duration_minutes=0,
-                    actual_duration_minutes=0,
-                    planned_load=0.0,
-                    actual_load=0.0,
-                    measured_load=0.0,
-                    estimated_load=0.0,
-                    planned_sessions_count=0,
-                    actual_sessions_count=0,
-                    status="rest_respected",
-                ),
-                TrainingLoadComparison(
-                    date=date(2026, 11, 7),
-                    planned_duration_minutes=60,
-                    actual_duration_minutes=65,
-                    planned_load=40.0,
-                    actual_load=45.0,
-                    measured_load=45.0,
-                    estimated_load=0.0,
-                    planned_sessions_count=1,
-                    actual_sessions_count=1,
-                    status="above_plan",
-                ),
-            )
-            return RecentTrainingLoad(
-                days=comparisons,
-                analyzed_days=2,
-                planned_load_total=40.0,
-                actual_load_total=45.0,
-                above_plan_days=1,
-                below_plan_days=0,
-                on_plan_days=0,
-                broken_rest_days=0,
-                respected_rest_days=1,
-                planning_covered_days=2,
-                unplanned_days=0,
-            )
+    tool = build_training_load_tool(FakeRecentLoadService(), athlete_id)
 
-    registry = AIToolRegistry()
-    registry.register(
-        build_training_load_tool(
-            FakeService(),
-            FakeTrainingStatsService(),
-            athlete_id,
-        )
-    )
+    assert tool.handler(TrainingLoadArguments(nb_days=1)) is expected
+    assert calls == [(athlete_id, 1)]
 
-    result = registry.execute("training_load", {"nb_days": 2})
 
-    assert result.status == "ok"
-    assert calls == [(athlete_id, reference_date, 2)]
-    assert result.data["period"] == {
-        "start_date": "2026-11-07",
-        "end_date": "2026-11-08",
-        "nb_days": 2,
-        "inclusive": True,
+def test_training_load_tool_leaves_default_window_to_coach_service():
+    athlete_id = uuid4()
+    calls = []
+
+    class FakeRecentLoadService:
+        def analysis_summary(self, profile_id, *, days=None):
+            calls.append((profile_id, days))
+            return {"status": "ok", "period": {"nb_days": 7}}
+
+    tool = build_training_load_tool(FakeRecentLoadService(), athlete_id)
+
+    assert tool.handler(TrainingLoadArguments()) == {
+        "status": "ok",
+        "period": {"nb_days": 7},
     }
-    assert result.data["load"]["actual_total"] == 45.0
-    assert result.data["volume"]["duration_minutes"] == 65
-    assert result.data["volume"]["distance_km"] == 12.5
-    assert result.data["volume"]["elevation_gain_m"] == 320.0
-    assert result.data["load"]["delta_total"] == 5.0
-    assert result.data["planning_coverage"]["ratio"] == 1.0
-    assert result.data["sessions"]["planned"] == 1
-    assert result.data["sessions"]["actual"] == 1
-    assert result.data["sessions"]["comparison_supported"] is False
-    assert "ne pas calculer de pourcentage" in result.data["sessions"]["meaning"]
-    assert result.data["daily"][0]["actual_load"] == 45.0
-    assert result.data["daily"][1]["actual_load"] is None
+    assert calls == [(athlete_id, None)]
 
 
-def test_training_load_tool_never_reports_missing_actual_load_as_zero():
-    class EmptyService:
-        def calculate(self, profile_id, *, days):
-            target_date = date(2026, 11, 9)
-            return RecentTrainingLoad(
-                days=(
-                    TrainingLoadComparison(
-                        date=date(2026, 11, 8),
-                        planned_duration_minutes=0,
-                        actual_duration_minutes=0,
-                        planned_load=0.0,
-                        actual_load=0.0,
-                        measured_load=0.0,
-                        estimated_load=0.0,
-                        planned_sessions_count=0,
-                        actual_sessions_count=0,
-                        status="rest_respected",
-                    ),
-                ),
-                analyzed_days=1,
-                planned_load_total=0.0,
-                actual_load_total=0.0,
-                above_plan_days=0,
-                below_plan_days=0,
-                on_plan_days=0,
-                broken_rest_days=0,
-                respected_rest_days=1,
-                planning_covered_days=1,
-                unplanned_days=0,
-            )
-
-    class EmptyStatsService(_CalculateDaysMixin):
-        def calculate(self, profile_id, start_date, end_date):
-            return _training_stats(
-                sessions_count=0,
-                measured_load_data_count=0,
-                estimated_load_data_count=0,
-                manual_sessions_count=0,
-            )
-
-    tool = build_training_load_tool(
-        EmptyService(),
-        EmptyStatsService(),
-        uuid4(),
-    )
-    result = tool.handler(TrainingLoadArguments(nb_days=1))
-
-    assert result["load"]["actual_total"] is None
-    assert result["load"]["delta_total"] is None
-    assert result["warnings"] == [
-        "Aucune séance réalisée enregistrée : la charge réelle est indisponible, pas égale à zéro."
-    ]
-
-
-def test_training_load_argument_schema_delegates_period_limits_to_coach_service():
+def test_training_load_argument_schema_does_not_own_period_limits():
     assert TrainingLoadArguments(nb_days=0).nb_days == 0
     assert TrainingLoadArguments(nb_days=91).nb_days == 91
-
-def test_training_load_argument_schema_leaves_default_period_to_domain():
     assert TrainingLoadArguments().nb_days is None
 
 
-
-def test_training_load_tool_hides_partial_total_and_marks_daily_status_unreliable():
-    class PartialStatsService(_CalculateDaysMixin):
-        def calculate(self, profile_id, start_date, end_date):
-            return _training_stats(
-                sessions_count=2,
-                measured_load=20.0,
-                measured_load_data_count=1,
-                estimated_load_data_count=0,
-                manual_sessions_count=0,
-            )
-
-    class PartialRecentLoadService:
-        def calculate(self, profile_id, *, days):
-            target_date = date(2026, 11, 9)
-            comparison = TrainingLoadComparison(
-                date=date(2026, 11, 8),
-                planned_duration_minutes=45,
-                actual_duration_minutes=40,
-                planned_load=30.0,
-                actual_load=20.0,
-                measured_load=20.0,
-                estimated_load=0.0,
-                planned_sessions_count=1,
-                actual_sessions_count=1,
-                status="below_plan",
-            )
-            return RecentTrainingLoad(
-                days=(comparison,),
-                analyzed_days=1,
-                planned_load_total=30.0,
-                actual_load_total=20.0,
-                above_plan_days=0,
-                below_plan_days=1,
-                on_plan_days=0,
-                broken_rest_days=0,
-                respected_rest_days=0,
-                planning_covered_days=1,
-                unplanned_days=0,
-            )
-
-    tool = build_training_load_tool(
-        PartialRecentLoadService(),
-        PartialStatsService(),
-        uuid4(),
-    )
-    result = tool.handler(TrainingLoadArguments(nb_days=1))
-
-    assert result["load"]["coverage"]["status"] == "partial"
-    assert result["load"]["actual_total"] is None
-    assert result["load"]["partial_observed_total"] == 20.0
-    assert result["daily"][0]["status"] == "load_data_incomplete"
-    assert result["daily"][0]["actual_load"] is None
-
-
-
-
-def test_training_load_tool_uses_only_opencoach_training_services():
+def test_training_load_adapter_does_not_compose_domain_services():
     import inspect
 
-    parameters = inspect.signature(build_training_load_tool).parameters
-    assert "wellness_repository" not in parameters
-
-    # L'outil ne dépend pas d'un dépôt ou d'un fournisseur externe : il construit
-    # son analyse depuis les services métier centralisés d'OpenCoach.
-    assert "COROS" not in inspect.getsource(build_training_load_tool)
-    assert "coros_training_load" not in inspect.getsource(build_training_load_tool)
-
-
-
-def test_training_load_coverage_does_not_treat_manual_session_without_duration_as_available():
-    class OneIncompleteManualSessionStats(_CalculateDaysMixin):
-        def calculate(self, profile_id, start_date, end_date):
-            return _training_stats(
-                sessions_count=1,
-                activities_count=0,
-                manual_sessions_count=1,
-                measured_load_data_count=0,
-                estimated_load_data_count=0,
-            )
-
-    class NoLoadService:
-        def calculate(self, profile_id, *, days):
-            target_date = date(2026, 11, 9)
-            return RecentTrainingLoad(
-                days=(),
-                analyzed_days=1,
-                planned_load_total=0.0,
-                actual_load_total=0.0,
-                above_plan_days=0,
-                below_plan_days=0,
-                on_plan_days=0,
-                broken_rest_days=0,
-                respected_rest_days=0,
-                planning_covered_days=0,
-                unplanned_days=1,
-            )
-
-    tool = build_training_load_tool(
-        NoLoadService(),
-        OneIncompleteManualSessionStats(),
-        uuid4(),
-    )
-
-    result = tool.handler(TrainingLoadArguments(nb_days=1))
-
-    assert result["sessions"]["actual"] == 1
-    assert result["load"]["coverage"] == {
-        "available_sessions": 0,
-        "measured_sessions": 0,
-        "estimated_manual_sessions": 0,
-        "total_sessions": 1,
-        "status": "unavailable",
-    }
-    assert result["load"]["actual_total"] is None
-    assert result["load"]["delta_total"] is None
-    assert any("Aucune charge exploitable" in warning for warning in result["warnings"])
+    source = inspect.getsource(build_training_load_tool)
+    assert "calculate_days" not in source
+    assert ".calculate(" not in source
+    assert "analysis_summary(" in source

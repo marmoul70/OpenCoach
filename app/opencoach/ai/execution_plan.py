@@ -294,7 +294,7 @@ def build_coach_execution_plan(
                 # mais la décision d'entraînement doit s'appuyer sur la
                 # récupération disponible aujourd'hui, comme recovery_analysis.
                 PlannedToolCall("recovery_status", {}),
-                PlannedToolCall("next_planned_session", {}),
+                PlannedToolCall("coach_decision", {}),
                 PlannedToolCall("weekly_plan_context", {}),
                 PlannedToolCall("athlete_training_profile", {}),
             ))
@@ -463,7 +463,9 @@ def build_coach_execution_plan(
                 "history_days": periods[-1],
             }))
 
-    if "next_planned_session" in selected:
+    if recommendation_history and "coach_decision" in selected:
+        calls.append(PlannedToolCall("coach_decision", {}))
+    elif "next_planned_session" in selected:
         calls.append(PlannedToolCall("next_planned_session", {}))
 
     if "planned_sessions" in selected:

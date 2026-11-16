@@ -22,6 +22,7 @@ ALL_COACH_TOOLS = frozenset({
     "race_preparation_analysis",
     "planned_sessions",
     "next_planned_session",
+    "coach_decision",
     "session_execution_review",
     "activity_detail",
     "training_history",
@@ -173,7 +174,7 @@ def select_coach_tools(
         selected.add("active_constraints")
         selected.update((
             "recovery_analysis", "recovery_status", "athlete_training_profile",
-            "weekly_plan_context", "next_planned_session", "training_history",
+            "weekly_plan_context", "coach_decision", "training_history",
         ))
 
     # Une analyse de charge utile au coaching doit disposer du cadre
@@ -215,7 +216,7 @@ def select_coach_tools(
         filtered = frozenset({
             *filtered, "training_history", "training_load",
             "athlete_training_profile", "weekly_plan_context",
-            "next_planned_session", "recovery_analysis",
+            "coach_decision", "recovery_analysis",
             "recovery_status", "active_constraints",
         })
     if "training_load" in filtered:

@@ -258,7 +258,7 @@ def test_training_recommendation_routes_all_required_athlete_context():
     assert {
         "active_constraints", "recovery_analysis", "recovery_status",
         "athlete_training_profile", "weekly_plan_context",
-        "next_planned_session", "training_history",
+        "coach_decision", "training_history",
     } <= selected
 
 

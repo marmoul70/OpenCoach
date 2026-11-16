@@ -118,7 +118,7 @@ def test_injury_advice_executes_constraints_before_recovery_status():
         ("training_load", {}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
-        ("next_planned_session", {}),
+        ("coach_decision", {}),
         ("weekly_plan_context", {}),
         ("athlete_training_profile", {}),
     ]
@@ -322,7 +322,7 @@ def test_injury_for_tomorrow_keeps_full_coaching_context_and_requested_safety_da
         ("training_load", {}),
         ("recovery_analysis", {}),
         ("recovery_status", {}),
-        ("next_planned_session", {}),
+        ("coach_decision", {}),
         ("weekly_plan_context", {}),
         ("athlete_training_profile", {}),
     ]
@@ -520,7 +520,7 @@ def test_training_recommendation_uses_recent_history_profile_and_schedule():
         ("recovery_analysis", {}),
         ("recovery_status", {}),
         ("active_constraints", {}),
-        ("next_planned_session", {}),
+        ("coach_decision", {}),
         ("weekly_plan_context", {}),
         ("athlete_training_profile", {}),
     ]
@@ -538,7 +538,7 @@ def test_low_recovery_before_planned_intensity_collects_all_decision_context():
         ("recovery_analysis", {}),
         ("recovery_status", {}),
         ("active_constraints", {}),
-        ("next_planned_session", {}),
+        ("coach_decision", {}),
         ("weekly_plan_context", {}),
         ("athlete_training_profile", {}),
     ]

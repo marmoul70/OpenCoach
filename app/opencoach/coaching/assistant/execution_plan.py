@@ -15,7 +15,11 @@ from opencoach.coaching.assistant.argument_evidence import (
     extract_explicit_date_range,
     extract_explicit_periods,
 )
-from opencoach.coaching.assistant.tool_routing import is_coach_recommendation_request, select_coach_tools
+from opencoach.coaching.assistant.tool_routing import (
+    has_coach_intent,
+    is_coach_recommendation_request,
+    select_coach_tools,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,18 +143,6 @@ def build_coach_execution_plan(
 
     # Le routeur conserve un catalogue de repli pour les formulations inconnues.
     # Ce catalogue ne constitue pas une autorisation d'exécuter tous ces outils.
-    intent_markers = (
-        "historique", "entrainement realise", "mes entrainements", "mes activites", "mes sorties", "charge", "atl", "ctl",
-        "tsb", "recuperation", "recup", "sommeil", "hrv", "tendance", "evolution",
-        "progression", "compare", "comparaison", "activite", "seance", "sortie du",
-        "course", "ultra", "trail", "dossard", "preparation", "planning", "planifie",
-        "programme", "semaine", "prochaine seance", "prochain entrainement", "seance suivante", "blessure", "douleur", "tendon", "malade", "maladie",
-        "indisponible", "contrainte", "profil", "vma", "fc max", "frequence cardiaque",
-        "zones cardiaques", "zone cardiaque", "etat de forme", "fatigue", "stress",
-        "seuil", "poids", "je pese", "equipement", "chaussures", "mon poids",
-        "comment je vais", "comment vais-je", "comment est ma forme", "comment va ma forme",
-        "ou j en suis", "bilan de forme", "suis-je en forme", "bilan de ma semaine", "bilan de la semaine", "bilan hebdomadaire",
-    )
     last_assistant = _normalize(assistant_history[-1]) if assistant_history else ""
     clarification_follow_up = (
         len(question.split()) <= 5
@@ -199,7 +191,7 @@ def build_coach_execution_plan(
         assistant_history=assistant_history,
         evidence_history=history,
     ))
-    if not any(marker in intent_context for marker in intent_markers):
+    if not has_coach_intent(intent_context):
         return CoachExecutionPlan()
 
     periods = extract_explicit_periods(conversation_users, assistant_history)

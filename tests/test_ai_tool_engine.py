@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from opencoach.ai.tool_engine import AITool, AIToolRegistry
 from opencoach.ai.training_tools import build_training_history_tool
+from opencoach.training import TrainingStats
 
 
 class EchoArguments(BaseModel):
@@ -113,7 +114,7 @@ def test_training_history_tool_uses_injected_athlete_and_inclusive_period():
 
     def calculate(profile_id, start_date, end_date):
         calls.append((profile_id, start_date, end_date))
-        return SimpleNamespace(
+        return TrainingStats(
             start_date=start_date,
             end_date=end_date,
             activities_count=2,
@@ -123,14 +124,25 @@ def test_training_history_tool_uses_injected_athlete_and_inclusive_period():
             total_elevation_gain_m=900.0,
             measured_load=120.0,
             estimated_load=30.0,
+            duration_data_count=0,
             distance_data_count=2,
             elevation_data_count=1,
             measured_load_data_count=2,
-            sessions_count=3,
-            total_load=150.0,
+            estimated_load_data_count=1,
         )
 
-    service = SimpleNamespace(calculate=calculate)
+    def calculate_days(
+        profile_id,
+        reference_date,
+        *,
+        days,
+        include_reference_day=True,
+    ):
+        end_date = reference_date if include_reference_day else reference_date - timedelta(days=1)
+        start_date = end_date - timedelta(days=days - 1)
+        return calculate(profile_id, start_date, end_date)
+
+    service = SimpleNamespace(calculate_days=calculate_days)
     tool = build_training_history_tool(
         service,
         athlete_id,

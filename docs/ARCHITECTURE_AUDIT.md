@@ -519,7 +519,7 @@ L'audit ciblé de la séparation métier Coach / IA est clôturé sur cette bran
 
 ### Limites explicites
 
-Cette clôture certifie la frontière Coach / IA et les responsabilités examinées dans les modules décrits par cet audit. Elle ne prétend pas certifier ligne par ligne les 1 165 fichiers du dépôt, ni l'absence de toute duplication dans l'ensemble du backend, du frontend, des scripts et de l'infrastructure. Les façades historiques restent en place tant qu'une rupture de compatibilité n'est pas décidée. Une validation opérationnelle sur la VM Debian 13, avec base existante et synchronisations COROS/Intervals.icu réelles, reste distincte de la CI et n'est pas remplacée par ces tests.
+Cette clôture certifie la frontière Coach / IA et les responsabilités examinées dans les modules décrits par cet audit. Elle ne prétend pas certifier ligne par ligne les 1 183 fichiers suivis dans le dépôt au HEAD audité, ni l'absence de toute duplication dans l'ensemble du backend, du frontend, des scripts et de l'infrastructure. Les façades historiques restent en place tant qu'une rupture de compatibilité n'est pas décidée. Une validation opérationnelle sur la VM Debian 13, avec base existante et synchronisations COROS/Intervals.icu réelles, reste distincte de la CI et n'est pas remplacée par ces tests.
 
 
 ## 19. Reprise de l'audit global du dépôt — 16 novembre 2026
@@ -546,3 +546,12 @@ Cette étape est un inventaire reproductible et une clarification des faux posit
 ### Correctif opérationnel identifié pendant l'audit global
 
 Le script de déploiement frontend acceptait `OPENCOACH_WEB_ROOT`, mais le script de rollback utilisait encore systématiquement `/var/www/opencoach`. Avec une racine web personnalisée, le déploiement et le rollback ne ciblaient donc pas le même répertoire. Le rollback utilise maintenant la même variable et rejette les chemins relatifs. Le test shell du déploiement couvre cette cohérence.
+
+
+### Nettoyage ciblé et validation
+
+- `_extract_scheduled_workouts_for_date()` dans `api/coros.py` n'avait aucun appel de production : il n'était appelé que par un test. Il répétait une partie du parcours de parsing déjà centralisé dans `_extract_scheduled_workout_records_for_date()`. La fonction inutilisée et son assertion dédiée ont été retirées ; les tests conservent la couverture du parseur canonique utilisé par les routes.
+- Le script de rollback frontend utilise maintenant `OPENCOACH_WEB_ROOT`, comme le déploiement, et refuse une valeur relative. Le test shell vérifie explicitement cette cohérence.
+- CI du commit `4908e8ef` : **3 171 tests Python réussis**, Bash et Frontend réussis (run GitHub Actions `43877822007`). Les deux warnings Python sont des avertissements de dépréciation des dépendances de test.
+
+Ces changements retirent un vrai chemin de parsing mort et corrigent une incohérence de déploiement sans toucher aux règles métier ni à la synchronisation COROS.

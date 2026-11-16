@@ -52,7 +52,7 @@ def _coach_synthesis_system_prompt(preferences: AICoachPreferencesPayload) -> st
         5: "Ton très stimulant, honnête et réaliste.",
     }[preferences.motivation]
     response_style = {
-        "concise": "Réponse courte et directement actionnable.",
+        "concise": "Privilégie des réponses courtes et directement actionnables.",
         "analytical": "Explication fluide, structurée et orientée compréhension.",
         "detailed": "Explication développée, hiérarchisée et conversationnelle.",
     }[preferences.response_style]

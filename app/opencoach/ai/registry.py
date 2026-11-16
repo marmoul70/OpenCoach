@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from opencoach.ai.tool_engine import AIToolRegistry
+from opencoach.coaching.capabilities.registry import CoachCapabilityRegistry as AIToolRegistry
 from opencoach.ai.activity_tools import build_activity_detail_tool
 from opencoach.ai.coaching_tools import (
     build_coach_decision_tool,

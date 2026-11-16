@@ -44,7 +44,7 @@ from opencoach.ai.recovery_tools import (
 from opencoach.ai.trend_tools import TrainingTrendsArguments
 from opencoach.ai.training_tools import TrainingHistoryArguments
 from opencoach.api.ai import _DEFAULT_COACH_PREFERENCES, _coach_system_prompt
-from opencoach.ai.tool_routing import select_coach_tools
+from opencoach.coaching.assistant.tool_routing import select_coach_tools
 from opencoach.services import RacePreparationService
 
 

@@ -140,7 +140,7 @@ _COACH_ACTIONABLE_GUIDANCE = re.compile(
     r"garde|maintiens|réduis|allège|remplace|reporte|"
     r"pars sur|opte pour|privilégie|évite|"
     r"séance facile|endurance fondamentale|récupération active|"
-    r"repos|footing|fractionné|renforcement)\\b",
+    r"repos|footing|fractionné|renforcement)\b",
     re.IGNORECASE,
 )
 

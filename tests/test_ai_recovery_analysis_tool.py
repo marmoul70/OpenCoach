@@ -6,6 +6,7 @@ from opencoach.ai.recovery_tools import (
     build_recovery_analysis_tool,
 )
 from opencoach.coaching.daily_checkin import AthleteDailyCheckIn
+from opencoach.readiness import ReadinessService
 from opencoach.models import DailyContext, WellnessDay
 
 
@@ -41,6 +42,14 @@ class FakeDailyCheckInRepository:
         return self.checkin if self.checkin and self.checkin.date == checkin_date else None
 
 
+def build_tool(wellness, context, checkin, profile_id):
+    service = ReadinessService(
+        wellness,
+        daily_context_repository=context,
+    )
+    return build_recovery_analysis_tool(service, checkin, profile_id)
+
+
 def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():
     profile_id = uuid4()
     wellness = FakeWellnessRepository([
@@ -73,9 +82,7 @@ def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():
         pain_wellness_rating=4,
     ))
 
-    tool = build_recovery_analysis_tool(
-        wellness, context, checkin, profile_id
-    )
+    tool = build_tool(wellness, context, checkin, profile_id)
     result = tool.handler(RecoveryAnalysisArguments(target_date=TARGET))
 
     assert result["provider"] == "opencoach"
@@ -104,7 +111,7 @@ def test_recovery_analysis_reads_intervals_after_import_into_opencoach():
             hrv=42.0,
         )
     ])
-    tool = build_recovery_analysis_tool(
+    tool = build_tool(
         wellness,
         FakeDailyContextRepository(),
         FakeDailyCheckInRepository(),
@@ -121,7 +128,7 @@ def test_recovery_analysis_reads_intervals_after_import_into_opencoach():
 
 def test_recovery_analysis_keeps_missing_data_unknown_and_requests_subjective_followup():
     profile_id = uuid4()
-    tool = build_recovery_analysis_tool(
+    tool = build_tool(
         FakeWellnessRepository([]),
         FakeDailyContextRepository(),
         FakeDailyCheckInRepository(),

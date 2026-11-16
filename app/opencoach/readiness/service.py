@@ -6,7 +6,14 @@ from opencoach.config import ThresholdSettings, get_threshold_settings
 from opencoach.database.repositories.daily_context import DailyContextRepository
 from opencoach.database.repositories.wellness import WellnessRepository
 from opencoach.models import DailyContext, WellnessDay
-from opencoach.wellness_aggregation import aggregate_wellness_days
+from opencoach.wellness_aggregation import (
+    WellnessAggregation,
+    aggregate_wellness_days,
+)
+from opencoach.recovery_assessment import (
+    RecoveryAssessment,
+    build_recovery_assessment,
+)
 
 from .baseline import calculate_readiness_baseline
 from .comparison import ReadinessComparison, compare_with_baseline
@@ -163,6 +170,34 @@ class ReadinessService:
             data_status=data_status,
             data_conflicts=tuple(sorted(set(data_conflicts))),
         )
+
+    def describe_recovery(
+        self,
+        athlete_profile_id: UUID,
+        target_date: date,
+    ) -> tuple[RecoveryAssessment, WellnessAggregation]:
+        """Construit la synthèse descriptive depuis les imports Wellness centralisés.
+
+        Cette capacité réutilise le repository, l'agrégation multi-fournisseurs
+        et le contexte quotidien déjà détenus par ReadinessService.
+        """
+        start_date = target_date - timedelta(days=29)
+        imported = self.repository.list_range(
+            athlete_profile_id,
+            start_date,
+            target_date,
+        )
+        aggregation = aggregate_wellness_days(imported)
+        assessment = build_recovery_assessment(
+            wellness_days=list(aggregation.days),
+            target_date=target_date,
+            provider="opencoach",
+            subjective_context=self._get_daily_context(
+                athlete_profile_id,
+                target_date,
+            ),
+        )
+        return assessment, aggregation
 
     def _get_daily_context(
         self,

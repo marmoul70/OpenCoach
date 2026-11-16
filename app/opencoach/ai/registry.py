@@ -36,10 +36,6 @@ from opencoach.database.repositories import (
 from opencoach.database.repositories.sql_daily_checkin import (
     SqlDailyCheckInRepository,
 )
-from opencoach.database.repositories.sql_daily_context import (
-    SqlDailyContextRepository,
-)
-from opencoach.database.repositories.sql_wellness import SqlWellnessRepository
 from opencoach.planning.service import PlanningContextService
 from opencoach.services import PlannedTrainingService, RacePreparationService
 from opencoach.training import TrainingStatsService
@@ -137,10 +133,9 @@ def build_ai_tool_registry(
     )
     registry.register(
         build_recovery_analysis_tool(
-            wellness_repository=SqlWellnessRepository(db),
-            daily_context_repository=SqlDailyContextRepository(db),
-            daily_checkin_repository=SqlDailyCheckInRepository(db),
-            athlete_profile_id=athlete_profile_id,
+            context_service.readiness_service,
+            SqlDailyCheckInRepository(db),
+            athlete_profile_id,
         )
     )
     registry.register(

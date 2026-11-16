@@ -1,4 +1,4 @@
-"""Outil de disponibilité quotidienne basé sur le moteur Readiness OpenCoach."""
+"""Adaptateurs conversationnels pour les capacités de récupération OpenCoach."""
 from __future__ import annotations
 
 from datetime import date
@@ -7,11 +7,13 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from opencoach.ai.tool_engine import AITool
+from opencoach.database.repositories import DailyCheckInRepository
 from opencoach.readiness import (
     ReadinessDataUnavailableError,
     ReadinessService,
     readiness_assessment_to_dict,
 )
+from opencoach.recovery_assessment import recovery_coach_summary_to_dict
 
 
 class RecoveryStatusArguments(BaseModel):
@@ -29,20 +31,21 @@ def build_recovery_status_tool(
     service: ReadinessService,
     athlete_profile_id: UUID,
 ) -> AITool:
-    """Construit l'outil Readiness pour l'athlète authentifié."""
+    """Expose le résultat Readiness calculé par le Coach."""
 
     def execute(arguments: BaseModel) -> dict:
-        target_date = arguments.target_date
         try:
-            assessment = service.calculate(athlete_profile_id, target_date)
+            assessment = service.calculate(
+                athlete_profile_id,
+                arguments.target_date,
+            )
         except ReadinessDataUnavailableError:
             return {
                 "available": False,
-                "target_date": target_date.isoformat(),
+                "target_date": arguments.target_date.isoformat(),
                 "reason": "no_readiness_data",
                 "message": "Aucune donnée de récupération exploitable n'est disponible pour cette date.",
             }
-
         return readiness_assessment_to_dict(assessment)
 
     return AITool(
@@ -57,8 +60,9 @@ def build_recovery_status_tool(
         handler=execute,
     )
 
+
 class RecoveryAnalysisArguments(BaseModel):
-    """Fenêtre descriptive de récupération, ancrée sur une date."""
+    """Date d'ancrage de la synthèse de récupération."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -69,209 +73,26 @@ class RecoveryAnalysisArguments(BaseModel):
 
 
 def build_recovery_analysis_tool(
-    wellness_repository,
-    daily_context_repository,
-    daily_checkin_repository,
+    service: ReadinessService,
+    daily_checkin_repository: DailyCheckInRepository,
     athlete_profile_id: UUID,
 ) -> AITool:
-    """Expose les données sommeil, physiologie, charge et ressenti sur les 7 derniers jours.
-
-    Les calculs restent dans recovery_assessment.py. L'outil ne crée aucun score
-    composite et conserve séparément données objectives et déclarations athlète.
-    """
-
-    from datetime import timedelta
-
-    from opencoach.wellness_aggregation import aggregate_wellness_days
-    from opencoach.recovery_assessment import (
-        build_recovery_assessment,
-        recovery_assessment_to_dict,
-    )
-
-    # Ne transmettre que les indicateurs utiles à une synthèse forme /
-    # fatigue / sommeil. Les métriques détaillées restent disponibles dans
-    # les écrans métier ; elles alourdissent inutilement le contexte du LLM.
-    analysis_metrics = {
-        "hrv", "resting_hr", "sleep_seconds", "sleep_score", "sleep_quality",
-        "stress_avg", "spo2", "sleep_deep_seconds",
-        "sleep_rem_seconds", "fatigue_atl", "fitness_ctl",
-    }
-
-    def format_duration(value: float | int | None) -> str | None:
-        if value is None:
-            return None
-        total_minutes = round(float(value) / 60)
-        hours, minutes = divmod(total_minutes, 60)
-        return f"{hours} h {minutes:02d} min"
-
-    def metric_result(name, metric) -> dict:
-        if metric.sample_count <= 0:
-            return {"current": None, "sample_count": 0}
-        if name in {"sleep_seconds", "sleep_deep_seconds", "sleep_rem_seconds"}:
-            return {
-                "current": format_duration(metric.current),
-                "average": format_duration(metric.average),
-                "median": format_duration(metric.median),
-                "unit": "heures et minutes",
-                "sample_count": metric.sample_count,
-                "coverage_days": metric.coverage_days,
-                "expected_days": metric.expected_days,
-            }
-        return {
-            "current": metric.current,
-            "average": metric.average,
-            "median": metric.median,
-            "sample_count": metric.sample_count,
-            "coverage_days": metric.coverage_days,
-            "expected_days": metric.expected_days,
-        }
+    """Expose le résumé de récupération construit par le domaine Coach."""
 
     def execute(arguments: BaseModel) -> dict:
-        target_date = arguments.target_date
-        start_date = target_date - timedelta(days=29)
-        # Le coach lit uniquement les lignes déjà centralisées dans OpenCoach.
-        # Aucun fournisseur n’est prioritaire : les métriques sont fusionnées
-        # indépendamment, journée par journée.
-        imported_wellness_days = wellness_repository.list_range(
-            athlete_profile_id, start_date, target_date,
-        )
-        aggregation = aggregate_wellness_days(imported_wellness_days)
-        provider = "opencoach"
-        wellness_days = list(aggregation.days)
-
-        subjective_context = daily_context_repository.get_by_date(
+        assessment, _aggregation = service.describe_recovery(
             athlete_profile_id,
-            target_date,
+            arguments.target_date,
         )
         daily_checkin = daily_checkin_repository.get_for_date(
             athlete_profile_id,
-            target_date,
+            arguments.target_date,
         )
-
-        assessment = build_recovery_assessment(
-            wellness_days=wellness_days,
-            target_date=target_date,
-            provider=provider,
-            subjective_context=subjective_context,
+        return recovery_coach_summary_to_dict(
+            assessment,
+            _aggregation,
+            daily_checkin,
         )
-        payload = recovery_assessment_to_dict(assessment)
-
-        checkin_payload = None
-        if daily_checkin is not None:
-            checkin_payload = {
-                "date": daily_checkin.date.isoformat(),
-                "energy_rating": daily_checkin.energy_rating,
-                "pain_wellness_rating": daily_checkin.pain_wellness_rating,
-                "illness": daily_checkin.illness,
-                "unavailable": daily_checkin.unavailable,
-                "pain_locations": [
-                    {
-                        "area": item.area.value,
-                        "side": item.side.value,
-                    }
-                    for item in daily_checkin.pain_locations
-                ],
-            }
-
-        windows = []
-        # Une demande de récupération « récente » doit être strictement bornée
-        # à 7 jours. Ne pas exposer les fenêtres 14/30 j au LLM : il privilégiait
-        # régulièrement la fenêtre de 30 jours malgré les consignes du prompt.
-        for window in assessment.windows:
-            if window.days != 7:
-                continue
-            windows.append({
-                "days": window.days,
-                "start_date": window.start_date.isoformat(),
-                "end_date": window.end_date.isoformat(),
-                "recorded_days": window.recorded_days,
-                "coverage_ratio": round(window.coverage_ratio, 3),
-                "metrics": {
-                    name: metric_result(name, metric)
-                    for name, metric in window.metrics.items()
-                    if name in analysis_metrics
-                },
-            })
-
-        warnings = []
-        if aggregation.conflicts:
-            warnings.append(
-                "Des valeurs concurrentes de fraîcheur identique ont été écartées : "
-                + str(aggregation.conflicts)
-            )
-        if assessment.data_status == "unavailable":
-            warnings.append("Aucune donnée Wellness disponible sur la période.")
-        elif assessment.data_status == "stale":
-            warnings.append(
-                f"Dernière donnée Wellness le {assessment.source_date.isoformat()} "
-                f"(J-{assessment.data_age_days})."
-            )
-        if checkin_payload is None and payload["subjective"] is None:
-            warnings.append(
-                "Aucun ressenti subjectif enregistré pour cette date. "
-                "Demander à l'athlète comment il se sent ; ne rien déduire."
-            )
-        if windows and windows[0]["coverage_ratio"] < 0.7:
-            warnings.append(
-                "Couverture Wellness inférieure à 70 % sur 7 jours ; "
-                "interpréter les tendances avec prudence."
-            )
-
-        metric_definitions = {
-            "hrv": {"label": "Variabilité de la fréquence cardiaque", "unit": "ms"},
-            "resting_hr": {"label": "Fréquence cardiaque au repos", "unit": "bpm"},
-            "stress_avg": {"label": "Stress moyen", "unit": "score COROS"},
-            "sleep_seconds": {"label": "Durée totale de sommeil", "unit": "heures et minutes"},
-            "sleep_score": {"label": "Score de sommeil", "unit": "score COROS"},
-            "sleep_quality": {"label": "Qualité du sommeil", "unit": "score COROS"},
-            "spo2": {"label": "Saturation périphérique en oxygène", "unit": "%"},
-            "sleep_deep_seconds": {"label": "Sommeil profond", "unit": "heures et minutes"},
-            "sleep_rem_seconds": {"label": "Sommeil paradoxal (REM)", "unit": "heures et minutes"},
-            "fatigue_atl": {"label": "Charge aiguë COROS (ATL)", "unit": "points COROS"},
-            "fitness_ctl": {"label": "Charge chronique COROS (CTL)", "unit": "points COROS"},
-        }
-
-        return {
-            "target_date": target_date.isoformat(),
-            "data_store": "OpenCoach",
-            "metric_definitions": metric_definitions,
-            "provider": provider if wellness_days else None,
-            # Conserver la provenance sans transmettre une matrice journalière
-            # répétitive qui peut dépasser le budget de contexte du modèle.
-            "metric_sources": {
-                metric: sorted({
-                    source
-                    for day_sources in aggregation.metric_sources.values()
-                    for source in day_sources.get(metric, ())
-                })
-                for metric in sorted({
-                    metric
-                    for day_sources in aggregation.metric_sources.values()
-                    for metric in day_sources
-                    if metric in analysis_metrics
-                })
-            },
-            "metric_source_days": {
-                metric: sum(
-                    1 for day_sources in aggregation.metric_sources.values()
-                    if metric in day_sources and metric in analysis_metrics
-                )
-                for metric in sorted({
-                    metric
-                    for day_sources in aggregation.metric_sources.values()
-                    for metric in day_sources
-                    if metric in analysis_metrics
-                })
-            },
-            "conflicting_metrics": aggregation.conflicts,
-            "source_date": payload["source_date"],
-            "data_age_days": payload["data_age_days"],
-            "data_status": payload["data_status"],
-            "windows": windows,
-            "daily_context": payload["subjective"],
-            "daily_checkin": checkin_payload,
-            "warnings": warnings,
-        }
 
     return AITool(
         name="recovery_analysis",

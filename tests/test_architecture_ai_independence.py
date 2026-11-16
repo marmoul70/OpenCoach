@@ -54,3 +54,33 @@ def test_business_packages_do_not_import_the_ai_package():
         "Les domaines métier ne doivent pas dépendre du moteur IA :\n"
         + "\n".join(sorted(set(violations)))
     )
+
+
+
+def test_ai_package_does_not_import_persistence_or_sqlalchemy():
+    ai_root = Path(__file__).resolve().parents[1] / "app" / "opencoach" / "ai"
+    violations = []
+
+    for source in ai_root.rglob("*.py"):
+        tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
+        for node in ast.walk(tree):
+            modules = []
+            if isinstance(node, ast.Import):
+                modules.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                modules.append(node.module)
+
+            for module in modules:
+                if (
+                    module == "sqlalchemy"
+                    or module.startswith("sqlalchemy.")
+                    or module == "opencoach.database"
+                    or module.startswith("opencoach.database.")
+                ):
+                    relative = source.relative_to(ai_root)
+                    violations.append(f"{relative}:{node.lineno} -> {module}")
+
+    assert not violations, (
+        "Le package IA ne doit pas dépendre de la persistance :\n"
+        + "\n".join(sorted(set(violations)))
+    )

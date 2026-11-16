@@ -283,3 +283,15 @@ La suite de l'audit doit encore vérifier les responsabilités restantes des ada
 Le résultat Readiness et ses avertissements sont désormais sérialisés par `readiness_assessment_to_dict()` dans le domaine `opencoach.readiness`. L'adaptateur `ai/recovery_tools.py` se limite à appeler `ReadinessService.calculate()`, traiter l'indisponibilité technique prévue et transmettre le résultat domaine. Les règles de fraîcheur, de fiabilité des baselines et les avertissements ne sont plus reconstruits dans l'IA.
 
 Ce déplacement réutilise le moteur Readiness et son assessment existants ; aucun second service ni calcul n'a été ajouté. La suite ciblée `tests/test_ai_recovery_tools.py` doit confirmer la préservation du contrat de l'outil.
+
+
+
+## État de reprise — 16 novembre 2026
+
+Les refactors récents ont déplacé plusieurs responsabilités vers les capacités Coach existantes : statistiques et tendances, charge récente, récupération Wellness, calendrier de courses, contraintes, plan hebdomadaire, débriefing prévu/réalisé et sélection/détail d'activité.
+
+Le package opencoach.ai ne compose plus les repositories SQL : le câblage est effectué dans la composition API. Des tests d'architecture empêchent les dépendances directes entre domaines métier et IA, ainsi que les imports de persistance dans opencoach.ai.
+
+Le moteur IA local est optionnel et désactivé par défaut. Les domaines Coach restent indépendants de son fournisseur.
+
+Non terminé : audit et déplacement des règles de recommandation/restriction présentes dans api/ai.py et ai/response_synthesis.py, puis audit exhaustif des autres adaptateurs IA et de leurs contrats. Ne pas déclarer la règle zéro métier satisfaite avant cette dernière passe et la CI complète.

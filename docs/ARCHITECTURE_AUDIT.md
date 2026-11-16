@@ -352,3 +352,29 @@ Aucun merge, rebase sur `main`, déploiement, suppression de branche ou incréme
 La sérialisation du résultat Readiness, notamment les avertissements liés aux conflits d'import, à la fraîcheur des données et à la fiabilité des baselines, est maintenant portée par `opencoach.readiness.readiness_assessment_to_dict()`. `ai/recovery_tools.py` délègue au `ReadinessService` et transmet le résultat. Le contrat de sortie de l'outil est conservé ; aucun service parallèle n'est créé.
 
 Il s'agit d'un premier retrait ciblé. L'outil `recovery_analysis` contient encore une orchestration et des règles de composition qui restent à déplacer vers les capacités Coach existantes après caractérisation de ses contrats.
+
+
+
+## 15. Centralisation Coach et indépendance du moteur IA
+
+Les responsabilités suivantes ont été replacées dans les capacités Coach existantes :
+
+- TrainingStatsService possède les fenêtres calendaires et les comparaisons de périodes successives.
+- TrainingStats.history_summary() et RecentTrainingLoad.analysis_summary() centralisent les règles de couverture, les sous-totaux partiels, la fiabilité des totaux et les avertissements.
+- ReadinessService.describe_recovery() centralise l'accès aux imports Wellness, leur agrégation, le contexte quotidien et le check-in ; l'API Wellness et l'adaptateur conversationnel réutilisent cette même capacité.
+- recovery_assessment_to_coach_summary() dans opencoach.recovery_assessment construit la synthèse descriptive métier, notamment la fenêtre récente, les métriques pertinentes, la provenance et les limites de couverture.
+- RacePreparationService.list_calendar() porte la consultation du calendrier des courses.
+- PlanningContextService.active_constraints() et weekly_plan_context() portent les contraintes et le contexte de plan hebdomadaire.
+- PlannedTrainingService.list_between() valide les limites de période des séances planifiées.
+- ValidateTrainingSessionService.review() réutilise le moteur d'analyse prévu/réalisé pour un débriefing strictement en lecture seule.
+- ActivityDetailService a été ajouté après vérification : les repositories d'activité/détail et la route API COROS existaient, mais aucun service applicatif commun ne résolvait la sélection d'activité et son détail centralisé. Il réutilise les repositories existants et ne crée aucune nouvelle persistance.
+
+La composition des repositories nécessaires aux outils a été déplacée dans api/ai.py. ai/registry.py ne construit plus de repositories SQL ; il assemble uniquement les adaptateurs autour des services Coach injectés.
+
+Deux garde-fous d'architecture vérifient désormais que :
+1. les packages métier n'importent pas opencoach.ai ;
+2. le package opencoach.ai n'importe ni SQLAlchemy ni opencoach.database.
+
+Le moteur local reste désactivé par défaut (OPENCOACH_AI_ENABLED=false). Les capacités de domaine et leurs API métier ne nécessitent pas qu'un fournisseur LLM soit disponible.
+
+Travaux restant à auditer avant certification zéro métier dans l'IA : les règles de recommandation et de restriction dans api/ai.py et ai/response_synthesis.py, les modules de collecte/proposition de données, ainsi que l'ensemble des adaptateurs et contrats de routage. Aucun retrait global n'est déclaré terminé à ce stade.

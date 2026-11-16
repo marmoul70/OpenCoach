@@ -236,7 +236,7 @@ def build_routed_tool_definitions(case: dict[str, Any]) -> list[AIToolDefinition
             history=user_turns[:-1],
             assistant_history=assistant_turns,
         ))
-    # Le benchmark mesure les 14 outils métier en lecture ; l'outil contrôlé
+    # Le benchmark mesure les 15 outils métier en lecture ; l'outil contrôlé
     # propose_profile_data n'appartient pas à ce catalogue de mesure.
     selected_names.intersection_update(ARGUMENT_MODELS)
     return [

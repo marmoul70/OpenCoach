@@ -402,7 +402,11 @@ Les schémas IA transportent des entiers/dates sans reproduire ces politiques. L
 
 La route /api/coach/today repose sur CoachDecisionService et ses services métier. Un test d'architecture vérifie que les routes Coach principales n'importent pas opencoach.ai. Le moteur IA peut donc être désactivé sans retirer la décision quotidienne du Coach.
 
-**Reste à traiter avant certification zéro logique métier :** la composition des analyses de recommandation dans ai/execution_plan.py, les règles de validation des affirmations dans ai/response_synthesis.py et le blocage des restrictions dans api/ai.py. Ces éléments doivent être comparés à CoachDecisionService et PlanningContextService pour réutiliser leurs décisions au lieu de maintenir une politique parallèle. Aucun nouveau service ne doit être créé avant cette vérification.
+La décision de séance n'est plus reconstruite par le parcours conversationnel : `coach_decision` expose désormais `CoachDecisionService`, déjà utilisé par la route Coach quotidienne. Les scénarios de recommandation appellent cette capacité à la place de `next_planned_session` seul ; le service renvoie l'action, la justification, la séance concernée, Readiness et l'évaluation de charge. Le contrôle de restriction s'appuie toujours sur `PlanningContextService.active_constraints()` et sa décision métier structurée.
+
+Les règles restantes dans `ai/execution_plan.py` et `ai/tool_routing.py` concernent l'interprétation du langage utilisateur, la sélection des outils et la collecte de paramètres conversationnels. Elles doivent rester des règles d'interface, sans seuil sportif, calcul, classification ni politique de planification. `ai/response_synthesis.py` conserve uniquement des contrôles de qualité de génération qui vérifient l'étayage des affirmations par les résultats Coach.
+
+**Audit encore ouvert avant certification zéro métier :** vérifier ligne par ligne les derniers contrats du planificateur et de la collecte de données, et confirmer que tous les parcours métier principaux restent disponibles quand `OPENCOACH_AI_ENABLED=false`.
 
 
 ## 17. Suppression de la composition métier dans les adaptateurs IA

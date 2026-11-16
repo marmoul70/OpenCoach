@@ -319,3 +319,10 @@ Le package opencoach.ai n'importe ni SQLAlchemy ni opencoach.database. Les repos
 
 
 Le dernier nettoyage de composition a aussi supprimé la recréation des repositories activité/séance dans api/ai.py : les outils réutilisent ceux de TrainingStatsService. La dépendance de charge est partagée par la composition Coach. Le schéma de collecte de données hérite du modèle métier AIDataProposalCreate au lieu de dupliquer sa liste de champs et ses validations.
+
+
+### Décision de séance et recommandations
+
+Les demandes de recommandation conversationnelle exposent maintenant l'outil `coach_decision`, adaptateur mince de `CoachDecisionService`. Le parcours conversationnel ne s'appuie plus sur le seul outil de consultation de la prochaine séance pour fabriquer la recommandation : il consomme l'action et la justification calculées par le Coach. La route métier quotidienne et l'IA réutilisent le même service.
+
+Le routeur conserve uniquement l'interprétation de l'intention et la sélection des capacités à appeler. Il ne doit pas reproduire les seuils, règles de charge, statuts ou décisions de séance.

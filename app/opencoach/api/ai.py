@@ -171,7 +171,7 @@ def get_ai_tool_registry(
     ),
     context_service: PlanningContextService = Depends(get_planning_context_service),
 ) -> AIToolRegistry:
-    """Construit les capacités Coach dans la composition API, puis les expose à l'IA."""
+    """Construit les capacités Coach appelées par le plan d'exécution déterministe."""
     # Réutilise les repositories déjà injectés dans le service de statistiques.
     # Aucun repository activité/séance parallèle n'est créé pour les outils IA.
     training_session_repository = training_stats_service.training_session_repository

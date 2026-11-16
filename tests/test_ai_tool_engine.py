@@ -171,16 +171,23 @@ def test_training_history_tool_uses_injected_athlete_and_inclusive_period():
 
 def test_training_history_tool_rejects_out_of_range_period_without_calling_service():
     calls = []
-    service = SimpleNamespace(calculate=lambda *args: calls.append(args))
+    def calculate_days(*args, days, **kwargs):
+        calls.append((args, days))
+        if not 1 <= days <= 365:
+            raise ValueError("La période doit contenir au moins un jour et ne pas dépasser 365 jours.")
+        raise AssertionError("La période valide n'aurait pas dû être exécutée dans ce test.")
+
+    service = SimpleNamespace(calculate_days=calculate_days)
     tool = build_training_history_tool(service, uuid4())
     registry = AIToolRegistry()
     registry.register(tool)
 
     for nb_days in (366, 500):
         result = registry.execute("training_history", {"nb_days": nb_days})
-        assert result.status == "invalid_arguments"
+        assert result.status == "failed"
+        assert "365 jours" in (result.error or "")
 
-    assert calls == []
+    assert len(calls) == 2
 
 
 
@@ -201,7 +208,7 @@ def test_argument_evidence_guard_blocks_unrequested_or_out_of_range_periods():
     from opencoach.ai.argument_evidence import validate_period_argument_evidence
 
     assert validate_period_argument_evidence("training_history", {"nb_days": 7}, ["Fais-moi le bilan de mon historique."]) == "Sur combien de jours souhaites-tu que j'analyse ton historique ?"
-    assert validate_period_argument_evidence("training_history", {"nb_days": 500}, ["Analyse mon historique sur 500 jours."]).startswith("La période demandée (500 jours) dépasse les limites")
+    assert validate_period_argument_evidence("training_history", {"nb_days": 500}, ["Analyse mon historique sur 500 jours."]) is None
     assert validate_period_argument_evidence("training_history", {"nb_days": 7}, ["Analyse mon historique sur 7 jours."]) is None
     assert validate_period_argument_evidence("training_history", {"nb_days": 7}, ["Analyse mon historique sur les 7 derniers jours."]) is None
     assert validate_period_argument_evidence("training_history", {"nb_days": 7}, ["Fais-moi le bilan de mon historique.", "7"], ["Sur combien de jours souhaites-tu ton historique ?"]) is None

@@ -392,6 +392,21 @@ def test_calculate_days_builds_inclusive_window_with_optional_reference_day():
     ]
 
 
+def test_calculate_days_rejects_window_over_domain_maximum():
+    import pytest
+
+    service = TrainingStatsService(
+        FakeActivityRepository([]),
+        FakeTrainingSessionRepository([]),
+    )
+    with pytest.raises(ValueError, match="365 jours"):
+        service.calculate_days(
+            uuid4(),
+            date(2026, 11, 15),
+            days=366,
+        )
+
+
 def test_calculate_days_rejects_empty_window():
     import pytest
 

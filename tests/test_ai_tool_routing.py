@@ -212,19 +212,19 @@ def test_planned_sessions_requires_an_explicit_date_range():
     )
     assert "planned_sessions" in selected
 
-def test_router_hides_history_tool_when_explicit_period_exceeds_supported_range():
+def test_router_does_not_duplicate_training_history_domain_period_limit():
     selected = select_coach_tools("Analyse mon historique sur 500 jours.")
-    assert "training_history" not in selected
+    assert "training_history" in selected
 
 
-def test_router_hides_load_and_race_preparation_tools_for_out_of_range_periods():
+def test_router_does_not_duplicate_load_or_race_preparation_domain_limits():
     load_tools = select_coach_tools("Donne-moi ma charge sur 120 jours.")
     race_tools = select_coach_tools(
         "Analyse ma préparation sur les 200 derniers jours."
     )
 
-    assert "training_load" not in load_tools
-    assert "race_preparation_analysis" not in race_tools
+    assert "training_load" in load_tools
+    assert "race_preparation_analysis" in race_tools
 
 
 

@@ -1,12 +1,13 @@
 import json
 from datetime import date, datetime, timezone
 
-from opencoach.api.training_sessions import _as_utc
+from opencoach.api.training_session_serializers import _as_utc
 from opencoach.integrations.coros.workout_responses import (
     _extract_coros_scheduled_id,
     _extract_other_coros_workouts,
     _extract_scheduled_workout_records_for_date,
 )
+
 
 
 def test_extracts_scheduled_id_from_structured_mcp_result() -> None:

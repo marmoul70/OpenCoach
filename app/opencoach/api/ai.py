@@ -693,10 +693,7 @@ async def ask_local_ai_with_athlete_context(
                 answer = rewritten.content
                 model = rewritten.model
             else:
-                answer = (
-                    _coach_planned_session_fallback_answer(payload.question, tool_results)
-                    or _coach_response_quality_fallback_answer()
-                )
+                answer = _coach_response_quality_fallback_answer()
     except AIProviderError as exc:
         if not tool_results:
             raise HTTPException(

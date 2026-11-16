@@ -14,6 +14,7 @@ from opencoach.database.repositories import (
     SqlActivityRepository,
     SqlTrainingSessionRepository,
 )
+from opencoach.training.session_execution.validation_service import ValidateTrainingSessionService
 from opencoach.database.models import (
     Activity as ActivityModel,
     AthleteProfile as AthleteProfileModel,
@@ -99,9 +100,11 @@ def test_session_execution_review_uses_deterministic_engine_and_scoped_repositor
             activity_id=activity.id,
         )
         result = build_session_execution_review_tool(
-            SqlTrainingSessionRepository(session),
-            SqlActivityRepository(session),
-            SqlActivityDetailRepository(session),
+            ValidateTrainingSessionService(
+                training_session_repository=SqlTrainingSessionRepository(session),
+                activity_repository=SqlActivityRepository(session),
+                activity_detail_repository=SqlActivityDetailRepository(session),
+            ),
             profile.id,
         ).handler(SessionExecutionReviewArguments(session_id=planned.id))
 
@@ -129,9 +132,11 @@ def test_session_execution_review_asks_for_activity_link_instead_of_guessing():
         profile = _profile(session, "unlinked")
         planned = _planned_session(session, profile.id)
         result = build_session_execution_review_tool(
-            SqlTrainingSessionRepository(session),
-            SqlActivityRepository(session),
-            SqlActivityDetailRepository(session),
+            ValidateTrainingSessionService(
+                training_session_repository=SqlTrainingSessionRepository(session),
+                activity_repository=SqlActivityRepository(session),
+                activity_detail_repository=SqlActivityDetailRepository(session),
+            ),
             profile.id,
         ).handler(SessionExecutionReviewArguments(session_id=planned.id))
 
@@ -148,9 +153,11 @@ def test_session_execution_review_does_not_expose_another_athletes_session():
         other = _profile(session, "review-other")
         planned = _planned_session(session, owner.id)
         result = build_session_execution_review_tool(
-            SqlTrainingSessionRepository(session),
-            SqlActivityRepository(session),
-            SqlActivityDetailRepository(session),
+            ValidateTrainingSessionService(
+                training_session_repository=SqlTrainingSessionRepository(session),
+                activity_repository=SqlActivityRepository(session),
+                activity_detail_repository=SqlActivityDetailRepository(session),
+            ),
             other.id,
         ).handler(SessionExecutionReviewArguments(session_id=planned.id))
 

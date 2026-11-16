@@ -19,6 +19,8 @@ from opencoach.planning.sessions.prescription.integrity import (
     TrainingSessionPrescriptionIntegrityError,
     validate_training_session_prescription,
 )
+from opencoach.models import Activity, ActivityDetail, TrainingSession
+from opencoach.training.session_execution.models import SessionExecutionAssessment
 from opencoach.training.session_execution.analyzer import (
     analyze_session_execution,
 )
@@ -76,6 +78,17 @@ class TrainingSessionValidationResult:
     analysis: PersistedSessionExecutionAnalysis
 
 
+@dataclass(frozen=True, slots=True)
+class TrainingSessionReviewResult:
+    """Résultat en lecture seule du débriefing prévu / réalisé."""
+
+    status: str
+    session: TrainingSession | None = None
+    activity: Activity | None = None
+    detail: ActivityDetail | None = None
+    assessment: SessionExecutionAssessment | None = None
+
+
 
 @dataclass(slots=True)
 class ValidateTrainingSessionService:
@@ -84,7 +97,54 @@ class ValidateTrainingSessionService:
     training_session_repository: TrainingSessionRepository
     activity_repository: ActivityRepository
     activity_detail_repository: ActivityDetailRepository
-    validation_writer: TrainingSessionValidationWriter
+    validation_writer: TrainingSessionValidationWriter | None = None
+
+    def review(
+        self,
+        *,
+        athlete_profile_id: UUID,
+        training_session_id: UUID,
+    ) -> TrainingSessionReviewResult:
+        """Analyse une séance associée sans modifier ni valider les données."""
+        session = self.training_session_repository.get_session(
+            athlete_profile_id,
+            training_session_id,
+        )
+        if session is None:
+            return TrainingSessionReviewResult(status="not_found")
+
+        if session.activity_id is None:
+            return TrainingSessionReviewResult(
+                status="activity_not_linked",
+                session=session,
+            )
+
+        activity = self.activity_repository.get_activity(
+            athlete_profile_id,
+            session.activity_id,
+        )
+        if activity is None:
+            return TrainingSessionReviewResult(
+                status="linked_activity_unavailable",
+                session=session,
+            )
+
+        detail = self.activity_detail_repository.get_activity_detail(
+            athlete_profile_id,
+            activity.id,
+        )
+        assessment = analyze_session_execution(
+            session,
+            activity,
+            detail,
+        )
+        return TrainingSessionReviewResult(
+            status="ok",
+            session=session,
+            activity=activity,
+            detail=detail,
+            assessment=assessment,
+        )
 
     def execute(
         self,
@@ -183,6 +243,11 @@ class ValidateTrainingSessionService:
             activity_id=activity.id,
             status="completed",
         )
+
+        if self.validation_writer is None:
+            raise TrainingSessionValidationError(
+                "La validation avec persistance n'est pas configurée."
+            )
 
         (
             persisted_session,

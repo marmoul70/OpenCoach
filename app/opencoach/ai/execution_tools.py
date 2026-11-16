@@ -1,17 +1,15 @@
-"""Outil IA de débriefing prévu/réalisé d'une séance."""
+"""Adaptateur conversationnel du débriefing prévu / réalisé."""
 
 from __future__ import annotations
 
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+
 from opencoach.ai.tool_engine import AITool
-from opencoach.database.repositories import (
-    ActivityDetailRepository,
-    ActivityRepository,
-    TrainingSessionRepository,
+from opencoach.training.session_execution.validation_service import (
+    ValidateTrainingSessionService,
 )
-from opencoach.training.session_execution import analyze_session_execution
 
 
 class SessionExecutionReviewArguments(BaseModel):
@@ -29,24 +27,23 @@ def _safe_text(value: str | None, limit: int = 240) -> str | None:
 
 
 def build_session_execution_review_tool(
-    training_repository: TrainingSessionRepository,
-    activity_repository: ActivityRepository,
-    detail_repository: ActivityDetailRepository,
+    service: ValidateTrainingSessionService,
     athlete_profile_id: UUID,
 ) -> AITool:
-    """Construit un débriefing strictement limité aux repositories injectés."""
+    """Expose le débriefing calculé par le domaine session_execution."""
 
     def execute(arguments: BaseModel) -> dict:
-        planned = training_repository.get_session(
-            athlete_profile_id,
-            arguments.session_id,
+        review = service.review(
+            athlete_profile_id=athlete_profile_id,
+            training_session_id=arguments.session_id,
         )
-        if planned is None:
+        if review.status == "not_found":
             return {
                 "status": "not_found",
                 "message": "Séance introuvable dans le planning de cet athlète.",
             }
 
+        planned = review.session
         planned_payload = {
             "session_id": str(planned.id),
             "date": planned.date.isoformat(),
@@ -61,9 +58,9 @@ def build_session_execution_review_tool(
             "status": planned.status,
         }
 
-        if planned.activity_id is None:
+        if review.status == "activity_not_linked":
             return {
-                "status": "activity_not_linked",
+                "status": review.status,
                 "message": (
                     "Aucune activité n'est associée à cette séance. "
                     "Ne pas supposer qu'elle n'a pas été réalisée : demander "
@@ -71,14 +68,9 @@ def build_session_execution_review_tool(
                 ),
                 "planned_session": planned_payload,
             }
-
-        activity = activity_repository.get_activity(
-            athlete_profile_id,
-            planned.activity_id,
-        )
-        if activity is None:
+        if review.status == "linked_activity_unavailable":
             return {
-                "status": "linked_activity_unavailable",
+                "status": review.status,
                 "message": (
                     "La séance référence une activité qui n'est pas accessible "
                     "dans les données de cet athlète."
@@ -86,35 +78,25 @@ def build_session_execution_review_tool(
                 "planned_session": planned_payload,
             }
 
-        detail = detail_repository.get_activity_detail(
-            athlete_profile_id,
-            planned.activity_id,
-        )
-        assessment = analyze_session_execution(
-            planned,
-            activity,
-            detail,
-        )
+        activity = review.activity
+        assessment = review.assessment
         goal = assessment.goal_analysis
-
-        metrics = []
-        if goal is not None:
-            metrics = [
-                {
-                    "key": metric.key,
-                    "label": _safe_text(metric.label, 100),
-                    "importance": metric.importance.value,
-                    "status": metric.status.value,
-                    "target_minimum": metric.target_minimum,
-                    "target_maximum": metric.target_maximum,
-                    "unit": _safe_text(metric.unit, 30),
-                    "actual_value": metric.actual_value,
-                    "delta": metric.delta,
-                    "delta_percent": metric.delta_percent,
-                    "message": _safe_text(metric.message, 240),
-                }
-                for metric in goal.metrics
-            ]
+        metrics = [
+            {
+                "key": metric.key,
+                "label": _safe_text(metric.label, 100),
+                "importance": metric.importance.value,
+                "status": metric.status.value,
+                "target_minimum": metric.target_minimum,
+                "target_maximum": metric.target_maximum,
+                "unit": _safe_text(metric.unit, 30),
+                "actual_value": metric.actual_value,
+                "delta": metric.delta,
+                "delta_percent": metric.delta_percent,
+                "message": _safe_text(metric.message, 240),
+            }
+            for metric in (goal.metrics if goal is not None else ())
+        ]
 
         return {
             "status": "ok",
@@ -130,7 +112,7 @@ def build_session_execution_review_tool(
                 "average_speed_mps": activity.average_speed_mps,
                 "training_load": activity.training_load,
             },
-            "detail_available": detail is not None,
+            "detail_available": review.detail is not None,
             "assessment": {
                 "overall_status": assessment.overall_status.value,
                 "technical_status": (
@@ -152,10 +134,7 @@ def build_session_execution_review_tool(
                     if goal is not None else None
                 ),
                 "derived_results": (
-                    [
-                        {"key": key, "value": value}
-                        for key, value in goal.derived_results[:10]
-                    ]
+                    [{"key": key, "value": value} for key, value in goal.derived_results[:10]]
                     if goal is not None else []
                 ),
                 "observations": [

@@ -34,6 +34,7 @@ from opencoach.database.repositories import (
 from opencoach.planning.service import PlanningContextService
 from opencoach.services import PlannedTrainingService, RacePreparationService
 from opencoach.training import TrainingStatsService
+from opencoach.training.session_execution.validation_service import ValidateTrainingSessionService
 
 
 def build_ai_tool_registry(
@@ -84,11 +85,14 @@ def build_ai_tool_registry(
     registry.register(build_planned_sessions_tool(planned_training_service))
     registry.register(build_next_planned_session_tool(planned_training_service))
 
+    execution_review_service = ValidateTrainingSessionService(
+        training_session_repository=training_session_repository,
+        activity_repository=activity_repository,
+        activity_detail_repository=activity_detail_repository,
+    )
     registry.register(
         build_session_execution_review_tool(
-            training_session_repository,
-            activity_repository,
-            activity_detail_repository,
+            execution_review_service,
             athlete_profile_id,
         )
     )

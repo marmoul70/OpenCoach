@@ -11,13 +11,11 @@ from opencoach.training import TrainingStatsService
 
 
 class TrainingHistoryArguments(BaseModel):
-    """Paramètres bornés de la demande d'historique."""
+    """Paramètres de transport de la demande d'historique."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     nb_days: int = Field(
-        ge=1,
-        le=365,
         description="Nombre de jours calendaires inclus dans la période.",
     )
     exclude_current_day: bool = Field(

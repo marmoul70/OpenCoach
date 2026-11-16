@@ -15,8 +15,6 @@ class RacePreparationArguments(BaseModel):
 
     race_id: UUID = Field(description="Identifiant de la course obtenu via race_calendar.")
     history_days: int = Field(
-        ge=7,
-        le=180,
         description="Nombre de jours calendaires d'historique récent à analyser. Obligatoire.",
     )
 

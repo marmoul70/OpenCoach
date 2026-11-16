@@ -106,6 +106,7 @@ check "la release est préparée avant la bascule atomique" test_release_is_stag
 check "un rollback est prévu si Nginx échoue" test_rollback_is_available_for_failed_nginx_validation_or_reload
 check "la racine web peut être configurée" test_web_root_is_configurable
 check "le déploiement ne redémarre pas le backend" test_no_backend_restart_is_triggered
+check "rollback respecte la racine web configurable du déploiement" test_rollback_uses_the_same_configurable_web_root
 check "l'ancien nom de script délègue au point d'entrée canonique" test_legacy_script_delegates_to_canonical_script
 check "la dépendance ShellCheck est déclarée" test_shellcheck_source_is_declared
 

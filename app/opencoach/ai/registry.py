@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from opencoach.coaching.assistant.argument_evidence import validate_period_argument_evidence
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.ai.activity_tools import build_activity_detail_tool
 from opencoach.ai.coaching_tools import (
@@ -50,7 +49,7 @@ def build_ai_tool_registry(
     coach_decision_service: CoachDecisionService,
 ) -> AIToolRegistry:
     """Assemble uniquement les adaptateurs ; la composition des repositories reste dans l'API."""
-    registry = AIToolRegistry(argument_guard=validate_period_argument_evidence)
+    registry = AIToolRegistry()
 
     registry.register(build_training_profile_tool(context_service.profile_service))
     registry.register(build_active_constraints_tool(context_service, athlete_profile_id))

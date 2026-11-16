@@ -403,3 +403,17 @@ Les schémas IA transportent des entiers/dates sans reproduire ces politiques. L
 La route /api/coach/today repose sur CoachDecisionService et ses services métier. Un test d'architecture vérifie que les routes Coach principales n'importent pas opencoach.ai. Le moteur IA peut donc être désactivé sans retirer la décision quotidienne du Coach.
 
 **Reste à traiter avant certification zéro logique métier :** la composition des analyses de recommandation dans ai/execution_plan.py, les règles de validation des affirmations dans ai/response_synthesis.py et le blocage des restrictions dans api/ai.py. Ces éléments doivent être comparés à CoachDecisionService et PlanningContextService pour réutiliser leurs décisions au lieu de maintenir une politique parallèle. Aucun nouveau service ne doit être créé avant cette vérification.
+
+
+## 17. Suppression de la composition métier dans les adaptateurs IA
+
+Deux compositions restantes ont été retirées des adaptateurs :
+
+- Les dates de référence courantes sont maintenant obtenues par les services Coach (TrainingStatsService, RecentTrainingLoadService, ReadinessService). Les schémas IA transmettent une date explicite lorsqu'elle est demandée, sinon ils laissent le domaine appliquer son horloge. Les outils d'historique, de tendances, de charge et de récupération n'appellent plus date.today() et ne construisent plus leurs fenêtres.
+- La synthèse charge + volume réel est maintenant une capacité unique de RecentTrainingLoadService.analysis_summary(). Ce service existant orchestre RecentTrainingLoadService.calculate() et TrainingStatsService.calculate_days() avec la même date de référence, puis délègue le résumé à RecentTrainingLoad.analysis_summary(). ai/load_tools.py ne reçoit plus deux services et ne compose plus les résultats.
+
+La règle de restriction de course est elle aussi fournie par PlanningContextService.active_constraints() dans running_restriction. Le contrôle rédactionnel IA consomme ce résultat structuré et ne réévalue plus running_allowed à partir de chaque contrainte.
+
+Les garde-fous de synthèse qui restent dans ai/response_synthesis.py sont des contrôles de qualité de génération : ils vérifient qu'une affirmation du LLM est étayée par les résultats Coach, sans recalculer de seuil, score ou statut métier. Ils ne sont pas une source de vérité sportive.
+
+**Audit encore ouvert :** terminer la revue des contrats d'outils et du planificateur conversationnel (tool_routing.py, execution_plan.py, argument_evidence.py), vérifier les chemins d'exécution lorsque l'IA est désactivée et recenser les derniers imports/usages publics avant toute suppression. La règle zéro métier n'est pas encore certifiée globalement.

@@ -136,3 +136,10 @@ Un adaptateur IA ne peut notamment pas :
 Ces responsabilités appartiennent à la capacité Coach existante qui les possède déjà. Si une orchestration métier est réellement absente, elle doit être ajoutée au domaine Coach approprié **après recherche de l'équivalent existant** et en étendant celui-ci lorsque c'est cohérent. Il est interdit de créer un second service qui reproduit une capacité déjà disponible.
 
 Les payloads IA ne doivent pas réinventer les règles : le service Coach doit retourner les faits, statuts, avertissements et données de qualité nécessaires. L'adaptateur ne fait que les transporter. Les prompts peuvent expliquer au modèle comment formuler une réponse, mais ne sont jamais l'autorité pour une règle métier.
+
+
+## Garde-fous rédactionnels : périmètre autorisé de l'IA
+
+L'IA peut conserver des contrôles propres à la génération de langage : validation de structure, détection d'une affirmation non étayée par les résultats structurés, refus d'exposer des payloads bruts et fallback technique neutre. Ces contrôles ne calculent aucune métrique, ne créent aucun seuil sportif et ne remplacent jamais un statut Coach. Lorsqu'une règle métier est nécessaire, le domaine doit fournir un fait ou une décision explicite que l'IA se contente de présenter.
+
+Exemple : PlanningContextService.active_constraints() fournit running_restriction.blocked et son message. La couche IA peut vérifier que le texte généré respecte ce fait ; elle ne doit pas reconstruire la restriction en parcourant les contraintes brutes.

@@ -63,3 +63,31 @@ def test_profile_proposal_evidence_rejects_unsupported_values():
         16,
         ["Ma VMA est de 15,5 km/h."],
     )
+
+def test_numeric_profile_proposal_is_extracted_only_from_explicit_wording():
+    from opencoach.coaching.profile_data_evidence import extract_numeric_profile_proposal
+
+    assert extract_numeric_profile_proposal("Ma VMA est de 15,5 km/h.") == (
+        {
+            "field_key": "vma",
+            "value": 15.5,
+            "evidence": "Ma VMA est de 15,5 km/h.",
+        },
+        None,
+    )
+    assert extract_numeric_profile_proposal("Je pèse 82 kg.") == (
+        {
+            "field_key": "weight_kg",
+            "value": 82.0,
+            "evidence": "Je pèse 82 kg.",
+        },
+        None,
+    )
+
+
+def test_numeric_profile_proposal_does_not_guess_missing_units_or_values():
+    from opencoach.coaching.profile_data_evidence import extract_numeric_profile_proposal
+
+    proposal, clarification = extract_numeric_profile_proposal("Ma VMA est de 15,5.")
+    assert proposal is None
+    assert "aucune donnée n'a été proposée" in clarification

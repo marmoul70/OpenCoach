@@ -411,3 +411,62 @@ def test_recent_training_load_tracks_planning_coverage() -> None:
         result.actual_load_total
         == 55.0
     )
+
+
+
+def test_recent_training_load_analysis_summary_preserves_partial_load_semantics():
+    from opencoach.training import RecentTrainingLoad, TrainingLoadComparison, TrainingStats
+
+    comparison = TrainingLoadComparison(
+        date=TARGET_DATE - timedelta(days=1),
+        planned_duration_minutes=45,
+        actual_duration_minutes=40,
+        planned_load=30.0,
+        actual_load=20.0,
+        measured_load=20.0,
+        estimated_load=0.0,
+        planned_sessions_count=1,
+        actual_sessions_count=1,
+        status="below_plan",
+    )
+    recent = RecentTrainingLoad(
+        days=(comparison,),
+        analyzed_days=1,
+        planned_load_total=30.0,
+        actual_load_total=20.0,
+        above_plan_days=0,
+        below_plan_days=1,
+        on_plan_days=0,
+        broken_rest_days=0,
+        respected_rest_days=0,
+        planning_covered_days=1,
+        unplanned_days=0,
+    )
+    stats = TrainingStats(
+        start_date=TARGET_DATE - timedelta(days=1),
+        end_date=TARGET_DATE - timedelta(days=1),
+        activities_count=2,
+        manual_sessions_count=0,
+        total_duration_minutes=80,
+        total_distance_km=10.0,
+        total_elevation_gain_m=100.0,
+        measured_load=20.0,
+        estimated_load=0.0,
+        duration_data_count=2,
+        distance_data_count=1,
+        elevation_data_count=2,
+        measured_load_data_count=1,
+    )
+
+    summary = recent.analysis_summary(stats)
+
+    assert summary["load"]["actual_total"] is None
+    assert summary["load"]["partial_observed_total"] == 20.0
+    assert summary["load"]["coverage"]["status"] == "partial"
+    assert summary["volume"]["distance_km"] is None
+    assert summary["volume"]["partial_distance_km"] == 10.0
+    assert summary["daily"][0]["status"] == "load_data_incomplete"
+    assert summary["daily"][0]["actual_load"] is None
+    assert summary["warnings"] == [
+        "Charge partielle : 1/2 séances disposent d'une charge exploitable. Le total complet est masqué."
+    ]

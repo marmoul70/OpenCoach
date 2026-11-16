@@ -48,6 +48,17 @@ from opencoach.ai.service import AIService, AIServiceDisabledError
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.ai.execution_plan import build_coach_execution_plan
 from opencoach.database.session import get_db
+from opencoach.database.repositories import (
+    SqlActivityDetailRepository,
+    SqlActivityRepository,
+    SqlTrainingSessionRepository,
+)
+from opencoach.services import (
+    ActivityDetailService,
+    PlannedTrainingService,
+    RacePreparationService,
+)
+from opencoach.training.session_execution.validation_service import ValidateTrainingSessionService
 from opencoach.api.training_stats import get_training_stats_service
 from opencoach.training import TrainingStatsService
 from opencoach.database.models.ai_coach_preference import AICoachPreference
@@ -156,12 +167,37 @@ def get_ai_tool_registry(
     ),
     context_service: PlanningContextService = Depends(get_planning_context_service),
 ) -> AIToolRegistry:
-    """Construit le registre IA depuis les dépendances authentifiées."""
+    """Construit les capacités Coach dans la composition API, puis les expose à l'IA."""
+    training_session_repository = (
+        getattr(training_stats_service, "training_session_repository", None)
+        or SqlTrainingSessionRepository(db)
+    )
+    activity_repository = SqlActivityRepository(db)
+    activity_detail_repository = SqlActivityDetailRepository(db)
+
     return build_ai_tool_registry(
-        db=db,
         athlete_profile_id=athlete_profile_id,
         training_stats_service=training_stats_service,
         context_service=context_service,
+        planned_training_service=PlannedTrainingService(
+            training_session_repository,
+            athlete_profile_id,
+        ),
+        race_preparation_service=RacePreparationService(
+            context_service.race_repository,
+            context_service.profile_service,
+            training_stats_service,
+            athlete_profile_id,
+        ),
+        activity_detail_service=ActivityDetailService(
+            activity_repository,
+            activity_detail_repository,
+        ),
+        execution_review_service=ValidateTrainingSessionService(
+            training_session_repository=training_session_repository,
+            activity_repository=activity_repository,
+            activity_detail_repository=activity_detail_repository,
+        ),
     )
 
 

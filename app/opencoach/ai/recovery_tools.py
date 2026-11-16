@@ -7,7 +7,11 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from opencoach.ai.tool_engine import AITool
-from opencoach.readiness import (\n    ReadinessDataUnavailableError,\n    ReadinessService,\n    readiness_assessment_to_dict,\n)
+from opencoach.readiness import (
+    ReadinessDataUnavailableError,
+    ReadinessService,
+    readiness_assessment_to_dict,
+)
 
 
 class RecoveryStatusArguments(BaseModel):

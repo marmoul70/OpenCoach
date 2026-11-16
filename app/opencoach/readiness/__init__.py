@@ -20,6 +20,7 @@ from .service import (
     ReadinessDataUnavailableError,
     ReadinessService,
     ReadinessServiceError,
+    readiness_assessment_to_dict,
 )
 from .context import (
     apply_daily_context,
@@ -35,6 +36,7 @@ __all__ = [
     "ReadinessDataUnavailableError",
     "ReadinessService",
     "ReadinessServiceError",
+    "readiness_assessment_to_dict",
     "ReadinessSignal",
     "calculate_daily_readiness",
     "calculate_readiness_baseline",

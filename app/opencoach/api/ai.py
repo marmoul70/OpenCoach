@@ -52,7 +52,9 @@ from opencoach.coaching.assistant.execution_safety import (
 )
 from opencoach.coaching.assistant.response_safety import (
     coach_response_has_ungrounded_risk_claims,
-)
+)# Compatibility exports retained for existing API tests and evaluation scripts.
+_coach_response_has_ungrounded_risk_claims = coach_response_has_ungrounded_risk_claims
+
 from opencoach.database.session import get_db
 from opencoach.database.repositories import SqlActivityDetailRepository
 from opencoach.services import (
@@ -75,6 +77,7 @@ from opencoach.api.coaching.dependencies import (
 from opencoach.planning.service import PlanningContextService
 from opencoach.ai.registry import build_ai_tool_registry
 from opencoach.ai.response_synthesis import (
+    _coach_provider_unavailable_answer,  # Compatibility export.
     _coach_generation_failure_answer,
     _coach_response_needs_rewrite,
     _coach_response_quality_fallback_answer,

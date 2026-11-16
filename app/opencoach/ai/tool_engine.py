@@ -92,6 +92,18 @@ class AIToolRegistry:
             raise ValueError(f"L'outil '{tool.name}' est déjà enregistré.")
         self._tools[tool.name] = tool
 
+    def definitions(self) -> list[dict[str, Any]]:
+        """Expose un catalogue interne pour l'inspection et les tests, jamais au modèle."""
+        return [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": tool.arguments_model.model_json_schema(),
+            }
+            for tool in self._tools.values()
+            if self._allowed_tool_names is None or tool.name in self._allowed_tool_names
+        ]
+
     def execute(
         self,
         name: str,

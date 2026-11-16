@@ -4,6 +4,8 @@ from uuid import UUID
 
 from opencoach.config import ThresholdSettings, get_threshold_settings
 from opencoach.database.repositories.daily_context import DailyContextRepository
+from opencoach.database.repositories.daily_checkin import DailyCheckInRepository
+from opencoach.coaching.daily_checkin import AthleteDailyCheckIn
 from opencoach.database.repositories.wellness import WellnessRepository
 from opencoach.models import DailyContext, WellnessDay
 from opencoach.wellness_aggregation import (
@@ -60,10 +62,12 @@ class ReadinessService:
         repository: WellnessRepository,
         *,
         daily_context_repository: DailyContextRepository | None = None,
+        daily_checkin_repository: DailyCheckInRepository | None = None,
         thresholds: ThresholdSettings | None = None,
     ) -> None:
         self.repository = repository
         self.daily_context_repository = daily_context_repository
+        self.daily_checkin_repository = daily_checkin_repository
         self.thresholds = thresholds if thresholds is not None else get_threshold_settings()
 
     def calculate(
@@ -175,7 +179,7 @@ class ReadinessService:
         self,
         athlete_profile_id: UUID,
         target_date: date,
-    ) -> tuple[RecoveryAssessment, WellnessAggregation]:
+    ) -> tuple[RecoveryAssessment, WellnessAggregation, AthleteDailyCheckIn | None]:
         """Construit la synthèse descriptive depuis les imports Wellness centralisés.
 
         Cette capacité réutilise le repository, l'agrégation multi-fournisseurs
@@ -197,7 +201,15 @@ class ReadinessService:
                 target_date,
             ),
         )
-        return assessment, aggregation
+        daily_checkin = (
+            self.daily_checkin_repository.get_for_date(
+                athlete_profile_id,
+                target_date,
+            )
+            if self.daily_checkin_repository is not None
+            else None
+        )
+        return assessment, aggregation, daily_checkin
 
     def _get_daily_context(
         self,

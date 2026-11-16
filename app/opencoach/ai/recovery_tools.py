@@ -7,7 +7,6 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from opencoach.ai.tool_engine import AITool
-from opencoach.database.repositories.daily_checkin import DailyCheckInRepository
 from opencoach.readiness import (
     ReadinessDataUnavailableError,
     ReadinessService,
@@ -74,23 +73,18 @@ class RecoveryAnalysisArguments(BaseModel):
 
 def build_recovery_analysis_tool(
     service: ReadinessService,
-    daily_checkin_repository: DailyCheckInRepository,
     athlete_profile_id: UUID,
 ) -> AITool:
     """Expose le résumé de récupération construit par le domaine Coach."""
 
     def execute(arguments: BaseModel) -> dict:
-        assessment, _aggregation = service.describe_recovery(
-            athlete_profile_id,
-            arguments.target_date,
-        )
-        daily_checkin = daily_checkin_repository.get_for_date(
+        assessment, aggregation, daily_checkin = service.describe_recovery(
             athlete_profile_id,
             arguments.target_date,
         )
         return recovery_coach_summary_to_dict(
             assessment,
-            _aggregation,
+            aggregation,
             daily_checkin,
         )
 

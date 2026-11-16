@@ -46,8 +46,9 @@ def build_tool(wellness, context, checkin, profile_id):
     service = ReadinessService(
         wellness,
         daily_context_repository=context,
+        daily_checkin_repository=checkin,
     )
-    return build_recovery_analysis_tool(service, checkin, profile_id)
+    return build_recovery_analysis_tool(service, profile_id)
 
 
 def test_recovery_analysis_returns_7_14_30_day_sleep_and_fatigue_data():

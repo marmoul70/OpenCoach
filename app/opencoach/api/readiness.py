@@ -14,6 +14,7 @@ from opencoach.database.repositories import (
     WellnessRepositoryError,
 )
 from opencoach.database.session import get_db
+from opencoach.database.repositories.sql_daily_checkin import SqlDailyCheckInRepository
 from opencoach.readiness import (
     ReadinessAssessment,
     ReadinessDataUnavailableError,
@@ -54,6 +55,7 @@ def get_readiness_service(
         daily_context_repository=(
             daily_context_repository
         ),
+        daily_checkin_repository=SqlDailyCheckInRepository(db),
     )
 
 

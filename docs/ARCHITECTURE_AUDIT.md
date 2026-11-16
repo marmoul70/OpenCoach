@@ -29,7 +29,7 @@ Ce choix est provisoire : il ne signifie pas que tout le contenu de cette branch
 ## 2 bis. Inventaire quantitatif actualisé
 
 Inventaire calculé sur l'arbre Git du commit `553f518228bc` :
-- **1 183 fichiers suivis** au total ;
+- **1 182 fichiers suivis** au total ;
 - **519 fichiers Python** sous `app/opencoach` ;
 - **164 fichiers** sous `frontend/src` ;
 - **387 fichiers** sous `tests` ;
@@ -68,7 +68,7 @@ La taille seule ne justifie aucune extraction. Chaque découpage doit isoler une
 ### État des répertoires historiques
 
 - Le répertoire `.refactor-backup/20260831-231419/` cité dans une version antérieure de cet audit **n'existe pas dans l'arbre de cette branche**. Il n'est donc pas une archive à supprimer dans l'état actuel de `refactor/architecture-cleanup`. Ne pas extrapoler cet état à `main`.
-- `backend/` ne contient que `.gitkeep` ; le package Python est installé depuis `app/` via `pyproject.toml`. Ce marqueur vide est un candidat de nettoyage, mais sa suppression est différée jusqu'à la vérification de toutes les références documentaires et scripts.
+- Le répertoire racine `backend/` ne contenait que `.gitkeep`. Après vérification du packaging (`pyproject.toml` pointe sur `app/`) et des scripts d'installation/démarrage, ce marqueur vide a été supprimé : il ne représentait aucun code ni point d'entrée applicatif.
 - `config/thresholds.toml` est le fichier de valeurs chargé et validé par `app/opencoach/config/thresholds.py`. Ce module est le parseur/contrat typé, pas une seconde copie de la configuration.
 - `app/opencoach/training/session_execution/thresholds.py` définit des tolérances d'évaluation de l'exécution des séances (volume, adhérence et structure). Ces seuils sont d'une autre nature que les seuils Readiness/Coach de `config/thresholds.toml` ; leur présence ne constitue pas en soi une duplication.
 
@@ -536,7 +536,7 @@ Cette clôture certifie la frontière Coach / IA et les responsabilités examin�
 
 Aucun module métier n'est supprimé sur la base de sa taille ou de son ancienneté. Les premiers candidats à la revue fonctionnelle sont l'API COROS, le mapper de séances COROS, les routes de séances d'entraînement et les gros composants frontend de profil, entraînement et activités. La prochaine étape doit cartographier leurs fonctions, appels, imports et responsabilités avant toute extraction.
 
-Le nettoyage de `backend/.gitkeep` reste en attente de la vérification des références. L'absence de `.refactor-backup/` sur cette branche est constatée, mais aucune conclusion n'est tirée sur les autres branches.
+Le marqueur vide `backend/.gitkeep` a été retiré après vérification des points d'entrée de packaging et d'installation. L'absence de `.refactor-backup/` sur cette branche est constatée, mais aucune conclusion n'est tirée sur les autres branches.
 
 ### Portée
 

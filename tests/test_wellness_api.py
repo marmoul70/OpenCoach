@@ -7,10 +7,9 @@ from opencoach.api.app import create_app
 from opencoach.api.intervals import (
     get_current_athlete_profile_id,
 )
-from opencoach.api.wellness import (
-    get_daily_context_repository,
-    get_wellness_repository,
-)
+from opencoach.api.readiness import get_readiness_service
+from opencoach.api.wellness import get_wellness_repository
+from opencoach.readiness import ReadinessService
 from opencoach.database.repositories import (
     WellnessRepositoryError,
 )
@@ -72,6 +71,9 @@ def create_client(
     app.dependency_overrides[
         get_wellness_repository
     ] = lambda: repository
+    app.dependency_overrides[
+        get_readiness_service
+    ] = lambda: ReadinessService(repository)
 
     return TestClient(app), profile_id
 
@@ -240,8 +242,11 @@ def test_get_recovery_assessment_exposes_windows_and_subjective_fatigue() -> Non
     )
     client, _ = create_client(repository)
     client.app.dependency_overrides[
-        get_daily_context_repository
-    ] = lambda: context_repository
+        get_readiness_service
+    ] = lambda: ReadinessService(
+        repository,
+        daily_context_repository=context_repository,
+    )
 
     response = client.get("/api/wellness/recovery")
 
@@ -258,10 +263,14 @@ def test_get_recovery_assessment_exposes_windows_and_subjective_fatigue() -> Non
 
 
 def test_get_recovery_assessment_returns_unavailable_when_no_sensor_data() -> None:
-    client, _ = create_client(FakeWellnessRepository())
+    repository = FakeWellnessRepository()
+    client, _ = create_client(repository)
     client.app.dependency_overrides[
-        get_daily_context_repository
-    ] = lambda: FakeDailyContextRepository()
+        get_readiness_service
+    ] = lambda: ReadinessService(
+        repository,
+        daily_context_repository=FakeDailyContextRepository(),
+    )
 
     response = client.get("/api/wellness/recovery")
 
@@ -281,10 +290,14 @@ def test_recovery_uses_all_wellness_data_already_imported_into_opencoach() -> No
             return []
 
 
-    client, _ = create_client(IntervalsOnlyRepository())
+    repository = IntervalsOnlyRepository()
+    client, _ = create_client(repository)
     client.app.dependency_overrides[
-        get_daily_context_repository
-    ] = lambda: FakeDailyContextRepository()
+        get_readiness_service
+    ] = lambda: ReadinessService(
+        repository,
+        daily_context_repository=FakeDailyContextRepository(),
+    )
 
     response = client.get("/api/wellness/recovery")
 

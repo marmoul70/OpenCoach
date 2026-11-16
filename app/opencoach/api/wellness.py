@@ -8,6 +8,7 @@ from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
 )
 from opencoach.database.repositories import (
+    DailyContextRepositoryError,
     SqlWellnessRepository,
     WellnessRepositoryError,
 )
@@ -189,7 +190,7 @@ def get_recovery_assessment(
             athlete_profile_id,
             target_date,
         )
-    except WellnessRepositoryError as exc:
+    except (WellnessRepositoryError, DailyContextRepositoryError) as exc:
         raise HTTPException(
             status_code=503,
             detail="Impossible de charger la synthèse de récupération.",

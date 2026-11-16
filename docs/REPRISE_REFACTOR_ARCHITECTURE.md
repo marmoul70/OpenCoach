@@ -261,3 +261,18 @@ Ne pas fusionner, rebaser sur `main`, supprimer de branche, déployer ou incrém
 5. Relancer la CI sur le HEAD final avant la recette.
 
 La règle de non-duplication de la section 10 reste impérative. Aucun merge, déploiement, suppression de branche ou incrément de version n'est autorisé dans ce chantier.
+
+
+## 12. Déplacement des propositions de données vers le Coach — 16 novembre 2026
+
+**Commit :** `c6f79c5f57684b9c4675c7bfdeec027005a160d8`
+
+- Le cycle de proposition/confirmation a été déplacé de `ai/data_proposals.py` vers `coaching/profile_data_proposals.py`. L'ancien module IA ne contient plus qu'un shim de compatibilité ; l'API et l'outil IA importent directement le module Coach.
+- Les modifications confirmées du profil passent maintenant par `ProfileService` et `SqlProfileRepository`. Les champs physiques, physiologiques, d'entraînement et de nutrition utilisent les sections du modèle domaine `AthleteProfile`, au lieu de modifier directement les colonnes SQL.
+- Les équipements chaussure/vélo/montre sont ajoutés au modèle `AthleteProfile.equipment`, puis persistés par le mécanisme canonique de synchronisation de `SqlProfileRepository`. La détection des doublons compare les équipements du profil domaine ; aucune seconde implémentation SQL d'inventaire matériel n'est conservée.
+- Les check-ins passent par `AthleteDailyCheckIn` et `SqlDailyCheckInRepository`. Le statut de proposition est modifié dans la même session avant l'appel du repository, qui valide la transaction.
+- Les validations, l'isolation par profil, l'expiration à 15 minutes, la détection de conflit, la déduplication des propositions en attente et la confirmation explicite sont conservées.
+- `ProfileService.build_training_context()` reste l'unique exposition des repères nutritionnels (glucides, hydratation, sodium) au Coach. La politique de cycles reste `planning/trajectory/load_recovery_cycle.py` ; aucun cycle parallèle n'a été ajouté.
+- Tests complets : **3 141 passed**, 2 avertissements ; Bash, ShellCheck, bootstrap Debian 13, lint et build frontend validés sur le commit.
+
+La suite de l'audit doit encore vérifier les responsabilités restantes des adaptateurs IA, les accès SQL directs, puis les domaines frontend, scripts, infrastructure, migrations et imports dynamiques. Ce lot ne certifie pas encore l'absence globale de code mort ou de doublons.

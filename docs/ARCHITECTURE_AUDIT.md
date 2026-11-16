@@ -303,3 +303,18 @@ Conséquences de conception :
 - si aucun service métier existant ne couvre un besoin, créer/compléter un service dans le domaine Coach, avec tests, plutôt que coder le calcul dans l'IA.
 
 Le plan détaillé de reprise, l'état Git et les constats techniques sont consignés dans `docs/REPRISE_REFACTOR_ARCHITECTURE.md`.
+
+
+## 5 sexies. Propositions de profil : réutilisation des domaines Coach
+
+Le cycle de propositions de données a été déplacé de `opencoach.ai` vers `opencoach.coaching.profile_data_proposals`. L'IA ne porte plus l'implémentation de ce cas d'usage.
+
+- Profil, physiologie, capacité d'entraînement et nutrition : les lectures/écritures confirmées utilisent `ProfileService` et `SqlProfileRepository`.
+- Équipements : l'inventaire canonique est `AthleteProfile.equipment`; la persistance passe par la synchronisation existante du repository profil. Le service de proposition d'équipement d'activité `EquipmentProposalService` garde son rôle distinct de sélection d'une chaussure compatible, sans être détourné en CRUD.
+- Check-in : le modèle domaine `AthleteDailyCheckIn` et `SqlDailyCheckInRepository` sont réutilisés.
+- Nutrition : les repères sont ceux de `AthleteNutrition` et sont exposés par `ProfileService.build_training_context()`. Aucun calcul ou stockage nutritionnel parallèle n'a été ajouté.
+- Cycles : `planning/trajectory/load_recovery_cycle.py` demeure la politique de cycle de charge/récupération unique. Les outils IA ne doivent ni la recopier ni produire une deuxième décision de cycle.
+
+L'ancien `ai/data_proposals.py` est conservé comme shim d'import historique uniquement ; l'API et les outils utilisent désormais directement le module Coach. Les tests de caractérisation du cycle de propositions passent dans la suite complète.
+
+**Validation du commit `c6f79c5f57684b9c4675c7bfdeec027005a160d8` :** Python 3.13, 3 141 tests réussis ; Bash et bootstrap Debian 13 réussis ; frontend lint/build réussis. Cela valide ce lot, pas encore l'audit exhaustif du dépôt.

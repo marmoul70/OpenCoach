@@ -83,7 +83,7 @@ test_no_backend_restart_is_triggered() {
 }
 
 test_rollback_uses_the_same_configurable_web_root() {
-    grep -Fq 'WEB_ROOT="${OPENCOACH_WEB_ROOT:-/var/www/opencoach}"' "$ROLLBACK_SCRIPT" \
+    grep -Fq "WEB_ROOT=\"\${OPENCOACH_WEB_ROOT:-/var/www/opencoach}\"" "$ROLLBACK_SCRIPT" \
         && grep -Fq 'OPENCOACH_WEB_ROOT doit être un chemin absolu.' "$ROLLBACK_SCRIPT"
 }
 

@@ -492,3 +492,27 @@ Les tests métier du routage, du plan conversationnel, des preuves et des propos
 Les anciens modules `ai/argument_evidence.py`, `ai/execution_plan.py`, `ai/tool_routing.py` et `ai/data_proposals.py` restent de simples façades de compatibilité. Un test dédié vérifie l'identité des fonctions exportées avec les implémentations Coach : il n'existe donc pas de seconde implémentation à maintenir. Le test du registre vérifie de la même manière les alias historiques `AITool`, `AIToolRegistry` et `ToolStatus`.
 
 Ce choix retire les dépendances internes inutiles aux anciens chemins IA sans casser d'éventuels imports historiques. La suppression définitive de ces façades est différée jusqu'à la décision de rupture de compatibilité ; elles ne portent aucune logique métier.
+
+
+## 18. Clôture de l'audit de la frontière Coach / IA — 16 novembre 2026
+
+### Résultat
+
+L'audit ciblé de la séparation métier Coach / IA est clôturé sur cette branche. Le contrat d'architecture retenu et vérifié est le suivant :
+
+- Les calculs, validations de données, règles d'entraînement, décisions, contraintes, recommandations et cycle de vie des propositions appartiennent aux services et cas d'usage Coach.
+- Le package `opencoach.ai` est un adaptateur de conversation : il valide les entrées de transport, prépare les appels vers les capacités Coach et présente les résultats structurés. Il ne possède ni accès direct à la persistance ni registre métier autonome.
+- Les anciens chemins `ai/*` encore exposés pour compatibilité sont des réexports testés, et non des implémentations concurrentes.
+- Les routes métier Coach et les autres routes API non IA ne dépendent pas du package IA. La configuration IA est désactivée par défaut ; la construction de l'application ne doit pas initialiser de client Ollama ni contacter un fournisseur.
+- Les propositions issues de la conversation restent soumises à une preuve utilisateur exacte et à une confirmation explicite avant toute écriture du profil.
+
+### Derniers contrôles et correction
+
+- La CI du HEAD précédent `4073f189` est verte sur les trois jobs : Python 3.13, Bash et Frontend (run GitHub Actions `43875655025`).
+- Un test d'intégration vérifie que l'application répond sur `/api/health` sans construire de client Ollama.
+- La validation d'une preuve de proposition exige désormais que la preuve soit contenue dans un seul message utilisateur. Une preuve artificiellement reconstruite en joignant des fragments de messages distincts est rejetée ; un test de régression couvre ce cas.
+- Les contrôles AST interdisent les dépendances du domaine vers `opencoach.ai`, les dépendances IA vers SQLAlchemy/la persistance et les imports IA dans les routes métier.
+
+### Limites explicites
+
+Cette clôture certifie la frontière Coach / IA et les responsabilités examinées dans les modules décrits par cet audit. Elle ne prétend pas certifier ligne par ligne les 1 165 fichiers du dépôt, ni l'absence de toute duplication dans l'ensemble du backend, du frontend, des scripts et de l'infrastructure. Les façades historiques restent en place tant qu'une rupture de compatibilité n'est pas décidée. Une validation opérationnelle sur la VM Debian 13, avec base existante et synchronisations COROS/Intervals.icu réelles, reste distincte de la CI et n'est pas remplacée par ces tests.

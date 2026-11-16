@@ -157,3 +157,19 @@ def test_non_ai_api_modules_do_not_import_the_ai_package():
         "Les routes métier ne doivent pas importer le package IA :\n"
         + "\n".join(sorted(set(violations)))
     )
+
+
+def test_application_health_starts_without_constructing_ollama_client(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from opencoach.ai.client import OllamaClient
+    from opencoach.api.app import create_app
+
+    def fail_if_constructed(*args, **kwargs):
+        raise AssertionError("Le démarrage de l'API ne doit pas initialiser Ollama.")
+
+    monkeypatch.setattr(OllamaClient, "__init__", fail_if_constructed)
+    response = TestClient(create_app()).get("/api/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "healthy"}

@@ -91,3 +91,15 @@ def test_numeric_profile_proposal_does_not_guess_missing_units_or_values():
     proposal, clarification = extract_numeric_profile_proposal("Ma VMA est de 15,5.")
     assert proposal is None
     assert "aucune donnée n'a été proposée" in clarification
+
+
+def test_profile_proposal_evidence_cannot_be_stitched_across_messages():
+    from opencoach.coaching.profile_data_evidence import validate_profile_proposal_evidence
+
+    evidence = r"Ma VMA est de\\n15,5 km/h."
+    assert not validate_profile_proposal_evidence(
+        "vma",
+        evidence,
+        15.5,
+        ["Ma VMA est de", "15,5 km/h."],
+    )

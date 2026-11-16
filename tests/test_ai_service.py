@@ -99,11 +99,7 @@ def test_tool_orchestration_executes_validated_tool_then_returns_final_answer():
     service = AIService(AISettings(enabled=True), client=client)
     request = AIChatRequest(messages=[AIMessage(role="user", content="Mon historique")])
 
-    result = asyncio.run(service.chat_with_tools(
-        request,
-        registry,
-        user_messages=["Montre-moi mon historique."],
-    ))
+    result = asyncio.run(service.chat_with_tools(request, registry))
 
     assert result.content == "Bilan sur 7 jours."
     assert client.calls == 2
@@ -153,7 +149,11 @@ def test_missing_required_tool_argument_is_returned_to_model_for_clarification()
         AIMessage(role="user", content="Montre-moi mon historique.")
     ])
 
-    result = asyncio.run(service.chat_with_tools(request, registry))
+    result = asyncio.run(service.chat_with_tools(
+        request,
+        registry,
+        user_messages=["Montre-moi mon historique."],
+    ))
 
     assert result.content == "Sur combien de jours souhaites-tu ton historique ?"
     assert client.calls == 2

@@ -42,7 +42,6 @@ from opencoach.ai.prompts import (
     _CHAT_SYSTEM_PROMPT,
     _coach_response_token_budget,
     _coach_synthesis_system_prompt,
-    _coach_system_prompt,
 )
 from opencoach.ai.service import AIService, AIServiceDisabledError
 from opencoach.ai.tool_engine import AIToolRegistry
@@ -76,7 +75,6 @@ from opencoach.planning.service import PlanningContextService
 from opencoach.ai.registry import build_ai_tool_registry
 from opencoach.ai.response_synthesis import (
     _coach_generation_failure_answer,
-    _coach_provider_unavailable_answer,
     _coach_response_needs_rewrite,
     _coach_response_quality_fallback_answer,
     _extract_coach_analysis_periods,

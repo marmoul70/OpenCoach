@@ -210,65 +210,49 @@ def test_synthesis_prompt_explicitly_enforces_avoid_running_restriction():
     assert "cross_training_allowed" in system_prompt
 
 
-def _constraints_result(*constraints):
-    from opencoach.ai.tool_engine import AIToolResult
+def test_domain_guard_blocks_running_when_forbidden():
+    from types import SimpleNamespace
 
-    return AIToolResult(
-        tool="active_constraints",
-        status="ok",
-        data={"constraints": list(constraints)},
-        metadata={},
-    )
+    from opencoach.coaching.constraint_impact import evaluate_running_restriction
 
-
-def test_production_guard_blocks_running_when_forbidden():
-    from opencoach.api.ai import _coach_running_restriction_answer
-
-    result = _constraints_result(
-        {"running_allowed": False, "cross_training_allowed": True}
-    )
-    answer = _coach_running_restriction_answer(
-        "Quelle séance me conseilles-tu demain ?", [result]
-    )
-    assert answer is not None
-    assert "interdit" in answer
-    assert "course à pied" in answer
-    assert "indolore" in answer
-    assert _coach_running_restriction_answer(
-        "Que me conseilles-tu aujourd'hui ?", [result]
-    ) is not None
+    decision = evaluate_running_restriction((
+        SimpleNamespace(running_allowed=False, cross_training_allowed=True),
+    ))
+    assert decision.blocked is True
+    assert "interdit" in decision.message
+    assert "course à pied" in decision.message
+    assert "indolore" in decision.message
 
 
-def test_production_guard_does_not_offer_unauthorized_cross_training():
-    from opencoach.api.ai import _coach_running_restriction_answer
+def test_domain_guard_does_not_offer_unauthorized_cross_training():
+    from types import SimpleNamespace
 
-    result = _constraints_result(
-        {"running_allowed": False, "cross_training_allowed": False}
-    )
-    answer = _coach_running_restriction_answer(
-        "Puis-je courir demain ?", [result]
-    )
-    assert answer is not None
-    assert "sans autorisation explicite" in answer
-    assert "Une activité croisée peut être envisagée" not in answer
+    from opencoach.coaching.constraint_impact import evaluate_running_restriction
+
+    decision = evaluate_running_restriction((
+        SimpleNamespace(running_allowed=False, cross_training_allowed=False),
+    ))
+    assert decision.blocked is True
+    assert "sans autorisation explicite" in decision.message
+    assert "Une activité croisée peut être envisagée" not in decision.message
 
 
-def test_production_guard_respects_all_constraints_and_non_recommendation_questions():
-    from opencoach.api.ai import _coach_running_restriction_answer
+def test_domain_guard_respects_all_constraints_and_recommendation_intent():
+    from types import SimpleNamespace
 
-    mixed = _constraints_result(
-        {"running_allowed": False, "cross_training_allowed": True},
-        {"running_allowed": True, "cross_training_allowed": False},
-    )
-    assert "sans autorisation explicite" in _coach_running_restriction_answer(
-        "Quelle séance demain ?", [mixed]
-    )
-    assert _coach_running_restriction_answer(
-        "Quel est mon profil ?", [mixed]
-    ) is None
-    allowed = _constraints_result(
-        {"running_allowed": True, "cross_training_allowed": True}
-    )
-    assert _coach_running_restriction_answer(
-        "Quelle séance demain ?", [allowed]
-    ) is None
+    from opencoach.ai.tool_routing import is_coach_recommendation_request
+    from opencoach.coaching.constraint_impact import evaluate_running_restriction
+
+    mixed = evaluate_running_restriction((
+        SimpleNamespace(running_allowed=False, cross_training_allowed=True),
+        SimpleNamespace(running_allowed=True, cross_training_allowed=False),
+    ))
+    assert "sans autorisation explicite" in mixed.message
+    assert is_coach_recommendation_request("Quelle séance demain ?") is True
+    assert is_coach_recommendation_request("Quel est mon profil ?") is False
+
+    allowed = evaluate_running_restriction((
+        SimpleNamespace(running_allowed=True, cross_training_allowed=True),
+    ))
+    assert allowed.blocked is False
+    assert allowed.message is None

@@ -467,6 +467,19 @@ async def ask_local_ai_with_athlete_context(
                     context_used=False,
                 )
 
+    # Le Coach valide les prérequis métier avant toute rédaction IA.
+    execution_block = recommendation_execution_block_message(
+        plan.recommendation_request,
+        tool_results,
+    )
+    if execution_block is not None:
+        return AIQuestionResponse(
+            answer=execution_block,
+            model=settings.model,
+            context_used=any(item.status == "ok" for item in tool_results),
+        )
+
+
     failed_tools = [item for item in tool_results if item.status == "failed"]
     if failed_tools:
         failed_names = ", ".join(item.tool for item in failed_tools)
@@ -485,19 +498,6 @@ async def ask_local_ai_with_athlete_context(
             model=settings.model,
             context_used=any(item.status == "ok" for item in tool_results),
         )
-
-    # Le Coach valide les prérequis métier avant toute rédaction IA.
-    execution_block = recommendation_execution_block_message(
-        plan.recommendation_request,
-        tool_results,
-    )
-    if execution_block is not None:
-        return AIQuestionResponse(
-            answer=execution_block,
-            model=settings.model,
-            context_used=any(item.status == "ok" for item in tool_results),
-        )
-
     preferences = db.scalar(
         select(AICoachPreference).where(AICoachPreference.user_id == user_id)
     )

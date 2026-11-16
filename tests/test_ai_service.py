@@ -99,7 +99,11 @@ def test_tool_orchestration_executes_validated_tool_then_returns_final_answer():
     service = AIService(AISettings(enabled=True), client=client)
     request = AIChatRequest(messages=[AIMessage(role="user", content="Mon historique")])
 
-    result = asyncio.run(service.chat_with_tools(request, registry))
+    result = asyncio.run(service.chat_with_tools(
+        request,
+        registry,
+        user_messages=["Montre-moi mon historique."],
+    ))
 
     assert result.content == "Bilan sur 7 jours."
     assert client.calls == 2
@@ -113,6 +117,7 @@ def test_missing_required_tool_argument_is_returned_to_model_for_clarification()
     from opencoach.ai.schemas import AIToolCall
     from opencoach.ai.tool_engine import AITool, AIToolRegistry
     from opencoach.ai.training_tools import TrainingHistoryArguments
+    from opencoach.ai.argument_evidence import validate_period_argument_evidence
 
     class ClarifyingClient:
         def __init__(self):
@@ -135,7 +140,7 @@ def test_missing_required_tool_argument_is_returned_to_model_for_clarification()
                 done=True,
             )
 
-    registry = AIToolRegistry()
+    registry = AIToolRegistry(argument_guard=validate_period_argument_evidence)
     registry.register(AITool(
         name="training_history",
         description="Historique sportif.",
@@ -152,8 +157,8 @@ def test_missing_required_tool_argument_is_returned_to_model_for_clarification()
 
     assert result.content == "Sur combien de jours souhaites-tu ton historique ?"
     assert client.calls == 2
-    assert "invalid_arguments" in client.follow_up_tool_message
-    assert "paramètres" in client.follow_up_tool_message
+    assert "needs_clarification" in client.follow_up_tool_message
+    assert "combien de jours" in client.follow_up_tool_message
 
 
 def test_tool_orchestration_stops_and_asks_for_period_when_model_invents_one():

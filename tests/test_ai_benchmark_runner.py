@@ -271,7 +271,7 @@ def test_benchmark_exposes_the_complete_production_read_tool_catalog() -> None:
 
     descriptions = {item.name: item.description for item in definitions}
     assert "nb_days est facultatif" in descriptions["training_history"]
-    assert "demande la période si elle manque et attends la réponse" in descriptions["training_load"]
+    assert "nb_days est facultatif" in descriptions["training_load"]
     assert "deux durées si elles manquent et attends la réponse" in descriptions["training_trends"]
 
 

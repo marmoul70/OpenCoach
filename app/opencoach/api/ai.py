@@ -429,6 +429,7 @@ async def ask_local_ai_with_athlete_context(
                 call.arguments,
                 user_messages=user_messages,
                 assistant_messages=assistant_messages,
+                trusted_arguments=True,
             )
             log_ai_event(
                 "coach_tool_execution",

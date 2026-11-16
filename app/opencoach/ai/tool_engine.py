@@ -111,8 +111,9 @@ class AIToolRegistry:
         *,
         user_messages: list[str] | None = None,
         assistant_messages: list[str] | None = None,
+        trusted_arguments: bool = False,
     ) -> AIToolResult:
-        """Vérifie la provenance, valide puis exécute un outil enregistré."""
+        """Valide puis exécute un outil ; les plans déterministes peuvent marquer leurs arguments comme fiables."""
         started_at = perf_counter()
         tool = self._tools.get(name)
         if tool is None or (
@@ -127,7 +128,7 @@ class AIToolRegistry:
             self._record_result(result)
             return result
 
-        if self._argument_guard is not None:
+        if self._argument_guard is not None and not trusted_arguments:
             clarification = self._argument_guard(name, arguments, user_messages or [], assistant_messages or [])
             if clarification:
                 result = AIToolResult(

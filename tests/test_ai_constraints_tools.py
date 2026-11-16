@@ -85,6 +85,9 @@ def test_active_constraints_returns_only_constraints_covering_target_date():
     assert result["constraints"][0]["cross_training_allowed"] is True
     assert result["constraints"][0]["max_duration_minutes"] == 45
     assert result["constraints"][0]["notes"] == "Douleur signalée au mollet"
+    assert result["running_restriction"]["blocked"] is True
+    assert result["running_restriction"]["cross_training_allowed"] is True
+    assert "interdit actuellement la course à pied" in result["running_restriction"]["message"]
     engine.dispose()
 
 
@@ -113,6 +116,8 @@ def test_active_constraints_is_scoped_to_athlete_and_empty_is_explicit():
     assert result["status"] == "empty"
     assert result["constraint_count"] == 0
     assert result["constraints"] == []
+    assert result["running_restriction"]["blocked"] is False
+    assert result["running_restriction"]["message"] is None
     engine.dispose()
 
 

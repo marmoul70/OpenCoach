@@ -121,6 +121,16 @@ def test_injury_advice_executes_constraints_before_recovery_status():
         ("weekly_plan_context", {}),
         ("athlete_training_profile", {}),
     ]
+    assert plan.recommendation_request is True
+
+
+
+def test_injury_without_session_advice_is_not_marked_as_recommendation():
+    plan = build_coach_execution_plan(
+        "J'ai mal au tendon d'Achille.",
+        reference_date=REFERENCE_DATE,
+    )
+    assert plan.recommendation_request is False
 
 
 def test_activity_date_is_extracted_without_asking_the_model():

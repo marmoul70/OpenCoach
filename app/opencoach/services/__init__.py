@@ -8,6 +8,7 @@ from .intervals_sync import (
 from .profile import ProfileService
 from .planned_training import PlannedTrainingService
 from .race_preparation import RacePreparationService
+from .activity_detail import ActivityDetailResult, ActivityDetailService
 from .integration_connection import (
     IntegrationConnectionService,
     IntegrationConnectionServiceError,
@@ -25,6 +26,8 @@ __all__ = [
     "IntervalsSyncResult",
     "ProfileService",
     "RacePreparationService",
+    "ActivityDetailResult",
+    "ActivityDetailService",
     "PlannedTrainingService",
     "IntegrationConnectionService",
     "IntegrationConnectionServiceError",

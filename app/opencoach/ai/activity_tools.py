@@ -1,4 +1,4 @@
-"""Outil de consultation détaillée d'une activité, en lecture seule."""
+"""Adaptateur conversationnel de consultation détaillée d'activité."""
 
 from __future__ import annotations
 
@@ -8,32 +8,18 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from opencoach.ai.tool_engine import AITool
-from opencoach.database.repositories import ActivityRepository, ActivityDetailRepository
+from opencoach.services import ActivityDetailService
 
 
 class ActivityDetailArguments(BaseModel):
-    """Sélection d'une activité par identifiant ou date locale."""
+    """Sélection technique d'une activité."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    activity_id: UUID | None = Field(
-        default=None,
-        description="Identifiant OpenCoach de l'activité, si déjà connu.",
-    )
-    activity_date: date | None = Field(
-        default=None,
-        description="Date locale de l'activité à consulter.",
-    )
-    latest: bool = Field(
-        default=False,
-        description="Sélectionne la dernière activité enregistrée lorsque l'utilisateur demande sa dernière sortie.",
-    )
-    activity_name: str | None = Field(
-        default=None,
-        min_length=1,
-        max_length=120,
-        description="Partie du nom de l'activité pour départager plusieurs séances le même jour.",
-    )
+    activity_id: UUID | None = Field(default=None, description="Identifiant OpenCoach de l'activité, si déjà connu.")
+    activity_date: date | None = Field(default=None, description="Date locale de l'activité à consulter.")
+    latest: bool = Field(default=False, description="Sélectionne la dernière activité enregistrée lorsque l'utilisateur demande sa dernière sortie.")
+    activity_name: str | None = Field(default=None, min_length=1, max_length=120, description="Partie du nom de l'activité pour départager plusieurs séances le même jour.")
 
     @model_validator(mode="after")
     def require_selector(self):
@@ -50,46 +36,29 @@ def _safe_text(value: str | None, limit: int) -> str | None:
 
 
 def build_activity_detail_tool(
-    activity_repository: ActivityRepository,
-    detail_repository: ActivityDetailRepository,
+    service: ActivityDetailService,
     athlete_profile_id: UUID,
 ) -> AITool:
-    """Construit un outil strictement limité aux activités de l'athlète connecté."""
+    """Expose le résultat du service ActivityDetailService."""
 
     def execute(arguments: BaseModel) -> dict:
-        if arguments.activity_id is not None:
-            activity = activity_repository.get_activity(
-                athlete_profile_id,
-                arguments.activity_id,
-            )
-            activities = [activity] if activity is not None else []
-        elif arguments.latest:
-            activities = activity_repository.list_activities(athlete_profile_id)[:1]
-        else:
-            activities = activity_repository.list_activities_between(
-                athlete_profile_id,
-                arguments.activity_date,
-                arguments.activity_date,
-            )
-
-        if arguments.activity_name:
-            needle = arguments.activity_name.casefold()
-            activities = [
-                item for item in activities
-                if needle in item.name.casefold()
-            ]
-
-        if not activities:
+        result = service.get(
+            athlete_profile_id,
+            activity_id=arguments.activity_id,
+            activity_date=arguments.activity_date,
+            latest=arguments.latest,
+            activity_name=arguments.activity_name,
+        )
+        if result.status == "not_found":
             return {
                 "status": "not_found",
                 "message": "Aucune activité correspondante dans les données de cet athlète.",
                 "selection": {
-                    "activity_id": str(arguments.activity_id) if arguments.activity_id else None,
-                    "activity_date": arguments.activity_date.isoformat() if arguments.activity_date else None,
+                    "activity_id": str(result.selection_activity_id) if result.selection_activity_id else None,
+                    "activity_date": result.selection_date.isoformat() if result.selection_date else None,
                 },
             }
-
-        if len(activities) > 1:
+        if result.status == "ambiguous":
             return {
                 "status": "ambiguous",
                 "message": "Plusieurs activités correspondent. Demander à l'utilisateur de choisir.",
@@ -98,35 +67,25 @@ def build_activity_detail_tool(
                         "activity_id": str(item.id),
                         "name": item.name,
                         "sport_type": item.sport_type,
-                        "start_at_local": (
-                            item.start_at_local.isoformat()
-                            if item.start_at_local else item.start_at.isoformat()
-                        ),
+                        "start_at_local": item.start_at_local.isoformat() if item.start_at_local else item.start_at.isoformat(),
                         "distance_m": item.distance_m,
                         "elevation_gain_m": item.elevation_gain_m,
                     }
-                    for item in activities[:10]
+                    for item in result.choices
                 ],
-                "choices_truncated": len(activities) > 10,
+                "choices_truncated": result.choices_truncated,
             }
 
-        activity = activities[0]
-        detail = detail_repository.get_activity_detail(
-            athlete_profile_id,
-            activity.id,
-        )
-
-        result = {
+        activity = result.activity
+        detail = result.detail
+        response = {
             "status": "ok",
             "activity": {
                 "activity_id": str(activity.id),
                 "provider": activity.provider,
                 "name": _safe_text(activity.name, 160),
                 "sport_type": _safe_text(activity.sport_type, 60),
-                "start_at_local": (
-                    activity.start_at_local.isoformat()
-                    if activity.start_at_local else activity.start_at.isoformat()
-                ),
+                "start_at_local": activity.start_at_local.isoformat() if activity.start_at_local else activity.start_at.isoformat(),
                 "distance_m": activity.distance_m,
                 "elapsed_time_seconds": activity.elapsed_time_seconds,
                 "moving_time_seconds": activity.moving_time_seconds,
@@ -145,18 +104,16 @@ def build_activity_detail_tool(
             "detail_available": detail is not None,
         }
         if detail is None:
-            result["detail_message"] = (
+            response["detail_message"] = (
                 "Aucun détail par intervalle ou série temporelle n'est enregistré pour cette activité. "
                 "Les métriques générales ci-dessus restent disponibles."
             )
-            return result
+            return response
 
         streams = detail.streams
-        result["detail"] = {
+        response["detail"] = {
             "provider_lap_count": detail.provider_lap_count,
-            "interval_summary": [
-                _safe_text(item, 120) for item in detail.interval_summary[:20]
-            ],
+            "interval_summary": [_safe_text(item, 120) for item in detail.interval_summary[:20]],
             "interval_summary_truncated": len(detail.interval_summary) > 20,
             "intervals": [
                 {
@@ -186,7 +143,7 @@ def build_activity_detail_tool(
                 "watts": streams.watts.summary if streams.watts is not None else None,
             },
         }
-        return result
+        return response
 
     return AITool(
         name="activity_detail",

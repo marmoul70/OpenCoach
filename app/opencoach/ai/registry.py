@@ -32,7 +32,7 @@ from opencoach.database.repositories import (
     SqlTrainingSessionRepository,
 )
 from opencoach.planning.service import PlanningContextService
-from opencoach.services import PlannedTrainingService, RacePreparationService
+from opencoach.services import ActivityDetailService, PlannedTrainingService, RacePreparationService
 from opencoach.training import TrainingStatsService
 from opencoach.training.session_execution.validation_service import ValidateTrainingSessionService
 
@@ -98,8 +98,10 @@ def build_ai_tool_registry(
     )
     registry.register(
         build_activity_detail_tool(
-            activity_repository,
-            activity_detail_repository,
+            ActivityDetailService(
+                activity_repository,
+                activity_detail_repository,
+            ),
             athlete_profile_id,
         )
     )

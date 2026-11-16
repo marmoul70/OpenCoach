@@ -306,4 +306,13 @@ Le plan déterministe transmet les arguments préparés comme fiables ; les appe
 
 Le package opencoach.ai n'importe ni SQLAlchemy ni opencoach.database. Les repositories sont composés dans la couche API et les adaptateurs appellent les services Coach existants.
 
-**Non terminé :** la composition des analyses de recommandation et les contrôles d'affirmations de la synthèse IA doivent encore être rapprochés de CoachDecisionService et PlanningContextService. Ne pas déclarer la règle zéro logique métier satisfaite avant ce travail et une CI verte sur le HEAD final.
+**Non terminé :** la règle de restriction de course est maintenant calculée par PlanningContextService et consommée telle quelle par l'IA. La synthèse combinant charge et volume réel est portée par RecentTrainingLoadService.analysis_summary(), qui compose les services métier existants ; l'adaptateur IA n'assemble plus ces résultats. Les dates de référence courantes sont également déterminées par les services Coach. Il reste à terminer l'audit des contrats de routage conversationnel, des contrôles de génération et des derniers usages/imports avant de certifier zéro logique métier dans l'IA. La CI du HEAD final doit rester verte.
+
+
+## Dernier lot — charge, dates et indépendance hors IA
+
+- RecentTrainingLoadService porte désormais la synthèse combinée charge/volume via analysis_summary(), en réutilisant TrainingStatsService et le modèle RecentTrainingLoad existants.
+- Les adaptateurs de charge, historique, tendances et récupération n'obtiennent plus eux-mêmes la date courante ; les services Coach appliquent leur horloge et leurs fenêtres par défaut.
+- La restriction de course est produite par PlanningContextService.active_constraints(). L'IA consomme running_restriction sans recalculer la règle à partir des contraintes brutes.
+- Un garde-fou d'architecture couvre maintenant tous les modules API hors api/ai.py et vérifie qu'ils n'importent pas opencoach.ai. Les tests vérifient aussi l'absence de dépendance du package IA vers la persistance SQL.
+- Le moteur IA reste désactivable ; les routes métier n'importent pas le package IA.

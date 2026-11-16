@@ -135,7 +135,7 @@ _COACH_STRUCTURED_DATA = re.compile(
 
 
 _COACH_ACTIONABLE_GUIDANCE = re.compile(
-    r"\\b(?:je te conseille|je recommande|je propose|je privilégie|"
+    r"\b(?:je te conseille|je recommande|je propose|je privilégie|"
     r"tu peux|tu devrais|il vaut mieux|"
     r"garde|maintiens|réduis|allège|remplace|reporte|"
     r"pars sur|opte pour|privilégie|évite|"
@@ -160,7 +160,7 @@ def _coach_response_needs_rewrite(question: str, answer: str) -> bool:
 
     unit_claims = len(_COACH_UNIT_CLAIM.findall(content))
     has_actionable_guidance = bool(_COACH_ACTIONABLE_GUIDANCE.search(content))
-    first_sentence = re.split(r"(?<=[.!?])\\s+", content, maxsplit=1)[0]
+    first_sentence = re.split(r"(?<=[.!?])\s+", content, maxsplit=1)[0]
     has_coach_opening = bool(_COACH_OPENING_JUDGMENT.search(first_sentence))
 
     # Une recommandation concrète peut être formulée après une phrase de contexte.

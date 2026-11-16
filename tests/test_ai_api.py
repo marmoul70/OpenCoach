@@ -879,7 +879,9 @@ def test_ai_coach_returns_evidence_verified_pending_data_proposal():
     app.dependency_overrides[get_current_athlete_profile_id] = lambda: athlete_profile_id
     app.dependency_overrides[get_current_user_id] = lambda: user_id
     app.dependency_overrides[get_training_stats_service] = lambda: SimpleNamespace(
-        calculate=lambda *_: None
+        activity_repository=object(),
+        training_session_repository=object(),
+        calculate=lambda *_: None,
     )
     client = TestClient(app)
     client.cookies.set(COOKIE_NAME, "test-session-token")

@@ -50,6 +50,9 @@ from opencoach.coaching.assistant.execution_plan import build_coach_execution_pl
 from opencoach.coaching.recommendation_safety import (
     blocked_running_recommendation_message,
 )
+from opencoach.coaching.assistant.response_safety import (
+    coach_response_has_ungrounded_risk_claims,
+)
 from opencoach.database.session import get_db
 from opencoach.database.repositories import SqlActivityDetailRepository
 from opencoach.services import (
@@ -74,7 +77,6 @@ from opencoach.ai.registry import build_ai_tool_registry
 from opencoach.ai.response_synthesis import (
     _coach_generation_failure_answer,
     _coach_provider_unavailable_answer,
-    _coach_response_has_ungrounded_risk_claims,
     _coach_response_needs_rewrite,
     _coach_response_quality_fallback_answer,
     _extract_coach_analysis_periods,
@@ -614,7 +616,7 @@ async def ask_local_ai_with_athlete_context(
             quality_gate_started_at = perf_counter()
             initial_rejected = (
                 _coach_response_needs_rewrite(payload.question, answer)
-                or _coach_response_has_ungrounded_risk_claims(answer, tool_results)
+                or coach_response_has_ungrounded_risk_claims(answer, tool_results)
             )
             log_ai_event(
                 "coach_quality_gate",
@@ -684,7 +686,7 @@ async def ask_local_ai_with_athlete_context(
                 and rewritten.done_reason != "length"
                 and bool(rewritten.content.strip())
                 and not _coach_response_needs_rewrite(payload.question, rewritten.content)
-                and not _coach_response_has_ungrounded_risk_claims(
+                and not coach_response_has_ungrounded_risk_claims(
                     rewritten.content, tool_results
                 )
             )

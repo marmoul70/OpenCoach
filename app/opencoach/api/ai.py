@@ -71,7 +71,6 @@ from opencoach.planning.service import PlanningContextService
 from opencoach.ai.registry import build_ai_tool_registry
 from opencoach.ai.response_synthesis import (
     _coach_generation_failure_answer,
-    _coach_planned_session_fallback_answer,
     _coach_provider_unavailable_answer,
     _coach_response_has_ungrounded_risk_claims,
     _coach_response_needs_rewrite,

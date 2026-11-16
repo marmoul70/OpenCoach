@@ -378,3 +378,6 @@ Deux garde-fous d'architecture vérifient désormais que :
 Le moteur local reste désactivé par défaut (OPENCOACH_AI_ENABLED=false). Les capacités de domaine et leurs API métier ne nécessitent pas qu'un fournisseur LLM soit disponible.
 
 Travaux restant à auditer avant certification zéro métier dans l'IA : les règles de recommandation et de restriction dans api/ai.py et ai/response_synthesis.py, les modules de collecte/proposition de données, ainsi que l'ensemble des adaptateurs et contrats de routage. Aucun retrait global n'est déclaré terminé à ce stade.
+
+
+Le fallback de rédaction tronquée ne formule plus de recommandation sportive autonome à partir d'une séance planifiée. En cas d'échec de synthèse LLM, l'API renvoie désormais un message technique neutre ; toute décision de séance doit provenir d'une capacité Coach explicite.

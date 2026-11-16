@@ -574,7 +574,7 @@ def test_coach_synthesis_prompt_is_compact_and_preserves_safety_rules():
     assert "seules sources factuelles" in prompt
     assert "Une donnée absente ou indisponible n'est jamais zéro" in prompt
     assert "ne mélange pas" in prompt
-    assert "restrictions sportives explicites" in prompt
+    assert "Ne contredis jamais une restriction" in prompt
     assert "3 à 6 phrases courtes" in prompt
     assert "propose_profile_data" not in prompt
 
@@ -603,7 +603,7 @@ def test_default_concise_coach_style_is_actionable():
 
     assert "réponses courtes et directement actionnables" in prompt
     assert "3 à 6 phrases courtes" in prompt
-    assert "N’affiche ni tableau ni liste de métriques" in prompt
+    assert "sans tableau ni liste de métriques" in prompt
     assert "plan numéroté ou une succession de rubriques" in prompt
 
 
@@ -1033,7 +1033,7 @@ def test_detailed_coach_style_expands_explanation_without_returning_to_metric_li
 
     assert "Le style détaillé peut développer davantage l'explication" in prompt
     assert "ne doit jamais redevenir un inventaire de métriques" in prompt
-    assert "N’affiche ni tableau ni liste de métriques" in prompt
+    assert "sans tableau ni liste de métriques" in prompt
 
 
 

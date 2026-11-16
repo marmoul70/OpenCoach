@@ -4,7 +4,10 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from opencoach.ai.tool_engine import AITool, AIToolRegistry
+from opencoach.coaching.capabilities.registry import (
+    CoachCapability as AITool,
+    CoachCapabilityRegistry as AIToolRegistry,
+)
 from opencoach.ai.training_tools import build_training_history_tool
 from opencoach.training import TrainingStats
 

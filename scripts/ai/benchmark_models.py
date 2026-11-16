@@ -44,6 +44,7 @@ from opencoach.ai.trend_tools import TrainingTrendsArguments
 from opencoach.ai.training_tools import TrainingHistoryArguments
 from opencoach.api.ai import _DEFAULT_COACH_PREFERENCES, _coach_system_prompt
 from opencoach.ai.tool_routing import select_coach_tools
+from opencoach.services import RacePreparationService
 
 
 ARGUMENT_MODELS = {
@@ -112,8 +113,8 @@ TOOL_DESCRIPTIONS = {
     ),
     "race_calendar": (
         "Consulte les courses de l'athlète authentifié sur une période. "
-        "Par défaut, retourne les 180 prochains jours ; horizon_days est borné "
-        "à 365 et start_date peut être fourni. Distingue objectifs principaux, "
+        "Par défaut, retourne les 180 prochains jours ; start_date et horizon_days "
+        "peuvent être fournis. Distingue objectifs principaux, "
         "courses de préparation et courses réalisées selon priority/status. "
         "Ne déduis pas une préparation si aucune course n'est enregistrée."
     ),
@@ -121,7 +122,7 @@ TOOL_DESCRIPTIONS = {
         "Analyse une course future du calendrier de l'athlète authentifié en "
         "croisant ses caractéristiques (distance, D+, date, objectif) avec le "
         "profil d'entraînement et l'historique réellement observé. race_id doit "
-        "être obtenu via race_calendar. history_days est obligatoire (7 à 180) : "
+        "être obtenu via race_calendar. history_days est obligatoire ; "
         "si la période n'est pas précisée, demande à l'utilisateur combien de "
         "jours analyser. Les totaux et moyennes sont masqués si la couverture "
         "des métriques est incomplète. Aucun score de préparation n'est inventé."
@@ -144,7 +145,7 @@ TOOL_DESCRIPTIONS = {
         "Retourne les séances planifiées ou enregistrées dans OpenCoach entre "
         "start_date et end_date inclus. Les deux dates sont obligatoires : si "
         "l'utilisateur ne précise pas la période, demande-la avant l'appel. "
-        "La fenêtre est limitée à 31 jours. Les descriptions et prescriptions "
+        "Les descriptions et prescriptions "
         "brutes ne sont pas transmises ; les agrégats distance/D+ sont masqués "
         "si toutes les séances n'ont pas ces données."
     ),
@@ -320,6 +321,13 @@ def _effective_tool_arguments(
     parsed = argument_model.model_validate(arguments)
     effective = parsed.model_dump(mode="json")
     for field_name, field in argument_model.model_fields.items():
+        if (
+            tool_name == "race_calendar"
+            and field_name == "horizon_days"
+            and effective.get(field_name) is None
+        ):
+            effective[field_name] = RacePreparationService.DEFAULT_CALENDAR_HORIZON_DAYS
+            continue
         if field_name in arguments:
             continue
         if field.annotation is date and field.default_factory is not None:

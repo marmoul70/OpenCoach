@@ -46,3 +46,15 @@ def test_recommendation_can_proceed_when_coach_prerequisites_are_available():
             _result("recovery_status", data={"available": True}),
         ],
     ) is None
+
+
+def test_recommendation_fails_safely_when_restriction_payload_is_malformed():
+    message = recommendation_execution_block_message(
+        True,
+        [
+            _result("active_constraints", data={"running_restriction": {"blocked": "false"}}),
+            _result("recovery_status", data={"available": True}),
+        ],
+    )
+    assert message is not None
+    assert "état de restriction exploitable" in message

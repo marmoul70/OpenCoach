@@ -46,13 +46,14 @@ class _CalculateDaysMixin:
     def calculate_days(
         self,
         profile_id,
-        reference_date,
+        reference_date=None,
         *,
         days,
         include_reference_day=True,
     ):
         from datetime import timedelta
 
+        reference_date = reference_date or date(2026, 11, 9)
         end_date = (
             reference_date
             if include_reference_day
@@ -87,7 +88,8 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
             )
 
     class FakeService:
-        def calculate(self, profile_id, target_date, *, days):
+        def calculate(self, profile_id, *, days):
+            target_date = date(2026, 11, 9)
             calls.append((profile_id, target_date, days))
             comparisons = (
                 TrainingLoadComparison(
@@ -135,7 +137,6 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
             FakeService(),
             FakeTrainingStatsService(),
             athlete_id,
-            reference_date_provider=lambda: reference_date,
         )
     )
 
@@ -165,7 +166,8 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
 
 def test_training_load_tool_never_reports_missing_actual_load_as_zero():
     class EmptyService:
-        def calculate(self, profile_id, target_date, *, days):
+        def calculate(self, profile_id, *, days):
+            target_date = date(2026, 11, 9)
             return RecentTrainingLoad(
                 days=(
                     TrainingLoadComparison(
@@ -206,7 +208,6 @@ def test_training_load_tool_never_reports_missing_actual_load_as_zero():
         EmptyService(),
         EmptyStatsService(),
         uuid4(),
-        reference_date_provider=lambda: date(2026, 11, 9),
     )
     result = tool.handler(TrainingLoadArguments(nb_days=1))
 
@@ -238,7 +239,8 @@ def test_training_load_tool_hides_partial_total_and_marks_daily_status_unreliabl
             )
 
     class PartialRecentLoadService:
-        def calculate(self, profile_id, target_date, *, days):
+        def calculate(self, profile_id, *, days):
+            target_date = date(2026, 11, 9)
             comparison = TrainingLoadComparison(
                 date=date(2026, 11, 8),
                 planned_duration_minutes=45,
@@ -269,7 +271,6 @@ def test_training_load_tool_hides_partial_total_and_marks_daily_status_unreliabl
         PartialRecentLoadService(),
         PartialStatsService(),
         uuid4(),
-        reference_date_provider=lambda: date(2026, 11, 9),
     )
     result = tool.handler(TrainingLoadArguments(nb_days=1))
 
@@ -307,7 +308,8 @@ def test_training_load_coverage_does_not_treat_manual_session_without_duration_a
             )
 
     class NoLoadService:
-        def calculate(self, profile_id, target_date, *, days):
+        def calculate(self, profile_id, *, days):
+            target_date = date(2026, 11, 9)
             return RecentTrainingLoad(
                 days=(),
                 analyzed_days=1,
@@ -326,7 +328,6 @@ def test_training_load_coverage_does_not_treat_manual_session_without_duration_a
         NoLoadService(),
         OneIncompleteManualSessionStats(),
         uuid4(),
-        reference_date_provider=lambda: date(2026, 11, 9),
     )
 
     result = tool.handler(TrainingLoadArguments(nb_days=1))

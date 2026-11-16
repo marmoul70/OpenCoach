@@ -40,12 +40,11 @@ def test_training_trends_delegates_periods_and_returns_coach_result():
             self,
             profile_id,
             *,
-            reference_date,
             current_days,
             comparison_days,
         ):
             calls.append(
-                (profile_id, reference_date, current_days, comparison_days)
+                (profile_id, date(2026, 11, 9), current_days, comparison_days)
             )
             return expected
 
@@ -53,7 +52,6 @@ def test_training_trends_delegates_periods_and_returns_coach_result():
     tool = build_training_trends_tool(
         FakeStatsService(),
         athlete_id,
-        reference_date_provider=lambda: date(2026, 11, 9),
     )
     result = tool.handler(
         TrainingTrendsArguments(nb_days=7, comparison_days=7)

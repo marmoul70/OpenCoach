@@ -276,3 +276,10 @@ La règle de non-duplication de la section 10 reste impérative. Aucun merge, d�
 - Tests complets : **3 141 passed**, 2 avertissements ; Bash, ShellCheck, bootstrap Debian 13, lint et build frontend validés sur le commit.
 
 La suite de l'audit doit encore vérifier les responsabilités restantes des adaptateurs IA, les accès SQL directs, puis les domaines frontend, scripts, infrastructure, migrations et imports dynamiques. Ce lot ne certifie pas encore l'absence globale de code mort ou de doublons.
+
+
+## 13. Déplacement de la sérialisation Readiness hors des adaptateurs IA
+
+Le résultat Readiness et ses avertissements sont désormais sérialisés par `readiness_assessment_to_dict()` dans le domaine `opencoach.readiness`. L'adaptateur `ai/recovery_tools.py` se limite à appeler `ReadinessService.calculate()`, traiter l'indisponibilité technique prévue et transmettre le résultat domaine. Les règles de fraîcheur, de fiabilité des baselines et les avertissements ne sont plus reconstruits dans l'IA.
+
+Ce déplacement réutilise le moteur Readiness et son assessment existants ; aucun second service ni calcul n'a été ajouté. La suite ciblée `tests/test_ai_recovery_tools.py` doit confirmer la préservation du contrat de l'outil.

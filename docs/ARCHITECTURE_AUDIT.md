@@ -345,3 +345,10 @@ Cette cartographie est un constat partiel, pas la certification de tout le packa
 6. Vérifier qu'aucun accès SQL métier, calcul ou décision ne subsiste dans `opencoach.ai`, puis exécuter la CI complète sur le HEAD final.
 
 Aucun merge, rebase sur `main`, déploiement, suppression de branche ou incrément de version n'est autorisé sans accord explicite.
+
+
+## 14. Premier retrait de logique Readiness du package IA
+
+La sérialisation du résultat Readiness, notamment les avertissements liés aux conflits d'import, à la fraîcheur des données et à la fiabilité des baselines, est maintenant portée par `opencoach.readiness.readiness_assessment_to_dict()`. `ai/recovery_tools.py` délègue au `ReadinessService` et transmet le résultat. Le contrat de sortie de l'outil est conservé ; aucun service parallèle n'est créé.
+
+Il s'agit d'un premier retrait ciblé. L'outil `recovery_analysis` contient encore une orchestration et des règles de composition qui restent à déplacer vers les capacités Coach existantes après caractérisation de ses contrats.

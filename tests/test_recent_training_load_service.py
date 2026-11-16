@@ -470,3 +470,14 @@ def test_recent_training_load_analysis_summary_preserves_partial_load_semantics(
     assert summary["warnings"] == [
         "Charge partielle : 1/2 séances disposent d'une charge exploitable. Le total complet est masqué."
     ]
+
+
+
+def test_recent_training_load_enforces_the_domain_maximum_window():
+    service = RecentTrainingLoadService(FakeTrainingLoadComparisonService({}))
+    with pytest.raises(ValueError, match="90 jours"):
+        service.calculate(
+            uuid4(),
+            TARGET_DATE,
+            days=91,
+        )

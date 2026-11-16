@@ -234,8 +234,8 @@ class TrainingStatsService:
         include_reference_day: bool = True,
     ) -> TrainingStats:
         """Calcule une fenêtre calendaire inclusive à partir d'une date d'ancrage."""
-        if days < 1:
-            raise ValueError("La période doit contenir au moins un jour.")
+        if not 1 <= days <= 365:
+            raise ValueError("La période doit être comprise entre 1 et 365 jours.")
         end_date = reference_date if include_reference_day else reference_date - timedelta(days=1)
         start_date = end_date - timedelta(days=days - 1)
         return self.calculate(athlete_profile_id, start_date, end_date)

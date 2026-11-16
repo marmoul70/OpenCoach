@@ -260,3 +260,9 @@ def test_training_recommendation_routes_all_required_athlete_context():
         "athlete_training_profile", "weekly_plan_context",
         "next_planned_session", "training_history",
     } <= selected
+
+
+
+def test_router_does_not_duplicate_domain_period_limits():
+    selected = select_coach_tools("Analyse ma charge sur 91 jours.")
+    assert "training_load" in selected

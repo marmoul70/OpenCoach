@@ -29,9 +29,9 @@ class RecentTrainingLoadService:
     ) -> RecentTrainingLoad:
         """Analyse les jours précédant la date cible."""
 
-        if days < 1:
+        if not 1 <= days <= 90:
             raise ValueError(
-                "La période doit contenir au moins un jour."
+                "La période de charge doit être comprise entre 1 et 90 jours."
             )
 
         comparisons = []

@@ -18,11 +18,6 @@ _ISO_DATE_RE = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b")
 _FRENCH_DATE_RANGE_RE = re.compile(
     r"\bdu\s+(?P<start_day>\d{1,2})(?:\s+(?P<start_month>janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre))?\s+au\s+(?P<end_day>\d{1,2})\s+(?P<end_month>janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)\s+(?P<year>20\d{2})\b"
 )
-_PERIOD_RULES = {
-    "training_history": ("nb_days", 1, 365, "historique"),
-    "training_load": ("nb_days", 1, 90, "charge"),
-    "race_preparation_analysis": ("history_days", 7, 180, "préparation"),
-}
 
 def _normalize(value: str) -> str:
     decomposed = unicodedata.normalize("NFKD", value.casefold())
@@ -162,7 +157,12 @@ def validate_period_argument_evidence(tool_name: str, arguments: dict, user_mess
             return "Les dates proposées ne correspondent pas à la période que tu as indiquée. Confirme les dates souhaitées ; aucune recherche n'a été lancée."
         return None
 
-    if tool_name not in (*_PERIOD_RULES, "training_trends"):
+    if tool_name not in {
+        "training_history",
+        "training_load",
+        "race_preparation_analysis",
+        "training_trends",
+    }:
         return None
     periods = extract_explicit_periods(user_messages, assistant_messages)
     if tool_name == "training_trends":
@@ -172,10 +172,12 @@ def validate_period_argument_evidence(tool_name: str, arguments: dict, user_mess
         supplied = [arguments.get("nb_days"), arguments.get("comparison_days")]
         if supplied != expected:
             return "Les durées proposées par le modèle ne correspondent pas aux deux périodes que tu as indiquées. Précise les deux durées à comparer ; aucun calcul n'a été lancé."
-        if any(value < 1 or value > 180 for value in expected):
-            return "Chaque période doit être comprise entre 1 et 180 jours. Quelles durées valides souhaites-tu comparer ?"
         return None
-    argument_name, minimum, maximum, label = _PERIOD_RULES[tool_name]
+    argument_name, label = {
+        "training_history": ("nb_days", "historique"),
+        "training_load": ("nb_days", "charge"),
+        "race_preparation_analysis": ("history_days", "préparation"),
+    }[tool_name]
     if not periods:
         if tool_name == "training_history":
             return "Sur combien de jours souhaites-tu que j'analyse ton historique ?"
@@ -193,8 +195,6 @@ def validate_period_argument_evidence(tool_name: str, arguments: dict, user_mess
         for marker in ("compare", "comparaison", "deux periodes", "tendances")
     )
     expected = periods[-2] if comparison_requested else periods[-1]
-    if expected < minimum or expected > maximum:
-        return f"La période demandée ({expected} jours) dépasse les limites de cet outil ({minimum} à {maximum} jours). Indique une période valide ; aucune donnée n'a été consultée."
     supplied = arguments.get(argument_name)
     if supplied != expected:
         return f"Tu as indiqué {expected} jours pour {label}, mais le modèle a proposé {supplied!r}. Je n'ai pas lancé l'analyse. Confirme la période souhaitée."

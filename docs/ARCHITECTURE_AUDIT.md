@@ -417,3 +417,8 @@ La règle de restriction de course est elle aussi fournie par PlanningContextSer
 Les garde-fous de synthèse qui restent dans ai/response_synthesis.py sont des contrôles de qualité de génération : ils vérifient qu'une affirmation du LLM est étayée par les résultats Coach, sans recalculer de seuil, score ou statut métier. Ils ne sont pas une source de vérité sportive.
 
 **Audit encore ouvert :** terminer la revue des contrats d'outils et du planificateur conversationnel (tool_routing.py, execution_plan.py, argument_evidence.py), vérifier les chemins d'exécution lorsque l'IA est désactivée et recenser les derniers imports/usages publics avant toute suppression. La règle zéro métier n'est pas encore certifiée globalement.
+
+
+La composition API de la charge a également été factorisée : get_recent_training_load_service() construit le service existant depuis les repositories déjà détenus par TrainingStatsService. PlanningContextService et CoachDecisionService réutilisent cette même chaîne de dépendances. api/ai.py réutilise directement les repositories canoniques de TrainingStatsService pour les outils activité/séance, sans recréer une seconde paire de repositories SQL.
+
+Le schéma de l'outil de proposition de profil hérite maintenant directement de AIDataProposalCreate. Les champs autorisés et validations de valeurs ne sont donc plus redéfinis dans le package IA ; seul le contrôle de preuve conversationnelle reste spécifique à l'adaptateur.

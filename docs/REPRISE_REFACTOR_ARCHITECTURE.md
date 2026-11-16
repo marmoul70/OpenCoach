@@ -316,3 +316,6 @@ Le package opencoach.ai n'importe ni SQLAlchemy ni opencoach.database. Les repos
 - La restriction de course est produite par PlanningContextService.active_constraints(). L'IA consomme running_restriction sans recalculer la règle à partir des contraintes brutes.
 - Un garde-fou d'architecture couvre maintenant tous les modules API hors api/ai.py et vérifie qu'ils n'importent pas opencoach.ai. Les tests vérifient aussi l'absence de dépendance du package IA vers la persistance SQL.
 - Le moteur IA reste désactivable ; les routes métier n'importent pas le package IA.
+
+
+Le dernier nettoyage de composition a aussi supprimé la recréation des repositories activité/séance dans api/ai.py : les outils réutilisent ceux de TrainingStatsService. La dépendance de charge est partagée par la composition Coach. Le schéma de collecte de données hérite du modèle métier AIDataProposalCreate au lieu de dupliquer sa liste de champs et ses validations.

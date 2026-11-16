@@ -48,11 +48,7 @@ from opencoach.ai.service import AIService, AIServiceDisabledError
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.ai.execution_plan import build_coach_execution_plan
 from opencoach.database.session import get_db
-from opencoach.database.repositories import (
-    SqlActivityDetailRepository,
-    SqlActivityRepository,
-    SqlTrainingSessionRepository,
-)
+from opencoach.database.repositories import SqlActivityDetailRepository
 from opencoach.services import (
     ActivityDetailService,
     PlannedTrainingService,
@@ -166,11 +162,10 @@ def get_ai_tool_registry(
     context_service: PlanningContextService = Depends(get_planning_context_service),
 ) -> AIToolRegistry:
     """Construit les capacités Coach dans la composition API, puis les expose à l'IA."""
-    training_session_repository = (
-        getattr(training_stats_service, "training_session_repository", None)
-        or SqlTrainingSessionRepository(db)
-    )
-    activity_repository = SqlActivityRepository(db)
+    # Réutilise les repositories déjà injectés dans le service de statistiques.
+    # Aucun repository activité/séance parallèle n'est créé pour les outils IA.
+    training_session_repository = training_stats_service.training_session_repository
+    activity_repository = training_stats_service.activity_repository
     activity_detail_repository = SqlActivityDetailRepository(db)
 
     return build_ai_tool_registry(

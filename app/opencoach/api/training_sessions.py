@@ -12,7 +12,6 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from opencoach.api.training_session_serializers import (
-    _as_utc,
     _debrief_response,
     to_response,
 )
@@ -49,7 +48,6 @@ from opencoach.database.repositories.sql_training_session_validation import (
 from opencoach.database.session import get_db
 from opencoach.schemas.training_session import (
     SessionExecutionDebriefResponse,
-    SessionExecutionMetricResponse,
     TrainingActivityCandidateResponse,
     TrainingEquipmentProposalResponse,
     TrainingEquipmentShoeResponse,

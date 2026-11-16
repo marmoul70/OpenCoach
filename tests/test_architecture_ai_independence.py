@@ -69,6 +69,24 @@ def test_ai_package_does_not_import_persistence_or_sqlalchemy():
                 modules.extend(alias.name for alias in node.names)
             elif isinstance(node, ast.ImportFrom) and node.module:
                 modules.append(node.module)
+            elif (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "import_module"
+                and node.args
+                and isinstance(node.args[0], ast.Constant)
+                and isinstance(node.args[0].value, str)
+            ):
+                modules.append(node.args[0].value)
+            elif (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "__import__"
+                and node.args
+                and isinstance(node.args[0], ast.Constant)
+                and isinstance(node.args[0].value, str)
+            ):
+                modules.append(node.args[0].value)
 
             for module in modules:
                 if (

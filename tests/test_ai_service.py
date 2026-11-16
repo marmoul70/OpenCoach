@@ -54,3 +54,23 @@ def test_enabled_service_calls_provider():
 
     assert result.content == "Réponse de test."
     assert client.calls == 1
+
+
+def test_chat_rejects_tool_catalog_before_calling_provider():
+    from opencoach.ai.schemas import AIToolDefinition
+
+    client = FakeClient()
+    service = AIService(AISettings(enabled=True), client=client)
+    request = AIChatRequest(
+        messages=[AIMessage(role="user", content="Analyse mon historique.")],
+        tools=[AIToolDefinition(
+            name="training_history",
+            description="Historique sportif.",
+            parameters={"type": "object", "properties": {}},
+        )],
+    )
+
+    with pytest.raises(ValueError, match="ne peut pas sélectionner"):
+        asyncio.run(service.chat(request))
+
+    assert client.calls == 0

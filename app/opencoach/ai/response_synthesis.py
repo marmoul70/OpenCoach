@@ -265,12 +265,8 @@ def _coach_provider_unavailable_answer() -> str:
         "alors te donner un véritable bilan de coach et une conduite à tenir."
     )
 
-def _coach_generation_failure_answer(
-    error: AIProviderError,
-    question: str = "",
-    tool_results=(),
-) -> str:
-    """Privilégie une réponse métier déterministe si la rédaction LLM échoue."""
+def _coach_generation_failure_answer(error: Exception) -> str:
+    """Retourne un fallback technique neutre sans prendre de décision sportive."""
     if "interrompu la rédaction" in str(error):
         return _coach_response_quality_fallback_answer()
     return _coach_provider_unavailable_answer()

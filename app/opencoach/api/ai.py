@@ -702,7 +702,7 @@ async def ask_local_ai_with_athlete_context(
             ) from exc
         # Les calculs Python ont déjà été exécutés : une panne du LLM ne doit
         # pas masquer les données ni faire échouer toute la consultation.
-        answer = _coach_generation_failure_answer(exc, payload.question, tool_results)
+        answer = _coach_generation_failure_answer(exc)
         model = settings.model
 
     data_proposals = [

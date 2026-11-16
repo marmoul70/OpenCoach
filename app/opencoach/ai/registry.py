@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from opencoach.ai.argument_evidence import validate_period_argument_evidence
+from opencoach.coaching.assistant.argument_evidence import validate_period_argument_evidence
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.ai.activity_tools import build_activity_detail_tool
 from opencoach.ai.coaching_tools import (

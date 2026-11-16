@@ -86,6 +86,18 @@ def _filter_period_tools(
     return frozenset(filtered)
 
 
+def is_coach_recommendation_request(value: str) -> bool:
+    """Reconnaît une demande de conseil de séance dans le contexte conversationnel."""
+    context = _normalize(value)
+    return any(
+        term in context
+        for term in (
+            "que faire", "quelle seance", "quel entrainement",
+            "conseille", "recommande", "ajuste", "adapter",
+        )
+    )
+
+
 def select_coach_tools(
     question: str,
     *,
@@ -167,8 +179,7 @@ def select_coach_tools(
 
     # Les contraintes sont toujours ajoutées dès qu'une recommandation ou une
     # décision d'entraînement est demandée, même si la douleur est implicite.
-    recommendation_terms = ("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter")
-    recommendation_request = any(term in context for term in recommendation_terms)
+    recommendation_request = is_coach_recommendation_request(context)
     if recommendation_request:
         selected.add("active_constraints")
         selected.update((

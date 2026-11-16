@@ -16,7 +16,7 @@ from opencoach.ai.argument_evidence import (
     extract_explicit_date_range,
     extract_explicit_periods,
 )
-from opencoach.ai.tool_routing import select_coach_tools
+from opencoach.ai.tool_routing import is_coach_recommendation_request, select_coach_tools
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,6 +29,7 @@ class PlannedToolCall:
 class CoachExecutionPlan:
     calls: tuple[PlannedToolCall, ...] = ()
     clarification: str | None = None
+    recommendation_request: bool = False
 
 
 _MONTHS = {
@@ -272,13 +273,7 @@ def build_coach_execution_plan(
             else {}
         )
         safety_calls = [PlannedToolCall("active_constraints", safety_arguments)]
-        recommendation_request = any(
-            term in intent_context
-            for term in (
-                "quelle seance", "quel entrainement", "que faire",
-                "conseille", "recommande", "adapter", "ajuste",
-            )
-        )
+        recommendation_request = is_coach_recommendation_request(intent_context)
         if recommendation_request:
             # La restriction reste toujours le premier résultat consulté.
             # Une demande de séance avec douleur exige ensuite le contexte complet
@@ -321,7 +316,7 @@ def build_coach_execution_plan(
                 safety_calls.append(PlannedToolCall("race_calendar", {}))
         elif "recovery_status" in selected:
             safety_calls.append(PlannedToolCall("recovery_status", safety_arguments))
-        return CoachExecutionPlan(tuple(safety_calls))
+        return CoachExecutionPlan(tuple(safety_calls), recommendation_request=recommendation_request)
 
     # Une mise à jour de profil est proposée uniquement sur preuve textuelle exacte.
     if "propose_profile_data" in selected:
@@ -331,13 +326,7 @@ def build_coach_execution_plan(
         return CoachExecutionPlan((PlannedToolCall("propose_profile_data", proposal or {}),))
 
     periods = extract_explicit_periods(conversation_users, assistant_history)
-    recommendation_history = any(
-        term in intent_context
-        for term in (
-            "que faire", "quelle seance", "quel entrainement",
-            "conseille", "recommande", "ajuste", "adapter",
-        )
-    )
+    recommendation_history = is_coach_recommendation_request(intent_context)
 
     if "activity_detail" in selected:
         activity_id = re.search(
@@ -436,10 +425,7 @@ def build_coach_execution_plan(
             )
         )
         status_request = any(term in normalized for term in ("etat de recuperation", "readiness", "disponibilite aujourd", "suis-je pret"))
-        recommendation_request = any(
-            term in normalized
-            for term in ("que faire", "quelle seance", "quel entrainement", "conseille", "recommande", "ajuste", "adapter")
-        )
+        recommendation_request = is_coach_recommendation_request(intent_context)
         if coach_overview_request or recommendation_request:
             # Un bilan ou un conseil de séance doit croiser la tendance de
             # récupération et l'état Readiness courant, pas choisir l'un des deux.
@@ -550,4 +536,4 @@ def build_coach_execution_plan(
 
     if not calls:
         return CoachExecutionPlan()
-    return CoachExecutionPlan(tuple(calls))
+    return CoachExecutionPlan(tuple(calls), recommendation_request=recommendation_history)

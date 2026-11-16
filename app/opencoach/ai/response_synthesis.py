@@ -245,55 +245,6 @@ def _coach_response_has_ungrounded_risk_claims(answer: str, tool_results) -> boo
     return False
 
 
-def _coach_running_restriction_answer(question: str, tool_results) -> str | None:
-    """Bloque une recommandation de course quand une contrainte métier l'interdit.
-
-    Cette règle Python est indépendante de la rédaction Ollama et utilise
-    exclusivement running_allowed / cross_training_allowed issus d'OpenCoach.
-    """
-    if not re.search(
-        r"\b(?:s[eé]ance|entra[iî]n\w*|courir|course|footing|sortie|"
-        r"que faire|dois-je faire|conseill\w*|recommand\w*|adapt\w*|ajust\w*)\b",
-        question,
-        re.IGNORECASE,
-    ):
-        return None
-
-    constraints = [
-        constraint
-        for item in tool_results
-        if item.tool == "active_constraints" and item.status == "ok"
-        for constraint in (item.data or {}).get("constraints", [])
-        if isinstance(constraint, dict)
-    ]
-    if not any(constraint.get("running_allowed") is False for constraint in constraints):
-        return None
-
-    cross_training_allowed = all(
-        constraint.get("cross_training_allowed") is True
-        for constraint in constraints
-    )
-    answer = (
-        "La restriction enregistrée dans OpenCoach interdit actuellement "
-        "la course à pied pour la date concernée, même si ta Readiness est favorable. "
-        "Je ne peux donc pas te conseiller de maintenir une séance en courant. "
-    )
-    if cross_training_allowed:
-        answer += (
-            "Une activité croisée peut être envisagée uniquement si elle reste "
-            "indolore et respecte les autres limites enregistrées. "
-        )
-    else:
-        answer += (
-            "Je ne peux pas non plus te proposer une activité croisée sans "
-            "autorisation explicite dans tes contraintes. "
-        )
-    return answer + (
-        "Vérifie l'évolution de la douleur et fais réévaluer la restriction "
-        "si nécessaire avant de reprendre la course."
-    )
-
-
 def _coach_planned_session_fallback_answer(question: str, tool_results) -> str | None:
     """Builds a minimal, grounded answer when LLM synthesis fails quality checks."""
     if not re.search(

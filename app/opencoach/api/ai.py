@@ -76,7 +76,6 @@ from opencoach.ai.response_synthesis import (
     _coach_response_has_ungrounded_risk_claims,
     _coach_response_needs_rewrite,
     _coach_response_quality_fallback_answer,
-    _coach_running_restriction_answer,
     _extract_coach_analysis_periods,
     _extract_race_options,
     _serialize_coach_tool_results,
@@ -495,13 +494,28 @@ async def ask_local_ai_with_athlete_context(
     # Les interdictions de course sont des contraintes métier, pas une
     # préférence rédactionnelle du LLM. Elles sont appliquées après la collecte
     # Python et avant toute génération Ollama.
-    restricted_answer = _coach_running_restriction_answer(payload.question, tool_results)
-    if restricted_answer is not None:
-        return AIQuestionResponse(
-            answer=restricted_answer,
-            model=settings.model,
-            context_used=True,
+    if plan.recommendation_request:
+        constraints_result = next(
+            (
+                item for item in tool_results
+                if item.tool == "active_constraints" and item.status == "ok"
+                and isinstance(item.data, dict)
+            ),
+            None,
         )
+        restriction = (
+            constraints_result.data.get("running_restriction")
+            if constraints_result is not None else None
+        )
+        if isinstance(restriction, dict) and restriction.get("blocked") is True:
+            return AIQuestionResponse(
+                answer=restriction.get("message") or (
+                    "Une restriction active dans OpenCoach interdit la course à pied "
+                    "pour la date concernée."
+                ),
+                model=settings.model,
+                context_used=True,
+            )
 
     preferences = db.scalar(
         select(AICoachPreference).where(AICoachPreference.user_id == user_id)

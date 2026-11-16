@@ -414,7 +414,7 @@ def test_calculate_days_rejects_empty_window():
         FakeActivityRepository([]),
         FakeTrainingSessionRepository([]),
     )
-    with pytest.raises(ValueError, match="au moins un jour"):
+    with pytest.raises(ValueError, match="1 et 365 jours"):
         service.calculate_days(
             uuid4(),
             date(2026, 11, 15),
@@ -433,4 +433,19 @@ def test_calculate_days_enforces_the_domain_maximum_window():
             uuid4(),
             date(2026, 8, 20),
             days=366,
+        )
+
+
+
+def test_compare_adjacent_periods_enforces_domain_maximum():
+    service = TrainingStatsService(
+        FakeActivityRepository([]),
+        FakeTrainingSessionRepository([]),
+    )
+    with pytest.raises(ValueError, match="180 jours"):
+        service.compare_adjacent_periods(
+            uuid4(),
+            reference_date=date(2026, 8, 20),
+            current_days=181,
+            comparison_days=7,
         )

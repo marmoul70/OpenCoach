@@ -318,7 +318,7 @@ def test_recent_training_load_rejects_invalid_period() -> None:
     with pytest.raises(
         ValueError,
         match=(
-            "au moins un jour"
+            "1 et 90 jours"
         ),
     ):
         service.calculate(

@@ -384,3 +384,22 @@ Le fallback de rédaction tronquée ne formule plus de recommandation sportive a
 
 
 Le module mort ai/context.py et ses tests dédiés ont été supprimés après vérification des imports et usages : aucune route, dépendance, composition d'outils ou API de production ne l'appelait. Il reconstruisait une seconde synthèse de statistiques, de charge et de Readiness dans le package IA, avec ses propres règles de couverture et ses propres fenêtres temporelles. Les capacités canoniques sont désormais fournies directement par les services Coach.
+
+
+
+## 16. Périodes et valeurs par défaut : propriété du domaine Coach
+
+Les durées maximales et les fenêtres par défaut ont été retirées des schémas IA et du planificateur conversationnel. Elles sont désormais portées par les capacités métier :
+
+- TrainingStatsService.calculate_days() applique la fenêtre historique par défaut de 7 jours et valide sa plage.
+- RecentTrainingLoadService.calculate() conserve la fenêtre de charge par défaut du domaine et ses validations.
+- TrainingStatsService.compare_adjacent_periods() valide les deux fenêtres de comparaison.
+- RacePreparationService.analyze() valide la fenêtre d'historique d'une préparation.
+- RacePreparationService.list_calendar() applique le défaut du calendrier et valide son horizon.
+- PlannedTrainingService.list_between() valide les fenêtres de séances planifiées.
+
+Les schémas IA transportent des entiers/dates sans reproduire ces politiques. Le plan conversationnel demande une période lorsqu'elle est nécessaire, mais ne décide plus de ses bornes ni de ses valeurs par défaut. Le plan déterministe peut transmettre l'absence de durée au domaine ; les appels directs émis par le LLM restent protégés par le contrôle de preuve utilisateur.
+
+La route /api/coach/today repose sur CoachDecisionService et ses services métier. Un test d'architecture vérifie que les routes Coach principales n'importent pas opencoach.ai. Le moteur IA peut donc être désactivé sans retirer la décision quotidienne du Coach.
+
+**Reste à traiter avant certification zéro logique métier :** la composition des analyses de recommandation dans ai/execution_plan.py, les règles de validation des affirmations dans ai/response_synthesis.py et le blocage des restrictions dans api/ai.py. Ces éléments doivent être comparés à CoachDecisionService et PlanningContextService pour réutiliser leurs décisions au lieu de maintenir une politique parallèle. Aucun nouveau service ne doit être créé avant cette vérification.

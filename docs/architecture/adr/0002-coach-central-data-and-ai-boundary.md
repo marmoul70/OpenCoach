@@ -109,7 +109,7 @@ Question utilisateur ─> IA ─> capacités Coach┘
 - Les services Coach deviennent le point de passage unique pour l'analyse sportive.
 - Les intégrations restent interchangeables et peuvent être enrichies sans changer les règles de coaching.
 - L'IA devient remplaçable (Ollama, autre modèle, ou absence d'IA) sans perte des fonctions métier.
-- Les outils IA actuellement couplés à SQLAlchemy sont des écarts d'architecture à migrer, notamment `ai/coaching_tools.py` et `ai/race_tools.py`.
+- Le couplage direct des adaptateurs IA à SQLAlchemy a été supprimé : ai/registry.py assemble désormais des services Coach injectés, et la composition des repositories reste dans la couche API. Les contrôles d'architecture empêchent le retour d'import SQLAlchemy ou opencoach.database dans opencoach.ai.
 - Le chantier n'est considéré terminé que lorsque les fonctions métier essentielles sont accessibles hors IA et que les outils IA ne contiennent plus de calcul métier ni d'accès SQL direct.
 
 

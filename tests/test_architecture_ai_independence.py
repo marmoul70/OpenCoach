@@ -84,3 +84,30 @@ def test_ai_package_does_not_import_persistence_or_sqlalchemy():
         "Le package IA ne doit pas dépendre de la persistance :\n"
         + "\n".join(sorted(set(violations)))
     )
+
+
+
+def test_core_coach_api_does_not_import_the_ai_package():
+    api_root = Path(__file__).resolve().parents[1] / "app" / "opencoach" / "api"
+    sources = [
+        api_root / "coach.py",
+        *(api_root / "coaching").rglob("*.py"),
+    ]
+    violations = []
+
+    for source in sources:
+        tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
+        for node in ast.walk(tree):
+            modules = []
+            if isinstance(node, ast.Import):
+                modules.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                modules.append(node.module)
+            for module in modules:
+                if module == "opencoach.ai" or module.startswith("opencoach.ai."):
+                    violations.append(f"{source.relative_to(api_root)}:{node.lineno} -> {module}")
+
+    assert not violations, (
+        "Les routes Coach principales doivent rester utilisables sans le moteur IA :\n"
+        + "\n".join(sorted(set(violations)))
+    )

@@ -295,3 +295,15 @@ Le package opencoach.ai ne compose plus les repositories SQL : le câblage est e
 Le moteur IA local est optionnel et désactivé par défaut. Les domaines Coach restent indépendants de son fournisseur.
 
 Non terminé : audit et déplacement des règles de recommandation/restriction présentes dans api/ai.py et ai/response_synthesis.py, puis audit exhaustif des autres adaptateurs IA et de leurs contrats. Ne pas déclarer la règle zéro métier satisfaite avant cette dernière passe et la CI complète.
+
+
+
+## État de reprise — mise à jour du 16 novembre 2026
+
+Les fenêtres par défaut et limites de périodes ont été déplacées vers les services Coach. Les schémas IA et le plan conversationnel ne reproduisent plus les limites historiques, de charge, de tendances, de préparation de course ou de calendrier. Les valeurs par défaut (historique/charge, calendrier) sont appliquées par les services métier.
+
+Le plan déterministe transmet les arguments préparés comme fiables ; les appels directs du modèle restent soumis à la validation de preuve utilisateur. Les routes Coach principales ne dépendent pas du package IA, et un garde-fou d'architecture le vérifie.
+
+Le package opencoach.ai n'importe ni SQLAlchemy ni opencoach.database. Les repositories sont composés dans la couche API et les adaptateurs appellent les services Coach existants.
+
+**Non terminé :** la composition des analyses de recommandation et les contrôles d'affirmations de la synthèse IA doivent encore être rapprochés de CoachDecisionService et PlanningContextService. Ne pas déclarer la règle zéro logique métier satisfaite avant ce travail et une CI verte sur le HEAD final.

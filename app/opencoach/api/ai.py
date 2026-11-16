@@ -47,6 +47,9 @@ from opencoach.ai.prompts import (
 from opencoach.ai.service import AIService, AIServiceDisabledError
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.coaching.assistant.execution_plan import build_coach_execution_plan
+from opencoach.coaching.recommendation_safety import (
+    blocked_running_recommendation_message,
+)
 from opencoach.database.session import get_db
 from opencoach.database.repositories import SqlActivityDetailRepository
 from opencoach.services import (
@@ -514,12 +517,12 @@ async def ask_local_ai_with_athlete_context(
             constraints_result.data.get("running_restriction")
             if constraints_result is not None else None
         )
-        if isinstance(restriction, dict) and restriction.get("blocked") is True:
+        restriction_message = blocked_running_recommendation_message(
+            restriction if isinstance(restriction, dict) else None
+        )
+        if restriction_message is not None:
             return AIQuestionResponse(
-                answer=restriction.get("message") or (
-                    "Une restriction active dans OpenCoach interdit la course à pied "
-                    "pour la date concernée."
-                ),
+                answer=restriction_message,
                 model=settings.model,
                 context_used=True,
             )

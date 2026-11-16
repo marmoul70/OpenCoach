@@ -109,7 +109,7 @@ def test_tool_orchestration_executes_validated_tool_then_returns_final_answer():
 
 
 
-def test_missing_required_tool_argument_is_returned_to_model_for_clarification():
+def test_missing_period_is_clarified_before_model_tool_execution():
     from opencoach.ai.schemas import AIToolCall
     from opencoach.ai.tool_engine import AITool, AIToolRegistry
     from opencoach.ai.training_tools import TrainingHistoryArguments
@@ -156,9 +156,9 @@ def test_missing_required_tool_argument_is_returned_to_model_for_clarification()
     ))
 
     assert result.content == "Sur combien de jours souhaites-tu que j'analyse ton historique ?"
-    assert client.calls == 2
-    assert "needs_clarification" in client.follow_up_tool_message
-    assert "combien de jours" in client.follow_up_tool_message
+    assert client.calls == 1
+    assert registry.execution_results[-1].status == "needs_clarification"
+    assert registry.execution_results[-1].metadata["business_tool_executed"] is False
 
 
 def test_tool_orchestration_stops_and_asks_for_period_when_model_invents_one():

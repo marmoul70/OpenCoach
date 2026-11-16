@@ -381,3 +381,6 @@ Travaux restant à auditer avant certification zéro métier dans l'IA : les rè
 
 
 Le fallback de rédaction tronquée ne formule plus de recommandation sportive autonome à partir d'une séance planifiée. En cas d'échec de synthèse LLM, l'API renvoie désormais un message technique neutre ; toute décision de séance doit provenir d'une capacité Coach explicite.
+
+
+Le module mort ai/context.py et ses tests dédiés ont été supprimés après vérification des imports et usages : aucune route, dépendance, composition d'outils ou API de production ne l'appelait. Il reconstruisait une seconde synthèse de statistiques, de charge et de Readiness dans le package IA, avec ses propres règles de couverture et ses propres fenêtres temporelles. Les capacités canoniques sont désormais fournies directement par les services Coach.

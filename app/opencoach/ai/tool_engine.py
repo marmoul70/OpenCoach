@@ -10,6 +10,5 @@ from opencoach.coaching.capabilities.registry import (
     CoachCapabilityResult,
     CoachCapability,
     CoachCapabilityRegistry,
+    ToolStatus,
 )
-
-ToolStatus = str

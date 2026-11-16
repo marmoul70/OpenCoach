@@ -1,4 +1,4 @@
-"""Outil de synthèse de charge récente, basé sur les services métier existants."""
+"""Outil de synthèse de charge récente, basé sur une capacité Coach unique."""
 from __future__ import annotations
 
 from uuid import UUID
@@ -6,7 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from opencoach.ai.tool_engine import AITool
-from opencoach.training import RecentTrainingLoadService, TrainingStatsService
+from opencoach.training import RecentTrainingLoadService
 
 
 class TrainingLoadArguments(BaseModel):
@@ -22,10 +22,9 @@ class TrainingLoadArguments(BaseModel):
 
 def build_training_load_tool(
     service: RecentTrainingLoadService,
-    training_stats_service: TrainingStatsService,
     athlete_profile_id: UUID,
 ) -> AITool:
-    """Construit l'outil de charge pour l'athlète authentifié."""
+    """Expose la synthèse charge + volume calculée par le domaine training."""
 
     def execute(arguments: BaseModel) -> dict:
         period_arguments = (
@@ -33,17 +32,10 @@ def build_training_load_tool(
             if arguments.nb_days is not None
             else {}
         )
-        load = service.calculate(
+        return service.analysis_summary(
             athlete_profile_id,
             **period_arguments,
         )
-        stats = training_stats_service.calculate_days(
-            athlete_profile_id,
-            **period_arguments,
-            include_reference_day=False,
-        )
-
-        return load.analysis_summary(stats)
 
     return AITool(
         name="training_load",

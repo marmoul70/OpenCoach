@@ -5,6 +5,7 @@ set -Eeuo pipefail
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT="$PROJECT_ROOT/scripts/deploy-frontend.sh"
 LEGACY_SCRIPT="$PROJECT_ROOT/scripts/deploy_frontend.sh"
+ROLLBACK_SCRIPT="$PROJECT_ROOT/scripts/rollback_frontend.sh"
 
 passed=0
 failed=0
@@ -79,6 +80,11 @@ test_web_root_is_configurable() {
 
 test_no_backend_restart_is_triggered() {
     ! grep -Eq 'systemctl (restart|reload) opencoach-backend' "$SCRIPT"
+}
+
+test_rollback_uses_the_same_configurable_web_root() {
+    grep -Fq 'WEB_ROOT="${OPENCOACH_WEB_ROOT:-/var/www/opencoach}"' "$ROLLBACK_SCRIPT" \
+        && grep -Fq 'OPENCOACH_WEB_ROOT doit être un chemin absolu.' "$ROLLBACK_SCRIPT"
 }
 
 test_legacy_script_delegates_to_canonical_script() {

@@ -3,7 +3,11 @@
 set -Eeuo pipefail
 
 
-WEB_ROOT="/var/www/opencoach"
+WEB_ROOT="${OPENCOACH_WEB_ROOT:-/var/www/opencoach}"
+if [[ "$WEB_ROOT" != /* ]]; then
+    echo "ERREUR : OPENCOACH_WEB_ROOT doit être un chemin absolu." >&2
+    exit 1
+fi
 RELEASES_DIR="$WEB_ROOT/releases"
 CURRENT_LINK="$WEB_ROOT/current"
 

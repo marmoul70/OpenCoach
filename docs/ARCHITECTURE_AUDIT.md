@@ -541,3 +541,8 @@ Le nettoyage de `backend/.gitkeep` reste en attente de la vérification des réf
 ### Portée
 
 Cette étape est un inventaire reproductible et une clarification des faux positifs de duplication. Elle ne constitue pas encore une revue exhaustive des 1 183 fichiers et ne certifie pas l'absence de code mort dans les modules non examinés.
+
+
+### Correctif opérationnel identifié pendant l'audit global
+
+Le script de déploiement frontend acceptait `OPENCOACH_WEB_ROOT`, mais le script de rollback utilisait encore systématiquement `/var/www/opencoach`. Avec une racine web personnalisée, le déploiement et le rollback ne ciblaient donc pas le même répertoire. Le rollback utilise maintenant la même variable et rejette les chemins relatifs. Le test shell du déploiement couvre cette cohérence.

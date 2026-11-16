@@ -43,6 +43,26 @@ PERIOD_REQUIRED_TOOLS = frozenset({
 FALLBACK_SAFE_TOOLS = ALL_COACH_TOOLS - {"propose_profile_data"}
 
 
+COACH_INTENT_MARKERS = (
+        "historique", "entrainement realise", "mes entrainements", "mes activites", "mes sorties", "charge", "atl", "ctl",
+        "tsb", "recuperation", "recup", "sommeil", "hrv", "tendance", "evolution",
+        "progression", "compare", "comparaison", "activite", "seance", "sortie du",
+        "course", "ultra", "trail", "dossard", "preparation", "planning", "planifie",
+        "programme", "semaine", "prochaine seance", "prochain entrainement", "seance suivante", "blessure", "douleur", "tendon", "malade", "maladie",
+        "indisponible", "contrainte", "profil", "vma", "fc max", "frequence cardiaque",
+        "zones cardiaques", "zone cardiaque", "etat de forme", "fatigue", "stress",
+        "seuil", "poids", "je pese", "equipement", "chaussures", "mon poids",
+        "comment je vais", "comment vais-je", "comment est ma forme", "comment va ma forme",
+        "ou j en suis", "bilan de forme", "suis-je en forme", "bilan de ma semaine", "bilan de la semaine", "bilan hebdomadaire",
+    )
+
+
+def has_coach_intent(value: str) -> bool:
+    """Indique si la demande porte sur une capacité métier du Coach."""
+    normalized = _normalize(value)
+    return any(marker in normalized for marker in COACH_INTENT_MARKERS)
+
+
 def _normalize(value: str) -> str:
     value = unicodedata.normalize("NFKD", value.lower())
     return "".join(char for char in value if not unicodedata.combining(char))

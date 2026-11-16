@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Any
 
 
@@ -173,7 +174,8 @@ def extract_numeric_profile_proposal(
     message: str,
 ) -> tuple[dict[str, Any] | None, str | None]:
     """Construit une proposition numérique uniquement depuis une formulation explicite."""
-    normalized = message.casefold()
+    decomposed = unicodedata.normalize("NFKD", message.casefold())
+    normalized = "".join(char for char in decomposed if not unicodedata.combining(char))
     for pattern, field_key, value_type in _NUMERIC_PROFILE_PROPOSAL_PATTERNS:
         match = re.search(pattern, normalized)
         if match:

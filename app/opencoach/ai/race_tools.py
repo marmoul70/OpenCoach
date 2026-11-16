@@ -34,7 +34,7 @@ def build_race_preparation_tool(service: RacePreparationService) -> AITool:
             "Analyse une course future du calendrier de l'athlète authentifié en "
             "croisant ses caractéristiques (distance, D+, date, objectif) avec le "
             "profil d'entraînement et l'historique réellement observé. race_id doit "
-            "être obtenu via race_calendar. history_days est obligatoire (7 à 180) : "
+            "être obtenu via race_calendar. history_days est obligatoire ; "
             "si la période n'est pas précisée, demande à l'utilisateur combien de "
             "jours analyser. Les totaux et moyennes sont masqués si la couverture "
             "des métriques est incomplète. Aucun score de préparation n'est inventé."

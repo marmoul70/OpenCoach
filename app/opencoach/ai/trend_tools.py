@@ -19,8 +19,6 @@ class TrainingTrendsArguments(BaseModel):
         description="Durée de la période récente, en jours.",
     )
     comparison_days: int = Field(
-        ge=1,
-        le=180,
         description="Durée de la période précédente de comparaison, en jours.",
     )
 

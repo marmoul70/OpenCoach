@@ -34,14 +34,15 @@ class RacePreparationService:
         self,
         *,
         start_date: date | None = None,
-        horizon_days: int = 180,
+        horizon_days: int | None = None,
     ) -> dict:
         """Retourne le calendrier de courses de l'athlète sur une fenêtre inclusive."""
-        if not 1 <= horizon_days <= 365:
+        effective_horizon = 180 if horizon_days is None else horizon_days
+        if not 1 <= effective_horizon <= 365:
             raise ValueError("L'horizon du calendrier doit être compris entre 1 et 365 jours.")
 
         period_start = start_date or self.reference_date_provider()
-        period_end = period_start + timedelta(days=horizon_days - 1)
+        period_end = period_start + timedelta(days=effective_horizon - 1)
         races = self.race_repository.list_races_between(
             self.athlete_profile_id,
             period_start,
@@ -52,7 +53,7 @@ class RacePreparationService:
             "period": {
                 "start_date": period_start.isoformat(),
                 "end_date": period_end.isoformat(),
-                "horizon_days": horizon_days,
+                "horizon_days": effective_horizon,
                 "inclusive": True,
             },
             "race_count": len(races),

@@ -33,9 +33,9 @@ class RaceCalendarArguments(BaseModel):
         default=None,
         description="Date de début inclusive. Par défaut, la date locale du serveur.",
     )
-    horizon_days: int = Field(
-        default=180,
-        description="Nombre de jours calendaires à consulter, début inclus.",
+    horizon_days: int | None = Field(
+        default=None,
+        description="Nombre de jours calendaires à consulter, début inclus. Valeur par défaut gérée par le Coach.",
     )
 
 
@@ -98,8 +98,8 @@ def build_race_calendar_tool(
         name="race_calendar",
         description=(
             "Consulte les courses de l'athlète authentifié sur une période. "
-            "Par défaut, retourne les 180 prochains jours ; horizon_days est borné "
-            "à 365 et start_date peut être fourni. Distingue objectifs principaux, "
+            "Par défaut, retourne les 180 prochains jours ; start_date et horizon_days "
+            "peuvent être fournis. Distingue objectifs principaux, "
             "courses de préparation et courses réalisées selon priority/status. "
             "Ne déduis pas une préparation si aucune course n'est enregistrée."
         ),

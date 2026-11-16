@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
 
+from opencoach.coaching.profile_data_evidence import extract_numeric_profile_proposal
 from opencoach.coaching.assistant.argument_evidence import (
     extract_explicit_date_range,
     extract_explicit_periods,
@@ -89,32 +90,6 @@ def extract_activity_date(value: str, reference_date: date | None = None) -> dat
         except ValueError:
             return None
     return None
-
-
-def _profile_proposal(question: str) -> tuple[dict[str, Any] | None, str | None]:
-    """Extrait uniquement quelques valeurs numériques explicitement formulées."""
-    patterns = (
-        (r"\bma\s+vma\s+est\s+de\s+(\d+(?:[.,]\d+)?)\s*km/?h\b", "vma", "float"),
-        (r"\b(?:mon\s+poids\s+est\s+de|je\s+pese)\s+(\d+(?:[.,]\d+)?)\s*kg\b", "weight_kg", "float"),
-        (r"\bma\s+fc\s+max(?:imale)?\s+est\s+de\s+(\d{2,3})\s*(?:bpm)?\b", "max_heart_rate", "int"),
-        (r"\bma\s+fc\s+au\s+repos\s+est\s+de\s+(\d{2,3})\s*(?:bpm)?\b", "resting_heart_rate", "int"),
-        (r"\bje\s+mesure\s+(\d{2,3})\s*cm\b", "height_cm", "int"),
-    )
-    normalized = _normalize(question)
-    for pattern, field_key, value_type in patterns:
-        match = re.search(pattern, normalized)
-        if match:
-            raw = match.group(1).replace(",", ".")
-            value = float(raw) if value_type == "float" else int(raw)
-            return {
-                "field_key": field_key,
-                "value": value,
-                "evidence": question.strip()[:200],
-            }, None
-    return None, (
-        "Je n'ai pas identifié de valeur de profil exploitable avec certitude. "
-        "Indique le champ et sa valeur avec son unité ; aucune donnée n'a été proposée."
-    )
 
 
 def build_coach_execution_plan(
@@ -300,7 +275,7 @@ def build_coach_execution_plan(
 
     # Une mise à jour de profil est proposée uniquement sur preuve textuelle exacte.
     if "propose_profile_data" in selected:
-        proposal, clarification = _profile_proposal(question)
+        proposal, clarification = extract_numeric_profile_proposal(question)
         if clarification:
             return CoachExecutionPlan(clarification=clarification)
         return CoachExecutionPlan((PlannedToolCall("propose_profile_data", proposal or {}),))

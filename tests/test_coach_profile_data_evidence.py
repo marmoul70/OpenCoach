@@ -35,3 +35,31 @@ def test_equipment_brand_and_model_must_both_be_present():
         "J'ai acheté des Trabuco 14.",
         {"model": "Trabuco 14", "brand": "Asics"},
     )
+
+
+def test_profile_proposal_evidence_must_belong_to_user_messages():
+    from opencoach.coaching.profile_data_evidence import validate_profile_proposal_evidence
+
+    assert validate_profile_proposal_evidence(
+        "vma",
+        "Ma VMA est de 15,5 km/h.",
+        15.5,
+        ["Bonjour", "Ma VMA est de 15,5 km/h."],
+    )
+    assert not validate_profile_proposal_evidence(
+        "vma",
+        "Ma VMA est de 15,5 km/h.",
+        15.5,
+        ["Ma VMA est de 15 km/h."],
+    )
+
+
+def test_profile_proposal_evidence_rejects_unsupported_values():
+    from opencoach.coaching.profile_data_evidence import validate_profile_proposal_evidence
+
+    assert not validate_profile_proposal_evidence(
+        "vma",
+        "Ma VMA est de 15,5 km/h.",
+        16,
+        ["Ma VMA est de 15,5 km/h."],
+    )

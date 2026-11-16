@@ -202,7 +202,7 @@ def test_training_history_tool_uses_domain_default_period_when_omitted():
         def calculate_days(
             self,
             profile_id,
-            reference_date,
+            reference_date=None,
             *,
             days=7,
             include_reference_day=True,

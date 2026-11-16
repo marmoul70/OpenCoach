@@ -129,7 +129,7 @@ def test_coaching_history_can_use_the_same_completed_days_as_training_load():
 
 def test_history_keeps_including_reference_day_by_default():
     reference_date = date(2026, 11, 15)
-    service = FakeTrainingStatsService(make_stats())
+    service = FakeTrainingStatsService(make_stats(), reference_date=reference_date)
     tool = build_training_history_tool(
         service,
         uuid4(),

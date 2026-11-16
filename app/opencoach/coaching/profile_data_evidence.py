@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 
@@ -42,8 +43,6 @@ def evidence_supports_profile_value(
     }:
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             return False
-        import re
-
         candidates = re.findall(r"(?<!\\d)\\d+(?:\\.\\d+)?(?!\\d)", normalized)
         try:
             return any(float(candidate) == float(value) for candidate in candidates)

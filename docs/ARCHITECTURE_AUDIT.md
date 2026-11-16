@@ -26,47 +26,51 @@ Motif : ce socle contient les développements métier et infrastructure présent
 
 Ce choix est provisoire : il ne signifie pas que tout le contenu de cette branche est validé ni qu'il faut conserver toute la couche IA.
 
-## 2 bis. Inventaire quantitatif du socle
+## 2 bis. Inventaire quantitatif actualisé
 
-L'arbre Git contient environ 1 165 fichiers :
-- 503 fichiers Python sous `app/opencoach` ;
-- 164 fichiers source frontend sous `frontend/src` ;
-- 380 fichiers sous `tests` ;
-- 30 documents sous `docs` ;
-- 38 fichiers sous `scripts`.
+Inventaire calculé sur l'arbre Git du commit `553f518228bc` :
+- **1 183 fichiers suivis** au total ;
+- **519 fichiers Python** sous `app/opencoach` ;
+- **164 fichiers** sous `frontend/src` ;
+- **387 fichiers** sous `tests` ;
+- **32 fichiers** sous `docs` ;
+- **38 fichiers** sous `scripts`.
 
-Les principaux ensembles backend sont :
-- `planning` : 127 fichiers Python ;
+Principaux ensembles backend (fichiers Python) :
+- `planning` : 127 ;
 - `database` : 116 ;
-- `coaching` : 54 ;
+- `coaching` : 65 ;
 - `training` : 48 ;
 - `api` : 27 ;
-- `ai` : 22 ;
+- `ai` : 24 ;
 - `integrations` : 19.
 
-Ce volume confirme que le chantier doit être conduit par domaines avec une cartographie des dépendances. Il ne faut pas interpréter le nombre de fichiers comme une mesure directe de qualité ou de code inutile.
+Les décomptes décrivent le volume, pas la qualité ni l'inutilité des fichiers. Ils doivent être recalculés après les suppressions ou déplacements importants.
 
-### Gros fichiers à examiner en priorité
+### Gros fichiers à examiner par responsabilité
 
 Backend :
-- `app/opencoach/api/ai.py` (~86 Ko) ;
-- `app/opencoach/api/coros.py` (~82 Ko) ;
-- `app/opencoach/api/training_sessions.py` (~40 Ko) ;
-- `app/opencoach/integrations/coros/workout_mapper.py` (~41 Ko) ;
-- `app/opencoach/planning/sessions/prescription/intervals.py` (~36 Ko).
+- `app/opencoach/api/coros.py` (~80 Ko) ;
+- `app/opencoach/integrations/coros/workout_mapper.py` (~40 Ko) ;
+- `app/opencoach/api/training_sessions.py` (~39 Ko) ;
+- `app/opencoach/planning/sessions/prescription/intervals.py` (~35 Ko) ;
+- `app/opencoach/api/ai.py` (~27 Ko après le refactoring Coach/IA).
 
 Frontend :
-- `frontend/src/modules/profile/AthleteProfileSections.tsx` (~96 Ko) ;
-- `frontend/src/modules/weather/WeatherPage.tsx` (~53 Ko) ;
-- `frontend/src/modules/training/TrainingDetails.tsx` (~53 Ko) ;
-- `frontend/src/modules/activities/ActivityPage.tsx` (~51 Ko) ;
-- `frontend/src/modules/races/RaceDetails.tsx` (~51 Ko).
+- `frontend/src/modules/profile/AthleteProfileSections.tsx` (~93 Ko) ;
+- `frontend/src/modules/weather/WeatherPage.tsx` (~52 Ko) ;
+- `frontend/src/modules/training/TrainingDetails.tsx` (~52 Ko) ;
+- `frontend/src/modules/activities/ActivityPage.tsx` (~50 Ko) ;
+- `frontend/src/modules/races/RaceDetails.tsx` (~50 Ko).
 
-Ces fichiers sont des candidats à une revue de responsabilités et de lisibilité, pas des candidats automatiques à la découpe. Toute extraction doit réduire le couplage et non déplacer simplement des lignes.
+La taille seule ne justifie aucune extraction. Chaque découpage doit isoler une responsabilité cohérente, réduire les dépendances ou rendre les tests plus ciblés, sans déplacer artificiellement du code.
 
-### Sauvegarde frontend suivie par Git
+### État des répertoires historiques
 
-Le dépôt contient `.refactor-backup/20260831-231419/`, avec d'anciennes versions de plusieurs écrans frontend (App, Connections, Profile, Settings). Ce répertoire n'est pas une source d'exécution applicative d'après son chemin, mais il est suivi par Git. Il peut être utile comme archive de récupération ; avant suppression, comparer chaque fichier avec son équivalent courant et vérifier qu'aucune fonctionnalité unique n'y subsiste.
+- Le répertoire `.refactor-backup/20260831-231419/` cité dans une version antérieure de cet audit **n'existe pas dans l'arbre de cette branche**. Il n'est donc pas une archive à supprimer dans l'état actuel de `refactor/architecture-cleanup`. Ne pas extrapoler cet état à `main`.
+- `backend/` ne contient que `.gitkeep` ; le package Python est installé depuis `app/` via `pyproject.toml`. Ce marqueur vide est un candidat de nettoyage, mais sa suppression est différée jusqu'à la vérification de toutes les références documentaires et scripts.
+- `config/thresholds.toml` est le fichier de valeurs chargé et validé par `app/opencoach/config/thresholds.py`. Ce module est le parseur/contrat typé, pas une seconde copie de la configuration.
+- `app/opencoach/training/session_execution/thresholds.py` définit des tolérances d'évaluation de l'exécution des séances (volume, adhérence et structure). Ces seuils sont d'une autre nature que les seuils Readiness/Coach de `config/thresholds.toml` ; leur présence ne constitue pas en soi une duplication.
 
 ## 3. État de validation observé
 
@@ -516,3 +520,24 @@ L'audit ciblé de la séparation métier Coach / IA est clôturé sur cette bran
 ### Limites explicites
 
 Cette clôture certifie la frontière Coach / IA et les responsabilités examinées dans les modules décrits par cet audit. Elle ne prétend pas certifier ligne par ligne les 1 165 fichiers du dépôt, ni l'absence de toute duplication dans l'ensemble du backend, du frontend, des scripts et de l'infrastructure. Les façades historiques restent en place tant qu'une rupture de compatibilité n'est pas décidée. Une validation opérationnelle sur la VM Debian 13, avec base existante et synchronisations COROS/Intervals.icu réelles, reste distincte de la CI et n'est pas remplacée par ces tests.
+
+
+## 19. Reprise de l'audit global du dépôt — 16 novembre 2026
+
+### Contrôles réalisés
+
+- Recalcul des volumes directement depuis l'arbre Git du HEAD de la branche.
+- Vérification de la présence réelle des répertoires d'archives mentionnés dans les anciennes notes.
+- Vérification du rôle du répertoire racine `backend/` et du point d'entrée de packaging Python.
+- Comparaison des responsabilités entre le chargeur central des seuils et les tolérances propres à l'évaluation d'exécution des séances.
+- Revue des tailles des plus gros modules backend et frontend pour établir un ordre d'audit fondé sur le coût de maintenance.
+
+### Décisions
+
+Aucun module métier n'est supprimé sur la base de sa taille ou de son ancienneté. Les premiers candidats à la revue fonctionnelle sont l'API COROS, le mapper de séances COROS, les routes de séances d'entraînement et les gros composants frontend de profil, entraînement et activités. La prochaine étape doit cartographier leurs fonctions, appels, imports et responsabilités avant toute extraction.
+
+Le nettoyage de `backend/.gitkeep` reste en attente de la vérification des références. L'absence de `.refactor-backup/` sur cette branche est constatée, mais aucune conclusion n'est tirée sur les autres branches.
+
+### Portée
+
+Cette étape est un inventaire reproductible et une clarification des faux positifs de duplication. Elle ne constitue pas encore une revue exhaustive des 1 183 fichiers et ne certifie pas l'absence de code mort dans les modules non examinés.

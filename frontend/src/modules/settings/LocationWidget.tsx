@@ -14,9 +14,7 @@ import {
   updateAthleteProfile,
 } from '../../core/profile'
 
-import {
-  parseOptionalNumber,
-} from '../profile/ProfileForm'
+import { parseOptionalNumber } from '../../lib/number'
 
 
 interface LocationWidgetProps {

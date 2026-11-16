@@ -23,9 +23,7 @@ import {
   updateAthleteProfile,
 } from '../../core/profile'
 
-import {
-  parseOptionalNumber,
-} from './ProfileForm'
+import { parseOptionalNumber } from '../../lib/number'
 
 
 /* =====================================================

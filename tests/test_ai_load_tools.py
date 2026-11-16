@@ -48,6 +48,8 @@ def test_training_load_tool_returns_period_coverage_and_daily_breakdown():
     class FakeTrainingStatsService:
         def calculate(self, profile_id, start_date, end_date):
             return _training_stats(
+                start_date=start_date,
+                end_date=end_date,
                 sessions_count=1,
                 measured_load=45.0,
                 measured_load_data_count=1,

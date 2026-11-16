@@ -426,3 +426,33 @@ Les garde-fous de synthèse qui restent dans ai/response_synthesis.py sont des c
 La composition API de la charge a également été factorisée : get_recent_training_load_service() construit le service existant depuis les repositories déjà détenus par TrainingStatsService. PlanningContextService et CoachDecisionService réutilisent cette même chaîne de dépendances. api/ai.py réutilise directement les repositories canoniques de TrainingStatsService pour les outils activité/séance, sans recréer une seconde paire de repositories SQL.
 
 Le schéma de l'outil de proposition de profil hérite maintenant directement de AIDataProposalCreate. Les champs autorisés et validations de valeurs ne sont donc plus redéfinis dans le package IA ; seul le contrôle de preuve conversationnelle reste spécifique à l'adaptateur.
+
+
+## 14. Mise à jour — frontière du registre Coach/IA (16 novembre 2026)
+
+**HEAD de référence :** `b6c72dcba7e136f271f20ca8beb26868cc653968` (branche `refactor/architecture-cleanup`).
+
+### Changements effectifs
+
+- Le contrat générique d'exécution (`CoachCapability`, `CoachCapabilityResult`, `CoachCapabilityRegistry` et `ToolStatus`) est défini dans `coaching/capabilities/registry.py`. Il ne dépend ni du package IA ni de son observabilité.
+- `coaching/capabilities/__init__.py` expose ce contrat comme API publique du domaine.
+- `ai/tool_engine.py` est une façade de compatibilité stricte : ses anciens symboles sont des alias des types Coach, y compris le type `ToolStatus` (plus de remplacement permissif par `str`).
+- Les adaptateurs conversationnels importent le contrat Coach. L'API enregistre et exécute ces capacités via le registre Coach.
+- `ai/data_proposals.py` est déjà un shim de compatibilité ; le cycle de vie des propositions est implémenté dans `coaching/profile_data_proposals.py`.
+- `ai/registry.py` reste une composition d'adaptateurs IA autour de services métier injectés. Ce n'est pas un second registre métier et il ne doit pas contenir de calcul ni de décision sportive.
+
+### Vérifications
+
+- CI du commit `aecb23695ef32994c8850e534732d093b63cdc9f` : Python 3.13, Bash et Frontend terminés avec succès.
+- Un test de contrat vérifie l'identité des alias historiques avec les types Coach et le caractère strict du type `ToolStatus`.
+- La CI du HEAD `b6c72dcba7e136f271f20ca8beb26868cc653968` est en cours au moment de cette mise à jour ; ne pas la considérer comme validée avant la fin des trois jobs.
+
+### Audit restant — points non certifiés
+
+1. Parcourir chaque adaptateur de `ai/*_tools.py` et distinguer strictement validation de transport/sérialisation des règles métier. Une fonction de calcul, un seuil, une interprétation de statut ou une décision individuelle ne doit pas rester dans l'adaptateur.
+2. Vérifier les frontières de `api/ai.py` et `ai/response_synthesis.py` : l'orchestration HTTP et la présentation peuvent rester dans la couche IA, mais aucun garde-fou sportif ou choix de recommandation ne doit y être réimplémenté.
+3. Confirmer par tests d'intégration que les parcours métier (profil, entraînement, courses, contraintes, récupération, propositions) fonctionnent lorsque le fournisseur IA est désactivé ou absent.
+4. Identifier les façades de compatibilité encore importées. Ne les supprimer qu'après inventaire des usages internes, tests, scripts et intégrations externes ; une façade n'est pas une duplication d'implémentation si elle ne contient aucun comportement.
+5. Compléter l'audit global des duplications et du code mort hors IA (backend, frontend, scripts, infrastructure et migrations).
+
+**Conclusion provisoire :** le registre et le cycle de propositions ne sont plus des implémentations métier dupliquées dans le package IA. En revanche, l'objectif « zéro logique métier dans l'IA » n'est pas encore certifié ; les points ci-dessus sont des critères bloquants, pas des tâches facultatives.

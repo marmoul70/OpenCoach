@@ -87,6 +87,8 @@ class TrainingSessionReviewResult:
     activity: Activity | None = None
     detail: ActivityDetail | None = None
     assessment: SessionExecutionAssessment | None = None
+    message: str | None = None
+    interpretation_rules: tuple[str, ...] = ()
 
 
 
@@ -111,12 +113,20 @@ class ValidateTrainingSessionService:
             training_session_id,
         )
         if session is None:
-            return TrainingSessionReviewResult(status="not_found")
+            return TrainingSessionReviewResult(
+                status="not_found",
+                message="Séance introuvable dans le planning de cet athlète.",
+            )
 
         if session.activity_id is None:
             return TrainingSessionReviewResult(
                 status="activity_not_linked",
                 session=session,
+                message=(
+                    "Aucune activité n'est associée à cette séance. "
+                    "Ne pas supposer qu'elle n'a pas été réalisée : demander "
+                    "à l'utilisateur de confirmer ou d'associer l'activité."
+                ),
             )
 
         activity = self.activity_repository.get_activity(
@@ -127,6 +137,10 @@ class ValidateTrainingSessionService:
             return TrainingSessionReviewResult(
                 status="linked_activity_unavailable",
                 session=session,
+                message=(
+                    "La séance référence une activité qui n'est pas accessible "
+                    "dans les données de cet athlète."
+                ),
             )
 
         detail = self.activity_detail_repository.get_activity_detail(
@@ -144,6 +158,11 @@ class ValidateTrainingSessionService:
             activity=activity,
             detail=detail,
             assessment=assessment,
+            interpretation_rules=(
+                "Les statuts et écarts sont calculés par le moteur Python d'exécution.",
+                "Ne pas recalculer les métriques ni transformer une donnée insuffisante en échec.",
+                "Une analyse sans détail d'activité reste partielle si les métriques nécessitent des laps ou des streams.",
+            ),
         )
 
     def execute(

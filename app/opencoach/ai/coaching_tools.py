@@ -35,8 +35,6 @@ class RaceCalendarArguments(BaseModel):
     )
     horizon_days: int = Field(
         default=180,
-        ge=1,
-        le=365,
         description="Nombre de jours calendaires à consulter, début inclus.",
     )
 

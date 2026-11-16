@@ -31,7 +31,7 @@ class RecentTrainingLoadService:
 
         if not 1 <= days <= 90:
             raise ValueError(
-                "La période de charge doit contenir au moins un jour et ne pas dépasser 90 jours."
+                "La période de charge doit être comprise entre 1 et 90 jours (au moins un jour)."
             )
 
         comparisons = []

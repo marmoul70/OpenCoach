@@ -16,8 +16,6 @@ class TrainingTrendsArguments(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     nb_days: int = Field(
-        ge=1,
-        le=180,
         description="Durée de la période récente, en jours.",
     )
     comparison_days: int = Field(

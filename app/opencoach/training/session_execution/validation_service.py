@@ -164,14 +164,12 @@ class ValidateTrainingSessionService:
             )
         )
 
-        if detail is None:
-            raise TrainingSessionMissingActivityDetailError(
-                "Les données détaillées de cette activité "
-                "ne sont pas encore disponibles."
-            )
+        # Les données détaillées enrichissent l'analyse, mais ne doivent
+        # jamais empêcher l'association explicite d'une activité à une séance.
+        # COROS peut fournir le résumé de l'activité sans streams/intervals
+        # normalisés ; l'analyse signale alors les métriques indisponibles.
+        # Le moteur accepte déjà activity_detail=None.
 
-        # Important :
-        # l'analyse est réalisée AVANT toute modification de la séance.
         assessment = analyze_session_execution(
             session,
             activity,

@@ -432,7 +432,11 @@ def test_registry_does_not_retry_a_failed_exact_invocation():
 def test_legacy_ai_tool_engine_is_a_strict_alias_of_coach_contract():
     from typing import get_args
 
-    from opencoach.ai.tool_engine import ToolStatus as LegacyToolStatus
+    from opencoach.ai.tool_engine import (
+        AITool as LegacyCapability,
+        AIToolRegistry as LegacyRegistry,
+        ToolStatus as LegacyToolStatus,
+    )
     from opencoach.coaching.capabilities import (
         CoachCapability as DomainCapability,
         CoachCapabilityRegistry as DomainRegistry,
@@ -442,6 +446,8 @@ def test_legacy_ai_tool_engine_is_a_strict_alias_of_coach_contract():
 
     assert AITool is DomainCapability
     assert AIToolRegistry is DomainRegistry
+    assert LegacyCapability is DomainCapability
+    assert LegacyRegistry is DomainRegistry
     assert LegacyToolStatus is DomainToolStatus
     assert get_args(DomainToolStatus) == (
         "ok",

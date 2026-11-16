@@ -15,8 +15,9 @@ class TrainingLoadArguments(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    nb_days: int = Field(
-        description="Nombre de jours calendaires précédant la date de référence.",
+    nb_days: int | None = Field(
+        default=None,
+        description="Nombre de jours calendaires précédant la date de référence. Si absent, le domaine applique sa fenêtre par défaut.",
     )
 
 
@@ -30,17 +31,21 @@ def build_training_load_tool(
     """Construit l'outil de charge pour l'athlète authentifié."""
 
     def execute(arguments: BaseModel) -> dict:
-        nb_days = arguments.nb_days
+        period_arguments = (
+            {"days": arguments.nb_days}
+            if arguments.nb_days is not None
+            else {}
+        )
         target_date = reference_date_provider()
         load = service.calculate(
             athlete_profile_id,
             target_date,
-            days=nb_days,
+            **period_arguments,
         )
         stats = training_stats_service.calculate_days(
             athlete_profile_id,
             target_date,
-            days=nb_days,
+            **period_arguments,
             include_reference_day=False,
         )
 

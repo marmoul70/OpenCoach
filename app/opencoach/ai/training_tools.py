@@ -15,8 +15,9 @@ class TrainingHistoryArguments(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    nb_days: int = Field(
-        description="Nombre de jours calendaires inclus dans la période.",
+    nb_days: int | None = Field(
+        default=None,
+        description="Nombre de jours calendaires inclus dans la période. Si absent, le domaine applique sa fenêtre par défaut.",
     )
     exclude_current_day: bool = Field(
         default=False,
@@ -36,10 +37,15 @@ def build_training_history_tool(
     """Expose les statistiques calculées par le domaine training."""
 
     def execute(arguments: BaseModel) -> dict:
+        period_arguments = (
+            {"days": arguments.nb_days}
+            if arguments.nb_days is not None
+            else {}
+        )
         stats = service.calculate_days(
             athlete_profile_id,
             reference_date_provider(),
-            days=arguments.nb_days,
+            **period_arguments,
             include_reference_day=not arguments.exclude_current_day,
         )
         return stats.history_summary()

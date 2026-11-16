@@ -230,7 +230,7 @@ class TrainingStatsService:
         athlete_profile_id: UUID,
         reference_date: date,
         *,
-        days: int,
+        days: int = 7,
         include_reference_day: bool = True,
     ) -> TrainingStats:
         """Calcule une fenêtre calendaire inclusive à partir d'une date d'ancrage."""

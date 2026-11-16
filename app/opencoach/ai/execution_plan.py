@@ -280,14 +280,15 @@ def build_coach_execution_plan(
                 return CoachExecutionPlan(clarification=(
                     "Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?"
                 ))
-            load_period = requested_periods[-1] if explicit_load_request else 7
-            history_period = load_period if explicit_load_request else 7
+            load_period = requested_periods[-1] if explicit_load_request else None
+            history_arguments = {"exclude_current_day": True}
+            load_arguments = {}
+            if load_period is not None:
+                history_arguments["nb_days"] = load_period
+                load_arguments["nb_days"] = load_period
             safety_calls.extend((
-                PlannedToolCall(
-                    "training_history",
-                    {"nb_days": history_period, "exclude_current_day": True},
-                ),
-                PlannedToolCall("training_load", {"nb_days": load_period}),
+                PlannedToolCall("training_history", history_arguments),
+                PlannedToolCall("training_load", load_arguments),
                 PlannedToolCall("recovery_analysis", {}),
                 # La date cible de la séance/douleur sert aux contraintes,
                 # mais la décision d'entraînement doit s'appuyer sur la
@@ -346,25 +347,22 @@ def build_coach_execution_plan(
                 "bilan de la semaine", "bilan hebdomadaire",
             )
         )
-        history_period = (
-            7 if (overview_history or recommendation_history) and not periods
-            else (periods[-1] if periods else None)
-        )
-        if history_period is None:
+        history_period = periods[-1] if periods else None
+        if history_period is None and not (overview_history or recommendation_history):
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
-        history_arguments = {"nb_days": history_period}
+        history_arguments = (
+            {"nb_days": history_period}
+            if history_period is not None
+            else {}
+        )
         if recommendation_history:
             # training_load porte sur les jours complets précédant la date cible ;
-            # l'historique doit utiliser exactement la même fenêtre.
+            # l'historique utilise la fenêtre par défaut définie par le domaine.
             history_arguments["exclude_current_day"] = True
         calls.append(PlannedToolCall("training_history", history_arguments))
         if recommendation_history and (not periods or "training_load" not in selected):
-            # Une décision de séance doit aussi connaître la charge réellement
-            # observée sur une fenêtre récente fixe, distincte de l'historique
-            # descriptif. Sept jours sont préparés par Python, sans choix du LLM.
-            # Si une période explicite a déjà autorisé training_load, l'appel
-            # correspondant est ajouté plus bas avec la durée demandée.
-            calls.append(PlannedToolCall("training_load", {"nb_days": 7}))
+            # Le domaine applique lui-même la fenêtre par défaut de charge récente.
+            calls.append(PlannedToolCall("training_load", {}))
 
     # Une comparaison utilise training_trends, qui calcule déjà les métriques
     # des deux fenêtres. Ne lance pas en parallèle training_load : cela ajoute

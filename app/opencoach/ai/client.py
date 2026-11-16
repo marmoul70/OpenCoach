@@ -8,7 +8,7 @@ import httpx
 
 from opencoach.ai.config import AISettings
 from opencoach.ai.observability import log_ai_event, ollama_metrics
-from opencoach.ai.schemas import AIChatRequest, AIChatResult
+from opencoach.ai.schemas import AIChatRequest, AIChatResult, AIToolCall
 
 
 def _log_generation(
@@ -60,6 +60,14 @@ class OllamaClient:
             "messages": [
                 {
                     **{"role": message.role, "content": message.content},
+                    **({"tool_name": message.tool_name} if message.tool_name else {}),
+                    **(
+                        {"tool_calls": [
+                            {"function": {"name": call.name, "arguments": call.arguments}}
+                            for call in message.tool_calls
+                        ]}
+                        if message.tool_calls else {}
+                    ),
                 }
                 for message in request.messages
             ],
@@ -70,6 +78,15 @@ class OllamaClient:
                 "num_predict": request.num_predict,
             },
         }
+        if request.tools:
+            payload["tools"] = [
+                {
+                    "type": "function",
+                    "function": tool.model_dump(),
+                }
+                for tool in request.tools
+            ]
+
         try:
             async with httpx.AsyncClient(
                 base_url=self.settings.base_url,
@@ -98,9 +115,17 @@ class OllamaClient:
 
         try:
             message = data["message"]
+            tool_calls = [
+                AIToolCall(
+                    name=item["function"]["name"],
+                    arguments=item["function"].get("arguments") or {},
+                )
+                for item in message.get("tool_calls", [])
+            ]
             result = AIChatResult(
                 model=data["model"],
                 content=message.get("content", ""),
+                tool_calls=tool_calls,
                 done=data["done"],
                 done_reason=data.get("done_reason"),
                 total_duration=data.get("total_duration"),

@@ -42,6 +42,7 @@ from opencoach.coaching.weekly_assessment_service import (
     CoachWeeklyAssessmentService,
 )
 from opencoach.api.coaching.dependencies import (
+    get_coach_decision_service,
     get_coach_weekly_assessment_service,
     get_weekly_planning_context_builder,
 )
@@ -107,67 +108,6 @@ router = APIRouter(
 )
 
 
-def get_coach_decision_service(
-    db: Session = Depends(get_db),
-) -> CoachDecisionService:
-    training_repository = (
-        SqlTrainingSessionRepository(
-            db
-        )
-    )
-
-    activity_repository = (
-        SqlActivityRepository(
-            db
-        )
-    )
-
-    wellness_repository = (
-        SqlWellnessRepository(
-            db
-        )
-    )
-
-    daily_context_repository = (
-        SqlDailyContextRepository(
-            db
-        )
-    )
-
-    readiness_service = ReadinessService(
-        wellness_repository,
-        daily_context_repository=(
-            daily_context_repository
-        ),
-    )
-
-    daily_training_load_service = (
-        DailyTrainingLoadService(
-            activity_repository,
-            training_repository,
-        )
-    )
-
-    load_comparison_service = (
-        TrainingLoadComparisonService(
-            training_repository,
-            daily_training_load_service,
-        )
-    )
-
-    recent_load_service = (
-        RecentTrainingLoadService(
-            load_comparison_service,
-        )
-    )
-
-    return CoachDecisionService(
-        training_repository,
-        readiness_service,
-        recent_load_service=(
-            recent_load_service
-        ),
-    )
 
 @router.get(
     "/trajectory",

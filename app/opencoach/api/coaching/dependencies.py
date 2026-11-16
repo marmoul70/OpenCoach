@@ -43,6 +43,7 @@ from opencoach.api.training_stats import (
 from opencoach.coaching.weekly_assessment_service import (
     CoachWeeklyAssessmentService,
 )
+from opencoach.coaching import CoachDecisionService
 
 from opencoach.coaching.generation import (
     AthleteWeeklyTrainingGenerationService,
@@ -107,6 +108,30 @@ from opencoach.training import (
     TrainingStatsService,
     WeeklyLoadProjectionService,
 )
+
+
+
+def get_coach_decision_service(
+    db: Session = Depends(get_db),
+    readiness_service: ReadinessService = Depends(get_readiness_service),
+) -> CoachDecisionService:
+    """Construit la décision quotidienne à partir des services Coach canoniques."""
+    training_repository = SqlTrainingSessionRepository(db)
+    activity_repository = SqlActivityRepository(db)
+    daily_training_load_service = DailyTrainingLoadService(
+        activity_repository,
+        training_repository,
+    )
+    load_comparison_service = TrainingLoadComparisonService(
+        training_repository,
+        daily_training_load_service,
+    )
+    recent_load_service = RecentTrainingLoadService(load_comparison_service)
+    return CoachDecisionService(
+        training_repository,
+        readiness_service,
+        recent_load_service=recent_load_service,
+    )
 
 
 def get_planning_context_service(

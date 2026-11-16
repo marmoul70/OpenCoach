@@ -155,7 +155,7 @@ def test_missing_required_tool_argument_is_returned_to_model_for_clarification()
         user_messages=["Montre-moi mon historique."],
     ))
 
-    assert result.content == "Sur combien de jours souhaites-tu ton historique ?"
+    assert result.content == "Sur combien de jours souhaites-tu que j'analyse ton historique ?"
     assert client.calls == 2
     assert "needs_clarification" in client.follow_up_tool_message
     assert "combien de jours" in client.follow_up_tool_message

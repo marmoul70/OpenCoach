@@ -1,7 +1,6 @@
 """Adaptateur conversationnel de l'historique d'entraînement."""
 from __future__ import annotations
 
-from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -31,8 +30,6 @@ class TrainingHistoryArguments(BaseModel):
 def build_training_history_tool(
     service: TrainingStatsService,
     athlete_profile_id: UUID,
-    *,
-    reference_date_provider=date.today,
 ) -> AITool:
     """Expose les statistiques calculées par le domaine training."""
 
@@ -44,7 +41,6 @@ def build_training_history_tool(
         )
         stats = service.calculate_days(
             athlete_profile_id,
-            reference_date_provider(),
             **period_arguments,
             include_reference_day=not arguments.exclude_current_day,
         )

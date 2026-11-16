@@ -20,8 +20,8 @@ class RecoveryStatusArguments(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    target_date: date = Field(
-        default_factory=date.today,
+    target_date: date | None = Field(
+        default=None,
         description="Date à analyser ; omettre le champ pour consulter aujourd'hui.",
     )
 
@@ -41,7 +41,10 @@ def build_recovery_status_tool(
         except ReadinessDataUnavailableError:
             return {
                 "available": False,
-                "target_date": arguments.target_date.isoformat(),
+                "target_date": (
+                    arguments.target_date.isoformat()
+                    if arguments.target_date is not None else None
+                ),
                 "reason": "no_readiness_data",
                 "message": "Aucune donnée de récupération exploitable n'est disponible pour cette date.",
             }
@@ -65,8 +68,8 @@ class RecoveryAnalysisArguments(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    target_date: date = Field(
-        default_factory=date.today,
+    target_date: date | None = Field(
+        default=None,
         description="Date de fin de l'analyse ; aujourd'hui par défaut.",
     )
 

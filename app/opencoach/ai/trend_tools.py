@@ -1,7 +1,6 @@
 """Adaptateur conversationnel des tendances statistiques OpenCoach."""
 from __future__ import annotations
 
-from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -26,15 +25,12 @@ class TrainingTrendsArguments(BaseModel):
 def build_training_trends_tool(
     service: TrainingStatsService,
     athlete_profile_id: UUID,
-    *,
-    reference_date_provider=date.today,
 ) -> AITool:
     """Expose la comparaison calculée par le service statistique Coach."""
 
     def execute(arguments: BaseModel) -> dict:
         return service.compare_adjacent_periods(
             athlete_profile_id,
-            reference_date=reference_date_provider(),
             current_days=arguments.nb_days,
             comparison_days=arguments.comparison_days,
         )

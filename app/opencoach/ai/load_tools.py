@@ -1,7 +1,6 @@
 """Outil de synthèse de charge récente, basé sur les services métier existants."""
 from __future__ import annotations
 
-from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -25,8 +24,6 @@ def build_training_load_tool(
     service: RecentTrainingLoadService,
     training_stats_service: TrainingStatsService,
     athlete_profile_id: UUID,
-    *,
-    reference_date_provider=date.today,
 ) -> AITool:
     """Construit l'outil de charge pour l'athlète authentifié."""
 
@@ -36,15 +33,12 @@ def build_training_load_tool(
             if arguments.nb_days is not None
             else {}
         )
-        target_date = reference_date_provider()
         load = service.calculate(
             athlete_profile_id,
-            target_date,
             **period_arguments,
         )
         stats = training_stats_service.calculate_days(
             athlete_profile_id,
-            target_date,
             **period_arguments,
             include_reference_day=False,
         )

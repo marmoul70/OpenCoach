@@ -611,7 +611,7 @@ def test_coach_quality_gate_accepts_explicit_running_restriction():
         SimpleNamespace(
             tool="active_constraints",
             status="ok",
-            data={"constraints": [{"running_allowed": False}]},
+            data={"running_restriction": {"blocked": True}},
         ),
     ]
 

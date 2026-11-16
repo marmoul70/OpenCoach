@@ -224,10 +224,10 @@ def _coach_response_has_ungrounded_risk_claims(answer: str, tool_results) -> boo
         content,
     ):
         constraints_data = results.get("active_constraints") or {}
-        constraints = constraints_data.get("constraints", [])
-        explicitly_blocked = any(
-            isinstance(item, dict) and item.get("running_allowed") is False
-            for item in constraints
+        restriction = constraints_data.get("running_restriction")
+        explicitly_blocked = (
+            isinstance(restriction, dict)
+            and restriction.get("blocked") is True
         )
         if not explicitly_blocked:
             return True

@@ -161,11 +161,11 @@ def validate_profile_proposal_evidence(
     return evidence_supports_profile_value(field_key, evidence, value)
 
 _NUMERIC_PROFILE_PROPOSAL_PATTERNS = (
-    (r"\\bma\\s+vma\\s+est\\s+de\\s+(\\d+(?:[.,]\\d+)?)\\s*km/?h\\b", "vma", "float"),
-    (r"\\b(?:mon\\s+poids\\s+est\\s+de|je\\s+pese)\\s+(\\d+(?:[.,]\\d+)?)\\s*kg\\b", "weight_kg", "float"),
-    (r"\\bma\\s+fc\\s+max(?:imale)?\\s+est\\s+de\\s+(\\d{2,3})\\s*(?:bpm)?\\b", "max_heart_rate", "int"),
-    (r"\\bma\\s+fc\\s+au\\s+repos\\s+est\\s+de\\s+(\\d{2,3})\\s*(?:bpm)?\\b", "resting_heart_rate", "int"),
-    (r"\\bje\\s+mesure\\s+(\\d{2,3})\\s*cm\\b", "height_cm", "int"),
+    (r"\bma\s+vma\s+est\s+de\s+(\d+(?:[.,]\d+)?)\s*km/?h\b", "vma", "float"),
+    (r"\b(?:mon\s+poids\s+est\s+de|je\s+pese)\s+(\d+(?:[.,]\d+)?)\s*kg\b", "weight_kg", "float"),
+    (r"\bma\s+fc\s+max(?:imale)?\s+est\s+de\s+(\d{2,3})\s*(?:bpm)?\b", "max_heart_rate", "int"),
+    (r"\bma\s+fc\s+au\s+repos\s+est\s+de\s+(\d{2,3})\s*(?:bpm)?\b", "resting_heart_rate", "int"),
+    (r"\bje\s+mesure\s+(\d{2,3})\s*cm\b", "height_cm", "int"),
 )
 
 

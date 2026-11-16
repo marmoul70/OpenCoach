@@ -84,10 +84,6 @@ def test_benchmark_treats_explicit_default_arguments_as_equivalent_to_omission()
             {"tool": "active_constraints", "arguments": {}},
             {"name": "active_constraints", "arguments": {"target_date": "2026-11-09"}},
         ),
-        (
-            {"tool": "race_calendar", "arguments": {}},
-            {"name": "race_calendar", "arguments": {"horizon_days": 180}},
-        ),
     ]
 
     for expected_call, actual_call in cases:

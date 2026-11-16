@@ -169,12 +169,14 @@ def test_training_history_tool_uses_injected_athlete_and_inclusive_period():
     assert result.data["metrics"]["training_load"]["total"] == 150.0
 
 
-def test_training_history_tool_schema_rejects_out_of_range_period_without_service_call():
+def test_training_history_tool_delegates_period_limits_to_domain_service():
     calls = []
 
-    def calculate_days(*args, **kwargs):
-        calls.append(args)
-        raise AssertionError("Le service ne doit pas être appelé pour une période invalide.")
+    def calculate_days(*args, days, **kwargs):
+        calls.append(days)
+        if not 1 <= days <= 365:
+            raise ValueError("La période doit être comprise entre 1 et 365 jours.")
+        raise AssertionError("Une période invalide ne doit pas être exécutée.")
 
     tool = build_training_history_tool(
         SimpleNamespace(calculate_days=calculate_days),
@@ -185,9 +187,11 @@ def test_training_history_tool_schema_rejects_out_of_range_period_without_servic
 
     for nb_days in (366, 500):
         result = registry.execute("training_history", {"nb_days": nb_days})
-        assert result.status == "invalid_arguments"
+        assert result.status == "failed"
+        assert result.metadata["error_type"] == "ValueError"
+        assert result.error == "L'exécution de l'outil a échoué."
 
-    assert calls == []
+    assert calls == [366, 500]
 
 
 

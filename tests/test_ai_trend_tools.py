@@ -5,6 +5,7 @@ from opencoach.ai.trend_tools import (
     TrainingTrendsArguments,
     build_training_trends_tool,
 )
+from opencoach.training import TrainingStatsService
 
 
 def test_training_trends_delegates_periods_and_returns_coach_result():
@@ -62,11 +63,25 @@ def test_training_trends_delegates_periods_and_returns_coach_result():
     assert result is expected
 
 
-def test_training_trends_arguments_reject_invalid_periods():
+def test_training_trends_argument_schema_delegates_limits_to_domain_service():
     import pytest
-    from pydantic import ValidationError
 
-    with pytest.raises(ValidationError):
-        TrainingTrendsArguments(nb_days=0, comparison_days=7)
-    with pytest.raises(ValidationError):
-        TrainingTrendsArguments(nb_days=7, comparison_days=181)
+    arguments = TrainingTrendsArguments(nb_days=0, comparison_days=181)
+    assert arguments.nb_days == 0
+    assert arguments.comparison_days == 181
+
+    service = TrainingStatsService(object(), object())
+    with pytest.raises(ValueError, match="1 et 180 jours"):
+        service.compare_adjacent_periods(
+            uuid4(),
+            reference_date=date(2026, 11, 9),
+            current_days=0,
+            comparison_days=7,
+        )
+    with pytest.raises(ValueError, match="180 jours"):
+        service.compare_adjacent_periods(
+            uuid4(),
+            reference_date=date(2026, 11, 9),
+            current_days=7,
+            comparison_days=181,
+        )

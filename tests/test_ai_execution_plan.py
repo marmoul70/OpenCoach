@@ -76,13 +76,14 @@ def test_short_clarification_answer_does_not_reuse_unrelated_old_intent():
     assert plan.clarification is None
 
 
-def test_out_of_range_history_is_rejected_before_tool_execution():
+def test_execution_plan_does_not_duplicate_training_history_domain_period_limit():
     plan = build_coach_execution_plan(
         "Analyse mon historique sur 500 jours.",
         reference_date=REFERENCE_DATE,
     )
-    assert plan.calls == ()
-    assert "1 à 365 jours" in plan.clarification
+    assert ("training_history", {"nb_days": 500}) in [
+        (call.name, call.arguments) for call in plan.calls
+    ]
 
 
 def test_current_recovery_uses_python_default_date_and_status_tool():
@@ -375,14 +376,16 @@ def test_race_preparation_without_race_id_never_guesses_target():
     assert any(call.name == "race_calendar" for call in plan.calls)
 
 
-def test_race_preparation_invalid_history_period_does_not_execute_analysis():
+def test_execution_plan_delegates_race_history_period_limits_to_coach_service():
     race_id = "123e4567-e89b-42d3-a456-426614174000"
     plan = build_coach_execution_plan(
         f"Analyse ma préparation pour la course {race_id} sur 200 jours.",
         reference_date=REFERENCE_DATE,
     )
-    assert all(call.name != "race_preparation_analysis" for call in plan.calls)
-    assert "7 à 180 jours" in (plan.clarification or "")
+    assert ("race_preparation_analysis", {
+        "race_id": race_id,
+        "history_days": 200,
+    }) in [(call.name, call.arguments) for call in plan.calls]
 
 
 def test_race_selection_survives_follow_up_history_period_clarification():
@@ -391,7 +394,7 @@ def test_race_selection_survives_follow_up_history_period_clarification():
         "30 jours",
         history=[f"Analyse ma préparation pour la course {race_id}."],
         assistant_history=[
-            "Sur combien de jours d'historique souhaites-tu analyser ta préparation à cette course (7 à 180 jours) ?"
+            "Sur combien de jours d'historique souhaites-tu analyser ta préparation à cette course ?"
         ],
         reference_date=REFERENCE_DATE,
     )

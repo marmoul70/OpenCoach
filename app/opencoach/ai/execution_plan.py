@@ -207,8 +207,6 @@ def build_coach_execution_plan(
     if any(term in intent_context for term in ("historique", "entrainement realise", "mes entrainements", "mes activites", "mes sorties", "bilan de ma semaine", "bilan de la semaine", "bilan hebdomadaire")) and "training_history" not in selected:
         if not periods:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
-        if not 1 <= periods[-1] <= 365:
-            return CoachExecutionPlan(clarification="L'historique doit porter sur une période de 1 à 365 jours. Quelle période valide souhaites-tu ?")
     trend_comparison_requested = any(
         term in intent_context
         for term in (
@@ -235,8 +233,6 @@ def build_coach_execution_plan(
     if explicit_load_analysis_request and not trend_comparison_requested:
         if not periods:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?")
-        if not 1 <= periods[-1] <= 90:
-            return CoachExecutionPlan(clarification="La charge peut être analysée sur 1 à 90 jours. Quelle période valide souhaites-tu ?")
     if any(term in intent_context for term in ("seances planifiees", "seances prevues", "prochaines seances")) and "planned_sessions" not in selected:
         return CoachExecutionPlan(clarification="Quelles sont les dates de début et de fin à consulter pour tes séances planifiées ?")
 
@@ -246,13 +242,9 @@ def build_coach_execution_plan(
         if any(term in normalized for term in ("historique", "entrainement realise", "mes entrainements", "mes activites", "mes sorties")):
             if not periods:
                 return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
-            if not 1 <= periods[-1] <= 365:
-                return CoachExecutionPlan(clarification="L'historique doit porter sur une période de 1 à 365 jours. Quelle période valide souhaites-tu ?")
         if any(term in normalized for term in ("charge", "atl", "ctl", "tsb")):
             if not periods:
                 return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?")
-            if not 1 <= periods[-1] <= 90:
-                return CoachExecutionPlan(clarification="La charge peut être analysée sur 1 à 90 jours. Quelle période valide souhaites-tu ?")
         if any(term in normalized for term in ("tendance", "compare mes", "comparaison", "evolution de mon entrainement")):
             if len(periods) < 2:
                 return CoachExecutionPlan(clarification="Pour comparer tes tendances, indique la durée des deux périodes (par exemple 7 jours et 14 jours).")
@@ -289,10 +281,6 @@ def build_coach_execution_plan(
                     "Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?"
                 ))
             load_period = requested_periods[-1] if explicit_load_request else 7
-            if not 1 <= load_period <= 90:
-                return CoachExecutionPlan(clarification=(
-                    "La charge peut être analysée sur 1 à 90 jours. Quelle période valide souhaites-tu ?"
-                ))
             history_period = load_period if explicit_load_request else 7
             safety_calls.extend((
                 PlannedToolCall(
@@ -364,8 +352,6 @@ def build_coach_execution_plan(
         )
         if history_period is None:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu que j'analyse ton historique ?")
-        if not 1 <= history_period <= 365:
-            return CoachExecutionPlan(clarification="L'historique doit porter sur une période de 1 à 365 jours. Quelle période valide souhaites-tu ?")
         history_arguments = {"nb_days": history_period}
         if recommendation_history:
             # training_load porte sur les jours complets précédant la date cible ;
@@ -394,16 +380,12 @@ def build_coach_execution_plan(
         if not periods:
             return CoachExecutionPlan(clarification="Sur combien de jours souhaites-tu analyser ta charge d'entraînement ?")
         load_period = periods[-1]
-        if not 1 <= load_period <= 90:
-            return CoachExecutionPlan(clarification="La charge peut être analysée sur 1 à 90 jours. Quelle période valide souhaites-tu ?")
         calls.append(PlannedToolCall("training_load", {"nb_days": load_period}))
 
     if "training_trends" in selected:
         if len(periods) < 2:
             return CoachExecutionPlan(clarification="Pour comparer tes tendances, indique la durée des deux périodes (par exemple 7 jours et 14 jours).")
         first, second = periods[-2:]
-        if not all(1 <= value <= 180 for value in (first, second)):
-            return CoachExecutionPlan(clarification="Chaque période de comparaison doit être comprise entre 1 et 180 jours.")
         calls.append(PlannedToolCall("training_trends", {"nb_days": first, "comparison_days": second}))
 
     if "training_load" in selected and not trend_comparison_requested:
@@ -465,19 +447,6 @@ def build_coach_execution_plan(
             {"horizon_days": int(horizon.group(1))} if horizon else {},
         ))
 
-    # Une période explicite invalide ne doit pas désactiver silencieusement
-    # l'analyse de préparation : demander une correction sans consulter l'outil.
-    if (
-        "preparation" in intent_context
-        and "race_preparation_analysis" not in selected
-        and periods
-        and not 7 <= periods[-1] <= 180
-    ):
-        return CoachExecutionPlan(clarification=(
-            "L'analyse de préparation nécessite une période de 7 à 180 jours. "
-            "Quelle période valide souhaites-tu ?"
-        ))
-
     if "race_preparation_analysis" in selected:
         # Une course ne peut être analysée qu'après identification explicite :
         # le calendrier fournit les identifiants, jamais un choix arbitraire.
@@ -488,12 +457,7 @@ def build_coach_execution_plan(
         elif not periods:
             return CoachExecutionPlan(clarification=(
                 "Sur combien de jours d'historique souhaites-tu analyser ta préparation "
-                "à cette course (7 à 180 jours) ?"
-            ))
-        elif not 7 <= periods[-1] <= 180:
-            return CoachExecutionPlan(clarification=(
-                "L'analyse de préparation nécessite une période de 7 à 180 jours. "
-                "Quelle période valide souhaites-tu ?"
+                "à cette course ?"
             ))
         else:
             calls.append(PlannedToolCall("race_preparation_analysis", {

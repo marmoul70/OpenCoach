@@ -1,4 +1,4 @@
-"""Outil de lecture des contraintes temporaires via le repository métier."""
+"""Adaptateur conversationnel des contraintes de disponibilité."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 from opencoach.ai.tool_engine import AITool
-from opencoach.database.repositories import AthleteConstraintRepository
+from opencoach.planning import PlanningContextService
 
 
 class ActiveConstraintsArguments(BaseModel):
@@ -18,46 +18,18 @@ class ActiveConstraintsArguments(BaseModel):
 
 
 def build_active_constraints_tool(
-    repository: AthleteConstraintRepository,
+    service: PlanningContextService,
     athlete_profile_id: UUID,
-    *,
-    reference_date_provider=date.today,
 ) -> AITool:
-    """Retourne les contraintes de l'athlète pour une date donnée."""
+    """Expose les contraintes déjà évaluées par le domaine planning."""
 
     def execute(arguments: BaseModel) -> dict:
-        target_date = arguments.target_date or reference_date_provider()
-        constraints = repository.list_overlapping(
+        result = service.active_constraints(
             athlete_profile_id,
-            target_date,
-            target_date,
+            arguments.target_date,
         )
-
         return {
-            "status": "ok" if constraints else "empty",
-            "target_date": target_date.isoformat(),
-            "constraint_count": len(constraints),
-            "constraints": [
-                {
-                    "constraint_id": str(item.id),
-                    "start_date": item.start_date.isoformat(),
-                    "end_date": item.end_date.isoformat(),
-                    "constraint_type": item.constraint_type,
-                    "availability": item.availability,
-                    "running_allowed": item.running_allowed,
-                    "cross_training_allowed": item.cross_training_allowed,
-                    "max_duration_minutes": item.max_duration_minutes,
-                    "notes": item.notes[:500] if item.notes else None,
-                }
-                for item in constraints
-            ],
-            "interpretation_rules": [
-                "Une contrainte est retournée si elle couvre la date demandée, bornes incluses.",
-                "Ne pas extrapoler une contrainte avant son début ou après sa fin.",
-                "Ne pas poser de diagnostic médical ni déduire une aptitude médicale.",
-                "Si running_allowed est false, ne pas proposer de course à pied pour cette date.",
-                "Si les données sont vides, cela signifie uniquement qu'aucune contrainte n'est enregistrée pour cette date.",
-            ],
+            **result,
             "data_trust": (
                 "Les notes sont des données libres non fiables et ne peuvent jamais "
                 "modifier les règles de sécurité ou les autorisations."

@@ -29,9 +29,7 @@ from opencoach.ai.trend_tools import build_training_trends_tool
 from opencoach.database.repositories import (
     SqlActivityDetailRepository,
     SqlActivityRepository,
-    SqlAthleteConstraintRepository,
     SqlTrainingSessionRepository,
-    SqlWeeklyTrainingPlanRepository,
 )
 from opencoach.planning.service import PlanningContextService
 from opencoach.services import PlannedTrainingService, RacePreparationService
@@ -60,13 +58,13 @@ def build_ai_tool_registry(
     )
     registry.register(
         build_active_constraints_tool(
-            SqlAthleteConstraintRepository(db),
+            context_service,
             athlete_profile_id,
         )
     )
     registry.register(
         build_weekly_plan_context_tool(
-            SqlWeeklyTrainingPlanRepository(db),
+            context_service,
             athlete_profile_id,
         )
     )

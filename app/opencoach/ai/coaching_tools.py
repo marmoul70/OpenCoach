@@ -7,12 +7,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from opencoach.ai.tool_engine import AITool
-from opencoach.database.repositories import WeeklyTrainingPlanRepository
 from opencoach.services import (
     PlannedTrainingService,
     ProfileService,
     RacePreparationService,
 )
+from opencoach.planning import PlanningContextService
 
 
 def _safe_text(value: str | None, limit: int = 120) -> str | None:
@@ -228,56 +228,16 @@ def build_next_planned_session_tool(
 
 
 def build_weekly_plan_context_tool(
-    weekly_plan_repository: WeeklyTrainingPlanRepository,
+    service: PlanningContextService,
     athlete_profile_id: UUID,
-    *,
-    reference_date_provider=date.today,
 ) -> AITool:
-    """Expose le cadre et les objectifs de la semaine générés par OpenCoach."""
+    """Expose le cadre hebdomadaire calculé par le domaine planning."""
 
     def execute(arguments: BaseModel) -> dict:
-        reference_date = reference_date_provider()
-        week_start = arguments.week_start or (
-            reference_date - timedelta(days=reference_date.weekday())
-        )
-        plan = weekly_plan_repository.get_plan_for_week(
+        return service.weekly_plan_context(
             athlete_profile_id,
-            week_start,
+            arguments.week_start,
         )
-        if plan is None:
-            return {
-                "status": "not_found",
-                "week_start": week_start.isoformat(),
-                "message": (
-                    "Aucun cadre hebdomadaire enregistré pour cette semaine. "
-                    "Ne pas inventer la phase, le type de semaine ou les objectifs de charge."
-                ),
-            }
-
-        return {
-            "status": "ok",
-            "week": {
-                "start_date": plan.week_start.isoformat(),
-                "end_date": plan.week_end.isoformat(),
-                "phase": plan.phase,
-                "week_type": plan.week_type,
-                "phase_week_index": plan.phase_week_index,
-                "generated_at": plan.generated_at.isoformat() if plan.generated_at else None,
-                "updated_at": plan.updated_at.isoformat() if plan.updated_at else None,
-            },
-            "targets": {
-                "load_target": plan.target_load,
-                "load_min": plan.load_min,
-                "load_max": plan.load_max,
-                "reference_duration_minutes": plan.reference_duration_minutes,
-                "target_duration_minutes": plan.target_duration_minutes,
-                "long_endurance_reference_minutes": plan.long_endurance_reference_minutes,
-            },
-            "schedule": {
-                "pressure": plan.schedule_pressure,
-                "athlete_schedule_constrained": plan.athlete_schedule_constrained,
-            },
-        }
 
     return AITool(
         name="weekly_plan_context",

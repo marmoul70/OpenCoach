@@ -185,6 +185,7 @@ def get_planning_context_service(
                 db
             )
         ),
+        weekly_plan_repository=SqlWeeklyTrainingPlanRepository(db),
     )
 
 

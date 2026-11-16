@@ -19,11 +19,13 @@ from opencoach.ai.coaching_tools import (
 )
 from opencoach.database.base import Base
 from opencoach.database.repositories import (
+    SqlAthleteConstraintRepository,
     SqlProfileRepository,
     SqlRaceRepository,
     SqlTrainingSessionRepository,
     SqlWeeklyTrainingPlanRepository,
 )
+from opencoach.planning import PlanningContextService
 from opencoach.services import (
     PlannedTrainingService,
     ProfileService,
@@ -76,6 +78,20 @@ def _profile(session: Session, *, suffix: str = "one"):
     session.add(profile)
     session.flush()
     return profile
+
+
+
+def _planning_service(session, reference_date):
+    return PlanningContextService(
+        profile_service=object(),
+        race_repository=object(),
+        readiness_service=object(),
+        recent_load_service=object(),
+        training_stats_service=object(),
+        constraint_repository=SqlAthleteConstraintRepository(session),
+        weekly_plan_repository=SqlWeeklyTrainingPlanRepository(session),
+        reference_date_provider=lambda: reference_date,
+    )
 
 
 def test_training_profile_returns_recorded_values_and_personal_hr_zones():
@@ -300,9 +316,8 @@ def test_weekly_plan_context_returns_targets_for_current_monday():
         )
         session.flush()
         result = build_weekly_plan_context_tool(
-            SqlWeeklyTrainingPlanRepository(session),
+            _planning_service(session, date(2026, 11, 11)),
             profile.id,
-            reference_date_provider=lambda: date(2026, 11, 11),
         ).handler(WeeklyPlanContextArguments())
 
     assert result["status"] == "ok"
@@ -333,9 +348,8 @@ def test_weekly_plan_context_does_not_return_another_athletes_plan():
         )
         session.flush()
         result = build_weekly_plan_context_tool(
-            SqlWeeklyTrainingPlanRepository(session),
+            _planning_service(session, date(2026, 11, 11)),
             other.id,
-            reference_date_provider=lambda: date(2026, 11, 11),
         ).handler(WeeklyPlanContextArguments())
 
     assert result["status"] == "not_found"

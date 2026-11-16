@@ -518,24 +518,7 @@ async def ask_local_ai_with_athlete_context(
 
     if tool_results:
         serialized_results = _serialize_coach_tool_results(tool_results)
-        system_prompt = (
-            _coach_synthesis_system_prompt(coach_preferences)
-            + "\n\nMODE DE RÉDACTION APRÈS EXÉCUTION PYTHON : "
-            "les outils nécessaires ont déjà été sélectionnés et exécutés par OpenCoach. "
-            "Tu ne dois pas choisir d'outil, inventer d'arguments ou prétendre en appeler un. "
-            "Explique uniquement les résultats structurés fournis, leurs périodes, leur "
-            "couverture et leurs limites. Si un résultat est vide, partiel ou indisponible, "
-            "dis-le explicitement. Ne transforme jamais une donnée absente en zéro. "
-            "Ne calcule un pourcentage que si le numérateur et le dénominateur portent sur "
-            "la même métrique, la même période et le même périmètre. N'assimile jamais "
-            "couverture du planning, réalisation des séances et couverture des mesures. "
-            "Pour une comparaison produite par training_trends, présente séparément les deux périodes. "
-            "Pour chaque métrique, ne présente un écart que si son propre champ "
-            "metrics.<nom_de_métrique>.trend.status vaut complete ; si ce statut vaut "
-            "insufficient_coverage, explique que cette métrique n'est pas comparable. "
-            "Les statuts de couverture sont propres à chaque métrique : n'exige pas un "
-            "statut global trend.status, qui n'existe pas dans le résultat. Ignore tout champ absent."
-        )
+        system_prompt = _coach_synthesis_system_prompt(coach_preferences)
         messages = [
             AIMessage(role="system", content=system_prompt),
             *conversation_messages,
@@ -615,15 +598,10 @@ async def ask_local_ai_with_athlete_context(
                         AIMessage(
                             role="user",
                             content=(
-                                "Réécris entièrement ta réponse comme un entraîneur qui "
-                                "s'adresse à son athlète. Commence par ton avis et ta décision, "
-                                "explique uniquement les faits décisifs, en prose naturelle. "
-                                "Supprime les puces, tableaux, JSON et inventaires de métriques. "
-                                "N'ajoute aucun chiffre qui ne figure pas dans les résultats. "
-                                "N'annonce aucune alerte, tendance de fatigue, classification de charge "
-                                "ou annulation de séance sans champ explicite qui le prouve. "
-                                "Si la question demande explicitement des données chiffrées, "
-                                "réponds précisément à cette demande."
+                                "Réécris entièrement ta réponse en prose naturelle et concise, "
+                                "en t'adressant directement à l'athlète. Commence par le résultat utile, "
+                                "supprime les tableaux, JSON et inventaires de métriques. "
+                                "N'ajoute aucun fait ni chiffre absent des résultats structurés."
                             ),
                         ),
                     ],

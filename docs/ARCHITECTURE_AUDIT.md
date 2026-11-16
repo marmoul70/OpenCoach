@@ -29,8 +29,8 @@ Ce choix est provisoire : il ne signifie pas que tout le contenu de cette branch
 ## 2 bis. Inventaire quantitatif actualisé
 
 Inventaire calculé sur l'arbre Git du commit `553f518228bc` :
-- **1 182 fichiers suivis** au total ;
-- **519 fichiers Python** sous `app/opencoach` ;
+- **1 183 fichiers suivis** au total ;
+- **520 fichiers Python** sous `app/opencoach` ;
 - **164 fichiers** sous `frontend/src` ;
 - **387 fichiers** sous `tests` ;
 - **32 fichiers** sous `docs` ;
@@ -43,14 +43,14 @@ Principaux ensembles backend (fichiers Python) :
 - `training` : 48 ;
 - `api` : 27 ;
 - `ai` : 24 ;
-- `integrations` : 19.
+- `integrations` : 20.
 
 Les décomptes décrivent le volume, pas la qualité ni l'inutilité des fichiers. Ils doivent être recalculés après les suppressions ou déplacements importants.
 
 ### Gros fichiers à examiner par responsabilité
 
 Backend :
-- `app/opencoach/api/coros.py` (~80 Ko) ;
+- `app/opencoach/api/coros.py` (~59 Ko après extraction du parsing MCP) ;
 - `app/opencoach/integrations/coros/workout_mapper.py` (~40 Ko) ;
 - `app/opencoach/api/training_sessions.py` (~39 Ko) ;
 - `app/opencoach/planning/sessions/prescription/intervals.py` (~35 Ko) ;
@@ -555,3 +555,12 @@ Le script de déploiement frontend acceptait `OPENCOACH_WEB_ROOT`, mais le scrip
 - CI du commit `4908e8ef` : **3 171 tests Python réussis**, Bash et Frontend réussis (run GitHub Actions `43877822007`). Les deux warnings Python sont des avertissements de dépréciation des dépendances de test.
 
 Ces changements retirent un vrai chemin de parsing mort et corrigent une incohérence de déploiement sans toucher aux règles métier ni à la synchronisation COROS.
+
+
+### Extraction du parsing des réponses COROS
+
+Les fonctions de lecture des réponses MCP relatives aux séances planifiées, aux identifiants COROS, à l'éditabilité et aux autres séances du calendrier ont été déplacées de `api/coros.py` vers `integrations/coros/workout_responses.py`. Le module API importe ces fonctions et conserve le contrôle HTTP, les dépendances FastAPI et l'orchestration de synchronisation. Les tests de parsing importent maintenant directement le module d'intégration.
+
+Cette extraction retire environ 451 lignes de parsing de la route API (fichier passé d'environ 80 Ko à 59 Ko) et clarifie la frontière entre transport HTTP et protocole fournisseur. Aucun format de réponse n'a été volontairement supprimé ; les tests existants couvrent les réponses MCP structurées, textuelles et JSON encapsulées.
+
+CI du commit `869484cd` : **3 171 tests Python réussis**, Bash et Frontend réussis (run GitHub Actions `43878399726`).

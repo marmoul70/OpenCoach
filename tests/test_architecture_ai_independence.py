@@ -111,3 +111,31 @@ def test_core_coach_api_does_not_import_the_ai_package():
         "Les routes Coach principales doivent rester utilisables sans le moteur IA :\n"
         + "\n".join(sorted(set(violations)))
     )
+
+
+
+def test_non_ai_api_modules_do_not_import_the_ai_package():
+    api_root = Path(__file__).resolve().parents[1] / "app" / "opencoach" / "api"
+    violations = []
+
+    for source in api_root.rglob("*.py"):
+        relative = source.relative_to(api_root)
+        if relative == Path("ai.py"):
+            continue
+
+        tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
+        for node in ast.walk(tree):
+            modules = []
+            if isinstance(node, ast.Import):
+                modules.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                modules.append(node.module)
+
+            for module in modules:
+                if module == "opencoach.ai" or module.startswith("opencoach.ai."):
+                    violations.append(f"{relative}:{node.lineno} -> {module}")
+
+    assert not violations, (
+        "Les routes métier ne doivent pas importer le package IA :\n"
+        + "\n".join(sorted(set(violations)))
+    )

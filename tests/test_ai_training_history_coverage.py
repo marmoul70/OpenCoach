@@ -1,8 +1,9 @@
-"""Tests de couverture de l'outil d'historique sportif."""
+"""Tests de contrat de l'historique sportif et de sa couverture."""
 
-from datetime import date
-from types import SimpleNamespace
+from datetime import date, timedelta
 from uuid import uuid4
+
+from opencoach.training import TrainingStats
 
 from opencoach.ai.training_tools import (
     TrainingHistoryArguments,
@@ -15,7 +16,16 @@ class FakeTrainingStatsService:
         self.stats = stats
         self.calls = []
 
-    def calculate(self, athlete_profile_id, start_date, end_date):
+    def calculate_days(
+        self,
+        athlete_profile_id,
+        reference_date,
+        *,
+        days,
+        include_reference_day=True,
+    ):
+        end_date = reference_date if include_reference_day else reference_date - timedelta(days=1)
+        start_date = end_date - timedelta(days=days - 1)
         self.calls.append((athlete_profile_id, start_date, end_date))
         return self.stats
 
@@ -24,22 +34,21 @@ def make_stats(**overrides):
     values = {
         "start_date": date(2026, 11, 1),
         "end_date": date(2026, 11, 7),
-        "sessions_count": 0,
         "activities_count": 0,
         "manual_sessions_count": 0,
         "duration_data_count": 0,
-        "measured_load_data_count": 0,
         "distance_data_count": 0,
         "elevation_data_count": 0,
+        "measured_load_data_count": 0,
+        "estimated_load_data_count": 0,
         "total_duration_minutes": 0,
-        "total_distance_km": 0,
-        "total_elevation_gain_m": 0,
-        "measured_load": 0,
-        "estimated_load": 0,
-        "total_load": 0,
+        "total_distance_km": 0.0,
+        "total_elevation_gain_m": 0.0,
+        "measured_load": 0.0,
+        "estimated_load": 0.0,
     }
     values.update(overrides)
-    return SimpleNamespace(**values)
+    return TrainingStats(**values)
 
 
 def run_history(stats):
@@ -70,7 +79,6 @@ def test_empty_period_reports_metrics_as_unavailable_not_zero():
 
 def test_partial_history_keeps_only_explicit_partial_subtotals():
     result = run_history(make_stats(
-        sessions_count=2,
         activities_count=2,
         duration_data_count=1,
         distance_data_count=2,
@@ -80,7 +88,6 @@ def test_partial_history_keeps_only_explicit_partial_subtotals():
         total_distance_km=12.5,
         total_elevation_gain_m=300,
         measured_load=80,
-        total_load=80,
     ))
 
     duration = result["metrics"]["duration_minutes"]
@@ -102,7 +109,6 @@ def test_partial_history_keeps_only_explicit_partial_subtotals():
     assert load["coverage"]["status"] == "partial"
 
 
-
 def test_coaching_history_can_use_the_same_completed_days_as_training_load():
     reference_date = date(2026, 11, 15)
     service = FakeTrainingStatsService(make_stats())
@@ -112,10 +118,7 @@ def test_coaching_history_can_use_the_same_completed_days_as_training_load():
         reference_date_provider=lambda: reference_date,
     )
 
-    tool.handler(TrainingHistoryArguments(
-        nb_days=7,
-        exclude_current_day=True,
-    ))
+    tool.handler(TrainingHistoryArguments(nb_days=7, exclude_current_day=True))
 
     _, start_date, end_date = service.calls[0]
     assert (start_date, end_date) == (

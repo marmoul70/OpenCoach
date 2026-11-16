@@ -366,3 +366,40 @@ def test_compare_adjacent_periods_rejects_invalid_domain_windows():
             current_days=0,
             comparison_days=7,
         )
+
+
+
+def test_calculate_days_builds_inclusive_window_with_optional_reference_day():
+    athlete_id = uuid4()
+    activity_repository = FakeActivityRepository([])
+    session_repository = FakeTrainingSessionRepository([])
+    service = TrainingStatsService(activity_repository, session_repository)
+
+    service.calculate_days(
+        athlete_id,
+        date(2026, 11, 15),
+        days=7,
+        include_reference_day=False,
+    )
+
+    assert activity_repository.calls == [
+        (athlete_id, date(2026, 11, 8), date(2026, 11, 14))
+    ]
+    assert session_repository.calls == [
+        (athlete_id, date(2026, 11, 8), date(2026, 11, 14))
+    ]
+
+
+def test_calculate_days_rejects_empty_window():
+    import pytest
+
+    service = TrainingStatsService(
+        FakeActivityRepository([]),
+        FakeTrainingSessionRepository([]),
+    )
+    with pytest.raises(ValueError, match="au moins un jour"):
+        service.calculate_days(
+            uuid4(),
+            date(2026, 11, 15),
+            days=0,
+        )

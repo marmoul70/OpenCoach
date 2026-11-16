@@ -172,3 +172,61 @@ class TrainingStats:
             + self.estimated_load,
             2,
         )
+
+
+    def history_summary(self) -> dict:
+        """Retourne les métriques réelles avec leur couverture canonique."""
+        sessions_count = self.sessions_count
+        load_available = self.measured_load_data_count + self.estimated_load_data_count
+
+        def metric_value(value: float | int, available: int):
+            if sessions_count == 0 or available < sessions_count:
+                return None
+            return value
+
+        def observed_value(value: float | int, available: int):
+            return value if available > 0 else None
+
+        return {
+            "period": {
+                "start_date": self.start_date.isoformat(),
+                "end_date": self.end_date.isoformat(),
+                "nb_days": (self.end_date - self.start_date).days + 1,
+                "inclusive": True,
+            },
+            "sessions": {
+                "total": sessions_count,
+                "imported_activities": self.activities_count,
+                "manual_completed_sessions": self.manual_sessions_count,
+            },
+            "metrics": {
+                "duration_minutes": {
+                    "value": metric_value(self.total_duration_minutes, self.duration_data_count),
+                    "observed_value": observed_value(self.total_duration_minutes, self.duration_data_count),
+                    "observed_value_semantics": "sum_of_sessions_with_available_duration",
+                    "unit": "minutes",
+                    "coverage": self.coverage(self.duration_data_count),
+                },
+                "distance_km": {
+                    "value": metric_value(self.total_distance_km, self.distance_data_count),
+                    "observed_value": observed_value(self.total_distance_km, self.distance_data_count),
+                    "observed_value_semantics": "sum_of_sessions_with_available_distance",
+                    "unit": "km",
+                    "coverage": self.coverage(self.distance_data_count),
+                },
+                "elevation_gain_m": {
+                    "value": metric_value(self.total_elevation_gain_m, self.elevation_data_count),
+                    "observed_value": observed_value(self.total_elevation_gain_m, self.elevation_data_count),
+                    "observed_value_semantics": "sum_of_sessions_with_available_elevation_gain",
+                    "unit": "m",
+                    "coverage": self.coverage(self.elevation_data_count),
+                },
+                "training_load": {
+                    "measured": self.measured_load if sessions_count else None,
+                    "estimated": self.estimated_load if sessions_count else None,
+                    "total": metric_value(self.total_load, load_available),
+                    "unit": "load_points",
+                    "coverage": self.coverage(load_available),
+                },
+            },
+        }

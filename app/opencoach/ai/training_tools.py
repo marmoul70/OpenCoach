@@ -1,7 +1,7 @@
-"""Outil historique d'entraînement basé sur TrainingStatsService."""
+"""Adaptateur conversationnel de l'historique d'entraînement."""
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -11,7 +11,7 @@ from opencoach.training import TrainingStatsService
 
 
 class TrainingHistoryArguments(BaseModel):
-    """Paramètres bornés de l'historique sportif."""
+    """Paramètres bornés de la demande d'historique."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -35,108 +35,16 @@ def build_training_history_tool(
     *,
     reference_date_provider=date.today,
 ) -> AITool:
-    """Construit l'outil pour un athlète authentifié.
-
-    L'identifiant d'athlète et la date de référence sont injectés par OpenCoach,
-    jamais choisis par le modèle.
-    """
+    """Expose les statistiques calculées par le domaine training."""
 
     def execute(arguments: BaseModel) -> dict:
-        nb_days = arguments.nb_days
-        reference_date = reference_date_provider()
-        end_date = (
-            reference_date - timedelta(days=1)
-            if arguments.exclude_current_day
-            else reference_date
-        )
-        start_date = end_date - timedelta(days=nb_days - 1)
-        stats = service.calculate(
+        stats = service.calculate_days(
             athlete_profile_id,
-            start_date,
-            end_date,
+            reference_date_provider(),
+            days=arguments.nb_days,
+            include_reference_day=not arguments.exclude_current_day,
         )
-        sessions_count = stats.sessions_count
-
-        def coverage(available: int) -> dict[str, int | str | None]:
-            if sessions_count == 0:
-                state = "no_sessions"
-            elif available == 0:
-                state = "unavailable"
-            elif available < sessions_count:
-                state = "partial"
-            else:
-                state = "complete"
-            return {
-                "available_sessions": available,
-                "total_sessions": sessions_count,
-                "status": state,
-            }
-
-        duration_available = getattr(stats, "duration_data_count", 0)
-        load_available = (
-            stats.measured_load_data_count + stats.manual_sessions_count
-        )
-
-        def metric_value(value: float | int, available: int):
-            # Une période sans séance ne constitue pas une mesure égale à zéro.
-            # Une somme partielle ne doit jamais être présentée comme un total fiable.
-            if sessions_count == 0 or available < sessions_count:
-                return None
-            return value
-
-        return {
-            "period": {
-                "start_date": stats.start_date.isoformat(),
-                "end_date": stats.end_date.isoformat(),
-                "nb_days": nb_days,
-                "inclusive": True,
-            },
-            "sessions": {
-                "total": sessions_count,
-                "imported_activities": stats.activities_count,
-                "manual_completed_sessions": stats.manual_sessions_count,
-            },
-            "metrics": {
-                "duration_minutes": {
-                    "value": metric_value(
-                        stats.total_duration_minutes,
-                        duration_available,
-                    ),
-                    "observed_value": (
-                        stats.total_duration_minutes if duration_available else None
-                    ),
-                    "observed_value_semantics": "sum_of_sessions_with_available_duration",
-                    "unit": "minutes",
-                    "coverage": coverage(duration_available),
-                },
-                "distance_km": {
-                    "value": metric_value(stats.total_distance_km, stats.distance_data_count),
-                    "observed_value": (
-                        stats.total_distance_km if stats.distance_data_count else None
-                    ),
-                    "observed_value_semantics": "sum_of_sessions_with_available_distance",
-                    "unit": "km",
-                    "coverage": coverage(stats.distance_data_count),
-                },
-                "elevation_gain_m": {
-                    "value": metric_value(stats.total_elevation_gain_m, stats.elevation_data_count),
-                    "observed_value": (
-                        stats.total_elevation_gain_m if stats.elevation_data_count else None
-                    ),
-                    "observed_value_semantics": "sum_of_sessions_with_available_elevation_gain",
-                    "unit": "m",
-                    "coverage": coverage(stats.elevation_data_count),
-                },
-                "training_load": {
-                    # Sans séance, 0 serait une fausse mesure : aucun effort n'a été observé.
-                    "measured": stats.measured_load if sessions_count else None,
-                    "estimated": stats.estimated_load if sessions_count else None,
-                    "total": metric_value(stats.total_load, load_available),
-                    "unit": "load_points",
-                    "coverage": coverage(load_available),
-                },
-            },
-        }
+        return stats.history_summary()
 
     return AITool(
         name="training_history",

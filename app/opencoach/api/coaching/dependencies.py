@@ -136,6 +136,22 @@ def get_recent_training_load_service(
     return _build_recent_training_load_service(training_stats_service)
 
 
+def build_coach_decision_service(
+    training_stats_service: TrainingStatsService,
+    readiness_service: ReadinessService,
+    recent_load_service: RecentTrainingLoadService,
+    *,
+    planned_training_service=None,
+) -> CoachDecisionService:
+    """Assemble le moteur de décision existant depuis les capacités Coach partagées."""
+    return CoachDecisionService(
+        training_stats_service.training_session_repository,
+        readiness_service,
+        recent_load_service=recent_load_service,
+        planned_training_service=planned_training_service,
+    )
+
+
 def get_coach_decision_service(
     db: Session = Depends(get_db),
     readiness_service: ReadinessService = Depends(get_readiness_service),
@@ -143,10 +159,10 @@ def get_coach_decision_service(
     """Construit la décision quotidienne à partir des services Coach canoniques."""
     training_stats_service = get_training_stats_service(db)
     recent_load_service = _build_recent_training_load_service(training_stats_service)
-    return CoachDecisionService(
-        training_stats_service.training_session_repository,
+    return build_coach_decision_service(
+        training_stats_service,
         readiness_service,
-        recent_load_service=recent_load_service,
+        recent_load_service,
     )
 
 

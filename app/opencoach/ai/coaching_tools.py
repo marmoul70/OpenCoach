@@ -240,3 +240,120 @@ def build_weekly_plan_context_tool(
         arguments_model=WeeklyPlanContextArguments,
         handler=execute,
     )
+
+
+
+class CoachDecisionArguments(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    target_date: date | None = Field(
+        default=None,
+        description="Date de la séance à évaluer. Si absente, le Coach évalue la prochaine séance planifiée.",
+    )
+
+
+def build_coach_decision_tool(service, athlete_profile_id: UUID) -> AITool:
+    """Expose la décision déterministe du Coach sans la recalculer dans le LLM."""
+
+    def execute(arguments: BaseModel) -> dict:
+        if arguments.target_date is None:
+            assessment = service.calculate_next(athlete_profile_id)
+            if assessment is None:
+                return {
+                    "status": "no_next_session",
+                    "message": "Aucune séance future au statut planned n'est enregistrée.",
+                }
+        else:
+            assessment = service.calculate(
+                athlete_profile_id,
+                arguments.target_date,
+            )
+
+        return {
+            "status": "ok",
+            "date": assessment.date.isoformat(),
+            "session_decisions": [
+                {
+                    "session": (
+                        {
+                            "session_id": str(item.session.id),
+                            "date": item.session.date.isoformat(),
+                            "title": _safe_text(item.session.title, 140),
+                            "type": _safe_text(item.session.type, 50),
+                            "sport_type": _safe_text(item.session.sport_type, 50),
+                            "duration_minutes": item.session.duration_minutes,
+                            "distance_km": item.session.distance_km,
+                            "elevation_gain_m": item.session.elevation_gain_m,
+                            "intensity": _safe_text(item.session.intensity, 80),
+                            "status": item.session.status,
+                        }
+                        if item.session is not None else None
+                    ),
+                    "decision": {
+                        "action": item.decision.action,
+                        "reason": _safe_text(item.decision.reason, 500),
+                        "original_duration_minutes": item.decision.original_duration_minutes,
+                        "recommended_duration_minutes": item.decision.recommended_duration_minutes,
+                        "original_intensity": item.decision.original_intensity,
+                        "recommended_intensity": item.decision.recommended_intensity,
+                        "constraints": list(item.decision.constraints),
+                    },
+                }
+                for item in assessment.session_decisions
+            ],
+            "readiness": {
+                "score": assessment.readiness.readiness.score,
+                "level": assessment.readiness.readiness.level,
+                "data_status": assessment.readiness.data_status,
+                "source_date": (
+                    assessment.readiness.source_date.isoformat()
+                    if assessment.readiness.source_date else None
+                ),
+                "data_age_days": assessment.readiness.data_age_days,
+                "training_constraints": list(
+                    assessment.readiness.readiness.training_constraints
+                ),
+                "signals": [
+                    {
+                        "metric": signal.metric,
+                        "level": signal.level,
+                        "reason": _safe_text(signal.reason, 240),
+                    }
+                    for signal in assessment.readiness.readiness.signals
+                ],
+            },
+            "recent_load_assessment": (
+                {
+                    "has_warning": assessment.recent_load_assessment.has_warning,
+                    "has_critical": assessment.recent_load_assessment.has_critical,
+                    "has_overload": assessment.recent_load_assessment.has_overload,
+                    "has_broken_rest": assessment.recent_load_assessment.has_broken_rest,
+                    "signals": [
+                        {
+                            "kind": signal.kind,
+                            "level": signal.level,
+                            "reason": _safe_text(signal.reason, 240),
+                        }
+                        for signal in assessment.recent_load_assessment.signals
+                    ],
+                }
+                if assessment.recent_load_assessment is not None else None
+            ),
+            "data_trust": (
+                "L'action et la justification sont des décisions métier calculées par CoachDecisionService. "
+                "Ne les remplace pas par une décision personnelle du modèle."
+            ),
+        }
+
+    return AITool(
+        name="coach_decision",
+        description=(
+            "Retourne la décision OpenCoach pour une séance planifiée : conserver, réduire, "
+            "remplacer ou repos, avec la justification et les données Readiness/charge utilisées. "
+            "Si target_date est fourni, évalue cette date. Sinon, évalue la prochaine séance "
+            "planifiée. Cette décision est calculée par CoachDecisionService ; présente-la sans "
+            "modifier l'action ni recalculer les seuils."
+        ),
+        arguments_model=CoachDecisionArguments,
+        handler=execute,
+    )

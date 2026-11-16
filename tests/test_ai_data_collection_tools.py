@@ -11,7 +11,7 @@ from opencoach.ai.data_collection_tools import (
     build_profile_data_proposal_tool,
 )
 from pydantic import ValidationError
-from opencoach.ai.data_proposals import create_profile_data_proposal
+from opencoach.coaching.profile_data_proposals import create_profile_data_proposal
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.database.base import Base
 from opencoach.database.models import AIDataProposal, AthleteProfile, User

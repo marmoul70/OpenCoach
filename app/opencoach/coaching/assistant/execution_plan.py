@@ -10,7 +10,6 @@ import unicodedata
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
-from uuid import UUID
 
 from opencoach.coaching.assistant.argument_evidence import (
     extract_explicit_date_range,

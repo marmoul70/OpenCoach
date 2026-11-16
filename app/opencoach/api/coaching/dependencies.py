@@ -111,10 +111,10 @@ from opencoach.training import (
 
 
 
-def get_recent_training_load_service(
-    training_stats_service: TrainingStatsService = Depends(get_training_stats_service),
+def _build_recent_training_load_service(
+    training_stats_service: TrainingStatsService,
 ) -> RecentTrainingLoadService:
-    """Partage les repositories canoniques pour toutes les analyses de charge."""
+    """Assemble une seule fois la capacité de charge depuis les repositories canoniques."""
     daily_training_load_service = DailyTrainingLoadService(
         training_stats_service.activity_repository,
         training_stats_service.training_session_repository,
@@ -129,12 +129,20 @@ def get_recent_training_load_service(
     )
 
 
-def get_coach_decision_service(
-    readiness_service: ReadinessService = Depends(get_readiness_service),
-    recent_load_service: RecentTrainingLoadService = Depends(get_recent_training_load_service),
+def get_recent_training_load_service(
     training_stats_service: TrainingStatsService = Depends(get_training_stats_service),
+) -> RecentTrainingLoadService:
+    """Dépendance FastAPI partagée pour les analyses de charge."""
+    return _build_recent_training_load_service(training_stats_service)
+
+
+def get_coach_decision_service(
+    db: Session = Depends(get_db),
+    readiness_service: ReadinessService = Depends(get_readiness_service),
 ) -> CoachDecisionService:
     """Construit la décision quotidienne à partir des services Coach canoniques."""
+    training_stats_service = get_training_stats_service(db)
+    recent_load_service = _build_recent_training_load_service(training_stats_service)
     return CoachDecisionService(
         training_stats_service.training_session_repository,
         readiness_service,

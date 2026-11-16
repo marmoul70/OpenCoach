@@ -133,11 +133,12 @@ def test_training_history_tool_uses_injected_athlete_and_inclusive_period():
 
     def calculate_days(
         profile_id,
-        reference_date,
+        reference_date=None,
         *,
         days,
         include_reference_day=True,
     ):
+        reference_date = reference_date or date(2026, 11, 9)
         end_date = reference_date if include_reference_day else reference_date - timedelta(days=1)
         start_date = end_date - timedelta(days=days - 1)
         return calculate(profile_id, start_date, end_date)
@@ -146,7 +147,6 @@ def test_training_history_tool_uses_injected_athlete_and_inclusive_period():
     tool = build_training_history_tool(
         service,
         athlete_id,
-        reference_date_provider=lambda: date(2026, 11, 9),
     )
     registry = AIToolRegistry()
     registry.register(tool)

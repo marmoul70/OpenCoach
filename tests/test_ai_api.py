@@ -737,11 +737,12 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
         def calculate_days(
             self,
             profile_id,
-            reference_date,
+            reference_date=None,
             *,
             days,
             include_reference_day=True,
         ):
+            reference_date = reference_date or date.today()
             end_date = reference_date if include_reference_day else reference_date - timedelta(days=1)
             start_date = end_date - timedelta(days=days - 1)
             return self.calculate(profile_id, start_date, end_date)

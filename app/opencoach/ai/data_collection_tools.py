@@ -7,7 +7,7 @@ from typing import Any, Callable
 from pydantic import Field
 
 from opencoach.ai.tool_engine import AITool
-from opencoach.coaching.profile_data_evidence import evidence_supports_profile_value
+from opencoach.coaching.profile_data_evidence import validate_profile_proposal_evidence
 from opencoach.coaching.profile_data_proposals import AIDataProposalCreate
 
 
@@ -22,17 +22,16 @@ def build_profile_data_proposal_tool(
     user_messages: list[str],
 ) -> AITool:
     """Transmet une proposition validée au cas d'usage Coach."""
-    user_text = "\n".join(user_messages)
-
     def handler(arguments: ProposeProfileDataArguments) -> dict:
-        if arguments.evidence not in user_text:
-            raise ValueError("La preuve ne correspond pas à un message utilisateur.")
-        if not evidence_supports_profile_value(
+        if not validate_profile_proposal_evidence(
             arguments.field_key,
             arguments.evidence,
             arguments.value,
+            user_messages,
         ):
-            raise ValueError("La valeur proposée n'est pas étayée par la preuve utilisateur.")
+            raise ValueError(
+                "La preuve ne correspond pas à un message utilisateur ou n'étaye pas la valeur proposée."
+            )
         proposal = proposal_creator(arguments)
         return {
             "proposal_id": str(proposal.id),

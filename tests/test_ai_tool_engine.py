@@ -345,11 +345,8 @@ def test_planned_sessions_guard_requires_exact_user_date_range():
     ).startswith("Quelles sont les dates")
 
 
-def test_registry_emits_correlated_tool_metrics_without_arguments(caplog):
-    import logging
-
-    caplog.set_level(logging.INFO, logger="opencoach.ai.observability")
-    registry = AIToolRegistry(trace_id="trace-tool-123")
+def test_registry_keeps_execution_results_without_ai_observability_dependency():
+    registry = AIToolRegistry()
     registry.register(AITool(
         name="echo",
         description="Outil de test.",
@@ -360,18 +357,13 @@ def test_registry_emits_correlated_tool_metrics_without_arguments(caplog):
     result = registry.execute("echo", {"value": 4})
 
     assert result.status == "ok"
-    assert '"trace_id":"trace-tool-123"' in caplog.text
-    assert '"event":"tool_execution"' in caplog.text
-    assert '"tool":"echo"' in caplog.text
-    assert '"status":"ok"' in caplog.text
-    assert '"duration_ms":' in caplog.text
-    assert '"value":4' not in caplog.text
-
+    assert registry.execution_results == (result,)
+    assert result.data == {"value": 4}
 
 
 def test_registry_reuses_exact_duplicate_call_without_reexecuting_business_handler():
     calls = []
-    registry = AIToolRegistry(trace_id="duplicate-call-test")
+    registry = AIToolRegistry()
     registry.register(AITool(
         name="echo",
         description="Outil de test.",

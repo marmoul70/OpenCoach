@@ -43,7 +43,7 @@ def evidence_supports_profile_value(
     }:
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             return False
-        candidates = re.findall(r"(?<!\\d)\\d+(?:\\.\\d+)?(?!\\d)", normalized)
+        candidates = re.findall(r"(?<!\d)\d+(?:\.\d+)?(?!\d)", normalized)
         try:
             return any(float(candidate) == float(value) for candidate in candidates)
         except (TypeError, ValueError):

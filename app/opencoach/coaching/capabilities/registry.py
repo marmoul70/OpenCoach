@@ -54,7 +54,6 @@ class CoachCapabilityRegistry:
         argument_guard: Callable[
             [str, dict[str, Any], list[str], list[str]], str | None
         ] | None = None,
-        *,
     ) -> None:
         self._tools: dict[str, CoachCapability] = {}
         self._argument_guard = argument_guard
@@ -201,8 +200,10 @@ class CoachCapabilityRegistry:
         return result
 
     def _record_result(self, result: CoachCapabilityResult) -> None:
-        """Conserve le résultat et émet une trace expurgée."""
+        """Conserve le résultat de l'exécution courante."""
         self._execution_results.append(result)
+
+
 def _execution_metadata(started_at: float, **extra: Any) -> dict[str, Any]:
     """Ajoute une durée monotone à chaque issue d'exécution, sans donnée métier."""
     return {

@@ -78,6 +78,30 @@ class FakeTrainingSessionRepository:
         return self.sessions
 
 
+def test_calculate_days_uses_domain_default_seven_day_inclusive_window() -> None:
+    athlete_id = uuid4()
+    activity_repository = FakeActivityRepository([])
+    session_repository = FakeTrainingSessionRepository([])
+    service = TrainingStatsService(
+        activity_repository,
+        session_repository,
+    )
+
+    result = service.calculate_days(
+        athlete_id,
+        date(2026, 11, 9),
+    )
+
+    assert result.start_date == date(2026, 11, 3)
+    assert result.end_date == date(2026, 11, 9)
+    assert activity_repository.calls == [
+        (athlete_id, date(2026, 11, 3), date(2026, 11, 9))
+    ]
+    assert session_repository.calls == [
+        (athlete_id, date(2026, 11, 3), date(2026, 11, 9))
+    ]
+
+
 def test_training_stats_use_linked_activity_as_actual() -> None:
     activity_id = uuid4()
 

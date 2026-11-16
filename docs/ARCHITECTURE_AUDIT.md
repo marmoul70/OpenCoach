@@ -456,3 +456,30 @@ Le schéma de l'outil de proposition de profil hérite maintenant directement de
 5. Compléter l'audit global des duplications et du code mort hors IA (backend, frontend, scripts, infrastructure et migrations).
 
 **Conclusion provisoire :** le registre et le cycle de propositions ne sont plus des implémentations métier dupliquées dans le package IA. En revanche, l'objectif « zéro logique métier dans l'IA » n'est pas encore certifié ; les points ci-dessus sont des critères bloquants, pas des tâches facultatives.
+
+
+## 15. Audit des contrôles de synthèse et durcissement des garde-fous — 16 novembre 2026
+
+### Responsabilités examinées
+
+- `ai/response_synthesis.py` : extraction de métadonnées de période, conversion des courses pour le contrat API, limitation de taille des payloads et contrôle de qualité rédactionnelle. Ces opérations relèvent de la présentation et du transport ; elles ne calculent pas d'indicateur sportif et ne choisissent pas de conduite d'entraînement.
+- `api/ai.py` : la décision de blocage avant synthèse est appelée via `coaching.assistant.execution_safety`. Les contrôles de risque s'appuient sur `coaching.assistant.response_safety`. Les libellés de proposition et leur rendu sont de la présentation. Aucun seuil sportif ou calcul de recommandation n'a été identifié dans les blocs examinés.
+- `ai/execution_plan.py` (désormais dans `coaching/assistant/execution_plan.py`) : interprète l'intention conversationnelle, extrait les dates/périodes explicitement données et prépare les appels. Cette couche est de l'orchestration conversationnelle, pas un moteur de calcul d'entraînement. Les limites et valeurs par défaut des périodes sont appliquées par les services Coach.
+- Adaptateurs activité, charge, tendances, récupération, course, contraintes, exécution et profil : validation de schémas d'entrée, appel des services injectés et sérialisation des résultats. Les calculs/états de couverture examinés sont fournis par les modèles et services Coach.
+
+### Correctif concret
+
+Un défaut de regex a été repéré dans `_COACH_ACTIONABLE_GUIDANCE` : la borne de mot finale était échappée deux fois, donc les formulations de conseil n'étaient pas détectées comme prévu. La séparation de la première phrase utilisait également un échappement incorrect de `\s`. Les deux expressions sont corrigées. Des tests ciblés couvrent maintenant :
+- une recommandation placée après une phrase de contexte ;
+- une réponse purement descriptive qui doit être reformulée ;
+- une demande explicite de chiffres qui doit conserver son mode de restitution.
+
+### Renforcement de l'audit statique
+
+Le garde-fou `test_ai_package_does_not_import_persistence_or_sqlalchemy` détecte maintenant aussi les imports dynamiques statiques identifiables via `importlib.import_module("...")` et `__import__("...")`, en plus des imports Python classiques. Il empêche ainsi qu'un accès à la persistance soit masqué derrière ces deux mécanismes.
+
+### Validation et limites
+
+- Le commit `174dd157ee83586c83ab3f314ed1854867b27296` a passé les trois jobs CI.
+- Les correctifs regex, les tests ciblés et le durcissement AST sont postérieurs ; leur CI doit être vérifiée sur le HEAD final.
+- Cet audit porte sur les fichiers et responsabilités explicitement examinés. Il ne constitue pas encore une certification de chaque module IA ni de l'ensemble des duplications backend/frontend.

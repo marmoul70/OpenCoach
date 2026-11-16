@@ -8,18 +8,15 @@ from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
 )
 from opencoach.database.repositories import (
-    DailyContextRepositoryError,
-    SqlDailyContextRepository,
     SqlWellnessRepository,
     WellnessRepositoryError,
 )
 from opencoach.database.session import get_db
+from opencoach.api.readiness import get_readiness_service
+from opencoach.readiness import ReadinessService
 from opencoach.models import WellnessDay
 from opencoach.wellness_aggregation import aggregate_wellness_days
-from opencoach.recovery_assessment import (
-    build_recovery_assessment,
-    recovery_assessment_to_dict,
-)
+from opencoach.recovery_assessment import recovery_assessment_to_dict
 from opencoach.wellness_trends import (
     WellnessMetricTrend,
     WellnessTrends,
@@ -37,13 +34,6 @@ def get_wellness_repository(
     db: Session = Depends(get_db),
 ) -> SqlWellnessRepository:
     return SqlWellnessRepository(db)
-
-
-def get_daily_context_repository(
-    db: Session = Depends(get_db),
-) -> SqlDailyContextRepository:
-    return SqlDailyContextRepository(db)
-
 
 
 @router.get("/latest")
@@ -189,35 +179,23 @@ def get_recovery_assessment(
     athlete_profile_id: UUID = Depends(
         get_current_athlete_profile_id,
     ),
-    repository: SqlWellnessRepository = Depends(
-        get_wellness_repository,
-    ),
-    context_repository: SqlDailyContextRepository = Depends(
-        get_daily_context_repository,
-    ),
+    service: ReadinessService = Depends(get_readiness_service),
 ) -> dict:
-    """Expose la synthèse descriptive 7/14/30 jours au coach."""
+    """Expose la synthèse descriptive 7/14/30 jours calculée par le Coach."""
 
     target_date = date.today()
-    start_date = target_date - timedelta(days=29)
     try:
-        imported = repository.list_range(athlete_profile_id, start_date, target_date)
-        wellness_days = list(aggregate_wellness_days(imported).days)
-        subjective_context = context_repository.get_by_date(athlete_profile_id, target_date)
-    except (WellnessRepositoryError, DailyContextRepositoryError) as exc:
+        assessment, aggregation, _daily_checkin = service.describe_recovery(
+            athlete_profile_id,
+            target_date,
+        )
+    except WellnessRepositoryError as exc:
         raise HTTPException(
             status_code=503,
             detail="Impossible de charger la synthèse de récupération.",
         ) from exc
 
-    assessment = build_recovery_assessment(
-        wellness_days=wellness_days,
-        target_date=target_date,
-        provider="opencoach",
-        subjective_context=subjective_context,
-    )
     payload = recovery_assessment_to_dict(assessment)
-    aggregation = aggregate_wellness_days(imported)
     payload["data_store"] = "OpenCoach"
     payload["metric_sources"] = aggregation.metric_sources
     payload["conflicting_metrics"] = aggregation.conflicts

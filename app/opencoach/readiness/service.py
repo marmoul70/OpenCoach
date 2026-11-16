@@ -179,6 +179,8 @@ class ReadinessService:
         self,
         athlete_profile_id: UUID,
         target_date: date,
+        *,
+        include_checkin: bool = False,
     ) -> tuple[RecoveryAssessment, WellnessAggregation, AthleteDailyCheckIn | None]:
         """Construit la synthèse descriptive depuis les imports Wellness centralisés.
 
@@ -206,7 +208,7 @@ class ReadinessService:
                 athlete_profile_id,
                 target_date,
             )
-            if self.daily_checkin_repository is not None
+            if include_checkin and self.daily_checkin_repository is not None
             else None
         )
         return assessment, aggregation, daily_checkin

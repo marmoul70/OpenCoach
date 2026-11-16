@@ -81,6 +81,7 @@ def build_recovery_analysis_tool(
         assessment, aggregation, daily_checkin = service.describe_recovery(
             athlete_profile_id,
             arguments.target_date,
+            include_checkin=True,
         )
         return recovery_coach_summary_to_dict(
             assessment,

@@ -483,3 +483,12 @@ Le garde-fou `test_ai_package_does_not_import_persistence_or_sqlalchemy` détect
 - Le commit `174dd157ee83586c83ab3f314ed1854867b27296` a passé les trois jobs CI.
 - Les correctifs regex, les tests ciblés et le durcissement AST sont postérieurs ; leur CI doit être vérifiée sur le HEAD final.
 - Cet audit porte sur les fichiers et responsabilités explicitement examinés. Il ne constitue pas encore une certification de chaque module IA ni de l'ensemble des duplications backend/frontend.
+
+
+## 16. Suppression des dépendances internes aux anciens chemins IA
+
+Les tests métier du routage, du plan conversationnel, des preuves et des propositions utilisent maintenant directement les modules Coach. Le benchmark expérimental importe également le routeur depuis `coaching.assistant`.
+
+Les anciens modules `ai/argument_evidence.py`, `ai/execution_plan.py`, `ai/tool_routing.py` et `ai/data_proposals.py` restent de simples façades de compatibilité. Un test dédié vérifie l'identité des fonctions exportées avec les implémentations Coach : il n'existe donc pas de seconde implémentation à maintenir. Le test du registre vérifie de la même manière les alias historiques `AITool`, `AIToolRegistry` et `ToolStatus`.
+
+Ce choix retire les dépendances internes inutiles aux anciens chemins IA sans casser d'éventuels imports historiques. La suppression définitive de ces façades est différée jusqu'à la décision de rupture de compatibilité ; elles ne portent aucune logique métier.

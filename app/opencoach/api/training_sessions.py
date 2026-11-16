@@ -47,6 +47,9 @@ from opencoach.database.repositories.sql_training_session_validation import (
 )
 from opencoach.database.session import get_db
 from opencoach.schemas.training_session import (
+    SessionGuidanceIntensityTargetResponse,
+    SessionGuidanceStepResponse,
+    SessionGuidanceResponse,
     SessionExecutionDebriefResponse,
     TrainingActivityCandidateResponse,
     TrainingEquipmentProposalResponse,
@@ -118,82 +121,6 @@ def get_training_session_repository(
 
     return SqlTrainingSessionRepository(db)
 
-
-
-class SessionGuidanceIntensityTargetResponse(
-    BaseModel
-):
-    reference: str
-    label: str
-
-    minimum: float
-    maximum: float
-
-    unit: str
-
-    speed_min_kmh: float | None = None
-    speed_max_kmh: float | None = None
-
-    pace_fastest_seconds_per_km: float | None = None
-    pace_slowest_seconds_per_km: float | None = None
-
-
-class SessionGuidanceStepResponse(
-    BaseModel
-):
-    title: str
-    description: str
-
-    duration_minutes: int | None = None
-
-    intensity_target: str | None = None
-    heart_rate_target: str | None = None
-
-    intensity_targets: list[
-        SessionGuidanceIntensityTargetResponse
-    ] = Field(
-        default_factory=list
-    )
-
-    repetitions: int | None = None
-
-    work_distance_meters: int | None = None
-
-    repetition_fast_seconds: float | None = None
-    repetition_slow_seconds: float | None = None
-
-    recovery_description: str | None = None
-
-
-class SessionGuidanceResponse(
-    BaseModel
-):
-    session_type: str
-
-    objective: str
-    coach_rationale: str
-
-    terrain_recommendation: str
-
-    preparation: list[str]
-
-    warmup: list[
-        SessionGuidanceStepResponse
-    ]
-
-    main_set: list[
-        SessionGuidanceStepResponse
-    ]
-
-    cooldown: list[
-        SessionGuidanceStepResponse
-    ]
-
-    execution_advice: list[str]
-
-    warnings: list[str]
-
-    analysis_targets: list[str]
 
 
 @router.get(

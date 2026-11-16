@@ -790,11 +790,12 @@ def test_actual_coach_provider_failure_keeps_provider_fallback():
     assert "moteur de rédaction local est momentanément indisponible" in answer
 
 def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_only_tools():
-    from datetime import date
+    from datetime import date, timedelta
     from types import SimpleNamespace
     from uuid import UUID
 
     from opencoach.api.ai import get_ai_tool_registry
+    from opencoach.training import TrainingStats
 
     athlete_profile_id = UUID("00000000-0000-0000-0000-000000000002")
     calls = []
@@ -807,9 +808,7 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
 
         def calculate(self, profile_id, start_date, end_date):
             calls.append((profile_id, start_date, end_date))
-            from types import SimpleNamespace
-
-            return SimpleNamespace(
+            return TrainingStats(
                 start_date=start_date,
                 end_date=end_date,
                 activities_count=1,
@@ -819,12 +818,23 @@ def test_ai_tool_registry_is_scoped_to_authenticated_athlete_and_exposes_read_on
                 total_elevation_gain_m=200.0,
                 measured_load=50.0,
                 estimated_load=0.0,
+                duration_data_count=1,
                 distance_data_count=1,
                 elevation_data_count=1,
                 measured_load_data_count=1,
-                sessions_count=1,
-                total_load=50.0,
             )
+
+        def calculate_days(
+            self,
+            profile_id,
+            reference_date,
+            *,
+            days,
+            include_reference_day=True,
+        ):
+            end_date = reference_date if include_reference_day else reference_date - timedelta(days=1)
+            start_date = end_date - timedelta(days=days - 1)
+            return self.calculate(profile_id, start_date, end_date)
 
     from sqlalchemy import create_engine
     from sqlalchemy.orm import Session

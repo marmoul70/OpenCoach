@@ -30,6 +30,54 @@ class RacePreparationService:
         self.athlete_profile_id = athlete_profile_id
         self.reference_date_provider = reference_date_provider
 
+    def list_calendar(
+        self,
+        *,
+        start_date: date | None = None,
+        horizon_days: int = 180,
+    ) -> dict:
+        """Retourne le calendrier de courses de l'athlète sur une fenêtre inclusive."""
+        if not 1 <= horizon_days <= 365:
+            raise ValueError("L'horizon du calendrier doit être compris entre 1 et 365 jours.")
+
+        period_start = start_date or self.reference_date_provider()
+        period_end = period_start + timedelta(days=horizon_days - 1)
+        races = self.race_repository.list_races_between(
+            self.athlete_profile_id,
+            period_start,
+            period_end,
+        )
+        return {
+            "status": "ok" if races else "empty",
+            "period": {
+                "start_date": period_start.isoformat(),
+                "end_date": period_end.isoformat(),
+                "horizon_days": horizon_days,
+                "inclusive": True,
+            },
+            "race_count": len(races),
+            "races": [
+                {
+                    "race_id": str(race.id),
+                    "date": race.date.isoformat(),
+                    "days_from_period_start": (race.date - period_start).days,
+                    "name": race.name[:160] if race.name is not None else None,
+                    "location": race.location[:120] if race.location is not None else None,
+                    "race_type": race.race_type[:50] if race.race_type is not None else None,
+                    "priority": race.priority,
+                    "status": race.status,
+                    "distance_km": race.distance_km,
+                    "elevation_gain_m": race.elevation_gain_m,
+                    "target_time_minutes": race.target_time_minutes,
+                    "actual_distance_km": race.actual_distance_km,
+                    "actual_elevation_gain_m": race.actual_elevation_gain_m,
+                    "actual_time_minutes": race.actual_time_minutes,
+                    "has_linked_activity": race.activity_id is not None,
+                }
+                for race in races
+            ],
+        }
+
     def analyze(self, race_id: UUID, history_days: int) -> dict:
         if not 7 <= history_days <= 180:
             raise ValueError("La période d'historique doit être comprise entre 7 et 180 jours.")

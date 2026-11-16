@@ -70,22 +70,14 @@ def build_ai_tool_registry(
             athlete_profile_id,
         )
     )
-    registry.register(
-        build_race_calendar_tool(
-            context_service.race_repository,
-            athlete_profile_id,
-        )
+    race_preparation_service = RacePreparationService(
+        context_service.race_repository,
+        context_service.profile_service,
+        training_stats_service,
+        athlete_profile_id,
     )
-    registry.register(
-        build_race_preparation_tool(
-            RacePreparationService(
-                context_service.race_repository,
-                context_service.profile_service,
-                training_stats_service,
-                athlete_profile_id,
-            )
-        )
-    )
+    registry.register(build_race_calendar_tool(race_preparation_service))
+    registry.register(build_race_preparation_tool(race_preparation_service))
 
     planned_training_service = PlannedTrainingService(
         training_session_repository,

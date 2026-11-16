@@ -27,6 +27,7 @@ from opencoach.database.repositories import (
 from opencoach.services import (
     PlannedTrainingService,
     ProfileService,
+    RacePreparationService,
 )
 from opencoach.database.models import (
     AthleteProfile as AthleteProfileModel,
@@ -153,9 +154,13 @@ def test_race_calendar_returns_only_authenticated_athletes_races_inclusive():
         ])
         session.flush()
         result = build_race_calendar_tool(
-            SqlRaceRepository(session),
-            profile.id,
-            reference_date_provider=lambda: date(2026, 11, 9),
+            RacePreparationService(
+                SqlRaceRepository(session),
+                object(),
+                object(),
+                profile.id,
+                reference_date_provider=lambda: date(2026, 11, 9),
+            )
         ).handler(RaceCalendarArguments(horizon_days=30))
 
     assert result["status"] == "ok"
@@ -171,9 +176,13 @@ def test_race_calendar_reports_empty_period_explicitly():
     with Session(engine) as session:
         profile = _profile(session)
         result = build_race_calendar_tool(
-            SqlRaceRepository(session),
-            profile.id,
-            reference_date_provider=lambda: date(2026, 11, 9),
+            RacePreparationService(
+                SqlRaceRepository(session),
+                object(),
+                object(),
+                profile.id,
+                reference_date_provider=lambda: date(2026, 11, 9),
+            )
         ).handler(RaceCalendarArguments(horizon_days=7))
 
     assert result["status"] == "empty"

@@ -16,7 +16,6 @@ from opencoach.training.session_execution.validation_service import (
     TrainingSessionActivityNotFoundError,
     TrainingSessionAlreadyValidatedError,
     TrainingSessionInvalidPrescriptionError,
-    TrainingSessionMissingActivityDetailError,
     TrainingSessionNotFoundError,
     ValidateTrainingSessionService,
 )

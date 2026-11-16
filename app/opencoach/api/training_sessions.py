@@ -1,7 +1,7 @@
-from datetime import date, datetime, timezone
+from datetime import date
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from fastapi import (
     APIRouter,

@@ -28,6 +28,11 @@ class PlannedTrainingService:
         start_date: date,
         end_date: date,
     ) -> tuple[list[TrainingSession], dict]:
+        if end_date < start_date:
+            raise ValueError("La date de fin doit être postérieure ou égale à la date de début.")
+        if (end_date - start_date).days > 30:
+            raise ValueError("La période ne peut pas dépasser 31 jours calendaires.")
+
         sessions = self.repository.list_sessions_between(
             self.athlete_profile_id,
             start_date,

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 from opencoach.ai.tool_engine import AITool
 from opencoach.services import (
     PlannedTrainingService,
@@ -55,15 +55,6 @@ class PlannedSessionsArguments(BaseModel):
 
     start_date: date = Field(description="Premier jour inclus de la période.")
     end_date: date = Field(description="Dernier jour inclus de la période.")
-
-    @model_validator(mode="after")
-    def validate_period(self):
-        if self.end_date < self.start_date:
-            raise ValueError("La date de fin doit être postérieure ou égale à la date de début.")
-        if (self.end_date - self.start_date).days > 30:
-            raise ValueError("La période ne peut pas dépasser 31 jours calendaires.")
-        return self
-
 
 def build_training_profile_tool(
     profile_service: ProfileService,

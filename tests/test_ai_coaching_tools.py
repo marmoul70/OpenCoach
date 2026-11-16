@@ -277,16 +277,21 @@ def test_planned_sessions_returns_bounded_fields_and_partial_aggregates():
     engine.dispose()
 
 
-def test_planned_sessions_requires_valid_period_of_at_most_31_days():
-    with pytest.raises(ValidationError):
-        PlannedSessionsArguments(
-            start_date=date(2026, 11, 10),
-            end_date=date(2026, 11, 9),
+def test_planned_sessions_period_limits_are_enforced_by_coach_service():
+    class EmptyRepository:
+        def list_sessions_between(self, *_args):
+            return []
+
+    service = PlannedTrainingService(EmptyRepository(), uuid4())
+    with pytest.raises(ValueError, match="date de fin"):
+        service.list_between(
+            date(2026, 11, 10),
+            date(2026, 11, 9),
         )
-    with pytest.raises(ValidationError):
-        PlannedSessionsArguments(
-            start_date=date(2026, 11, 1),
-            end_date=date(2026, 12, 2),
+    with pytest.raises(ValueError, match="31 jours"):
+        service.list_between(
+            date(2026, 11, 1),
+            date(2026, 12, 2),
         )
     with pytest.raises(ValidationError):
         RaceCalendarArguments(horizon_days=366)

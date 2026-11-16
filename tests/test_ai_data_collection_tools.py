@@ -6,7 +6,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from opencoach.ai.data_collection_tools import build_profile_data_proposal_tool
+from opencoach.ai.data_collection_tools import (
+    ProposeProfileDataArguments,
+    build_profile_data_proposal_tool,
+)
+from pydantic import ValidationError
 from opencoach.ai.data_proposals import create_profile_data_proposal
 from opencoach.ai.tool_engine import AIToolRegistry
 from opencoach.database.base import Base
@@ -336,3 +340,21 @@ def test_daily_checkin_tool_rejects_missing_illness_evidence():
     finally:
         db.close()
         engine.dispose()
+
+
+
+def test_profile_data_tool_schema_reuses_coach_proposal_validation():
+    import pytest
+
+    with pytest.raises(ValidationError):
+        ProposeProfileDataArguments(
+            field_key="vma",
+            value=80,
+            evidence="Ma VMA est de 80 km/h.",
+        )
+    with pytest.raises(ValidationError):
+        ProposeProfileDataArguments(
+            field_key="unknown",
+            value=1,
+            evidence="Une valeur.",
+        )

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Callable, Literal
+from typing import Any, Callable
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -13,22 +13,10 @@ from opencoach.coaching.profile_data_proposals import (
 from opencoach.ai.tool_engine import AITool
 
 
-class ProposeProfileDataArguments(BaseModel):
-    """La preuve doit être une citation exacte d'un message utilisateur."""
+class ProposeProfileDataArguments(AIDataProposalCreate):
+    """Schéma domaine partagé, enrichi de la preuve conversationnelle."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    field_key: Literal[
-        "height_cm", "weight_kg", "max_heart_rate", "resting_heart_rate",
-        "vma", "threshold_heart_rate_1", "threshold_heart_rate_2",
-        "weekly_sessions", "weekly_duration_minutes", "weekly_distance_km",
-        "carbohydrates_per_hour", "fluids_per_hour", "sodium_per_hour",
-        "fatigue_threshold", "available_days", "experience", "sport_disciplines",
-        "shoe", "bike", "watch", "daily_checkin",
-    ]
-    value: Any
     evidence: str = Field(min_length=1, max_length=200)
-
 
 _DAY_EVIDENCE = {
     0: ("lundi", "lun"),
@@ -185,12 +173,7 @@ def build_profile_data_proposal_tool(
             arguments.value,
         ):
             raise ValueError("La valeur proposée n'est pas étayée par la preuve utilisateur.")
-        proposal = proposal_creator(
-            AIDataProposalCreate(
-                field_key=arguments.field_key,
-                value=arguments.value,
-            )
-        )
+        proposal = proposal_creator(arguments)
         return {
             "proposal_id": str(proposal.id),
             "field_key": proposal.field_key,

@@ -14,8 +14,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from opencoach.database.models import AIDataProposal, AthleteProfile, Bike, Shoe, Watch
-from opencoach.database.models.daily_checkin import DailyCheckIn as DailyCheckInModel
+from opencoach.database.models import AIDataProposal, AthleteProfile as AthleteProfileModel
+from opencoach.database.repositories.sql_daily_checkin import SqlDailyCheckInRepository
+from opencoach.database.repositories.sql_profile import SqlProfileRepository
+from opencoach.coaching.daily_checkin import (
+    AthleteDailyCheckIn, BodySide, PainArea, PainLocation,
+)
+from opencoach.models.profile import Bike, Shoe, Watch
+from opencoach.services.profile import ProfileService
 from opencoach.schemas.profile import AthletePhysiologySchema, AthleteTrainingSchema
 
 
@@ -206,25 +212,58 @@ def _now_utc_naive() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def _equipment_exists(
-    db: Session,
-    athlete_profile_id: UUID,
-    field_key: str,
-    value: dict[str, str],
-) -> bool:
-    equipment_model = {"shoe": Shoe, "bike": Bike, "watch": Watch}[field_key]
+_PROFILE_PATHS: dict[str, tuple[str, str]] = {
+    "height_cm": ("body", "height_cm"),
+    "weight_kg": ("body", "weight_kg"),
+    "max_heart_rate": ("physiology", "max_heart_rate"),
+    "resting_heart_rate": ("physiology", "resting_heart_rate"),
+    "vma": ("physiology", "vma"),
+    "threshold_heart_rate_1": ("physiology", "threshold_heart_rate_1"),
+    "threshold_heart_rate_2": ("physiology", "threshold_heart_rate_2"),
+    "weekly_sessions": ("training", "weekly_sessions"),
+    "weekly_duration_minutes": ("training", "weekly_duration_minutes"),
+    "weekly_distance_km": ("training", "weekly_distance_km"),
+    "fatigue_threshold": ("training", "fatigue_threshold"),
+    "available_days": ("training", "available_days"),
+    "experience": ("training", "experience"),
+    "sport_disciplines": ("training", "sport_disciplines"),
+    "carbohydrates_per_hour": ("nutrition", "carbohydrates_per_hour"),
+    "fluids_per_hour": ("nutrition", "fluids_per_hour"),
+    "sodium_per_hour": ("nutrition", "sodium_per_hour"),
+}
+
+
+def _profile_service(db: Session, athlete_profile_id: UUID) -> ProfileService:
+    """Construit le service canonique du profil pour le profil authentifié."""
+    row = db.get(AthleteProfileModel, athlete_profile_id)
+    if row is None:
+        raise LookupError("Profil sportif introuvable.")
+    return ProfileService(SqlProfileRepository(db, row.user_id))
+
+
+def _profile_value(profile, field_key: str):
+    if field_key in {"shoe", "bike", "watch"}:
+        return None
+    section, attribute = _PROFILE_PATHS[field_key]
+    return getattr(getattr(profile, section), attribute)
+
+
+def _set_profile_value(profile, field_key: str, value) -> None:
+    section, attribute = _PROFILE_PATHS[field_key]
+    setattr(getattr(profile, section), attribute, value)
+
+
+def _equipment_items(profile, field_key: str):
+    return getattr(profile.equipment, {"shoe": "shoes", "bike": "bikes", "watch": "watches"}[field_key])
+
+
+def _equipment_exists(profile, field_key: str, value: dict[str, str]) -> bool:
     proposed_brand = (value.get("brand") or "").casefold()
-    items = db.scalars(
-        select(equipment_model).where(
-            equipment_model.athlete_profile_id == athlete_profile_id,
-        )
-    ).all()
     return any(
         item.model.casefold() == value["model"].casefold()
         and (item.brand or "").casefold() == proposed_brand
-        for item in items
+        for item in _equipment_items(profile, field_key)
     )
-
 
 def _to_response(proposal: AIDataProposal) -> AIDataProposalResponse:
     return AIDataProposalResponse(
@@ -243,15 +282,13 @@ def create_profile_data_proposal(
     athlete_profile_id: UUID,
     payload: AIDataProposalCreate,
 ) -> AIDataProposalResponse:
-    profile = db.get(AthleteProfile, athlete_profile_id)
-    if profile is None:
-        raise LookupError("Profil sportif introuvable.")
+    """Crée une proposition sans modifier le profil Coach."""
+    profile_service = _profile_service(db, athlete_profile_id)
+    profile = profile_service.get_profile()
+
     if payload.field_key == "daily_checkin":
         checkin_date = date.today()
-        if db.scalar(select(DailyCheckInModel).where(
-            DailyCheckInModel.athlete_profile_id == athlete_profile_id,
-            DailyCheckInModel.date == checkin_date,
-        )) is not None:
+        if SqlDailyCheckInRepository(db).get_for_date(athlete_profile_id, checkin_date) is not None:
             raise ValueError("Un check-in existe déjà pour aujourd'hui ; utilise le formulaire de modification.")
         now = _now_utc_naive()
         pending = db.scalar(select(AIDataProposal).where(
@@ -276,26 +313,25 @@ def create_profile_data_proposal(
         db.commit()
         db.refresh(proposal)
         return _to_response(proposal)
+
     rule = PROFILE_FIELD_RULES[payload.field_key]
-    current_value = None if rule["kind"] == "equipment" else getattr(profile, payload.field_key)
-    if rule["kind"] == "equipment" and _equipment_exists(
-        db, athlete_profile_id, payload.field_key, payload.value
-    ):
+    current_value = _profile_value(profile, payload.field_key)
+    if rule["kind"] == "equipment" and _equipment_exists(profile, payload.field_key, payload.value):
         raise ValueError("Cet équipement est déjà présent dans le profil.")
     if current_value == payload.value:
         raise ValueError("Cette valeur est déjà enregistrée dans le profil.")
+
     now = _now_utc_naive()
-    existing_pending = db.scalar(
-        select(AIDataProposal).where(
-            AIDataProposal.athlete_profile_id == athlete_profile_id,
-            AIDataProposal.field_key == payload.field_key,
-            AIDataProposal.proposed_value == payload.value,
-            AIDataProposal.status == "pending",
-            AIDataProposal.expires_at > now,
-        )
-    )
+    existing_pending = db.scalar(select(AIDataProposal).where(
+        AIDataProposal.athlete_profile_id == athlete_profile_id,
+        AIDataProposal.field_key == payload.field_key,
+        AIDataProposal.proposed_value == payload.value,
+        AIDataProposal.status == "pending",
+        AIDataProposal.expires_at > now,
+    ))
     if existing_pending is not None:
         return _to_response(existing_pending)
+
     proposal = AIDataProposal(
         athlete_profile_id=athlete_profile_id,
         field_key=payload.field_key,
@@ -309,7 +345,6 @@ def create_profile_data_proposal(
     db.commit()
     db.refresh(proposal)
     return _to_response(proposal)
-
 
 def get_profile_data_proposal(
     db: Session,
@@ -352,122 +387,121 @@ def confirm_profile_data_proposal(
     athlete_profile_id: UUID,
     proposal_id: UUID,
 ) -> AIDataProposalResponse:
-    proposal = db.scalar(
-        select(AIDataProposal).where(
-            AIDataProposal.id == proposal_id,
-            AIDataProposal.athlete_profile_id == athlete_profile_id,
-        )
-    )
+    """Applique une proposition en passant par les services métier canoniques."""
+    proposal = db.scalar(select(AIDataProposal).where(
+        AIDataProposal.id == proposal_id,
+        AIDataProposal.athlete_profile_id == athlete_profile_id,
+    ))
     if proposal is None:
         raise LookupError("Proposition introuvable.")
     if proposal.status != "pending":
         raise ValueError("Cette proposition n'est plus en attente.")
+
     now = _now_utc_naive()
     if proposal.expires_at <= now:
         proposal.status = "expired"
         db.commit()
         raise TimeoutError("La proposition a expiré.")
+
     if proposal.field_key == "daily_checkin":
         checkin_date = date.today()
-        if db.scalar(select(DailyCheckInModel).where(
-            DailyCheckInModel.athlete_profile_id == athlete_profile_id,
-            DailyCheckInModel.date == checkin_date,
-        )) is not None:
+        repository = SqlDailyCheckInRepository(db)
+        if repository.get_for_date(athlete_profile_id, checkin_date) is not None:
             proposal.status = "conflict"
             db.commit()
             raise RuntimeError("Un check-in a été enregistré entre-temps ; confirmation annulée.")
+
         payload = DailyCheckInProposalValue.model_validate(proposal.proposed_value)
-        checkin = DailyCheckInModel(
-            athlete_profile_id=athlete_profile_id,
+        checkin = AthleteDailyCheckIn(
             date=checkin_date,
             energy_rating=payload.energy_rating,
             pain_wellness_rating=payload.pain_wellness_rating,
             illness=payload.illness,
             unavailable=payload.unavailable,
-            pain_locations=[item.model_dump() for item in payload.pain_locations],
+            pain_locations=tuple(
+                PainLocation(area=PainArea(item.area), side=BodySide(item.side))
+                for item in payload.pain_locations
+            ),
             note=payload.note,
         )
-        db.add(checkin)
         proposal.status = "confirmed"
         proposal.confirmed_at = now
-        db.commit()
+        # Le repository existant persiste le check-in et valide la transaction
+        # qui contient également le statut de la proposition.
+        repository.save(athlete_profile_id, checkin)
         db.refresh(proposal)
         return _to_response(proposal)
 
-    profile = db.get(AthleteProfile, athlete_profile_id)
-    if profile is None:
-        raise LookupError("Profil sportif introuvable.")
+    profile_service = _profile_service(db, athlete_profile_id)
+    profile = profile_service.get_profile()
     is_equipment = proposal.field_key in {"shoe", "bike", "watch"}
-    current_value = None if is_equipment else getattr(profile, proposal.field_key)
+    current_value = _profile_value(profile, proposal.field_key)
     if current_value != proposal.existing_value:
         proposal.status = "conflict"
         db.commit()
         raise RuntimeError("La donnée a changé depuis la proposition ; confirmation annulée.")
 
-    if is_equipment and _equipment_exists(
-        db, athlete_profile_id, proposal.field_key, proposal.proposed_value
-    ):
+    if is_equipment and _equipment_exists(profile, proposal.field_key, proposal.proposed_value):
         proposal.status = "conflict"
         db.commit()
         raise RuntimeError("Cet équipement a été ajouté depuis la création de la proposition.")
+
     if proposal.field_key in {
         "max_heart_rate", "resting_heart_rate", "threshold_heart_rate_1",
         "threshold_heart_rate_2", "vma",
     }:
+        physiology = profile.physiology
         physiology_values = {
-            "max_heart_rate": profile.max_heart_rate,
-            "resting_heart_rate": profile.resting_heart_rate,
-            "threshold_heart_rate_1": profile.threshold_heart_rate_1,
-            "threshold_heart_rate_2": profile.threshold_heart_rate_2,
-            "vma": profile.vma,
+            "max_heart_rate": physiology.max_heart_rate,
+            "resting_heart_rate": physiology.resting_heart_rate,
+            "threshold_heart_rate_1": physiology.threshold_heart_rate_1,
+            "threshold_heart_rate_2": physiology.threshold_heart_rate_2,
+            "vma": physiology.vma,
         }
         physiology_values[proposal.field_key] = proposal.proposed_value
         AthletePhysiologySchema(**physiology_values)
 
     if proposal.field_key in {"available_days", "experience", "sport_disciplines"}:
+        training = profile.training
         training_values = {
-            "weekly_sessions": profile.weekly_sessions,
-            "weekly_duration_minutes": profile.weekly_duration_minutes,
-            "weekly_distance_km": profile.weekly_distance_km,
-            "available_days": profile.available_days,
-            "fatigue_threshold": profile.fatigue_threshold,
-            "experience": profile.experience,
-            "sport_disciplines": profile.sport_disciplines,
+            "weekly_sessions": training.weekly_sessions,
+            "weekly_duration_minutes": training.weekly_duration_minutes,
+            "weekly_distance_km": training.weekly_distance_km,
+            "available_days": training.available_days,
+            "fatigue_threshold": training.fatigue_threshold,
+            "experience": training.experience,
+            "sport_disciplines": training.sport_disciplines,
         }
         training_values[proposal.field_key] = proposal.proposed_value
         AthleteTrainingSchema(**training_values)
 
     if is_equipment:
-        equipment_data = proposal.proposed_value
-        equipment_model = {"shoe": Shoe, "bike": Bike, "watch": Watch}[proposal.field_key]
-        item = equipment_model(
+        data = proposal.proposed_value
+        equipment_type = {"shoe": Shoe, "bike": Bike, "watch": Watch}[proposal.field_key]
+        item = equipment_type(
             id=str(uuid4()),
-            athlete_profile_id=athlete_profile_id,
-            model=equipment_data["model"],
-            brand=equipment_data.get("brand"),
-            **(
-                {"category": equipment_data.get("category")}
-                if proposal.field_key in {"shoe", "bike"}
-                else {}
-            ),
+            model=data["model"],
+            brand=data.get("brand"),
+            **({"category": data.get("category")} if proposal.field_key in {"shoe", "bike"} else {}),
         )
-        db.add(item)
+        _equipment_items(profile, proposal.field_key).append(item)
     else:
-        setattr(profile, proposal.field_key, proposal.proposed_value)
-    profile.updated_at = now
+        _set_profile_value(profile, proposal.field_key, proposal.proposed_value)
+
     proposal.status = "confirmed"
     proposal.confirmed_at = now
-    db.commit()
+    # ProfileService/SqlProfileRepository restent l'unique chemin d'écriture
+    # du profil, de la nutrition et des équipements.
+    profile_service.update_profile(profile)
     db.refresh(proposal)
-    db.refresh(profile)
-    if not is_equipment and getattr(profile, proposal.field_key) != proposal.proposed_value:
-        raise RuntimeError("La valeur persistée ne correspond pas à la proposition.")
-    if is_equipment and not _equipment_exists(
-        db, athlete_profile_id, proposal.field_key, proposal.proposed_value
-    ):
-        raise RuntimeError("L'équipement n'a pas été persisté correctement.")
-    return _to_response(proposal)
 
+    persisted_profile = profile_service.get_profile()
+    if is_equipment:
+        if not _equipment_exists(persisted_profile, proposal.field_key, proposal.proposed_value):
+            raise RuntimeError("L'équipement n'a pas été persisté correctement.")
+    elif _profile_value(persisted_profile, proposal.field_key) != proposal.proposed_value:
+        raise RuntimeError("La valeur persistée ne correspond pas à la proposition.")
+    return _to_response(proposal)
 
 def reject_profile_data_proposal(
     db: Session,

@@ -111,3 +111,28 @@ Question utilisateur ─> IA ─> capacités Coach┘
 - L'IA devient remplaçable (Ollama, autre modèle, ou absence d'IA) sans perte des fonctions métier.
 - Les outils IA actuellement couplés à SQLAlchemy sont des écarts d'architecture à migrer, notamment `ai/coaching_tools.py` et `ai/race_tools.py`.
 - Le chantier n'est considéré terminé que lorsque les fonctions métier essentielles sont accessibles hors IA et que les outils IA ne contiennent plus de calcul métier ni d'accès SQL direct.
+
+
+## 5. Frontière stricte : zéro logique métier dans l'IA
+
+Cette règle précise et renforce la décision initiale : **le package `opencoach.ai` ne contient aucune logique métier, même lorsqu'elle ne fait que composer des services existants.** L'objectif n'est pas seulement d'éviter les calculs dupliqués : l'IA ne doit être propriétaire d'aucune règle du Coach.
+
+Un adaptateur IA peut uniquement :
+- déclarer et valider le schéma technique des arguments nécessaires à l'appel ;
+- récupérer l'identité de l'athlète depuis le contexte authentifié (jamais depuis le LLM) ;
+- transmettre les paramètres à une capacité applicative Coach existante ;
+- convertir le résultat déjà calculé en contrat de transport, sans réinterpréter son sens ;
+- traduire les erreurs techniques en résultats d'outil contrôlés.
+
+Un adaptateur IA ne peut notamment pas :
+- calculer des périodes métier, fenêtres, agrégats, moyennes, couvertures, ratios ou scores ;
+- sélectionner les métriques ou les fenêtres qui constituent une analyse métier ;
+- appliquer des seuils, statuts, règles de complétude, masquage conditionnel ou priorités ;
+- construire des avertissements métier à partir des valeurs retournées ;
+- agréger plusieurs repositories pour fabriquer une capacité métier ;
+- décider qu'une donnée est exploitable, partielle, périmée ou insuffisante ;
+- effectuer de lecture ou écriture SQL métier directe.
+
+Ces responsabilités appartiennent à la capacité Coach existante qui les possède déjà. Si une orchestration métier est réellement absente, elle doit être ajoutée au domaine Coach approprié **après recherche de l'équivalent existant** et en étendant celui-ci lorsque c'est cohérent. Il est interdit de créer un second service qui reproduit une capacité déjà disponible.
+
+Les payloads IA ne doivent pas réinventer les règles : le service Coach doit retourner les faits, statuts, avertissements et données de qualité nécessaires. L'adaptateur ne fait que les transporter. Les prompts peuvent expliquer au modèle comment formuler une réponse, mais ne sont jamais l'autorité pour une règle métier.

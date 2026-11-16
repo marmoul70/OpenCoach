@@ -318,3 +318,30 @@ Le cycle de propositions de données a été déplacé de `opencoach.ai` vers `o
 L'ancien `ai/data_proposals.py` est conservé comme shim d'import historique uniquement ; l'API et les outils utilisent désormais directement le module Coach. Les tests de caractérisation du cycle de propositions passent dans la suite complète.
 
 **Validation du commit `c6f79c5f57684b9c4675c7bfdeec027005a160d8` :** Python 3.13, 3 141 tests réussis ; Bash et bootstrap Debian 13 réussis ; frontend lint/build réussis. Cela valide ce lot, pas encore l'audit exhaustif du dépôt.
+
+
+## 13. Renforcement de la frontière IA — 16 novembre 2026
+
+Décision utilisateur : **zéro logique métier dans le package `opencoach.ai`**. La règle s'applique aussi à la composition de services, au choix des fenêtres/métriques, aux conditions de couverture, au masquage des résultats, aux avertissements métier et aux agrégations de repositories. L'IA est un client du Coach, pas un orchestrateur métier.
+
+### Première cartographie des responsabilités restantes
+
+- `ai/race_tools.py` : adaptateur déjà mince vers `RacePreparationService.analyze()`; conserver ce contrat et vérifier les éventuels détails de sérialisation.
+- `ai/trend_tools.py` : appelle `TrainingStatsService` et `TrainingStats.compare_to()`; la construction des périodes et leur orchestration doivent être examinées au regard des capacités Coach déjà présentes avant toute modification.
+- `ai/load_tools.py` : construit les périodes, combine `RecentTrainingLoadService` et `TrainingStatsService`, applique des règles de complétude/masquage et produit des avertissements. Ces responsabilités ne doivent pas rester dans l'adaptateur. Réutiliser/étendre les capacités Coach de charge et statistiques déjà présentes.
+- `ai/recovery_tools.py` : combine des repositories, appelle `aggregate_wellness_days` et `build_recovery_assessment`, choisit la fenêtre de 7 jours, filtre les métriques, interprète la couverture et construit des avertissements. Le moteur `recovery_assessment.py`, l'agrégateur Wellness et `ReadinessService` existent déjà : les responsabilités doivent être rattachées à ces capacités, sans créer un moteur de récupération parallèle.
+- `ai/coaching_tools.py` : contient des calculs de période, validations temporelles et transformations conditionnelles de données de planning ; examiner les services `PlannedTrainingService`, repositories de courses et plans hebdomadaires avant d'extraire quoi que ce soit.
+- `api/ai.py` : l'orchestration conversationnelle, les préférences IA, le routage des outils et la gestion du fournisseur relèvent de la couche conversation/API ; les routes ne doivent pas contenir de règles sportives.
+
+Cette cartographie est un constat partiel, pas la certification de tout le package. Les autres modules IA, leurs dépendances, leurs appels SQL et leurs tests restent à inventorier. Aucune suppression de code ne sera faite avant la vérification des usages, des contrats et de la couverture de non-régression.
+
+### Ordre de traitement obligatoire
+
+1. Inventorier chaque fonction de `opencoach.ai` et classer ses responsabilités : conversation/transport, sécurité technique ou métier.
+2. Pour chaque responsabilité métier, identifier son propriétaire Coach existant, ses routes/API, repositories et tests.
+3. Étendre le propriétaire existant si nécessaire ; ne créer un nouveau service que si l'absence de capacité est démontrée et documentée.
+4. Déplacer les tests de règles vers le domaine Coach et conserver des tests d'adaptateur limités au contrat d'appel et au transport.
+5. Supprimer l'implémentation métier des adaptateurs IA et les imports devenus inutiles.
+6. Vérifier qu'aucun accès SQL métier, calcul ou décision ne subsiste dans `opencoach.ai`, puis exécuter la CI complète sur le HEAD final.
+
+Aucun merge, rebase sur `main`, déploiement, suppression de branche ou incrément de version n'est autorisé sans accord explicite.

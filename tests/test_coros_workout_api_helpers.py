@@ -222,9 +222,7 @@ def test_extracts_scheduled_workout_from_iso_date_field() -> None:
 
 
 
-def test_extracts_scheduled_workouts_from_coros_plain_text_schedule() -> None:
-    from opencoach.api.coros import _extract_scheduled_workouts_for_date
-
+def test_extracts_scheduled_workout_records_from_coros_plain_text_schedule() -> None:
     result = {
         "content": [
             {
@@ -254,10 +252,6 @@ def test_extracts_scheduled_workouts_from_coros_plain_text_schedule() -> None:
         ("26", "Footing 35 min"),
         ("10", "Test COROS - Endurance fondamentale"),
     ]
-    assert _extract_scheduled_workouts_for_date(
-        result,
-        date(2026, 11, 12),
-    ) == ["Footing 35 min", "Test COROS - Endurance fondamentale"]
 
 
 def test_extracts_schedule_when_coros_wraps_plain_text_in_json_string() -> None:

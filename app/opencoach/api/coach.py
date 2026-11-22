@@ -461,6 +461,8 @@ def get_weekly_debrief(
             "sleep_rem_seconds": day.sleep_rem_seconds,
             "sleep_awake_seconds": day.sleep_awake_seconds,
             "avg_sleeping_hr": day.avg_sleeping_hr,
+            "min_sleeping_hr": day.min_sleeping_hr,
+            "max_sleeping_hr": day.max_sleeping_hr,
             "spo2": day.spo2,
             "steps": day.steps,
         }

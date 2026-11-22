@@ -286,7 +286,10 @@ export function SidePanel({
         className={[
           (
             'absolute inset-y-0 right-0 '
+            + 'h-[100dvh] max-h-[100dvh] '
             + 'flex w-full flex-col '
+            + 'pt-[env(safe-area-inset-top)] '
+            + 'pb-[env(safe-area-inset-bottom)] '
             + 'oc-panel-surface '
             + 'md:w-[max(36vw,460px)] '
             + 'md:min-w-[max(36vw,460px)] '
@@ -305,8 +308,9 @@ export function SidePanel({
           className="
             oc-panel-header
             flex
-            min-h-[58px]
+            min-h-[52px]
             shrink-0
+            sm:min-h-[58px]
             items-center
             justify-between
             gap-3
@@ -396,6 +400,9 @@ export function SidePanel({
             min-h-0
             flex-1
             overflow-y-auto
+            overscroll-contain
+            [touch-action:pan-y]
+            [webkit-overflow-scrolling:touch]
 
             px-3
             py-3

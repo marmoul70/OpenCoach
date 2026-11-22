@@ -222,31 +222,6 @@ class WeeklyDebriefOrchestrator:
                 ),
             )
 
-            planning_result = (
-                self._planning_application_service.execute(
-                    athlete_profile_id=(
-                        context.athlete_profile_id
-                    ),
-                    closed_week_start=(
-                        context.week_start
-                    ),
-                    planning_input=(
-                        context.planning_input
-                    ),
-                    physiological_reference_date=(
-                        context.physiological_reference_date
-                    ),
-                    sport_disciplines=(
-                        context.sport_disciplines
-                    ),
-                    reconcile_from_date=(
-                        context.reconcile_from_date
-                    ),
-                    additional_context=(
-                        context.additional_context
-                    ),
-                )
-            )
 
         except Exception as exc:
             return WeeklyDebriefOrchestrationResult(
@@ -266,11 +241,11 @@ class WeeklyDebriefOrchestrator:
                 ),
             )
 
-        status = (
-            WeeklyDebriefOrchestrationStatus.ALREADY_COMPLETED
-            if planning_result.already_applied
-            else WeeklyDebriefOrchestrationStatus.COMPLETED
-        )
+        # La clôture produit un bilan et une proposition
+        # d'adaptation persistée. Le planning actif reste intact :
+        # seule une validation explicite de l'athlète pourra
+        # déclencher WeeklyDebriefPlanningApplicationService.
+        status = WeeklyDebriefOrchestrationStatus.COMPLETED
 
         return WeeklyDebriefOrchestrationResult(
             athlete_profile_id=(

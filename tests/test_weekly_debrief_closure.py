@@ -9,9 +9,6 @@ from opencoach.coaching.weekly_debrief_closure import (
     WeeklyDebriefClosureService,
     serialize_weekly_adaptation_decision,
 )
-from opencoach.coaching.weekly_adaptation_proposal_store import (
-    WeeklyAdaptationProposalStore,
-)
 
 
 WEEK_START = date(2026, 8, 31)
@@ -185,7 +182,6 @@ def _service(
     plan=None,
     analyses=None,
     existing=None,
-    proposal_store=None,
 ):
     session_reader = FakeSessionReader(
         sessions
@@ -211,7 +207,6 @@ def _service(
             analysis_reader
         ),
         debrief_repository=repository,
-        proposal_store=proposal_store,
     )
 
     return (
@@ -253,9 +248,8 @@ def test_existing_debrief_is_strictly_idempotent() -> None:
     assert analysis_reader.calls == []
 
 
-def test_closes_week_and_stores_adaptation_in_tmp(tmp_path) -> None:
+def test_closes_week_without_persisting_adaptation_payload() -> None:
     profile_id = uuid4()
-    proposal_store = WeeklyAdaptationProposalStore(root=tmp_path)
     session_id = uuid4()
     activity_id = uuid4()
 
@@ -285,7 +279,6 @@ def test_closes_week_and_stores_adaptation_in_tmp(tmp_path) -> None:
         plan=FakePlan(
             target_load=80.0
         ),
-        proposal_store=proposal_store,
         analyses={
             session_id: FakeAnalysis(
                 training_session_id=session_id,
@@ -328,15 +321,6 @@ def test_closes_week_and_stores_adaptation_in_tmp(tmp_path) -> None:
     ]
 
     assert saved["adaptation_payload"] is None
-    payload = proposal_store.get(
-        profile_id,
-        WEEK_START,
-    )
-    assert isinstance(payload, dict)
-    assert "direction" in payload
-
-    # Le payload temporaire doit être immédiatement compatible JSON.
-    json.dumps(payload)
 
 
 def test_reads_analysis_only_for_completed_sessions() -> None:

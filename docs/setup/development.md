@@ -373,3 +373,61 @@ Pour afficher l'aide :
 
     python -m opencoach.commands.generate_training_plan --help
 
+---
+
+## 17. Workflow hebdomadaire automatique du Coach
+
+Le workflow complet est exécuté dans cet ordre :
+
+1. Analyse et clôture de la semaine écoulée.
+2. Application de l'adaptation et génération du planning de la semaine suivante.
+3. Synchronisation des séances avec Intervals.icu.
+4. Envoi de la notification Push finale.
+
+Le point d'entrée applicatif est :
+
+    python -m opencoach.commands.run_weekly_debrief_workflow
+
+Le lanceur Bash correspondant est :
+
+    bash scripts/maintenance/run-weekly-coach-workflow.sh
+
+### Planification chaque dimanche à 20 h (heure française)
+
+Sur le serveur Debian, ouvrir la crontab de l'utilisateur qui exécute OpenCoach :
+
+    crontab -e
+
+Ajouter cette entrée :
+
+    CRON_TZ=Europe/Paris
+    0 20 * * 0 cd /CHEMIN/VERS/OpenCoach && bash scripts/maintenance/run-weekly-coach-workflow.sh >> logs/weekly-coach.log 2>&1
+
+Remplacer /CHEMIN/VERS/OpenCoach par le chemin absolu du dépôt. Créer le dossier de journalisation avant le premier lancement :
+
+    mkdir -p /CHEMIN/VERS/OpenCoach/logs
+
+Cron utilise le fuseau Europe/Paris : l'exécution reste à 20 h locales lors des changements heure d'été / heure d'hiver. Le script empêche deux exécutions simultanées avec un verrou système.
+
+Le workflow peut également être lancé manuellement :
+
+    bash scripts/maintenance/run-weekly-coach-workflow.sh
+
+Une date de référence peut être fournie pour les tests :
+
+    bash scripts/maintenance/run-weekly-coach-workflow.sh --reference-date 2026-11-22
+
+### Génération manuelle du planning uniquement
+
+Pour tester le moteur de génération sans exécuter le débrief ni envoyer la notification :
+
+    bash scripts/maintenance/generate-training-plan.sh --username <identifiant>
+
+Exemple avec quatre semaines :
+
+    bash scripts/maintenance/generate-training-plan.sh --username <identifiant> --weeks 4
+
+Cette commande appelle le CLI Python qui assemble et exécute le `GeneratePlannedTrainingWeekService` de production. Elle ne déclenche pas le workflow hebdomadaire complet.
+
+La variable `OPENCOACH_PYTHON` permet de choisir explicitement l'interpréteur Python. Par défaut, les scripts utilisent `.venv/bin/python` si présent, sinon `python3`.
+

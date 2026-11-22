@@ -1,4 +1,25 @@
 export interface WeeklyDebriefHistory {
+  wellness_days: Array<{
+    date: string
+    provider: string
+    resting_hr: number | null
+    avg_hr: number | null
+    min_hr: number | null
+    max_hr: number | null
+    hrv: number | null
+    hrv_baseline: number | null
+    stress_avg: number | null
+    sleep_seconds: number | null
+    sleep_score: number | null
+    sleep_quality: number | null
+    sleep_deep_seconds: number | null
+    sleep_light_seconds: number | null
+    sleep_rem_seconds: number | null
+    sleep_awake_seconds: number | null
+    avg_sleeping_hr: number | null
+    spo2: number | null
+    steps: number | null
+  }>
   heart_rate_activities: Array<{
     activity_name: string
     started_at: string

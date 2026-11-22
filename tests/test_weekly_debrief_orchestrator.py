@@ -169,7 +169,7 @@ def test_remaining_session_waits() -> None:
     assert planning.calls == []
 
 
-def test_normal_close_runs_closure_then_planning() -> None:
+def test_normal_close_persists_proposal_without_applying_planning() -> None:
     closure = FakeClosureService()
     planning = FakePlanningApplicationService()
 
@@ -195,15 +195,10 @@ def test_normal_close_runs_closure_then_planning() -> None:
     )
 
     assert len(closure.calls) == 1
-    assert len(planning.calls) == 1
+    assert planning.calls == []
 
     assert (
         closure.calls[0]["athlete_profile_id"]
-        == ctx.athlete_profile_id
-    )
-
-    assert (
-        planning.calls[0]["athlete_profile_id"]
         == ctx.athlete_profile_id
     )
 
@@ -236,7 +231,7 @@ def test_cutoff_forces_processing() -> None:
     )
 
     assert len(closure.calls) == 1
-    assert len(planning.calls) == 1
+    assert planning.calls == []
 
 
 def test_sync_grace_waits() -> None:
@@ -303,7 +298,7 @@ def test_missing_planning_input_fails_before_closure() -> None:
     assert planning.calls == []
 
 
-def test_existing_planning_is_reported_as_already_completed() -> None:
+def test_existing_debrief_is_completed_without_applying_planning() -> None:
     closure = FakeClosureService()
 
     planning = FakePlanningApplicationService(
@@ -321,11 +316,11 @@ def test_existing_planning_is_reported_as_already_completed() -> None:
 
     assert (
         result.status
-        is WeeklyDebriefOrchestrationStatus.ALREADY_COMPLETED
+        is WeeklyDebriefOrchestrationStatus.COMPLETED
     )
 
     assert len(closure.calls) == 1
-    assert len(planning.calls) == 1
+    assert planning.calls == []
 
 
 def test_closure_failure_does_not_run_planning() -> None:
@@ -355,7 +350,7 @@ def test_closure_failure_does_not_run_planning() -> None:
     assert planning.calls == []
 
 
-def test_planning_failure_is_reported() -> None:
+def test_planning_service_is_not_called_during_weekly_closure() -> None:
     closure = FakeClosureService()
 
     planning = FakePlanningApplicationService(
@@ -375,13 +370,12 @@ def test_planning_failure_is_reported() -> None:
 
     assert (
         result.status
-        is WeeklyDebriefOrchestrationStatus.FAILED
+        is WeeklyDebriefOrchestrationStatus.COMPLETED
     )
 
-    assert "planning failed" in result.error
-
+    assert result.error is None
     assert len(closure.calls) == 1
-    assert len(planning.calls) == 1
+    assert planning.calls == []
 
 
 def test_multi_profile_failure_is_isolated() -> None:

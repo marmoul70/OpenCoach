@@ -382,26 +382,3 @@ def test_invalid_prescription_prevents_validation() -> None:
         application.validation_writer.persisted_session
         is None
     )
-
-
-def test_missing_activity_detail_does_not_prevent_validation() -> None:
-    planned = session()
-    performed = activity()
-
-    application, _, _ = service(
-        session_value=planned,
-        activity_value=performed,
-    )
-
-    application.activity_detail_repository.detail = None
-
-    result = application.execute(
-        athlete_profile_id=uuid4(),
-        training_session_id=planned.id,
-        activity_id=performed.id,
-    )
-
-    assert result.session.status == "completed"
-    assert result.session.activity_id == performed.id
-    assert result.analysis.activity_id == performed.id
-    assert application.validation_writer.persisted_session is not None

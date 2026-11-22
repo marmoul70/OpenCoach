@@ -1017,7 +1017,7 @@ function countUniqueSignals(
     const normalizedReason =
       signal.reason
         .trim()
-        .replace(/\\s+/g, ' ')
+        .replace(/\s+/g, ' ')
         .toLocaleLowerCase('fr-FR')
 
     if (normalizedReason) {

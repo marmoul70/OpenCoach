@@ -329,24 +329,92 @@ def get_coach_trajectory(
 
 
 def _weekly_debrief_json(value):
-    if isinstance(value, Enum): return value.value
-    if is_dataclass(value): return _weekly_debrief_json(asdict(value))
-    if isinstance(value, dict): return {str(key): _weekly_debrief_json(item) for key, item in value.items()}
-    if isinstance(value, (tuple, list, set, frozenset)): return [_weekly_debrief_json(item) for item in value]
-    if isinstance(value, (date, datetime)): return value.isoformat()
-    if isinstance(value, UUID): return str(value)
+    """Convertit les objets métier en valeurs JSON compatibles."""
+
+    if isinstance(value, Enum):
+        return value.value
+
+    if is_dataclass(value):
+        return _weekly_debrief_json(asdict(value))
+
+    if isinstance(value, dict):
+        return {
+            str(key): _weekly_debrief_json(item)
+            for key, item in value.items()
+        }
+
+    if isinstance(value, (tuple, list, set, frozenset)):
+        return [
+            _weekly_debrief_json(item)
+            for item in value
+        ]
+
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+
+    if isinstance(value, UUID):
+        return str(value)
+
     return value
 
-@router.get('/weekly-debriefs')
-def list_weekly_debriefs(limit: int = 26, athlete_profile_id: UUID = Depends(get_current_athlete_profile_id), db: Session = Depends(get_db)) -> list[dict]:
-    safe_limit = min(max(limit, 1), 104)
-    records = db.scalars(select(WeeklyDebriefRecord).where(WeeklyDebriefRecord.athlete_profile_id == athlete_profile_id).order_by(WeeklyDebriefRecord.week_start.desc()).limit(safe_limit)).all()
-    return [{'week_start': r.week_start.isoformat(), 'week_end': r.week_end.isoformat(), 'verdict': r.verdict, 'overall_score': r.overall_score, 'planning_updated': r.planning_updated_at is not None} for r in records]
 
-@router.get('/weekly-debrief')
-def get_weekly_debrief(week_start: date, athlete_profile_id: UUID = Depends(get_current_athlete_profile_id), db: Session = Depends(get_db)) -> dict:
-    stored = SqlWeeklyDebriefRepository(db).get_for_week(athlete_profile_id, week_start)
-    if stored is None: raise HTTPException(status_code=404, detail='Aucun bilan pour cette semaine.')
+@router.get("/weekly-debriefs")
+def list_weekly_debriefs(
+    limit: int = 26,
+    athlete_profile_id: UUID = Depends(
+        get_current_athlete_profile_id
+    ),
+    db: Session = Depends(get_db),
+) -> list[dict]:
+    """Liste les semaines pour lesquelles un bilan persistant existe."""
+
+    safe_limit = min(max(limit, 1), 104)
+    records = db.scalars(
+        select(WeeklyDebriefRecord)
+        .where(
+            WeeklyDebriefRecord.athlete_profile_id
+            == athlete_profile_id
+        )
+        .order_by(
+            WeeklyDebriefRecord.week_start.desc()
+        )
+        .limit(safe_limit)
+    ).all()
+
+    return [
+        {
+            "week_start": record.week_start.isoformat(),
+            "week_end": record.week_end.isoformat(),
+            "verdict": record.verdict,
+            "overall_score": record.overall_score,
+            "planning_updated": (
+                record.planning_updated_at is not None
+            ),
+        }
+        for record in records
+    ]
+
+
+@router.get("/weekly-debrief")
+def get_weekly_debrief(
+    week_start: date,
+    athlete_profile_id: UUID = Depends(
+        get_current_athlete_profile_id
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Retourne le bilan, ses indicateurs et les flux FC disponibles."""
+
+    stored = SqlWeeklyDebriefRepository(db).get_for_week(
+        athlete_profile_id,
+        week_start,
+    )
+    if stored is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Aucun bilan pour cette semaine.",
+        )
+
     activities = SqlActivityRepository(db).list_activities_between(
         athlete_profile_id,
         stored.facts.week_start,
@@ -354,58 +422,111 @@ def get_weekly_debrief(week_start: date, athlete_profile_id: UUID = Depends(get_
     )
     detail_repository = SqlActivityDetailRepository(db)
     heart_rate_activities = []
+
     for activity in activities:
         if activity.id is None:
             continue
+
         detail = detail_repository.get_activity_detail(
             athlete_profile_id,
             activity.id,
         )
         if detail is None or detail.streams.heartrate is None:
             continue
+
         heart_rates = list(detail.streams.heartrate.data)
         times = (
             list(detail.streams.time.data)
             if detail.streams.time is not None
             else list(range(len(heart_rates)))
         )
-        paired = [
-            {"time_seconds": times[index], "bpm": heart_rates[index]}
+        samples = [
+            {
+                "time_seconds": times[index],
+                "bpm": heart_rates[index],
+            }
             for index in range(min(len(times), len(heart_rates)))
         ]
-        if not paired:
+        if not samples:
             continue
-        heart_rate_activities.append({
-            "activity_name": activity.name,
-            "started_at": (
-                activity.start_at_local.isoformat()
-                if activity.start_at_local is not None
-                else activity.start_at.isoformat()
-            ),
-            "average_bpm": activity.average_heart_rate,
-            "maximum_bpm": activity.max_heart_rate,
-            "sample_count": len(paired),
-            "samples": paired,
-        })
+
+        heart_rate_activities.append(
+            {
+                "activity_name": activity.name,
+                "started_at": (
+                    activity.start_at_local.isoformat()
+                    if activity.start_at_local is not None
+                    else activity.start_at.isoformat()
+                ),
+                "average_bpm": activity.average_heart_rate,
+                "maximum_bpm": activity.max_heart_rate,
+                "sample_count": len(samples),
+                "samples": samples,
+            }
+        )
+
     return {
         "id": str(stored.id),
         "facts": _weekly_debrief_json(stored.facts),
         "debrief": _weekly_debrief_json(stored.debrief),
-        "adaptation": _weekly_debrief_json(build_weekly_adaptation_decision(stored.debrief)),
+        "adaptation": _weekly_debrief_json(
+            build_weekly_adaptation_decision(stored.debrief)
+        ),
         "heart_rate_activities": heart_rate_activities,
         "generated_at": stored.generated_at.isoformat(),
-        "planning_updated": stored.planning_updated_at is not None,
+        "planning_updated": (
+            stored.planning_updated_at is not None
+        ),
     }
 
-@router.post('/weekly-debrief/apply')
-def apply_weekly_debrief_adaptation(week_start: date, athlete_profile_id: UUID = Depends(get_current_athlete_profile_id), context_builder: WeeklyPlanningContextBuilder = Depends(get_weekly_planning_context_builder), planning_service=Depends(get_generate_planned_training_week_service), db: Session = Depends(get_db)) -> dict:
+
+@router.post("/weekly-debrief/apply")
+def apply_weekly_debrief_adaptation(
+    week_start: date,
+    athlete_profile_id: UUID = Depends(
+        get_current_athlete_profile_id
+    ),
+    context_builder: WeeklyPlanningContextBuilder = Depends(
+        get_weekly_planning_context_builder
+    ),
+    planning_service=Depends(
+        get_generate_planned_training_week_service
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Applique la proposition uniquement après validation explicite."""
+
     next_week_start = week_start + timedelta(days=7)
+
     try:
-        prepared = context_builder.build(athlete_profile_id=athlete_profile_id, planning_date=next_week_start, trajectory_start_date=next_week_start)
-        result = WeeklyDebriefPlanningApplicationService(debrief_repository=SqlWeeklyDebriefRepository(db), planning_service=planning_service).execute(athlete_profile_id=athlete_profile_id, closed_week_start=week_start, planning_input=prepared.planning_input, reconcile_from_date=next_week_start)
+        prepared = context_builder.build(
+            athlete_profile_id=athlete_profile_id,
+            planning_date=next_week_start,
+            trajectory_start_date=next_week_start,
+        )
+        result = WeeklyDebriefPlanningApplicationService(
+            debrief_repository=SqlWeeklyDebriefRepository(db),
+            planning_service=planning_service,
+        ).execute(
+            athlete_profile_id=athlete_profile_id,
+            closed_week_start=week_start,
+            planning_input=prepared.planning_input,
+            reconcile_from_date=next_week_start,
+        )
     except Exception as exc:
-        raise HTTPException(status_code=409, detail='Impossible d’appliquer la proposition. Le planning n’a pas été confirmé.') from exc
-    return {'week_start': week_start.isoformat(), 'applied': not result.already_applied}
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Impossible d’appliquer la proposition. "
+                "Le planning n’a pas été confirmé."
+            ),
+        ) from exc
+
+    return {
+        "week_start": week_start.isoformat(),
+        "applied": not result.already_applied,
+    }
+
 
 @router.get(
     "/weekly-plan",

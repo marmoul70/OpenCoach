@@ -165,3 +165,30 @@ def test_activity_match_score_cannot_be_negative() -> None:
     assert result.duration_score == 0.0
     assert result.elevation_score == 0.0
     assert result.score == 40.0
+
+
+def test_activity_match_normalizes_coros_french_running_sports() -> None:
+    session = create_session()
+    session.sport_type = "Trail"
+
+    activity = create_activity()
+    activity.provider = "coros"
+    activity.sport_type = "Course extérieure"
+
+    result = match_activity_to_session(session, activity)
+
+    assert result.sport_matches is True
+    assert result.sport_score == 40.0
+
+
+def test_activity_match_normalizes_coros_trail_sport() -> None:
+    session = create_session()
+    session.sport_type = "Run"
+
+    activity = create_activity()
+    activity.provider = "coros"
+    activity.sport_type = "Trail"
+
+    result = match_activity_to_session(session, activity)
+
+    assert result.sport_matches is True

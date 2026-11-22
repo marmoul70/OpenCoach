@@ -34,6 +34,9 @@ from opencoach.coaching import (
 from opencoach.coaching.generation.current_week import (
     current_week_start,
 )
+from opencoach.coaching.weekly_adaptation_proposal_store import (
+    WeeklyAdaptationProposalStore,
+)
 
 from opencoach.coaching.weekly_assessment import (
     CoachWeeklyAssessment,
@@ -314,6 +317,47 @@ def get_coach_trajectory(
             preparation_start
         ),
         weeks=response_weeks,
+    )
+
+
+@router.get(
+    "/weekly-adaptation-proposal",
+)
+def get_weekly_adaptation_proposal(
+    week_start: date,
+    athlete_profile_id: UUID = Depends(
+        get_current_athlete_profile_id,
+    ),
+) -> dict:
+    """Retourne la proposition temporaire d'une semaine."""
+
+    proposal = WeeklyAdaptationProposalStore().get(
+        athlete_profile_id,
+        week_start,
+    )
+    if proposal is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Aucune proposition temporaire pour cette semaine.",
+        )
+    return proposal
+
+
+@router.delete(
+    "/weekly-adaptation-proposal",
+    status_code=204,
+)
+def reject_weekly_adaptation_proposal(
+    week_start: date,
+    athlete_profile_id: UUID = Depends(
+        get_current_athlete_profile_id,
+    ),
+) -> None:
+    """Le refus de l'athlète supprime la proposition temporaire."""
+
+    WeeklyAdaptationProposalStore().delete(
+        athlete_profile_id,
+        week_start,
     )
 
 

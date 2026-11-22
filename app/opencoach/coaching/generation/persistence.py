@@ -63,66 +63,7 @@ class WeeklyTrainingPersistenceService:
         TrainingSession,
         ...,
     ]:
-        """Crée ou actualise les séances planifiées de la semaine."""
-
-        self.weekly_plan_repository.save_plan(
-            WeeklyTrainingPlan(
-                id=None,
-                athlete_profile_id=(
-                    athlete_profile_id
-                ),
-                week_start=envelope.week_start,
-                week_end=envelope.week_end,
-                phase=str(
-                    envelope.phase.value
-                    if hasattr(
-                        envelope.phase,
-                        "value",
-                    )
-                    else envelope.phase
-                ),
-                week_type=str(
-                    envelope.week_type.value
-                    if hasattr(
-                        envelope.week_type,
-                        "value",
-                    )
-                    else envelope.week_type
-                ),
-                phase_week_index=(
-                    envelope.phase_week_index
-                ),
-                target_load=(
-                    envelope.target_load
-                ),
-                load_min=(
-                    envelope.load_min
-                ),
-                load_max=(
-                    envelope.load_max
-                ),
-                reference_duration_minutes=(
-                    envelope.reference_duration_minutes
-                ),
-                target_duration_minutes=(
-                    envelope.target_duration_minutes
-                ),
-                long_endurance_reference_minutes=(
-                    envelope.long_endurance_reference_minutes
-                ),
-                schedule_pressure=str(
-                    envelope.schedule_pressure.value
-                    if hasattr(
-                        envelope.schedule_pressure,
-                        "value",
-                    )
-                    else envelope.schedule_pressure
-                ),
-                athlete_schedule_constrained=(
-                    envelope.athlete_schedule_constrained
-                ),
-            )
-        )
+        """Prévalide toute la semaine avant de modifier les données."""
 
         existing_sessions = (
             self.repository
@@ -141,31 +82,15 @@ class WeeklyTrainingPersistenceService:
             for generated in week.sessions
         }
 
-        _remove_obsolete_generated_sessions(
-            repository=self.repository,
-            athlete_profile_id=(
-                athlete_profile_id
-            ),
-            existing_sessions=(
-                existing_sessions
-            ),
-            generated_planning_keys=(
-                generated_planning_keys
-            ),
-            reconcile_from_date=(
-                reconcile_from_date
-            ),
-        )
-
-        persisted: list[
-            TrainingSession
-        ] = []
+        # Phase de prévalidation : aucun plan ni aucune séance ne doit
+        # être modifié tant qu'un conflit ou une prescription invalide
+        # subsiste dans la semaine générée.
+        prepared_sessions: list[TrainingSession] = []
 
         for generated in week.sessions:
             if (
                 reconcile_from_date is not None
-                and generated.date
-                < reconcile_from_date
+                and generated.date < reconcile_from_date
             ):
                 continue
 
@@ -173,7 +98,6 @@ class WeeklyTrainingPersistenceService:
                 week_start=week.week_start,
                 slot_id=generated.slot_id,
             )
-
             existing = _find_existing_session(
                 sessions=existing_sessions,
                 planning_key=planning_key,
@@ -182,64 +106,83 @@ class WeeklyTrainingPersistenceService:
             if (
                 existing is not None
                 and reconcile_from_date is not None
-                and existing.date
-                < reconcile_from_date
+                and existing.date < reconcile_from_date
             ):
                 continue
 
-            if (
-                existing is not None
-                and existing.status != "planned"
-            ):
-                raise (
-                    ExistingTrainingSessionConflictError(
-                        (
-                            "Une séance existe déjà le "
-                            f"{generated.date.isoformat()} "
-                            f"avec le statut "
-                            f"'{existing.status}'."
-                        )
+            if existing is not None and existing.status != "planned":
+                raise ExistingTrainingSessionConflictError(
+                    (
+                        "Une séance existe déjà le "
+                        f"{generated.date.isoformat()} "
+                        f"avec le statut '{existing.status}'."
                     )
                 )
 
-            mapped = (
-                generated_session_to_training_session(
-                    generated,
-                    planning_key=planning_key,
-                    existing_id=(
-                        existing.id
-                        if existing is not None
-                        else None
-                    ),
-                )
+            mapped = generated_session_to_training_session(
+                generated,
+                planning_key=planning_key,
+                existing_id=existing.id if existing is not None else None,
             )
-
             try:
-                validate_training_session_prescription(
-                    mapped
-                )
-
+                validate_training_session_prescription(mapped)
             except TrainingSessionPrescriptionIntegrityError as exc:
                 raise WeeklyTrainingPersistenceError(
-                    "La séance générée possède une "
-                    "prescription incohérente."
+                    "La séance générée possède une prescription incohérente."
                 ) from exc
 
-            saved = (
-                self.repository
-                .save_session(
-                    athlete_profile_id,
-                    mapped,
-                )
-            )
+            prepared_sessions.append(mapped)
 
-            persisted.append(
-                saved
+        # Le plan hebdomadaire n'est enregistré qu'après la prévalidation.
+        self.weekly_plan_repository.save_plan(
+            WeeklyTrainingPlan(
+                id=None,
+                athlete_profile_id=athlete_profile_id,
+                week_start=envelope.week_start,
+                week_end=envelope.week_end,
+                phase=str(
+                    envelope.phase.value
+                    if hasattr(envelope.phase, "value")
+                    else envelope.phase
+                ),
+                week_type=str(
+                    envelope.week_type.value
+                    if hasattr(envelope.week_type, "value")
+                    else envelope.week_type
+                ),
+                phase_week_index=envelope.phase_week_index,
+                target_load=envelope.target_load,
+                load_min=envelope.load_min,
+                load_max=envelope.load_max,
+                reference_duration_minutes=envelope.reference_duration_minutes,
+                target_duration_minutes=envelope.target_duration_minutes,
+                long_endurance_reference_minutes=envelope.long_endurance_reference_minutes,
+                schedule_pressure=str(
+                    envelope.schedule_pressure.value
+                    if hasattr(envelope.schedule_pressure, "value")
+                    else envelope.schedule_pressure
+                ),
+                athlete_schedule_constrained=envelope.athlete_schedule_constrained,
             )
-
-        return tuple(
-            persisted
         )
+
+        _remove_obsolete_generated_sessions(
+            repository=self.repository,
+            athlete_profile_id=athlete_profile_id,
+            existing_sessions=existing_sessions,
+            generated_planning_keys=generated_planning_keys,
+            reconcile_from_date=reconcile_from_date,
+        )
+
+        persisted: list[TrainingSession] = []
+        for mapped in prepared_sessions:
+            saved = self.repository.save_session(
+                athlete_profile_id,
+                mapped,
+            )
+            persisted.append(saved)
+
+        return tuple(persisted)
 
 
 def _find_existing_session(

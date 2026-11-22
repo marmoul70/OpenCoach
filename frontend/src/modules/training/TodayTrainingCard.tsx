@@ -72,6 +72,7 @@ export function TodayTrainingCard({
 
           <p
             className="
+              oc-today-focus-muted
               mt-0.5
               text-[12px]
               text-[var(--oc-muted)]

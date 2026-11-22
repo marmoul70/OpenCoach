@@ -420,6 +420,38 @@ def get_weekly_debrief(
         stored.facts.week_start,
         stored.facts.week_end,
     )
+
+    # Les métriques quotidiennes sont lues depuis le référentiel Wellness
+    # déjà alimenté par les intégrations ; aucun snapshot n'est recopié.
+    wellness_days = SqlWellnessRepository(db).list_range(
+        athlete_profile_id,
+        stored.facts.week_start,
+        stored.facts.week_end,
+    )
+    wellness_payload = [
+        {
+            "date": day.date.isoformat(),
+            "provider": day.provider,
+            "resting_hr": day.resting_hr,
+            "avg_hr": day.avg_hr,
+            "min_hr": day.min_hr,
+            "max_hr": day.max_hr,
+            "hrv": day.hrv,
+            "hrv_baseline": day.hrv_baseline,
+            "stress_avg": day.stress_avg,
+            "sleep_seconds": day.sleep_seconds,
+            "sleep_score": day.sleep_score,
+            "sleep_quality": day.sleep_quality,
+            "sleep_deep_seconds": day.sleep_deep_seconds,
+            "sleep_light_seconds": day.sleep_light_seconds,
+            "sleep_rem_seconds": day.sleep_rem_seconds,
+            "sleep_awake_seconds": day.sleep_awake_seconds,
+            "avg_sleeping_hr": day.avg_sleeping_hr,
+            "spo2": day.spo2,
+            "steps": day.steps,
+        }
+        for day in wellness_days
+    ]
     detail_repository = SqlActivityDetailRepository(db)
     heart_rate_activities = []
 
@@ -481,6 +513,7 @@ def get_weekly_debrief(
             build_weekly_adaptation_decision(stored.debrief)
         ),
         "heart_rate_activities": heart_rate_activities,
+        "wellness_days": wellness_payload,
         "generated_at": stored.generated_at.isoformat(),
         "planning_updated": (
             stored.planning_updated_at is not None

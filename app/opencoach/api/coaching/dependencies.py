@@ -1018,6 +1018,9 @@ def build_weekly_debrief_application_service(
             workout_sync_service=(
                 workout_sync_service
             ),
+            proposal_store=(
+                runtime.weekly_adaptation_proposals
+            ),
         )
     )
 

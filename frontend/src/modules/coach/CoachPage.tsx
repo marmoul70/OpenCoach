@@ -379,7 +379,8 @@ export function CoachPage() {
                             text-[19px]
                             font-bold
                             tracking-[-0.025em]
-                            text-white
+                            text-[var(--oc-text)]
+                            dark:text-white
                           "
                         >
                           {session.title}
@@ -395,7 +396,8 @@ export function CoachPage() {
                             gap-y-2
                             text-[12px]
                             font-medium
-                            text-white/55
+                            text-[var(--oc-muted)]
+                            dark:text-white/55
                           "
                         >
                           <span
@@ -476,7 +478,8 @@ export function CoachPage() {
                           px-3
                           text-[10px]
                           font-semibold
-                          text-emerald-300
+                          text-emerald-700
+                          dark:text-emerald-300
                           transition
                           hover:border-emerald-400/40
                           hover:bg-emerald-400/[0.14]
@@ -514,7 +517,8 @@ export function CoachPage() {
                             max-w-[680px]
                             text-[12px]
                             leading-[1.65]
-                            text-white/45
+                            text-[var(--oc-muted)]
+                            dark:text-white/45
                           "
                         >
                           {
@@ -1828,7 +1832,7 @@ function SessionStatusBadge({
       className: (
         'border-sky-400/20 '
         + 'bg-sky-400/[0.08] '
-        + 'text-sky-300'
+        + 'text-sky-700 dark:text-sky-300'
       ),
     },
     completed: {
@@ -1836,7 +1840,7 @@ function SessionStatusBadge({
       className: (
         'border-emerald-400/20 '
         + 'bg-emerald-400/[0.08] '
-        + 'text-emerald-300'
+        + 'text-emerald-700 dark:text-emerald-300'
       ),
     },
     skipped: {
@@ -1844,7 +1848,7 @@ function SessionStatusBadge({
       className: (
         'border-slate-400/20 '
         + 'bg-[var(--oc-surface-muted)] '
-        + 'text-[var(--oc-muted-soft)]'
+        + 'text-[var(--oc-muted)] dark:text-[var(--oc-muted-soft)]'
       ),
     },
   }[status]

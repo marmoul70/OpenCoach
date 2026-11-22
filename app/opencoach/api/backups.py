@@ -8,7 +8,6 @@ import signal
 from datetime import date, datetime, timedelta
 from typing import Literal
 from uuid import UUID
-from typing import Literal
 
 from fastapi import (
     APIRouter,
@@ -108,6 +107,27 @@ def _restore_service() -> BackupRestoreService:
     )
 
 
+def _planning_profile_skip_reason(training) -> str | None:
+    """Vérifie les deux paramètres indispensables au placement hebdomadaire."""
+    available_days = training.available_days or []
+    weekly_sessions = training.weekly_sessions
+    if (
+        weekly_sessions is None
+        or weekly_sessions < 1
+        or weekly_sessions > 7
+        or not available_days
+        or any(
+            not isinstance(day, int) or day < 0 or day > 6
+            for day in available_days
+        )
+    ):
+        return (
+            "Planning non généré : renseigne le nombre de séances hebdomadaires "
+            "et au moins un jour d'entraînement valide dans le profil."
+        )
+    return None
+
+
 def _restore_training_planning(
     request: Request,
 ) -> tuple[
@@ -164,24 +184,9 @@ def _restore_training_planning(
 
         profile = SqlProfileRepository(db, user_id).get_profile()
         training = profile.training
-        available_days = training.available_days or []
-        weekly_sessions = training.weekly_sessions
-
-        if (
-            weekly_sessions is None
-            or weekly_sessions < 1
-            or weekly_sessions > 7
-            or not available_days
-            or any(
-                not isinstance(day, int) or day < 0 or day > 6
-                for day in available_days
-            )
-        ):
-            return (
-                "skipped",
-                0,
-                "Planning non généré : renseigne le nombre de séances hebdomadaires et au moins un jour d'entraînement valide dans le profil.",
-            )
+        skip_reason = _planning_profile_skip_reason(training)
+        if skip_reason is not None:
+            return ("skipped", 0, skip_reason)
 
         context_builder, generation_service = (
             build_weekly_planning_services_for_user(

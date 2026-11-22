@@ -598,17 +598,32 @@ export function TrainingDetails({
                 loading={false}
                 debrief={debrief}
               />
+            ) : session.type === 'supplementary' ? (
+              <p
+                className="
+                  text-[11.5px]
+                  leading-5
+                  text-slate-500
+                  dark:text-slate-400
+                "
+              >
+                Cette activité a été réalisée en dehors
+                de votre programme d'entraînement.
+                Aucun débriefing de séance n'est donc
+                disponible, car aucun entraînement
+                planifié n'était à évaluer.
+              </p>
             ) : (
               <p
                 className="
                   text-[11.5px]
                   leading-5
-                  text-slate-400
-                  dark:text-slate-500
+                  text-slate-500
+                  dark:text-slate-400
                 "
               >
-                Le débriefing est en cours
-                de préparation.
+                Aucun débriefing n'est disponible
+                pour cette séance.
               </p>
             )}
           </div>

@@ -9,6 +9,7 @@ on:
       - 'fix/**'
       - 'chore/**'
       - 'refactor/**'
+      - 'cleanup/**'
 
   pull_request:
     branches:
@@ -17,6 +18,7 @@ on:
       - 'feature/**'
       - 'fix/**'
       - 'chore/**'
+      - 'cleanup/**'
 
 
 jobs:
@@ -36,17 +38,12 @@ jobs:
       - name: Bash syntax check
         run: |
           bash -n scripts/bootstrap/install.sh
-          bash -n scripts/bootstrap/install-ai.sh
           bash -n scripts/bootstrap/check-environment.sh
           bash -n scripts/deploy-frontend.sh
           bash -n scripts/deploy_frontend.sh
           bash -n scripts/maintenance/check-version-consistency.sh
-          bash -n scripts/maintenance/check-ai-model-config.sh
           bash -n scripts/maintenance/shellcheck.sh
           bash -n tests/test-libraries.sh
-          bash -n tests/test-install-ai.sh
-          bash -n tests/test-install-ai-runtime.sh
-          bash -n tests/test-install-ai-flow.sh
 
       - name: ShellCheck
         run: |
@@ -55,7 +52,6 @@ jobs:
       - name: Version consistency
         run: |
           ./scripts/maintenance/check-version-consistency.sh
-          ./scripts/maintenance/check-ai-model-config.sh
 
       - name: Frontend deployment script tests
         run: |
@@ -75,9 +71,6 @@ jobs:
               apt-get install -y bash git curl ca-certificates python3
 
               ./tests/test-libraries.sh
-              bash ./tests/test-install-ai.sh
-              bash ./tests/test-install-ai-runtime.sh
-              bash ./tests/test-install-ai-flow.sh
             '
 
 

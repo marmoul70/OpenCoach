@@ -23,6 +23,9 @@ from opencoach.coaching.weekly_adaptation import (
 from opencoach.coaching.weekly_debrief import (
     build_weekly_debrief,
 )
+from opencoach.coaching.weekly_adaptation_proposal_store import (
+    WeeklyAdaptationProposalStore,
+)
 from opencoach.coaching.weekly_debrief_facts import (
     WeeklyActivityReader,
     WeeklyTrainingSessionReader,
@@ -118,6 +121,7 @@ class WeeklyDebriefClosureService:
             SessionExecutionAnalysisReader
         ),
         debrief_repository: WeeklyDebriefRepository,
+        proposal_store: WeeklyAdaptationProposalStore | None = None,
     ) -> None:
         self._session_reader = session_reader
         self._activity_reader = activity_reader
@@ -126,6 +130,7 @@ class WeeklyDebriefClosureService:
             execution_analysis_reader
         )
         self._debrief_repository = debrief_repository
+        self._proposal_store = proposal_store
 
     def execute(
         self,
@@ -234,12 +239,21 @@ class WeeklyDebriefClosureService:
             )
         )
 
-        return self._debrief_repository.save_closed(
+        # Le bilan reste persistant, mais la proposition n'est jamais
+        # enregistrée en base : elle vit uniquement dans le stockage tmp.
+        stored = self._debrief_repository.save_closed(
             athlete_profile_id,
             facts,
             debrief,
-            adaptation_payload=adaptation_payload,
+            adaptation_payload=None,
         )
+        if self._proposal_store is not None:
+            self._proposal_store.save(
+                athlete_profile_id,
+                week_start,
+                adaptation_payload,
+            )
+        return stored
 
 
 class _FrozenSessionReader:

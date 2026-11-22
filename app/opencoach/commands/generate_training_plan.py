@@ -66,15 +66,6 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="1..8",
         help="Nombre de semaines à examiner (défaut : 2).",
     )
-    parser.add_argument(
-        "--include-existing",
-        action="store_true",
-        help=(
-            "Ne pas ignorer une semaine qui contient déjà des séances "
-            "planifiées. À utiliser avec prudence : le moteur peut signaler "
-            "un conflit si des séances existent déjà."
-        ),
-    )
     return parser
 
 
@@ -105,7 +96,6 @@ def _generate_for_profile(
     user: User,
     reference_date: date,
     weeks: int,
-    include_existing: bool,
 ) -> tuple[int, int, int]:
     user_id: UUID = user.id
     profile_id: UUID = profile.id
@@ -138,7 +128,7 @@ def _generate_for_profile(
 
         print()
         print(f"Semaine du {week_start.isoformat()} au {week_end.isoformat()}")
-        if planned and not include_existing:
+        if planned:
             skipped_total += 1
             print(
                 f"[IGNORÉE] {len(planned)} séance(s) déjà planifiée(s). "
@@ -217,7 +207,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 user=user,
                 reference_date=reference_date,
                 weeks=args.weeks,
-                include_existing=args.include_existing,
             )
             generated += result[0]
             skipped += result[1]

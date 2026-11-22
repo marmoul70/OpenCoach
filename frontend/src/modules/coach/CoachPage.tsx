@@ -294,6 +294,7 @@ export function CoachPage() {
               {session ? (
                 <div
                   className="
+                    oc-today-focus-card
                     mt-6
                     overflow-hidden
                     rounded-[13px]
@@ -379,6 +380,7 @@ export function CoachPage() {
                             text-[19px]
                             font-bold
                             tracking-[-0.025em]
+                            oc-today-focus-title
                             text-white
                           "
                         >
@@ -395,6 +397,7 @@ export function CoachPage() {
                             gap-y-2
                             text-[12px]
                             font-medium
+                            oc-today-focus-muted
                             text-white/55
                           "
                         >
@@ -514,6 +517,7 @@ export function CoachPage() {
                             max-w-[680px]
                             text-[12px]
                             leading-[1.65]
+                            oc-today-focus-muted
                             text-white/45
                           "
                         >

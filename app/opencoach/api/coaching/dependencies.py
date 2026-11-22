@@ -431,6 +431,64 @@ def get_current_week_planning_service(
     )
 
 
+def build_weekly_planning_services_for_user(
+    *,
+    db: Session,
+    user_id: UUID,
+) -> tuple[
+    WeeklyPlanningContextBuilder,
+    GeneratePlannedTrainingWeekService,
+]:
+    """Assemble le pipeline hebdomadaire hors requête HTTP authentifiée.
+
+    Utilisé notamment après restauration d'une sauvegarde, lorsque
+    le profil restauré doit être planifié automatiquement.
+    """
+    training_stats_service = get_training_stats_service(db)
+    readiness_service = get_readiness_service(db)
+    recent_load_service = _build_recent_training_load_service(
+        training_stats_service
+    )
+    planning_context_service = get_planning_context_service(
+        user_id=user_id,
+        db=db,
+        readiness_service=readiness_service,
+        training_stats_service=training_stats_service,
+        recent_load_service=recent_load_service,
+    )
+    history_service = get_training_history_snapshot_service(
+        db=db,
+        training_stats_service=training_stats_service,
+    )
+    context_builder = get_weekly_planning_context_builder(
+        planning_context_service=planning_context_service,
+        history_service=history_service,
+    )
+
+    physiology_service = get_physiological_snapshot_service(db)
+    weekly_generation_service = get_weekly_training_generation_service()
+    athlete_generation_service = get_athlete_weekly_training_generation_service(
+        user_id=user_id,
+        db=db,
+        physiology_service=physiology_service,
+        generation_service=weekly_generation_service,
+    )
+    training_repository = get_training_session_repository(db)
+    persistence_service = get_weekly_training_persistence_service(
+        repository=training_repository
+    )
+    generation_and_persistence = get_generate_and_persist_training_week_service(
+        generation_service=athlete_generation_service,
+        persistence_service=persistence_service,
+    )
+    physiological_test_service = get_automatic_physiological_test_proposal_service(db)
+    planned_generation_service = get_generate_planned_training_week_service(
+        generation_service=generation_and_persistence,
+        physiological_test_service=physiological_test_service,
+    )
+    return context_builder, planned_generation_service
+
+
 def get_athlete_constraint_planning_service(
     db: Session = Depends(
         get_db

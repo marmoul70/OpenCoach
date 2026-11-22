@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -95,6 +95,9 @@ from opencoach.api.profile import (
 )
 from opencoach.coaching.manual_session_move import (
     ManualSessionMoveError,
+)
+from opencoach.coaching.weekly_adaptation_proposal_store import (
+    WeeklyAdaptationProposalStore,
 )
 from opencoach.coaching.manual_session_move_service import (
     ManualSessionMoveService,
@@ -200,6 +203,14 @@ def create_training_session(
             status_code=503,
             detail="Impossible de créer la séance.",
         ) from exc
+
+    # Une séance saisie manuellement dans la semaine vaut choix
+    # explicite de l'athlète : l'ancienne proposition devient caduque.
+    week_start = payload.date - timedelta(days=payload.date.weekday())
+    WeeklyAdaptationProposalStore().delete(
+        athlete_profile_id,
+        week_start,
+    )
 
     return to_response(
         created_session,

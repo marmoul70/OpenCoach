@@ -1128,6 +1128,10 @@ phaseLabel={
                   <p className="mt-4 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                     Cette proposition a déjà été appliquée.
                   </p>
+                ) : isWeeklyDebriefApplicationExpired(debriefWeekStart) ? (
+                  <p className="mt-4 text-sm text-[var(--oc-text-secondary)]">
+                    Cette proposition historique reste consultable, mais ne peut plus modifier un planning passé.
+                  </p>
                 ) : (
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
@@ -1275,6 +1279,12 @@ function percentageOfTarget(
   )
 }
 
+
+function isWeeklyDebriefApplicationExpired(weekStart: string): boolean {
+  const nextWeek = new Date(weekStart + 'T12:00:00')
+  nextWeek.setDate(nextWeek.getDate() + 7)
+  return formatLocalDate(nextWeek) < getCurrentWeekStart()
+}
 
 function formatDuration(seconds: number | null): string {
   if (seconds == null) return '—'

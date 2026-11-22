@@ -35,6 +35,7 @@ NEXT_WEEK_START = date(2026, 9, 7)
 class FakeStoredDebrief:
     adaptation_payload: dict | None
     planning_updated_at: datetime | None = None
+    debrief: object | None = None
 
 
 class FakeRepository:
@@ -223,6 +224,46 @@ def test_already_applied_is_idempotent() -> None:
 
     assert planner.calls == []
     assert repository.mark_calls == []
+
+
+def test_rebuilds_adaptation_from_persisted_debrief_without_payload() -> None:
+    facts = WeeklyDebriefFacts(
+        week_start=WEEK_START,
+        week_end=date(2026, 9, 6),
+        planned_sessions=4,
+        completed_sessions=4,
+        skipped_sessions=0,
+        supplementary_sessions=0,
+        planned_duration_minutes=240,
+        actual_duration_minutes=240,
+        planned_load=300.0,
+        actual_load=300.0,
+        key_sessions_planned=1,
+        key_sessions_completed=1,
+        compliant_intensity_sessions=1,
+        analyzed_intensity_sessions=1,
+        history_confidence=1.0,
+    )
+    stored = FakeStoredDebrief(
+        adaptation_payload=None,
+        debrief=build_weekly_debrief(facts),
+    )
+    repository = FakeRepository(stored=stored)
+    planner = FakePlanningService()
+    service = WeeklyDebriefPlanningApplicationService(
+        debrief_repository=repository,
+        planning_service=planner,
+    )
+
+    result = service.execute(
+        athlete_profile_id=uuid4(),
+        closed_week_start=WEEK_START,
+        planning_input=object(),
+    )
+
+    assert result.already_applied is False
+    assert len(planner.calls) == 1
+    assert planner.calls[0]["weekly_adaptation"] == _decision()
 
 
 def test_applies_persisted_adaptation_then_marks() -> None:

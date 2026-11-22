@@ -270,7 +270,6 @@ export function SidePanel({
           (
             'absolute inset-0 '
             + 'bg-slate-950/15 '
-            + 'backdrop-blur-[1px] '
             + 'transition-opacity '
             + 'duration-[280ms] '
             + 'dark:bg-black/30'
@@ -288,8 +287,6 @@ export function SidePanel({
             'absolute inset-y-0 right-0 '
             + 'h-[100dvh] max-h-[100dvh] '
             + 'flex w-full flex-col '
-            + 'pt-[env(safe-area-inset-top)] '
-            + 'pb-[env(safe-area-inset-bottom)] '
             + 'oc-panel-surface '
             + 'md:w-[max(36vw,460px)] '
             + 'md:min-w-[max(36vw,460px)] '
@@ -308,9 +305,11 @@ export function SidePanel({
           className="
             oc-panel-header
             flex
-            min-h-[52px]
+            min-h-[calc(52px+env(safe-area-inset-top))]
             shrink-0
+            pt-[env(safe-area-inset-top)]
             sm:min-h-[58px]
+            sm:pt-0
             items-center
             justify-between
             gap-3
@@ -403,9 +402,10 @@ export function SidePanel({
             overscroll-contain
             [touch-action:pan-y]
             [webkit-overflow-scrolling:touch]
+            pb-[calc(0.75rem+env(safe-area-inset-bottom))]
 
             px-3
-            py-3
+            pt-3
 
             sm:px-4
             sm:py-4

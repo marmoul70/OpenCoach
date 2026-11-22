@@ -213,6 +213,7 @@ export function TrainingDetails({
   }, [
     session.id,
     session.status,
+    session.type,
   ])
 
 

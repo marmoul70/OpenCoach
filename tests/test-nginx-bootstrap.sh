@@ -59,6 +59,12 @@ check_nginx_proxy() {
 }
 
 
+check_nginx_api_upload_limit() {
+    grep -A 5 -F 'location /api/ {' "$NGINX_CONFIG" \
+        | grep -Fq 'client_max_body_size 100m;'
+}
+
+
 check_nginx_spa_fallback() {
     grep -Fq \
         "try_files \$uri \$uri/ /index.html;" \
@@ -69,6 +75,7 @@ check_nginx_spa_fallback() {
 check_nginx_current_release_root() {
     grep -Fq 'root /var/www/opencoach/current;' "$NGINX_CONFIG"
 }
+
 
 check_bootstrap_preserves_releases() {
     ! grep -Fq 'rm -rf' "$INSTALL_SERVICES" \
@@ -101,6 +108,10 @@ check \
 check \
     "Nginx proxifie /api vers FastAPI" \
     check_nginx_proxy
+
+check \
+    "Nginx autorise les sauvegardes jusqu'à 100 Mio sur l'API" \
+    check_nginx_api_upload_limit
 
 check \
     "Nginx supporte le fallback SPA" \

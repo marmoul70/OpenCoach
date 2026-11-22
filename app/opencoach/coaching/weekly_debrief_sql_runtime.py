@@ -19,6 +19,9 @@ from sqlalchemy.orm import Session
 from opencoach.coaching.weekly_debrief_closure import (
     WeeklyDebriefClosureService,
 )
+from opencoach.coaching.weekly_adaptation_proposal_store import (
+    WeeklyAdaptationProposalStore,
+)
 from opencoach.coaching.weekly_debrief_runtime_context import (
     WeeklyDebriefRuntimeFacts,
     build_weekly_debrief_runtime_facts,
@@ -109,6 +112,9 @@ class SqlWeeklyDebriefRuntime:
                 database
             )
         )
+        self.weekly_adaptation_proposals = (
+            WeeklyAdaptationProposalStore()
+        )
 
     def active_profile_ids(
         self,
@@ -154,5 +160,8 @@ class SqlWeeklyDebriefRuntime:
             ),
             debrief_repository=(
                 self.weekly_debriefs
+            ),
+            proposal_store=(
+                self.weekly_adaptation_proposals
             ),
         )

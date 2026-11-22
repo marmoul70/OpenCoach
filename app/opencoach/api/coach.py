@@ -27,6 +27,10 @@ from opencoach.database.repositories.sql_weekly_debrief import (
 from opencoach.database.repositories.sql_activity_detail import (
     SqlActivityDetailRepository,
 )
+from opencoach.database.repositories.sql_coros_daily_data import (
+    SqlCorosDailyDataRepository,
+)
+from opencoach.recovery_assessment import aggregate_coros_time_series
 
 from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
@@ -428,6 +432,16 @@ def get_weekly_debrief(
         stored.facts.week_start,
         stored.facts.week_end,
     )
+    coros_snapshots = SqlCorosDailyDataRepository(db).list_time_series_snapshots(
+        athlete_profile_id,
+        stored.facts.week_start,
+        stored.facts.week_end,
+    )
+    coros_time_series = aggregate_coros_time_series(
+        coros_snapshots,
+        start_date=stored.facts.week_start,
+        end_date=stored.facts.week_end,
+    )
     wellness_payload = [
         {
             "date": day.date.isoformat(),
@@ -514,6 +528,7 @@ def get_weekly_debrief(
         ),
         "heart_rate_activities": heart_rate_activities,
         "wellness_days": wellness_payload,
+        "coros_time_series": _weekly_debrief_json(coros_time_series),
         "generated_at": stored.generated_at.isoformat(),
         "planning_updated": (
             stored.planning_updated_at is not None

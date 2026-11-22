@@ -39,6 +39,9 @@ export interface BackupRestoreResult {
   safetyBackupFilename: string
   importedRevision: string
   environmentRestored: boolean
+  planningStatus: 'generated' | 'already_present' | 'skipped' | 'failed'
+  planningSessionCount: number
+  planningMessage?: string
 }
 
 
@@ -47,6 +50,9 @@ interface ApiBackupRestoreResult {
   safety_backup_filename: string
   imported_revision: string
   environment_restored?: boolean
+  planning_status?: 'generated' | 'already_present' | 'skipped' | 'failed'
+  planning_session_count?: number
+  planning_message?: string | null
 }
 
 
@@ -70,6 +76,9 @@ function restoreFromApi(
       result.safety_backup_filename,
     importedRevision: result.imported_revision,
     environmentRestored: result.environment_restored ?? false,
+    planningStatus: result.planning_status ?? 'skipped',
+    planningSessionCount: result.planning_session_count ?? 0,
+    planningMessage: result.planning_message ?? undefined,
   }
 }
 

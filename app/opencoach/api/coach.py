@@ -24,6 +24,9 @@ from opencoach.database.repositories.sql_weekly_training_plan import (
 from opencoach.database.repositories.sql_weekly_debrief import (
     SqlWeeklyDebriefRepository,
 )
+from opencoach.database.repositories.sql_activity_detail import (
+    SqlActivityDetailRepository,
+)
 
 from opencoach.authentication.dependencies import (
     get_current_athlete_profile_id,
@@ -344,7 +347,55 @@ def list_weekly_debriefs(limit: int = 26, athlete_profile_id: UUID = Depends(get
 def get_weekly_debrief(week_start: date, athlete_profile_id: UUID = Depends(get_current_athlete_profile_id), db: Session = Depends(get_db)) -> dict:
     stored = SqlWeeklyDebriefRepository(db).get_for_week(athlete_profile_id, week_start)
     if stored is None: raise HTTPException(status_code=404, detail='Aucun bilan pour cette semaine.')
-    return {'id': str(stored.id), 'facts': _weekly_debrief_json(stored.facts), 'debrief': _weekly_debrief_json(stored.debrief), 'adaptation': _weekly_debrief_json(build_weekly_adaptation_decision(stored.debrief)), 'generated_at': stored.generated_at.isoformat(), 'planning_updated': stored.planning_updated_at is not None}
+    activities = SqlActivityRepository(db).list_activities_between(
+        athlete_profile_id,
+        stored.facts.week_start,
+        stored.facts.week_end,
+    )
+    detail_repository = SqlActivityDetailRepository(db)
+    heart_rate_activities = []
+    for activity in activities:
+        if activity.id is None:
+            continue
+        detail = detail_repository.get_activity_detail(
+            athlete_profile_id,
+            activity.id,
+        )
+        if detail is None or detail.streams.heartrate is None:
+            continue
+        heart_rates = list(detail.streams.heartrate.data)
+        times = (
+            list(detail.streams.time.data)
+            if detail.streams.time is not None
+            else list(range(len(heart_rates)))
+        )
+        paired = [
+            {"time_seconds": times[index], "bpm": heart_rates[index]}
+            for index in range(min(len(times), len(heart_rates)))
+        ]
+        if not paired:
+            continue
+        heart_rate_activities.append({
+            "activity_name": activity.name,
+            "started_at": (
+                activity.start_at_local.isoformat()
+                if activity.start_at_local is not None
+                else activity.start_at.isoformat()
+            ),
+            "average_bpm": activity.average_heart_rate,
+            "maximum_bpm": activity.max_heart_rate,
+            "sample_count": len(paired),
+            "samples": paired,
+        })
+    return {
+        "id": str(stored.id),
+        "facts": _weekly_debrief_json(stored.facts),
+        "debrief": _weekly_debrief_json(stored.debrief),
+        "adaptation": _weekly_debrief_json(build_weekly_adaptation_decision(stored.debrief)),
+        "heart_rate_activities": heart_rate_activities,
+        "generated_at": stored.generated_at.isoformat(),
+        "planning_updated": stored.planning_updated_at is not None,
+    }
 
 @router.post('/weekly-debrief/apply')
 def apply_weekly_debrief_adaptation(week_start: date, athlete_profile_id: UUID = Depends(get_current_athlete_profile_id), context_builder: WeeklyPlanningContextBuilder = Depends(get_weekly_planning_context_builder), planning_service=Depends(get_generate_planned_training_week_service), db: Session = Depends(get_db)) -> dict:

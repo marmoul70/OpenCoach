@@ -1,4 +1,19 @@
 export interface WeeklyDebriefHistory {
+  coros_time_series: Array<{
+    metric: string
+    unit: string | null
+    current: number
+    average: number
+    median: number
+    minimum: number
+    maximum: number
+    sample_count: number
+    coverage_days: number
+    first_measured_at: string
+    last_measured_at: string
+    statuses: string[]
+    source_categories: string[]
+  }>
   wellness_days: Array<{
     date: string
     provider: string

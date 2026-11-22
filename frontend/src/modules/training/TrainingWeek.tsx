@@ -14,6 +14,13 @@ import {
 import {
   fetchTrainingStats,
 } from '../../core/training/api'
+import {
+  applyWeeklyDebrief,
+  fetchWeeklyDebrief,
+} from './weeklyDebriefApi'
+import type {
+  WeeklyDebriefHistory,
+} from './weeklyDebriefApi'
 
 import {
   AddTrainingSessionModal,
@@ -243,6 +250,65 @@ export function TrainingWeek() {
     }
   }, [])
 
+
+  const [
+    weeklyDebrief,
+    setWeeklyDebrief,
+  ] = useState<WeeklyDebriefHistory | null>(null)
+
+  const [
+    weeklyDebriefOpen,
+    setWeeklyDebriefOpen,
+  ] = useState(false)
+
+  const [
+    weeklyDebriefLoading,
+    setWeeklyDebriefLoading,
+  ] = useState(false)
+
+  const [
+    weeklyDebriefError,
+    setWeeklyDebriefError,
+  ] = useState<string | null>(null)
+
+  const [
+    applyingWeeklyDebrief,
+    setApplyingWeeklyDebrief,
+  ] = useState(false)
+
+  async function openWeeklyDebrief() {
+    setWeeklyDebriefOpen(true)
+    setWeeklyDebriefLoading(true)
+    setWeeklyDebriefError(null)
+    setWeeklyDebrief(null)
+    try {
+      const result = await fetchWeeklyDebrief(weekStart)
+      setWeeklyDebrief(result)
+    } catch (reason) {
+      setWeeklyDebriefError(
+        reason instanceof Error ? reason.message : 'Impossible de charger le bilan.',
+      )
+    } finally {
+      setWeeklyDebriefLoading(false)
+    }
+  }
+
+  async function confirmWeeklyAdaptation() {
+    setApplyingWeeklyDebrief(true)
+    setWeeklyDebriefError(null)
+    try {
+      await applyWeeklyDebrief(weekStart)
+      const refreshed = await fetchWeeklyDebrief(weekStart)
+      setWeeklyDebrief(refreshed)
+      await loadWeeklyStats()
+    } catch (reason) {
+      setWeeklyDebriefError(
+        reason instanceof Error ? reason.message : 'Impossible d’appliquer la proposition.',
+      )
+    } finally {
+      setApplyingWeeklyDebrief(false)
+    }
+  }
 
   const [
     selectedSessionId,
@@ -737,6 +803,15 @@ phaseLabel={
           }
         />
 
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => void openWeeklyDebrief()}
+            className="rounded-lg border border-[var(--oc-border)] bg-[var(--oc-surface)] px-3 py-2 text-sm font-semibold text-[var(--oc-text)] hover:bg-[var(--oc-surface-hover)]"
+          >
+            Voir le bilan de cette semaine
+          </button>
+        </div>
 
         {statsError && (
           <div
@@ -791,6 +866,113 @@ phaseLabel={
         </section>
       </div>
 
+
+      {weeklyDebriefOpen && (
+        <SidePanel
+          title="Bilan hebdomadaire"
+          eyebrow="Historique du coaching"
+          open
+          onClose={() => setWeeklyDebriefOpen(false)}
+        >
+          {weeklyDebriefLoading && (
+            <p className="text-sm text-[var(--oc-text-secondary)]">Chargement du bilan…</p>
+          )}
+
+          {weeklyDebriefError && (
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] p-3 text-sm text-amber-700 dark:text-amber-300">
+              {weeklyDebriefError}
+            </div>
+          )}
+
+          {weeklyDebrief && (
+            <div className="space-y-4 text-sm">
+              <section className="rounded-xl border border-[var(--oc-border)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--oc-text-secondary)]">
+                  {weeklyDebrief.debrief.week_start} au {weeklyDebrief.debrief.week_end}
+                </p>
+                <h3 className="mt-2 text-base font-semibold text-[var(--oc-text)]">
+                  {weeklyDebrief.debrief.headline}
+                </h3>
+                <p className="mt-2 text-[var(--oc-text-secondary)]">
+                  {weeklyDebrief.debrief.analysis}
+                </p>
+                <p className="mt-3 font-semibold">
+                  Score global : {weeklyDebrief.debrief.overall_score ?? 'Non calculable'}
+                  {weeklyDebrief.debrief.overall_score !== null ? ' / 100' : ''}
+                </p>
+              </section>
+
+              <section className="rounded-xl border border-[var(--oc-border)] p-4">
+                <h3 className="font-semibold">Indicateurs de la semaine</h3>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <Metric label="Séances prévues" value={weeklyDebrief.facts.planned_sessions} />
+                  <Metric label="Séances réalisées" value={weeklyDebrief.facts.completed_sessions} />
+                  <Metric label="Durée prévue" value={weeklyDebrief.facts.planned_duration_minutes != null ? `${weeklyDebrief.facts.planned_duration_minutes} min` : '—'} />
+                  <Metric label="Durée réalisée" value={weeklyDebrief.facts.actual_duration_minutes != null ? `${weeklyDebrief.facts.actual_duration_minutes} min` : '—'} />
+                  <Metric label="Charge prévue" value={weeklyDebrief.facts.planned_load} />
+                  <Metric label="Charge réalisée" value={weeklyDebrief.facts.actual_load} />
+                  <Metric label="Séances prioritaires prévues" value={weeklyDebrief.facts.key_sessions_planned} />
+                  <Metric label="Séances prioritaires réalisées" value={weeklyDebrief.facts.key_sessions_completed} />
+                </div>
+              </section>
+
+              {weeklyDebrief.debrief.strengths.length > 0 && (
+                <section>
+                  <h3 className="font-semibold">Points positifs</h3>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-[var(--oc-text-secondary)]">
+                    {weeklyDebrief.debrief.strengths.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </section>
+              )}
+
+              {weeklyDebrief.debrief.warnings.length > 0 && (
+                <section>
+                  <h3 className="font-semibold">Points de vigilance</h3>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-[var(--oc-text-secondary)]">
+                    {weeklyDebrief.debrief.warnings.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </section>
+              )}
+
+              <section className="rounded-xl border border-[var(--oc-border)] p-4">
+                <h3 className="font-semibold">Proposition du coach</h3>
+                <p className="mt-2 font-semibold">{weeklyDebrief.adaptation.direction}</p>
+                <p className="mt-1 text-[var(--oc-text-secondary)]">{weeklyDebrief.adaptation.reason}</p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <Metric label="Facteur de charge" value={weeklyDebrief.adaptation.load_factor} />
+                  <Metric label="Facteur de volume" value={weeklyDebrief.adaptation.volume_factor} />
+                </div>
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-[var(--oc-text-secondary)]">
+                  {weeklyDebrief.adaptation.guardrails.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+                {weeklyDebrief.planning_updated ? (
+                  <p className="mt-4 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    Cette proposition a déjà été appliquée.
+                  </p>
+                ) : (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={applyingWeeklyDebrief}
+                      onClick={() => void confirmWeeklyAdaptation()}
+                      className="rounded-lg bg-emerald-600 px-3 py-2 font-semibold text-white disabled:opacity-50"
+                    >
+                      {applyingWeeklyDebrief ? 'Application…' : 'Appliquer la proposition'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWeeklyDebriefOpen(false)}
+                      className="rounded-lg border border-[var(--oc-border)] px-3 py-2 font-semibold"
+                    >
+                      Conserver mon planning
+                    </button>
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+        </SidePanel>
+      )}
 
       {selectedSession && (
         <SidePanel
@@ -911,5 +1093,15 @@ function percentageOfTarget(
     value
     / target
     * 100
+  )
+}
+
+
+function Metric({ label, value }: { label: string; value: unknown }) {
+  return (
+    <div>
+      <p className="text-xs text-[var(--oc-text-secondary)]">{label}</p>
+      <p className="mt-1 font-semibold text-[var(--oc-text)]">{value == null ? '—' : String(value)}</p>
+    </div>
   )
 }

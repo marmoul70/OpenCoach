@@ -226,12 +226,12 @@ export function CoachTodayWidget({
       coach,
     )
 
-  const signalCount =
-    countUniqueSignals(
-      readiness.signals,
-      readiness.warningCount + readiness.criticalCount,
-      recentLoadAssessment,
-    )
+  const signalCount = (
+    readiness.signals.filter(
+      signal => signal.level !== 'normal',
+    ).length
+    + (recentLoadAssessment?.signals.length ?? 0)
+  )
 
   const readinessTrend =
     resolveReadinessTrend(
@@ -996,62 +996,6 @@ function getReadinessPresentation(
   }
 }
 
-
-function countUniqueSignals(
-  readinessSignals: Array<{
-    metric: string
-    level: string
-    reason: string
-  }>,
-  readinessSignalCount: number,
-  loadAssessment: {
-    hasWarning: boolean
-    hasCritical: boolean
-    hasOverload: boolean
-    hasBrokenRest: boolean
-    signals: Array<{
-      kind: string
-      level: string
-      reason: string
-    }>
-  } | null,
-): number {
-  const reasons = new Set<string>()
-  const loadSignals = loadAssessment?.signals ?? []
-
-  for (const signal of [
-    ...readinessSignals,
-    ...loadSignals,
-  ]) {
-    const normalizedReason =
-      signal.reason
-        .trim()
-        .replace(/\s+/g, ' ')
-        .toLocaleLowerCase('fr-FR')
-
-    if (normalizedReason) {
-      reasons.add(normalizedReason)
-    }
-  }
-
-  const hasUndescribedLoadAlert = (
-    loadSignals.length === 0
-    && (
-      loadAssessment?.hasWarning
-      || loadAssessment?.hasCritical
-      || loadAssessment?.hasOverload
-      || loadAssessment?.hasBrokenRest
-    )
-  )
-
-  return (
-    Math.max(
-      reasons.size,
-      readinessSignalCount,
-    )
-    + Number(Boolean(hasUndescribedLoadAlert))
-  )
-}
 
 function buildCoachGuidance(
   coach: {

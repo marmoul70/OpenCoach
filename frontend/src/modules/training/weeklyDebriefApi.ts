@@ -1,3 +1,26 @@
+export interface WeeklyDebriefListItem {
+  week_start: string
+  week_end: string
+  verdict: string
+  overall_score: number | null
+  planning_updated: boolean
+}
+
+export async function fetchWeeklyDebriefHistory(
+  limit = 26,
+): Promise<WeeklyDebriefListItem[]> {
+  const params = new URLSearchParams({ limit: String(limit) })
+  const response = await fetch(
+    `/api/coach/weekly-debriefs?${params.toString()}`,
+  )
+  if (!response.ok) {
+    throw new Error(
+      `Impossible de charger l’historique des bilans (${response.status}).`,
+    )
+  }
+  return await response.json() as WeeklyDebriefListItem[]
+}
+
 export interface WeeklyDebriefHistory {
   coros_time_series: Array<{
     metric: string

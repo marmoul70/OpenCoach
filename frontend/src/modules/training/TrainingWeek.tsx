@@ -18,9 +18,11 @@ import {
 import {
   applyWeeklyDebrief,
   fetchWeeklyDebrief,
+  fetchWeeklyDebriefHistory,
 } from './weeklyDebriefApi'
 import type {
   WeeklyDebriefHistory,
+  WeeklyDebriefListItem,
 } from './weeklyDebriefApi'
 
 import {
@@ -257,6 +259,10 @@ export function TrainingWeek() {
     setWeeklyDebrief,
   ] = useState<WeeklyDebriefHistory | null>(null)
 
+  const [debriefWeekStart, setDebriefWeekStart] = useState(weekStart)
+  const [debriefHistory, setDebriefHistory] = useState<WeeklyDebriefListItem[]>([])
+  const [debriefHistoryLoading, setDebriefHistoryLoading] = useState(false)
+
   const [
     weeklyDebriefOpen,
     setWeeklyDebriefOpen,
@@ -282,20 +288,27 @@ export function TrainingWeek() {
   useEffect(() => {
     weeklyDebriefRequestId.current += 1
     setWeeklyDebriefOpen(false)
+    setDebriefWeekStart(weekStart)
     setWeeklyDebrief(null)
     setWeeklyDebriefError(null)
     setWeeklyDebriefLoading(false)
     setApplyingWeeklyDebrief(false)
   }, [weekStart])
 
-  async function openWeeklyDebrief() {
+  async function openWeeklyDebrief(targetWeekStart = weekStart) {
     const requestId = ++weeklyDebriefRequestId.current
+    setDebriefWeekStart(targetWeekStart)
     setWeeklyDebriefOpen(true)
+    setDebriefHistoryLoading(true)
+    void fetchWeeklyDebriefHistory(52)
+      .then((items) => setDebriefHistory(items))
+      .catch(() => setDebriefHistory([]))
+      .finally(() => setDebriefHistoryLoading(false))
     setWeeklyDebriefLoading(true)
     setWeeklyDebriefError(null)
     setWeeklyDebrief(null)
     try {
-      const result = await fetchWeeklyDebrief(weekStart)
+      const result = await fetchWeeklyDebrief(targetWeekStart)
       if (requestId === weeklyDebriefRequestId.current) {
         setWeeklyDebrief(result)
       }
@@ -313,7 +326,7 @@ export function TrainingWeek() {
   }
 
   async function confirmWeeklyAdaptation() {
-    const appliedWeekStart = weekStart
+    const appliedWeekStart = debriefWeekStart
     const requestId = weeklyDebriefRequestId.current
     setApplyingWeeklyDebrief(true)
     setWeeklyDebriefError(null)
@@ -901,6 +914,33 @@ phaseLabel={
           open
           onClose={() => setWeeklyDebriefOpen(false)}
         >
+          <section className="rounded-xl border border-[var(--oc-border)] p-3">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-semibold">Bilans enregistrés</h3>
+              {debriefHistoryLoading && <span className="text-xs text-[var(--oc-text-secondary)]">Actualisation…</span>}
+            </div>
+            {debriefHistory.length === 0 ? (
+              <p className="mt-2 text-xs text-[var(--oc-text-secondary)]">Aucun autre bilan enregistré dans l’historique disponible.</p>
+            ) : (
+              <div className="mt-2 max-h-48 space-y-1 overflow-y-auto">
+                {debriefHistory.map((item) => (
+                  <button
+                    key={item.week_start}
+                    type="button"
+                    onClick={() => void openWeeklyDebrief(item.week_start)}
+                    className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm ${debriefWeekStart === item.week_start ? 'bg-[var(--oc-surface-muted)] font-semibold' : 'hover:bg-[var(--oc-surface-muted)]'}`}
+                  >
+                    <span>{item.week_start} au {item.week_end}</span>
+                    <span className="shrink-0 text-xs text-[var(--oc-text-secondary)]">
+                      {item.overall_score == null ? '—' : `${item.overall_score}/100`}
+                      {item.planning_updated ? ' · appliqué' : ''}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+
           {weeklyDebriefLoading && (
             <p className="text-sm text-[var(--oc-text-secondary)]">Chargement du bilan…</p>
           )}

@@ -27,6 +27,9 @@ from uuid import UUID
 from opencoach.coaching.weekly_adaptation import (
     WeeklyAdaptationDecision,
 )
+from opencoach.coaching.weekly_adaptation_proposal_store import (
+    WeeklyAdaptationProposalStore,
+)
 from opencoach.database.repositories.weekly_debrief import (
     StoredWeeklyDebrief,
 )
@@ -273,6 +276,7 @@ class WeeklyDebriefPlanningApplicationService:
         workout_sync_service: (
             WeeklyWorkoutSyncService | None
         ) = None,
+        proposal_store: WeeklyAdaptationProposalStore | None = None,
     ) -> None:
         if (
             planning_service is None
@@ -291,6 +295,7 @@ class WeeklyDebriefPlanningApplicationService:
         self._workout_sync_service = (
             workout_sync_service
         )
+        self._proposal_store = proposal_store
 
     def execute(
         self,
@@ -325,7 +330,14 @@ class WeeklyDebriefPlanningApplicationService:
                 already_applied=True,
             )
 
-        payload = stored.adaptation_payload
+        payload = (
+            self._proposal_store.get(
+                athlete_profile_id,
+                closed_week_start,
+            )
+            if self._proposal_store is not None
+            else stored.adaptation_payload
+        )
 
         if payload is None:
             raise WeeklyAdaptationPayloadError(
@@ -388,6 +400,12 @@ class WeeklyDebriefPlanningApplicationService:
             raise WeeklyPlanningApplicationError(
                 "Le planning a été généré mais "
                 "planning_updated_at n'a pas pu être persisté."
+            )
+
+        if self._proposal_store is not None:
+            self._proposal_store.delete(
+                athlete_profile_id,
+                closed_week_start,
             )
 
         self._sync_next_week_best_effort(

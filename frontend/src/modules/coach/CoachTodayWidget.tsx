@@ -221,20 +221,16 @@ export function CoachTodayWidget({
   const session =
     todayItem?.session ?? null
 
-  const summary =
-    buildWeeklySummary(
-      recentLoadAssessment,
-    )
-
   const guidance =
     buildCoachGuidance(
       coach,
     )
 
-  const signalCount = (
-    readiness.warningCount
-    + readiness.criticalCount
-  )
+  const signalCount =
+    countUniqueSignals(
+      readiness.signals,
+      recentLoadAssessment?.signals ?? [],
+    )
 
   const readinessTrend =
     resolveReadinessTrend(
@@ -369,7 +365,7 @@ export function CoachTodayWidget({
                 dark:text-white
               "
             >
-              {summary.title}
+              {readinessPresentation.title}
             </h3>
 
             <p
@@ -932,6 +928,7 @@ function getReadinessPresentation(
   } | null,
 ): {
   label: string
+  title: string
   badgeClass: string
 } {
   if (
@@ -939,8 +936,8 @@ function getReadinessPresentation(
     || score < 50
   ) {
     return {
-      label:
-        'Récupération prioritaire',
+      label: 'Récupération prioritaire',
+      title: 'Récupération prioritaire',
       badgeClass:
         (
           'bg-red-50 '
@@ -953,8 +950,8 @@ function getReadinessPresentation(
 
   if (loadAssessment?.hasCritical) {
     return {
-      label:
-        'Charge critique',
+      label: 'Charge critique',
+      title: 'Charge critique détectée',
       badgeClass:
         (
           'bg-red-50 '
@@ -973,8 +970,8 @@ function getReadinessPresentation(
     || loadAssessment?.hasBrokenRest
   ) {
     return {
-      label:
-        'À surveiller',
+      label: 'À surveiller',
+      title: 'Semaine à surveiller',
       badgeClass:
         (
           'bg-amber-50 '
@@ -986,8 +983,8 @@ function getReadinessPresentation(
   }
 
   return {
-    label:
-      'Prêt à s’entraîner',
+    label: 'Prêt à s’entraîner',
+    title: 'Semaine sous contrôle',
     badgeClass:
       (
         'bg-emerald-50 '
@@ -999,61 +996,37 @@ function getReadinessPresentation(
 }
 
 
-function buildWeeklySummary(
-  assessment: {
-    hasWarning: boolean
-    hasCritical: boolean
-    hasOverload: boolean
-    hasBrokenRest: boolean
-  } | null,
-): {
-  title: string
-  level:
-    | 'good'
-    | 'warning'
-    | 'info'
-} {
-  if (!assessment) {
-    return {
-      title:
-        'Semaine en cours',
-      level:
-        'info',
+function countUniqueSignals(
+  readinessSignals: Array<{
+    metric: string
+    level: string
+    reason: string
+  }>,
+  loadSignals: Array<{
+    kind: string
+    level: string
+    reason: string
+  }>,
+): number {
+  const reasons = new Set<string>()
+
+  for (const signal of [
+    ...readinessSignals,
+    ...loadSignals,
+  ]) {
+    const normalizedReason =
+      signal.reason
+        .trim()
+        .replace(/\\s+/g, ' ')
+        .toLocaleLowerCase('fr-FR')
+
+    if (normalizedReason) {
+      reasons.add(normalizedReason)
     }
   }
 
-  if (
-    assessment.hasCritical
-  ) {
-    return {
-      title:
-        'Semaine à surveiller',
-      level:
-        'warning',
-    }
-  }
-
-  if (
-    assessment.hasWarning
-    || assessment.hasOverload
-    || assessment.hasBrokenRest
-  ) {
-    return {
-      title:
-        'Quelques points à surveiller',
-      level:
-        'warning',
-    }
-  }
-
-  return {
-    title:
-      'Semaine sous contrôle',
-    level:
-      'good',
-  }
+  return reasons.size
 }
-
 
 function buildCoachGuidance(
   coach: {

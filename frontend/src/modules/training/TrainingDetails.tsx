@@ -270,7 +270,8 @@ export function TrainingDetails({
 
   useEffect(() => {
     if (
-      session.status !== 'completed'
+      session.status !== 'completed' ||
+      session.type === 'supplementary'
     ) {
       setDebrief(null)
       setLoadingDebrief(false)
@@ -312,6 +313,7 @@ export function TrainingDetails({
   }, [
     session.id,
     session.status,
+    session.type,
   ])
 
 

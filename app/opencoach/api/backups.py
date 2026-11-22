@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import signal
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
+from typing import Literal
+from uuid import UUID
 from typing import Literal
 
 from fastapi import (
@@ -30,6 +33,12 @@ from opencoach.database.session import (
     engine,
 )
 from opencoach.database.models.user import User
+from opencoach.database.models.athlete_profile import AthleteProfile as AthleteProfileModel
+from opencoach.database.repositories.sql_profile import SqlProfileRepository
+from opencoach.database.repositories import SqlTrainingSessionRepository
+from opencoach.api.coaching.dependencies import (
+    build_weekly_planning_services_for_user,
+)
 from sqlalchemy import select
 
 
@@ -39,6 +48,9 @@ router = APIRouter(
         "backups",
     ],
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 STATUS_PATH = (
@@ -72,6 +84,14 @@ class BackupRestoreResponse(BaseModel):
     safety_backup_filename: str
     imported_revision: str
     environment_restored: bool = False
+    planning_status: Literal[
+        "generated",
+        "already_present",
+        "skipped",
+        "failed",
+    ] = "skipped"
+    planning_session_count: int = 0
+    planning_message: str | None = None
 
 
 def _restart_backend_after_response() -> None:
@@ -86,6 +106,162 @@ def _restore_service() -> BackupRestoreService:
     return BackupRestoreService(
         backup_service=_service()
     )
+
+
+def _restore_training_planning(
+    request: Request,
+) -> tuple[
+    Literal["generated", "already_present", "skipped", "failed"],
+    int,
+    str,
+]:
+    """Reconstruit les semaines absentes après restauration, si le profil le permet.
+
+    La restauration des données reste acquise même si le profil ne permet
+    pas de planifier ou si le moteur de génération rencontre une erreur.
+    """
+    db = SessionLocal()
+    try:
+        raw_user_id = getattr(request.state, "user_id", None)
+        user_id = None
+        if raw_user_id:
+            try:
+                candidate = UUID(str(raw_user_id))
+                if db.scalar(
+                    select(AthleteProfileModel.id).where(
+                        AthleteProfileModel.user_id == candidate
+                    )
+                ) is not None:
+                    user_id = candidate
+            except (TypeError, ValueError):
+                user_id = None
+
+        if user_id is None:
+            restored_user_ids = set(
+                db.scalars(
+                    select(AthleteProfileModel.user_id)
+                ).all()
+            )
+            if len(restored_user_ids) != 1:
+                return (
+                    "skipped",
+                    0,
+                    "Planning non généré : impossible d'identifier un profil athlète unique.",
+                )
+            user_id = next(iter(restored_user_ids))
+
+        profile_id = db.scalar(
+            select(AthleteProfileModel.id).where(
+                AthleteProfileModel.user_id == user_id
+            )
+        )
+        if profile_id is None:
+            return (
+                "skipped",
+                0,
+                "Planning non généré : aucun profil athlète n'est présent dans la sauvegarde.",
+            )
+
+        profile = SqlProfileRepository(db, user_id).get_profile()
+        training = profile.training
+        available_days = training.available_days or []
+        weekly_sessions = training.weekly_sessions
+
+        if (
+            weekly_sessions is None
+            or weekly_sessions < 1
+            or weekly_sessions > 7
+            or not available_days
+            or any(
+                not isinstance(day, int) or day < 0 or day > 6
+                for day in available_days
+            )
+        ):
+            return (
+                "skipped",
+                0,
+                "Planning non généré : renseigne le nombre de séances hebdomadaires et au moins un jour d'entraînement valide dans le profil.",
+            )
+
+        context_builder, generation_service = (
+            build_weekly_planning_services_for_user(
+                db=db,
+                user_id=user_id,
+            )
+        )
+        training_repository = SqlTrainingSessionRepository(db)
+
+        today = date.today()
+        current_monday = today - timedelta(days=today.weekday())
+        target_weeks = (
+            current_monday,
+            current_monday + timedelta(days=7),
+        )
+
+        generated_count = 0
+        already_planned_weeks = 0
+
+        for week_start in target_weeks:
+            week_end = week_start + timedelta(days=6)
+            existing_sessions = training_repository.list_sessions_between(
+                profile_id,
+                week_start,
+                week_end,
+            )
+            if any(
+                session.status == "planned"
+                for session in existing_sessions
+            ):
+                already_planned_weeks += 1
+                continue
+
+            planning_date = max(today, week_start)
+            prepared = context_builder.build(
+                athlete_profile_id=profile_id,
+                planning_date=planning_date,
+                trajectory_start_date=current_monday,
+            )
+            result = generation_service.execute(
+                athlete_profile_id=profile_id,
+                planning_input=prepared.planning_input,
+                physiological_reference_date=planning_date,
+                sport_disciplines=prepared.sport_disciplines,
+                reconcile_from_date=planning_date,
+                additional_context=(
+                    "Planning reconstruit automatiquement après restauration d'une sauvegarde.",
+                ),
+            )
+            generated_count += result.session_count
+
+        if generated_count:
+            return (
+                "generated",
+                generated_count,
+                f"Planning reconstruit après restauration : {generated_count} séance(s) créée(s) sur les deux semaines à venir.",
+            )
+        if already_planned_weeks:
+            return (
+                "already_present",
+                0,
+                "Aucune reconstruction nécessaire : des séances planifiées sont déjà présentes dans la période contrôlée.",
+            )
+        return (
+            "skipped",
+            0,
+            "Le profil est complet, mais le moteur n'a proposé aucune séance sur les deux semaines contrôlées.",
+        )
+
+    except Exception:
+        logger.exception(
+            "La sauvegarde a été restaurée, mais la reconstruction du planning a échoué."
+        )
+        return (
+            "failed",
+            0,
+            "La sauvegarde est restaurée, mais la reconstruction du planning a échoué. Consulte les journaux du backend.",
+        )
+    finally:
+        db.close()
 
 
 def _to_response(
@@ -260,6 +436,11 @@ async def restore_uploaded_backup(
             detail=str(exc),
         ) from exc
 
+    planning_status, planning_session_count, planning_message = (
+        _restore_training_planning(request)
+    )
+    engine.dispose()
+
     if result.environment_restored:
         background_tasks.add_task(_restart_backend_after_response)
 
@@ -268,6 +449,9 @@ async def restore_uploaded_backup(
         safety_backup_filename=result.safety_backup.filename,
         imported_revision=result.imported_revision,
         environment_restored=result.environment_restored,
+        planning_status=planning_status,
+        planning_session_count=planning_session_count,
+        planning_message=planning_message,
     )
 
 
@@ -277,6 +461,7 @@ async def restore_uploaded_backup(
 )
 def restore_existing_backup(
     filename: str,
+    request: Request,
     background_tasks: BackgroundTasks,
 ) -> BackupRestoreResponse:
     service = (
@@ -318,6 +503,11 @@ def restore_existing_backup(
             detail=str(exc),
         ) from exc
 
+    planning_status, planning_session_count, planning_message = (
+        _restore_training_planning(request)
+    )
+    engine.dispose()
+
     if result.environment_restored:
         background_tasks.add_task(_restart_backend_after_response)
 
@@ -326,6 +516,9 @@ def restore_existing_backup(
         safety_backup_filename=result.safety_backup.filename,
         imported_revision=result.imported_revision,
         environment_restored=result.environment_restored,
+        planning_status=planning_status,
+        planning_session_count=planning_session_count,
+        planning_message=planning_message,
     )
 
 

@@ -210,20 +210,6 @@ export function CoachTodayWidget({
     dataWarning,
   } = coach
 
-  console.log(
-    '[OpenCoach DEBUG coach today]',
-    {
-      coachDate: coach.date,
-      sessions: sessionDecisions.map(
-        item => ({
-          date: item.session?.date ?? null,
-          title: item.session?.title ?? null,
-          status: item.session?.status ?? null,
-        }),
-      ),
-    },
-  )
-
   const todayItem =
     sessionDecisions.find(
       item => (
@@ -266,6 +252,7 @@ export function CoachTodayWidget({
       readiness.score,
       readiness.criticalCount,
       readiness.warningCount,
+      recentLoadAssessment,
     )
 
 
@@ -937,6 +924,12 @@ function getReadinessPresentation(
   score: number,
   criticalCount: number,
   warningCount: number,
+  loadAssessment: {
+    hasWarning: boolean
+    hasCritical: boolean
+    hasOverload: boolean
+    hasBrokenRest: boolean
+  } | null,
 ): {
   label: string
   badgeClass: string
@@ -958,9 +951,26 @@ function getReadinessPresentation(
     }
   }
 
+  if (loadAssessment?.hasCritical) {
+    return {
+      label:
+        'Charge critique',
+      badgeClass:
+        (
+          'bg-red-50 '
+          + 'text-red-600 '
+          + 'dark:bg-red-500/10 '
+          + 'dark:text-red-400'
+        ),
+    }
+  }
+
   if (
     warningCount > 0
     || score < 70
+    || loadAssessment?.hasWarning
+    || loadAssessment?.hasOverload
+    || loadAssessment?.hasBrokenRest
   ) {
     return {
       label:

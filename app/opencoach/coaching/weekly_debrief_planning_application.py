@@ -324,6 +324,11 @@ class WeeklyDebriefPlanningApplicationService:
             )
 
         if stored.planning_updated_at is not None:
+            if self._proposal_store is not None:
+                self._proposal_store.delete(
+                    athlete_profile_id,
+                    closed_week_start,
+                )
             return WeeklyPlanningApplicationResult(
                 stored_debrief=stored,
                 planning_result=None,

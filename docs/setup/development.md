@@ -334,3 +334,42 @@ Ce document doit être mis à jour lorsque :
 - la procédure de contribution change.
 
 Les composants métier et les décisions d'architecture doivent être documentés dans les sections correspondantes de docs/.
+
+
+---
+
+## 16. Génération manuelle du planning d'entraînement
+
+La commande de maintenance du planning utilise le même pipeline applicatif que l'API Coach. Elle ne crée pas de séances de démonstration : elle construit le contexte réel de l'athlète et passe par le moteur de trajectoire, la génération et la persistance habituels.
+
+Depuis la racine du dépôt, dans l'environnement Python OpenCoach activé :
+
+### Générer deux semaines pour un compte
+
+    python -m opencoach.commands.generate_training_plan --username <identifiant>
+
+### Générer une période plus longue
+
+    python -m opencoach.commands.generate_training_plan --username <identifiant> --weeks 4
+
+La période peut être ancrée sur une date précise :
+
+    python -m opencoach.commands.generate_training_plan --username <identifiant> --reference-date 2026-11-23 --weeks 3
+
+Pour traiter explicitement tous les profils athlètes des comptes actifs :
+
+    python -m opencoach.commands.generate_training_plan --all-active --weeks 2
+
+### Comportement et sécurité
+
+- La cible doit être explicite : un identifiant avec `--username`, ou `--all-active`.
+- La commande utilise les données du profil, les disponibilités, les disciplines, les courses et objectifs, l'historique des activités et séances, la charge récente, les données physiologiques et de récupération, ainsi que les contraintes enregistrées.
+- Les séances sont produites et enregistrées par les services de production OpenCoach, comme lors d'une génération depuis le Coach.
+- Une semaine contenant déjà des séances au statut `planned` est ignorée pour éviter les doublons ou l'écrasement d'un planning existant.
+- Chaque semaine est traitée séparément. Le bilan indique les séances créées, les semaines ignorées et les erreurs.
+- La commande n'invente aucune séance de démonstration et ne contourne pas les règles métier du moteur.
+
+Pour afficher l'aide :
+
+    python -m opencoach.commands.generate_training_plan --help
+

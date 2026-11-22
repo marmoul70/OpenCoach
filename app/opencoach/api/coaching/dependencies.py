@@ -43,6 +43,7 @@ from opencoach.api.training_stats import (
 from opencoach.coaching.weekly_assessment_service import (
     CoachWeeklyAssessmentService,
 )
+from opencoach.coaching import CoachDecisionService
 
 from opencoach.coaching.generation import (
     AthleteWeeklyTrainingGenerationService,
@@ -109,6 +110,62 @@ from opencoach.training import (
 )
 
 
+
+def _build_recent_training_load_service(
+    training_stats_service: TrainingStatsService,
+) -> RecentTrainingLoadService:
+    """Assemble une seule fois la capacité de charge depuis les repositories canoniques."""
+    daily_training_load_service = DailyTrainingLoadService(
+        training_stats_service.activity_repository,
+        training_stats_service.training_session_repository,
+    )
+    load_comparison_service = TrainingLoadComparisonService(
+        training_stats_service.training_session_repository,
+        daily_training_load_service,
+    )
+    return RecentTrainingLoadService(
+        load_comparison_service,
+        training_stats_service=training_stats_service,
+    )
+
+
+def get_recent_training_load_service(
+    training_stats_service: TrainingStatsService = Depends(get_training_stats_service),
+) -> RecentTrainingLoadService:
+    """Dépendance FastAPI partagée pour les analyses de charge."""
+    return _build_recent_training_load_service(training_stats_service)
+
+
+def build_coach_decision_service(
+    training_stats_service: TrainingStatsService,
+    readiness_service: ReadinessService,
+    recent_load_service: RecentTrainingLoadService,
+    *,
+    planned_training_service=None,
+) -> CoachDecisionService:
+    """Assemble le moteur de décision existant depuis les capacités Coach partagées."""
+    return CoachDecisionService(
+        training_stats_service.training_session_repository,
+        readiness_service,
+        recent_load_service=recent_load_service,
+        planned_training_service=planned_training_service,
+    )
+
+
+def get_coach_decision_service(
+    db: Session = Depends(get_db),
+    readiness_service: ReadinessService = Depends(get_readiness_service),
+) -> CoachDecisionService:
+    """Construit la décision quotidienne à partir des services Coach canoniques."""
+    training_stats_service = get_training_stats_service(db)
+    recent_load_service = _build_recent_training_load_service(training_stats_service)
+    return build_coach_decision_service(
+        training_stats_service,
+        readiness_service,
+        recent_load_service,
+    )
+
+
 def get_planning_context_service(
     user_id: UUID = Depends(
         get_current_user_id
@@ -122,46 +179,15 @@ def get_planning_context_service(
     training_stats_service: TrainingStatsService = Depends(
         get_training_stats_service
     ),
+    recent_load_service: RecentTrainingLoadService = Depends(
+        get_recent_training_load_service
+    ),
 ) -> PlanningContextService:
     """Construit le service de contexte consolidé du planning."""
 
-    activity_repository = (
-        SqlActivityRepository(
-            db
-        )
-    )
-
-    training_repository = (
-        SqlTrainingSessionRepository(
-            db
-        )
-    )
-
-    profile_repository = (
-        SqlProfileRepository(
-            db,
-            user_id,
-        )
-    )
-
-    daily_training_load_service = (
-        DailyTrainingLoadService(
-            activity_repository,
-            training_repository,
-        )
-    )
-
-    load_comparison_service = (
-        TrainingLoadComparisonService(
-            training_repository,
-            daily_training_load_service,
-        )
-    )
-
-    recent_load_service = (
-        RecentTrainingLoadService(
-            load_comparison_service
-        )
+    profile_repository = SqlProfileRepository(
+        db,
+        user_id,
     )
 
     return PlanningContextService(
@@ -185,6 +211,7 @@ def get_planning_context_service(
                 db
             )
         ),
+        weekly_plan_repository=SqlWeeklyTrainingPlanRepository(db),
     )
 
 

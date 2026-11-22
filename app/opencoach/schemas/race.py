@@ -188,6 +188,8 @@ class RaceResponse(BaseModel):
 
     activity_id: UUID | None
 
+    planning_warning: str | None = None
+
 class RaceActivityUpdate(BaseModel):
     activity_id: UUID | None
 

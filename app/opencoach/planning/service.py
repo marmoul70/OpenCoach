@@ -1,9 +1,11 @@
 from datetime import date, timedelta
 from uuid import UUID
 
+from opencoach.coaching.constraint_impact import evaluate_running_restriction
 from opencoach.database.repositories import (
     AthleteConstraintRepository,
     RaceRepository,
+    WeeklyTrainingPlanRepository,
 )
 from opencoach.models import (
     AthleteConstraint,
@@ -39,6 +41,9 @@ class PlanningContextService:
         recent_load_service: RecentTrainingLoadService,
         training_stats_service: TrainingStatsService,
         constraint_repository: AthleteConstraintRepository,
+        weekly_plan_repository: WeeklyTrainingPlanRepository | None = None,
+        *,
+        reference_date_provider=date.today,
     ) -> None:
         self.profile_service = profile_service
         self.race_repository = race_repository
@@ -46,6 +51,8 @@ class PlanningContextService:
         self.recent_load_service = recent_load_service
         self.training_stats_service = training_stats_service
         self.constraint_repository = constraint_repository
+        self.weekly_plan_repository = weekly_plan_repository
+        self.reference_date_provider = reference_date_provider
 
     def build(
         self,
@@ -136,6 +143,103 @@ class PlanningContextService:
             constraints=constraints,
             constraints_end_date=constraints_end_date,
         )
+
+    def active_constraints(
+        self,
+        athlete_profile_id: UUID,
+        target_date: date | None = None,
+    ) -> dict:
+        """Retourne les contraintes applicables à une date précise."""
+        effective_date = target_date or self.reference_date_provider()
+        constraints = self.constraint_repository.list_overlapping(
+            athlete_profile_id,
+            effective_date,
+            effective_date,
+        )
+        restriction = evaluate_running_restriction(tuple(constraints))
+        return {
+            "status": "ok" if constraints else "empty",
+            "target_date": effective_date.isoformat(),
+            "constraint_count": len(constraints),
+            "running_restriction": {
+                "blocked": restriction.blocked,
+                "cross_training_allowed": restriction.cross_training_allowed,
+                "message": restriction.message,
+            },
+            "constraints": [
+                {
+                    "constraint_id": str(item.id),
+                    "start_date": item.start_date.isoformat(),
+                    "end_date": item.end_date.isoformat(),
+                    "constraint_type": item.constraint_type,
+                    "availability": item.availability,
+                    "running_allowed": item.running_allowed,
+                    "cross_training_allowed": item.cross_training_allowed,
+                    "max_duration_minutes": item.max_duration_minutes,
+                    "notes": item.notes[:500] if item.notes else None,
+                }
+                for item in constraints
+            ],
+            "interpretation_rules": [
+                "Une contrainte est retournée si elle couvre la date demandée, bornes incluses.",
+                "Ne pas extrapoler une contrainte avant son début ou après sa fin.",
+                "Ne pas poser de diagnostic médical ni déduire une aptitude médicale.",
+                "Si running_allowed est false, ne pas proposer de course à pied pour cette date.",
+                "Si les données sont vides, cela signifie uniquement qu'aucune contrainte n'est enregistrée pour cette date.",
+            ],
+        }
+
+    def weekly_plan_context(
+        self,
+        athlete_profile_id: UUID,
+        week_start: date | None = None,
+    ) -> dict:
+        """Retourne le cadre hebdomadaire enregistré dans le domaine planning."""
+        if self.weekly_plan_repository is None:
+            raise RuntimeError("Le repository de plans hebdomadaires n'est pas configuré.")
+
+        reference_date = self.reference_date_provider()
+        effective_week_start = week_start or (
+            reference_date - timedelta(days=reference_date.weekday())
+        )
+        plan = self.weekly_plan_repository.get_plan_for_week(
+            athlete_profile_id,
+            effective_week_start,
+        )
+        if plan is None:
+            return {
+                "status": "not_found",
+                "week_start": effective_week_start.isoformat(),
+                "message": (
+                    "Aucun cadre hebdomadaire enregistré pour cette semaine. "
+                    "Ne pas inventer la phase, le type de semaine ou les objectifs de charge."
+                ),
+            }
+
+        return {
+            "status": "ok",
+            "week": {
+                "start_date": plan.week_start.isoformat(),
+                "end_date": plan.week_end.isoformat(),
+                "phase": plan.phase,
+                "week_type": plan.week_type,
+                "phase_week_index": plan.phase_week_index,
+                "generated_at": plan.generated_at.isoformat() if plan.generated_at else None,
+                "updated_at": plan.updated_at.isoformat() if plan.updated_at else None,
+            },
+            "targets": {
+                "load_target": plan.target_load,
+                "load_min": plan.load_min,
+                "load_max": plan.load_max,
+                "reference_duration_minutes": plan.reference_duration_minutes,
+                "target_duration_minutes": plan.target_duration_minutes,
+                "long_endurance_reference_minutes": plan.long_endurance_reference_minutes,
+            },
+            "schedule": {
+                "pressure": plan.schedule_pressure,
+                "athlete_schedule_constrained": plan.athlete_schedule_constrained,
+            },
+        }
 
     def _get_training_races(
         self,

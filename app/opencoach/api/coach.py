@@ -13,9 +13,7 @@ from opencoach.database.models import (
     Race as RaceModel,
 )
 
-from opencoach.database.session import (
-    get_db,
-)
+from opencoach.database.session import get_db
 
 from opencoach.database.repositories.sql_weekly_training_plan import (
     SqlWeeklyTrainingPlanRepository,
@@ -44,11 +42,11 @@ from opencoach.coaching.weekly_assessment_service import (
     CoachWeeklyAssessmentService,
 )
 from opencoach.api.coaching.dependencies import (
+    get_coach_decision_service,
     get_coach_weekly_assessment_service,
+    get_weekly_planning_context_builder,
 )
 from opencoach.database.repositories import (
-    CorosDailyDataRepositoryError,
-    SqlCorosDailyDataRepository,
     ActivityRepositoryError,
     DailyContextRepositoryError,
     SqlActivityRepository,
@@ -58,7 +56,6 @@ from opencoach.database.repositories import (
     TrainingSessionRepositoryError,
     WellnessRepositoryError,
 )
-from opencoach.database.session import get_db
 from opencoach.readiness import (
     ReadinessAssessment,
     ReadinessDataUnavailableError,
@@ -90,10 +87,6 @@ from opencoach.schemas.coach import (
     CoachTrajectoryWeekResponse,
 )
 
-
-from opencoach.api.coaching.dependencies import (
-    get_weekly_planning_context_builder,
-)
 from opencoach.coaching.generation.context import (
     WeeklyPlanningContextBuilder,
     WeeklyPlanningContextError,
@@ -115,69 +108,6 @@ router = APIRouter(
 )
 
 
-def get_coach_decision_service(
-    db: Session = Depends(get_db),
-) -> CoachDecisionService:
-    training_repository = (
-        SqlTrainingSessionRepository(
-            db
-        )
-    )
-
-    activity_repository = (
-        SqlActivityRepository(
-            db
-        )
-    )
-
-    wellness_repository = (
-        SqlWellnessRepository(
-            db
-        )
-    )
-
-    daily_context_repository = (
-        SqlDailyContextRepository(
-            db
-        )
-    )
-
-    readiness_service = ReadinessService(
-        wellness_repository,
-        daily_context_repository=(
-            daily_context_repository
-        ),
-        provider="coros",
-        fallback_providers=("intervals",),
-    )
-
-    daily_training_load_service = (
-        DailyTrainingLoadService(
-            activity_repository,
-            training_repository,
-        )
-    )
-
-    load_comparison_service = (
-        TrainingLoadComparisonService(
-            training_repository,
-            daily_training_load_service,
-        )
-    )
-
-    recent_load_service = (
-        RecentTrainingLoadService(
-            load_comparison_service,
-        )
-    )
-
-    return CoachDecisionService(
-        training_repository,
-        readiness_service,
-        recent_load_service=(
-            recent_load_service
-        ),
-    )
 
 @router.get(
     "/trajectory",
@@ -493,28 +423,23 @@ def get_today_coach_decision(
                 )
             )
 
-        recovery_provider = assessment.readiness.provider
         recovery_wellness_days = SqlWellnessRepository(db).list_range(
             athlete_profile_id,
             reference_date - timedelta(days=29),
             reference_date,
-            provider=recovery_provider,
         )
-        recovery_time_series = SqlCorosDailyDataRepository(db).list_time_series_snapshots(
-            athlete_profile_id,
-            reference_date - timedelta(days=29),
-            reference_date,
-        )
+        from opencoach.wellness_aggregation import aggregate_wellness_days
+        recovery_aggregation = aggregate_wellness_days(recovery_wellness_days)
         recovery_assessment = build_recovery_assessment(
-            wellness_days=recovery_wellness_days,
+            wellness_days=list(recovery_aggregation.days),
             target_date=reference_date,
-            provider=recovery_provider,
+            provider="opencoach",
             subjective_context=assessment.readiness.context,
-            time_series_snapshots=recovery_time_series,
         )
-        recovery_payload = recovery_assessment_to_dict(
-            recovery_assessment
-        )
+        recovery_payload = recovery_assessment_to_dict(recovery_assessment)
+        recovery_payload["data_store"] = "OpenCoach"
+        recovery_payload["metric_sources"] = recovery_aggregation.metric_sources
+        recovery_payload["conflicting_metrics"] = recovery_aggregation.conflicts
 
     except PlannedSessionUnavailableError as exc:
         raise HTTPException(
@@ -539,7 +464,6 @@ def get_today_coach_decision(
         TrainingSessionRepositoryError,
         WellnessRepositoryError,
         DailyContextRepositoryError,
-        CorosDailyDataRepositoryError,
     ) as exc:
         raise HTTPException(
             status_code=503,

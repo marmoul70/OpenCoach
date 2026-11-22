@@ -18,6 +18,10 @@ import {
 } from '../../components/ui/SidePanel'
 
 import {
+  useToast,
+} from '../../components/ui/ToastProvider'
+
+import {
   useRaces,
 } from './raceStore'
 
@@ -44,6 +48,10 @@ export function RaceForm({
   const {
     addRace,
   } = useRaces()
+
+  const {
+    toast,
+  } = useToast()
 
   const [
     name,
@@ -178,9 +186,18 @@ export function RaceForm({
     setSaving(true)
 
     try {
-      await addRace(
+      const createdRace = await addRace(
         payload,
       )
+
+      if (createdRace.planningWarning) {
+        toast({
+          type: 'warning',
+          title: 'Course enregistrée — préparation trop courte',
+          message: createdRace.planningWarning,
+          duration: 9000,
+        })
+      }
 
       resetForm()
       onClose()

@@ -7,6 +7,7 @@
 readonly OPENCOACH_REQUIRED_COMMANDS=(
     bash
     git
+    curl
 )
 
 readonly OPENCOACH_APPLICATION_COMMANDS=(

@@ -42,7 +42,6 @@ DEV_REQUESTED=0
 PULL_REQUESTED=0
 
 OPENCOACH_USER=""
-OPENCOACH_GROUP=""
 
 VENV_PYTHON="$PROJECT_ROOT/.venv/bin/python"
 VENV_ALEMBIC="$PROJECT_ROOT/.venv/bin/alembic"
@@ -122,10 +121,6 @@ require_root() {
 resolve_project_owner() {
     OPENCOACH_USER="$(
         stat -c '%U' "$PROJECT_ROOT"
-    )"
-
-    OPENCOACH_GROUP="$(
-        stat -c '%G' "$PROJECT_ROOT"
     )"
 
     if [[ "$OPENCOACH_USER" == "root" ]]; then

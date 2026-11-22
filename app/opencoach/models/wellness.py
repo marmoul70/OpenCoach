@@ -36,3 +36,4 @@ class WellnessDay:
     steps: int | None = None
 
     provider_updated_at: datetime | None = None
+    stored_at: datetime | None = None

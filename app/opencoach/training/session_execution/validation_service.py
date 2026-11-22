@@ -19,6 +19,8 @@ from opencoach.planning.sessions.prescription.integrity import (
     TrainingSessionPrescriptionIntegrityError,
     validate_training_session_prescription,
 )
+from opencoach.models import Activity, ActivityDetail, TrainingSession
+from opencoach.training.session_execution.models import SessionExecutionAssessment
 from opencoach.training.session_execution.analyzer import (
     analyze_session_execution,
 )
@@ -76,6 +78,19 @@ class TrainingSessionValidationResult:
     analysis: PersistedSessionExecutionAnalysis
 
 
+@dataclass(frozen=True, slots=True)
+class TrainingSessionReviewResult:
+    """Résultat en lecture seule du débriefing prévu / réalisé."""
+
+    status: str
+    session: TrainingSession | None = None
+    activity: Activity | None = None
+    detail: ActivityDetail | None = None
+    assessment: SessionExecutionAssessment | None = None
+    message: str | None = None
+    interpretation_rules: tuple[str, ...] = ()
+
+
 
 @dataclass(slots=True)
 class ValidateTrainingSessionService:
@@ -84,7 +99,71 @@ class ValidateTrainingSessionService:
     training_session_repository: TrainingSessionRepository
     activity_repository: ActivityRepository
     activity_detail_repository: ActivityDetailRepository
-    validation_writer: TrainingSessionValidationWriter
+    validation_writer: TrainingSessionValidationWriter | None = None
+
+    def review(
+        self,
+        *,
+        athlete_profile_id: UUID,
+        training_session_id: UUID,
+    ) -> TrainingSessionReviewResult:
+        """Analyse une séance associée sans modifier ni valider les données."""
+        session = self.training_session_repository.get_session(
+            athlete_profile_id,
+            training_session_id,
+        )
+        if session is None:
+            return TrainingSessionReviewResult(
+                status="not_found",
+                message="Séance introuvable dans le planning de cet athlète.",
+            )
+
+        if session.activity_id is None:
+            return TrainingSessionReviewResult(
+                status="activity_not_linked",
+                session=session,
+                message=(
+                    "Aucune activité n'est associée à cette séance. "
+                    "Ne pas supposer qu'elle n'a pas été réalisée : demander "
+                    "à l'utilisateur de confirmer ou d'associer l'activité."
+                ),
+            )
+
+        activity = self.activity_repository.get_activity(
+            athlete_profile_id,
+            session.activity_id,
+        )
+        if activity is None:
+            return TrainingSessionReviewResult(
+                status="linked_activity_unavailable",
+                session=session,
+                message=(
+                    "La séance référence une activité qui n'est pas accessible "
+                    "dans les données de cet athlète."
+                ),
+            )
+
+        detail = self.activity_detail_repository.get_activity_detail(
+            athlete_profile_id,
+            activity.id,
+        )
+        assessment = analyze_session_execution(
+            session,
+            activity,
+            detail,
+        )
+        return TrainingSessionReviewResult(
+            status="ok",
+            session=session,
+            activity=activity,
+            detail=detail,
+            assessment=assessment,
+            interpretation_rules=(
+                "Les statuts et écarts sont calculés par le moteur Python d'exécution.",
+                "Ne pas recalculer les métriques ni transformer une donnée insuffisante en échec.",
+                "Une analyse sans détail d'activité reste partielle si les métriques nécessitent des laps ou des streams.",
+            ),
+        )
 
     def execute(
         self,
@@ -164,12 +243,14 @@ class ValidateTrainingSessionService:
             )
         )
 
-        # Les données détaillées enrichissent l'analyse, mais ne doivent
-        # jamais empêcher l'association explicite d'une activité à une séance.
-        # COROS peut fournir le résumé de l'activité sans streams/intervals
-        # normalisés ; l'analyse signale alors les métriques indisponibles.
-        # Le moteur accepte déjà activity_detail=None.
+        if detail is None:
+            raise TrainingSessionMissingActivityDetailError(
+                "Les données détaillées de cette activité "
+                "ne sont pas encore disponibles."
+            )
 
+        # Important :
+        # l'analyse est réalisée AVANT toute modification de la séance.
         assessment = analyze_session_execution(
             session,
             activity,
@@ -181,6 +262,11 @@ class ValidateTrainingSessionService:
             activity_id=activity.id,
             status="completed",
         )
+
+        if self.validation_writer is None:
+            raise TrainingSessionValidationError(
+                "La validation avec persistance n'est pas configurée."
+            )
 
         (
             persisted_session,

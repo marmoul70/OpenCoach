@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
+from numbers import Real
 
 
 StreamValue = float | int | None
@@ -72,6 +74,14 @@ class ActivityInterval:
             )
 
 
+def normalize_stream_number(value: object) -> float | None:
+    """Normalise un échantillon numérique fini ; exclut booléens et valeurs non finies."""
+    if not isinstance(value, Real) or isinstance(value, bool):
+        return None
+    normalized = float(value)
+    return normalized if isfinite(normalized) else None
+
+
 @dataclass(frozen=True, slots=True)
 class ActivityStream:
     """Série temporelle d'une métrique d'activité."""
@@ -84,6 +94,22 @@ class ActivityStream:
             raise ValueError(
                 "Le type de stream ne peut pas être vide."
             )
+
+    @property
+    def summary(self) -> dict[str, int | float | None]:
+        """Résumé descriptif canonique des échantillons disponibles."""
+        values = [
+            normalized
+            for sample in self.data
+            if (normalized := normalize_stream_number(sample)) is not None
+        ]
+        return {
+            "samples": len(self.data),
+            "valid_samples": len(values),
+            "minimum": min(values) if values else None,
+            "maximum": max(values) if values else None,
+            "average": round(sum(values) / len(values), 2) if values else None,
+        }
 
 
 @dataclass(frozen=True, slots=True)

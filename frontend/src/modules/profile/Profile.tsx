@@ -28,9 +28,7 @@ import {
   AthleteTrainingSection,
 } from './AthleteProfileSections'
 
-import {
-  parseOptionalNumber,
-} from './ProfileForm'
+import { parseOptionalNumber } from '../../lib/number'
 
 
 export function Profile() {

@@ -1,7 +1,7 @@
-from datetime import date, datetime, timezone
+from datetime import date
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from fastapi import (
     APIRouter,
@@ -10,6 +10,11 @@ from fastapi import (
     Query,
 )
 from sqlalchemy.orm import Session
+
+from opencoach.api.training_session_serializers import (
+    _debrief_response,
+    to_response,
+)
 
 from opencoach.coaching.session_guidance import (
     SessionGuidanceStep,
@@ -42,8 +47,10 @@ from opencoach.database.repositories.sql_training_session_validation import (
 )
 from opencoach.database.session import get_db
 from opencoach.schemas.training_session import (
+    SessionGuidanceIntensityTargetResponse,
+    SessionGuidanceStepResponse,
+    SessionGuidanceResponse,
     SessionExecutionDebriefResponse,
-    SessionExecutionMetricResponse,
     TrainingActivityCandidateResponse,
     TrainingEquipmentProposalResponse,
     TrainingEquipmentShoeResponse,
@@ -114,217 +121,6 @@ def get_training_session_repository(
 
     return SqlTrainingSessionRepository(db)
 
-
-def to_response(
-    session,
-) -> TrainingSessionResponse:
-    """Convertit une séance métier vers sa réponse API."""
-
-    return TrainingSessionResponse(
-        id=session.id,
-        date=session.date,
-        type=session.type,
-        sport_type=session.sport_type,
-        title=session.title,
-        description=session.description,
-        duration_minutes=session.duration_minutes,
-        distance_km=session.distance_km,
-        elevation_gain_m=session.elevation_gain_m,
-        intensity=session.intensity,
-        heart_rate_zone=session.heart_rate_zone,
-        status=session.status,
-        activity_id=session.activity_id,
-        prescription=session.prescription,
-        intervals_external_id=(
-            session.intervals_external_id
-        ),
-        intervals_event_id=(
-            session.intervals_event_id
-        ),
-        intervals_sync_status=(
-            session.intervals_sync_status
-        ),
-        intervals_last_synced_at=(
-            session.intervals_last_synced_at
-        ),
-        intervals_payload_hash=(
-            session.intervals_payload_hash
-        ),
-        intervals_sync_error=(
-            session.intervals_sync_error
-        ),
-        coros_sync_status=session.coros_sync_status,
-        coros_scheduled_date=session.coros_scheduled_date,
-        coros_sync_started_at=_as_utc(session.coros_sync_started_at),
-        coros_last_synced_at=_as_utc(session.coros_last_synced_at),
-        coros_sync_error=session.coros_sync_error,
-    )
-
-
-
-
-def _as_utc(value: datetime | None) -> datetime | None:
-    """Expose les dates COROS en UTC explicite, même si SQLite les rend naïves."""
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
-
-
-def _debrief_response(
-    analysis,
-) -> SessionExecutionDebriefResponse:
-    """Convertit un débriefing persistant vers l'API."""
-
-    return SessionExecutionDebriefResponse(
-        id=analysis.id,
-        training_session_id=(
-            analysis.training_session_id
-        ),
-        activity_id=analysis.activity_id,
-        goal_type=analysis.goal_type,
-        overall_status=(
-            analysis.overall_status
-        ),
-        technical_status=(
-            analysis.technical_status
-        ),
-        objective=analysis.objective,
-        metrics=[
-            SessionExecutionMetricResponse(
-                key=metric["key"],
-                label=metric["label"],
-                importance=(
-                    metric["importance"]
-                ),
-                status=metric["status"],
-                target_minimum=(
-                    metric.get(
-                        "target_minimum"
-                    )
-                ),
-                target_maximum=(
-                    metric.get(
-                        "target_maximum"
-                    )
-                ),
-                unit=metric.get("unit"),
-                actual_value=(
-                    metric.get(
-                        "actual_value"
-                    )
-                ),
-                delta=metric.get(
-                    "delta"
-                ),
-                delta_percent=(
-                    metric.get(
-                        "delta_percent"
-                    )
-                ),
-                message=metric.get(
-                    "message"
-                ),
-            )
-            for metric
-            in analysis.metrics
-        ],
-        strengths=list(
-            analysis.strengths
-        ),
-        attention_points=list(
-            analysis.attention_points
-        ),
-        debriefing=analysis.debriefing,
-        derived_results=[
-            {
-                "key": key,
-                "value": value,
-            }
-            for key, value
-            in analysis.derived_results
-        ],
-        analyzed_at=(
-            analysis.analyzed_at
-        ),
-    )
-
-
-class SessionGuidanceIntensityTargetResponse(
-    BaseModel
-):
-    reference: str
-    label: str
-
-    minimum: float
-    maximum: float
-
-    unit: str
-
-    speed_min_kmh: float | None = None
-    speed_max_kmh: float | None = None
-
-    pace_fastest_seconds_per_km: float | None = None
-    pace_slowest_seconds_per_km: float | None = None
-
-
-class SessionGuidanceStepResponse(
-    BaseModel
-):
-    title: str
-    description: str
-
-    duration_minutes: int | None = None
-
-    intensity_target: str | None = None
-    heart_rate_target: str | None = None
-
-    intensity_targets: list[
-        SessionGuidanceIntensityTargetResponse
-    ] = Field(
-        default_factory=list
-    )
-
-    repetitions: int | None = None
-
-    work_distance_meters: int | None = None
-
-    repetition_fast_seconds: float | None = None
-    repetition_slow_seconds: float | None = None
-
-    recovery_description: str | None = None
-
-
-class SessionGuidanceResponse(
-    BaseModel
-):
-    session_type: str
-
-    objective: str
-    coach_rationale: str
-
-    terrain_recommendation: str
-
-    preparation: list[str]
-
-    warmup: list[
-        SessionGuidanceStepResponse
-    ]
-
-    main_set: list[
-        SessionGuidanceStepResponse
-    ]
-
-    cooldown: list[
-        SessionGuidanceStepResponse
-    ]
-
-    execution_advice: list[str]
-
-    warnings: list[str]
-
-    analysis_targets: list[str]
 
 
 @router.get(

@@ -162,4 +162,4 @@ def test_notification_migration_keeps_a_single_alembic_head():
     config = Config("alembic.ini")
     script = ScriptDirectory.from_config(config)
 
-    assert script.get_heads() == ["a4d6f8b2c1e3"]
+    assert script.get_heads() == ["d4f7a9c2e610"]

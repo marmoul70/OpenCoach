@@ -11,7 +11,9 @@ from datetime import date, datetime, timedelta
 from math import isfinite
 from statistics import fmean, median
 
+from opencoach.coaching.daily_checkin import AthleteDailyCheckIn
 from opencoach.models import DailyContext, WellnessDay
+from opencoach.wellness_aggregation import WellnessAggregation
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,6 +96,8 @@ METRICS: tuple[str, ...] = (
     "stress_avg",
     "sleep_seconds",
     "sleep_score",
+    "sleep_quality",
+    "spo2",
     "sleep_deep_seconds",
     "sleep_light_seconds",
     "sleep_rem_seconds",
@@ -365,4 +369,175 @@ def recovery_assessment_to_dict(
             if assessment.subjective is not None
             else None
         ),
+    }
+
+
+
+def recovery_coach_summary_to_dict(
+    assessment: RecoveryAssessment,
+    aggregation: WellnessAggregation,
+    daily_checkin: AthleteDailyCheckIn | None = None,
+) -> dict:
+    """Construit le résumé descriptif de récupération partagé par les interfaces Coach.
+
+    La sélection des métriques, la fenêtre récente, la couverture, la provenance
+    et les avertissements sont des règles du domaine, pas de l'adaptateur IA.
+    """
+    analysis_metrics = {
+        "hrv", "resting_hr", "sleep_seconds", "sleep_score", "sleep_quality",
+        "stress_avg", "spo2", "sleep_deep_seconds", "sleep_rem_seconds",
+        "fatigue_atl", "fitness_ctl",
+    }
+    duration_metrics = {
+        "sleep_seconds", "sleep_deep_seconds", "sleep_rem_seconds",
+    }
+
+    def format_duration(value: float | int | None) -> str | None:
+        if value is None:
+            return None
+        total_minutes = round(float(value) / 60)
+        hours, minutes = divmod(total_minutes, 60)
+        return f"{hours} h {minutes:02d} min"
+
+    windows = []
+    for window in assessment.windows:
+        if window.days != 7:
+            continue
+        metrics = {}
+        for name, metric in window.metrics.items():
+            if name not in analysis_metrics:
+                continue
+            if metric.sample_count <= 0:
+                metrics[name] = {"current": None, "sample_count": 0}
+            elif name in duration_metrics:
+                metrics[name] = {
+                    "current": format_duration(metric.current),
+                    "average": format_duration(metric.average),
+                    "median": format_duration(metric.median),
+                    "unit": "heures et minutes",
+                    "sample_count": metric.sample_count,
+                    "coverage_days": metric.coverage_days,
+                    "expected_days": metric.expected_days,
+                }
+            else:
+                metrics[name] = {
+                    "current": metric.current,
+                    "average": metric.average,
+                    "median": metric.median,
+                    "sample_count": metric.sample_count,
+                    "coverage_days": metric.coverage_days,
+                    "expected_days": metric.expected_days,
+                }
+        windows.append({
+            "days": window.days,
+            "start_date": window.start_date.isoformat(),
+            "end_date": window.end_date.isoformat(),
+            "recorded_days": window.recorded_days,
+            "coverage_ratio": round(window.coverage_ratio, 3),
+            "metrics": metrics,
+        })
+
+    available_metrics = sorted({
+        metric
+        for day_sources in aggregation.metric_sources.values()
+        for metric in day_sources
+        if metric in analysis_metrics
+    })
+    metric_sources = {
+        metric: sorted({
+            source
+            for day_sources in aggregation.metric_sources.values()
+            for source in day_sources.get(metric, ())
+        })
+        for metric in available_metrics
+    }
+    metric_source_days = {
+        metric: sum(
+            1 for day_sources in aggregation.metric_sources.values()
+            if metric in day_sources
+        )
+        for metric in available_metrics
+    }
+
+    checkin_payload = None
+    if daily_checkin is not None:
+        checkin_payload = {
+            "date": daily_checkin.date.isoformat(),
+            "energy_rating": daily_checkin.energy_rating,
+            "pain_wellness_rating": daily_checkin.pain_wellness_rating,
+            "illness": daily_checkin.illness,
+            "unavailable": daily_checkin.unavailable,
+            "pain_locations": [
+                {"area": item.area.value, "side": item.side.value}
+                for item in daily_checkin.pain_locations
+            ],
+        }
+
+    subjective = None
+    if assessment.subjective is not None:
+        subjective = {
+            "date": assessment.subjective.date.isoformat(),
+            "fatigue": assessment.subjective.fatigue,
+            "pain": assessment.subjective.pain,
+            "illness_status": assessment.subjective.illness_status,
+            "treatment_impact": assessment.subjective.treatment_impact,
+            "motivation": assessment.subjective.motivation,
+        }
+
+    warnings = []
+    if aggregation.conflicts:
+        warnings.append(
+            "Des valeurs concurrentes de fraîcheur identique ont été écartées : "
+            + str(aggregation.conflicts)
+        )
+    if assessment.data_status == "unavailable":
+        warnings.append("Aucune donnée Wellness disponible sur la période.")
+    elif assessment.data_status == "stale":
+        warnings.append(
+            f"Dernière donnée Wellness le {assessment.source_date.isoformat()} "
+            f"(J-{assessment.data_age_days})."
+        )
+    if checkin_payload is None and subjective is None:
+        warnings.append(
+            "Aucun ressenti subjectif enregistré pour cette date. "
+            "Demander à l'athlète comment il se sent ; ne rien déduire."
+        )
+    if windows and windows[0]["coverage_ratio"] < 0.7:
+        warnings.append(
+            "Couverture Wellness inférieure à 70 % sur 7 jours ; "
+            "interpréter les tendances avec prudence."
+        )
+
+    metric_definitions = {
+        "hrv": {"label": "Variabilité de la fréquence cardiaque", "unit": "ms"},
+        "resting_hr": {"label": "Fréquence cardiaque au repos", "unit": "bpm"},
+        "stress_avg": {"label": "Stress moyen", "unit": "score COROS"},
+        "sleep_seconds": {"label": "Durée totale de sommeil", "unit": "heures et minutes"},
+        "sleep_score": {"label": "Score de sommeil", "unit": "score COROS"},
+        "sleep_quality": {"label": "Qualité du sommeil", "unit": "score COROS"},
+        "spo2": {"label": "Saturation périphérique en oxygène", "unit": "%"},
+        "sleep_deep_seconds": {"label": "Sommeil profond", "unit": "heures et minutes"},
+        "sleep_rem_seconds": {"label": "Sommeil paradoxal (REM)", "unit": "heures et minutes"},
+        "fatigue_atl": {"label": "Charge aiguë COROS (ATL)", "unit": "points COROS"},
+        "fitness_ctl": {"label": "Charge chronique COROS (CTL)", "unit": "points COROS"},
+    }
+
+    return {
+        "target_date": assessment.date.isoformat(),
+        "data_store": "OpenCoach",
+        "metric_definitions": metric_definitions,
+        "provider": "opencoach" if assessment.source_date is not None else None,
+        "metric_sources": metric_sources,
+        "metric_source_days": metric_source_days,
+        "conflicting_metrics": aggregation.conflicts,
+        "source_date": (
+            assessment.source_date.isoformat()
+            if assessment.source_date is not None else None
+        ),
+        "data_age_days": assessment.data_age_days,
+        "data_status": assessment.data_status,
+        "windows": windows,
+        "daily_context": subjective,
+        "daily_checkin": checkin_payload,
+        "warnings": warnings,
     }

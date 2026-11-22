@@ -388,4 +388,5 @@ class SqlWellnessRepository(WellnessRepository):
             provider_updated_at=(
                 wellness.provider_updated_at
             ),
+            stored_at=wellness.updated_at,
         )

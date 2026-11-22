@@ -5,6 +5,7 @@ import pytest
 from opencoach.planning.trajectory.coaching_phase_allocation import (
     AllocatedTrainingPhase,
     CoachingPhaseAllocation,
+    InsufficientPreparationTimeError,
     PhaseDurationPolicy,
     allocate_coaching_phases,
 )
@@ -107,7 +108,7 @@ def test_minimum_phase_lengths_are_preserved() -> None:
 
 def test_impossible_horizon_is_rejected() -> None:
     with pytest.raises(
-        ValueError,
+        InsufficientPreparationTimeError,
         match="insuffisant",
     ):
         allocate_coaching_phases(

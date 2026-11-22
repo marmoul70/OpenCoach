@@ -20,6 +20,7 @@ from opencoach.training import (
     RecentTrainingLoadService,
     assess_recent_training_load,
 )
+from opencoach.services import PlannedTrainingService
 
 from .decision import decide_training_session
 from .models import CoachDecision
@@ -107,17 +108,33 @@ class CoachDecisionService:
         readiness_service: ReadinessService,
         *,
         recent_load_service: RecentTrainingLoadService | None = None,
+        planned_training_service: PlannedTrainingService | None = None,
         thresholds: ThresholdSettings | None = None,
     ) -> None:
         self.training_repository = training_repository
         self.readiness_service = readiness_service
         self.recent_load_service = recent_load_service
+        self.planned_training_service = planned_training_service
 
         self.thresholds = (
             thresholds
             if thresholds is not None
             else get_threshold_settings()
         )
+
+    def calculate_next(
+        self,
+        athlete_profile_id: UUID,
+    ) -> CoachDecisionAssessment | None:
+        """Calcule la décision pour la prochaine séance planifiée connue."""
+        if self.planned_training_service is None:
+            raise CoachDecisionServiceError(
+                "Le service de consultation du planning n'est pas configuré."
+            )
+        _, session = self.planned_training_service.next_planned()
+        if session is None:
+            return None
+        return self.calculate(athlete_profile_id, session.date)
 
     def calculate(
         self,

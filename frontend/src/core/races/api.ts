@@ -49,6 +49,8 @@ interface RaceApiResponse {
 
   activity_id: string | null
 
+  planning_warning?: string | null
+
   actual_result:
     RaceActualResultApiResponse
 }
@@ -182,6 +184,9 @@ function mapRace(
       mapActualResult(
         data.actual_result,
       ),
+
+    planningWarning:
+      data.planning_warning ?? undefined,
   }
 }
 

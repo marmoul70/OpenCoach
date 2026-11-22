@@ -16,6 +16,7 @@ from opencoach.training.session_execution.validation_service import (
     TrainingSessionActivityNotFoundError,
     TrainingSessionAlreadyValidatedError,
     TrainingSessionInvalidPrescriptionError,
+    TrainingSessionMissingActivityDetailError,
     TrainingSessionNotFoundError,
     ValidateTrainingSessionService,
 )
@@ -333,7 +334,7 @@ def test_completed_session_cannot_be_validated_again() -> None:
         )
 
 
-def test_missing_activity_detail_does_not_prevent_validation() -> None:
+def test_missing_activity_detail_prevents_validation() -> None:
     planned = session()
     performed = activity()
 
@@ -345,16 +346,19 @@ def test_missing_activity_detail_does_not_prevent_validation() -> None:
 
     application.activity_detail_repository.detail = None
 
-    result = application.execute(
-        athlete_profile_id=uuid4(),
-        training_session_id=planned.id,
-        activity_id=performed.id,
-    )
+    with pytest.raises(
+        TrainingSessionMissingActivityDetailError
+    ):
+        application.execute(
+            athlete_profile_id=uuid4(),
+            training_session_id=planned.id,
+            activity_id=performed.id,
+        )
 
-    assert result.session.status == "completed"
-    assert result.session.activity_id == performed.id
-    assert result.analysis.activity_id == performed.id
-    assert application.validation_writer.persisted_session is not None
+    assert (
+        application.validation_writer.persisted_session
+        is None
+    )
 
 
 def test_invalid_prescription_prevents_validation() -> None:

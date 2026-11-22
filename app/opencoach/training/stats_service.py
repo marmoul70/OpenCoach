@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from uuid import UUID
 
 from opencoach.database.repositories import (
@@ -25,11 +25,14 @@ class TrainingStatsService:
         self,
         activity_repository: ActivityRepository,
         training_session_repository: TrainingSessionRepository,
+        *,
+        reference_date_provider=date.today,
     ) -> None:
         self.activity_repository = activity_repository
         self.training_session_repository = (
             training_session_repository
         )
+        self.reference_date_provider = reference_date_provider
 
     def calculate(
         self,
@@ -107,6 +110,32 @@ class TrainingStatsService:
             )
         )
 
+        duration_data_count = sum(
+            activity.moving_time_seconds is not None
+            or activity.elapsed_time_seconds is not None
+            for activity in activities
+        ) + sum(
+            session.duration_minutes is not None
+            for session in manual_sessions
+        )
+        distance_data_count = sum(
+            activity.distance_m is not None for activity in activities
+        ) + sum(
+            session.distance_km is not None for session in manual_sessions
+        )
+        elevation_data_count = sum(
+            activity.elevation_gain_m is not None for activity in activities
+        ) + sum(
+            session.elevation_gain_m is not None for session in manual_sessions
+        )
+        measured_load_data_count = sum(
+            activity.training_load is not None for activity in activities
+        )
+        estimated_load_data_count = sum(
+            session.duration_minutes is not None and session.duration_minutes > 0
+            for session in manual_sessions
+        )
+
         measured_load = sum(
             activity.training_load or 0.0
             for activity in activities
@@ -147,7 +176,74 @@ class TrainingStatsService:
                 estimated_load,
                 2,
             ),
+            duration_data_count=duration_data_count,
+            distance_data_count=distance_data_count,
+            elevation_data_count=elevation_data_count,
+            measured_load_data_count=measured_load_data_count,
+            estimated_load_data_count=estimated_load_data_count,
         )
+
+    def compare_adjacent_periods(
+        self,
+        athlete_profile_id: UUID,
+        *,
+        reference_date: date | None = None,
+        current_days: int,
+        comparison_days: int,
+    ) -> dict:
+        """Compare deux périodes successives de statistiques d'entraînement.
+
+        Les fenêtres sont ancrées sur la veille de reference_date afin de ne
+        comparer que des journées entièrement écoulées. La couverture et les
+        écarts restent ceux du modèle TrainingStats.
+        """
+        reference_date = reference_date or self.reference_date_provider()
+        if not 1 <= current_days <= 180:
+            raise ValueError("La période récente doit être comprise entre 1 et 180 jours.")
+        if not 1 <= comparison_days <= 180:
+            raise ValueError("La période de comparaison doit être comprise entre 1 et 180 jours.")
+
+        current_end = reference_date - timedelta(days=1)
+        current_start = current_end - timedelta(days=current_days - 1)
+        comparison_end = current_start - timedelta(days=1)
+        comparison_start = comparison_end - timedelta(days=comparison_days - 1)
+
+        current = self.calculate(athlete_profile_id, current_start, current_end)
+        comparison = self.calculate(athlete_profile_id, comparison_start, comparison_end)
+        comparison_result = current.compare_to(comparison)
+
+        return {
+            "current_period": {
+                "start_date": current.start_date.isoformat(),
+                "end_date": current.end_date.isoformat(),
+                "nb_days": current_days,
+                "sessions": current.sessions_count,
+            },
+            "comparison_period": {
+                "start_date": comparison.start_date.isoformat(),
+                "end_date": comparison.end_date.isoformat(),
+                "nb_days": comparison_days,
+                "sessions": comparison.sessions_count,
+            },
+            "metrics": comparison_result["metrics"],
+            "warnings": comparison_result["warnings"],
+        }
+
+    def calculate_days(
+        self,
+        athlete_profile_id: UUID,
+        reference_date: date | None = None,
+        *,
+        days: int = 7,
+        include_reference_day: bool = True,
+    ) -> TrainingStats:
+        """Calcule une fenêtre calendaire inclusive à partir d'une date d'ancrage."""
+        reference_date = reference_date or self.reference_date_provider()
+        if not 1 <= days <= 365:
+            raise ValueError("La période doit être comprise entre 1 et 365 jours (au moins un jour).")
+        end_date = reference_date if include_reference_day else reference_date - timedelta(days=1)
+        start_date = end_date - timedelta(days=days - 1)
+        return self.calculate(athlete_profile_id, start_date, end_date)
 
     @staticmethod
     def _is_manual_completed_session(

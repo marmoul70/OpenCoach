@@ -149,9 +149,10 @@ class FakeWellnessRepository(
 
         return [
             wellness
-            for wellness in self.history
+            for wellness in ([self.current] + self.history)
             if (
-                start_date
+                wellness is not None
+                and start_date
                 <= wellness.date
                 <= end_date
                 and (
@@ -253,7 +254,6 @@ def create_service(
             daily_context_repository
         ),
         thresholds=load_threshold_settings(),
-        provider="intervals",
     )
 
 
@@ -275,7 +275,7 @@ def test_readiness_service_calculates_assessment() -> None:
     )
 
     assert result.date == TARGET_DATE
-    assert result.provider == "intervals"
+    assert result.provider == "opencoach"
 
     assert result.source_date == TARGET_DATE
     assert result.data_age_days == 0
@@ -311,14 +311,12 @@ def test_readiness_service_uses_configured_history_window() -> None:
         TARGET_DATE,
     )
 
-    assert repository.list_range_calls == [
-        (
-            profile_id,
-            date(2026, 8, 4),
-            date(2026, 8, 17),
-            "intervals",
-        )
-    ]
+    assert repository.list_range_calls[-1] == (
+        profile_id,
+        date(2026, 8, 4),
+        date(2026, 8, 17),
+        None,
+    )
 
 
 def test_readiness_service_excludes_current_day_from_baseline() -> None:
@@ -353,42 +351,6 @@ def test_readiness_service_excludes_current_day_from_baseline() -> None:
     assert result.baseline.resting_hr.median == 46.0
     assert result.baseline.sleep_seconds.median == 27000.0
     assert result.baseline.sleep_score.median == 80.0
-
-
-def test_readiness_service_filters_provider() -> None:
-    history = create_history()
-
-    history.append(
-        WellnessDay(
-            provider="suunto",
-            date=date(
-                2026,
-                8,
-                10,
-            ),
-            hrv=200.0,
-            resting_hr=100,
-            sleep_seconds=5000,
-            sleep_score=10.0,
-        )
-    )
-
-    repository = FakeWellnessRepository(
-        current=create_current_day(),
-        history=history,
-    )
-
-    service = create_service(
-        repository
-    )
-
-    result = service.calculate(
-        uuid4(),
-        TARGET_DATE,
-    )
-
-    assert result.provider == "intervals"
-    assert result.baseline.hrv.median == 50.0
 
 
 def test_readiness_service_uses_previous_wellness_when_current_day_is_missing() -> None:
@@ -432,7 +394,7 @@ def test_readiness_service_uses_previous_wellness_when_current_day_is_missing() 
             (
                 profile_id,
                 TARGET_DATE,
-                "intervals",
+                None,
             )
         ]
     )
@@ -751,7 +713,7 @@ def test_readiness_service_raises_when_no_wellness_is_available() -> None:
             TARGET_DATE,
         )
 
-def test_readiness_service_builds_baseline_before_fallback_source_date() -> None:
+def test_readiness_service_builds_baseline_before_latest_imported_date() -> None:
     history = create_history()
 
     repository = FakeWellnessRepository(
@@ -777,82 +739,108 @@ def test_readiness_service_builds_baseline_before_fallback_source_date() -> None
     )
 
     assert repository.list_range_calls == [
+        (profile_id, date(2026, 8, 17), date(2026, 8, 17), None),
         (
             profile_id,
             date(2026, 8, 3),
             date(2026, 8, 16),
-            "intervals",
+            None,
         )
     ]
 
-def test_readiness_prefers_coros_and_uses_only_coros_for_baseline() -> None:
-    coros_current = create_current_day()
-    coros_current.provider = "coros"
-    coros_history = create_history()
-    for item in coros_history:
-        item.provider = "coros"
-
-    intervals_current = create_current_day()
-    intervals_history = create_history()
-    repository = FakeWellnessRepository(
-        current=intervals_current,
-        history=coros_history + intervals_history,
+def test_readiness_can_aggregate_all_provider_data_stored_in_opencoach():
+    coros_current = WellnessDay(
+        provider="coros",
+        date=TARGET_DATE,
+        hrv=55.0,
+        sleep_seconds=7 * 3600,
     )
-    # Add the COROS current day to the available history collection.
-    repository.history.append(coros_current)
-
+    intervals_current = WellnessDay(
+        provider="intervals",
+        date=TARGET_DATE,
+        resting_hr=52,
+        sleep_score=78.0,
+    )
+    history = []
+    for offset in range(1, 15):
+        day = TARGET_DATE - timedelta(days=offset)
+        history.extend([
+            WellnessDay(provider="coros", date=day, hrv=50.0, sleep_seconds=7 * 3600),
+            WellnessDay(provider="intervals", date=day, resting_hr=46, sleep_score=80.0),
+        ])
+    repository = FakeWellnessRepository(
+        current=coros_current,
+        history=[intervals_current, *history],
+    )
+    # Le mode par défaut doit agréger les imports OpenCoach sans fournisseur imposé.
     service = ReadinessService(
         repository,
         thresholds=load_threshold_settings(),
-        provider="coros",
-        fallback_providers=("intervals",),
     )
-    profile_id = uuid4()
 
-    result = service.calculate(profile_id, TARGET_DATE)
+    result = service.calculate(uuid4(), TARGET_DATE)
 
-    assert result.provider == "coros"
-    assert result.current.provider == "coros"
-    assert repository.list_range_calls[-1][-1] == "coros"
-    assert repository.get_by_date_calls[0][-1] == "coros"
+    assert result.provider == "opencoach"
+    assert result.current.provider == "opencoach"
+    assert result.current.hrv == 55.0
+    assert result.current.resting_hr == 52
+    assert result.current.sleep_seconds == 7 * 3600
+    assert result.current.sleep_score == 78.0
+    assert result.baseline.hrv.sample_count == 14
+    assert result.baseline.resting_hr.sample_count == 14
+    assert repository.list_range_calls[0][-1] is None
+    assert repository.list_range_calls[1][-1] is None
 
 
-def test_readiness_falls_back_to_intervals_when_coros_is_unavailable() -> None:
+def test_readiness_marks_conflicting_current_metric_as_unavailable():
+    current = create_current_day()
+    current.provider = "coros"
+    current.hrv = 55.0
+    conflicting_import = WellnessDay(
+        provider="intervals",
+        date=TARGET_DATE,
+        hrv=90.0,
+    )
     repository = FakeWellnessRepository(
-        current=create_current_day(),
+        current=current,
+        history=[conflicting_import, *create_history()],
+    )
+    service = ReadinessService(
+        repository,
+        thresholds=load_threshold_settings(),
+    )
+
+    result = service.calculate(uuid4(), TARGET_DATE)
+
+    assert result.current.provider == "opencoach"
+    assert result.current.hrv is None
+    assert f"{TARGET_DATE.isoformat()}:hrv" in result.data_conflicts
+
+
+def test_readiness_does_not_return_a_score_when_all_inputs_are_missing():
+    repository = FakeWellnessRepository(
+        current=WellnessDay(
+            provider="garmin",
+            date=TARGET_DATE,
+        ),
         history=create_history(),
     )
-    service = ReadinessService(
-        repository,
-        thresholds=load_threshold_settings(),
-        provider="coros",
-        fallback_providers=("intervals",),
-    )
+    service = create_service(repository)
 
-    result = service.calculate(uuid4(), TARGET_DATE)
-
-    assert result.provider == "intervals"
-    assert repository.list_range_calls[-1][-1] == "intervals"
+    with pytest.raises(
+        ReadinessDataUnavailableError,
+        match="aucune mesure exploitable",
+    ):
+        service.calculate(uuid4(), TARGET_DATE)
 
 
-def test_readiness_uses_fresher_intervals_when_coros_is_stale() -> None:
-    stale_coros = create_history(days=1)[0]
-    stale_coros.provider = "coros"
-    stale_coros.date = TARGET_DATE - timedelta(days=3)
-    repository = FakeWellnessRepository(
-        current=create_current_day(),
-        history=[stale_coros] + create_history(),
-    )
-    service = ReadinessService(
-        repository,
-        thresholds=load_threshold_settings(),
-        provider="coros",
-        fallback_providers=("intervals",),
-    )
+def test_readiness_rejects_a_day_without_any_usable_recovery_metric():
+    empty_day = WellnessDay(provider="coros", date=TARGET_DATE)
+    repository = FakeWellnessRepository(current=empty_day, history=[])
+    service = create_service(repository)
 
-    result = service.calculate(uuid4(), TARGET_DATE)
-
-    assert result.provider == "intervals"
-    assert result.source_date == TARGET_DATE
-    assert result.data_status == "fresh"
-    assert repository.list_range_calls[-1][-1] == "intervals"
+    with pytest.raises(
+        ReadinessDataUnavailableError,
+        match="aucune mesure exploitable",
+    ):
+        service.calculate(uuid4(), TARGET_DATE)

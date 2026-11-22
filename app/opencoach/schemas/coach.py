@@ -71,7 +71,6 @@ class CoachSessionDecisionResponse(BaseModel):
     session: CoachSessionResponse | None
     decision: CoachDecisionResponse
 
-
 class CoachRecentLoadResponse(BaseModel):
     """Synthèse de la charge d'entraînement récente."""
 
@@ -92,14 +91,12 @@ class CoachRecentLoadResponse(BaseModel):
 
     has_training_history: bool
 
-
 class CoachRecentLoadSignalResponse(BaseModel):
     """Signal métier dérivé de la charge récente."""
 
     kind: str
     level: str
     reason: str
-
 
 class CoachRecentLoadAssessmentResponse(BaseModel):
     """Synthèse des signaux de charge récente."""
@@ -150,6 +147,8 @@ class CoachWeeklyDebriefResponse(BaseModel):
     verdict: str
     adaptation_direction: str
 
+    # Les scores et ratios peuvent être absents lorsque les données
+    # de la semaine ne permettent pas de les calculer.
     overall_score: int | None
     adherence_score: int | None
     duration_score: int | None

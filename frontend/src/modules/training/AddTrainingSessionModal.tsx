@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import {
   Bike,
+  Check,
+  ChevronDown,
   Dumbbell,
   Footprints,
   Link2,
@@ -48,6 +50,7 @@ interface AddTrainingSessionModalProps {
 
 type CreationMode =
   | 'intervals'
+  | 'coros'
   | 'manual'
 
 
@@ -125,6 +128,8 @@ export function AddTrainingSessionModal({
     'intervals',
   )
 
+  const [modeMenuOpen, setModeMenuOpen] = useState(false)
+
   const [
     activities,
     setActivities,
@@ -183,7 +188,7 @@ export function AddTrainingSessionModal({
               ? caughtError.message
               : (
                   'Impossible de charger les '
-                  + 'activités Intervals.icu.'
+                  + 'activités disponibles.'
                 ),
           )
         } finally {
@@ -202,6 +207,7 @@ export function AddTrainingSessionModal({
     }
 
     setMode('intervals')
+    setModeMenuOpen(false)
     setError(null)
     setForm(EMPTY_MANUAL_FORM)
 
@@ -212,7 +218,7 @@ export function AddTrainingSessionModal({
   ])
 
 
-  async function addIntervalsActivity(
+  async function addImportedActivity(
     activity: TrainingAvailableActivity,
   ): Promise<void> {
     setSubmittingActivityId(
@@ -242,7 +248,9 @@ export function AddTrainingSessionModal({
           activity.name
           || 'Séance supplémentaire',
         description:
-          'Activité importée depuis Intervals.icu.',
+          activity.provider === 'coros'
+            ? 'Activité importée depuis COROS.'
+            : 'Activité importée depuis Intervals.icu.',
         durationMinutes,
         distanceKm:
           activity.distanceM !== undefined
@@ -479,101 +487,206 @@ export function AddTrainingSessionModal({
 
 
         <div
-          role="tablist"
-          aria-label="Mode d'ajout"
-          className="
-            grid
-            grid-cols-2
-            rounded-[10px]
-            bg-[var(--oc-surface-muted)]
-            p-1
-            bg-[var(--oc-surface)]/[0.045]
-          "
+          className="relative z-20"
+          onBlur={(event) => {
+            if (
+              !event.currentTarget.contains(
+                event.relatedTarget as Node | null,
+              )
+            ) {
+              setModeMenuOpen(false)
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setModeMenuOpen(false)
+            }
+          }}
         >
           <button
             type="button"
-            role="tab"
-            aria-selected={
-              mode === 'intervals'
-            }
-            className={[
-              (
-                'flex min-h-9 items-center '
-                + 'justify-center gap-1.5 '
-                + 'rounded-[8px] '
-                + 'px-2.5 '
-                + 'text-[11px] '
-                + 'font-semibold '
-                + 'transition'
-              ),
-              mode === 'intervals'
-                ? (
-                    'bg-[var(--oc-surface)] '
-                    + 'text-[var(--oc-text)] '
-                    + 'shadow-sm '
-                    + 'bg-[var(--oc-surface)]/[0.09] '
-                    + 'text-[var(--oc-text)]'
-                  )
-                : (
-                    'text-[var(--oc-muted)] '
-                    + 'hover:text-[var(--oc-text)] '
-                    + 'text-[var(--oc-muted)] '
-                    + 'dark:hover:text-[var(--oc-text-secondary)]'
-                  ),
-            ].join(' ')}
-            onClick={() =>
-              setMode(
-                'intervals',
-              )
-            }
+            aria-haspopup="menu"
+            aria-expanded={modeMenuOpen}
+            aria-label="Choisir le mode d'ajout"
+            onClick={() => setModeMenuOpen((current) => !current)}
+            className="
+              flex
+              min-h-[52px]
+              w-full
+              items-center
+              gap-3
+              rounded-[12px]
+              border
+              border-[var(--oc-border)]
+              bg-[var(--oc-surface)]
+              px-3
+              text-left
+              shadow-sm
+              transition
+              hover:border-emerald-500/35
+              hover:bg-[var(--oc-surface-hover)]
+              focus:outline-none
+              focus:ring-2
+              focus:ring-emerald-500/15
+            "
           >
-            <Link2 size={14} />
+            <span
+              className="
+                flex
+                h-8
+                w-8
+                shrink-0
+                items-center
+                justify-center
+                rounded-[9px]
+                bg-emerald-500/[0.09]
+                text-emerald-600
+                dark:text-emerald-400
+              "
+            >
+              {mode === 'intervals' ? (
+                <Link2 className="h-4 w-4" />
+              ) : mode === 'coros' ? (
+                <Footprints className="h-4 w-4" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
+            </span>
 
-            Intervals.icu
+            <span className="min-w-0 flex-1">
+              <span className="block text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--oc-muted)]">
+                Mode d'ajout
+              </span>
+              <span className="mt-0.5 block truncate text-[12px] font-semibold text-[var(--oc-text)]">
+                {mode === 'intervals'
+                  ? 'Intervals.icu'
+                  : mode === 'coros'
+                    ? 'COROS'
+                    : 'Saisie manuelle'}
+              </span>
+            </span>
+
+            <span className="flex items-center gap-2 text-[10px] font-medium text-[var(--oc-muted)]">
+              Modifier
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${modeMenuOpen ? 'rotate-180' : ''}`}
+              />
+            </span>
           </button>
 
+          {modeMenuOpen && (
+            <div
+              role="menu"
+              aria-label="Modes d'ajout disponibles"
+              className="
+                absolute
+                left-0
+                right-0
+                top-[calc(100%+6px)]
+                overflow-hidden
+                rounded-[12px]
+                border
+                border-[var(--oc-border)]
+                bg-[var(--oc-page)]
+                p-1.5
+                shadow-[0_12px_32px_rgba(15,23,42,0.14)]
+                dark:shadow-[0_12px_32px_rgba(0,0,0,0.32)]
+              "
+            >
+              <button
+                type="button"
+                role="menuitemradio"
+                aria-checked={mode === 'intervals'}
+                onClick={() => {
+                  setMode('intervals')
+                  setModeMenuOpen(false)
+                }}
+                className={`
+                  flex w-full items-center gap-3 rounded-[9px] px-2.5 py-2.5 text-left transition
+                  ${mode === 'intervals'
+                    ? 'bg-emerald-500/[0.08]'
+                    : 'hover:bg-[var(--oc-surface-hover)]'}
+                `}
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[var(--oc-surface-muted)] text-[var(--oc-text-secondary)]">
+                  <Link2 className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11.5px] font-semibold text-[var(--oc-text)]">
+                    Intervals.icu
+                  </span>
+                  <span className="mt-0.5 block text-[10px] text-[var(--oc-muted)]">
+                    Importer une activité synchronisée
+                  </span>
+                </span>
+                {mode === 'intervals' && (
+                  <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                )}
+              </button>
 
-          <button
-            type="button"
-            role="tab"
-            aria-selected={
-              mode === 'manual'
-            }
-            className={[
-              (
-                'flex min-h-9 items-center '
-                + 'justify-center gap-1.5 '
-                + 'rounded-[8px] '
-                + 'px-2.5 '
-                + 'text-[11px] '
-                + 'font-semibold '
-                + 'transition'
-              ),
-              mode === 'manual'
-                ? (
-                    'bg-[var(--oc-surface)] '
-                    + 'text-[var(--oc-text)] '
-                    + 'shadow-sm '
-                    + 'bg-[var(--oc-surface)]/[0.09] '
-                    + 'text-[var(--oc-text)]'
-                  )
-                : (
-                    'text-[var(--oc-muted)] '
-                    + 'hover:text-[var(--oc-text)] '
-                    + 'text-[var(--oc-muted)] '
-                    + 'dark:hover:text-[var(--oc-text-secondary)]'
-                  ),
-            ].join(' ')}
-            onClick={() =>
-              setMode(
-                'manual',
-              )
-            }
-          >
-            <Plus size={14} />
+              <button
+                type="button"
+                role="menuitemradio"
+                aria-checked={mode === 'coros'}
+                onClick={() => {
+                  setMode('coros')
+                  setModeMenuOpen(false)
+                }}
+                className={`
+                  flex w-full items-center gap-3 rounded-[9px] px-2.5 py-2.5 text-left transition
+                  ${mode === 'coros'
+                    ? 'bg-emerald-500/[0.08]'
+                    : 'hover:bg-[var(--oc-surface-hover)]'}
+                `}
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[var(--oc-surface-muted)] text-[var(--oc-text-secondary)]">
+                  <Footprints className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11.5px] font-semibold text-[var(--oc-text)]">
+                    COROS
+                  </span>
+                  <span className="mt-0.5 block text-[10px] text-[var(--oc-muted)]">
+                    Importer une activité depuis votre montre
+                  </span>
+                </span>
+                {mode === 'coros' && (
+                  <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                )}
+              </button>
 
-            Saisie manuelle
-          </button>
+              <button
+                type="button"
+                role="menuitemradio"
+                aria-checked={mode === 'manual'}
+                onClick={() => {
+                  setMode('manual')
+                  setModeMenuOpen(false)
+                }}
+                className={`
+                  flex w-full items-center gap-3 rounded-[9px] px-2.5 py-2.5 text-left transition
+                  ${mode === 'manual'
+                    ? 'bg-emerald-500/[0.08]'
+                    : 'hover:bg-[var(--oc-surface-hover)]'}
+                `}
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[var(--oc-surface-muted)] text-[var(--oc-text-secondary)]">
+                  <Plus className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11.5px] font-semibold text-[var(--oc-text)]">
+                    Saisie manuelle
+                  </span>
+                  <span className="mt-0.5 block text-[10px] text-[var(--oc-muted)]">
+                    Renseigner une séance soi-même
+                  </span>
+                </span>
+                {mode === 'manual' && (
+                  <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
 
@@ -599,23 +712,16 @@ export function AddTrainingSessionModal({
         )}
 
 
-        {mode === 'intervals' ? (
+        {mode === 'intervals' || mode === 'coros' ? (
           <IntervalsPanel
-            activities={
-              activities
-            }
-            loading={
-              loadingActivities
-            }
-            submittingActivityId={
-              submittingActivityId
-            }
-            onAdd={
-              addIntervalsActivity
-            }
-            onRefresh={
-              loadActivities
-            }
+            activities={activities.filter(activity =>
+              activity.provider === (mode === 'coros' ? 'coros' : 'intervals')
+            )}
+            providerLabel={mode === 'coros' ? 'COROS' : 'Intervals.icu'}
+            loading={loadingActivities}
+            submittingActivityId={submittingActivityId}
+            onAdd={addImportedActivity}
+            onRefresh={loadActivities}
           />
         ) : (
           <ManualPanel
@@ -641,6 +747,7 @@ export function AddTrainingSessionModal({
 interface IntervalsPanelProps {
   activities:
     TrainingAvailableActivity[]
+  providerLabel: string
   loading: boolean
   submittingActivityId:
     string | null
@@ -656,6 +763,7 @@ interface IntervalsPanelProps {
 
 function IntervalsPanel({
   activities,
+  providerLabel,
   loading,
   submittingActivityId,
   onAdd,
@@ -716,7 +824,7 @@ function IntervalsPanel({
               text-[var(--oc-muted)]
             "
           >
-            Synchronisation avec Intervals.icu
+            Chargement des activités {providerLabel}
           </p>
         </div>
       </div>
@@ -756,7 +864,7 @@ function IntervalsPanel({
               text-[var(--oc-muted)]
             "
           >
-            Importer une activité déjà réalisée
+            Importer une activité déjà réalisée depuis {providerLabel}
           </p>
         </div>
 

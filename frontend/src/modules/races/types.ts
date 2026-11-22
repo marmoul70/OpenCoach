@@ -83,4 +83,6 @@ export interface Race {
 
   // Retour personnel
   notes?: string
+
+  planningWarning?: string
 }

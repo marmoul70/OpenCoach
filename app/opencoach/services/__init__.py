@@ -6,6 +6,9 @@ from .intervals_sync import (
     IntervalsSyncResult,
 )
 from .profile import ProfileService
+from .planned_training import PlannedTrainingService
+from .race_preparation import RacePreparationService
+from .activity_detail import ActivityDetailResult, ActivityDetailService
 from .integration_connection import (
     IntegrationConnectionService,
     IntegrationConnectionServiceError,
@@ -22,6 +25,10 @@ __all__ = [
     "IntervalsInitialSyncAlreadyCompletedError",
     "IntervalsSyncResult",
     "ProfileService",
+    "RacePreparationService",
+    "ActivityDetailResult",
+    "ActivityDetailService",
+    "PlannedTrainingService",
     "IntegrationConnectionService",
     "IntegrationConnectionServiceError",
     "IntegrationCredentials",
@@ -33,3 +40,4 @@ from .push_notification import (
     PushDeliveryReport,
     PushNotificationService,
 )
+

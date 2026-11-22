@@ -1,12 +1,13 @@
 import json
 from datetime import date, datetime, timezone
 
-from opencoach.api.training_sessions import _as_utc
-from opencoach.api.coros import (
+from opencoach.api.training_session_serializers import _as_utc
+from opencoach.integrations.coros.workout_responses import (
     _extract_coros_scheduled_id,
     _extract_other_coros_workouts,
     _extract_scheduled_workout_records_for_date,
 )
+
 
 
 def test_extracts_scheduled_id_from_structured_mcp_result() -> None:
@@ -73,7 +74,7 @@ def test_training_session_coros_timestamps_are_exposed_as_explicit_utc() -> None
 
 
 def test_extracts_editability_from_nested_json_string_content() -> None:
-    from opencoach.api.coros import _extract_coros_scheduled_details
+    from opencoach.integrations.coros.workout_responses import _extract_coros_scheduled_details
 
     payload = {
         "result": {
@@ -96,7 +97,7 @@ def test_extracts_editability_from_nested_json_string_content() -> None:
 
 
 def test_extracts_editability_and_course_from_coros_plain_text_details() -> None:
-    from opencoach.api.coros import _extract_coros_scheduled_details
+    from opencoach.integrations.coros.workout_responses import _extract_coros_scheduled_details
 
     report = (
         "Scheduled Workout Detail\n"
@@ -118,7 +119,7 @@ def test_extracts_editability_and_course_from_coros_plain_text_details() -> None
 
 
 def test_extracts_editability_and_course_from_scheduled_workout_details() -> None:
-    from opencoach.api.coros import _extract_coros_scheduled_details
+    from opencoach.integrations.coros.workout_responses import _extract_coros_scheduled_details
 
     details = _extract_coros_scheduled_details(
         {
@@ -141,7 +142,7 @@ def test_extracts_editability_and_course_from_scheduled_workout_details() -> Non
 
 
 def test_extracts_non_editable_reason_from_scheduled_workout_details() -> None:
-    from opencoach.api.coros import _extract_coros_scheduled_details
+    from opencoach.integrations.coros.workout_responses import _extract_coros_scheduled_details
 
     details = _extract_coros_scheduled_details(
         {
@@ -222,9 +223,7 @@ def test_extracts_scheduled_workout_from_iso_date_field() -> None:
 
 
 
-def test_extracts_scheduled_workouts_from_coros_plain_text_schedule() -> None:
-    from opencoach.api.coros import _extract_scheduled_workouts_for_date
-
+def test_extracts_scheduled_workout_records_from_coros_plain_text_schedule() -> None:
     result = {
         "content": [
             {
@@ -254,10 +253,6 @@ def test_extracts_scheduled_workouts_from_coros_plain_text_schedule() -> None:
         ("26", "Footing 35 min"),
         ("10", "Test COROS - Endurance fondamentale"),
     ]
-    assert _extract_scheduled_workouts_for_date(
-        result,
-        date(2026, 11, 12),
-    ) == ["Footing 35 min", "Test COROS - Endurance fondamentale"]
 
 
 def test_extracts_schedule_when_coros_wraps_plain_text_in_json_string() -> None:
@@ -299,7 +294,7 @@ def test_extracts_schedule_when_coros_wraps_plain_text_in_json_string() -> None:
 
 
 def test_recovery_records_include_only_explicitly_standalone_workouts() -> None:
-    from opencoach.api.coros import (
+    from opencoach.integrations.coros.workout_responses import (
         _extract_standalone_scheduled_workout_records_for_date,
     )
 

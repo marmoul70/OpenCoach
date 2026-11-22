@@ -38,9 +38,9 @@ show_help() {
     printf '\n'
     printf '%s\n' "Options :"
     printf '%s\n' \
-        "  --dev    Installe également les dépendances de développement."
+        "  --dev       Installe également les dépendances de développement."
     printf '%s\n' \
-        "  --help   Affiche cette aide."
+        "  --help      Affiche cette aide."
 }
 
 

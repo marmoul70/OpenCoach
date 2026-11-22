@@ -92,10 +92,7 @@ export function HealthPage() {
     fetchRecoveryAssessment()
       .then(async (assessmentResult) => {
         const [trendsResult, corosConnection] = await Promise.all([
-          fetchWellnessTrends(
-            30,
-            assessmentResult.provider === 'intervals' ? 'intervals' : 'coros',
-          ),
+          fetchWellnessTrends(30),
           fetchCorosConnection().catch(() => null),
         ])
         if (mounted) {
@@ -136,7 +133,7 @@ export function HealthPage() {
         <PageHeader
           eyebrow={<><HeartPulse className="h-4 w-4" /> Santé & récupération</>}
           title="Suivi physiologique"
-          description="Historique COROS, sommeil, fréquence cardiaque, HRV et charge d’entraînement."
+          description="Données physiologiques centralisées, sommeil, fréquence cardiaque, HRV et charge d’entraînement."
           actions={
             <button
               type="button"
@@ -198,7 +195,7 @@ export function HealthPage() {
               <StatusCard
                 label="Mesures détaillées"
                 value={String(assessment.time_series.reduce((total, item) => total + item.sample_count, 0))}
-                detail="Échantillons COROS sur 30 jours"
+                detail="Échantillons importés sur 30 jours"
                 icon={<Waves className="h-5 w-5" />}
               />
             </section>
@@ -350,7 +347,7 @@ export function HealthPage() {
                       return series.metric === 'respiration_rate' || series.metric === 'temperature'
                     }).length > 0 && (
                       <section>
-                        <h3 className="mb-2 text-sm font-semibold text-[var(--oc-text)]">Mesures détaillées COROS</h3>
+                        <h3 className="mb-2 text-sm font-semibold text-[var(--oc-text)]">Mesures détaillées importées</h3>
                         <div className="space-y-2">
                           {assessment.time_series.filter((series) => {
                             if (selectedSection === 'cardio') return series.metric === 'heart_rate'

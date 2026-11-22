@@ -158,7 +158,39 @@ export function RacePage() {
           lg:py-5
         "
       >
-        <PageHeader eyebrow="Objectifs" title="Courses" description="Organise tes courses et tes objectifs sportifs." />
+        <PageHeader
+          eyebrow="Objectifs"
+          title="Courses"
+          description="Organise tes courses et tes objectifs sportifs."
+          actions={
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(true)}
+              className="
+                inline-flex
+                h-9
+                items-center
+                gap-2
+                rounded-[9px]
+                bg-emerald-600
+                px-3
+                text-[11px]
+                font-semibold
+                text-white
+                shadow-sm
+                transition-colors
+                hover:bg-emerald-700
+                focus-visible:outline
+                focus-visible:outline-2
+                focus-visible:outline-offset-2
+                focus-visible:outline-emerald-600
+              "
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter une course
+            </button>
+          }
+        />
 
 
         {loading && (

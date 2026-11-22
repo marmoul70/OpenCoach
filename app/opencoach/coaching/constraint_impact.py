@@ -311,3 +311,54 @@ def constraints_require_return_to_training(
         ).requires_return_to_training
         for constraint in constraints
     )
+
+
+
+@dataclass(frozen=True, slots=True)
+class RunningRestrictionDecision:
+    """Décision métier d'autorisation de course et d'activité croisée."""
+
+    blocked: bool
+    cross_training_allowed: bool
+    message: str | None = None
+
+
+def evaluate_running_restriction(
+    constraints: tuple[AthleteConstraint, ...],
+) -> RunningRestrictionDecision:
+    """Détermine si les contraintes actives interdisent la course."""
+    blocked = any(item.running_allowed is False for item in constraints)
+    if not blocked:
+        return RunningRestrictionDecision(
+            blocked=False,
+            cross_training_allowed=False,
+        )
+
+    cross_training_allowed = bool(constraints) and all(
+        item.cross_training_allowed is True
+        for item in constraints
+    )
+    message = (
+        "La restriction enregistrée dans OpenCoach interdit actuellement "
+        "la course à pied pour la date concernée, même si ta Readiness est favorable. "
+        "Je ne peux donc pas te conseiller de maintenir une séance en courant. "
+    )
+    if cross_training_allowed:
+        message += (
+            "Une activité croisée peut être envisagée uniquement si elle reste "
+            "indolore et respecte les autres limites enregistrées. "
+        )
+    else:
+        message += (
+            "Je ne peux pas non plus te proposer une activité croisée sans "
+            "autorisation explicite dans tes contraintes. "
+        )
+    message += (
+        "Vérifie l'évolution de la douleur et fais réévaluer la restriction "
+        "si nécessaire avant de reprendre la course."
+    )
+    return RunningRestrictionDecision(
+        blocked=True,
+        cross_training_allowed=cross_training_allowed,
+        message=message,
+    )

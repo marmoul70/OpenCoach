@@ -556,6 +556,7 @@ function App() {
             {page === 'profile-sport' && <Profile />}
             {page === 'settings' && <Settings />}
           </Suspense>
+
         </div>
       </TrainingProvider>
     </RaceProvider>

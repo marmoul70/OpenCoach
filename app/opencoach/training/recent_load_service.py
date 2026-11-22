@@ -7,6 +7,7 @@ from .load_comparison_service import (
 from .recent_load import (
     RecentTrainingLoad,
 )
+from .stats_service import TrainingStatsService
 
 
 class RecentTrainingLoadService:
@@ -15,23 +16,60 @@ class RecentTrainingLoadService:
     def __init__(
         self,
         comparison_service: TrainingLoadComparisonService,
+        *,
+        reference_date_provider=date.today,
+        training_stats_service: TrainingStatsService | None = None,
     ) -> None:
         self.comparison_service = (
             comparison_service
         )
+        self.reference_date_provider = reference_date_provider
+        self.training_stats_service = training_stats_service
+
+    def analysis_summary(
+        self,
+        athlete_profile_id: UUID,
+        *,
+        days: int | None = None,
+    ) -> dict:
+        """Construit le bilan charge + volume réel dans la couche Coach.
+
+        Cette capacité compose les deux services métier existants afin que les
+        adaptateurs (API/IA) n'assemblent pas eux-mêmes les résultats.
+        """
+        if self.training_stats_service is None:
+            raise RuntimeError(
+                "TrainingStatsService doit être configuré pour produire la synthèse de charge."
+            )
+
+        target_date = self.reference_date_provider()
+        period_arguments = {"days": days} if days is not None else {}
+        load = self.calculate(
+            athlete_profile_id,
+            target_date,
+            **period_arguments,
+        )
+        stats = self.training_stats_service.calculate_days(
+            athlete_profile_id,
+            target_date,
+            **period_arguments,
+            include_reference_day=False,
+        )
+        return load.analysis_summary(stats)
 
     def calculate(
         self,
         athlete_profile_id: UUID,
-        target_date: date,
+        target_date: date | None = None,
         *,
         days: int = 7,
     ) -> RecentTrainingLoad:
         """Analyse les jours précédant la date cible."""
 
-        if days < 1:
+        target_date = target_date or self.reference_date_provider()
+        if not 1 <= days <= 90:
             raise ValueError(
-                "La période doit contenir au moins un jour."
+                "La période de charge doit être comprise entre 1 et 90 jours (au moins un jour)."
             )
 
         comparisons = []

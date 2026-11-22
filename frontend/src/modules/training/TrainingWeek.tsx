@@ -333,8 +333,10 @@ export function TrainingWeek() {
     try {
       await applyWeeklyDebrief(appliedWeekStart)
       const refreshed = await fetchWeeklyDebrief(appliedWeekStart)
+      const refreshedHistory = await fetchWeeklyDebriefHistory(52)
       if (requestId === weeklyDebriefRequestId.current) {
         setWeeklyDebrief(refreshed)
+        setDebriefHistory(refreshedHistory)
         await loadWeeklyStats()
       }
     } catch (reason) {

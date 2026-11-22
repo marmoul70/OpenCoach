@@ -556,6 +556,17 @@ def apply_weekly_debrief_adaptation(
 
     next_week_start = week_start + timedelta(days=7)
 
+    # Un ancien bilan reste consultable, mais ne doit pas pouvoir
+    # réécrire rétroactivement un planning déjà passé.
+    if next_week_start < current_week_start(date.today()):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Cette proposition historique est consultable, "
+                "mais sa période d’application est dépassée."
+            ),
+        )
+
     try:
         prepared = context_builder.build(
             athlete_profile_id=athlete_profile_id,

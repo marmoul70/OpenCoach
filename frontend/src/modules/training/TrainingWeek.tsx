@@ -1018,6 +1018,42 @@ phaseLabel={
                 </p>
               </section>
 
+              <section className="rounded-xl border border-[var(--oc-border)] p-4">
+                <h3 className="font-semibold">Séries physiologiques COROS</h3>
+                {weeklyDebrief.coros_time_series.length === 0 ? (
+                  <p className="mt-2 text-sm text-[var(--oc-text-secondary)]">
+                    Aucune série temporelle COROS exploitable n’est enregistrée pour cette semaine.
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-2">
+                    {weeklyDebrief.coros_time_series.map((series) => (
+                      <div key={series.metric + (series.unit ?? '')} className="rounded-lg bg-[var(--oc-surface-muted)] p-3">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <p className="font-medium">{series.metric}</p>
+                          <p className="text-sm font-semibold">
+                            Actuel : {series.current} {series.unit ?? ''}
+                          </p>
+                        </div>
+                        <div className="mt-2 grid grid-cols-2 gap-3">
+                          <Metric label="Moyenne" value={`${series.average} ${series.unit ?? ''}`} />
+                          <Metric label="Médiane" value={`${series.median} ${series.unit ?? ''}`} />
+                          <Metric label="Minimum / maximum" value={`${series.minimum} / ${series.maximum} ${series.unit ?? ''}`} />
+                          <Metric label="Échantillons" value={series.sample_count} />
+                          <Metric label="Jours couverts" value={series.coverage_days} />
+                          <Metric label="Statuts remontés" value={series.statuses.length > 0 ? series.statuses.join(', ') : '—'} />
+                        </div>
+                        <p className="mt-2 text-xs text-[var(--oc-text-secondary)]">
+                          Du {new Date(series.first_measured_at).toLocaleString('fr-FR')} au {new Date(series.last_measured_at).toLocaleString('fr-FR')}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-3 text-xs text-[var(--oc-text-secondary)]">
+                  Synthèse des échantillons COROS déjà importés, dédupliqués par date de mesure et valeur.
+                </p>
+              </section>
+
               {weeklyDebrief.debrief.strengths.length > 0 && (
                 <section>
                   <h3 className="font-semibold">Points positifs</h3>

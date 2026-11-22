@@ -697,3 +697,28 @@ def test_past_generated_session_is_not_overwritten_on_refresh() -> None:
         stored.duration_minutes
         == original_duration
     )
+
+def test_conflict_does_not_persist_weekly_plan_or_change_sessions() -> None:
+    """Un conflit doit être détecté avant toute écriture de planning."""
+    completed = create_existing_session(status="completed")
+    repository = FakeTrainingSessionRepository((completed,))
+    plan_repository = FakeWeeklyTrainingPlanRepository()
+    service = WeeklyTrainingPersistenceService(
+        repository=repository,
+        weekly_plan_repository=plan_repository,
+    )
+    week = create_week()
+    original_title = completed.title
+
+    with pytest.raises(ExistingTrainingSessionConflictError):
+        service.persist(
+            athlete_profile_id=uuid4(),
+            week=week,
+            envelope=create_envelope_for_week(week),
+        )
+
+    assert plan_repository.saved_plans == []
+    assert len(repository.sessions) == 1
+    assert repository.sessions[0].id == completed.id
+    assert repository.sessions[0].title == original_title
+

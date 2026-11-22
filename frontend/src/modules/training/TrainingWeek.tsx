@@ -978,6 +978,46 @@ phaseLabel={
                 )}
               </section>
 
+              <section className="rounded-xl border border-[var(--oc-border)] p-4">
+                <h3 className="font-semibold">Récupération et données quotidiennes</h3>
+                {weeklyDebrief.wellness_days.length === 0 ? (
+                  <p className="mt-2 text-sm text-[var(--oc-text-secondary)]">
+                    Aucune donnée Wellness quotidienne n’est enregistrée pour cette semaine.
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    {weeklyDebrief.wellness_days.map((day) => (
+                      <details key={day.date + day.provider} className="rounded-lg bg-[var(--oc-surface-muted)] p-3">
+                        <summary className="cursor-pointer font-medium">
+                          {new Date(day.date + 'T12:00:00').toLocaleDateString('fr-FR')} · {day.provider}
+                        </summary>
+                        <div className="mt-3 grid grid-cols-2 gap-3">
+                          <Metric label="FC au repos" value={day.resting_hr != null ? `${day.resting_hr} bpm` : '—'} />
+                          <Metric label="FC moyenne" value={day.avg_hr != null ? `${day.avg_hr} bpm` : '—'} />
+                          <Metric label="FC min / max" value={day.min_hr != null || day.max_hr != null ? `${day.min_hr ?? '—'} / ${day.max_hr ?? '—'} bpm` : '—'} />
+                          <Metric label="HRV" value={day.hrv != null ? `${day.hrv} ms` : '—'} />
+                          <Metric label="Référence HRV" value={day.hrv_baseline != null ? `${day.hrv_baseline} ms` : '—'} />
+                          <Metric label="Stress moyen" value={day.stress_avg} />
+                          <Metric label="Sommeil" value={day.sleep_seconds != null ? `${(day.sleep_seconds / 3600).toFixed(1)} h` : '—'} />
+                          <Metric label="Score sommeil" value={day.sleep_score ?? day.sleep_quality ?? '—'} />
+                          <Metric label="FC moyenne sommeil" value={day.avg_sleeping_hr != null ? `${day.avg_sleeping_hr} bpm` : '—'} />
+                          <Metric label="SpO₂" value={day.spo2 != null ? `${day.spo2} %` : '—'} />
+                          <Metric label="Pas" value={day.steps} />
+                        </div>
+                        {(day.sleep_deep_seconds != null || day.sleep_light_seconds != null || day.sleep_rem_seconds != null || day.sleep_awake_seconds != null) && (
+                          <p className="mt-3 text-xs text-[var(--oc-text-secondary)]">
+                            Sommeil profond : {formatDuration(day.sleep_deep_seconds)} · Léger : {formatDuration(day.sleep_light_seconds)} · REM : {formatDuration(day.sleep_rem_seconds)} · Éveillé : {formatDuration(day.sleep_awake_seconds)}
+                          </p>
+                        )}
+                      </details>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-3 text-xs text-[var(--oc-text-secondary)]">
+                  Valeurs issues des enregistrements quotidiens existants. Une donnée absente reste affichée comme indisponible.
+                </p>
+              </section>
+
               {weeklyDebrief.debrief.strengths.length > 0 && (
                 <section>
                   <h3 className="font-semibold">Points positifs</h3>
@@ -1158,6 +1198,13 @@ function percentageOfTarget(
   )
 }
 
+
+function formatDuration(seconds: number | null): string {
+  if (seconds == null) return '—'
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  return hours > 0 ? `${hours} h ${minutes.toString().padStart(2, '0')} min` : `${minutes} min`
+}
 
 function Metric({ label, value }: { label: string; value: unknown }) {
   return (

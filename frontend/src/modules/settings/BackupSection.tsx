@@ -325,6 +325,9 @@ export function BackupSection() {
           'Une sauvegarde de sécurité '
           + 'a été créée avant restauration : '
           + result.safetyBackupFilename
+          + (result.planningMessage
+            ? '\\n\\n' + result.planningMessage
+            : '')
         ),
 
         duration: null,

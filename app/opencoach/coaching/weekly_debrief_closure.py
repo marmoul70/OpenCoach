@@ -17,9 +17,6 @@ from enum import Enum
 from typing import Any, Protocol
 from uuid import UUID
 
-from opencoach.coaching.weekly_adaptation import (
-    build_weekly_adaptation_decision,
-)
 from opencoach.coaching.weekly_debrief import (
     build_weekly_debrief,
 )
@@ -222,20 +219,8 @@ class WeeklyDebriefClosureService:
             facts
         )
 
-        adaptation = (
-            build_weekly_adaptation_decision(
-                debrief
-            )
-        )
-
-        adaptation_payload = (
-            serialize_weekly_adaptation_decision(
-                adaptation
-            )
-        )
-
-        # Le bilan reste persistant, mais la proposition n'est jamais
-        # enregistrée en base : elle vit uniquement dans le stockage tmp.
+        # La décision d'adaptation est reconstruite depuis ce débrief
+        # lorsque l'athlète consulte puis valide explicitement la proposition.
         stored = self._debrief_repository.save_closed(
             athlete_profile_id,
             facts,

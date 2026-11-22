@@ -1,4 +1,6 @@
-from datetime import date, timedelta
+from dataclasses import asdict, is_dataclass
+from datetime import date, datetime, timedelta
+from enum import Enum
 from uuid import UUID
 
 from fastapi import (
@@ -12,6 +14,7 @@ from sqlalchemy.orm import Session
 from opencoach.database.models import (
     Race as RaceModel,
 )
+from opencoach.database.models.weekly_debrief import WeeklyDebriefRecord
 
 from opencoach.database.session import get_db
 
@@ -34,9 +37,7 @@ from opencoach.coaching import (
 from opencoach.coaching.generation.current_week import (
     current_week_start,
 )
-from opencoach.coaching.weekly_adaptation_proposal_store import (
-    WeeklyAdaptationProposalStore,
-)
+from opencoach.coaching.weekly_adaptation import build_weekly_adaptation_decision
 from opencoach.coaching.weekly_debrief_planning_application import (
     WeeklyDebriefPlanningApplicationService,
 )
@@ -324,101 +325,36 @@ def get_coach_trajectory(
     )
 
 
-@router.get(
-    "/weekly-adaptation-proposal",
-)
-def get_weekly_adaptation_proposal(
-    week_start: date,
-    athlete_profile_id: UUID = Depends(
-        get_current_athlete_profile_id,
-    ),
-) -> dict:
-    """Retourne la proposition temporaire d'une semaine."""
+def _weekly_debrief_json(value):
+    if isinstance(value, Enum): return value.value
+    if is_dataclass(value): return _weekly_debrief_json(asdict(value))
+    if isinstance(value, dict): return {str(key): _weekly_debrief_json(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list, set, frozenset)): return [_weekly_debrief_json(item) for item in value]
+    if isinstance(value, (date, datetime)): return value.isoformat()
+    if isinstance(value, UUID): return str(value)
+    return value
 
-    proposal = WeeklyAdaptationProposalStore().get(
-        athlete_profile_id,
-        week_start,
-    )
-    if proposal is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Aucune proposition temporaire pour cette semaine.",
-        )
-    return proposal
+@router.get('/weekly-debriefs')
+def list_weekly_debriefs(limit: int = 26, athlete_profile_id: UUID = Depends(get_current_athlete_profile_id), db: Session = Depends(get_db)) -> list[dict]:
+    safe_limit = min(max(limit, 1), 104)
+    records = db.scalars(select(WeeklyDebriefRecord).where(WeeklyDebriefRecord.athlete_profile_id == athlete_profile_id).order_by(WeeklyDebriefRecord.week_start.desc()).limit(safe_limit)).all()
+    return [{'week_start': r.week_start.isoformat(), 'week_end': r.week_end.isoformat(), 'verdict': r.verdict, 'overall_score': r.overall_score, 'planning_updated': r.planning_updated_at is not None} for r in records]
 
+@router.get('/weekly-debrief')
+def get_weekly_debrief(week_start: date, athlete_profile_id: UUID = Depends(get_current_athlete_profile_id), db: Session = Depends(get_db)) -> dict:
+    stored = SqlWeeklyDebriefRepository(db).get_for_week(athlete_profile_id, week_start)
+    if stored is None: raise HTTPException(status_code=404, detail='Aucun bilan pour cette semaine.')
+    return {'id': str(stored.id), 'facts': _weekly_debrief_json(stored.facts), 'debrief': _weekly_debrief_json(stored.debrief), 'adaptation': _weekly_debrief_json(build_weekly_adaptation_decision(stored.debrief)), 'generated_at': stored.generated_at.isoformat(), 'planning_updated': stored.planning_updated_at is not None}
 
-@router.post(
-    "/weekly-adaptation-proposal/apply",
-)
-def apply_weekly_adaptation_proposal(
-    week_start: date,
-    athlete_profile_id: UUID = Depends(
-        get_current_athlete_profile_id,
-    ),
-    context_builder: WeeklyPlanningContextBuilder = Depends(
-        get_weekly_planning_context_builder,
-    ),
-    planning_service = Depends(
-        get_generate_planned_training_week_service,
-    ),
-    db: Session = Depends(get_db),
-) -> dict:
-    """Applique la proposition uniquement après validation explicite."""
-
-    proposal_store = WeeklyAdaptationProposalStore()
-    if proposal_store.get(athlete_profile_id, week_start) is None:
-        raise HTTPException(
-            status_code=404,
-            detail="La proposition n'existe plus ou a déjà été traitée.",
-        )
-
+@router.post('/weekly-debrief/apply')
+def apply_weekly_debrief_adaptation(week_start: date, athlete_profile_id: UUID = Depends(get_current_athlete_profile_id), context_builder: WeeklyPlanningContextBuilder = Depends(get_weekly_planning_context_builder), planning_service=Depends(get_generate_planned_training_week_service), db: Session = Depends(get_db)) -> dict:
     next_week_start = week_start + timedelta(days=7)
     try:
-        prepared = context_builder.build(
-            athlete_profile_id=athlete_profile_id,
-            planning_date=next_week_start,
-            trajectory_start_date=next_week_start,
-        )
-        application = WeeklyDebriefPlanningApplicationService(
-            debrief_repository=SqlWeeklyDebriefRepository(db),
-            planning_service=planning_service,
-            proposal_store=proposal_store,
-        )
-        result = application.execute(
-            athlete_profile_id=athlete_profile_id,
-            closed_week_start=week_start,
-            planning_input=prepared.planning_input,
-            reconcile_from_date=next_week_start,
-        )
+        prepared = context_builder.build(athlete_profile_id=athlete_profile_id, planning_date=next_week_start, trajectory_start_date=next_week_start)
+        result = WeeklyDebriefPlanningApplicationService(debrief_repository=SqlWeeklyDebriefRepository(db), planning_service=planning_service).execute(athlete_profile_id=athlete_profile_id, closed_week_start=week_start, planning_input=prepared.planning_input, reconcile_from_date=next_week_start)
     except Exception as exc:
-        raise HTTPException(
-            status_code=409,
-            detail="Impossible d'appliquer la proposition. Le planning n'a pas été confirmé.",
-        ) from exc
-
-    return {
-        "week_start": week_start,
-        "applied": not result.already_applied,
-    }
-
-
-@router.delete(
-    "/weekly-adaptation-proposal",
-    status_code=204,
-)
-def reject_weekly_adaptation_proposal(
-    week_start: date,
-    athlete_profile_id: UUID = Depends(
-        get_current_athlete_profile_id,
-    ),
-) -> None:
-    """Le refus de l'athlète supprime la proposition temporaire."""
-
-    WeeklyAdaptationProposalStore().delete(
-        athlete_profile_id,
-        week_start,
-    )
-
+        raise HTTPException(status_code=409, detail='Impossible d’appliquer la proposition. Le planning n’a pas été confirmé.') from exc
+    return {'week_start': week_start.isoformat(), 'applied': not result.already_applied}
 
 @router.get(
     "/weekly-plan",

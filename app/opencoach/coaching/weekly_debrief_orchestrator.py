@@ -214,10 +214,10 @@ class WeeklyDebriefOrchestrator:
                 ),
             )
 
-        # La clôture produit un bilan et une proposition
-        # d'adaptation persistée. Le planning actif reste intact :
-        # seule une validation explicite de l'athlète pourra
-        # déclencher WeeklyDebriefPlanningApplicationService.
+        # La clôture produit un bilan immuable. La décision
+        # d'adaptation est reconstruite depuis ce bilan à la demande.
+        # Le planning actif reste intact jusqu'à la validation explicite
+        # de l'athlète via WeeklyDebriefPlanningApplicationService.
         status = WeeklyDebriefOrchestrationStatus.COMPLETED
 
         return WeeklyDebriefOrchestrationResult(

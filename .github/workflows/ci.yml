@@ -47,7 +47,7 @@ jobs:
 
       - name: ShellCheck
         run: |
-          ./scripts/maintenance/shellcheck.sh
+          bash ./scripts/maintenance/shellcheck.sh
 
       - name: Version consistency
         run: |

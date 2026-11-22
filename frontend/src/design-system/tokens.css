@@ -185,6 +185,15 @@
   color: #a8bdb4 !important;
 }
 
+/* Win over the training-page polish selectors in both themes. */
+.oc-today-focus-card .oc-today-focus-session p:first-child {
+  color: #f2f8f5 !important;
+}
+
+.oc-today-focus-card .oc-today-focus-session p:nth-child(2) {
+  color: #a8bdb4 !important;
+}
+
 .oc-today-focus-card .oc-today-focus-icon {
   color: #6ee7b7 !important;
   background: rgba(52, 211, 153, 0.12) !important;

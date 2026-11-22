@@ -1,10 +1,10 @@
 """Notification finale du workflow hebdomadaire OpenCoach.
 
-Ce composant intervient uniquement après la persistance du débrief
-et l'application du planning N+1.
+Ce composant intervient après la persistance du débrief
+et de la proposition de planning N+1.
 
-Il ne clôture pas la semaine, ne recalcule pas le débrief et ne
-génère aucune séance.
+Il ne clôture pas la semaine, ne recalcule pas le débrief, ne
+génère aucune séance et ne modifie jamais le planning actif.
 """
 
 from __future__ import annotations
@@ -130,11 +130,6 @@ class WeeklyDebriefNotificationService:
                 ),
             )
 
-        if stored.planning_updated_at is None:
-            return WeeklyDebriefNotificationResult(
-                athlete_profile_id=athlete_profile_id,
-                status=WeeklyDebriefNotificationStatus.NOT_READY,
-            )
 
         user_id = self._user_id_resolver(
             athlete_profile_id
@@ -170,18 +165,19 @@ class WeeklyDebriefNotificationService:
         )
 
         if sync_incomplete:
-            title = "Programme hebdomadaire prêt"
+            title = "Ton bilan hebdomadaire est disponible"
             body = (
-                "Ta semaine a été analysée et ton programme "
-                "est prêt. Certaines séances n'ont pas pu "
-                "être synchronisées avec Intervals.icu."
+                "Le coach a analysé ta semaine et préparé "
+                "une proposition pour la suivante. Consulte "
+                "le débriefing et décide toi-même des changements. "
+                "La synchronisation Intervals.icu reste incomplète."
             )
         else:
-            title = "Programme hebdomadaire prêt"
+            title = "Ton bilan hebdomadaire est disponible"
             body = (
-                "Ta semaine a été analysée. Ton programme "
-                "de la semaine prochaine est prêt et "
-                "synchronisé avec Intervals.icu."
+                "Le coach a analysé ta semaine et préparé "
+                "une proposition pour la suivante. Consulte "
+                "le débriefing et décide toi-même des changements."
             )
 
         try:

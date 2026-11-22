@@ -174,11 +174,14 @@ def test_activity_match_normalizes_coros_french_running_sports() -> None:
     activity = create_activity()
     activity.provider = "coros"
     activity.sport_type = "Course extérieure"
+    activity.distance_m = 8000.0
 
     result = match_activity_to_session(session, activity)
 
     assert result.sport_matches is True
     assert result.sport_score == 40.0
+    assert result.distance_score == 20.0
+    assert result.score > 80.0
 
 
 def test_activity_match_normalizes_coros_trail_sport() -> None:

@@ -1,8 +1,7 @@
-"""Application d'une adaptation hebdomadaire persistée.
+"""Application d'une adaptation hebdomadaire approuvée par l'athlète.
 
-Ce module reprend une décision issue d'un débrief déjà fermé,
-l'applique au moteur de génération existant puis marque l'étape
-planning comme terminée.
+Ce module reconstruit la décision depuis le débrief fermé, l'applique
+au moteur de génération existant puis marque l'étape planning terminée.
 
 Il ne recalcule jamais le débrief et n'envoie aucune notification.
 """
@@ -304,7 +303,7 @@ class WeeklyDebriefPlanningApplicationService:
         reconcile_from_date=None,
         additional_context=(),
     ) -> WeeklyPlanningApplicationResult:
-        """Applique exactement une fois l'adaptation persistée."""
+        """Applique la décision du débrief après approbation explicite."""
 
         stored = (
             self._debrief_repository.get_for_week(

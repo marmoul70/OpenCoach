@@ -37,6 +37,9 @@ from opencoach.coaching.generation.current_week import (
 from opencoach.coaching.weekly_adaptation_proposal_store import (
     WeeklyAdaptationProposalStore,
 )
+from opencoach.coaching.weekly_debrief_planning_application import (
+    WeeklyDebriefPlanningApplicationService,
+)
 
 from opencoach.coaching.weekly_assessment import (
     CoachWeeklyAssessment,
@@ -48,6 +51,7 @@ from opencoach.api.coaching.dependencies import (
     get_coach_decision_service,
     get_coach_weekly_assessment_service,
     get_weekly_planning_context_builder,
+    get_generate_planned_training_week_service,
 )
 from opencoach.database.repositories import (
     ActivityRepositoryError,
@@ -341,6 +345,61 @@ def get_weekly_adaptation_proposal(
             detail="Aucune proposition temporaire pour cette semaine.",
         )
     return proposal
+
+
+@router.post(
+    "/weekly-adaptation-proposal/apply",
+)
+def apply_weekly_adaptation_proposal(
+    week_start: date,
+    athlete_profile_id: UUID = Depends(
+        get_current_athlete_profile_id,
+    ),
+    context_builder: WeeklyPlanningContextBuilder = Depends(
+        get_weekly_planning_context_builder,
+    ),
+    planning_service = Depends(
+        get_generate_planned_training_week_service,
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Applique la proposition uniquement après validation explicite."""
+
+    proposal_store = WeeklyAdaptationProposalStore()
+    if proposal_store.get(athlete_profile_id, week_start) is None:
+        raise HTTPException(
+            status_code=404,
+            detail="La proposition n'existe plus ou a déjà été traitée.",
+        )
+
+    next_week_start = week_start + timedelta(days=7)
+    try:
+        prepared = context_builder.build(
+            athlete_profile_id=athlete_profile_id,
+            planning_date=next_week_start,
+            trajectory_start_date=next_week_start,
+        )
+        application = WeeklyDebriefPlanningApplicationService(
+            debrief_repository=SqlWeeklyDebriefRepository(db),
+            planning_service=planning_service,
+            proposal_store=proposal_store,
+        )
+        result = application.execute(
+            athlete_profile_id=athlete_profile_id,
+            closed_week_start=week_start,
+            planning_input=prepared.planning_input,
+            reconcile_from_date=next_week_start,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="Impossible d'appliquer la proposition. Le planning n'a pas été confirmé.",
+        ) from exc
+
+    return {
+        "week_start": week_start,
+        "applied": not result.already_applied,
+    }
 
 
 @router.delete(

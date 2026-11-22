@@ -132,7 +132,7 @@ def _generate_for_profile(
             skipped_total += 1
             print(
                 f"[IGNORÉE] {len(planned)} séance(s) déjà planifiée(s). "
-                "Utilise --include-existing uniquement si tu sais pourquoi."
+                "La semaine est laissée intacte pour protéger le planning existant."
             )
             continue
 

@@ -32,6 +32,8 @@ export interface WeeklyDebriefHistory {
     sleep_rem_seconds: number | null
     sleep_awake_seconds: number | null
     avg_sleeping_hr: number | null
+    min_sleeping_hr: number | null
+    max_sleeping_hr: number | null
     spo2: number | null
     steps: number | null
   }>

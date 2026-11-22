@@ -179,37 +179,10 @@ class WeeklyDebriefOrchestrator:
                 reason=eligibility.reason,
             )
 
-        if context.completed_sessions_count == 0:
-            return WeeklyDebriefOrchestrationResult(
-                athlete_profile_id=(
-                    context.athlete_profile_id
-                ),
-                status=(
-                    WeeklyDebriefOrchestrationStatus.NO_DEBRIEF
-                ),
-                eligibility=eligibility.decision,
-                reason=(
-                    "Aucune séance réalisée cette semaine ; "
-                    "aucun débrief hebdomadaire n'est généré."
-                ),
-            )
-
-        if context.planning_input is None:
-            return WeeklyDebriefOrchestrationResult(
-                athlete_profile_id=(
-                    context.athlete_profile_id
-                ),
-                status=(
-                    WeeklyDebriefOrchestrationStatus.FAILED
-                ),
-                eligibility=eligibility.decision,
-                reason=(
-                    "La clôture est éligible mais le contexte "
-                    "du planning suivant est indisponible."
-                ),
-                error="missing_planning_input",
-            )
-
+        # Le bilan doit aussi exister lorsque l'athlète n'a
+        # réalisé aucune séance ou que le contexte de planification
+        # est indisponible. La proposition pourra alors être absente
+        # ou incomplète, sans empêcher la consultation du bilan.
         try:
             self._closure_service.execute(
                 athlete_profile_id=(

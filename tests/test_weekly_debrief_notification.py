@@ -183,12 +183,12 @@ def test_sends_and_marks_notification_once() -> None:
     assert len(push.calls) == 1
     assert len(repository.mark_calls) == 1
     assert (
-        "synchronisé avec Intervals.icu"
+        "décide toi-même des changements"
         in push.calls[0]["body"]
     )
 
 
-def test_not_ready_before_planning_update() -> None:
+def test_notifies_when_debrief_exists_before_plan_is_approved() -> None:
     stored = FakeStored(
         planning_updated_at=None,
         notification_sent_at=None,
@@ -209,9 +209,10 @@ def test_not_ready_before_planning_update() -> None:
 
     assert (
         result.status
-        is WeeklyDebriefNotificationStatus.NOT_READY
+        is WeeklyDebriefNotificationStatus.SENT
     )
-    assert push.calls == []
+    assert len(push.calls) == 1
+    assert "proposition" in push.calls[0]["body"]
 
 
 def test_reports_incomplete_intervals_sync() -> None:
@@ -239,7 +240,7 @@ def test_reports_incomplete_intervals_sync() -> None:
     )
     assert result.sync_incomplete is True
     assert (
-        "n'ont pas pu être synchronisées"
+        "synchronisation Intervals.icu reste incomplète"
         in push.calls[0]["body"]
     )
 

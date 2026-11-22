@@ -54,8 +54,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Clôture les semaines éligibles "
-            "et applique leur adaptation au "
-            "planning suivant."
+            "et prépare une proposition de planning "
+            "soumise à validation de l’athlète."
         )
     )
 

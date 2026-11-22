@@ -1,4 +1,12 @@
 export interface WeeklyDebriefHistory {
+  heart_rate_activities: Array<{
+    activity_name: string
+    started_at: string
+    average_bpm: number | null
+    maximum_bpm: number | null
+    sample_count: number
+    samples: Array<{ time_seconds: number; bpm: number }>
+  }>
   id: string
   facts: Record<string, number | string | null>
   debrief: {

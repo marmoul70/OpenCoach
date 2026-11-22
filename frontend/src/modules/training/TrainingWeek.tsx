@@ -916,6 +916,41 @@ phaseLabel={
                 </div>
               </section>
 
+              <section className="rounded-xl border border-[var(--oc-border)] p-4">
+                <h3 className="font-semibold">Fréquence cardiaque enregistrée</h3>
+                {weeklyDebrief.heart_rate_activities.length === 0 ? (
+                  <p className="mt-2 text-[var(--oc-text-secondary)]">
+                    Aucun flux de fréquence cardiaque détaillé n’est disponible pour cette semaine.
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    {weeklyDebrief.heart_rate_activities.map((activity) => (
+                      <details key={activity.activity_name + activity.started_at} className="rounded-lg bg-[var(--oc-surface-muted)] p-3">
+                        <summary className="cursor-pointer font-medium">
+                          {activity.activity_name} — {activity.sample_count} mesures
+                        </summary>
+                        <p className="mt-2 text-xs text-[var(--oc-text-secondary)]">
+                          Moyenne : {activity.average_bpm ?? '—'} bpm · Maximum : {activity.maximum_bpm ?? '—'} bpm
+                        </p>
+                        <div className="mt-2 max-h-48 overflow-auto">
+                          <table className="w-full text-xs">
+                            <thead><tr><th className="py-1 text-left">Temps (s)</th><th className="py-1 text-right">FC (bpm)</th></tr></thead>
+                            <tbody>
+                              {activity.samples.map((sample, index) => (
+                                <tr key={index} className="border-t border-[var(--oc-border)]">
+                                  <td className="py-1">{sample.time_seconds}</td>
+                                  <td className="py-1 text-right">{sample.bpm}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                )}
+              </section>
+
               {weeklyDebrief.debrief.strengths.length > 0 && (
                 <section>
                   <h3 className="font-semibold">Points positifs</h3>

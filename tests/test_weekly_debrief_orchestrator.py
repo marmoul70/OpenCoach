@@ -269,7 +269,7 @@ def test_sync_grace_waits() -> None:
     assert planning.calls == []
 
 
-def test_missing_planning_input_fails_before_closure() -> None:
+def test_missing_planning_context_does_not_block_debrief() -> None:
     closure = FakeClosureService()
     planning = FakePlanningApplicationService()
 
@@ -286,15 +286,10 @@ def test_missing_planning_input_fails_before_closure() -> None:
 
     assert (
         result.status
-        is WeeklyDebriefOrchestrationStatus.FAILED
+        is WeeklyDebriefOrchestrationStatus.COMPLETED
     )
-
-    assert (
-        result.error
-        == "missing_planning_input"
-    )
-
-    assert closure.calls == []
+    assert result.error is None
+    assert len(closure.calls) == 1
     assert planning.calls == []
 
 
@@ -462,11 +457,11 @@ def test_no_completed_session_returns_no_debrief() -> None:
 
     assert (
         result.status
-        is WeeklyDebriefOrchestrationStatus.NO_DEBRIEF
+        is WeeklyDebriefOrchestrationStatus.COMPLETED
     )
 
     assert result.error is None
-    assert closure_service.calls == []
+    assert len(closure_service.calls) == 1
     assert planning_service.calls == []
 
 

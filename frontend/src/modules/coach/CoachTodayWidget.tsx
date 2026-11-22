@@ -210,20 +210,6 @@ export function CoachTodayWidget({
     dataWarning,
   } = coach
 
-  console.log(
-    '[OpenCoach DEBUG coach today]',
-    {
-      coachDate: coach.date,
-      sessions: sessionDecisions.map(
-        item => ({
-          date: item.session?.date ?? null,
-          title: item.session?.title ?? null,
-          status: item.session?.status ?? null,
-        }),
-      ),
-    },
-  )
-
   const todayItem =
     sessionDecisions.find(
       item => (
@@ -235,20 +221,17 @@ export function CoachTodayWidget({
   const session =
     todayItem?.session ?? null
 
-  const summary =
-    buildWeeklySummary(
-      recentLoadAssessment,
-    )
-
   const guidance =
     buildCoachGuidance(
       coach,
     )
 
-  const signalCount = (
-    readiness.warningCount
-    + readiness.criticalCount
-  )
+  const signalCount =
+    countUniqueSignals(
+      readiness.signals,
+      readiness.warningCount + readiness.criticalCount,
+      recentLoadAssessment,
+    )
 
   const readinessTrend =
     resolveReadinessTrend(
@@ -266,6 +249,7 @@ export function CoachTodayWidget({
       readiness.score,
       readiness.criticalCount,
       readiness.warningCount,
+      recentLoadAssessment,
     )
 
 
@@ -382,7 +366,7 @@ export function CoachTodayWidget({
                 dark:text-white
               "
             >
-              {summary.title}
+              {readinessPresentation.title}
             </h3>
 
             <p
@@ -937,8 +921,15 @@ function getReadinessPresentation(
   score: number,
   criticalCount: number,
   warningCount: number,
+  loadAssessment: {
+    hasWarning: boolean
+    hasCritical: boolean
+    hasOverload: boolean
+    hasBrokenRest: boolean
+  } | null,
 ): {
   label: string
+  title: string
   badgeClass: string
 } {
   if (
@@ -946,8 +937,22 @@ function getReadinessPresentation(
     || score < 50
   ) {
     return {
-      label:
-        'Récupération prioritaire',
+      label: 'Récupération prioritaire',
+      title: 'Récupération prioritaire',
+      badgeClass:
+        (
+          'bg-red-50 '
+          + 'text-red-600 '
+          + 'dark:bg-red-500/10 '
+          + 'dark:text-red-400'
+        ),
+    }
+  }
+
+  if (loadAssessment?.hasCritical) {
+    return {
+      label: 'Charge critique',
+      title: 'Charge critique détectée',
       badgeClass:
         (
           'bg-red-50 '
@@ -961,10 +966,13 @@ function getReadinessPresentation(
   if (
     warningCount > 0
     || score < 70
+    || loadAssessment?.hasWarning
+    || loadAssessment?.hasOverload
+    || loadAssessment?.hasBrokenRest
   ) {
     return {
-      label:
-        'À surveiller',
+      label: 'À surveiller',
+      title: 'Semaine à surveiller',
       badgeClass:
         (
           'bg-amber-50 '
@@ -976,8 +984,8 @@ function getReadinessPresentation(
   }
 
   return {
-    label:
-      'Prêt à s’entraîner',
+    label: 'Prêt à s’entraîner',
+    title: 'Semaine sous contrôle',
     badgeClass:
       (
         'bg-emerald-50 '
@@ -989,61 +997,61 @@ function getReadinessPresentation(
 }
 
 
-function buildWeeklySummary(
-  assessment: {
+function countUniqueSignals(
+  readinessSignals: Array<{
+    metric: string
+    level: string
+    reason: string
+  }>,
+  readinessSignalCount: number,
+  loadAssessment: {
     hasWarning: boolean
     hasCritical: boolean
     hasOverload: boolean
     hasBrokenRest: boolean
+    signals: Array<{
+      kind: string
+      level: string
+      reason: string
+    }>
   } | null,
-): {
-  title: string
-  level:
-    | 'good'
-    | 'warning'
-    | 'info'
-} {
-  if (!assessment) {
-    return {
-      title:
-        'Semaine en cours',
-      level:
-        'info',
+): number {
+  const reasons = new Set<string>()
+  const loadSignals = loadAssessment?.signals ?? []
+
+  for (const signal of [
+    ...readinessSignals,
+    ...loadSignals,
+  ]) {
+    const normalizedReason =
+      signal.reason
+        .trim()
+        .replace(/\s+/g, ' ')
+        .toLocaleLowerCase('fr-FR')
+
+    if (normalizedReason) {
+      reasons.add(normalizedReason)
     }
   }
 
-  if (
-    assessment.hasCritical
-  ) {
-    return {
-      title:
-        'Semaine à surveiller',
-      level:
-        'warning',
-    }
-  }
+  const hasUndescribedLoadAlert = (
+    loadSignals.length === 0
+    && (
+      loadAssessment?.hasWarning
+      || loadAssessment?.hasCritical
+      || loadAssessment?.hasOverload
+      || loadAssessment?.hasBrokenRest
+    )
+  )
 
-  if (
-    assessment.hasWarning
-    || assessment.hasOverload
-    || assessment.hasBrokenRest
-  ) {
-    return {
-      title:
-        'Quelques points à surveiller',
-      level:
-        'warning',
-    }
-  }
-
-  return {
-    title:
-      'Semaine sous contrôle',
-    level:
-      'good',
-  }
+  return (
+    Math.max(
+      reasons.size,
+      readinessSignalCount,
+    )
+    + Number(Boolean(hasUndescribedLoadAlert))
+  )
 }
-
 
 function buildCoachGuidance(
   coach: {

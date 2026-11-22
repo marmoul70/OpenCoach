@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 
@@ -276,37 +277,63 @@ export function TrainingWeek() {
     setApplyingWeeklyDebrief,
   ] = useState(false)
 
+  const weeklyDebriefRequestId = useRef(0)
+
+  useEffect(() => {
+    weeklyDebriefRequestId.current += 1
+    setWeeklyDebriefOpen(false)
+    setWeeklyDebrief(null)
+    setWeeklyDebriefError(null)
+    setWeeklyDebriefLoading(false)
+    setApplyingWeeklyDebrief(false)
+  }, [weekStart])
+
   async function openWeeklyDebrief() {
+    const requestId = ++weeklyDebriefRequestId.current
     setWeeklyDebriefOpen(true)
     setWeeklyDebriefLoading(true)
     setWeeklyDebriefError(null)
     setWeeklyDebrief(null)
     try {
       const result = await fetchWeeklyDebrief(weekStart)
-      setWeeklyDebrief(result)
+      if (requestId === weeklyDebriefRequestId.current) {
+        setWeeklyDebrief(result)
+      }
     } catch (reason) {
-      setWeeklyDebriefError(
-        reason instanceof Error ? reason.message : 'Impossible de charger le bilan.',
-      )
+      if (requestId === weeklyDebriefRequestId.current) {
+        setWeeklyDebriefError(
+          reason instanceof Error ? reason.message : 'Impossible de charger le bilan.',
+        )
+      }
     } finally {
-      setWeeklyDebriefLoading(false)
+      if (requestId === weeklyDebriefRequestId.current) {
+        setWeeklyDebriefLoading(false)
+      }
     }
   }
 
   async function confirmWeeklyAdaptation() {
+    const appliedWeekStart = weekStart
+    const requestId = weeklyDebriefRequestId.current
     setApplyingWeeklyDebrief(true)
     setWeeklyDebriefError(null)
     try {
-      await applyWeeklyDebrief(weekStart)
-      const refreshed = await fetchWeeklyDebrief(weekStart)
-      setWeeklyDebrief(refreshed)
-      await loadWeeklyStats()
+      await applyWeeklyDebrief(appliedWeekStart)
+      const refreshed = await fetchWeeklyDebrief(appliedWeekStart)
+      if (requestId === weeklyDebriefRequestId.current) {
+        setWeeklyDebrief(refreshed)
+        await loadWeeklyStats()
+      }
     } catch (reason) {
-      setWeeklyDebriefError(
-        reason instanceof Error ? reason.message : 'Impossible d’appliquer la proposition.',
-      )
+      if (requestId === weeklyDebriefRequestId.current) {
+        setWeeklyDebriefError(
+          reason instanceof Error ? reason.message : 'Impossible d’appliquer la proposition.',
+        )
+      }
     } finally {
-      setApplyingWeeklyDebrief(false)
+      if (requestId === weeklyDebriefRequestId.current) {
+        setApplyingWeeklyDebrief(false)
+      }
     }
   }
 

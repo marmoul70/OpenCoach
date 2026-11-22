@@ -23,9 +23,6 @@ from opencoach.coaching.weekly_adaptation import (
 from opencoach.coaching.weekly_debrief import (
     build_weekly_debrief,
 )
-from opencoach.coaching.weekly_adaptation_proposal_store import (
-    WeeklyAdaptationProposalStore,
-)
 from opencoach.coaching.weekly_debrief_facts import (
     WeeklyActivityReader,
     WeeklyTrainingSessionReader,
@@ -121,7 +118,6 @@ class WeeklyDebriefClosureService:
             SessionExecutionAnalysisReader
         ),
         debrief_repository: WeeklyDebriefRepository,
-        proposal_store: WeeklyAdaptationProposalStore | None = None,
     ) -> None:
         self._session_reader = session_reader
         self._activity_reader = activity_reader
@@ -130,7 +126,6 @@ class WeeklyDebriefClosureService:
             execution_analysis_reader
         )
         self._debrief_repository = debrief_repository
-        self._proposal_store = proposal_store
 
     def execute(
         self,
@@ -247,12 +242,6 @@ class WeeklyDebriefClosureService:
             debrief,
             adaptation_payload=None,
         )
-        if self._proposal_store is not None:
-            self._proposal_store.save(
-                athlete_profile_id,
-                week_start,
-                adaptation_payload,
-            )
         return stored
 
 

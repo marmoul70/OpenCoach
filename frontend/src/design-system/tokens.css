@@ -198,9 +198,8 @@
 }
 
 .oc-panel-header {
-  background: color-mix(in srgb, var(--oc-surface) 94%, transparent);
+  background: var(--oc-surface);
   border-bottom: 1px solid var(--oc-border);
-  backdrop-filter: blur(16px);
 }
 
 

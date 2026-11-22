@@ -38,6 +38,7 @@ export function TodayTrainingCard({
     <section
       aria-label="Entraînement du jour"
       className="
+        oc-today-focus-card
         training-polish__today
         rounded-[14px]
         border
@@ -111,6 +112,7 @@ export function TodayTrainingCard({
         {sessions.length === 0 && (
           <div
             className="
+              oc-today-focus-session
               training-polish__today-empty
               rounded-[10px]
               border
@@ -122,6 +124,7 @@ export function TodayTrainingCard({
           >
             <p
               className="
+                oc-today-focus-title
                 text-[14px]
                 font-semibold
                 text-[var(--oc-text-secondary)]
@@ -132,6 +135,7 @@ export function TodayTrainingCard({
 
             <p
               className="
+                oc-today-focus-session-meta
                 mt-0.5
                 text-[12px]
                 text-[var(--oc-muted)]
@@ -316,7 +320,7 @@ function TodayTrainingSession({
       onClick={onOpen}
       className={[
         (
-          'training-polish__today-session group flex w-full items-center '
+          'oc-today-focus-session training-polish__today-session group flex w-full items-center '
           + 'justify-between gap-4 rounded-[10px] '
           + 'border border-[var(--oc-border)] '
           + 'bg-[var(--oc-surface-muted)] px-3 py-2 '
@@ -341,6 +345,7 @@ function TodayTrainingSession({
           <p
             className="
               truncate
+              oc-today-focus-session-title
               text-[15px]
               font-semibold
               text-[var(--oc-text)]
@@ -356,6 +361,7 @@ function TodayTrainingSession({
 
         <p
           className="
+            oc-today-focus-session-meta
             mt-0.5
             whitespace-nowrap
             text-[11.5px]

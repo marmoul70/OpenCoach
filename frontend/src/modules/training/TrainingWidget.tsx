@@ -120,6 +120,7 @@ export function TrainingWidget({
       type="button"
       onClick={onClick}
       className="
+        oc-today-focus-card
         group
         relative
         w-full
@@ -204,6 +205,7 @@ export function TrainingWidget({
 
             <p
               className="
+                oc-today-focus-muted
                 mt-1
                 text-sm
                 text-[var(--oc-muted)]
@@ -225,6 +227,7 @@ export function TrainingWidget({
               shrink-0
               items-center
               justify-center
+              oc-today-focus-icon
               rounded-xl
               bg-[var(--oc-surface-muted)]
               text-[var(--oc-muted)]
@@ -294,6 +297,7 @@ export function TrainingWidget({
             {todaySessions.length > 1 && (
               <div
                 className="
+                  oc-today-focus-divider
                   mt-5
                   divide-y
                   divide-[var(--oc-border)]
@@ -326,6 +330,7 @@ export function TrainingWidget({
                       >
                         <p
                           className="
+                            oc-today-focus-title
                             truncate
                             text-sm
                             font-semibold
@@ -338,6 +343,7 @@ export function TrainingWidget({
 
                         <p
                           className="
+                            oc-today-focus-muted
                             mt-0.5
                             truncate
                             text-xs
@@ -350,6 +356,7 @@ export function TrainingWidget({
 
                       <span
                         className="
+                          oc-today-focus-muted
                           text-xs
                           font-medium
                           text-[var(--oc-muted)]
@@ -457,6 +464,7 @@ function TrainingMetric({
   return (
     <div
       className="
+        oc-today-focus-metric
         rounded-xl
         bg-[var(--oc-surface-muted)]
         px-3.5
@@ -465,6 +473,7 @@ function TrainingMetric({
     >
       <div
         className="
+          oc-today-focus-muted
           flex
           items-center
           gap-1.5

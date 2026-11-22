@@ -136,6 +136,63 @@
   --oc-shadow-popover: 0 16px 40px rgba(0, 0, 0, 0.32);
 }
 
+/* Persistent dark focus surface for today's training cards.
+ * Deliberately identical in light and dark application themes.
+ */
+.oc-today-focus-card,
+.oc-today-focus-card.training-polish__today {
+  color: #f2f8f5 !important;
+  background: linear-gradient(145deg, #14231f 0%, #1b3029 100%) !important;
+  border-color: rgba(52, 211, 153, 0.32) !important;
+  box-shadow: 0 12px 30px rgba(8, 24, 18, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
+}
+
+.oc-today-focus-card .oc-today-focus-title {
+  color: #f2f8f5 !important;
+}
+
+.oc-today-focus-card .oc-today-focus-muted {
+  color: #a8bdb4 !important;
+}
+
+.oc-today-focus-card .oc-today-focus-metric {
+  color: #e5f1eb !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.oc-today-focus-card .oc-today-focus-divider {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  --tw-divide-opacity: 0.12;
+}
+
+.oc-today-focus-card .oc-today-focus-session {
+  color: #f2f8f5 !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+.oc-today-focus-card .oc-today-focus-session:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(52, 211, 153, 0.38) !important;
+}
+
+.oc-today-focus-card .oc-today-focus-session-title,
+.oc-today-focus-card .oc-today-focus-session p:first-child {
+  color: #f2f8f5 !important;
+}
+
+.oc-today-focus-card .oc-today-focus-session-meta,
+.oc-today-focus-card .oc-today-focus-session p:nth-child(2) {
+  color: #a8bdb4 !important;
+}
+
+.oc-today-focus-card .oc-today-focus-icon {
+  color: #6ee7b7 !important;
+  background: rgba(52, 211, 153, 0.12) !important;
+  border: 1px solid rgba(52, 211, 153, 0.16);
+}
+
 /* Alias class for components migrated to the shared surface contract. */
 .oc-surface {
   color: var(--oc-text);

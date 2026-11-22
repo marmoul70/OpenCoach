@@ -26,7 +26,6 @@ source "$PROJECT_ROOT/scripts/lib/log.sh"
 
 
 DEV_REQUESTED=0
-WITH_AI_REQUESTED=0
 
 
 show_help() {
@@ -41,8 +40,6 @@ show_help() {
     printf '%s\n' \
         "  --dev       Installe également les dépendances de développement."
     printf '%s\n' \
-        "  --with-ai   Installe Ollama et le modèle IA local (optionnel)."
-    printf '%s\n' \
         "  --help      Affiche cette aide."
 }
 
@@ -52,10 +49,6 @@ parse_arguments() {
         case "$1" in
             "--dev")
                 DEV_REQUESTED=1
-                ;;
-
-            "--with-ai")
-                WITH_AI_REQUESTED=1
                 ;;
 
             "--help"|"-h")
@@ -184,16 +177,6 @@ main() {
 
     log_success \
         "Application OpenCoach installée et migrée."
-
-    if (( WITH_AI_REQUESTED == 1 )); then
-        log_info "Installation optionnelle du moteur IA local"
-        if ! bash "$BOOTSTRAP_DIR/install-ai.sh"; then
-            log_error "L'installation du moteur IA demandée avec --with-ai a échoué."
-            return 1
-        fi
-        log_success "Moteur IA local installé. L'activation applicative reste désactivée."
-    fi
-
 
     log_info \
         "Installation des services OpenCoach"

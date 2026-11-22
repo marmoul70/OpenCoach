@@ -1,7 +1,5 @@
 from fastapi import FastAPI
 
-from opencoach.api.ai import router as ai_router
-
 from opencoach.api.auth import router as auth_router
 from opencoach.api.push import router as push_router
 from opencoach.api.notifications import router as notifications_router
@@ -37,7 +35,6 @@ def create_app() -> FastAPI:
     app.add_middleware(AuthenticationMiddleware)
 
     app.include_router(health_router)
-    app.include_router(ai_router)
     app.include_router(auth_router)
     app.include_router(push_router)
     app.include_router(notifications_router)

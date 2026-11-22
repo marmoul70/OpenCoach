@@ -20,7 +20,6 @@ import {
 import { TrainingProvider } from './modules/training/trainingStore'
 import { RaceProvider } from './modules/races/raceStore'
 import { logout as logoutOpenCoach } from './modules/auth'
-import { CoachAIChat } from './modules/coach/CoachAIChat'
 
 /**
  * Les pages sont chargées à la demande : le premier écran ne télécharge
@@ -558,8 +557,6 @@ function App() {
             {page === 'settings' && <Settings />}
           </Suspense>
 
-          {/* Assistant IA accessible depuis toutes les pages */}
-          <CoachAIChat />
         </div>
       </TrainingProvider>
     </RaceProvider>

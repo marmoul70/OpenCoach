@@ -17,8 +17,6 @@ from opencoach.database.models.race import Race
 from .athlete_constraint import AthleteConstraint
 from .physiological_measurement import PhysiologicalMeasurement
 from .notification import Notification
-from .ai_coach_preference import AICoachPreference
-from .ai_data_proposal import AIDataProposal
 
 __all__ = [
     "Activity",
@@ -42,8 +40,6 @@ __all__ = [
     "AthleteConstraint",
     "PhysiologicalMeasurement",
     "Notification",
-    "AICoachPreference",
-    "AIDataProposal",
 ]
 
 from .daily_checkin import DailyCheckIn

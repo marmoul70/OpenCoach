@@ -26,9 +26,7 @@ from uuid import UUID
 
 from opencoach.coaching.weekly_adaptation import (
     WeeklyAdaptationDecision,
-)
-from opencoach.coaching.weekly_adaptation_proposal_store import (
-    WeeklyAdaptationProposalStore,
+    build_weekly_adaptation_decision,
 )
 from opencoach.database.repositories.weekly_debrief import (
     StoredWeeklyDebrief,
@@ -276,7 +274,6 @@ class WeeklyDebriefPlanningApplicationService:
         workout_sync_service: (
             WeeklyWorkoutSyncService | None
         ) = None,
-        proposal_store: WeeklyAdaptationProposalStore | None = None,
     ) -> None:
         if (
             planning_service is None
@@ -295,7 +292,6 @@ class WeeklyDebriefPlanningApplicationService:
         self._workout_sync_service = (
             workout_sync_service
         )
-        self._proposal_store = proposal_store
 
     def execute(
         self,
@@ -324,37 +320,29 @@ class WeeklyDebriefPlanningApplicationService:
             )
 
         if stored.planning_updated_at is not None:
-            if self._proposal_store is not None:
-                self._proposal_store.delete(
-                    athlete_profile_id,
-                    closed_week_start,
-                )
             return WeeklyPlanningApplicationResult(
                 stored_debrief=stored,
                 planning_result=None,
                 already_applied=True,
             )
 
-        payload = (
-            self._proposal_store.get(
-                athlete_profile_id,
-                closed_week_start,
+        # La décision est reconstruite à partir du débrief immuable
+        # persisté. Aucun snapshot brut ni proposition temporaire n'est requis.
+        if stored.debrief is not None:
+            decision = build_weekly_adaptation_decision(
+                stored.debrief
             )
-            if self._proposal_store is not None
-            else stored.adaptation_payload
-        )
-
-        if payload is None:
+        elif stored.adaptation_payload is not None:
+            # Compatibilité avec les anciens débriefs qui stockaient
+            # encore explicitement le payload d'adaptation.
+            decision = deserialize_weekly_adaptation_decision(
+                stored.adaptation_payload
+            )
+        else:
             raise WeeklyAdaptationPayloadError(
-                "Le débrief fermé ne contient "
-                "aucune décision d'adaptation."
+                "Le débrief fermé ne permet pas de reconstruire "
+                "la décision d'adaptation."
             )
-
-        decision = (
-            deserialize_weekly_adaptation_decision(
-                payload
-            )
-        )
 
         planning_service = self._planning_service
 
@@ -405,12 +393,6 @@ class WeeklyDebriefPlanningApplicationService:
             raise WeeklyPlanningApplicationError(
                 "Le planning a été généré mais "
                 "planning_updated_at n'a pas pu être persisté."
-            )
-
-        if self._proposal_store is not None:
-            self._proposal_store.delete(
-                athlete_profile_id,
-                closed_week_start,
             )
 
         self._sync_next_week_best_effort(

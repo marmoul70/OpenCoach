@@ -431,13 +431,16 @@ def get_weekly_debrief(
             athlete_profile_id,
             activity.id,
         )
-        if detail is None or detail.streams.heartrate is None:
-            continue
-
-        heart_rates = list(detail.streams.heartrate.data)
+        heart_rates = (
+            list(detail.streams.heartrate.data)
+            if detail is not None
+            and detail.streams.heartrate is not None
+            else []
+        )
         times = (
             list(detail.streams.time.data)
-            if detail.streams.time is not None
+            if detail is not None
+            and detail.streams.time is not None
             else list(range(len(heart_rates)))
         )
         samples = [
@@ -447,7 +450,12 @@ def get_weekly_debrief(
             }
             for index in range(min(len(times), len(heart_rates)))
         ]
-        if not samples:
+
+        if (
+            not samples
+            and activity.average_heart_rate is None
+            and activity.max_heart_rate is None
+        ):
             continue
 
         heart_rate_activities.append(

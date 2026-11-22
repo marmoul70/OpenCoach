@@ -1001,6 +1001,7 @@ phaseLabel={
                           <Metric label="Sommeil" value={day.sleep_seconds != null ? `${(day.sleep_seconds / 3600).toFixed(1)} h` : '—'} />
                           <Metric label="Score sommeil" value={day.sleep_score ?? day.sleep_quality ?? '—'} />
                           <Metric label="FC moyenne sommeil" value={day.avg_sleeping_hr != null ? `${day.avg_sleeping_hr} bpm` : '—'} />
+                          <Metric label="FC min / max sommeil" value={day.min_sleeping_hr != null || day.max_sleeping_hr != null ? `${day.min_sleeping_hr ?? '—'} / ${day.max_sleeping_hr ?? '—'} bpm` : '—'} />
                           <Metric label="SpO₂" value={day.spo2 != null ? `${day.spo2} %` : '—'} />
                           <Metric label="Pas" value={day.steps} />
                         </div>

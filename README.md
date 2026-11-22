@@ -1,5 +1,7 @@
 # OpenCoach
 
-Application de suivi et de coaching sportif, avec planification d'entraînement déterministe, suivi des activités, préparation des courses et synchronisation COROS / Intervals.icu.
+Application personnelle de coaching sportif et de suivi de l'entraînement, orientée course à pied et trail.
 
-Le coach conversationnel basé sur l'intelligence artificielle n'est pas inclus dans cette branche.
+OpenCoach regroupe la planification des entraînements, l'analyse de la charge, le suivi de la récupération, la préparation des courses et les synchronisations COROS et Intervals.icu.
+
+Cette branche conserve le coaching déterministe et les fonctionnalités classiques. Le coach conversationnel basé sur l'intelligence artificielle n'y est pas inclus.

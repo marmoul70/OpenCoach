@@ -698,6 +698,66 @@ def test_past_generated_session_is_not_overwritten_on_refresh() -> None:
         == original_duration
     )
 
+
+class FakeTransaction:
+    def __init__(self) -> None:
+        self.commits = 0
+        self.rollbacks = 0
+
+    def commit(self) -> None:
+        self.commits += 1
+
+    def rollback(self) -> None:
+        self.rollbacks += 1
+
+
+class TransactionalTrainingSessionRepository(FakeTrainingSessionRepository):
+    def __init__(self, transaction, *, fail_on_save=False) -> None:
+        super().__init__()
+        self.session = transaction
+        self.fail_on_save = fail_on_save
+
+    def save_session(self, athlete_profile_id, session, *, commit=True):
+        if self.fail_on_save:
+            raise RuntimeError("Échec simulé pendant l'enregistrement")
+        return super().save_session(athlete_profile_id, session)
+
+
+class TransactionalWeeklyPlanRepository(FakeWeeklyTrainingPlanRepository):
+    def __init__(self, transaction) -> None:
+        super().__init__()
+        self.session = transaction
+
+    def save_plan(self, plan, *, commit=True):
+        self.saved_plans.append(plan)
+        return plan
+
+
+def test_sql_style_persistence_rolls_back_all_writes_on_failure() -> None:
+    transaction = FakeTransaction()
+    repository = TransactionalTrainingSessionRepository(
+        transaction,
+        fail_on_save=True,
+    )
+    plan_repository = TransactionalWeeklyPlanRepository(transaction)
+    service = WeeklyTrainingPersistenceService(
+        repository=repository,
+        weekly_plan_repository=plan_repository,
+    )
+    week = create_week()
+
+    with pytest.raises(RuntimeError, match="Échec simulé"):
+        service.persist(
+            athlete_profile_id=uuid4(),
+            week=week,
+            envelope=create_envelope_for_week(week),
+        )
+
+    assert len(plan_repository.saved_plans) == 1
+    assert transaction.commits == 0
+    assert transaction.rollbacks == 1
+
+
 def test_conflict_does_not_persist_weekly_plan_or_change_sessions() -> None:
     """Un conflit doit être détecté avant toute écriture de planning."""
     completed = create_existing_session(status="completed")

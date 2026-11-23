@@ -233,8 +233,8 @@ def _remove_obsolete_generated_sessions(
         TrainingSession
     ],
     generated_planning_keys: set[str],
-    reconcile_from_date: date | None = None,,
-    defer_commit: bool = False
+    reconcile_from_date: date | None = None,
+    defer_commit: bool = False,
 ) -> None:
     """Supprime les anciennes séances générées devenues obsolètes.
 

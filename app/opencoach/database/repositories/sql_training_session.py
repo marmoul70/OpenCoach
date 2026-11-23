@@ -35,6 +35,8 @@ class SqlTrainingSessionRepository(
         self,
         athlete_profile_id: UUID,
         session: TrainingSession,
+        *,
+        commit: bool = True,
     ) -> TrainingSession:
         """Crée ou met à jour une séance."""
 
@@ -134,8 +136,11 @@ class SqlTrainingSessionRepository(
                         field_name,
                         getattr(session, field_name),
                     )
-            self.session.commit()
-            self.session.refresh(database_session)
+            if commit:
+                self.session.commit()
+                self.session.refresh(database_session)
+            else:
+                self.session.flush()
 
             return self._to_domain(database_session)
 
@@ -219,6 +224,8 @@ class SqlTrainingSessionRepository(
         self,
         athlete_profile_id: UUID,
         session_id: UUID,
+        *,
+        commit: bool = True,
     ) -> None:
         """Supprime une séance appartenant à l'athlète."""
 
@@ -258,7 +265,10 @@ class SqlTrainingSessionRepository(
             self.session.delete(
                 database_session
             )
-            self.session.commit()
+            if commit:
+                self.session.commit()
+            else:
+                self.session.flush()
 
         except SQLAlchemyError as exc:
             self.session.rollback()

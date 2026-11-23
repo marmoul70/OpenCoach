@@ -733,6 +733,28 @@ class TransactionalWeeklyPlanRepository(FakeWeeklyTrainingPlanRepository):
         return plan
 
 
+
+def test_sql_style_persistence_commits_once_after_all_writes() -> None:
+    transaction = FakeTransaction()
+    repository = TransactionalTrainingSessionRepository(transaction)
+    plan_repository = TransactionalWeeklyPlanRepository(transaction)
+    service = WeeklyTrainingPersistenceService(
+        repository=repository,
+        weekly_plan_repository=plan_repository,
+    )
+    week = create_week()
+
+    persisted = service.persist(
+        athlete_profile_id=uuid4(),
+        week=week,
+        envelope=create_envelope_for_week(week),
+    )
+
+    assert len(persisted) == 1
+    assert transaction.commits == 1
+    assert transaction.rollbacks == 0
+
+
 def test_sql_style_persistence_rolls_back_all_writes_on_failure() -> None:
     transaction = FakeTransaction()
     repository = TransactionalTrainingSessionRepository(

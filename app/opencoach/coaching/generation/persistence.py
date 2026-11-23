@@ -142,7 +142,8 @@ class WeeklyTrainingPersistenceService:
         )
 
         try:
-            self.weekly_plan_repository.save_plan(
+            save_plan = getattr(self.weekly_plan_repository, "save_plan")
+            save_plan(
                 WeeklyTrainingPlan(
                     id=None,
                     athlete_profile_id=athlete_profile_id,
@@ -173,8 +174,9 @@ class WeeklyTrainingPersistenceService:
             )
 
             persisted: list[TrainingSession] = []
+            save_session = getattr(self.repository, "save_session")
             for mapped in prepared_sessions:
-                saved = self.repository.save_session(
+                saved = save_session(
                     athlete_profile_id,
                     mapped,
                     **({"commit": False} if transactional else {}),
@@ -285,7 +287,8 @@ def _remove_obsolete_generated_sessions(
                 "ne peut pas être réconciliée."
             )
 
-        repository.delete_session(
+        delete_session = getattr(repository, "delete_session")
+        delete_session(
             athlete_profile_id,
             session.id,
             **({"commit": False} if defer_commit else {}),

@@ -36,6 +36,8 @@ class SqlWeeklyTrainingPlanRepository(
     def save_plan(
         self,
         plan: WeeklyTrainingPlan,
+        *,
+        commit: bool = True,
     ) -> WeeklyTrainingPlan:
         """Crée ou met à jour le plan de la semaine."""
 
@@ -123,10 +125,11 @@ class SqlWeeklyTrainingPlanRepository(
 
             database_plan.updated_at = now
 
-            self.session.commit()
-            self.session.refresh(
-                database_plan
-            )
+            if commit:
+                self.session.commit()
+                self.session.refresh(database_plan)
+            else:
+                self.session.flush()
 
             return self._to_domain(
                 database_plan

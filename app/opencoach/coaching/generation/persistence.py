@@ -133,56 +133,63 @@ class WeeklyTrainingPersistenceService:
 
             prepared_sessions.append(mapped)
 
-        # Le plan hebdomadaire n'est enregistré qu'après la prévalidation.
-        self.weekly_plan_repository.save_plan(
-            WeeklyTrainingPlan(
-                id=None,
+        # Les repositories SQL partagent la même Session. Dans ce cas,
+        # toutes les écritures sont différées jusqu'au commit final.
+        session = getattr(self.repository, "session", None)
+        transactional = (
+            session is not None
+            and session is getattr(self.weekly_plan_repository, "session", None)
+        )
+
+        try:
+            self.weekly_plan_repository.save_plan(
+                WeeklyTrainingPlan(
+                    id=None,
+                    athlete_profile_id=athlete_profile_id,
+                    week_start=envelope.week_start,
+                    week_end=envelope.week_end,
+                    phase=str(envelope.phase.value if hasattr(envelope.phase, "value") else envelope.phase),
+                    week_type=str(envelope.week_type.value if hasattr(envelope.week_type, "value") else envelope.week_type),
+                    phase_week_index=envelope.phase_week_index,
+                    target_load=envelope.target_load,
+                    load_min=envelope.load_min,
+                    load_max=envelope.load_max,
+                    reference_duration_minutes=envelope.reference_duration_minutes,
+                    target_duration_minutes=envelope.target_duration_minutes,
+                    long_endurance_reference_minutes=envelope.long_endurance_reference_minutes,
+                    schedule_pressure=str(envelope.schedule_pressure.value if hasattr(envelope.schedule_pressure, "value") else envelope.schedule_pressure),
+                    athlete_schedule_constrained=envelope.athlete_schedule_constrained,
+                ),
+                **({"commit": False} if transactional else {}),
+            )
+
+            _remove_obsolete_generated_sessions(
+                repository=self.repository,
                 athlete_profile_id=athlete_profile_id,
-                week_start=envelope.week_start,
-                week_end=envelope.week_end,
-                phase=str(
-                    envelope.phase.value
-                    if hasattr(envelope.phase, "value")
-                    else envelope.phase
-                ),
-                week_type=str(
-                    envelope.week_type.value
-                    if hasattr(envelope.week_type, "value")
-                    else envelope.week_type
-                ),
-                phase_week_index=envelope.phase_week_index,
-                target_load=envelope.target_load,
-                load_min=envelope.load_min,
-                load_max=envelope.load_max,
-                reference_duration_minutes=envelope.reference_duration_minutes,
-                target_duration_minutes=envelope.target_duration_minutes,
-                long_endurance_reference_minutes=envelope.long_endurance_reference_minutes,
-                schedule_pressure=str(
-                    envelope.schedule_pressure.value
-                    if hasattr(envelope.schedule_pressure, "value")
-                    else envelope.schedule_pressure
-                ),
-                athlete_schedule_constrained=envelope.athlete_schedule_constrained,
+                existing_sessions=existing_sessions,
+                generated_planning_keys=generated_planning_keys,
+                reconcile_from_date=reconcile_from_date,
+                defer_commit=transactional,
             )
-        )
 
-        _remove_obsolete_generated_sessions(
-            repository=self.repository,
-            athlete_profile_id=athlete_profile_id,
-            existing_sessions=existing_sessions,
-            generated_planning_keys=generated_planning_keys,
-            reconcile_from_date=reconcile_from_date,
-        )
+            persisted: list[TrainingSession] = []
+            for mapped in prepared_sessions:
+                saved = self.repository.save_session(
+                    athlete_profile_id,
+                    mapped,
+                    **({"commit": False} if transactional else {}),
+                )
+                persisted.append(saved)
 
-        persisted: list[TrainingSession] = []
-        for mapped in prepared_sessions:
-            saved = self.repository.save_session(
-                athlete_profile_id,
-                mapped,
-            )
-            persisted.append(saved)
+            if transactional:
+                session.commit()
 
-        return tuple(persisted)
+            return tuple(persisted)
+        except Exception:
+            if transactional:
+                session.rollback()
+            raise
+
 
 
 def _find_existing_session(
@@ -226,7 +233,8 @@ def _remove_obsolete_generated_sessions(
         TrainingSession
     ],
     generated_planning_keys: set[str],
-    reconcile_from_date: date | None = None,
+    reconcile_from_date: date | None = None,,
+    defer_commit: bool = False
 ) -> None:
     """Supprime les anciennes séances générées devenues obsolètes.
 
@@ -280,4 +288,5 @@ def _remove_obsolete_generated_sessions(
         repository.delete_session(
             athlete_profile_id,
             session.id,
+            **({"commit": False} if defer_commit else {}),
         )
